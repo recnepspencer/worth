@@ -1,7 +1,7 @@
 //! One invoked original-source fold produces the strong Complete result.
 use super::{
     branches::BranchImages, canonical::CanonicalOutput, capture::FrozenCompleteMetadata,
-    roots::FoldedRoots, schemas::CompleteSchemas, symbols::OriginalSymbolDictionary,
+    roots::CapturedRoots, schemas::CompleteSchemas, symbols::OriginalSymbolDictionary,
     CompleteRelationalNativeCheckpoint, Denial,
 };
 use crate::durability::data::*;
@@ -21,21 +21,16 @@ pub(super) fn prepare(
     {
         return Err(Denial::OriginalAuthorityUnavailable);
     }
-    let mut frozen = FrozenCompleteMetadata::capture(runtime, execution)?.resolve(execution)?;
+    let mut frozen =
+        FrozenCompleteMetadata::capture(runtime, execution, &placement)?.resolve(execution)?;
     let commits = frozen.original.read_canonical(execution, 1 << 30)?;
     let dictionary =
         OriginalSymbolDictionary::capture(&frozen.original.symbols, &commits, execution)?;
-    let roots = FoldedRoots::derive(&commits, &dictionary, execution)?;
+    let roots = CapturedRoots::capture(frozen.components.observations(), execution)?;
     let main = &frozen.branches.branch_cells[frozen.main_cell].branch_id;
-    let branches =
-        BranchImages::derive(main, &frozen.original.branches, &commits, &roots, execution)?;
-    branches.require_current(
-        &frozen.branches.branch_cells,
-        &frozen.branches.branch_lifecycle,
-        &frozen.branches.retired_branch_names,
-        &roots,
-    )?;
+    let branches = BranchImages::capture(&frozen.branches, execution)?;
     let schemas = CompleteSchemas::capture(&frozen.original, &commits, execution)?;
+    super::covered_prefix::require(&frozen.original, &schemas, execution)?;
     let initial = crate::durability::source_initial_inputs::capture::capture_complete(
         main,
         &frozen.original.branches,
@@ -43,21 +38,35 @@ pub(super) fn prepare(
         execution,
     )
     .map_err(initial_stop)?;
-    let original_image =
-        super::original_image::emit(&frozen.original.branches, &commits, execution)?;
-    let lineage = super::metadata::capture_lineage(&commits, execution)?;
+    let original_image = super::original_image::emit(&frozen.original, &commits, execution)?;
+    let lineage = super::metadata::capture_lineage(
+        &commits,
+        frozen
+            .original
+            .base
+            .as_ref()
+            .map(|base| &base.directory.manifest),
+        execution,
+    )?;
     let mut metadata = super::metadata::capture_metadata_members(
         &dictionary,
         &lineage,
         &frozen.indexes,
+        frozen
+            .original
+            .base
+            .as_ref()
+            .map(|base| &base.directory.manifest),
         execution,
     )?;
-    let canonical = CanonicalOutput::prepare(&commits, &mut metadata.members, execution)?;
+    let canonical =
+        CanonicalOutput::prepare(&commits, &frozen.original, &mut metadata.members, execution)?;
     let region_output = super::regions::capture(
         || frozen.components.observations(),
         main,
         &branches,
         &roots,
+        frozen.original.base.as_ref(),
         &schemas,
         &dictionary,
         &mut metadata.members,
@@ -67,7 +76,7 @@ pub(super) fn prepare(
         .components
         .observations()
         .find_map(|(descriptor, original_root)| {
-            (descriptor.branch_id() == main && branches.is_current_component(descriptor, &roots))
+            (descriptor.branch_id() == main && branches.is_current_component(descriptor))
                 .then(|| original_root.retained_schema_authority())
         })
         .ok_or(Denial::OriginalAuthorityUnavailable)?;
@@ -82,6 +91,7 @@ pub(super) fn prepare(
     )?;
     super::contracts::install(&main_schema, &mut draft, execution)?;
     let region_custody = region_output.install_into(&mut draft);
+    super::destination_members::require(&placement, &member_map, execution)?;
     let canonical_publication = canonical.publication(&draft, execution)?;
     let inline_bytes = canonical.inline_bytes;
     let coverage = draft.covered_position;
@@ -144,7 +154,12 @@ pub(super) fn prepare(
     checkpoint = checkpoint
         .with_manifest_publication(
             publication
-                .map(|publication| publication.with_initial_inputs(initial_artifact.clone())),
+                .map(|publication| {
+                    publication
+                        .with_initial_inputs(initial_artifact.clone())
+                        .with_capture_base(execution)
+                })
+                .transpose()?,
         )
         .bind_original_publication(
             runtime.durability.medium(),
@@ -183,7 +198,7 @@ pub(super) fn prepare(
         initial_predecessor: initial.predecessor,
     })
 }
-fn initial_stop(
+pub(super) fn initial_stop(
     cause: crate::durability::source_initial_inputs::RelationalInitialInputsRefusal,
 ) -> Denial {
     use crate::durability::source_initial_inputs::RelationalInitialInputsRefusal as Refusal;

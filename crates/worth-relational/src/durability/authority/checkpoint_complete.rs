@@ -5,11 +5,12 @@ pub use admission_projection::CapturedRelationalCheckpointAdmissionImage;
 mod canonical;
 mod capture;
 mod contracts;
+mod covered_prefix;
+mod destination_members;
 mod draft;
 mod metadata;
 mod original_image;
 mod prepare;
-mod records;
 mod regions;
 mod roots;
 mod schemas;
@@ -54,21 +55,6 @@ fn root_stop(cause: crate::branch::RelationalBranchRootCaptureDenial) -> Denial 
         cause => Denial::Durability(crate::durability::data::DurabilityError::new(
             crate::durability::data::RecoveryFailureClass::CorruptCanonicalArtifact,
             format!("original all-root reconstruction disagrees: {cause:?}"),
-        )),
-    }
-}
-fn transaction_stop(cause: crate::transactions::data::TransactionCommitError) -> Denial {
-    match cause {
-        crate::transactions::data::TransactionCommitError::Execution { denial, .. } => {
-            match denial.kind {
-                crate::transactions::data::CommitExecutionDenialKind::Cause(cause) => {
-                    Denial::Request(cause)
-                }
-            }
-        }
-        cause => Denial::Durability(crate::durability::data::DurabilityError::new(
-            crate::durability::data::RecoveryFailureClass::CorruptCanonicalArtifact,
-            format!("sealed original mutation input refused: {cause:?}"),
         )),
     }
 }

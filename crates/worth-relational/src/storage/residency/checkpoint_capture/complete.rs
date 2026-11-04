@@ -65,9 +65,24 @@ impl RelationalRegionResidency {
         request
             .consult()
             .map_err(|cause| RelationalRecoveryStop::Request(cause.into()))?;
-        let lease = self
-            .lease_resident_full()?
-            .ok_or_else(|| self.capture_failure(Cause::SourceUnavailable))?;
+        let lease = match self.lease_resident_full()? {
+            Some(lease) => lease,
+            None => self.demand_full(
+                request,
+                super::super::history_capture_bound::FULL_HISTORY_READ_LIMIT,
+                None,
+            )?,
+        };
+        lease.capture_checkpoint_data_for_request(request, schema, schema_digest, symbols)
+    }
+    fn capture_full_contents_for_request(
+        self: &Arc<Self>,
+        lease: &super::super::RelationalResidencyLease<super::super::Full>,
+        request: &ExecutionRequest<'_, '_>,
+        schema: &RelationalBranchRootSchemaAuthority,
+        schema_digest: [u8; 32],
+        symbols: &dyn crate::symbols::data::SymbolTextLookup,
+    ) -> Result<CapturedCompleteRegion, RelationalRecoveryStop> {
         let region = lease.resident_region();
         let captured = super::super::region_capture::complete::capture(
             &region.partition,
@@ -118,6 +133,19 @@ impl RelationalRegionResidency {
                 recorded,
             },
         })
+    }
+}
+/// DATA projection consumes the actual same-cell counted Full observation.
+impl super::super::RelationalResidencyLease<super::super::Full> {
+    pub(crate) fn capture_checkpoint_data_for_request(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+        schema: &RelationalBranchRootSchemaAuthority,
+        schema_digest: [u8; 32],
+        symbols: &dyn crate::symbols::data::SymbolTextLookup,
+    ) -> Result<CapturedCompleteRegion, RelationalRecoveryStop> {
+        self.cell()
+            .capture_full_contents_for_request(self, request, schema, schema_digest, symbols)
     }
 }
 #[cfg(test)]

@@ -15,12 +15,45 @@ use worth_proof::NativeCheckpointOriginalsVerified;
 /// Source selection and a receiver still have to admit its emitted artifact.
 pub struct CapturedRelationalCheckpointAdmissionImage {
     rows: ExecutionArray<EncodedAdmissionRow>,
+    source: crate::durability::source_initial_inputs::RelationalCompleteSourceArtifact,
+    normalized: std::sync::Arc<
+        crate::durability::source_initial_inputs::normalized::NormalizedOriginalInputs,
+    >,
+    capture_base: Option<
+        std::sync::Arc<crate::durability::checkpoint_admission::PreparedCheckpointCaptureBase>,
+    >,
     roots: ExecutionImmutableBytes,
     checkpoint_digest: [u8; 32],
     source_digest: [u8; 32],
     initial_digest: [u8; 32],
     covered: u64,
     transitions: u64,
+}
+/// The only constructor follows successful emission from this original producer.
+/// Descriptive source/image bytes have no conversion into this witness payload.
+pub(in crate::durability) struct SealedCheckpointCaptureData {
+    publication:
+        std::sync::Arc<crate::durability::checkpoint_admission::PreparedCheckpointCaptureBase>,
+    source: crate::durability::source_initial_inputs::RelationalCompleteSourceArtifact,
+    image: crate::durability::checkpoint_admission::RelationalCheckpointAdmissionArtifact,
+    normalized: std::sync::Arc<
+        crate::durability::source_initial_inputs::normalized::NormalizedOriginalInputs,
+    >,
+}
+impl worth_proof::AuthorityMarker for SealedCheckpointCaptureData {}
+impl SealedCheckpointCaptureData {
+    pub(in crate::durability) fn into_parts(
+        self,
+    ) -> (
+        std::sync::Arc<crate::durability::checkpoint_admission::PreparedCheckpointCaptureBase>,
+        crate::durability::source_initial_inputs::RelationalCompleteSourceArtifact,
+        crate::durability::checkpoint_admission::RelationalCheckpointAdmissionArtifact,
+        std::sync::Arc<
+            crate::durability::source_initial_inputs::normalized::NormalizedOriginalInputs,
+        >,
+    ) {
+        (self.publication, self.source, self.image, self.normalized)
+    }
 }
 impl std::fmt::Debug for CapturedRelationalCheckpointAdmissionImage {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -98,7 +131,19 @@ impl CapturedRelationalCheckpointAdmissionImage {
         if cut.checkpoint_digest() != &self.checkpoint_digest {
             return Err(Refusal::BindingMismatch(Mismatch::Checkpoint));
         }
-        crate::durability::checkpoint_admission::emit(cut, &self.roots, &self.rows, request)
+        let image =
+            crate::durability::checkpoint_admission::emit(cut, &self.roots, &self.rows, request)?;
+        if let Some(slot) = &self.capture_base {
+            let sealed =
+                NativeCheckpointOriginalsVerified::from_owner(SealedCheckpointCaptureData {
+                    publication: slot.clone(),
+                    source: self.source.clone(),
+                    image: image.clone(),
+                    normalized: self.normalized.clone(),
+                });
+            slot.install(sealed, request)?;
+        }
+        Ok(image)
     }
 }
 
@@ -107,18 +152,34 @@ pub(super) fn capture(
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<CapturedRelationalCheckpointAdmissionImage, Denial> {
     let originals = originals.value().custody();
-    let mut rows = ExecutionRequestArrayBuilder::allocate(*request, originals.commits.len())
-        .map_err(crate::durability::checkpoint_history::capture::array_capture_stop)?;
+    let covered = originals
+        .original
+        .base
+        .as_ref()
+        .map_or(0, |base| base.directory.manifest.commits.len());
+    let mut rows =
+        ExecutionRequestArrayBuilder::allocate(*request, covered + originals.commits.len())
+            .map_err(crate::durability::checkpoint_history::capture::array_capture_stop)?;
+    if let Some(base) = &originals.original.base {
+        let carried = base
+            .state
+            .image()
+            .carry_rows(request)
+            .map_err(admission_stop)?;
+        for row in carried {
+            rows.push(row)
+                .map_err(crate::durability::checkpoint_history::capture::array_capture_stop)?;
+        }
+    }
     for original in originals.commits.iter() {
         crate::durability::artifact_payload_emission::request::account_work(request, 1)
             .map_err(crate::durability::checkpoint_history::capture::capture_stop)?;
         let envelope = &original.envelope;
-        let root = &originals
-            .roots
-            .get(envelope.commit.commit_id)
-            .ok_or(Denial::OriginalAuthorityUnavailable)?
-            .root;
-        let axes = root.axes().ok_or(Denial::OriginalAuthorityUnavailable)?;
+        let descriptor = original.artifact.roots();
+        let visibility = crate::branch::checkpoint_visibility::from_original_commit_data(
+            envelope, descriptor, request,
+        )
+        .map_err(super::root_stop)?;
         let carrier = originals
             .carriers
             .get(
@@ -141,7 +202,8 @@ pub(super) fn capture(
             .checked_advance()
             .ok_or(Denial::OriginalAuthorityUnavailable)?;
         let created = created_patches(&envelope.patch.authoritative_record_patches, request)?;
-        let correctness = match axes.correctness_index {
+        let correctness = match crate::branch::RelationalRootCorrectnessIndex::AuthoritativeFallback
+        {
             crate::branch::RelationalRootCorrectnessIndex::AuthoritativeFallback => 0,
         };
         let groups = [
@@ -176,10 +238,10 @@ pub(super) fn capture(
             )?,
             encode(
                 &Visibility {
-                    storage: axes.storage_root,
-                    schema: axes.schema_root,
+                    storage: *descriptor.truth_root(),
+                    schema: *descriptor.schema_root(),
                     correctness,
-                    commitment: axes.visibility.digest(),
+                    commitment: visibility.digest(),
                 },
                 request,
             )?,
@@ -196,7 +258,20 @@ pub(super) fn capture(
         .map_err(crate::durability::checkpoint_history::capture::array_capture_stop)?;
     }
     let roots = root_directory::encode(&originals.manifest, &originals.roots, request)?;
+    let normalized = crate::durability::source_initial_inputs::normalized_admission::readmit(
+        originals.source_artifact.normalized_bytes(),
+        originals.source_artifact.covered().0,
+        originals.source_artifact.covered_transitions().0,
+        request,
+    )
+    .map_err(super::prepare::initial_stop)?;
     Ok(CapturedRelationalCheckpointAdmissionImage {
+        source: originals.source_artifact.clone(),
+        normalized,
+        capture_base: originals
+            .checkpoint
+            .manifest_publication()
+            .and_then(|publication| publication.capture_base()),
         rows: rows
             .seal()
             .map_err(crate::durability::checkpoint_history::capture::array_capture_stop)?,
@@ -293,4 +368,15 @@ fn created_patches<'a>(
     selected
         .seal()
         .map_err(crate::durability::checkpoint_history::capture::array_capture_stop)
+}
+
+fn admission_stop(
+    cause: crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal,
+) -> Denial {
+    match cause {
+        crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal::Request(
+            cause,
+        ) => Denial::Request(cause),
+        _ => Denial::OriginalAuthorityUnavailable,
+    }
 }

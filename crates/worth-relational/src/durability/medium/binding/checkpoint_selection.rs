@@ -182,7 +182,21 @@ impl AcknowledgingCheckpoint {
                 let admission = self
                     .admission
                     .get_or_insert_with(|| publication.begin_selected_directory_admission());
-                self.directory = Some(std::sync::Arc::new(admission.advance(execution)?));
+                let base = publication
+                    .capture_base()
+                    .map(|slot| slot.snapshot().ok_or(Denial::CaptureNotBound))
+                    .transpose()?;
+                let mut directory = admission.advance(execution)?;
+                if let Some(base) = base {
+                    if directory.manifest.covered_position != base.source().covered()
+                        || directory.manifest.coverage.up_to_branch_transition
+                            != base.source().covered_transitions()
+                    {
+                        return Err(Denial::CaptureNotBound);
+                    }
+                    directory.admission_image = Some(base.image().clone());
+                }
+                self.directory = Some(std::sync::Arc::new(directory));
             }
         }
         if self.capture.manifest_publication().is_some()

@@ -23,6 +23,20 @@ fn initial(artifact: &RelationalCompleteSourceArtifact) -> serde_json::Value {
     let len = u64::from_le_bytes(raw[36..44].try_into().unwrap()) as usize;
     crate::source_wire_value::read(&raw[84 + cp + 60..84 + cp + len])
 }
+fn selected_members(
+    image: &CompleteRelationalNativeCheckpoint,
+    request: &ExecutionRequest<'_, '_>,
+) -> worth_execution::ExecutionArray<RelationalDurableMemberLocator> {
+    let mut members = worth_execution::ExecutionRequestArrayBuilder::allocate(
+        *request,
+        image.checkpoint().members().len(),
+    )
+    .unwrap();
+    for member in image.checkpoint().members() {
+        members.push(member.locator()).unwrap();
+    }
+    members.seal().unwrap()
+}
 #[test]
 fn complete_source_recovery_restores_original_inputs_for_another_complete_capture() {
     let policy = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
@@ -30,7 +44,8 @@ fn complete_source_recovery_restores_original_inputs_for_another_complete_captur
     let (runtime, medium) = initialized(&request);
     let first = create_entity_outcome(&request, &runtime, "covered");
     release_test_commit_snapshot(&runtime, &first);
-    let complete = capture(&runtime, &request);
+    let complete = capture_external(&runtime, &medium, &request);
+    let members = selected_members(&complete, &request);
     medium.file_checkpoint(complete.checkpoint().clone());
     let later = create_entity_outcome(&request, &runtime, "tail");
     release_test_commit_snapshot(&runtime, &later);
@@ -49,7 +64,7 @@ fn complete_source_recovery_restores_original_inputs_for_another_complete_captur
         .durability_recovery()
         .recover_with_authority(&request, plan)
         .unwrap();
-    let second = capture(&receiver, &request);
+    let second = capture_selected_external(&receiver, &medium, &members, &request);
     assert_eq!(second.source_artifact().covered().0, 2);
     assert_eq!(second.source_artifact().initial_coordinate().0, 1);
     assert_eq!(

@@ -1,6 +1,6 @@
 //! Own the verified prefix, fold and protected read through image capture.
 use super::{
-    roots::FoldedRoots,
+    roots::CapturedRoots,
     source::{FrozenOriginalInputs, OriginalCanonicalCommit},
 };
 use crate::durability::{
@@ -16,7 +16,7 @@ pub(super) struct VerifiedOriginalCustody {
     pub(super) checkpoint: RelationalNativeCheckpoint,
     pub(super) source_artifact: RelationalCompleteSourceArtifact,
     pub(super) commits: ExecutionArray<OriginalCanonicalCommit>,
-    pub(super) roots: FoldedRoots,
+    pub(super) roots: CapturedRoots,
     pub(super) original: FrozenOriginalInputs,
     // The same actual input owners above prevent address reuse for this local
     // schema-identity lookup. No address is written into the wire image.

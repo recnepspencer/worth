@@ -4,6 +4,7 @@ use sha2::{Digest, Sha256};
 use worth_execution::ExecutionRequestArrayBuilder;
 use worth_foundational::facade::{CheckpointAdmissionCut, CheckpointAdmissionScope, HomeIdentity};
 use RelationalCheckpointAdmissionRefusal as Refusal;
+mod capture_cost;
 mod indexes;
 mod operational;
 mod references;

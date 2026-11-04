@@ -48,7 +48,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             disclosed_source,
             &commit_authority,
             entry,
-            &schedule_progression,
+            schedule_progression,
         )? {
             // Decided before the row is begun, so nothing is claimed.
             return self

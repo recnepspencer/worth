@@ -29,7 +29,7 @@ impl<'a> Grouped<'a> {
         observations: impl Fn() -> I,
         main: &BranchId,
         branches: &BranchImages<'_>,
-        roots: &FoldedRoots,
+        roots: &CapturedRoots,
         schemas: &CompleteSchemas<'_>,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<Self, Denial> {
@@ -42,7 +42,7 @@ impl<'a> Grouped<'a> {
         let mut saw_current_main = false;
         for (ordinal, (descriptor, observed)) in observations().enumerate() {
             crate::execution::check_request(request).map_err(request_stop)?;
-            let schema = branches.require_component(descriptor, roots)?;
+            let schema = branches.require_component(descriptor, observed)?;
             let carrier = schemas
                 .carrier_for(&schema)
                 .ok_or(Denial::OriginalAuthorityUnavailable)?;
@@ -51,7 +51,7 @@ impl<'a> Grouped<'a> {
                 return Err(Denial::OriginalAuthorityUnavailable);
             }
             let current_main =
-                descriptor.branch_id() == main && branches.is_current_component(descriptor, roots);
+                descriptor.branch_id() == main && branches.is_current_component(descriptor);
             if current_main {
                 if saw_current_main {
                     return Err(Denial::OriginalAuthorityUnavailable);
@@ -73,16 +73,16 @@ impl<'a> Grouped<'a> {
                 .get(commit)
                 .ok_or(Denial::OriginalAuthorityUnavailable)?;
             if observed.descriptor() != Some(target.roots())
-                || observed.descriptor() != folded.root.descriptor()
-                || observed.axes() != folded.root.axes()
+                || observed.descriptor() != folded.descriptor()
+                || observed.axes() != folded.axes()
                 || !observed
                     .commit_receipt()
-                    .zip(folded.root.commit_receipt())
+                    .zip(folded.commit_receipt())
                     .is_some_and(|(observed, derived)| observed == derived)
             {
                 return Err(Denial::OriginalAuthorityUnavailable);
             }
-            if schemas.carrier_for(&folded.root.retained_schema_authority()) != Some(carrier) {
+            if schemas.carrier_for(&folded.retained_schema_authority()) != Some(carrier) {
                 return Err(Denial::OriginalAuthorityUnavailable);
             }
             let group = match result.groups.get(&commit) {

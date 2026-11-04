@@ -1,7 +1,8 @@
 //! Emit required original component roots from independently reconstructed Full DATA.
+mod covered;
 mod emission;
 mod grouping;
-use super::{branches::BranchImages, roots::FoldedRoots, schemas::CompleteSchemas};
+use super::{branches::BranchImages, roots::CapturedRoots, schemas::CompleteSchemas};
 use crate::branch::{RelationalBranchBasisDescriptor, RelationalBranchRoot};
 use crate::durability::{data::*, medium::RelationalDurableMemberLocator};
 use crate::history::data::BranchId;
@@ -59,14 +60,15 @@ pub(super) fn capture<
     observations: impl Fn() -> I,
     main: &BranchId,
     branches: &BranchImages<'_>,
-    roots: &FoldedRoots,
+    roots: &CapturedRoots,
+    base: Option<&crate::durability::checkpoint_admission::FrozenSelectedCaptureBase>,
     schemas: &CompleteSchemas<'_>,
     dictionary: &dyn SymbolTextLookup,
     members: &mut ExecutionOrderedMap<RelationalDurableMemberLocator, RelationalCheckpointMember>,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<RegionOutput, Denial> {
     let grouped = Grouped::capture(observations, main, branches, roots, schemas, request)?;
-    emission::capture(grouped, roots, dictionary, members, request)
+    emission::capture(grouped, roots, base, dictionary, members, request)
 }
 fn request_stop(cause: crate::execution::RelationalExecutionDenialCause) -> Denial {
     Denial::Request(cause)

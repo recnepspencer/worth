@@ -22,16 +22,31 @@ pub(super) struct CanonicalOutput {
 impl CanonicalOutput {
     pub(super) fn prepare(
         commits: &[OriginalCanonicalCommit],
+        original: &super::source::FrozenOriginalInputs,
         members: &mut ExecutionOrderedMap<
             RelationalDurableMemberLocator,
             RelationalCheckpointMember,
         >,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<Self, Denial> {
+        let prior = original.base.as_ref().map(|base| &base.directory.manifest);
+        let covered = prior.map_or(0, |prior| prior.commits.len());
+        let count = original.artifacts.len();
         let index = CheckpointCommitIndex::copy_for_request(
-            commits.len(),
+            count,
             |index| {
-                let row = &commits[index];
+                if index < covered {
+                    let row = &prior.expect("covered original directory").commits[index];
+                    return Ok(CanonicalIndexSource {
+                        receipt: &row.commit,
+                        root: &row.root,
+                        position: row.position,
+                        digest: row.payload_digest,
+                        schema_version: row.schema_version,
+                        association: row.association_discovery.clone(),
+                    });
+                }
+                let row = &commits[index - covered];
                 Ok(CanonicalIndexSource {
                     receipt: &row.envelope.commit,
                     root: row.artifact.roots(),
@@ -45,10 +60,33 @@ impl CanonicalOutput {
         )
         .map_err(Denial::Request)?;
         let memory =
-            CanonicalCheckpointMembers::reserve(commits.len(), request).map_err(Denial::Request)?;
-        let mut rows = Vec::with_capacity(commits.len());
+            CanonicalCheckpointMembers::reserve(count, request).map_err(Denial::Request)?;
+        let mut rows = Vec::with_capacity(count);
         let mut cells = ExecutionOrderedMap::default();
         let mut inline_bytes = 0usize;
+        if let Some(prior) = prior {
+            for entry in prior.canonical_members.entries() {
+                rows.push(*entry);
+                members
+                    .insert_cloned_native_for_request(
+                        &entry.member,
+                        &RelationalCheckpointMember::Carried {
+                            locator: entry.member,
+                        },
+                        *request,
+                    )
+                    .map_err(map_stop)?;
+            }
+        }
+        for artifact in original.artifacts.iter() {
+            let cell = artifact.envelope_residency();
+            let position = cell
+                .captured_position()
+                .ok_or(Denial::OriginalAuthorityUnavailable)?;
+            cells
+                .insert_cloned_native_for_request(&position, &cell, *request)
+                .map_err(map_stop)?;
+        }
         for original in commits {
             crate::execution::check_request(request).map_err(Denial::Request)?;
             let bytes = &original.original_frame;
@@ -69,13 +107,6 @@ impl CanonicalOutput {
                         locator: member,
                         bytes: bytes.clone(),
                     },
-                    *request,
-                )
-                .map_err(map_stop)?;
-            cells
-                .insert_cloned_native_for_request(
-                    &original.position,
-                    &original.artifact.envelope_residency(),
                     *request,
                 )
                 .map_err(map_stop)?;

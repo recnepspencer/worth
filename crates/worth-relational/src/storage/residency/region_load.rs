@@ -1,7 +1,11 @@
+pub(super) mod materialization_funding;
+use crate::identity::data::PartitionId;
+use materialization_funding as funding;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use super::region_image::*;
+use super::resident_history::{fund_native_image, projection_funding};
 use super::{RelationalColdRegion, RelationalResidencyDemandFailure as Failure, ResidentRegion};
 use crate::durability::checkpoints::aspect_state_images::CheckpointAspectContractCatalog;
 use crate::durability::checkpoints::images::{
@@ -20,16 +24,29 @@ pub(super) fn load_head(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     limit: u64,
 ) -> Result<Arc<ResidentRegion>, Failure> {
+    let (_contract_memory, contract_bound) = funding::contracts(&cold.schema, execution)?;
+    check_member_limit(cold.head.length, limit).map_err(|cause| unavailable(cold, cause))?;
+    let _read = funding::Funding::reserve(
+        funding::vector::<u8>(usize::try_from(cold.head.length).map_err(|_| funding::overflow())?)?,
+        execution,
+    )?;
+    funding::work(execution, cold.head.length)?;
+    let bytes = source
+        .read_member(cold.head, limit)
+        .map_err(|cause| unavailable(cold, cause))?;
+    let frame = RelationalRegionImage::decode(
+        &bytes,
+        cold.head,
+        cold.partition_id,
+        cold.schema_carrier_digest,
+        RelationalRegionImageKind::Head,
+    )
+    .map_err(|cause| unavailable(cold, cause))?;
+    let quote = funding::region_image::head(funding::Raw(frame.payload), contract_bound, execution)
+        .map_err(|cause| funding::at_region(cause, cold.partition_id))?;
+    funding::work(execution, funding::sum(quote.wire, quote.native)?)?;
+    let memory = funding::MaterializationFunding::admit(quote, execution)?;
     let (mut partition, frontiers, mut historical) = (|| -> Result<_, Cause> {
-        check_member_limit(cold.head.length, limit)?;
-        let bytes = source.read_member(cold.head, limit)?;
-        let frame = RelationalRegionImage::decode(
-            &bytes,
-            cold.head,
-            cold.partition_id,
-            cold.schema_carrier_digest,
-            RelationalRegionImageKind::Head,
-        )?;
         let head: RegionHeadImage =
             rmp_serde::from_slice(frame.payload).map_err(|_| Cause::Damaged)?;
         super::kind_commitment::verify(&head.kind_projection, cold.kind_authority.head)?;
@@ -117,7 +134,7 @@ pub(super) fn load_head(
         partition,
         commitment: Some(commitment),
         _history_custody: Some(history_custody),
-        _memory: None,
+        _memory: memory.retained.into_memory(),
     }))
 }
 
@@ -128,6 +145,10 @@ pub(super) fn load_full(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     limit: u64,
 ) -> Result<Arc<ResidentRegion>, Failure> {
+    let (_contract_memory, contract_bound) = funding::contracts(&cold.schema, execution)?;
+    let (_projection_memory, incidences) = projection_funding(&head.partition, execution)?;
+    let current_quote = funding::current(&head.partition, contract_bound, execution)?;
+    let _current_wire = funding::Funding::reserve(current_quote.wire, execution)?;
     let reference = RegionHistoryBase {
         member: cold.history,
         partition_id: cold.partition_id,
@@ -137,77 +158,85 @@ pub(super) fn load_full(
     };
     let mut folder = super::history_fold::HistoryFolder::new(execution, cold.partition_id, limit);
     let history = folder.read(source.as_ref(), &cold.history_members, &reference)?;
-    super::kind_commitment::verify(&history.kind_projection, cold.kind_authority.history)
+    super::kind_commitment::verify(&history.image.kind_projection, cold.kind_authority.history)
         .map_err(|cause| unavailable(cold, cause))?;
-    if history.entities.len() != head.partition.entity_arena.slot_count()
-        || history.relations.len() != head.partition.relation_arena.slot_count()
+    if history.image.entities.len() != head.partition.entity_arena.slot_count()
+        || history.image.relations.len() != head.partition.relation_arena.slot_count()
     {
         return Err(unavailable(cold, Cause::Damaged).into());
     }
-    let entities = folder.fold_rows::<crate::storage::substrate::EntityRecordKind>(
+    let mut entities = folder.fold_rows::<crate::storage::substrate::EntityRecordKind>(
         source.as_ref(),
         &cold.history_members,
         &reference,
-        history.entities.len(),
+        history.image.entities.len(),
     )?;
-    let relations = folder.fold_rows::<crate::storage::substrate::RelationRecordKind>(
+    let mut relations = folder.fold_rows::<crate::storage::substrate::RelationRecordKind>(
         source.as_ref(),
         &cold.history_members,
         &reference,
-        history.relations.len(),
+        history.image.relations.len(),
     )?;
     drop(folder);
-    let partition = (|| -> Result<_, Cause> {
-        let contracts = contracts(cold)?;
+    let (partition, retained) = (|| -> Result<_, Failure> {
+        let contracts = contracts(cold).map_err(|cause| unavailable(cold, cause))?;
         let mut image = partition_to_image_with_contracts(
             head.partition.clone(),
             cold.schema.aspect_plans(),
             &contracts,
         )
-        .map_err(|_| Cause::Damaged)?;
-        for (current, mut earlier) in image.entity_arena.metadata_history.iter_mut().zip(entities) {
-            earlier.append(current);
-            *current = earlier;
+        .map_err(|_| unavailable(cold, Cause::Damaged))?;
+        for (current, earlier) in image
+            .entity_arena
+            .metadata_history
+            .iter_mut()
+            .zip(&mut entities.rows)
+        {
+            earlier.append_current(current, execution)?;
+            *current = std::mem::take(&mut earlier.values);
         }
-        for (current, mut earlier) in image
+        for (current, earlier) in image
             .relation_arena
             .metadata_history
             .iter_mut()
-            .zip(relations)
+            .zip(&mut relations.rows)
         {
-            earlier.append(current);
-            *current = earlier;
+            earlier.append_current(current, execution)?;
+            *current = std::mem::take(&mut earlier.values);
         }
+        let retained = fund_native_image(&image, contract_bound, incidences, execution)?;
         let mut partition = partition_from_image(image, cold.schema.aspect_plans(), &contracts)
-            .map_err(|_| Cause::Damaged)?;
+            .map_err(|_| unavailable(cold, Cause::Damaged))?;
         partition.adjacency = head.partition.adjacency.clone();
         partition.reverse_adjacency = head.partition.reverse_adjacency.clone();
         super::kind_projection::rebuild(
             &mut partition,
-            &history.kind_projection,
+            &history.image.kind_projection,
             AdjacencyKindBasis::Historical,
-        )?;
+        )
+        .map_err(|cause| unavailable(cold, cause))?;
         verify_buckets(
             &partition,
-            &history.adjacency_kinds,
-            &history.reverse_adjacency_kinds,
+            &history.image.adjacency_kinds,
+            &history.image.reverse_adjacency_kinds,
             AdjacencyKindBasis::Historical,
-        )?;
-        Ok(partition)
-    })()
-    .map_err(|cause| unavailable(cold, cause))?;
+        )
+        .map_err(|cause| unavailable(cold, cause))?;
+        Ok((partition, retained))
+    })()?;
     cold.symbols
         .demand_symbol_ids(execution, super::required_symbols::collect(&partition))?;
     let symbols = cold.symbols.interner_snapshot();
-    let (commitment, _) = PartitionContentCommitment::capture(&partition, &symbols, None)
-        .map_err(|_| unavailable(cold, Cause::Damaged))?;
+    let (commitment, _) =
+        PartitionContentCommitment::capture_full_for_request(&partition, &symbols, execution)
+            .map_err(|cause| funding::content(cause, cold.partition_id))?;
     verify_leaf(cold, &partition, &commitment).map_err(|cause| unavailable(cold, cause))?;
     crate::execution::check_request(execution).map_err(Failure::Request)?;
     Ok(Arc::new(ResidentRegion {
         partition,
         commitment: Some(commitment),
         _history_custody: None,
-        _memory: None,
+        _memory: retained.into_memory(),
     }))
 }
 
@@ -297,4 +326,71 @@ fn verify_buckets(
         return Err(Cause::IntegrityMismatch);
     }
     Ok(())
+}
+
+pub(in crate::storage::residency) fn at_region(cause: Failure, partition: PartitionId) -> Failure {
+    match cause {
+        Failure::Request(cause) => Failure::Request(cause),
+        Failure::StorageUnavailable(mut cause) => {
+            cause.subject = RelationalStorageSubject::Region(partition);
+            cause.into()
+        }
+    }
+}
+
+pub(in crate::storage::residency) fn scalars<T: crate::storage::substrate::StoredValue>(
+    raw: funding::Raw<'_>,
+    request: &worth_execution::ExecutionRequest<'_, '_>,
+) -> Result<funding::Quote, Failure> {
+    let count = funding::sequence(raw, request, |_| Ok(()))?;
+    Ok(funding::Quote::bytes(
+        funding::vector::<T::Value>(count)?,
+        funding::column::<T>(count)?,
+    ))
+}
+
+fn current_diagnostic_wire(
+    partition: &PartitionState,
+    request: &worth_execution::ExecutionRequest<'_, '_>,
+) -> Result<u64, Failure> {
+    use funding::{sum, tree, vector, work};
+    let e = &partition.entity_arena;
+    let r = &partition.relation_arena;
+    let mut bytes = 0;
+    for rows in [&e.diagnostics_enrichment, &r.diagnostics_enrichment] {
+        bytes = sum(
+            bytes,
+            vector::<BTreeMap<crate::symbols::data::Symbol, String>>(rows.len())?,
+        )?;
+        for row in rows.iter() {
+            work(request, 1)?;
+            bytes = sum(
+                bytes,
+                tree::<crate::symbols::data::Symbol, String>(row.len())?,
+            )?;
+        }
+    }
+    Ok(bytes)
+}
+
+pub(in crate::storage::residency) fn content(
+    cause: crate::storage::overlay::PartitionContentDigestError,
+    partition: crate::identity::data::PartitionId,
+) -> Failure {
+    use crate::storage::overlay::PartitionContentDigestError as Error;
+    match cause {
+        Error::Request(cause) => Failure::Request(cause),
+        Error::AllocationAccountingOverflow => funding::overflow(),
+        Error::UnresolvedContentSymbol(symbol) => RelationalStorageUnavailable {
+            subject: RelationalStorageSubject::Symbols {
+                first: symbol,
+                last: symbol,
+            },
+            cause: Cause::SourceUnavailable,
+        }
+        .into(),
+        Error::InvalidHistoryCoverage | Error::Encoding => {
+            funding::at_region(funding::damaged(), partition)
+        }
+    }
 }

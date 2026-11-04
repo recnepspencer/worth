@@ -18,7 +18,7 @@ pub(super) struct CompleteSchemas<'a> {
 impl<'a> CompleteSchemas<'a> {
     pub(super) fn capture(
         original: &'a FrozenOriginalInputs,
-        commits: &'a [OriginalCanonicalCommit],
+        _commits: &'a [OriginalCanonicalCommit],
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<Self, Denial> {
         let mut identities = ExecutionOrderedMap::default();
@@ -46,19 +46,17 @@ impl<'a> CompleteSchemas<'a> {
         for transition in original.branches.transitions() {
             record(&transition.schema, &mut identities, &mut images, request)?;
         }
-        for commit in commits {
+        for artifact in original.artifacts.iter() {
+            let inputs = artifact
+                .original_inputs()
+                .ok_or(Denial::OriginalAuthorityUnavailable)?;
             record(
-                &commit.inputs.prestate_schema,
+                &inputs.prestate_schema,
                 &mut identities,
                 &mut images,
                 request,
             )?;
-            record(
-                &commit.inputs.result_schema,
-                &mut identities,
-                &mut images,
-                request,
-            )?;
+            record(&inputs.result_schema, &mut identities, &mut images, request)?;
         }
         let images =
             CheckpointSchemaImages::copy_for_request(&images, request).map_err(Denial::Request)?;
