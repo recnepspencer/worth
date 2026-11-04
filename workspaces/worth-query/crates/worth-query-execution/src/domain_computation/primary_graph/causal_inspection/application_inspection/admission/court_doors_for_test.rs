@@ -42,3 +42,17 @@ impl<'a, 'storage, Schema, Scope> InspectionRead<'a, 'storage, Schema, Scope> {
         &mut self.memory
     }
 }
+
+impl<'a, 'storage, Schema, Scope> InspectionRead<'a, 'storage, Schema, Scope> {
+    #[doc(hidden)]
+    /// The target and session beside the mutable memory slot: one borrow, three fields.
+    pub fn target_session_memory_mut_for_test(
+        &mut self,
+    ) -> (
+        &Arc<WorthQueryApplicationInspectionTarget>,
+        &WorthQueryManagedGraphWorkSession,
+        &mut &'storage mut Option<ExecutionMemoryReservation>,
+    ) {
+        (&self.target, &self.session, &mut self.memory)
+    }
+}

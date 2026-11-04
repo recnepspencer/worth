@@ -109,12 +109,13 @@ fn real_report_refusal_preserves_original_payer_until_owned_denial_closes() {
                         .unwrap();
                     // This is the actual production report owner immediately after
                     // its real currentness check, with its real target and session.
+                    let (target, session, memory) = read.target_session_memory_mut_for_test();
                     let refusal = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::causal_inspection::application_inspection::report::materialize(
                         &execution,
-                        &(*read.target_for_test()),
-                        &(*read.session_for_test()),
+                        target,
+                        session,
                         worth_query_execution::court_doors_for_test::domain_computation::primary_graph::causal_inspection::application_inspection::identity::InspectionOriginalReference::After,
-                        (*read.memory_mut_for_test()),
+                        memory,
                     )
                     .err()
                     .expect("report backing must refuse after its real frame admits");
