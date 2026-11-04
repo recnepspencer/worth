@@ -19,7 +19,7 @@ worth_query_decl::facade::worth_query_application_contribution! {
         identity: "worth.query.test.mixed-owner-members",
         members: |schema| {
             let schema = crate::domain_computation::primary_graph::output_lineage::ownership_oracle::base_model::declare(schema);
-            let schema = crate::domain_computation::primary_graph::output_lineage::ownership_oracle::base_model::declare(schema);
+            let schema = crate::domain_computation::primary_graph::output_lineage::ownership_oracle::facts::declare(schema);
             crate::domain_computation::primary_graph::output_lineage::ownership_oracle::region_output::declare(schema)
                 .application_query(planar_query_definition::<OwnerSchema>())
                 .application_query_binding::<PlanarReadBinding<OwnerSchema>>()
