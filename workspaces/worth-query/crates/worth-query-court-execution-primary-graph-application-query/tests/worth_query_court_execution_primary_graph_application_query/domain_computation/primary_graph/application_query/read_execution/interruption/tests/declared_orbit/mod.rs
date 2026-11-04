@@ -19,8 +19,7 @@ fn original_query_cancellation_and_deadline_survive_native_orbit_entry() {
         let request = WorthQueryRequestScope::new(Some(deadline), cancellation.token());
         let visits = Rc::new(Cell::new(0));
         let observed = Rc::clone(&visits);
-        CHECKPOINT.with(|slot| {
-            *slot.borrow_mut() = Some(Box::new(move |subject| {
+        let _checkpoint = observe_checkpoints_for_test(Box::new(move |subject| {
                 if subject != "Next" {
                     return;
                 }
@@ -38,9 +37,7 @@ fn original_query_cancellation_and_deadline_survive_native_orbit_entry() {
                         cancellation.cancel();
                     }
                 }
-            }))
-        });
-        let _checkpoint = CheckpointGuard;
+            }));
         let host = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();
         let result = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::declared_queries::read::execute(
             &world,

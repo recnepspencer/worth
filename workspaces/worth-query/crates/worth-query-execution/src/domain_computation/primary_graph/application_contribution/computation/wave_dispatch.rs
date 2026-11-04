@@ -80,10 +80,7 @@ pub fn dispatch(
                 Some(seed) => {
                     let (outcome, order) =
                         map.run_owned_native_perturbed_for_test(lease, seed, kernel);
-                    #[cfg(test)]
-                    tests::seeded_dispatch::record(order);
-                    #[cfg(not(test))]
-                    drop(order);
+                    seeded_dispatch_orders::record(order);
                     outcome
                 }
                 None => map.run_owned_native(lease, kernel),
@@ -155,29 +152,6 @@ fn from_checkpoint(stop: worth_execution::MapKernelStop) -> WorthQueryAdvancemen
     }
 }
 
-pub mod tests {
-    use super::*;
-    use crate::domain_computation::primary_graph::application_contribution::request_execution::query_test_execution_authority_for_test as test_authority;
-    use std::{
-        num::NonZeroUsize,
-        sync::{Arc, Mutex},
-        time::{Duration, Instant},
-    };
-    use worth_query_admission::facade::authenticated_principal::{
-        WorthQueryCancellationSource, WorthQueryRequestScope,
-    };
-    use worth_runtime_world::facade::RuntimeWorldExecutionPlacement;
-    pub mod seeded_dispatch {
-        use super::*;
-use crate::domain_computation::primary_graph::application_contribution::request_execution::{
-    place_managed_computations_on_this_thread_for_test as place,
-    WorthQueryExecutionPlacementForTest as Placement,
-};
-        thread_local! { pub static ORDERS: std::cell::RefCell<Vec<Vec<usize>>> = const { std::cell::RefCell::new(Vec::new()) }; }
-        pub fn record(order: Vec<usize>) {
-            ORDERS.with(|orders| orders.borrow_mut().push(order));
-        }
-    }
-}
+pub(crate) mod seeded_dispatch_orders;
 
 mod court_doors_for_test;

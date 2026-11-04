@@ -1,4 +1,4 @@
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::read_execution::interruption::tests::CHECKPOINT;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::read_execution::interruption::checkpoint_observer::observe_checkpoints_for_test;
 pub use std::cell::Cell;
 pub use std::cell::RefCell;
 pub use std::num::NonZeroUsize;
@@ -18,13 +18,6 @@ pub use worth_query_execution::facade::domain_computation::WorthQueryProductQuer
 pub use worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource;
 pub use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 pub use worth_query_declaration::facade::application_query::ApplicationQueryParameterSet;
-
-pub struct CheckpointGuard;
-impl Drop for CheckpointGuard {
-    fn drop(&mut self) {
-        CHECKPOINT.with(|slot| *slot.borrow_mut() = None);
-    }
-}
 
 pub fn nz(value: usize) -> NonZeroUsize {
     NonZeroUsize::new(value).unwrap()
@@ -101,15 +94,12 @@ fn cancellation_during_real_nested_materialization_releases_all_read_resources()
         .expect("the fixture read owns its installed host call");
     let triggered = Rc::new(Cell::new(false));
     let witness = Rc::clone(&triggered);
-    CHECKPOINT.with(|slot| {
-        *slot.borrow_mut() = Some(Box::new(move |subject| {
+    let _guard = observe_checkpoints_for_test(Box::new(move |subject| {
             if !witness.get() && subject.contains("relation") {
                 witness.set(true);
                 cancellation.cancel();
             }
-        }))
-    });
-    let _guard = CheckpointGuard;
+        }));
     let denial = world
         .application
         .with_host_advancement(|phase| {

@@ -1,7 +1,7 @@
 //! Acquisition is recorded inside the shipped owned dispatcher, not in a racy kernel.
 
 use std::num::NonZeroUsize;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::computation::wave_dispatch::tests::seeded_dispatch::ORDERS;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::computation::wave_dispatch::seeded_dispatch_orders::record_seeded_dispatch_for_test;
 use crate::domain_computation::primary_graph::application_contribution::computation::wave_dispatch::tests::member_result;
 use crate::domain_computation::primary_graph::application_contribution::computation::wave_dispatch::tests::run;
 use crate::domain_computation::primary_graph::application_contribution::computation::wave_dispatch::tests::*;
@@ -19,7 +19,7 @@ fn certified_placement_perturbs_the_actual_owned_wave() {
                 workers: NonZeroUsize::new(width).unwrap(),
                 seed,
             });
-            ORDERS.with(|orders| orders.borrow_mut().clear());
+            let recorded = record_seeded_dispatch_for_test();
             let (settled, report) = run(
                 Some(width),
                 vec![member_result(0, false), member_result(1, false)],
@@ -37,7 +37,7 @@ fn certified_placement_perturbs_the_actual_owned_wave() {
                 .collect::<Vec<_>>();
             assert_eq!(report.accounted_cost(), None);
             histories.push(values);
-            orders.push(ORDERS.with(|orders| orders.borrow_mut().pop().unwrap()));
+            orders.push(recorded.take_last().unwrap());
         }
         assert_eq!(
             histories[0], histories[1],

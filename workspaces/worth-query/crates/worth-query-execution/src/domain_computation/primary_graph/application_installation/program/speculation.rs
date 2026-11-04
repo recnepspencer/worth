@@ -135,7 +135,7 @@ impl WorthQueryApplicationPreviewSession {
         mut self,
     ) -> Result<(), (Self, worth_runtime_bridge::facade::BridgeSpeculationError)> {
         let residue = vec![BridgePreviewResidueClass::TemporaryDiagnosticsResidue];
-        #[cfg(test)]
+        // Armed only by a court through `reject_discard_for_test`.
         let residue = if self.discard_fault.get() {
             vec![BridgePreviewResidueClass::AuthoritativeDiagnosticsResidue]
         } else {
