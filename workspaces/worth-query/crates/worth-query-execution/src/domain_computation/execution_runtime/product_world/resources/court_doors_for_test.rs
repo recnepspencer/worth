@@ -35,3 +35,10 @@ impl WorthQueryProductExecution {
         &self.policy
     }
 }
+
+impl WorthQueryProductExecution {
+    #[doc(hidden)]
+    pub fn authority_into_for_test(self) -> Option<Arc<ExecutionAuthority>> {
+        self.authority
+    }
+}

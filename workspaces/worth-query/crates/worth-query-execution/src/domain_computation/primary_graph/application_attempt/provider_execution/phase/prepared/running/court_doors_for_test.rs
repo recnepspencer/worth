@@ -61,3 +61,11 @@ impl<Schema, Operation, Input, Scope>
     }
 }
 
+impl<Schema, Operation, Input, Scope>
+    WorthQueryRunningApplicationCommit<Schema, Operation, Input, Scope>
+{
+    #[doc(hidden)]
+    pub fn lease_into_for_test(self) -> WorthQueryApplicationSnapshotLease {
+        self.lease
+    }
+}

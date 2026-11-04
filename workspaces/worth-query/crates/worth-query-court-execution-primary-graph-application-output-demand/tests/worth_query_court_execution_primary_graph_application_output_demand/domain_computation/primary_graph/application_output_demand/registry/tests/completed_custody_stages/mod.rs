@@ -34,7 +34,7 @@ pub fn completed_stage(claimed_with_ready: bool) {
             source: None,
             discovery: None,
             bound_sources: Some(vec![bound.clone()]),
-            consumed_sources: vec![(*bound.identity_for_test())],
+            consumed_sources: vec![bound.identity_into_for_test()],
             retired_sources: Vec::new(),
             retired: None,
             token_count: 0,
@@ -57,7 +57,7 @@ pub fn completed_stage(claimed_with_ready: bool) {
     };
     let mut row = record(occurrence(), DemandState::Output(output), 0);
     (*row.source_commits_mut_for_test()).push(commit.clone());
-    (*state.records_for_test()).insert_for_test(row_key.clone(), row);
+    (*state.records_mut_for_test()).insert_for_test(row_key.clone(), row);
     state.note_custody_for_test(&commit);
     state.prune_completed_custody().unwrap();
     assert_eq!(

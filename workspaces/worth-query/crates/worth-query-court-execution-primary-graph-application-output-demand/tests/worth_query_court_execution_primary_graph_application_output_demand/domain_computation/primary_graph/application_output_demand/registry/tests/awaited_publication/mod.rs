@@ -26,7 +26,7 @@ pub fn scenario(rejoin: bool, late_hold: bool) {
             .state_for_test())
             .lock()
             .unwrap()
-            .records_for_test())
+            .records_mut_for_test())
             .get_mut(&newest_key)
             .unwrap()
             .readmission_source_mut_for_test()) = Some(Arc::clone(&source));

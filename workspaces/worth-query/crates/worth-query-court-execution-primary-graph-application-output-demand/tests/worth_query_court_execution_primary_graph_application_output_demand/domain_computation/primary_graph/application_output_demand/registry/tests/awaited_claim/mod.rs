@@ -35,9 +35,9 @@ pub fn last_claim_closes(held_successor: bool) {
             let mut state = (*registry.state_for_test()).lock().unwrap();
             let claims = vec![Arc::new(stale_key.clone())];
 
-            (*(*state.records_for_test()).get_mut(&dependent_key).unwrap().prerequisites_mut_for_test()) = claims;
+            (*(*state.records_mut_for_test()).get_mut(&dependent_key).unwrap().prerequisites_mut_for_test()) = claims;
             (*(*state
-                .records_for_test())
+                .records_mut_for_test())
                 .get_mut(&stale_key)
                 .unwrap()
                 .framework_required_count_mut_for_test()) += 1;

@@ -28,7 +28,7 @@ fn checkpoint_finishes_keep_caller_stops_off_the_shared_row() {
             let fixture = Fixture::new(false);
             {
                 let mut state = (*fixture.registry.state_for_test()).lock().unwrap();
-                (*(*state.records_for_test()).get_mut(&(*fixture.interest.key_for_test())).unwrap().state_mut_for_test()) = DemandState::Output(
+                (*(*state.records_mut_for_test()).get_mut(&(*fixture.interest.key_for_test())).unwrap().state_mut_for_test()) = DemandState::Output(
                     WorthQueryOutputProgress::new_for_test(WorthQueryOutputCheckpoint::Published {
                         receipt: fixture.receipt.clone(),
                         delivery: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryPendingOutputDelivery::NoChange,

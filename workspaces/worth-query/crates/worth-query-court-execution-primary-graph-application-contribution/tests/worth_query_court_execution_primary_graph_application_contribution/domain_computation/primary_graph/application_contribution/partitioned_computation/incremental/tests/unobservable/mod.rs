@@ -30,7 +30,7 @@ fn an_unobservable_key_gathers_its_partition_again_and_denies_nothing() {
     let installed = installed(StatusRead::Gather(1), sum);
     let first = first_run(&world, &installed);
     let outcome = *first.outcome.as_ref().unwrap();
-    let mut state = (*first.sealed.unwrap().unwrap().state_for_test());
+    let mut state = first.sealed.unwrap().unwrap().state_into_for_test();
     let key = (*state
         .facts_for_test())
         .facts_for_test()
@@ -49,7 +49,7 @@ fn an_unobservable_key_gathers_its_partition_again_and_denies_nothing() {
         entity_id,
         locator,
     };
-    (*state.facts_for_test()).rename_key_for_test(&key, undeclared);
+    (*state.facts_mut_for_test()).rename_key_for_test(&key, undeclared);
     let prior = ComputationPrior::new_for_test(edition(), Ok(std::sync::Arc::new(state)), None);
 
     let next = attempt(&world, &installed, Some(prior));
@@ -71,7 +71,7 @@ fn more_retained_keys_than_the_request_work_runs_in_full_uncompared() {
     let installed = installed(StatusRead::Gather(1), sum);
     let first = first_run(&world, &installed);
     let outcome = *first.outcome.as_ref().unwrap();
-    let mut state = (*first.sealed.unwrap().unwrap().state_for_test());
+    let mut state = first.sealed.unwrap().unwrap().state_into_for_test();
     let key = (*state
         .facts_for_test())
         .facts_for_test()
@@ -87,7 +87,7 @@ fn more_retained_keys_than_the_request_work_runs_in_full_uncompared() {
     // One more key than the whole request work, each one a comparison no
     // one is charged for.
     let declared = OBSERVATION_WORK_CEILING;
-    (*state.facts_for_test()).copy_keys_for_test(
+    (*state.facts_mut_for_test()).copy_keys_for_test(
         &key,
         (0..=declared).map(|copy| Key::Field {
             entity: format!("Undeclared{copy}"),
@@ -124,7 +124,7 @@ fn a_few_adjacency_keys_whose_worst_case_passes_the_request_work_run_in_full() {
     let installed = installed(StatusRead::Gather(1), sum);
     let first = first_run(&world, &installed);
     let outcome = *first.outcome.as_ref().unwrap();
-    let mut state = (*first.sealed.unwrap().unwrap().state_for_test());
+    let mut state = first.sealed.unwrap().unwrap().state_into_for_test();
     let key = (*state
         .facts_for_test())
         .facts_for_test()
@@ -138,7 +138,7 @@ fn a_few_adjacency_keys_whose_worst_case_passes_the_request_work_run_in_full() {
     // third of it and its anchor's list, so together they pass it.
     let declared = OBSERVATION_WORK_CEILING;
     let third = declared / 3;
-    (*state.facts_for_test()).copy_keys_for_test(
+    (*state.facts_mut_for_test()).copy_keys_for_test(
         &key,
         (0..3).map(|copy| Key::Adjacency {
             relation: format!("Undeclared{copy}"),

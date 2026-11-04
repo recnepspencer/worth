@@ -61,9 +61,9 @@ fn last_published_interest_releases_its_own_prerequisite_claims() {
             let mut state = (*registry.state_for_test()).lock().unwrap();
             let claims = vec![Arc::new(upstream_key.clone())];
 
-            (*(*state.records_for_test()).get_mut(&output_key).unwrap().prerequisites_mut_for_test()) = claims;
+            (*(*state.records_mut_for_test()).get_mut(&output_key).unwrap().prerequisites_mut_for_test()) = claims;
             (*(*state
-                .records_for_test())
+                .records_mut_for_test())
                 .get_mut(&upstream_key)
                 .unwrap()
                 .framework_required_count_mut_for_test()) += 1;
@@ -96,9 +96,9 @@ fn one_remaining_interest_keeps_the_undelivered_publication() {
         {
             let mut state = (*registry.state_for_test()).lock().unwrap();
 
-            (*(*state.records_for_test()).get_mut(&output_key).unwrap().prerequisites_mut_for_test()) = claims.clone();
+            (*(*state.records_mut_for_test()).get_mut(&output_key).unwrap().prerequisites_mut_for_test()) = claims.clone();
             (*(*state
-                .records_for_test())
+                .records_mut_for_test())
                 .get_mut(&upstream_key)
                 .unwrap()
                 .framework_required_count_mut_for_test()) += 1;

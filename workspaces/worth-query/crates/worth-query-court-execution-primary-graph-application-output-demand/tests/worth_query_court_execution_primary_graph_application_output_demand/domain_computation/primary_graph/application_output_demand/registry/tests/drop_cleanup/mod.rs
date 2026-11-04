@@ -15,7 +15,7 @@ pub fn fixture(
     let ready = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::closed_retirement::ready();
     let mut state = (*registry.state_for_test()).lock().unwrap();
     worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::walk_bounds::add_live_custody(&mut state, &receipts, 1);
-    for mut row in (*state.records_for_test()).values_mut_for_test() {
+    for mut row in (*state.records_mut_for_test()).values_mut_for_test() {
         (*row.interests_mut_for_test()) = 0;
         (*row.state_mut_for_test()) = DemandState::Failed(WorthQueryOutputDemandDenial::new_for_test(
             WorthQueryOutputDemandDenialKind::NoEffect,
@@ -28,7 +28,7 @@ pub fn fixture(
             usize::from(token || index != 0);
     }
     if !token {
-        let mut row = (*state.records_for_test()).get_mut(&selected).unwrap();
+        let mut row = (*state.records_mut_for_test()).get_mut(&selected).unwrap();
         (*row.state_mut_for_test()) = ready;
         (*row.interests_mut_for_test()) = 1;
     }

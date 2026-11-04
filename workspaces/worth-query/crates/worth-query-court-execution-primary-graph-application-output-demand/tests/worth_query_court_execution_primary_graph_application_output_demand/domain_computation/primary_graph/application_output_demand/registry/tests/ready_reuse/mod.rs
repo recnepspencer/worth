@@ -73,7 +73,7 @@ fn ready_output_reopens_and_only_its_exact_restored_predecessor_refreshes_it() {
         generation: Mutex::new(0),
         changed: Condvar::new(),
     });
-    (*(*registry.state_for_test()).lock().unwrap().records_for_test()).insert_for_test(
+    (*(*registry.state_for_test()).lock().unwrap().records_mut_for_test()).insert_for_test(
         output_key.clone(),
         DemandRecord {
             source_scope: Some(scope),
@@ -118,7 +118,7 @@ fn ready_output_reopens_and_only_its_exact_restored_predecessor_refreshes_it() {
     };
     let mut lookalike = (*completion.authority_for_test()).clone();
     if let worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryAcceptedOutputAuthority::Restored(restored) = &mut lookalike {
-        (*(*restored.checkpoint_for_test()).idempotency_key_mut_for_test()) = [4; 32];
+        (*(*restored.checkpoint_mut_for_test()).idempotency_key_mut_for_test()) = [4; 32];
     }
     let unrelated = registry
         .admit_for_test(

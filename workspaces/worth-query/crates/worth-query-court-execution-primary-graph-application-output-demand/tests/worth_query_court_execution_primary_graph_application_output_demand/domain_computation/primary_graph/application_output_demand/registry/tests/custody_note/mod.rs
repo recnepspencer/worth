@@ -29,8 +29,8 @@ pub fn fixture(
     let mut next = record(receipt.product_branch().occurrence_for_test(), copy_ready(ready), 1);
     (*next.source_commits_mut_for_test()).push(commit.clone());
     let next_wake = Arc::clone(&(*next.wake_for_test()));
-    (*state.records_for_test()).insert_for_test(newest.clone(), next);
-    (*state.records_for_test()).insert_for_test(
+    (*state.records_mut_for_test()).insert_for_test(newest.clone(), next);
+    (*state.records_mut_for_test()).insert_for_test(
         old.clone(),
         DemandRecord {
             framework_required_count: 1,
@@ -52,7 +52,7 @@ pub fn fixture(
     (*row.required_interests_mut_for_test()) = 1;
 
     let wake = Arc::clone(&(*row.wake_for_test()));
-    (*state.records_for_test()).insert_for_test(dependent.clone(), row);
+    (*state.records_mut_for_test()).insert_for_test(dependent.clone(), row);
     let member = state.prepare_required_member_for_test(&newest).unwrap();
     state.install_required_member_for_test(member);
     state.source_custody.insert(

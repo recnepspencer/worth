@@ -7,7 +7,7 @@ fn unchanged_source_after_unrelated_world_work_joins_the_active_demand() {
     let older = key_with_identity("producer", 5, 1, 90);
     let later_same_source = key_with_identity("producer", 6, 1, 90);
     let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(root(1));
-    (*(*registry.state_for_test()).lock().unwrap().records_for_test()).insert_for_test(
+    (*(*registry.state_for_test()).lock().unwrap().records_mut_for_test()).insert_for_test(
         older.clone(),
         DemandRecord {
             source_scope: Some(scope),
@@ -43,7 +43,7 @@ fn semantic_join_deterministically_selects_the_latest_active_generation() {
     let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(root(1));
     let mut state = (*registry.state_for_test()).lock().unwrap();
     for key in [&oldest, &latest] {
-        (*state.records_for_test()).insert_for_test(
+        (*state.records_mut_for_test()).insert_for_test(
             key.clone(),
             DemandRecord {
                 source_scope: Some(scope),
@@ -77,7 +77,7 @@ fn changed_source_can_return_after_its_prior_cycle_was_superseded() {
     let source_b = key_with_identity("producer", 6, 1, 91);
     let returned_a = key_with_identity("producer", 7, 1, 90);
     let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(root(1));
-    (*(*registry.state_for_test()).lock().unwrap().records_for_test()).insert_for_test(
+    (*(*registry.state_for_test()).lock().unwrap().records_mut_for_test()).insert_for_test(
         source_a.clone(),
         DemandRecord {
             source_scope: Some(scope),
@@ -130,11 +130,11 @@ fn unrelated_world_generation_does_not_order_equal_custody_sources() {
     let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(root(1));
     let older = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::BoundOutputSource {
         scope,
-        identity: (*key_with_identity("producer", 5, 1, 90).source_for_test()),
+        identity: key_with_identity("producer", 5, 1, 90).source_into_for_test(),
     };
     let later_same_source = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::BoundOutputSource {
         scope,
-        identity: (*key_with_identity("producer", 6, 1, 90).source_for_test()),
+        identity: key_with_identity("producer", 6, 1, 90).source_into_for_test(),
     };
 
     assert_eq!(
@@ -184,8 +184,8 @@ fn recovery_rejoins_the_older_key_that_retains_newer_semantic_custody() {
     (*retained_record.source_scope_mut_for_test()) = Some(scope);
     (*retained_record.source_commits_mut_for_test()).push(commit.clone());
     let mut state = (*registry.state_for_test()).lock().unwrap();
-    (*state.records_for_test()).insert_for_test(older.clone(), retained_record);
-    (*state.records_for_test()).insert_for_test(
+    (*state.records_mut_for_test()).insert_for_test(older.clone(), retained_record);
+    (*state.records_mut_for_test()).insert_for_test(
         newer_non_owner.clone(),
         DemandRecord {
             required_interests: 1,

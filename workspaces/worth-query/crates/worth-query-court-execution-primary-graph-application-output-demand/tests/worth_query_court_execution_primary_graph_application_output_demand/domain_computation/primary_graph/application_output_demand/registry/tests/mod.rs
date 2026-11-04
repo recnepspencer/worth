@@ -31,9 +31,9 @@ fn stale_successor_is_denied_without_mutating_newer_or_unrelated_records() {
     let unrelated = key("producer", 2, 4);
     let mut state = DemandRegistryState::default();
     (*state
-        .records_for_test())
+        .records_mut_for_test())
         .insert_for_test(newer.clone(), record(occurrence, DemandState::Admitted, 0));
-    (*state.records_for_test()).insert_for_test(
+    (*state.records_mut_for_test()).insert_for_test(
         unrelated.clone(),
         record(occurrence, DemandState::Admitted, 0),
     );
@@ -57,9 +57,9 @@ fn newer_successor_supersedes_only_its_older_occurrence() {
     let unrelated = key("producer", 2, 4);
     let mut state = DemandRegistryState::default();
     (*state
-        .records_for_test())
+        .records_mut_for_test())
         .insert_for_test(older.clone(), record(occurrence, DemandState::Scheduled, 1));
-    (*state.records_for_test()).insert_for_test(
+    (*state.records_mut_for_test()).insert_for_test(
         unrelated.clone(),
         record(occurrence, DemandState::Admitted, 1),
     );
@@ -87,7 +87,7 @@ fn scheduling_failure_is_terminal_and_last_interest_releases_the_record() {
         generation: Mutex::new(0),
         changed: Condvar::new(),
     });
-    (*(*registry.state_for_test()).lock().unwrap().records_for_test()).insert_for_test(
+    (*(*registry.state_for_test()).lock().unwrap().records_mut_for_test()).insert_for_test(
         demand_key.clone(),
         DemandRecord {
             wake: Arc::clone(&wake),
@@ -124,7 +124,7 @@ fn required_failure_is_released_with_its_last_interest() {
         generation: Mutex::new(0),
         changed: Condvar::new(),
     });
-    (*(*registry.state_for_test()).lock().unwrap().records_for_test()).insert_for_test(
+    (*(*registry.state_for_test()).lock().unwrap().records_mut_for_test()).insert_for_test(
         demand_key.clone(),
         DemandRecord {
             required_interests: 1,
@@ -160,7 +160,7 @@ fn retiring_occurrence_closes_live_work_and_completion_cannot_resurrect_it() {
         generation: Mutex::new(0),
         changed: Condvar::new(),
     });
-    (*(*registry.state_for_test()).lock().unwrap().records_for_test()).insert_for_test(
+    (*(*registry.state_for_test()).lock().unwrap().records_mut_for_test()).insert_for_test(
         demand_key.clone(),
         DemandRecord {
             wake: Arc::clone(&wake),
@@ -196,7 +196,7 @@ fn deferred_scheduling_returns_to_admitted_while_no_effect_is_terminal() {
     let deferred_key = key("deferred", 5, 1);
     let terminal_key = key("no-effect", 5, 2);
     for demand_key in [&deferred_key, &terminal_key] {
-        (*(*registry.state_for_test()).lock().unwrap().records_for_test()).insert_for_test(
+        (*(*registry.state_for_test()).lock().unwrap().records_mut_for_test()).insert_for_test(
             demand_key.clone(),
             record(occurrence, DemandState::Scheduling, 1),
         );
@@ -242,7 +242,7 @@ fn retiring_occurrence_removes_unheld_cached_work_and_marks_preparation_closed()
     let registry = WorthQueryOutputDemandRegistry::default();
     let occurrence = occurrence();
     let scheduled = key("scheduled", 1, 1);
-    (*(*registry.state_for_test()).lock().unwrap().records_for_test()).insert_for_test(
+    (*(*registry.state_for_test()).lock().unwrap().records_mut_for_test()).insert_for_test(
         scheduled.clone(),
         record(occurrence, DemandState::Scheduled, 0),
     );
@@ -275,7 +275,7 @@ fn denied_executor_releases_the_shared_claim_for_its_peer() {
         generation: Mutex::new(0),
         changed: Condvar::new(),
     });
-    (*(*registry.state_for_test()).lock().unwrap().records_for_test()).insert_for_test(
+    (*(*registry.state_for_test()).lock().unwrap().records_mut_for_test()).insert_for_test(
         demand_key.clone(),
         DemandRecord {
             wake: Arc::clone(&wake),

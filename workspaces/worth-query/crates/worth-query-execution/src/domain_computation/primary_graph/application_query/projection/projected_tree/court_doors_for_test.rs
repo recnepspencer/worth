@@ -159,3 +159,10 @@ impl WorthQueryApplicationProjectedField {
         &mut self.value
     }
 }
+
+impl WorthQueryApplicationProjectionNode {
+    #[doc(hidden)]
+    pub fn fields_mut_for_test(&mut self) -> &mut Vec<WorthQueryApplicationProjectedField> {
+        &mut self.fields
+    }
+}

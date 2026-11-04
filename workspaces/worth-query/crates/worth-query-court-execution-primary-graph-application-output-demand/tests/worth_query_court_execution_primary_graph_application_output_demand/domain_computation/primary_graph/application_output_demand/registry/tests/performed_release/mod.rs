@@ -63,7 +63,7 @@ fn unheld_performed_sources_release_the_oldest_in_commit_order() {
     for slot in 1..=3 {
         let mut row = record(occurrence, DemandState::Admitted, 0);
         (*row.source_commits_mut_for_test()).push(oldest.clone());
-        (*state.records_for_test()).insert_for_test(key("release-proof", 1, slot), row);
+        (*state.records_mut_for_test()).insert_for_test(key("release-proof", 1, slot), row);
     }
 
     let released = state.release_unheld_performed_source_for_test().unwrap();

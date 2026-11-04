@@ -28,7 +28,7 @@ pub fn install(
         source_commit: commit,
         source: (*key.source_for_test()).clone(),
     });
-    (*state.records_for_test()).insert_for_test(key.clone(), row);
+    (*state.records_mut_for_test()).insert_for_test(key.clone(), row);
     let member = state.prepare_required_member_for_test(&key).unwrap();
     state.install_required_member_for_test(member);
     key

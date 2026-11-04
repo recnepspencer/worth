@@ -221,3 +221,28 @@ impl<Key> RetainedPartition<Key> {
         &self.gather
     }
 }
+
+impl<Key, Item, Reduced> RetainedPartitions<Key, Item, Reduced> {
+    #[doc(hidden)]
+    pub fn membership_into_for_test(self) -> RetainedCall {
+        self.membership
+    }
+}
+
+impl<Key, Item, Reduced> RetainedPartitions<Key, Item, Reduced> {
+    #[doc(hidden)]
+    pub fn partitions_into_for_test(
+        self,
+    ) -> super::super::partition_metadata::PartitionMetadata<Key> {
+        self.partitions
+    }
+}
+
+impl<Key, Item, Reduced> RetainedPartitions<Key, Item, Reduced> {
+    #[doc(hidden)]
+    pub fn partitions_mut_for_test(
+        &mut self,
+    ) -> &mut super::super::partition_metadata::PartitionMetadata<Key> {
+        &mut self.partitions
+    }
+}

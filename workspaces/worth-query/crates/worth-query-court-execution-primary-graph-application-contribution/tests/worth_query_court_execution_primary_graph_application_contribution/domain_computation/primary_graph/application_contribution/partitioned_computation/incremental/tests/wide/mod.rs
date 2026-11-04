@@ -145,11 +145,10 @@ fn ten_thousand_partitions_gather_and_compute_only_the_one_whose_fact_moved() {
     let outcome = *first.outcome.as_ref().unwrap();
     assert_eq!(outcome.0, PARTITIONS * (PARTITIONS + 1) / 2);
 
-    let mut state = (*first
+    let mut state = first
         .sealed
         .unwrap()
-        .expect("a producer's run retains")
-        .state_for_test());
+        .expect("a producer's run retains").state_into_for_test();
     let (key, entity_id) = (*state
         .facts_for_test())
         .facts_for_test()
@@ -160,7 +159,7 @@ fn ten_thousand_partitions_gather_and_compute_only_the_one_whose_fact_moved() {
             _ => None,
         })
         .expect("slot 1 reads the status");
-    (*state.facts_for_test()).replace_fact_for_test(
+    (*state.facts_mut_for_test()).replace_fact_for_test(
         &key,
         WorthQueryApplicationObservedFact::SourceEntity { entity_id },
     );

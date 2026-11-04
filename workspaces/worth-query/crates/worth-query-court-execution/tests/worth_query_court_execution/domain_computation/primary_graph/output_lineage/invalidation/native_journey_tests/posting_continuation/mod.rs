@@ -154,8 +154,7 @@ fn native_projection_continuation_keeps_exact_bindings_and_rejects_source_races(
         drop(candidate);
         // This owner proof seals unchanged revisions at the same live image;
         // it does not claim a performed producer or original-read permission.
-        (*selection
-            .basis_for_test())
+        selection.basis_into_for_test()
             .seal_for_test(original_body.clone(), before.clone(), control)
             .unwrap()
     });

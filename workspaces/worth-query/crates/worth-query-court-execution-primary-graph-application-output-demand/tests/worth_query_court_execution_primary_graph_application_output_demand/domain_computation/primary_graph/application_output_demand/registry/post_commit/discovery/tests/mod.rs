@@ -15,7 +15,7 @@ fn registry_completed_discovery_body_keeps_its_occurrence_bound() {
         let selected = key("posted-discovery", 3, 1);
         let mut state = (*registry.state_for_test()).lock().unwrap();
         for generation in 1..=3 {
-            (*state.records_for_test()).insert_for_test(
+            (*state.records_mut_for_test()).insert_for_test(
                 key("posted-discovery", generation, 1),
                 record(occurrence(), DemandState::Running, 1),
             );

@@ -17,7 +17,7 @@ fn stale_ready_successor_admission_forces_a_new_execution_cycle() {
         generation: Mutex::new(0),
         changed: Condvar::new(),
     });
-    (*(*registry.state_for_test()).lock().unwrap().records_for_test()).insert_for_test(
+    (*(*registry.state_for_test()).lock().unwrap().records_mut_for_test()).insert_for_test(
         demand_key.clone(),
         DemandRecord {
 
@@ -77,7 +77,7 @@ fn stale_ready_successor_admission_forces_a_new_execution_cycle() {
         .expect("the real performed application retains its read basis");
     {
         let mut state = (*registry.state_for_test()).lock().unwrap();
-        let mut record = (*state.records_for_test()).get_mut(&demand_key).unwrap();
+        let mut record = (*state.records_mut_for_test()).get_mut(&demand_key).unwrap();
         (*record.state_mut_for_test()) = DemandState::Running;
         (*record.performed_source_mut_for_test()) = Some(WorthQueryPerformedOutputDemandSource {
             receipt: performed,
@@ -114,7 +114,7 @@ fn stopped_ready_record_rejects_successor_without_reviving_custody() {
         WorthQueryOutputDemandDenialKind::Superseded,
         "newer source owns the cycle",
     ));
-    (*(*registry.state_for_test()).lock().unwrap().records_for_test()).insert_for_test(
+    (*(*registry.state_for_test()).lock().unwrap().records_mut_for_test()).insert_for_test(
         demand_key.clone(),
         DemandRecord {
             source_scope: Some(scope),
@@ -154,7 +154,7 @@ fn failed_successor_admission_preserves_ready_custody() {
     let ready_key = key_with_identity("preserve", 8, 1, 80);
     let stale_request = key_with_identity("preserve", 7, 1, 70);
     let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(root(1));
-    (*(*registry.state_for_test()).lock().unwrap().records_for_test()).insert_for_test(
+    (*(*registry.state_for_test()).lock().unwrap().records_mut_for_test()).insert_for_test(
         ready_key.clone(),
         DemandRecord {
 

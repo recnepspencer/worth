@@ -43,11 +43,11 @@ fn registry_binding_reader_ignores_logically_absent_completed_custody() {
     for seed in 0..16 {
         let selected = BoundOutputSource {
             scope,
-            identity: (*key("binding", seed + 1, 3).source_for_test()),
+            identity: key("binding", seed + 1, 3).source_into_for_test(),
         };
         let newer = BoundOutputSource {
             scope,
-            identity: (*key("binding", seed + 2, 3).source_for_test()),
+            identity: key("binding", seed + 2, 3).source_into_for_test(),
         };
         let make = || {
             let registry = WorthQueryOutputDemandRegistry::default();

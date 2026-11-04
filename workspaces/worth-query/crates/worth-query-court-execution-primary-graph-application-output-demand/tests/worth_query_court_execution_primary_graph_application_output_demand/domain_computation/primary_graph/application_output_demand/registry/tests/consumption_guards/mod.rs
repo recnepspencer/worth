@@ -62,7 +62,7 @@ pub fn repeat_source(initial: &SourceCustody) -> SourceCustody {
 
 #[test]
 fn completed_and_retired_custody_return_no_consumption() {
-    let identity = (*key("guarded-root", 5, 1).source_for_test());
+    let identity = key("guarded-root", 5, 1).source_into_for_test();
     let initial = retained_source(identity.clone());
     let scope = (*initial.bound_sources_for_test()).as_ref().unwrap()[0].scope;
     for completed in [false, true] {
@@ -112,7 +112,7 @@ fn delivered_and_ready_roots_keep_their_consumption_on_removal() {
         let mut row = record((*initial.occurrence_for_test()), stage, 0);
         (*row.source_scope_mut_for_test()) = Some(scope);
         (*row.source_commits_mut_for_test()).push(commit.clone());
-        (*state.records_for_test()).insert_for_test(row_key.clone(), row);
+        (*state.records_mut_for_test()).insert_for_test(row_key.clone(), row);
         drop(state.remove_record(&row_key).unwrap());
         assert_eq!(
             (*state.source_custody[&commit].consumed_sources_for_test()).as_slice(),
@@ -140,7 +140,7 @@ fn an_abandoned_join_returns_the_requested_source_it_consumed() {
             .insert(commit.clone(), repeat_source(&initial));
         let mut row = record((*initial.occurrence_for_test()), DemandState::Admitted, 0);
         (*row.source_scope_mut_for_test()) = Some(scope);
-        (*state.records_for_test()).insert_for_test(older.clone(), row);
+        (*state.records_mut_for_test()).insert_for_test(older.clone(), row);
     }
     let (interest, _) = registry
         .admit_for_test(
@@ -163,7 +163,7 @@ fn an_abandoned_join_returns_the_requested_source_it_consumed() {
         std::slice::from_ref(&(*requested.source_for_test()))
     );
     let backing = PreparedReadyBacking::new_for_test();
-    let mut row = (*state.records_for_test()).get_mut(&older).unwrap();
+    let mut row = (*state.records_mut_for_test()).get_mut(&older).unwrap();
     (*row.state_mut_for_test()) = DemandState::Output(WorthQueryOutputProgress::new_for_test(
         WorthQueryOutputCheckpoint::Published {
             receipt: (*source.receipt_for_test()).clone(),

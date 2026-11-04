@@ -111,3 +111,31 @@ impl RepublishedRecord {
         self.witness
     }
 }
+
+impl RepublishedRecord {
+    #[doc(hidden)]
+    pub fn consumed_outputs_into_for_test(self) -> Arc<[ConsumedOutputEvidence]> {
+        self.consumed_outputs
+    }
+}
+
+impl RepublishedRecord {
+    #[doc(hidden)]
+    pub fn facts_into_for_test(self) -> super::super::super::RetainedSourceFacts {
+        self.facts
+    }
+}
+
+impl RepublishedRecord {
+    #[doc(hidden)]
+    pub fn identity_into_for_test(self) -> Arc<RecordedSettlementIdentity> {
+        self.identity
+    }
+}
+
+impl RepublishedRecord {
+    #[doc(hidden)]
+    pub fn predecessor_into_for_test(self) -> Arc<RecordedSettlementIdentity> {
+        self.predecessor
+    }
+}

@@ -63,10 +63,10 @@ pub fn suspend_restore_and_read() {
             producer_dependency_identity: (*exact.producer_dependency_identity_for_test()),
             producing_implementation: (*exact.producing_implementation_for_test()),
             idempotency_key_identity: (*exact.idempotency_key_identity_for_test()),
-            runtime_authority: (*exact.runtime_authority_for_test()), schema: (*exact.schema_for_test()), scope: exact.scope,
+            runtime_authority: (*exact.runtime_authority_for_test()), schema: exact.schema_into_for_test(), scope: exact.scope,
             output_occurrence: observation.lifecycle_incarnation(),
             output_generation: observation.reference_generation().get(),
-            observed_source_facts: (*exact.observed_source_facts_for_test()),
+            observed_source_facts: exact.observed_source_facts_into_for_test(),
         };
         let generated = receipt
             .output_correspondence()
@@ -259,7 +259,7 @@ pub fn suspend_restore_and_read() {
                 application.record_restored_generated_output_for_test(
                     execution,
                     &observation,
-                    (*exact.correspondence_for_test()),
+                    exact.correspondence_into_for_test(),
                     producer,
                 )
             })

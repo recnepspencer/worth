@@ -90,7 +90,7 @@ fn another_input_or_edition_or_an_evicted_state_runs_in_full() {
     let installed = installed(StatusRead::Gather(1), sum);
     let first = first_run(&world, &installed);
     let total = *first.outcome.as_ref().unwrap();
-    let mut state = (*first.sealed.unwrap().unwrap().state_for_test());
+    let mut state = first.sealed.unwrap().unwrap().state_into_for_test();
     (*state.basis_mut_for_test()) = (*state.basis_for_test()).with_input_digest_for_test([0; 32]);
     let state = std::sync::Arc::new(state);
     let cases = [

@@ -211,7 +211,7 @@ fn a_new_key_stays_claimable_after_a_caller_resource_stop() {
             .state_for_test())
             .lock()
             .unwrap()
-            .records_for_test())
+            .records_mut_for_test())
             .get_mut(&(*fixture.interest.key_for_test()))
             .unwrap()
             .successor_of_mut_for_test()) = None;

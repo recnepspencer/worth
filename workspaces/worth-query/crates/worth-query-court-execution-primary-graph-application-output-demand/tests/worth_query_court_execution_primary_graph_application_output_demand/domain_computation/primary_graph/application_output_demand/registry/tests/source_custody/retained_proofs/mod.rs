@@ -10,11 +10,11 @@ fn completed_multi_root_custody_waits_for_token_and_active_record() {
     let (scope, _) = real_scope_and_occurrence();
     let first = BoundOutputSource {
         scope,
-        identity: (*key("producer", 5, 1).source_for_test()),
+        identity: key("producer", 5, 1).source_into_for_test(),
     };
     let second = BoundOutputSource {
         scope,
-        identity: (*key("producer", 5, 2).source_for_test()),
+        identity: key("producer", 5, 2).source_into_for_test(),
     };
     let mut state = DemandRegistryState::default();
     state.source_custody.insert(
@@ -40,11 +40,11 @@ fn completed_multi_root_custody_waits_for_token_and_active_record() {
     let demand_key = key("producer", 5, 1);
     let mut active = record(occurrence, DemandState::Admitted, 1);
     (*active.source_commits_mut_for_test()).push(commit.clone());
-    (*state.records_for_test()).insert_for_test(demand_key.clone(), active);
+    (*state.records_mut_for_test()).insert_for_test(demand_key.clone(), active);
     state.note_custody_for_test(&commit);
     state.prune_completed_custody().unwrap();
     assert_eq!(state.source_custody.len(), 1);
-    let mut record = (*state.records_for_test()).get_mut(&demand_key).unwrap();
+    let mut record = (*state.records_mut_for_test()).get_mut(&demand_key).unwrap();
     (*record.interests_mut_for_test()) = 0;
     (*record.state_mut_for_test()) = DemandState::Failed(WorthQueryOutputDemandDenial::new_for_test(
         WorthQueryOutputDemandDenialKind::NoEffect,
@@ -66,11 +66,11 @@ fn fully_superseded_multi_root_custody_prunes_after_its_last_token() {
     let (scope, _) = real_scope_and_occurrence();
     let first = BoundOutputSource {
         scope,
-        identity: (*key("producer", 5, 1).source_for_test()),
+        identity: key("producer", 5, 1).source_into_for_test(),
     };
     let second = BoundOutputSource {
         scope,
-        identity: (*key("producer", 5, 2).source_for_test()),
+        identity: key("producer", 5, 2).source_into_for_test(),
     };
     let superseded = WorthQueryOutputDemandDenial::new_for_test(
         WorthQueryOutputDemandDenialKind::Superseded,

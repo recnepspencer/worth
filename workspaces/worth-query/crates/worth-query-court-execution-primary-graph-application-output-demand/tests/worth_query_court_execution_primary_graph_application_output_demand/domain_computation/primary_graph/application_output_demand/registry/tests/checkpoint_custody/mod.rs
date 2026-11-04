@@ -23,7 +23,7 @@ pub fn insert(
     checkpoint: Checkpoint,
 ) {
     let occurrence = checkpoint.receipt().unwrap().product_branch().occurrence_for_test();
-    (*(*registry.state_for_test()).lock().unwrap().records_for_test()).insert_for_test(
+    (*(*registry.state_for_test()).lock().unwrap().records_mut_for_test()).insert_for_test(
         key.clone(),
         record(
             occurrence,
@@ -121,7 +121,7 @@ fn foreign_registry_and_missing_record_return_the_exact_claimed_cell() {
         foreign.finish_checkpoint_owned_for_test(&owner, claim, checkpoint, None),
         WorthQueryOutputDemandDenialKind::ForeignDemand,
     );
-    let removed = (*(*registry.state_for_test()).lock().unwrap().records_for_test()).remove_for_test(&key);
+    let removed = (*(*registry.state_for_test()).lock().unwrap().records_mut_for_test()).remove_for_test(&key);
     drop(removed);
     let checkpoint = returned(
         registry.finish_checkpoint_owned_for_test(&owner, claim, checkpoint, None),
@@ -150,7 +150,7 @@ fn cleanup_claim_keeps_the_original_stop_and_refuses_a_second_borrow() {
     assert_eq!(stop.kind(), WorthQueryOutputDemandDenialKind::Closed);
     let (cleanup_claim, checkpoint) = {
         let mut state = (*registry.state_for_test()).lock().unwrap();
-        let mut row = (*state.records_for_test()).get_mut(&key).unwrap();
+        let mut row = (*state.records_mut_for_test()).get_mut(&key).unwrap();
         let DemandState::Output(output) = &mut (*row.state_mut_for_test()) else {
             unreachable!()
         };

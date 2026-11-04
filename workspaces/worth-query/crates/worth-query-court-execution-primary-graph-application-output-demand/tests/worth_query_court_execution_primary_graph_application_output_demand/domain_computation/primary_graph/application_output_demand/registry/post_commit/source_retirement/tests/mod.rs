@@ -15,7 +15,7 @@ fn source_retirement_closes_all_producers_and_preserves_custody() {
             let mut row = record(occurrence, DemandState::Admitted, 1);
             (*row.source_scope_mut_for_test()) = Some(scope);
             (*state
-                .records_for_test())
+                .records_mut_for_test())
                 .insert_for_test(key(&format!("source-owner-{producer}"), 1, 1), row);
         }
         worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::walk_bounds::add_custody(&mut state, &receipts, 3);

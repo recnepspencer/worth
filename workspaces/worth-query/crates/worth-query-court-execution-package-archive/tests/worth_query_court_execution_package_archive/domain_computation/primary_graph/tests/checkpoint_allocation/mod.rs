@@ -88,7 +88,7 @@ pub fn leased_checkpoint_retains_one_frame_charge_through_native_handoff_and_reo
     assert_eq!(system.charged_payload_bytes(), None);
     assert_eq!(system_sections.total_bytes(), sections.total_bytes());
     drop(system);
-    let native = (*decoded.native_for_test());
+    let native = decoded.native_into_for_test();
     // Independent current wire layout: magic, checksum, Query/facts/instances
     // versions (u16 each), bootstrap commit, native length and accepted count.
     const NATIVE_OFFSET: usize =

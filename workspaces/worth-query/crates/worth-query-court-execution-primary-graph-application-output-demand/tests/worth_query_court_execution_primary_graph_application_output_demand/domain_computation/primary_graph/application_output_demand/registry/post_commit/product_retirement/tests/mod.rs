@@ -20,7 +20,7 @@ fn registry_product_retirement_prunes_rows_and_their_notes_together() {
         let mut state = (*registry.state_for_test()).lock().unwrap();
         for slot in 1..=3 {
             let key = key("retired-note", 1, slot);
-            (*state.records_for_test()).insert_for_test(
+            (*state.records_mut_for_test()).insert_for_test(
                 key.clone(),
                 record(
                     receipt.product_branch().occurrence_for_test(),
@@ -74,7 +74,7 @@ fn registry_product_retirement_sweep_names_its_registry_bound() {
         let registry = WorthQueryOutputDemandRegistry::default();
         let mut state = (*registry.state_for_test()).lock().unwrap();
         for generation in 1..=rows {
-            (*state.records_for_test()).insert_for_test(
+            (*state.records_mut_for_test()).insert_for_test(
                 key("retired", generation, 1),
                 record(
                     receipts[0].product_branch().occurrence_for_test(),

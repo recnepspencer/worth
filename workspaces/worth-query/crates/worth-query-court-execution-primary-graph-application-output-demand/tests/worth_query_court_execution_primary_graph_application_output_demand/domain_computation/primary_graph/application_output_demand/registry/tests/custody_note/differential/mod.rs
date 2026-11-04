@@ -74,7 +74,7 @@ pub fn eager(registry: &WorthQueryOutputDemandRegistry) {
         .collect();
     for commit in removed {
         state.discard_custody_for_test(&commit);
-        for mut row in (*state.records_for_test()).values_mut_for_test() {
+        for mut row in (*state.records_mut_for_test()).values_mut_for_test() {
             (*row.source_commits_mut_for_test()).retain(|c| c != &commit);
         }
     }
@@ -181,10 +181,10 @@ fn registry_custody_note_full_entry_oracle_covers_held_unhold_steps() {
             (*other.prerequisites_mut_for_test()).push(member);
 
             (*state
-                .records_for_test())
+                .records_mut_for_test())
                 .insert_for_test(key("other-dependent", seed + 1, 3), other);
             (*(*state
-                .records_for_test())
+                .records_mut_for_test())
                 .get_mut(&newest)
                 .unwrap()
                 .framework_required_count_mut_for_test()) = 1;
@@ -192,7 +192,7 @@ fn registry_custody_note_full_entry_oracle_covers_held_unhold_steps() {
             // install Superseded, rather than revisit an already stopped row.
             let predecessor = key_with_identity("upstream", seed + 1, 1, 10);
             retain_owned_key(&mut state, &predecessor);
-            (*(*state.records_for_test()).get_mut(&predecessor).unwrap().state_mut_for_test()) = copy_ready(&ready);
+            (*(*state.records_mut_for_test()).get_mut(&predecessor).unwrap().state_mut_for_test()) = copy_ready(&ready);
             assert!(!superseded(&(*state.records_for_test())[&predecessor]));
             supersede_predecessors(&mut state, &newest).unwrap();
             assert!(superseded(&(*state.records_for_test())[&predecessor]));
@@ -215,7 +215,7 @@ fn registry_custody_note_full_entry_oracle_covers_held_unhold_steps() {
             1 => {
                 for (reg, dependent) in [(&registry, &dependent), (&reference, &eager_dependent)] {
                     let mut state = (*reg.state_for_test()).lock().unwrap();
-                    (*(*state.records_for_test()).get_mut(&(*dependent.key_for_test())).unwrap().state_mut_for_test()) =
+                    (*(*state.records_mut_for_test()).get_mut(&(*dependent.key_for_test())).unwrap().state_mut_for_test()) =
                         DemandState::Failed(WorthQueryOutputDemandDenial::new_for_test(
                             WorthQueryOutputDemandDenialKind::NoEffect,
                             "done",

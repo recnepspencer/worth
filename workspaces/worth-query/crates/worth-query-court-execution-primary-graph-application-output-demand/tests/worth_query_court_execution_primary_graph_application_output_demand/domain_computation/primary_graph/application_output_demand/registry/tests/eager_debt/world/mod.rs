@@ -228,7 +228,7 @@ impl<'a> World<'a> {
                 (*record.source_commits_mut_for_test()).push(context.commit(1));
             }
             let wake = Arc::clone(&(*record.wake_for_test()));
-            (*state.records_for_test()).insert_for_test(keys[id].clone(), record);
+            (*state.records_mut_for_test()).insert_for_test(keys[id].clone(), record);
             let member = state.prepare_required_member_for_test(&keys[id]).unwrap();
             state.install_required_member_for_test(member);
             retain_owned_key(&mut state, &keys[id]);
@@ -244,7 +244,7 @@ impl<'a> World<'a> {
                     batch.install_for_test();
                     batch.publish_for_test();
                 }
-                (*(*state.records_for_test()).get_mut(&keys[id]).unwrap().claim_batch_mut_for_test()) = batch;
+                (*(*state.records_mut_for_test()).get_mut(&keys[id]).unwrap().claim_batch_mut_for_test()) = batch;
             }
         }
         for (&id, entry) in &model.custody {
@@ -316,7 +316,7 @@ impl<'a> World<'a> {
             .state_for_test())
             .lock()
             .unwrap()
-            .records_for_test())
+            .records_mut_for_test())
             .get_mut(&(*interest.key_for_test()))
             .unwrap()
             .state_mut_for_test()) = DemandState::Failed(WorthQueryOutputDemandDenial::new_for_test(

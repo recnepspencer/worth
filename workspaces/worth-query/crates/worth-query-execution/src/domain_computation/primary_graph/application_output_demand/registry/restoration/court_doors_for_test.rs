@@ -41,3 +41,12 @@ impl WorthQueryOutputDemandRegistry {
         )
     }
 }
+
+impl WorthQueryRestoredAcceptedOutput {
+    #[doc(hidden)]
+    pub fn checkpoint_mut_for_test(
+        &mut self,
+    ) -> &mut super::super::WorthQueryAcceptedOutputCheckpointIdentity {
+        &mut self.checkpoint
+    }
+}

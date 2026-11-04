@@ -1,7 +1,18 @@
 //! Sealed test doors over this module's private members.
 use super::*;
 
-impl<'runtime, Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, Scope, Target, Binding,>
+impl<
+    'runtime,
+    Schema,
+    Query,
+    Parameters,
+    QueryResult,
+    Principal,
+    PrincipalIdentity,
+    Scope,
+    Target,
+    Binding,
+>
     WorthQueryApplicationLiveLease<
         'runtime,
         Schema,
@@ -23,7 +34,18 @@ where
     }
 }
 
-impl<'runtime, Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, Scope, Target, Binding,>
+impl<
+    'runtime,
+    Schema,
+    Query,
+    Parameters,
+    QueryResult,
+    Principal,
+    PrincipalIdentity,
+    Scope,
+    Target,
+    Binding,
+>
     WorthQueryApplicationLiveLease<
         'runtime,
         Schema,
@@ -45,7 +67,18 @@ where
     }
 }
 
-impl<'runtime, Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, Scope, Target, Binding,>
+impl<
+    'runtime,
+    Schema,
+    Query,
+    Parameters,
+    QueryResult,
+    Principal,
+    PrincipalIdentity,
+    Scope,
+    Target,
+    Binding,
+>
     WorthQueryApplicationLiveLease<
         'runtime,
         Schema,
@@ -69,7 +102,18 @@ where
     }
 }
 
-impl<'runtime, Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, Scope, Target, Binding,>
+impl<
+    'runtime,
+    Schema,
+    Query,
+    Parameters,
+    QueryResult,
+    Principal,
+    PrincipalIdentity,
+    Scope,
+    Target,
+    Binding,
+>
     WorthQueryApplicationLiveLease<
         'runtime,
         Schema,
@@ -122,7 +166,18 @@ where
     }
 }
 
-impl<'runtime, Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, Scope, Target, Binding,>
+impl<
+    'runtime,
+    Schema,
+    Query,
+    Parameters,
+    QueryResult,
+    Principal,
+    PrincipalIdentity,
+    Scope,
+    Target,
+    Binding,
+>
     WorthQueryApplicationLiveLease<
         'runtime,
         Schema,
@@ -147,7 +202,18 @@ where
     }
 }
 
-impl<'runtime, Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, Scope, Target, Binding,>
+impl<
+    'runtime,
+    Schema,
+    Query,
+    Parameters,
+    QueryResult,
+    Principal,
+    PrincipalIdentity,
+    Scope,
+    Target,
+    Binding,
+>
     WorthQueryApplicationLiveLease<
         'runtime,
         Schema,
@@ -170,5 +236,38 @@ where
         <Binding::PayloadBinding as ApplicationStructuredValueBinding>::Value,
     > {
         &mut self.queue
+    }
+}
+
+impl<
+    'runtime,
+    Schema,
+    Query,
+    Parameters,
+    QueryResult,
+    Principal,
+    PrincipalIdentity,
+    Scope,
+    Target,
+    Binding,
+>
+    WorthQueryApplicationLiveLease<
+        'runtime,
+        Schema,
+        Query,
+        Parameters,
+        QueryResult,
+        Principal,
+        PrincipalIdentity,
+        Scope,
+        Target,
+        Binding,
+    >
+where
+    Binding: ApplicationQueryLiveCauseBinding<Schema, Query, Scope, Target>,
+{
+    #[doc(hidden)]
+    pub fn basis_mut_for_test(&mut self) -> &mut Option<WorthQueryManagedLowerExecutionBasis> {
+        &mut self.basis
     }
 }

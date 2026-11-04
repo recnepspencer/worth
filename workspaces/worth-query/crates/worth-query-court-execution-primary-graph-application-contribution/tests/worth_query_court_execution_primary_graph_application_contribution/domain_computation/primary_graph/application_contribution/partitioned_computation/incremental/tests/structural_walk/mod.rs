@@ -49,7 +49,7 @@ fn actual_retained_walk_runs_fresh_before_incremental_shortcuts_in_both_postures
         );
         assert!((*(*first.state_for_test()).facts_for_test()).has_structural_walk_for_test());
         let original = body(&first);
-        let prior = ComputationPrior::new_for_test(worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::edition(), Ok(Arc::new((*first.state_for_test()))), None);
+        let prior = ComputationPrior::new_for_test(worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::edition(), Ok(Arc::new(first.state_into_for_test())), None);
         let next = crate::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::structural_walk::attempt::run(
             &world,
             &installed,

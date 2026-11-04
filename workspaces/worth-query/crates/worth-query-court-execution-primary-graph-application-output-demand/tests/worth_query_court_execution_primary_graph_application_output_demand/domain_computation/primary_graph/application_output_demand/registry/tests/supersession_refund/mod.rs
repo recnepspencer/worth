@@ -13,7 +13,7 @@ fn an_incomparable_abandoned_publication_refunds_its_prerequisites() {
         let mut state = DemandRegistryState::default();
         let unrelated = crate::domain_computation::primary_graph::application_output_demand::registry::tests::reservation_baseline::install(&mut state, receipt.clone());
         let upstream = key("abandoned-upstream", 1, 2);
-        (*state.records_for_test()).insert_for_test(
+        (*state.records_mut_for_test()).insert_for_test(
             upstream.clone(),
             record(occurrence, DemandState::Admitted, 1),
         );
@@ -35,11 +35,11 @@ fn an_incomparable_abandoned_publication_refunds_its_prerequisites() {
         (*abandoned_record.prerequisites_mut_for_test()) = vec![Arc::new(upstream.clone())];
 
         (*(*state
-            .records_for_test())
+            .records_mut_for_test())
             .get_mut(&upstream)
             .unwrap()
             .framework_required_count_mut_for_test()) = 1;
-        (*state.records_for_test()).insert_for_test(abandoned.clone(), abandoned_record);
+        (*state.records_mut_for_test()).insert_for_test(abandoned.clone(), abandoned_record);
         let member = state.prepare_required_member_for_test(&abandoned).unwrap();
         state.install_required_member_for_test(member);
         supersede_predecessors(&mut state, &incoming).unwrap();

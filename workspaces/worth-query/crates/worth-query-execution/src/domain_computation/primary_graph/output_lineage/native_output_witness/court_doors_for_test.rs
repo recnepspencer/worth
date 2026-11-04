@@ -82,3 +82,24 @@ impl RoleProbe {
         &self.retirement
     }
 }
+
+impl RoleProbe {
+    #[doc(hidden)]
+    pub fn retirement_mut_for_test(&mut self) -> &mut Option<RetirementMetadata> {
+        &mut self.retirement
+    }
+}
+
+impl PreparedNativeOutputWitness {
+    #[doc(hidden)]
+    pub fn roles_mut_for_test(&mut self) -> &mut Vec<RoleProbe> {
+        &mut self.roles
+    }
+}
+
+impl SealedNativeOutputWitness {
+    #[doc(hidden)]
+    pub fn roles_mut_for_test(&mut self) -> &mut Vec<RoleProbe> {
+        &mut self.roles
+    }
+}

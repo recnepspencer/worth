@@ -42,15 +42,15 @@ pub fn fixture_with_commit(
         .performed_obligations_mut_for_test())
         .push(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::PerformedOutputObligation {
             source_commit: commit.clone(),
-            source: (*key("unmatched", 1, 2).source_for_test()),
+            source: key("unmatched", 1, 2).source_into_for_test(),
         });
     let next_record = record(occurrence(), DemandState::Admitted, 1);
     let old_interest = interest(&registry, old.clone(), Arc::clone(&(*old_record.wake_for_test())));
     let next_interest = interest(&registry, next.clone(), Arc::clone(&(*next_record.wake_for_test())));
     {
         let mut state = (*registry.state_for_test()).lock().unwrap();
-        (*state.records_for_test()).insert_for_test(old, old_record);
-        (*state.records_for_test()).insert_for_test(next, next_record);
+        (*state.records_mut_for_test()).insert_for_test(old, old_record);
+        (*state.records_mut_for_test()).insert_for_test(next, next_record);
     }
     (registry, old_interest, next_interest, commit)
 }

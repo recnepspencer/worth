@@ -12,7 +12,7 @@ fn a_cached_ready_without_its_source_cannot_claim_requested_execution() {
         .state_for_test())
         .lock()
         .unwrap()
-        .records_for_test())
+        .records_mut_for_test())
         .get_mut(&key)
         .unwrap()
         .state_mut_for_test()) = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::closed_retirement::ready();

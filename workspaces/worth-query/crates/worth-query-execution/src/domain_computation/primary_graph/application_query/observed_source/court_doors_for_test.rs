@@ -131,3 +131,10 @@ impl WorthQueryObservedSourceFootprint {
         &self.complete
     }
 }
+
+impl WorthQueryObservedSourceFootprint {
+    #[doc(hidden)]
+    pub fn aspects_mut_for_test(&mut self) -> &mut Vec<WorthQueryObservedFieldRevision> {
+        &mut self.aspects
+    }
+}

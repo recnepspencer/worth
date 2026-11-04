@@ -191,8 +191,8 @@ fn foreign_installed_phase_refuses_provider_readmission_before_read_or_charge() 
                 let _ = session.abort();
             })
             .unwrap();
-        finish_uncommitted(arun.mutation_run_into_for_test(), arun.running_into_for_test(), (*arun.lease_for_test()));
-        finish_uncommitted(brun.mutation_run_into_for_test(), brun.running_into_for_test(), (*brun.lease_for_test()));
+        finish_uncommitted(arun.mutation_run_into_for_test(), arun.running_into_for_test(), arun.lease_into_for_test());
+        finish_uncommitted(brun.mutation_run_into_for_test(), brun.running_into_for_test(), brun.lease_into_for_test());
         place(previous);
     }
 }

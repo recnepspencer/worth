@@ -22,15 +22,15 @@ fn newer_root_retires_only_its_matching_source() {
     let (scope, occurrence) = real_scope_and_occurrence();
     let older = BoundOutputSource {
         scope,
-        identity: (*key("producer", 5, 1).source_for_test()),
+        identity: key("producer", 5, 1).source_into_for_test(),
     };
     let sibling = BoundOutputSource {
         scope,
-        identity: (*key("producer", 5, 2).source_for_test()),
+        identity: key("producer", 5, 2).source_into_for_test(),
     };
     let newer = BoundOutputSource {
         scope,
-        identity: (*key("producer", 6, 1).source_for_test()),
+        identity: key("producer", 6, 1).source_into_for_test(),
     };
     assert_eq!(root_revision_order(&older, &newer), Some(Ordering::Less));
     assert_eq!(

@@ -118,7 +118,7 @@ pub fn managed_order_matches_legacy_for_stable_keys_and_full_equality(
             adjacencies: vec![b.clone(), b.clone(), a.clone(), b.clone(), a.clone()],
             root_selection: None,
         };
-        (*input.aspects_for_test()).rotate_left(rotation);
+        (*input.aspects_mut_for_test()).rotate_left(rotation);
         input.adjacencies.rotate_right(rotation);
         let mut expected = input.clone();
         normalize_source_footprint(&mut expected);

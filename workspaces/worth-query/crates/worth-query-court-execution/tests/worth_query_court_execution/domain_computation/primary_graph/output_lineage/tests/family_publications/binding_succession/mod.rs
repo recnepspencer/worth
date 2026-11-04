@@ -63,12 +63,12 @@ fn paired_prior_tracks_publication_not_old_binding_or_inherited_settlement() {
         true,
     );
     assert!(Arc::ptr_eq(
-        &(*resolve(&court).unwrap().correspondence_for_test()).unwrap(),
+        &resolve(&court).unwrap().correspondence_into_for_test().unwrap(),
         &reissued
     ));
     (*court.coordinate.generation_mut_for_test()) = 4;
     assert!(Arc::ptr_eq(
-        &(*resolve(&court).unwrap().correspondence_for_test()).unwrap(),
+        &resolve(&court).unwrap().correspondence_into_for_test().unwrap(),
         &preserved
     ));
     let ancestor = court.coordinate;
@@ -85,12 +85,12 @@ fn paired_prior_tracks_publication_not_old_binding_or_inherited_settlement() {
         true,
     );
     assert!(Arc::ptr_eq(
-        &(*resolve(&court).unwrap().correspondence_for_test()).unwrap(),
+        &resolve(&court).unwrap().correspondence_into_for_test().unwrap(),
         &child
     ));
     (*court.coordinate.generation_mut_for_test()) = 0;
     assert!(Arc::ptr_eq(
-        &(*resolve(&court).unwrap().correspondence_for_test()).unwrap(),
+        &resolve(&court).unwrap().correspondence_into_for_test().unwrap(),
         &preserved
     ));
     (*court.lineage.origins_mut_for_test()).remove(&court.child);

@@ -9,7 +9,7 @@ fn pending_required_prerequisite_preserves_its_retryable_operation() {
         generation: Mutex::new(0),
         changed: Condvar::new(),
     });
-    (*(*registry.state_for_test()).lock().unwrap().records_for_test()).insert_for_test(
+    (*(*registry.state_for_test()).lock().unwrap().records_mut_for_test()).insert_for_test(
         demand_key.clone(),
         DemandRecord {
             required_interests: 1,
@@ -51,7 +51,7 @@ fn an_upstream_retired_after_the_execution_read_it_is_a_retryable_stale_claim() 
         generation: Mutex::new(0),
         changed: Condvar::new(),
     });
-    (*(*registry.state_for_test()).lock().unwrap().records_for_test()).insert_for_test(
+    (*(*registry.state_for_test()).lock().unwrap().records_mut_for_test()).insert_for_test(
         reader_key.clone(),
         DemandRecord {
             required_interests: 1,

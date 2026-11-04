@@ -284,3 +284,33 @@ impl WorthQueryCurrentOutputFamilyResolution {
         &mut self.candidates
     }
 }
+
+impl WorthQueryExactRecordedOutput {
+    #[doc(hidden)]
+    pub fn correspondence_into_for_test(self) -> Arc<WorthQueryApplicationOutputCorrespondence> {
+        self.correspondence
+    }
+}
+
+impl WorthQueryPriorOutputBindingResolution {
+    #[doc(hidden)]
+    pub fn correspondence_into_for_test(
+        self,
+    ) -> Option<Arc<WorthQueryApplicationOutputCorrespondence>> {
+        self.correspondence
+    }
+}
+
+impl WorthQueryExactRecordedOutput {
+    #[doc(hidden)]
+    pub fn observed_source_facts_into_for_test(self) -> RetainedSourceFacts {
+        self.observed_source_facts
+    }
+}
+
+impl WorthQueryExactRecordedOutput {
+    #[doc(hidden)]
+    pub fn schema_into_for_test(self) -> ApplicationSchemaBindingIdentity {
+        self.schema
+    }
+}

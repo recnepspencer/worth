@@ -721,3 +721,21 @@ impl PerformedOutputObligation {
         &self.source_commit
     }
 }
+
+impl BoundOutputSource {
+    #[doc(hidden)]
+    pub fn identity_into_for_test(self) -> SourceEpoch {
+        self.identity
+    }
+}
+
+impl DemandRecord {
+    #[doc(hidden)]
+    pub fn settlements_mut_for_test(
+        &mut self,
+    ) -> &mut Vec<
+        Arc<crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity>,
+    > {
+        &mut self.settlements
+    }
+}

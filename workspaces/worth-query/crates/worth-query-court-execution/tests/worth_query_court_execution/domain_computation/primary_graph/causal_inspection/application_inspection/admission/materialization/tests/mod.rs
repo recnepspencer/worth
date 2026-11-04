@@ -114,7 +114,7 @@ fn real_report_refusal_preserves_original_payer_until_owned_denial_closes() {
                         &(*read.target_for_test()),
                         &(*read.session_for_test()),
                         worth_query_execution::court_doors_for_test::domain_computation::primary_graph::causal_inspection::application_inspection::identity::InspectionOriginalReference::After,
-                        (*read.memory_for_test()),
+                        (*read.memory_mut_for_test()),
                     )
                     .err()
                     .expect("report backing must refuse after its real frame admits");

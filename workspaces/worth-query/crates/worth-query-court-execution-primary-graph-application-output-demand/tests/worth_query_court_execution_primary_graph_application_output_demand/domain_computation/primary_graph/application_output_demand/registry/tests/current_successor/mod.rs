@@ -15,7 +15,7 @@ fn registry_current_successor_pin_acknowledges_only_its_native_current_proof() {
         let other = key("foreign-answer", 2, 2);
         let (old_member, answer_member, other_member) = {
             let mut state = (*registry.state_for_test()).lock().unwrap();
-            (*state.records_for_test()).insert_for_test(
+            (*state.records_mut_for_test()).insert_for_test(
                 old.clone(),
                 record(
                     occurrence(),
@@ -26,11 +26,11 @@ fn registry_current_successor_pin_acknowledges_only_its_native_current_proof() {
                     1,
                 ),
             );
-            (*state.records_for_test()).insert_for_test(
+            (*state.records_mut_for_test()).insert_for_test(
                 newest.clone(),
                 record(occurrence(), worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::closed_retirement::ready(), 1),
             );
-            (*state.records_for_test()).insert_for_test(
+            (*state.records_mut_for_test()).insert_for_test(
                 other.clone(),
                 record(occurrence(), worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::closed_retirement::ready(), 1),
             );

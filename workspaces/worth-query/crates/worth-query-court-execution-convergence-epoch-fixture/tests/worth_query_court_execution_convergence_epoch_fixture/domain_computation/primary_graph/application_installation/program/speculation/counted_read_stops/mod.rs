@@ -284,7 +284,7 @@ fn failed_preview_discard_retains_original_owner_after_every_readmission_stop() 
             let answer = counted(&|request, ceiling| runtime.with_application_advancement(request, |phase| {
                 phase.execution_request_for_for_test(&(*runtime.product_runtime_for_test())).unwrap().run(worth_execution::ExecutionWorkCeiling::new(Some(ceiling)), |_| {
                     let (preview, cause) = match preview.borrow_mut().take().unwrap().readmit(&phase, &runtime) {
-                        Ok(readmitted) => ((*readmitted.session_for_test()), None),
+                        Ok(readmitted) => (readmitted.session_into_for_test(), None),
                         Err((preview, denial)) => (preview, Some(denial)),
                     };
                     let (preview, denial) = preview.discard().unwrap_err();

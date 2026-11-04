@@ -110,7 +110,7 @@ pub fn run(
                 panic!("Ready")
             };
             let mut state = (*w.registry.state_for_test()).lock().unwrap();
-            (*(*state.records_for_test()).get_mut(&w.keys[1]).unwrap().state_mut_for_test()) =
+            (*(*state.records_mut_for_test()).get_mut(&w.keys[1]).unwrap().state_mut_for_test()) =
                 DemandState::Output(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputProgress::new_for_test(
                     worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint::Ready(ready.clone()),
                 ));

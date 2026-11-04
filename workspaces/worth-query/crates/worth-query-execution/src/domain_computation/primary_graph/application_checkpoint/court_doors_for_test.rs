@@ -43,3 +43,12 @@ impl DecodedApplicationCheckpoint {
         &self.native
     }
 }
+
+impl DecodedApplicationCheckpoint {
+    #[doc(hidden)]
+    pub fn native_into_for_test(
+        self,
+    ) -> worth_relational::facade::durability::RelationalNativeCheckpoint {
+        self.native
+    }
+}

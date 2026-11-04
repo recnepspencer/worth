@@ -23,3 +23,10 @@ impl WorthQueryReadmittedApplicationPreview {
         &self.session
     }
 }
+
+impl WorthQueryReadmittedApplicationPreview {
+    #[doc(hidden)]
+    pub fn session_into_for_test(self) -> WorthQueryApplicationPreviewSession {
+        self.session
+    }
+}

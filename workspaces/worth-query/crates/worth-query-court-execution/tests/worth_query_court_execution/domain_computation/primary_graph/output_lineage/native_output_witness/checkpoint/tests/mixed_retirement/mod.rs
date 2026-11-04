@@ -82,18 +82,18 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
                     .finish_for_test(&correspondence, runtime, &committed)
                     .unwrap();
                 let changed = Arc::get_mut(&mut changed).unwrap().get_mut().unwrap();
-                (*(*changed.roles_for_test())[1].posture_mut_for_test()) = WorthQueryApplicationOutputPosture::Preserve;
+                (*(*changed.roles_mut_for_test())[1].posture_mut_for_test()) = WorthQueryApplicationOutputPosture::Preserve;
                 assert!(
                     !witness.same_output_as_for_test(changed).unwrap(),
                     "matching entity and revisions cannot erase a retirement posture"
                 );
-                (*(*changed.roles_for_test())[1].posture_mut_for_test()) = WorthQueryApplicationOutputPosture::Retire;
+                (*(*changed.roles_mut_for_test())[1].posture_mut_for_test()) = WorthQueryApplicationOutputPosture::Retire;
                 let metadata =
                     worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::native_output_witness::retirement::native_metadata(runtime, &committed, retired, request_execution)
                         .unwrap()
                         .unwrap();
                 assert_ne!((*metadata.created_at_for_test()), (*metadata.deleted_at_for_test()));
-                (*(*(*changed.roles_for_test())[1].retirement_for_test()).as_mut().unwrap().created_at_mut_for_test()) = (*metadata.deleted_at_for_test());
+                (*(*(*changed.roles_mut_for_test())[1].retirement_mut_for_test()).as_mut().unwrap().created_at_mut_for_test()) = (*metadata.deleted_at_for_test());
                 assert!(
                     !witness.same_output_as_for_test(changed).unwrap(),
                     "the original creation version belongs to exact retirement equality"
@@ -185,12 +185,12 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
                 let missing = WorthQueryApplicationOutputCorrespondence::default();
                 assert!(prepare().finish_for_test(&missing, runtime, &committed).is_none());
                 let mut wrong_kind = prepare();
-                (*(*wrong_kind.roles_for_test())[1].kind_mut_for_test()) = KindId::new((*metadata.kind_for_test()).as_u32() + 1);
+                (*(*wrong_kind.roles_mut_for_test())[1].kind_mut_for_test()) = KindId::new((*metadata.kind_for_test()).as_u32() + 1);
                 assert!(wrong_kind
                     .finish_for_test(&correspondence, runtime, &committed)
                     .is_none());
                 let mut wrong_posture = prepare();
-                (*(*wrong_posture.roles_for_test())[1].posture_mut_for_test()) = WorthQueryApplicationOutputPosture::Preserve;
+                (*(*wrong_posture.roles_mut_for_test())[1].posture_mut_for_test()) = WorthQueryApplicationOutputPosture::Preserve;
                 assert!(wrong_posture
                     .finish_for_test(&correspondence, runtime, &committed)
                     .is_none());

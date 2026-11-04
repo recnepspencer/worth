@@ -103,7 +103,7 @@ fn subscription_drop_saturates_underflow_without_panicking() {
         let mut state = (*source.state_for_test()).lock().unwrap();
         (*state.subscriber_count_mut_for_test()) = 0;
         let key = WorthQueryLiveProductKey::from_observation_for_test(product.observation_for_test());
-        (*(*state.partitions_for_test()).get_mut(&key).unwrap().subscriber_count_mut_for_test()) = 0;
+        (*(*state.partitions_mut_for_test()).get_mut(&key).unwrap().subscriber_count_mut_for_test()) = 0;
     }
     assert!(
         catch_unwind(AssertUnwindSafe(|| drop(subscription))).is_ok(),

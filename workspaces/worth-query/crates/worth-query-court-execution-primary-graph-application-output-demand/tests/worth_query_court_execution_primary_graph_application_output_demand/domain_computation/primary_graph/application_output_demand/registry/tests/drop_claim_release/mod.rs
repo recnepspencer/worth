@@ -26,11 +26,11 @@ fn registry_drop_closed_claim_release_is_two_rows_without_a_registry_pass() {
             if let Some(upstream) = old.get(index + 1) {
                 (*row.prerequisites_mut_for_test()).push(Arc::new(upstream.clone()));
             }
-            (*state.records_for_test()).insert_for_test(key.clone(), row);
+            (*state.records_mut_for_test()).insert_for_test(key.clone(), row);
             let member = state.prepare_required_member_for_test(key).unwrap();
             state.install_required_member_for_test(member);
             let newest = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::support::key("quota-chain", 2, index as u8 + 1);
-            (*state.records_for_test()).insert_for_test(
+            (*state.records_mut_for_test()).insert_for_test(
                 newest.clone(),
                 record(occurrence(), worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::closed_retirement::ready(), 0),
             );
@@ -38,7 +38,7 @@ fn registry_drop_closed_claim_release_is_two_rows_without_a_registry_pass() {
             state.install_required_member_for_test(member);
         }
         for slot in 0..neighbors {
-            (*state.records_for_test()).insert_for_test(
+            (*state.records_mut_for_test()).insert_for_test(
                 key("neighbor", 1, 100 + slot),
                 record(occurrence(), DemandState::Admitted, 1),
             );

@@ -39,7 +39,7 @@ fn published_schema_validation_keeps_query_and_generation_authority() {
     let rebuilt = Arc::new((*world.application.runtime_for_test()).installed_packages().rebuild());
     (*world
         .application
-        .runtime_for_test())
+        .runtime_mut_for_test())
         .replace_rebuilt_installation(rebuilt)
         .unwrap();
     assert!(world
@@ -56,7 +56,7 @@ fn published_schema_validation_keeps_query_and_generation_authority() {
     );
     (*world
         .application
-        .runtime_for_test())
+        .runtime_mut_for_test())
         .commit_successor_installation(successor)
         .unwrap();
     assert_eq!(

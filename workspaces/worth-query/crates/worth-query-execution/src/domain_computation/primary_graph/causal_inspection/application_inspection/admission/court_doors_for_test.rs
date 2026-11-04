@@ -35,3 +35,10 @@ impl<'a, 'storage, Schema, Scope> InspectionRead<'a, 'storage, Schema, Scope> {
         &self.target
     }
 }
+
+impl<'a, 'storage, Schema, Scope> InspectionRead<'a, 'storage, Schema, Scope> {
+    #[doc(hidden)]
+    pub fn memory_mut_for_test(&mut self) -> &mut &'storage mut Option<ExecutionMemoryReservation> {
+        &mut self.memory
+    }
+}

@@ -23,9 +23,9 @@ fn a_released_claim_walks_each_released_key_once() {
             0,
         );
         (*stale_row.framework_required_count_mut_for_test()) = 1;
-        (*state.records_for_test()).insert_for_test(stale.clone(), stale_row);
+        (*state.records_mut_for_test()).insert_for_test(stale.clone(), stale_row);
         let backing = PreparedReadyBacking::new_for_test();
-        (*state.records_for_test()).insert_for_test(
+        (*state.records_mut_for_test()).insert_for_test(
             newest.clone(),
             record(
                 occurrence,
@@ -53,7 +53,7 @@ fn a_released_claim_walks_each_released_key_once() {
         );
         (*row.prerequisites_mut_for_test()) = vec![Arc::new(stale.clone())];
 
-        (*state.records_for_test()).insert_for_test(dependent.clone(), row);
+        (*state.records_mut_for_test()).insert_for_test(dependent.clone(), row);
         let before = (*state.records_for_test()).occurrence_visits_for_test();
         drop(state.release_record_prerequisites_for_test(&dependent));
         let visited = (*state.records_for_test()).occurrence_visits_for_test() - before;

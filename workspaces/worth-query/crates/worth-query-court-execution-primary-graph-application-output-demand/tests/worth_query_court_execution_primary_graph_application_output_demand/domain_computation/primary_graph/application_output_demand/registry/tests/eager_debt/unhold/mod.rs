@@ -11,7 +11,7 @@ pub fn run(
     {
         let mut state = (*world.registry.state_for_test()).lock().unwrap();
         (*(*state
-            .records_for_test())
+            .records_mut_for_test())
             .get_mut(&world.keys[2])
             .unwrap()
             .required_interests_mut_for_test()) = 1;

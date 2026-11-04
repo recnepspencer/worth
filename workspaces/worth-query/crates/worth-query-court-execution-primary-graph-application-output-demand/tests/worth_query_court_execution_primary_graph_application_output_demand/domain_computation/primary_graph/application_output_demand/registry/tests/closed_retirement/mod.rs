@@ -46,7 +46,7 @@ fn a_reclaim_keeps_a_superseded_row_whose_claim_did_not_move() {
         .state_for_test())
         .lock()
         .unwrap()
-        .records_for_test())
+        .records_mut_for_test())
         .get_mut(&dependent)
         .unwrap()
         .state_mut_for_test()) = DemandState::Failed(WorthQueryOutputDemandDenial::new_for_test(
@@ -84,8 +84,8 @@ fn an_unpublished_refresh_its_last_owner_lets_go_gives_the_occurrence_back() {
     let wake = Arc::clone(&(*refresh_record.wake_for_test()));
     {
         let mut state = (*registry.state_for_test()).lock().unwrap();
-        (*state.records_for_test()).insert_for_test(replaced.clone(), replaced_record);
-        (*state.records_for_test()).insert_for_test(refresh.clone(), refresh_record);
+        (*state.records_mut_for_test()).insert_for_test(replaced.clone(), replaced_record);
+        (*state.records_mut_for_test()).insert_for_test(refresh.clone(), refresh_record);
     }
     drop(interest(&registry, refresh.clone(), wake));
     let state = (*registry.state_for_test()).lock().unwrap();

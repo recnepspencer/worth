@@ -17,9 +17,9 @@ fn a_consumer_handoff_ends_at_real_row_reclamation() {
             Arc::clone(&consumer),
         );
         let mut row = record(identity.address_for_test().0, worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::closed_retirement::ready(), 0);
-        (*row.settlements_for_test()).push(Arc::clone(&identity));
+        (*row.settlements_mut_for_test()).push(Arc::clone(&identity));
 
-        (*state.records_for_test()).insert_for_test(consumer.as_ref().clone(), row);
+        (*state.records_mut_for_test()).insert_for_test(consumer.as_ref().clone(), row);
     }
     let handoff = registry.retain_consumer_handoff_for_test(&identity).unwrap();
     assert!(handoff.matches(&identity));

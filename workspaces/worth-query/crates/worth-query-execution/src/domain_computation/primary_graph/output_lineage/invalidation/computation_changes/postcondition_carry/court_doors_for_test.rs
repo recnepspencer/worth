@@ -52,3 +52,17 @@ impl SelectedPostconditionRebase {
         &self.ordinals
     }
 }
+
+impl SelectedPostconditionRebase {
+    #[doc(hidden)]
+    pub fn basis_into_for_test(self) -> super::super::super::settlement::PostingRebaseBasis {
+        self.basis
+    }
+}
+
+impl SelectedPostconditionRebase {
+    #[doc(hidden)]
+    pub fn ordinals_into_for_test(self) -> OrdSet<usize> {
+        self.ordinals
+    }
+}

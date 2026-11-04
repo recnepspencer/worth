@@ -209,7 +209,7 @@ pub fn native_attempt<Owned: TestOwner>(
 }
 
 pub fn retained_prior(sealed: SealedComputationRun) -> ComputationPrior {
-    ComputationPrior::new_for_test(edition(), Ok(Arc::new((*sealed.state_for_test()))), None)
+    ComputationPrior::new_for_test(edition(), Ok(Arc::new(sealed.state_into_for_test())), None)
 }
 
 #[test]

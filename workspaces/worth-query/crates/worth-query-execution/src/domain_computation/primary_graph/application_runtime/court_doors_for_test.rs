@@ -154,3 +154,10 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         &mut self.output_producer_routes
     }
 }
+
+impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    #[doc(hidden)]
+    pub fn runtime_mut_for_test(&mut self) -> &mut WorthQueryExecutionRuntime {
+        &mut self.runtime
+    }
+}

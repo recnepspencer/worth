@@ -17,7 +17,7 @@ fn no_position_policy_preserves_funded_history_and_original_reader_currentness()
         resources,
         (*execution.policy_for_test()),
     );
-    let configured = match (*execution.authority_for_test()) {
+    let configured = match execution.authority_into_for_test() {
         Some(authority) => configured.with_execution_authority(authority),
         None => configured,
     };

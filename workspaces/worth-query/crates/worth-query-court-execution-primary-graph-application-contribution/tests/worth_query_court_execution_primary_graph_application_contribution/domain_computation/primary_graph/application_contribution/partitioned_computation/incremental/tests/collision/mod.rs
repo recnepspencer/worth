@@ -52,7 +52,7 @@ pub fn colliding(
         }
     }
     (*typed.routing_mut_for_test()) = Arc::new(routing);
-    (*(*sealed.state_for_test()).typed_mut_for_test()) = Arc::new(typed);
+    (*(*sealed.state_mut_for_test()).typed_mut_for_test()) = Arc::new(typed);
     moved_facts(sealed, false)
 }
 
@@ -134,7 +134,7 @@ fn replacing_a_sole_member_key_with_a_prefix_collision_matches_a_fresh_run() {
         &request,
     );
     (*typed
-        .partitions_for_test())
+        .partitions_mut_for_test())
         .put_for_test(
             identity,
             replacement,
@@ -154,7 +154,7 @@ fn replacing_a_sole_member_key_with_a_prefix_collision_matches_a_fresh_run() {
         .route_for_test(PartitionItemId(1), a_digest, |_| Ok(()))
         .unwrap();
     (*typed.routing_mut_for_test()) = Arc::new(routing);
-    (*(*sealed.state_for_test()).typed_mut_for_test()) = Arc::new(typed);
+    (*(*sealed.state_mut_for_test()).typed_mut_for_test()) = Arc::new(typed);
     // Only the key call read this fact. Membership, item value and gathering
     // stayed unchanged, so a compact-identity-only test would carry A's leaf.
     let (key, fact) = (*(*sealed
@@ -171,11 +171,11 @@ fn replacing_a_sole_member_key_with_a_prefix_collision_matches_a_fresh_run() {
     let WorthQueryApplicationObservedFact::Field { entity_id, .. } = fact else {
         panic!("key field");
     };
-    (*(*sealed.state_for_test()).facts_for_test()).replace_fact_for_test(
+    (*(*sealed.state_mut_for_test()).facts_mut_for_test()).replace_fact_for_test(
         &key,
         WorthQueryApplicationObservedFact::SourceEntity { entity_id },
     );
-    let prior = ComputationPrior::new_for_test(edition(), Ok(std::sync::Arc::new((*sealed.state_for_test()))), None);
+    let prior = ComputationPrior::new_for_test(edition(), Ok(std::sync::Arc::new(sealed.state_into_for_test())), None);
     let next = attempt(&world, &installed, Some(prior));
     let full = attempt(&world, &installed, fresh());
     assert_eq!(next.outcome, full.outcome, "B must not carry A's result");

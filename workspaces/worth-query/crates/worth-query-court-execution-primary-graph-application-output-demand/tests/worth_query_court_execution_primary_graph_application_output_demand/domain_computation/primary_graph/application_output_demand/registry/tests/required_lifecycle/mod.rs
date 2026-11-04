@@ -195,7 +195,7 @@ fn settlement_releases_only_the_ready_authority_it_accepted() {
     let registry = WorthQueryOutputDemandRegistry::default();
     {
         let mut state = (*registry.state_for_test()).lock().unwrap();
-        (*state.records_for_test()).insert_for_test(output.clone(), retained);
+        (*state.records_mut_for_test()).insert_for_test(output.clone(), retained);
     }
     let interest = interest(&registry, output.clone(), wake);
     let denial = registry

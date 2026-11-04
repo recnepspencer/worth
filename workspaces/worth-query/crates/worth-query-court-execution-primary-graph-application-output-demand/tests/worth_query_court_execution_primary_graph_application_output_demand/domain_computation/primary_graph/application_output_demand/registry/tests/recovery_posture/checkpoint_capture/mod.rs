@@ -32,7 +32,7 @@ fn checkpoint_capture_includes_only_idle_ready_outputs_in_canonical_order() {
             })),
         ))
     };
-    (*(*registry.state_for_test()).lock().unwrap().records_for_test()).extend_for_test([
+    (*(*registry.state_for_test()).lock().unwrap().records_mut_for_test()).extend_for_test([
         (z_key, record(occurrence, ready(receipt.clone()), 1)),
         (a_key, record(occurrence, ready(receipt.clone()), 1)),
         (
@@ -61,7 +61,7 @@ fn checkpoint_capture_includes_only_idle_ready_outputs_in_canonical_order() {
         WorthQueryOutputDemandDenialKind::Superseded,
         "stopped before capture",
     ));
-    (*(*registry.state_for_test()).lock().unwrap().records_for_test()).insert_for_test(
+    (*(*registry.state_for_test()).lock().unwrap().records_mut_for_test()).insert_for_test(
         stopped_key,
         record(occurrence, DemandState::Output(stopped), 1),
     );

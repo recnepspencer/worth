@@ -25,7 +25,7 @@ fn native_value_decode_refusal_cancels_live_custody_before_delivery_consumption(
     );
     (*lease.queue_mut_for_test()).fill_for_test(
         &(*(*context.world.application.primary_provider_for_test()).live_delivery_for_test()),
-        (*lease.basis_for_test()).as_mut().expect("opening owns its native basis"),
+        (*lease.basis_mut_for_test()).as_mut().expect("opening owns its native basis"),
         LiveAccountActivityCause::effect(),
         (*lease.controls_for_test()).buffer_capacity(),
         |_| true,

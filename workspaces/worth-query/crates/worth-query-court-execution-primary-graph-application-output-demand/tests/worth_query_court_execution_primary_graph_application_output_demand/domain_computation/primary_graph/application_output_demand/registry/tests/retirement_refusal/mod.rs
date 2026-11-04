@@ -12,7 +12,7 @@ fn registry_post_commit_discovery_releases_an_unposted_displaced() {
 
     {
         let mut state = (*registry.state_for_test()).lock().unwrap();
-        (*state.records_for_test()).insert_for_test(
+        (*state.records_mut_for_test()).insert_for_test(
             selected.as_ref().clone(),
             record(occurrence(), DemandState::Running, 1),
         );

@@ -65,7 +65,7 @@ fn uncommitted_upstream_never_admits_a_prepared_member() {
             .state_for_test())
             .lock()
             .unwrap()
-            .records_for_test())
+            .records_mut_for_test())
             .insert_for_test(demand_key.clone(), record(occurrence(), state, 1));
         let denied = registry
             .admit_current_outputs(

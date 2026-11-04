@@ -21,3 +21,12 @@ impl<Schema, Operation, Input, Scope>
         &self.effects
     }
 }
+
+impl<Schema, Operation, Input, Scope>
+    WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>
+{
+    #[doc(hidden)]
+    pub fn effects_mut_for_test(&mut self) -> &mut Vec<WorthQueryApplicationRealizedEffect> {
+        &mut self.effects
+    }
+}

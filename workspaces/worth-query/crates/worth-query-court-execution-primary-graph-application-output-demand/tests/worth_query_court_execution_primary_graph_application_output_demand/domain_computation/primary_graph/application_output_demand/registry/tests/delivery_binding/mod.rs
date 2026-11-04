@@ -39,7 +39,7 @@ fn selected_delivery_keeps_both_producer_and_applicability_identity() {
                 ));
                 let mut row = record(occurrence(), DemandState::Output(output), 1);
                 (*row.source_scope_mut_for_test()) = Some(scope);
-                (*state.records_for_test()).insert_for_test(binding.clone(), row);
+                (*state.records_mut_for_test()).insert_for_test(binding.clone(), row);
             }
         }
         let joined = registry

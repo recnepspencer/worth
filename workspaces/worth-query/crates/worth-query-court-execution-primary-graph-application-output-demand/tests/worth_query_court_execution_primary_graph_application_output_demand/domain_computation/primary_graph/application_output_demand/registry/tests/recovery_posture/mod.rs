@@ -31,7 +31,7 @@ fn retryable_publication_stale_does_not_keep_a_closed_required_interest() {
         generation: Mutex::new(0),
         changed: Condvar::new(),
     });
-    (*(*registry.state_for_test()).lock().unwrap().records_for_test()).insert_for_test(
+    (*(*registry.state_for_test()).lock().unwrap().records_mut_for_test()).insert_for_test(
         demand_key.clone(),
         DemandRecord {
             required_interests: 1,
@@ -71,7 +71,7 @@ fn running_budget_failure_stays_with_its_request_and_leaves_the_row_claimable() 
         generation: Mutex::new(0),
         changed: Condvar::new(),
     });
-    (*(*registry.state_for_test()).lock().unwrap().records_for_test()).insert_for_test(
+    (*(*registry.state_for_test()).lock().unwrap().records_mut_for_test()).insert_for_test(
         demand_key.clone(),
         DemandRecord {
             required_interests: 1,
@@ -110,7 +110,7 @@ fn no_change_checkpoint_keeps_its_real_receipt_across_claims() {
         generation: Mutex::new(0),
         changed: Condvar::new(),
     });
-    (*(*registry.state_for_test()).lock().unwrap().records_for_test()).insert_for_test(
+    (*(*registry.state_for_test()).lock().unwrap().records_mut_for_test()).insert_for_test(
         demand_key.clone(),
         DemandRecord {
             required_interests: 1,
@@ -182,7 +182,7 @@ fn closed_occurrence_stops_a_claim_without_losing_published_identity() {
         generation: Mutex::new(0),
         changed: Condvar::new(),
     });
-    (*(*registry.state_for_test()).lock().unwrap().records_for_test()).insert_for_test(
+    (*(*registry.state_for_test()).lock().unwrap().records_mut_for_test()).insert_for_test(
         demand_key.clone(),
         DemandRecord {
             required_interests: 1,

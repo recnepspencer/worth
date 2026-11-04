@@ -287,10 +287,10 @@ impl Stage<'_> {
             republished,
         );
         Some(record.map(|record| Continued {
-            identity: (*record.identity_for_test()),
-            predecessor: (*record.predecessor_for_test()),
-            facts: (*record.facts_for_test()),
-            consumed_outputs: (*record.consumed_outputs_for_test()),
+            identity: record.identity_into_for_test(),
+            predecessor: record.predecessor_into_for_test(),
+            facts: record.facts_into_for_test(),
+            consumed_outputs: record.consumed_outputs_into_for_test(),
             witness: record.witness_into_for_test(),
         }))
     }

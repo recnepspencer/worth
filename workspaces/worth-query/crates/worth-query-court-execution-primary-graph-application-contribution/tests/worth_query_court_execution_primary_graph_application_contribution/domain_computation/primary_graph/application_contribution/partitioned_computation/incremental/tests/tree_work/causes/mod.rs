@@ -70,10 +70,10 @@ fn edit_encoding_denial_rebuilds_and_matches_reuse_off() {
         call_sequence: Arc::clone(&(*prior.call_sequence_for_test())),
         items: prior.items_into_for_test(),
         digests: prior.digests_into_for_test(),
-        membership: (*prior.membership_for_test()),
+        membership: prior.membership_into_for_test(),
         item_keys: prior.item_keys_into_for_test(),
         routing: prior.routing_into_for_test(),
-        partitions: (*prior.partitions_for_test()),
+        partitions: prior.partitions_into_for_test(),
         native_run,
         tree: ReductionTree::<Value, fn(&Value, &Value) -> Value>::try_from_declared_native(
             plan(&keys),
@@ -109,9 +109,9 @@ fn edit_encoding_denial_rebuilds_and_matches_reuse_off() {
         };
         let edited = run(plan(&keys).checked_build_work());
         assert!(matches!((*edited.report_for_test()), TreeRun::Rebuilt(observed, _) if observed == cause));
-        assert!(matches!((*edited.outcome_for_test()), Err(actual) if actual == denial));
+        assert!(matches!(edited.outcome_into_for_test(), Err(actual) if actual == denial));
         let rebuilt = run(None);
-        assert!(matches!((*rebuilt.outcome_for_test()), Err(actual) if actual == denial));
+        assert!(matches!(rebuilt.outcome_into_for_test(), Err(actual) if actual == denial));
         let fresh = ReductionTree::<Value, fn(&Value, &Value) -> Value>::try_from_declared_native(
             plan(&keys),
             keys.iter()

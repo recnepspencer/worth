@@ -50,7 +50,7 @@ fn registry_eager_claimed_row_transition_itself_leaves_the_note() {
     let world = World::new(&context, 3);
     let mut state = (*world.registry.state_for_test()).lock().unwrap();
     assert_eq!((*(*state.records_for_test())[&world.keys[0]].framework_required_count_for_test()), 1);
-    (*(*state.records_for_test()).get_mut(&world.keys[0]).unwrap().state_mut_for_test()) =
+    (*(*state.records_mut_for_test()).get_mut(&world.keys[0]).unwrap().state_mut_for_test()) =
         DemandState::Failed(WorthQueryOutputDemandDenial::new_for_test(
             WorthQueryOutputDemandDenialKind::Superseded,
             "transition",
@@ -73,12 +73,12 @@ fn registry_eager_owned_closed_note_does_not_name_a_reused_key() {
             )),
             0,
         );
-        (*state.records_for_test()).insert_for_test(reused.clone(), old);
+        (*state.records_mut_for_test()).insert_for_test(reused.clone(), old);
         state.note_closed_row_for_test(&reused);
         let old = state.remove_record(&reused).unwrap();
         let mut new = record(occurrence(), DemandState::Admitted, 0);
         (*new.source_scope_mut_for_test()) = Some(context.scope);
-        (*state.records_for_test()).insert_for_test(reused.clone(), new);
+        (*state.records_mut_for_test()).insert_for_test(reused.clone(), new);
         old
     };
     let owner = registry

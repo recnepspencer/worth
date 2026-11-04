@@ -24,7 +24,7 @@ pub use crate::domain_computation::primary_graph::application_contribution::part
 /// The prior a producer hands its next run from `sealed`, with the fact the
 /// membership read moved, and the fact every key read when `keys`.
 pub fn moved_facts(sealed: SealedComputationRun, keys: bool) -> ComputationPrior {
-    let mut state = (*sealed.state_for_test());
+    let mut state = sealed.state_into_for_test();
     let moved = |read: ComputationRead| {
         matches!(read, ComputationRead::Membership)
             || keys && matches!(read, ComputationRead::ItemKey(_))
@@ -44,7 +44,7 @@ pub fn moved_facts(sealed: SealedComputationRun, keys: bool) -> ComputationPrior
             panic!("a moved fact is a field's fact: {fact:?}");
         };
         let moved = WorthQueryApplicationObservedFact::SourceEntity { entity_id };
-        (*state.facts_for_test()).replace_fact_for_test(&key, moved);
+        (*state.facts_mut_for_test()).replace_fact_for_test(&key, moved);
     }
     ComputationPrior::new_for_test(edition(), Ok(std::sync::Arc::new(state)), None)
 }
