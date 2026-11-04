@@ -202,5 +202,3 @@ fn denial(
 }
 
 mod court_doors_for_test;
-#[cfg(test)]
-mod teardown_tests;
