@@ -81,6 +81,8 @@ pub use authority::consult_observation::{
 };
 #[doc(hidden)]
 pub use backend::ExecutionCheckpointObservationForTest;
+#[doc(hidden)]
+pub use backend::{ExecutionScopeSetupCountsForTest, ExecutionScopeSetupObservationForTest};
 
 #[cfg(test)]
 pub(crate) use authority::ExecutionAllocationDenialKind;

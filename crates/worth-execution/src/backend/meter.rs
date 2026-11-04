@@ -331,6 +331,7 @@ impl<'a, 'lease> KernelContext<'a, 'lease> {
         limits.safe_point(nested_stop)
     }
     pub(crate) fn new(limits: RunLimits) -> Self {
+        crate::backend::setup_observation::stage_setup();
         Self {
             meter: Rc::new(RefCell::new(KernelState {
                 issued_work_loan: None,
