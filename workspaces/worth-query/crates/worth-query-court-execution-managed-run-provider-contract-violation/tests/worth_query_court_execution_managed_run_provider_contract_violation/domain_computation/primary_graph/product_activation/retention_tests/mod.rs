@@ -1,7 +1,7 @@
 use worth_query_execution::facade::domain_computation::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
-use worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::activation::denial::WorthQueryProductActivationDenial;
-use worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::activation::registry::WorthQueryProductActivationRegistry;
-use worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources;
+use worth_query_execution::domain_computation::execution_runtime::product_world::activation::denial::WorthQueryProductActivationDenial;
+use worth_query_execution::domain_computation::execution_runtime::product_world::activation::registry::WorthQueryProductActivationRegistry;
+use worth_query_execution::domain_computation::execution_runtime::product_world::resources::test_product_world_resources;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
 
 #[test]
@@ -13,12 +13,7 @@ fn activation_capacity_follows_reserved_and_retired_gate_allocations() {
     let product = world
         .application
         .product_runtime()
-        .admit_product_branch_for_test(
-            world
-                .application
-                .product_runtime()
-                .default_branch_for_test(),
-        )
+        .admit_product_branch(world.application.product_runtime().default_branch())
         .unwrap();
     let limit = test_product_world_resources(
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
@@ -26,51 +21,48 @@ fn activation_capacity_follows_reserved_and_retired_gate_allocations() {
     .budgets()
     .live_product_branches();
     let registry = WorthQueryProductActivationRegistry::new(limit).unwrap();
-    registry
-        .reserve_for_test()
-        .unwrap()
-        .commit_for_test(product.observation_for_test());
-    let held_gate = registry.gate_for_test(product.branch_identity()).unwrap();
+    registry.reserve().unwrap().commit(product.observation());
+    let held_gate = registry.gate(product.branch_identity()).unwrap();
     let mut pending = (1..limit.get().expect("explicit finite branch policy"))
-        .map(|_| registry.reserve_for_test().unwrap())
+        .map(|_| registry.reserve().unwrap())
         .collect::<Vec<_>>();
     assert!(matches!(
-        registry.reserve_for_test(),
+        registry.reserve(),
         Err(WorthQueryProductActivationDenial::CapacityExhausted)
     ));
 
     // Removing membership cannot reclaim backing still held by an operation.
-    assert!(registry.release_for_test(
+    assert!(registry.release(
         product.branch_identity(),
-        product.observation_for_test().lifecycle_incarnation()
+        product.observation().lifecycle_incarnation()
     ));
     assert!(matches!(
-        registry.gate_for_test(product.branch_identity()),
+        registry.gate(product.branch_identity()),
         Err(WorthQueryProductActivationDenial::UnknownProductBranch)
     ));
     assert!(matches!(
-        registry.reserve_for_test(),
+        registry.reserve(),
         Err(WorthQueryProductActivationDenial::CapacityExhausted)
     ));
     drop(held_gate);
-    let replacement = registry.reserve_for_test().unwrap();
+    let replacement = registry.reserve().unwrap();
     assert!(matches!(
-        registry.reserve_for_test(),
+        registry.reserve(),
         Err(WorthQueryProductActivationDenial::CapacityExhausted)
     ));
     drop(replacement);
 
     // Abandoning an admitted creation frees its slot before any World effect.
     pending.pop();
-    let first = registry.reserve_for_test().unwrap();
-    let second = registry.reserve_for_test().unwrap();
+    let first = registry.reserve().unwrap();
+    let second = registry.reserve().unwrap();
     assert!(matches!(
-        registry.reserve_for_test(),
+        registry.reserve(),
         Err(WorthQueryProductActivationDenial::CapacityExhausted)
     ));
     drop((first, second, pending));
     for _ in 0..(limit.get().expect("explicit finite branch policy") * 2) {
-        drop(registry.reserve_for_test().unwrap());
+        drop(registry.reserve().unwrap());
     }
 }
 
@@ -87,15 +79,10 @@ fn foreign_product_is_denied_by_owner_affinity_before_local_coordination() {
     let selection = foreign
         .application
         .product_runtime()
-        .admit_product_branch_for_test(
-            foreign
-                .application
-                .product_runtime()
-                .default_branch_for_test(),
-        )
+        .admit_product_branch(foreign.application.product_runtime().default_branch())
         .unwrap();
     assert!(matches!(
-        (*local
+        local
             .application
             .runtime
             .product_runtime

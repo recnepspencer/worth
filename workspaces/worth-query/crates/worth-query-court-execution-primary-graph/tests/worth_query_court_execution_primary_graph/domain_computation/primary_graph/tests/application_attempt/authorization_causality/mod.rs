@@ -27,18 +27,13 @@ fn ownership_revocation_after_admission_stales_before_effect_commit() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(
-                &(phase).test_host_request_for_test(),
-                &world,
-                "open",
-                &request,
-            )
+            resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let program = world
@@ -58,12 +53,12 @@ fn ownership_revocation_after_admission_stales_before_effect_commit() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request_for_test();
+            let host_custody = phase.test_host_request();
             revoke_account_ownership(
                 &phase,
                 &host_custody.borrowed_request_for_test(),
                 &world,
-                account.entity_id_for_test(),
+                account.entity_id(),
             )
         })
         .expect("the fixture read owns its installed host call");
@@ -79,12 +74,7 @@ fn ownership_revocation_after_admission_stales_before_effect_commit() {
     let _still_open = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(
-                &(phase).test_host_request_for_test(),
-                &world,
-                "open",
-                &live_scope(),
-            )
+            resolved_account(&(phase).test_host_request(), &world, "open", &live_scope())
         })
         .expect("the fixture read owns its installed host call");
 }
@@ -99,18 +89,13 @@ fn distinct_abilities_sharing_one_policy_retain_exact_provider_cardinality() {
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(
-                &(phase).test_host_request_for_test(),
-                &world,
-                "open",
-                &request,
-            )
+            resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let operation = world
@@ -122,7 +107,7 @@ fn distinct_abilities_sharing_one_policy_retain_exact_provider_cardinality() {
         .application
         .with_host_advancement(|phase| {
             world
-                .selected_product(&(phase).test_host_request_for_test())
+                .selected_product(&(phase).test_host_request())
                 .authorize_operation(
                     &phase,
                     &principal,
@@ -166,7 +151,7 @@ fn distinct_abilities_sharing_one_policy_retain_exact_provider_cardinality() {
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )
                 .unwrap();
-            let host_custody = phase.test_host_request_for_test();
+            let host_custody = phase.test_host_request();
             reads
                 .observe_field(
                     &host_custody.borrowed_request_for_test(),
@@ -211,10 +196,10 @@ pub fn revoke_account_ownership(
         .layout
         .relation(AccountOwner::reference().name())
         .expect("account ownership is installed")
-        .kind_for_test());
-    let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
-    let relation = graph.with_runtime_mut_for_test(execution, |runtime| {
-        let snapshot = selected.application_basis_for_test().snapshot_handle();
+        .kind;
+    let selected = world.selected_product(&(phase_custody).test_host_request());
+    let relation = graph.with_runtime_mut(execution, |runtime| {
+        let snapshot = selected.application_basis().snapshot_handle();
         runtime
             .read_truth()
             .visible_relations_of_kind(execution, relation_kind, snapshot.version_id())

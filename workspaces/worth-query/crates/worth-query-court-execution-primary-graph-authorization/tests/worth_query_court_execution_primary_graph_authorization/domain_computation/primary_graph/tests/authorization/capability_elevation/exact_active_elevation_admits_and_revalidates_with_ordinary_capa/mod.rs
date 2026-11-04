@@ -11,7 +11,7 @@ fn exact_active_elevation_admits_and_revalidates_with_ordinary_capability_author
             .elevation_lifecycle_operation_count(),
         4
     );
-    let (_, _, request_role) = (*world
+    let (_, _, request_role) = world
         .application
         .runtime.authorization
         .elevation_lifecycle_operation::<IdentityExecutionSchema, RequestCapabilityElevationOperation>(
@@ -21,7 +21,7 @@ fn exact_active_elevation_admits_and_revalidates_with_ordinary_capability_author
         .expect("the request marker must match installed lifecycle identity")
         .expect("the request operation must have one lifecycle owner");
     assert_eq!(format!("{request_role:?}"), "Request");
-    assert!((*world
+    assert!(world
         .application
         .runtime.authorization
         .elevation_lifecycle_operation::<
@@ -36,10 +36,9 @@ fn exact_active_elevation_admits_and_revalidates_with_ordinary_capability_author
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request_for_test();
+            let host_custody = phase.test_host_request();
             authenticated_principal(
-                &(host_custody.phase_for_application_for_test(&world.application))
-                    .test_host_request_for_test(),
+                &(host_custody.phase_for_application(&world.application)).test_host_request(),
                 &world,
                 &request,
             )
@@ -48,10 +47,9 @@ fn exact_active_elevation_admits_and_revalidates_with_ordinary_capability_author
     let access = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request_for_test();
+            let host_custody = phase.test_host_request();
             admit(
-                &(host_custody.phase_for_application_for_test(&world.application))
-                    .test_host_request_for_test(),
+                &(host_custody.phase_for_application(&world.application)).test_host_request(),
                 &world,
                 &approved,
                 &principal,
@@ -71,11 +69,11 @@ fn exact_active_elevation_admits_and_revalidates_with_ordinary_capability_author
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request_for_test();
+            let host_custody = phase.test_host_request();
             world
                 .application
                 .authorize_capability_operation(
-                    &host_custody.phase_for_application_for_test(&world.application),
+                    &host_custody.phase_for_application(&world.application),
                     access,
                     &operation,
                     Default::default(),

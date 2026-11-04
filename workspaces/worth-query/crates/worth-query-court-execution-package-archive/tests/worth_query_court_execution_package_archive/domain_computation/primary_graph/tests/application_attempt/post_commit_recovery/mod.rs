@@ -26,9 +26,7 @@ fn first_post_commit_admission_failure_retains_exact_idempotent_recovery_evidenc
     );
     let selected = world
         .application
-        .with_host_advancement(|phase| {
-            world.selected_product(&(phase).test_host_request_for_test())
-        })
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
         .expect("the fixture read owns its installed host call");
     let _live = world
         .application
@@ -39,18 +37,13 @@ fn first_post_commit_admission_failure_retains_exact_idempotent_recovery_evidenc
     let principal = world
         .application
         .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request_for_test(), &world, &request)
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
         })
         .expect("the fixture read owns its installed host call");
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(
-                &(phase).test_host_request_for_test(),
-                &world,
-                "open",
-                &request,
-            )
+            resolved_account(&(phase).test_host_request(), &world, "open", &request)
         })
         .expect("the fixture read owns its installed host call");
     let published_snapshot_baseline = world
@@ -134,9 +127,7 @@ fn first_post_commit_admission_failure_retains_exact_idempotent_recovery_evidenc
         .committed_application_emissions(first_receipt.committed_product_publication());
     assert_eq!(emissions.len(), 1);
     assert_eq!(
-        emissions[0]
-            .payload_for_test::<String>()
-            .map(String::as_str),
+        emissions[0].payload::<String>().map(String::as_str),
         Some("post-commit-effect")
     );
     assert!(world
@@ -145,14 +136,14 @@ fn first_post_commit_admission_failure_retains_exact_idempotent_recovery_evidenc
         .primary_provider
         .retained_application_commit_basis(first_receipt.commit_reference())
         .is_some());
-    let bridge_head = (*(*world
+    let bridge_head = world
         .application
         .runtime
         .primary_provider
         .graph
         .relational_bridge_source()
         .load_branch_head_patch(
-            &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_branch::primary_truth_branch_identity(),
+            &worth_query_execution::domain_computation::primary_graph::application_branch::primary_truth_branch_identity(),
             resource_request,
         )
         .expect("post-commit recovery binds the exact Bridge head");
@@ -174,8 +165,7 @@ fn first_post_commit_admission_failure_retains_exact_idempotent_recovery_evidenc
                     .storage_stats(request_execution)
                     .unwrap()
                     .published_snapshot_handle_count
-            }
-        ),
+            }),
         published_snapshot_baseline,
         "post-commit recovery must release every temporary snapshot owner"
     );
