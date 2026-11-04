@@ -27,7 +27,7 @@ fn a_take_checks_the_live_stage_under_its_own_lock() {
             ));
             let restore = if stopped {
                 let mut state = (*registry.state_for_test()).lock().unwrap();
-                let record = (*state.records_mut_for_test()).get_mut(&row).unwrap();
+                let mut record = (*state.records_mut_for_test()).get_mut(&row).unwrap();
                 let DemandState::Output(output) = &mut (*record.state_mut_for_test())
                 else {
                     panic!("published output")

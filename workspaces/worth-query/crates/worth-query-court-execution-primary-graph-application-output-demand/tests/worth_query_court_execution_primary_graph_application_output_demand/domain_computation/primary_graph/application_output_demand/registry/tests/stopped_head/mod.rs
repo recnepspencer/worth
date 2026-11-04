@@ -31,7 +31,7 @@ fn stopped_head_is_released_by_every_finish_route() {
             match route {
                 0 => {
                     let mut state = (*registry.state_for_test()).lock().unwrap();
-                    let record = (*state.records_mut_for_test()).get_mut(&row).unwrap();
+                    let mut record = (*state.records_mut_for_test()).get_mut(&row).unwrap();
                     let DemandState::Output(output) = &mut (*record.state_mut_for_test())
                     else {
                         panic!("published row")
