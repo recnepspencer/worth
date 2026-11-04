@@ -10,6 +10,13 @@ impl ComparableSourceFacts {
 
 impl RetainedSourceFacts {
     #[doc(hidden)]
+    pub fn len_for_test(&self) -> usize {
+        Self::len(self)
+    }
+}
+
+impl RetainedSourceFacts {
+    #[doc(hidden)]
     pub fn for_test_for_test(stale: bool, facts: Arc<[Fact]>) -> Self {
         Self::for_test(stale, facts)
     }
