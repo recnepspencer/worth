@@ -143,7 +143,7 @@ fn first_post_commit_admission_failure_retains_exact_idempotent_recovery_evidenc
         .graph
         .relational_bridge_source()
         .load_branch_head_patch(
-            &worth_query_execution::domain_computation::primary_graph::application_branch::primary_truth_branch_identity(),
+            &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_branch::primary_truth_branch_identity(),
             resource_request,
         )
         .expect("post-commit recovery binds the exact Bridge head");

@@ -6,12 +6,12 @@ use std::sync::Arc;
 
 use crate::domain_computation::primary_graph::tests::inbound_admission::fixture::installed_world;
 use crate::domain_computation::primary_graph::tests::inbound_admission::verifier::signed_envelope;
-use worth_query_execution::domain_computation::application_aftermath::external_effect::dispatch::dispatch_external_effect;
+use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::dispatch::dispatch_external_effect;
 use worth_query_execution::facade::domain_computation::WorthQueryExternalDispatchRequest;
 use worth_query_execution::facade::domain_computation::WorthQueryExternalEffectTransport;
 use worth_query_execution::facade::domain_computation::WorthQueryExternalTransportOutcome;
-use worth_query_execution::domain_computation::primary_graph::application_runtime::inbound_publication::installed_transport::InstalledTransportCompletion;
-use worth_query_execution::domain_computation::primary_graph::application_runtime::inbound_publication::custody::InstalledTransportResumeOutcome;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_runtime::inbound_publication::installed_transport::InstalledTransportCompletion;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_runtime::inbound_publication::custody::InstalledTransportResumeOutcome;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitOutcome;
 use worth_query_execution::facade::domain_computation::WorthQueryInboundReceiptPosture;
 
@@ -155,7 +155,7 @@ fn transport_candidate_rejects_another_owner_and_terminal_matches_later_attempt(
         world.application.runtime.primary_provider.prepare_installed_transport_completion_candidate(&host_custody.borrowed_request_for_test(),
             lease.relational_basis(), &other_owner, &completed, &other_binding,
         ),
-        Err(worth_query_execution::domain_computation::primary_graph::provider::inbound_completion::WorthQueryInboundCompletionPreparationDenial::DispatchOwnerMismatch)
+        Err(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::inbound_completion::WorthQueryInboundCompletionPreparationDenial::DispatchOwnerMismatch)
     )) }).expect("the fixture read owns its installed host call");
 
     let evidence =
@@ -287,7 +287,7 @@ fn two_real_completed_attempts_share_the_first_world_terminal() {
             .runtime.primary_provider
             .begin_external_dispatch_in_flight(&owner)
             .err(),
-        Some(worth_query_execution::domain_computation::primary_graph::provider::outstanding_dispatch::in_flight::WorthQueryOutstandingInFlightDenial::TerminalReached),
+        Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::outstanding_dispatch::in_flight::WorthQueryOutstandingInFlightDenial::TerminalReached),
         "a physical attempt after the World terminal names completion, not a mismatch"
     );
     let late_evidence =
