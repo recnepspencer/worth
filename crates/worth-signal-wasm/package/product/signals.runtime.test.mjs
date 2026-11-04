@@ -40,6 +40,9 @@ import "./signals_runtime/entrypoint/construction/worker_first_callable_root_sur
 import "./signals_runtime/entrypoint/construction/worker_first_root_adapter_restore.test.mjs";
 import "./signals_runtime/entrypoint/construction/worker_first_root_observation_delivery.test.mjs";
 import "./signals_runtime/entrypoint/construction/worker_first_tip_react_notify.test.mjs";
+import "./signals_runtime/entrypoint/construction/react_subscription_snapshot_freshness.test.mjs";
+import "./signals_runtime/entrypoint/construction/worker_readback_batching.test.mjs";
+import "./signals_runtime/entrypoint/construction/worker_burst_tip_currentness.test.mjs";
 import "./signals_runtime/entrypoint/construction/worker_first_tip_react_notify_negatives.test.mjs";
 import "./signals_runtime/entrypoint/construction/worker_first_await_settlement_authored_drain.test.mjs";
 import "./signals_runtime/entrypoint/construction/worker_first_pending_authored_shutdown.test.mjs";

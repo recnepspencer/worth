@@ -79,6 +79,7 @@ export const productFilesToCopy = Object.freeze([
   ["product/entrypoint/sessions/support/authored/worker_first_host_dependency_records.ts", "product/entrypoint/sessions/support/authored/worker_first_host_dependency_records.js"],
   ["product/entrypoint/sessions/support/authored/worker_first_host_dependency_report.ts", "product/entrypoint/sessions/support/authored/worker_first_host_dependency_report.js"],
   ["product/entrypoint/sessions/support/authored/worker_first_authored_readable_refresh.ts", "product/entrypoint/sessions/support/authored/worker_first_authored_readable_refresh.js"],
+  ["product/entrypoint/sessions/support/authored/worker_first_authored_readback_currentness.ts", "product/entrypoint/sessions/support/authored/worker_first_authored_readback_currentness.js"],
   ["product/entrypoint/sessions/support/authored/worker_first_authored_tip_projection.ts", "product/entrypoint/sessions/support/authored/worker_first_authored_tip_projection.js"],
   ["product/entrypoint/sessions/support/authored/worker_first_host_tip_commit.ts", "product/entrypoint/sessions/support/authored/worker_first_host_tip_commit.js"],
   ["product/entrypoint/sessions/support/authored/worker_first_authored_publication_tracking.ts", "product/entrypoint/sessions/support/authored/worker_first_authored_publication_tracking.js"],

@@ -6,6 +6,7 @@ import {
 } from "./worker_first_authored_readable_state.js";
 import { hostDependenciesIntersect } from "./worker_first_host_dependency_records.js";
 import { materializeWorkerCachedValue } from "../worker_cached_value.js";
+import { pendingWorkerReadableIds } from "./worker_first_authored_readback_currentness.js";
 
 export async function refreshWorkerFirstAuthoredCallbackReadables(deps) {
   const {
@@ -49,6 +50,7 @@ export async function refreshWorkerFirstAuthoredCallbackReadables(deps) {
       readableIds: directlyChangedReadableIds,
       invalidationMessage: "worker-first authored readable no longer exists after worker runtime history mutation",
       awaitPublication,
+      pendingInputIds: deps.pendingInputIds,
     });
   }
   const hiddenTransactionOps = [];
@@ -114,11 +116,12 @@ export async function refreshWorkerFirstAuthoredReadableSignals(deps) {
     readableIds: activeReadableIds,
     invalidationMessage: "worker-first authored readable no longer exists after worker runtime mutation",
     awaitPublication: deps.awaitPublication ?? null,
+    pendingInputIds: deps.pendingInputIds,
   });
 }
 
 async function refreshWorkerFirstAuthoredReadableIds(deps) {
-  const refreshedSignals = [];
+  const readableIds = [];
   for (const readableId of deps.readableIds) {
     const authoredReadable = deps.authoredReadables.get(readableId);
     if (!authoredReadable || authoredReadable.invalidatedMessage !== null) {
@@ -144,25 +147,51 @@ async function refreshWorkerFirstAuthoredReadableIds(deps) {
     if (refreshed.publicationState === "pending") {
       continue;
     }
-    try {
-      const signalPacket = await deps.bridge.readSignals({
-        signalIds: [readableId],
-      });
-      refreshedSignals.push(...signalPacket.signals);
-    } catch (error) {
-      if (
-        isUnknownSignalIdError(error, readableId)
-        && refreshed.publicationState !== "pending"
-      ) {
-        invalidateAuthoredReadable(deps.authoredReadables, readableId, deps.invalidationMessage);
-        continue;
-      }
+    readableIds.push(readableId);
+  }
+  const pending = pendingWorkerReadableIds(deps);
+  const currentIds = readableIds.filter(id => !pending.has(id));
+  if (currentIds.length === 0) {
+    return;
+  }
+  // One transport round trip for the readable set, rather than one per node.
+  // Preparation and adoption remain O(readable count + returned value size).
+  try {
+    const packet = await deps.bridge.readSignals({ signalIds: currentIds });
+    adoptCurrentWorkerReadback(deps, packet.signals);
+  } catch (error) {
+    if (!currentIds.some((id) => isUnknownSignalIdError(error, id))) {
       throw error;
     }
+    // History can remove a subset of readables. Isolate missing identities only
+    // in that recovery lane so live siblings still refresh and unrelated errors
+    // retain their original failure behavior.
+    await refreshSurvivingAuthoredReadables(deps, currentIds);
   }
-  if (refreshedSignals.length > 0) {
-    updateWorkerFirstAuthoredReadables(deps.authoredReadables, refreshedSignals);
+}
+
+async function refreshSurvivingAuthoredReadables(deps, readableIds) {
+  const refreshedSignals = [];
+  for (const id of readableIds) {
+    try {
+      const packet = await deps.bridge.readSignals({ signalIds: [id] });
+      refreshedSignals.push(...packet.signals);
+    } catch (error) {
+      if (!isUnknownSignalIdError(error, id)) {
+        throw error;
+      }
+      invalidateAuthoredReadable(deps.authoredReadables, id, deps.invalidationMessage);
+    }
   }
+  adoptCurrentWorkerReadback(deps, refreshedSignals);
+}
+
+function adoptCurrentWorkerReadback(deps, signals) {
+  // Writes can arrive while readback is in flight; check the dependency basis
+  // again at adoption rather than promoting an older worker result to the tip.
+  const pending = pendingWorkerReadableIds(deps);
+  updateWorkerFirstAuthoredReadables(deps.authoredReadables,
+    signals.filter(signal => !pending.has(signal.id)));
 }
 
 function invalidateAuthoredReadable(authoredReadables, id, message) {

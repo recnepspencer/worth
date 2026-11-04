@@ -1,12 +1,6 @@
 import { hostDependenciesIntersect } from "./worker_first_host_dependency_records.js";
 import { materializeWorkerCachedValue } from "../worker_cached_value.js";
 import { evaluateWorkerFirstDeclarativeTip } from "../../../worker_first_declarative_expr.js";
-import {
-  readWorkerFirstAuthoredInputValue,
-} from "./worker_first_authored_input_state.js";
-import {
-  readWorkerFirstAuthoredReadableValue,
-} from "./worker_first_authored_readable_state.js";
 
 /**
  * Advance one authored input tip without enqueueing worker apply.
@@ -50,10 +44,10 @@ export function refreshAuthoredCallbackTipsFromHost(deps) {
   const {
     authoredReadables,
     authoredCallbacks,
-    authoredInputs,
     changedIds,
     changedHostDependencyIds = [],
     captureCallback,
+    readSignalValue,
   } = deps;
   if (!Array.isArray(changedIds) || changedIds.length === 0) {
     if (!Array.isArray(changedHostDependencyIds) || changedHostDependencyIds.length === 0) {
@@ -109,7 +103,7 @@ export function refreshAuthoredCallbackTipsFromHost(deps) {
       }
       const value = evaluateWorkerFirstDeclarativeTip(
         authoredReadable.publicationSpec,
-        (signalId) => readTipSignalValue(authoredInputs, authoredReadables, signalId),
+        readSignalValue,
         "tip.project.declarative",
       );
       authoredReadable.currentValue = materializeWorkerCachedValue(value);
@@ -146,16 +140,4 @@ export function refreshAuthoredCallbackTipsFromHost(deps) {
   }
 
   return projectedReadableIds;
-}
-
-function readTipSignalValue(authoredInputs, authoredReadables, signalId) {
-  if (authoredInputs?.has(signalId)) {
-    return readWorkerFirstAuthoredInputValue(authoredInputs, signalId);
-  }
-  if (authoredReadables?.has(signalId)) {
-    return readWorkerFirstAuthoredReadableValue(authoredReadables, signalId);
-  }
-  throw new TypeError(
-    `tip.project cannot read unknown signal id \`${signalId}\``,
-  );
 }

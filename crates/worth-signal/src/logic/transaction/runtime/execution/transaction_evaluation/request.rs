@@ -122,21 +122,11 @@ where
         F: for<'ctx> Fn(&mut EvaluationContext<'ctx, Ctx>) -> Result<O, SignalError> + Sync,
         O: IntoEvaluationOutput,
     {
-        let pending = self
-            .targets
-            .iter()
-            .copied()
-            .filter(|node| {
-                !matches!(
-                    self.tx.graph.get_state(*node),
-                    Ok(crate::data::node::NodeState::Clean)
-                )
-            })
-            .collect::<Vec<_>>();
-        if !pending.is_empty() {
+        // Let the planner settle upstream work before returning target versions.
+        if !self.targets.is_empty() {
             self.tx.execute_evaluation(
                 TransactionExecutionIntent::Targets {
-                    targets: &pending,
+                    targets: &self.targets,
                     request_mode: self.request_mode,
                     stage_task_candidates: false,
                 },
