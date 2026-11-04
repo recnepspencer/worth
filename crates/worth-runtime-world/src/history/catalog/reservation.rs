@@ -1,4 +1,5 @@
 use std::sync::{Arc, Mutex};
+mod close;
 mod recovered;
 
 use super::denial::CompositeHistoryCatalogDenial;
