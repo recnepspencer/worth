@@ -8,7 +8,9 @@ use state::RuntimeSymbolState;
 
 use std::sync::{Arc, RwLock};
 
-use crate::symbols::data::{StoredSymbolText, StringInterner, Symbol, SymbolTableSnapshot};
+use crate::symbols::data::{
+    StoredSymbolText, StringInterner, Symbol, SymbolTableSnapshot, SymbolTextLookupKey,
+};
 
 #[path = "symbol_table/reservations.rs"]
 mod reservations;
@@ -97,7 +99,9 @@ impl RuntimeSymbolTable {
     ) {
         self.update(|state| {
             for (symbol, value) in normalize(&mut state.interner) {
-                state.configuration.insert(value.into(), symbol);
+                state
+                    .configuration
+                    .insert(SymbolTextLookupKey::from_owned(value.into()), symbol);
             }
         });
     }
@@ -139,7 +143,9 @@ impl RuntimeSymbolTable {
         execution.check_live().map_err(Denial::Stopped)?;
         let symbol = self.admit_with_pending_identity(&mut state.interner, text.clone())?;
         state.configuration.remove(text.as_str());
-        state.configuration.insert(text.clone(), symbol);
+        state
+            .configuration
+            .insert(SymbolTextLookupKey::from_text(&text), symbol);
         Ok((symbol, text))
     }
 
@@ -159,7 +165,9 @@ impl RuntimeSymbolTable {
                     continue;
                 }
                 state.configuration.remove(text.as_str());
-                state.configuration.insert(text.clone(), *symbol);
+                state
+                    .configuration
+                    .insert(SymbolTextLookupKey::from_text(text), *symbol);
             }
             Ok(())
         })
@@ -175,7 +183,7 @@ impl RuntimeSymbolTable {
             entries: state
                 .configuration
                 .iter()
-                .map(|(text, symbol)| (*symbol, text.clone()))
+                .map(|(text, symbol)| (*symbol, text.retained_text()))
                 .collect(),
         })
     }
@@ -190,7 +198,7 @@ impl RuntimeSymbolTable {
                 .snapshot()
                 .entries
                 .into_iter()
-                .map(|(symbol, text)| (text, symbol))
+                .map(|(symbol, text)| (SymbolTextLookupKey::from_owned(text), symbol))
                 .collect();
             state.interner = interner;
         });

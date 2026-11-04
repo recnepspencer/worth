@@ -4,7 +4,7 @@ use super::*;
 #[derive(Debug, Clone, Default)]
 pub(super) struct RuntimeSymbolState {
     pub(super) interner: StringInterner,
-    pub(super) configuration: im::OrdMap<StoredSymbolText, Symbol>,
+    pub(super) configuration: im::OrdMap<SymbolTextLookupKey, Symbol>,
 }
 impl RuntimeSymbolTable {
     pub(super) fn read_state<T>(&self, read: impl FnOnce(&RuntimeSymbolState) -> T) -> T {

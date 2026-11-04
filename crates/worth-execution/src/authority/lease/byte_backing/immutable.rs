@@ -61,6 +61,14 @@ impl ExecutionImmutableBytes {
             })),
         })
     }
+    /// Physical backing origin, not an admission or execution witness.
+    pub fn is_external_backing(&self) -> bool {
+        match &self.backing {
+            Backing::External(_) => true,
+            Backing::Allocated(_) => false,
+        }
+    }
+
     pub fn bytes(&self) -> &[u8] {
         match &self.backing {
             Backing::External(bytes) => bytes,

@@ -4,7 +4,9 @@ use std::sync::{Arc, Mutex, Weak};
 
 use super::RuntimeSymbolTable;
 use crate::storage::data::RelationalStorageUnavailable;
-use crate::symbols::data::{StoredSymbolText, StringInterner, Symbol, SymbolTableSnapshot};
+use crate::symbols::data::{
+    StoredSymbolText, StringInterner, Symbol, SymbolTableSnapshot, SymbolTextLookupKey,
+};
 
 #[derive(Debug, Default)]
 pub(super) struct SymbolReservationDirectory {
@@ -177,7 +179,9 @@ impl PendingSymbolMeanings {
         binding.with_write(|symbols| *symbols = self.interner.clone());
         binding.update(|state| {
             for (symbol, text) in &self.admitted {
-                state.configuration.insert(text.clone(), *symbol);
+                state
+                    .configuration
+                    .insert(SymbolTextLookupKey::from_text(text), *symbol);
             }
         });
         binding
