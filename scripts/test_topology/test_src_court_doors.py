@@ -115,6 +115,28 @@ class CourtDoorTests(unittest.TestCase):
             self.assertEqual(relocated_caller(root, files, 'installation', src + 'x/lease_tests/tests.rs'), files[1])
             self.assertIsNone(relocated_caller(root, files, 'installation', src + 'gone.rs'))
 
+    def test_denial_exclusions_follow_the_moved_tests(self):
+        import tempfile
+        from pathlib import Path
+        from src_door_callers import CRATES, MOVED_NOTE, OWNER, ROAD, relocate_denial_exclusions
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            court = root / CRATES / 'worth-query-court-execution/tests/c/domain_computation'
+            (court / 'a/tests').mkdir(parents=True)
+            (court / 'a/tests/mod.rs').write_text('fn t() { boundary(); access(); }')
+            (root / OWNER / 'src').mkdir(parents=True)
+            (root / ROAD).parent.mkdir(parents=True)
+            moved = f'{CRATES}/worth-query-court-execution/tests/c/domain_computation/a/tests/mod.rs'
+            (root / ROAD).write_text('\n'.join([
+                '[[source_identifier_denials]]', 'exclude_paths = [', f'  "{OWNER}src/domain_computation/a/tests.rs",',
+                ']', 'forbidden_identifiers = ["access"]', '[[source_identifier_denials]]', 'exclude_paths = [',
+                f'  "{OWNER}src",', ']', 'forbidden_identifiers = ["boundary"]']))
+            self.assertEqual(relocate_denial_exclusions(root), 2)
+            text = (root / ROAD).read_text()
+            self.assertIn(f'  "{moved}",\n]\nforbidden_identifiers = ["access"]', text)
+            self.assertIn(f'  "{OWNER}src",\n{MOVED_NOTE}\n  "{moved}",', text)
+            self.assertEqual(relocate_denial_exclusions(root), 0)
+
 
 if __name__ == '__main__':
     unittest.main()

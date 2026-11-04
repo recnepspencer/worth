@@ -149,3 +149,45 @@ def relocate_certification_callers(root):
         out.append(line)
     path.write_text('\n'.join(out) + '\n', encoding='utf-8', newline='\n')
     return moved
+
+
+ROAD = 'tools/boundary-check/config/road1.toml'
+MOVED_NOTE = '  # Moved worth-query-execution tests, exempt inside the library before the move:'
+
+
+def relocate_denial_exclusions(root):
+    """Identifier denials in road1.toml whose exclusions named library test files, or the whole
+    library source, follow the moved tests: a stale exact path moves to the moved file(s) of the
+    same module that name the identifier; a library-wide exclusion gains the exact moved files
+    that name it. Returns the number of exclusion lines written."""
+    path = root / ROAD
+    lines = path.read_text(encoding='utf-8').split('\n')
+    files = [str(f.relative_to(root)) for f in moved_files(root)]
+    idents = {f: {t.value for t in tokens((root / f).read_text(encoding='utf-8')) if t.kind == 'ident'} for f in files}
+    out, written, block = [], 0, None
+    for i, line in enumerate(lines):
+        if line.startswith('[[source_identifier_denials]]'):
+            j = i + 1
+            while j < len(lines) and not lines[j].startswith('forbidden_identifiers'):
+                j += 1
+            block = set(re.findall(r'"(\w+)"', lines[j])) if j < len(lines) else set()
+        quoted = re.fullmatch(r'\s*"([^"]+)",', line)
+        if block and quoted and line != MOVED_NOTE:
+            entry = quoted.group(1)
+            readers = sorted(f for f in files if block & idents[f])
+            if entry == OWNER + 'src' and readers and MOVED_NOTE not in lines:
+                out.append(line)
+                out.append(MOVED_NOTE)
+                out.extend(f'  "{f}",' for f in readers)
+                written += len(readers)
+                continue
+            if not (root / entry).exists() and in_family(entry):
+                stem = re.sub(r'(\.rs|/mod\.rs)$', '', module_key(entry) or '')
+                same = [f for f in readers if re.sub(r'(\.rs|/mod\.rs)$', '', module_key(f) or '') == stem]
+                if same:
+                    out.extend(f'  "{f}",' for f in same)
+                    written += len(same)
+                    continue
+        out.append(line)
+    path.write_text('\n'.join(out), encoding='utf-8', newline='\n')
+    return written

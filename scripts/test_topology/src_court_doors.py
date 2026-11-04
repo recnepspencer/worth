@@ -9,6 +9,7 @@ Usage:
     python scripts/test_topology/src_court_doors.py normalize [--root .]
     python scripts/test_topology/src_court_doors.py callers [--root .]
     python scripts/test_topology/src_court_doors.py certification-callers [--root .]
+    python scripts/test_topology/src_court_doors.py denial-exclusions [--root .]
     python scripts/test_topology/src_court_doors.py inventory [--root .] [--report DIR]
     python scripts/test_topology/src_court_doors.py uses [--root .]
     python scripts/test_topology/src_court_doors.py parts --types NAME... [--dry-run] [--root .]
@@ -142,7 +143,7 @@ def write_report(report, name, data):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('step', choices=('items', 'interface', 'members', 'normalize', 'bodies', 'callers', 'inventory', 'uses', 'parts', 'certification-callers'))
+    parser.add_argument('step', choices=('items', 'interface', 'members', 'normalize', 'bodies', 'callers', 'inventory', 'uses', 'parts', 'certification-callers', 'denial-exclusions'))
     parser.add_argument('--base', default='038ff2869d')
     parser.add_argument('--dry-run', action='store_true', help='members, parts: write nothing, report and validate')
     parser.add_argument('--types', nargs='*', default=[], help='parts: the structs given destructuring doors')
@@ -177,6 +178,9 @@ def main(argv=None):
     elif args.step == 'certification-callers':
         from src_door_callers import relocate_certification_callers
         print(f'{relocate_certification_callers(root)} certification callers relocated')
+    elif args.step == 'denial-exclusions':
+        from src_door_callers import relocate_denial_exclusions
+        print(f'{relocate_denial_exclusions(root)} denial exclusions written')
     elif args.step == 'callers':
         from src_door_callers import update_callers
         print(f'{update_callers(root)} control-callers lines added')
