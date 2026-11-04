@@ -46,8 +46,10 @@ pub(crate) fn recover_home_observed(
     let opened = physical_admission::open(&request.location, opening)
         .map_err(ApplicationHomeOpenRefusal::Physical)?;
     observed(&opened.serving);
+    let serving = Arc::new(opened.serving);
+    request.opening_observation.bind_physical(&serving);
     let recovered = RecoveredPhysicalHome {
-        serving: Arc::new(opened.serving),
+        serving,
         origin: opened.origin,
         request,
     };
@@ -72,10 +74,13 @@ pub fn admit_home(
             relational,
             binding,
             build,
+            opening_observation,
             #[cfg(feature = "certification-test-authority")]
             mut controls,
         } = recovered.request;
         let binding = binding.consume(|admitted| admitted.into_description());
+        use crate::{ApplicationHomeOpeningEdge as Edge, ApplicationHomeOpeningStage as Stage};
+        opening_observation.arrive_for_test(Stage::DescriptorIncarnation, Edge::Before);
         let prepared_descriptor = crate::descriptor::prepare_admission(
             &recovered.serving,
             recovered.origin,
@@ -103,6 +108,7 @@ pub fn admit_home(
         let descriptor =
             crate::descriptor::publish(&recovered.serving, prepared_descriptor, execution)
                 .map_err(ApplicationHomeOpenRefusal::Descriptor)?;
+        opening_observation.arrive_for_test(Stage::DescriptorIncarnation, Edge::After);
         let checkpoint = Arc::new(Default::default());
         let world_slot = crate::world_section::UnclaimedWorldSlot::from_admitted_home(
             Arc::clone(&recovered.serving),
@@ -114,6 +120,7 @@ pub fn admit_home(
         Ok(HomeAdmitted::from_owner(AdmittedApplicationHome {
             native_source,
             context: HomeContext {
+                opening_observation,
                 selected_home_source: Some(selected_source),
                 initialization: crate::relational_preparation::HomeInitializationOrigin::Available(
                     recovered.origin,

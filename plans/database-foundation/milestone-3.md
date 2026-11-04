@@ -447,13 +447,19 @@ with this path.
   `control-callers.txt`.
 - **Owner unit courts.** Owners outside Store use `cfg(test)` in-crate media.
   Those are not a second durable path.
-- **The oracle's identity rule.** The memory-only reference host and the home
-  issue home-scoped identities from the same initial frontiers in the same
-  order (D6). Comparison covers only durable identities. Identities consumed
-  by attempts that never became durable are not part of the prefix. After each
-  reopen, the reference's issuers are reset to the recovered frontiers before
-  the script continues, so later identities compare exactly. Process-local
-  identities are excluded from comparison.
+- **The oracle's identity rule.** The reference is the ordinary MemoryOnly
+  host, issuing normal ephemeral identities without a durable binding,
+  Home-scoped identity, frontier snapshot or reset. One typed run-wide
+  `DurableIdentityCorrespondence` bijection relates Home durable identities
+  to reference identities across every reopen. Its `admit(home, reference)`
+  refuses either a Home identity mapped to a second reference identity or a
+  reference identity reached from a second Home identity. Admit identities
+  only when they first appear in compared durable graph state, occurrences,
+  custody, product heads or idempotency outcomes. Process-local identities and
+  identities consumed by attempts that never became durable stay out.
+  Identity meaning is compared by correspondence, which needs no durable
+  reference. The separate required test that identities issued after reopen
+  never collide with recovered ones remains unchanged.
 - **Seeds and lanes.** A failing seed reproduces deterministically. Focused
   lanes run a small seed range. A scheduled lane runs the broad campaign under
   a stated time and memory budget.

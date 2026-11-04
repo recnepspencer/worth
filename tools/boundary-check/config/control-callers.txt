@@ -583,3 +583,24 @@ workspaces/worth-query/crates/worth-query-execution/ crates/worth-court-server-c
 
 # Actual cleanup scheduling for the closed HTTP original-custody journey.
 workspaces/worth-query-bank-world/crates/bank-server/ workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/tests/closed_mutation_handoff/retained_effect.rs
+
+# D14 Host oracle: sealed Store placement and passive actual owner observations.
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-store/crates/worth-store-testkit-application-oracle/src/host_observation/occurrence.rs
+workspaces/worth-store/crates/worth-store-application/ workspaces/worth-query/crates/worth-query-host/src/application_home/request.rs
+workspaces/worth-store/crates/worth-store-application/ workspaces/worth-query/crates/worth-query-host/src/application_home/opening/preparation.rs
+workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-testkit-application-oracle/src/host_observation/opening.rs
+workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-testkit-application-oracle/src/host_interruption/opening.rs
+workspaces/worth-query/crates/worth-query-host/ workspaces/worth-store/crates/worth-store-testkit-application-oracle/src/host_observation/opening.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-store/crates/worth-store-testkit-application-oracle/src/host_observation/projection.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-store/crates/worth-store-testkit-application-oracle/src/host_interruption/publication.rs
+crates/worth-runtime-world/ workspaces/worth-store/crates/worth-store-testkit-application-oracle/src/host_interruption/publication.rs
+
+# D14 arrivals live only on actual owner phase receivers; weak Store scheduling only.
+workspaces/worth-store/crates/worth-store-application/ workspaces/worth-query/crates/worth-query-host/src/application_home/opening/initialization.rs
+workspaces/worth-store/crates/worth-store-application/ workspaces/worth-query/crates/worth-query-host/src/application_home/opening/fresh.rs
+workspaces/worth-store/crates/worth-store-application/ workspaces/worth-query/crates/worth-query-host/src/application_home/opening/existing.rs
+workspaces/worth-store/crates/worth-store-application/ workspaces/worth-query/crates/worth-query-host/src/application_home/opening/service.rs
+workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/host_oracle/session.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/host_oracle/execution.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/host_oracle/continuation.rs
+workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/host_oracle/opening.rs

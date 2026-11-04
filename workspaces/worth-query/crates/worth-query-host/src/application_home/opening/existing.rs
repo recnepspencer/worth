@@ -6,6 +6,7 @@ pub(super) fn finish_existing_home<Schema, Program>(
     home: UnsharedReadmittedApplicationHome,
     query: PreparedHomeNativeMeaning<Schema, Program>,
     checkpoint_limits: ApplicationHomeCheckpointLimits,
+    observation: ApplicationHomeOpeningObservation,
 ) -> Result<
     WorthQueryApplicationHome<Schema, Program>,
     WorthQueryApplicationHomeOpenRefused<Schema, Program>,
@@ -17,9 +18,13 @@ where
         ApplicationProgramOutputsShape<Schema> + WorthQueryApplicationProgramRoots<Schema>,
 {
     let (query, home) = finalize_native(phase, home, query)?;
-    let (query, home) = attach_source(phase, home, query)?;
+    let (query, home) = attach_source(phase, home, query, &observation)?;
     let (query, home) = attach_world(phase, home, query, checkpoint_limits)?;
-    super::service::finish_service(phase, query, home, checkpoint_limits)
+    observation.arrive_for_test(
+        ApplicationHomeOpeningStage::QueryReadmission,
+        ApplicationHomeOpeningEdge::After,
+    );
+    super::service::finish_service(phase, query, home, checkpoint_limits, observation)
 }
 
 #[inline(never)]
@@ -64,6 +69,7 @@ fn attach_source<Schema, Program>(
     phase: &WorthQueryBootstrapAdvancementPhase<'_>,
     home: UnsharedReadmittedApplicationHome,
     query: ReadmittedExistingHomeNativeMeaning<Schema, Program>,
+    observation: &ApplicationHomeOpeningObservation,
 ) -> Result<
     (
         PreparedExistingHomeQueryRuntime<Schema, Program>,
@@ -101,6 +107,10 @@ where
         Ok(parts) => parts,
         Err(cause) => return Err(Refused::ExistingComposition { query, home, cause }),
     };
+    observation.arrive_for_test(
+        ApplicationHomeOpeningStage::QueryReadmission,
+        ApplicationHomeOpeningEdge::Before,
+    );
     let query =
         match query.attach_existing_home_registered_source(phase, source, bridge, conditional) {
             Ok(query) => query,

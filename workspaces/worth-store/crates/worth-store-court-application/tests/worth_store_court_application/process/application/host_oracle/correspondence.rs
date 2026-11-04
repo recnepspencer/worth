@@ -1,0 +1,96 @@
+use super::*;
+use worth_relational::facade::{history::CommitId, identity::VersionId};
+
+#[test]
+fn identity_correspondence_keeps_both_directions_and_refusal_is_atomic() {
+    use ObservedDurableIdentity::{NativeCommit as C, NativeVersion as V};
+    let mut map = DurableIdentityCorrespondence::default();
+    map.admit(C(CommitId(1)), C(CommitId(9))).unwrap();
+    map.admit(C(CommitId(1)), C(CommitId(9))).unwrap();
+    assert_eq!(map.len(), 1);
+    assert!(matches!(
+        map.admit(C(CommitId(1)), C(CommitId(10))),
+        Err(IdentityDivergence::HomeRemapped { .. })
+    ));
+    assert!(matches!(
+        map.admit(C(CommitId(2)), C(CommitId(9))),
+        Err(IdentityDivergence::ReferenceCollision { .. })
+    ));
+    assert!(matches!(
+        map.admit(C(CommitId(2)), V(VersionId::new(2))),
+        Err(IdentityDivergence::Family { .. })
+    ));
+    assert_eq!(map.len(), 1, "all refusals preserve both maps");
+    map.admit(C(CommitId(2)), C(CommitId(10))).unwrap();
+    map.admit(C(CommitId(1)), C(CommitId(9))).unwrap();
+    assert_eq!(
+        map.len(),
+        2,
+        "later observations preserve the original correspondence"
+    );
+}
+
+#[test]
+fn every_seed_generates_the_complete_host_vocabulary_and_explicit_owner_gates() {
+    for seed in [0, 1, u64::MAX] {
+        let script = HostScript::generate(seed);
+        assert_eq!(script, HostScript::generate(seed));
+        assert_eq!(script.seed(), seed);
+        let steps = script.commands();
+        for predicate in [
+            |s: &HostCommand| matches!(s, HostCommand::Open),
+            |s: &HostCommand| matches!(s, HostCommand::Initialize),
+            |s: &HostCommand| matches!(s, HostCommand::Mutate { key: Some(_), .. }),
+            |s: &HostCommand| matches!(s, HostCommand::Mutate { key: None, .. }),
+            |s: &HostCommand| matches!(s, HostCommand::LoseResponse { .. }),
+            |s: &HostCommand| matches!(s, HostCommand::CreateBranch(_)),
+            |s: &HostCommand| {
+                matches!(
+                    s,
+                    HostCommand::MoveProduct {
+                        branch: BranchLabel::Left,
+                        ..
+                    }
+                )
+            },
+            |s: &HostCommand| {
+                matches!(
+                    s,
+                    HostCommand::MoveProduct {
+                        branch: BranchLabel::Right,
+                        ..
+                    }
+                )
+            },
+            |s: &HostCommand| matches!(s, HostCommand::SettlementFailure { .. }),
+            |s: &HostCommand| matches!(s, HostCommand::ContinueCustody),
+            |s: &HostCommand| matches!(s, HostCommand::ReleaseCustody),
+            |s: &HostCommand| matches!(s, HostCommand::AbandonCaller { .. }),
+            |s: &HostCommand| matches!(s, HostCommand::Checkpoint(CheckpointKind::Explicit)),
+            |s: &HostCommand| matches!(s, HostCommand::Checkpoint(CheckpointKind::Automatic)),
+            |s: &HostCommand| matches!(s, HostCommand::Close),
+            |s: &HostCommand| matches!(s, HostCommand::Reopen),
+            |s: &HostCommand| matches!(s, HostCommand::ProgramTransition { .. }),
+        ] {
+            assert!(
+                steps.iter().any(predicate),
+                "seed {seed} omits a required command family"
+            );
+        }
+        for command in steps {
+            assert_eq!(
+                command.activation() == OperationActivation::Current,
+                command.activation().owner_merge().is_none()
+            );
+        }
+        assert!(steps
+            .iter()
+            .any(|s| s.activation() == OperationActivation::ReopenCheckpointImage));
+        assert!(steps
+            .iter()
+            .any(|s| s.activation() == OperationActivation::LifecycleProgramTransition));
+        assert!(steps
+            .iter()
+            .any(|s| s.activation() == OperationActivation::LifecycleDurableSibling));
+    }
+}

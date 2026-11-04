@@ -214,9 +214,10 @@ pub use super::application_runtime::{
     WorthQueryInboundReceiptPosture, WorthQueryInboundSourceControlDenial,
     WorthQueryInboundSourcePosture, WorthQueryInboundTerminalObservation,
     WorthQueryInboundVerifierHandle, WorthQueryInboundVerifierInstallationDenial,
-    WorthQueryPrimaryGraphApplicationRuntime, WorthQueryRuleReadableCollectionLifecycleForTest,
-    WorthQueryStorageRetentionDenial, WorthQueryStorageRetentionProgress,
-    WorthQueryStorageRetentionStop,
+    WorthQueryOracleHistoryPageForTest, WorthQueryOracleOccurrenceForTest,
+    WorthQueryOracleSignalMovementForTest, WorthQueryPrimaryGraphApplicationRuntime,
+    WorthQueryRuleReadableCollectionLifecycleForTest, WorthQueryStorageRetentionDenial,
+    WorthQueryStorageRetentionProgress, WorthQueryStorageRetentionStop,
 };
 pub use super::authenticated_principal::{
     WorthQueryApplicationPrincipalIdentity, WorthQueryAuthenticatedPrincipal,

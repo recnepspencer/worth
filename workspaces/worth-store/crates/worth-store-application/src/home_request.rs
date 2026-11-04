@@ -11,6 +11,7 @@ pub struct ApplicationHomeRequest {
     pub(crate) relational: RelationalRuntimeDefinition,
     pub(crate) binding: AdmittedApplicationHomeBinding<WorthQueryHomeBindingAdmission>,
     pub(crate) build: worth_foundational::facade::ApplicationBuildIdentity,
+    pub(crate) opening_observation: crate::ApplicationHomeOpeningObservation,
     #[cfg(feature = "certification-test-authority")]
     pub(crate) controls: crate::home_controls_for_test::HomeControlsForTest,
 }
@@ -27,6 +28,7 @@ impl ApplicationHomeRequest {
             relational,
             binding,
             build,
+            opening_observation: Default::default(),
             #[cfg(feature = "certification-test-authority")]
             controls: Default::default(),
         }

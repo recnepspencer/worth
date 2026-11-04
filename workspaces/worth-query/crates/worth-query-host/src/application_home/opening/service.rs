@@ -24,10 +24,15 @@ pub(super) fn finish_service<Schema: ApplicationSchemaComposition, Program: 'sta
     query: ReadmittedHomeQueryService<Schema, Program>,
     home: DirectoryHome,
     checkpoint_limits: ApplicationHomeCheckpointLimits,
+    observation: ApplicationHomeOpeningObservation,
 ) -> Result<
     WorthQueryApplicationHome<Schema, Program>,
     WorthQueryApplicationHomeOpenRefused<Schema, Program>,
 > {
+    observation.arrive_for_test(
+        ApplicationHomeOpeningStage::Custody,
+        ApplicationHomeOpeningEdge::Before,
+    );
     let readmit = (|| {
         phase
             .execution_request()
@@ -60,6 +65,14 @@ pub(super) fn finish_service<Schema: ApplicationSchemaComposition, Program: 'sta
         });
     }
     let custody = CustodyReadmitted::from_owner(HomeServiceCustody { query, home });
+    observation.arrive_for_test(
+        ApplicationHomeOpeningStage::Custody,
+        ApplicationHomeOpeningEdge::After,
+    );
+    observation.arrive_for_test(
+        ApplicationHomeOpeningStage::ServiceHandoff,
+        ApplicationHomeOpeningEdge::Before,
+    );
     let settled = custody.consume(|HomeServiceCustody { query, home }| {
         match home.readmit_no_pending_owners(&phase.execution_request()) {
             Ok(home) => Ok(TransitionSettled::from_owner(SettledHomeService {
@@ -69,11 +82,16 @@ pub(super) fn finish_service<Schema: ApplicationSchemaComposition, Program: 'sta
             Err(home) => Err(WorthQueryApplicationHomeOpenRefused::OwnerAdmission { query, home }),
         }
     })?;
-    Ok(settled.consume(
+    let home = settled.consume(
         |SettledHomeService { query, home }| WorthQueryApplicationHome {
             query: query.into_home_program_runtime(),
             directory: Some(home.into_no_pending_home()),
             checkpoint_limits,
         },
-    ))
+    );
+    observation.arrive_for_test(
+        ApplicationHomeOpeningStage::ServiceHandoff,
+        ApplicationHomeOpeningEdge::After,
+    );
+    Ok(home)
 }

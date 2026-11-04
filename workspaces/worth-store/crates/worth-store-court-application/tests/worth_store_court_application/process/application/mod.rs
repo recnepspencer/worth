@@ -1,5 +1,6 @@
 mod admission;
 mod failed_close;
+mod host_oracle;
 mod interrupted_close;
 mod native_components;
 mod no_pending_owners;

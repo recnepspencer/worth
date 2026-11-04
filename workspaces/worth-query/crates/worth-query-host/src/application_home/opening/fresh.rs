@@ -13,6 +13,7 @@ pub(super) fn finish_new_home<Schema, Program>(
         worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenial,
     >,
     checkpoint_limits: ApplicationHomeCheckpointLimits,
+    observation: ApplicationHomeOpeningObservation,
 ) -> Result<
     WorthQueryApplicationHome<Schema, Program>,
     WorthQueryApplicationHomeOpenRefused<Schema, Program>,
@@ -24,7 +25,7 @@ where
         ApplicationProgramOutputsShape<Schema> + WorthQueryApplicationProgramRoots<Schema>,
 {
     use WorthQueryApplicationHomeOpenRefused as Refused;
-    let (mut query, home) = prepare_source(phase, home, query)?;
+    let (mut query, home) = prepare_source(phase, home, query, &observation)?;
     // Only the user initializer is caught by this borrowed Query operation;
     // the actual Home and Query bootstrap remain outside its unwind boundary.
     if let Err(cause) = query.initialize_home_query_state(phase, initial_state) {
@@ -33,13 +34,14 @@ where
     if let Err(cause) = query.publish_home_query_seed(phase) {
         return Err(Refused::SeedPublication { query, home, cause });
     }
-    finish_world(phase, query, home, checkpoint_limits)
+    finish_world(phase, query, home, checkpoint_limits, observation)
 }
 
 fn prepare_source<Schema, Program>(
     phase: &WorthQueryBootstrapAdvancementPhase<'_>,
     mut home: UnsharedReadmittedApplicationHome,
     query: PreparedHomeNativeMeaning<Schema, Program>,
+    observation: &ApplicationHomeOpeningObservation,
 ) -> Result<
     (PreparedHomeQueryRuntime<Schema, Program>, DirectoryHome),
     WorthQueryApplicationHomeOpenRefused<Schema, Program>,
@@ -88,6 +90,10 @@ where
         Ok(parts) => parts,
         Err(cause) => return Err(Refused::Composition { query, home, cause }),
     };
+    observation.arrive_for_test(
+        ApplicationHomeOpeningStage::QueryReadmission,
+        ApplicationHomeOpeningEdge::Before,
+    );
     let query = match query.attach_home_registered_source(phase, source, bridge, conditional) {
         Ok(query) => query,
         Err(query) => return Err(Refused::SourceAttachment { query, home }),
@@ -100,6 +106,7 @@ fn finish_world<Schema, Program>(
     query: PreparedHomeQueryRuntime<Schema, Program>,
     mut home: DirectoryHome,
     checkpoint_limits: ApplicationHomeCheckpointLimits,
+    observation: ApplicationHomeOpeningObservation,
 ) -> Result<
     WorthQueryApplicationHome<Schema, Program>,
     WorthQueryApplicationHomeOpenRefused<Schema, Program>,
@@ -135,5 +142,9 @@ where
         Ok(query) => query.consume(|query| query),
         Err(query) => return Err(Refused::QueryAttachment { query, home }),
     };
-    super::service::finish_service(phase, query, home, checkpoint_limits)
+    observation.arrive_for_test(
+        ApplicationHomeOpeningStage::QueryReadmission,
+        ApplicationHomeOpeningEdge::After,
+    );
+    super::service::finish_service(phase, query, home, checkpoint_limits, observation)
 }

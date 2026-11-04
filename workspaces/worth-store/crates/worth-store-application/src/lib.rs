@@ -13,6 +13,7 @@ mod home_context;
 mod home_controls_for_test;
 mod home_request;
 mod open;
+mod opening_control;
 mod registry;
 mod relational_preparation;
 mod request_stage;

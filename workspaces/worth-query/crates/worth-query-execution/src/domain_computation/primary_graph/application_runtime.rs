@@ -21,8 +21,13 @@ mod certification_controls;
 mod certification_cost;
 mod conditional_cleanup;
 mod home_retirement;
+mod oracle_observation;
 pub(in crate::domain_computation::primary_graph) use home_retirement::RetiringPrimaryGraphRuntime;
 pub use home_retirement::{WorthQueryHomeRetirementDenial, WorthQueryHomeRetirementOwner};
+pub use oracle_observation::{
+    WorthQueryOracleHistoryPageForTest, WorthQueryOracleOccurrenceForTest,
+    WorthQueryOracleSignalMovementForTest,
+};
 mod durable_admission;
 mod execution_memory;
 mod external_dispatch_attempt;
