@@ -1,7 +1,7 @@
 //! The retained root roster carries logical references and exact immutable leaves.
 use super::{reference, Denial};
 use crate::durability::{
-    authority::checkpoint_complete::roots::FoldedRoots,
+    authority::checkpoint_complete::roots::CapturedRoots,
     data::{RelationalCheckpointManifest, RelationalCheckpointRegion},
 };
 use serde::{
@@ -12,7 +12,7 @@ use worth_execution::{ExecutionImmutableBytes, ExecutionRequest};
 
 pub(super) fn encode(
     manifest: &RelationalCheckpointManifest,
-    originals: &FoldedRoots,
+    originals: &CapturedRoots,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<ExecutionImmutableBytes, Denial> {
     super::encode(
@@ -26,7 +26,7 @@ pub(super) fn encode(
 
 struct RootDirectory<'a> {
     manifest: &'a RelationalCheckpointManifest,
-    originals: &'a FoldedRoots,
+    originals: &'a CapturedRoots,
 }
 impl Serialize for RootDirectory<'_> {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
@@ -54,7 +54,7 @@ impl Serialize for RootRows<'_> {
                     schema: header.schema_carrier_digest,
                     regions: &header.regions,
                 },
-                original.root.output_publication_positions.checkpoint_view(),
+                original.output_publication_positions.checkpoint_view(),
             ))?;
         }
         sequence.end()

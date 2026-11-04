@@ -61,7 +61,7 @@ fn automatic_checkpoint_exhaustion_keeps_business_results_and_explicit_capture_u
         .unwrap_or_else(|refused| opening_failed("funding close", &refused));
 }
 
-fn explicit_caller(work: u64) -> worth_execution::ExecutionResourceLease<'static> {
+pub(super) fn explicit_caller(work: u64) -> worth_execution::ExecutionResourceLease<'static> {
     worth_execution::ExecutionResourceLease::serial(worth_execution::LeaseRequest {
         policy: worth_foundational::ExecutionRequestPolicy::new(
             worth_foundational::ExecutionPosture::Serial,

@@ -4,6 +4,7 @@ use super::*;
 use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
 mod checkpoint_funding;
 mod checkpoint_restart;
+mod checkpoint_state;
 mod refusals;
 mod separate_process;
 

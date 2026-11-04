@@ -4,22 +4,24 @@ use worth_execution::ExecutionRequestArrayBuilder;
 #[derive(Clone)]
 struct Cached {
     leaf: RelationalCheckpointRegion,
-    publication: RelationalCheckpointRegionPublication,
+    publication: Option<RelationalCheckpointRegionPublication>,
 }
 pub(super) fn capture(
     grouped: Grouped<'_>,
-    roots: &FoldedRoots,
+    roots: &CapturedRoots,
+    base: Option<&crate::durability::checkpoint_admission::FrozenSelectedCaptureBase>,
     dictionary: &dyn SymbolTextLookup,
     members: &mut ExecutionOrderedMap<RelationalDurableMemberLocator, RelationalCheckpointMember>,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<RegionOutput, Denial> {
+    let covered = super::covered::CoveredRegions::capture(base, request)?;
     let mut output =
         PreparedCheckpointRoots::prepare(grouped.groups.len(), request).map_err(request_stop)?;
     let (empty, empty_memory) = grouped.copy_empty(request)?;
     let mirror_count = grouped
         .mirror
         .and_then(|commit| roots.get(commit))
-        .map_or(0, |root| root.root.checkpoint_region_count());
+        .map_or(0, |root| root.checkpoint_region_count());
     let mirror_memory = reserve(
         array_bytes::<RelationalCheckpointRegion>(mirror_count)?,
         request,
@@ -49,35 +51,50 @@ pub(super) fn capture(
             *commit,
             group.count,
             descriptors,
-            source.root.checkpoint_region_count(),
+            source.checkpoint_region_count(),
             request,
         )
         .map_err(request_stop)?;
-        source.root.try_visit_checkpoint_regions(|region| {
+        source.try_visit_checkpoint_regions(|region| {
             crate::execution::check_request(request).map_err(request_stop)?;
+            region.cell.check_damage().map_err(|failure| {
+                crate::durability::checkpoint_history::capture::capture_stop(failure.into())
+            })?;
             #[expect(clippy::disallowed_methods, reason = "Fixed allocation identity deduplicates custody; canonical order never uses this address")]
             let identity = Arc::as_ptr(&region.cell) as usize;
             let key = (identity, group.carrier);
             if cache.get(&key).is_none() {
-                let captured = region
-                    .cell
-                    .capture_complete_for_request(request, &group.schema, group.carrier, dictionary)
-                    .map_err(crate::durability::checkpoint_history::capture::capture_stop)?;
-                for member in captured.members {
-                    let locator = member.locator();
-                    if members.get(&locator).is_none() {
-                        members
-                            .insert_cloned_native_for_request(&locator, &member, *request)
-                            .map_err(map_stop)?;
+                let captured = match covered.get(*commit, region.partition_id, group.carrier) {
+                    Some(leaf) => {
+                        for locator in [leaf.head, leaf.history] {
+                            if members.get(&locator).is_none() {
+                                members.insert_cloned_native_for_request(
+                                    &locator,
+                                    &RelationalCheckpointMember::Carried { locator },
+                                    *request,
+                                ).map_err(map_stop)?;
+                            }
+                        }
+                        Cached { leaf: leaf.clone(), publication: None }
                     }
-                }
+                    None => {
+                        let captured = region.cell.capture_complete_for_request(
+                            request, &group.schema, group.carrier, dictionary,
+                        ).map_err(crate::durability::checkpoint_history::capture::capture_stop)?;
+                        for member in captured.members {
+                            let locator = member.locator();
+                            if members.get(&locator).is_none() {
+                                members.insert_cloned_native_for_request(&locator, &member, *request)
+                                    .map_err(map_stop)?;
+                            }
+                        }
+                        Cached { leaf: captured.leaf, publication: Some(captured.publication) }
+                    }
+                };
                 cache
                     .insert_cloned_native_for_request(
                         &key,
-                        &Cached {
-                            leaf: captured.leaf,
-                            publication: captured.publication,
-                        },
+                        &captured,
                         *request,
                     )
                     .map_err(map_stop)?;
@@ -115,12 +132,16 @@ pub(super) fn capture(
     if mirror.len() != mirror_count {
         return Err(Denial::OriginalAuthorityUnavailable);
     }
+    let publication_count = cache
+        .values()
+        .filter(|entry| entry.publication.is_some())
+        .count();
     let mut publications =
-        ExecutionRequestArrayBuilder::allocate(*request, cache.len()).map_err(array_stop)?;
+        ExecutionRequestArrayBuilder::allocate(*request, publication_count).map_err(array_stop)?;
     for (_, entry) in cache.iter() {
-        publications
-            .push(entry.publication.clone())
-            .map_err(array_stop)?;
+        if let Some(publication) = &entry.publication {
+            publications.push(publication.clone()).map_err(array_stop)?;
+        }
     }
     let mut roster =
         ExecutionRequestArrayBuilder::allocate(*request, cells.len()).map_err(array_stop)?;

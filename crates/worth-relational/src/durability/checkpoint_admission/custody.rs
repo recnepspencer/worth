@@ -85,6 +85,19 @@ impl CheckpointAdmissionOwner {
     }
 }
 impl CheckpointAdmissionBinding {
+    pub(super) fn capture_directory(&self) -> Result<Arc<RelationalCheckpointDirectory>, Refusal> {
+        let directory = self.directory.snapshot().ok_or(Refusal::OwnerUnavailable)?;
+        if !directory
+            .admission_owner
+            .get()
+            .and_then(Weak::upgrade)
+            .is_some_and(|owner| Arc::ptr_eq(&owner, &self.owner.0))
+        {
+            return Err(Refusal::OwnerUnavailable);
+        }
+        Ok(directory)
+    }
+
     pub(crate) fn commit(
         &self,
         entry: &RelationalCommitIndexEntry,

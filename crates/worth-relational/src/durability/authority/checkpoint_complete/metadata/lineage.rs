@@ -32,12 +32,33 @@ pub(in crate::durability::authority::checkpoint_complete) struct OriginalCheckpo
 }
 pub(in crate::durability::authority::checkpoint_complete) fn capture_lineage<'a>(
     commits: &'a [OriginalCanonicalCommit],
+    prior: Option<&crate::durability::data::RelationalCheckpointManifest>,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<OriginalCheckpointLineage<'a>, Denial> {
     let mut nodes = ExecutionOrderedMap::<LineageId, EntityId>::default();
     let mut events = ExecutionOrderedMap::<u64, OriginalLineageEvent<'a>>::default();
+    let prior_basis = prior.map(|prior| &prior.lineage_basis);
     let (mut commit_count, mut event_count, mut decision_count, mut id_count) =
-        (0usize, 0usize, 0usize, 0usize);
+        prior_basis.map_or((0, 0, 0, 0), |basis| {
+            (
+                basis.published_lineage_commit_count,
+                basis.published_lineage_event_count,
+                basis.published_lineage_decision_count,
+                basis.canonical_published_event_ids.len(),
+            )
+        });
+    let mut covered_nodes = ExecutionOrderedMap::<LineageId, ()>::default();
+    if let Some(prior) = prior {
+        for page in &prior.lineage {
+            for id in page.first..=page.last {
+                if page.contains(id) {
+                    covered_nodes
+                        .insert_cloned_native_for_request(&LineageId(id), &(), *request)
+                        .map_err(map_stop)?;
+                }
+            }
+        }
+    }
     for original in commits {
         crate::execution::check_request(request).map_err(Denial::Request)?;
         let envelope = &original.envelope;
@@ -73,6 +94,9 @@ pub(in crate::durability::authority::checkpoint_complete) fn capture_lineage<'a>
                 return Err(Denial::OriginalAuthorityUnavailable);
             }
             let lineage = event.targets()[0];
+            if covered_nodes.contains_key(&lineage) {
+                continue;
+            }
             if let Some(previous) = nodes.get(&lineage) {
                 if previous != &entity {
                     return Err(Denial::OriginalAuthorityUnavailable);
@@ -109,13 +133,16 @@ pub(in crate::durability::authority::checkpoint_complete) fn capture_lineage<'a>
         event_count,
         decision_count,
         id_count,
-        commits.iter().flat_map(|c| {
-            c.envelope
-                .lineage_digest_basis()
-                .canonical_event_ids()
-                .iter()
-                .copied()
-        }),
+        prior_basis
+            .into_iter()
+            .flat_map(|basis| basis.canonical_published_event_ids.iter().copied())
+            .chain(commits.iter().flat_map(|c| {
+                c.envelope
+                    .lineage_digest_basis()
+                    .canonical_event_ids()
+                    .iter()
+                    .copied()
+            })),
         request,
     )
     .map_err(Denial::Request)?;

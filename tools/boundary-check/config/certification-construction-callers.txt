@@ -185,4 +185,6 @@ native-home-original-source-copy crates/worth-court-relational-certification/tes
 native-fresh-initialization crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/checkpoint_admission/required_outputs.rs
 native-durable-initial-installation crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/checkpoint_admission/required_outputs.rs
 native-home-complete-checkpoint workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/native_components/checkpoint.rs
+
 application-home-checkpoint-maintenance workspaces/worth-query/crates/worth-query-host/src/application_home/maintenance.rs
+native-home-complete-checkpoint crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/checkpoint_admission/capture_cost.rs

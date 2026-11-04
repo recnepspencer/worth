@@ -22,6 +22,7 @@ pub(crate) use basis_registry::{
 };
 mod basis_retention;
 mod canonical_runtime_frame;
+pub(crate) mod checkpoint_visibility;
 mod coordination;
 mod fork;
 mod fork_port;

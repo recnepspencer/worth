@@ -3,13 +3,13 @@
   "purpose": "telemetry-only scheduling; never a correctness or timing gate",
   "aggregation": "maximum recommendation from every successful complete sample per exact identity",
   "status": "partial",
-  "complete_samples": 5786,
-  "scheduler_samples": 5786,
+  "complete_samples": 5789,
+  "scheduler_samples": 5789,
   "standalone_complete_samples": 0,
   "unmeasured_samples": 3,
-  "failed_child_samples": 36,
-  "sample_count": 5825,
-  "measured_identities": 4627,
+  "failed_child_samples": 37,
+  "sample_count": 5829,
+  "measured_identities": 4630,
   "policy_identities": 67,
   "retired_identities": 451,
   "inventory_basis": {
@@ -17,18 +17,18 @@
     "identities": 4408,
     "sha256": "3435da974bde9300e64bf594331e2989128cfd44eb9b6e148da23a70315a90be"
   },
-  "source_count": 10,
+  "source_count": 11,
   "pending_claim_count": 0,
   "catalogs": {
     "sources": {
-      "file": "sources-00-000000-c17848eeecde3226.jsonl",
-      "sha256": "c17848eeecde3226341b1d1ad055aab9386ebd7a89af87dd19d9907be68382f1",
-      "records": 10
+      "file": "sources-00-000000-040ce82f47221669.jsonl",
+      "sha256": "040ce82f47221669b392fc76424e1d05b99046c116cdf339ab535be93be74626",
+      "records": 11
     },
     "samples": {
-      "file": "samples-01-000000-3b37556e9facfd99.jsonl",
-      "sha256": "3b37556e9facfd99521c96e0865f642f0a89ae6c4cf7ea8b6364f7f2894cbaad",
-      "records": 5825
+      "file": "samples-01-000000-612cde016fb1547c.jsonl",
+      "sha256": "612cde016fb1547c1b5624639103635ecb6fa486554bcfef04b013224def461c",
+      "records": 5829
     },
     "rules": {
       "file": "rules-00-000000-fe50167250cda55f.jsonl",
@@ -36,9 +36,9 @@
       "records": 67
     },
     "baselines": {
-      "file": "baselines-01-000000-18782b2f4e5b9016.jsonl",
-      "sha256": "18782b2f4e5b9016d5374c3559381ec0d460c96b2f88560cd240296fef5673fa",
-      "records": 4627
+      "file": "baselines-01-000000-7a3530c275307c46.jsonl",
+      "sha256": "7a3530c275307c463107b35d13550177940f858810e5b360bd292590dbc3db81",
+      "records": 4630
     },
     "retired": {
       "file": "retired-01-000000-cf6dddf3cc0096e8.jsonl",

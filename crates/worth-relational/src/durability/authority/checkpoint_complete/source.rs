@@ -12,6 +12,7 @@ use worth_execution::{
 };
 
 pub(super) struct FrozenOriginalInputs {
+    pub(super) base: Option<crate::durability::checkpoint_admission::FrozenSelectedCaptureBase>,
     pub(super) artifacts: ExecutionArray<Arc<RelationalCommitArtifact>>,
     pub(super) branches: OriginalBranchSchemaInputs,
     pub(super) symbols: crate::symbols::data::StringInterner,
@@ -36,6 +37,10 @@ impl FrozenOriginalInputs {
         selection: &crate::runtime::PerformedCheckpointSelection,
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<Self, Denial> {
+        let base = runtime
+            .durability
+            .checkpoint_selection()
+            .freeze_capture_base()?;
         let branches = runtime
             .history
             .capture_original_branch_schema_inputs(execution)
@@ -110,6 +115,7 @@ impl FrozenOriginalInputs {
             return Err(Denial::OriginalAuthorityUnavailable);
         }
         Ok(Self {
+            base,
             artifacts,
             branches,
             journal_source,
@@ -194,9 +200,18 @@ impl FrozenOriginalInputs {
         execution: &ExecutionRequest<'_, '_>,
         limit: u64,
     ) -> Result<ExecutionArray<OriginalCanonicalCommit>, Denial> {
-        let mut commits = ExecutionRequestArrayBuilder::allocate(*execution, self.artifacts.len())
-            .map_err(array_stop)?;
-        for (offset, artifact) in self.artifacts.iter().enumerate() {
+        let covered = self
+            .base
+            .as_ref()
+            .map_or(0, |base| base.directory.manifest.commits.len());
+        let count = self
+            .artifacts
+            .len()
+            .checked_sub(covered)
+            .ok_or(Denial::OriginalAuthorityUnavailable)?;
+        let mut commits =
+            ExecutionRequestArrayBuilder::allocate(*execution, count).map_err(array_stop)?;
+        for (offset, artifact) in self.artifacts.iter().enumerate().skip(covered) {
             crate::execution::check_request(execution).map_err(Denial::Request)?;
             let frame = artifact
                 .envelope_residency()
