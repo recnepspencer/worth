@@ -78,3 +78,15 @@ impl WorthQueryProgressedApplicationCommit {
         }
     }
 }
+
+impl WorthQueryProviderProgressionCompletion {
+    #[doc(hidden)]
+    pub fn into_parts_for_test(
+        self,
+    ) -> (
+        WorthQueryProviderProgressionOutcome,
+        WorthQueryApplicationMutationCleanupOwner,
+    ) {
+        (self.outcome, self.cleanup)
+    }
+}

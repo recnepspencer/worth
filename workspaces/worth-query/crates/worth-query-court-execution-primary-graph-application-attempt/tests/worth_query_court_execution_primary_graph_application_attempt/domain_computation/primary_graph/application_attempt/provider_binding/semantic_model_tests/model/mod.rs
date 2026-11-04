@@ -42,7 +42,7 @@ pub struct EmissionObservation {
 }
 
 pub fn observe(prepared: WorthQueryPreparedApplicationProviderAttempt) -> LoweringObservation {
-    let WorthQueryPreparedApplicationProviderAttempt { effects, .. } = prepared;
+    let (_workflow_origin_rest, _local_action_settlement_rest, _required_output_demand_rest, _installed_read_scopes_rest, _facts_rest, _application_projection_rest, _original_read_rest, _consumed_outputs_rest, effects, _preimage_demand_rest, _conditional_definition_rest, _retain_output_demand_observation_rest, _retain_client_observation_rest, _producer_required_invariants_rest, _output_currentness_facts_rest,) = prepared.into_parts_for_test();
     let steps = effects.expected_steps_for_test().iter().map(observe_step).collect();
     let intents = effects.batch_for_test().intents.clone();
     let emissions = effects.into_emissions_for_test();

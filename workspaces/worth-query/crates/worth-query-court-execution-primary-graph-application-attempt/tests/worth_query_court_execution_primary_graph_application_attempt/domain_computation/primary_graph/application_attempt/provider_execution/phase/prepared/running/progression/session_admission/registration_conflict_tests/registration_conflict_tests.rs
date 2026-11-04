@@ -84,19 +84,7 @@ pub fn reject_occupied_registration(
 ) -> WorthQueryApplicationCommitOutcome {
     let execution = phase;
 
-    let WorthQueryRunningApplicationCommit {
-        admission,
-        lease,
-        provider_attempt,
-        mut authorization,
-        idempotency,
-        mut running,
-        mutation_run: unbound_run,
-        attempt_basis,
-        aftermath_causality,
-        outcome_identity,
-        workflow_settlement_publication: _workflow_settlement_publication,
-    } = victim;
+    let (admission, lease, provider_attempt, outcome_identity, _workflow_settlement_publication, mut authorization, idempotency, mut running, unbound_run, attempt_basis, aftermath_causality,) = victim.into_parts_for_test();
     let reservation_basis = WorthQueryApplicationAttemptBasis::capture(
         &world.application,
         &admission,
@@ -146,7 +134,7 @@ pub fn reject_occupied_registration(
         Ok(_) => panic!("the actual occupied store must reject duplicate registration"),
         Err(failure) => failure,
     };
-    let WorthQueryProviderProgressionCompletion { outcome, cleanup } = failure.into_completion_for_test();
+    let (outcome, cleanup,) = failure.into_completion_for_test().into_parts_for_test();
     assert!(matches!(
         outcome,
         worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::outcome::WorthQueryProviderProgressionOutcome::Denied(
@@ -180,19 +168,7 @@ pub fn while_peer_is_registered(
 ) -> WorthQueryApplicationCommitOutcome {
     let execution = phase;
 
-    let WorthQueryRunningApplicationCommit {
-        admission,
-        lease,
-        provider_attempt,
-        mut authorization,
-        idempotency,
-        mut running,
-        mutation_run,
-        attempt_basis,
-        aftermath_causality,
-        outcome_identity,
-        workflow_settlement_publication: _workflow_settlement_publication,
-    } = peer;
+    let (admission, lease, provider_attempt, outcome_identity, _workflow_settlement_publication, mut authorization, idempotency, mut running, mutation_run, attempt_basis, aftermath_causality,) = peer.into_parts_for_test();
     let product = attempt_basis.retained_product();
     let admitted = admit_provider_session(
         execution,

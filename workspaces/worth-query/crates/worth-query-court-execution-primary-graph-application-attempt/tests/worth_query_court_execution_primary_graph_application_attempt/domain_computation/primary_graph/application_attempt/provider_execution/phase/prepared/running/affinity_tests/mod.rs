@@ -50,19 +50,7 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
                 retained_program(phase, &world, "axis-owner"),
                 idempotency(187, 188),
             );
-            let WorthQueryRunningApplicationCommit {
-                admission,
-                lease,
-                provider_attempt: _provider_attempt,
-                authorization: _authorization,
-                idempotency: _idempotency,
-                mut running,
-                mutation_run,
-                attempt_basis,
-                aftermath_causality: _aftermath_causality,
-                outcome_identity: _outcome_identity,
-                workflow_settlement_publication: _workflow_settlement_publication,
-            } = running;
+            let (admission, lease, _provider_attempt, _outcome_identity, _workflow_settlement_publication, _authorization, _idempotency, mut running, mutation_run, attempt_basis, _aftermath_causality,) = running.into_parts_for_test();
             let staged = real_terminal_session(
                 execution,
                 &world,
@@ -177,32 +165,8 @@ fn a_real_peer_plan_and_session_cannot_substitute_for_the_captured_attempt() {
                 retained_program(phase, &world, "plan-peer"),
                 idempotency(191, 192),
             );
-            let WorthQueryRunningApplicationCommit {
-                admission: _first_admission,
-                lease: first_lease,
-                provider_attempt: _first_provider_attempt,
-                authorization: _first_authorization,
-                idempotency: _first_idempotency,
-                running: mut first_running,
-                mutation_run: first_mutation_run,
-                attempt_basis: first_basis,
-                aftermath_causality: _first_aftermath,
-                outcome_identity: _first_outcome_identity,
-                workflow_settlement_publication: _first_workflow_settlement_publication,
-            } = first;
-            let WorthQueryRunningApplicationCommit {
-                admission: _second_admission,
-                lease: second_lease,
-                provider_attempt: _second_provider_attempt,
-                authorization: _second_authorization,
-                idempotency: _second_idempotency,
-                running: mut second_running,
-                mutation_run: second_mutation_run,
-                attempt_basis: second_basis,
-                aftermath_causality: _second_aftermath,
-                outcome_identity: _second_outcome_identity,
-                workflow_settlement_publication: _second_workflow_settlement_publication,
-            } = second;
+            let (_first_admission, first_lease, _first_provider_attempt, _first_outcome_identity, _first_workflow_settlement_publication, _first_authorization, _first_idempotency, mut first_running, first_mutation_run, first_basis, _first_aftermath,) = first.into_parts_for_test();
+            let (_second_admission, second_lease, _second_provider_attempt, _second_outcome_identity, _second_workflow_settlement_publication, _second_authorization, _second_idempotency, mut second_running, second_mutation_run, second_basis, _second_aftermath,) = second.into_parts_for_test();
             let first_staged = real_terminal_session(
                 execution,
                 &world,

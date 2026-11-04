@@ -41,19 +41,7 @@ fn cancellation_at_registration_binding_is_cancelled_not_denied() {
                 &request,
                 "interrupted-registration",
             );
-            let WorthQueryRunningApplicationCommit {
-                admission,
-                lease,
-                provider_attempt,
-                mut authorization,
-                idempotency,
-                mut running,
-                mutation_run,
-                attempt_basis,
-                aftermath_causality,
-                outcome_identity,
-                workflow_settlement_publication: _,
-            } = start(phase, &world, program, idempotency(185, 186));
+            let (admission, lease, provider_attempt, outcome_identity, _, mut authorization, idempotency, mut running, mutation_run, attempt_basis, aftermath_causality,) = start(phase, &world, program, idempotency(185, 186)).into_parts_for_test();
             let admitted = admit_provider_session(
                 phase,
                 &mut running,
@@ -80,8 +68,8 @@ fn cancellation_at_registration_binding_is_cancelled_not_denied() {
             ) else {
                 panic!("a cancelled request must not register its provider attempt")
             };
-            let WorthQueryProviderProgressionCompletion { outcome, cleanup } =
-                failure.into_completion_for_test();
+            let (outcome, cleanup,) =
+                failure.into_completion_for_test().into_parts_for_test();
             assert!(
                 matches!(outcome, WorthQueryProviderProgressionOutcome::Cancelled),
                 "the binding's request stop is a control outcome, never a denial"

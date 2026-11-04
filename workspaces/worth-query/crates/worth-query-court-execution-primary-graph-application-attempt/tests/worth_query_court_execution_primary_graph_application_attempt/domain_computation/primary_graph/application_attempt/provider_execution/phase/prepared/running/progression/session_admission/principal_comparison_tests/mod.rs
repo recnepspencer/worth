@@ -71,19 +71,7 @@ fn principal_staleness_and_request_stop_keep_their_distinct_answers() {
                 };
                 let running = start_managed_application_commit(phase, &world.application, prepared)
                     .unwrap_or_else(|outcome| panic!("overlay fixture must start: {outcome:?}"));
-                let WorthQueryRunningApplicationCommit {
-                    admission,
-                    lease,
-                    provider_attempt,
-                    mut authorization,
-                    idempotency: retained_idempotency,
-                    mut running,
-                    mutation_run,
-                    attempt_basis,
-                    aftermath_causality,
-                    outcome_identity,
-                    workflow_settlement_publication: _workflow_settlement_publication,
-                } = running;
+                let (admission, lease, provider_attempt, outcome_identity, _workflow_settlement_publication, mut authorization, retained_idempotency, mut running, mutation_run, attempt_basis, aftermath_causality,) = running.into_parts_for_test();
                 let admitted_session = admit_provider_session(
                     phase,
                     &mut running,
@@ -92,10 +80,7 @@ fn principal_staleness_and_request_stop_keep_their_distinct_answers() {
                     mutation_run,
                 )
                 .unwrap_or_else(|_| panic!("overlay fixture must admit its real provider session"));
-                let worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::session_admission::WorthQueryRegisteredProviderSession {
-                    registered,
-                    mutation_run,
-                } = admitted_session
+                let (registered, mutation_run,) = admitted_session
                     .register_for_test(
                         &mut authorization,
                         provider_attempt,
@@ -109,7 +94,7 @@ fn principal_staleness_and_request_stop_keep_their_distinct_answers() {
                         ),
                         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                     )
-                    .unwrap_or_else(|_| panic!("overlay fixture must register"));
+                    .unwrap_or_else(|_| panic!("overlay fixture must register")).into_parts_for_test();
                 registered.assert_principal_comparison(
                     &phase.borrowed_request_for_test(),
                     &world,

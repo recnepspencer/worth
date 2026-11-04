@@ -90,3 +90,15 @@ impl<'run> WorthQueryRegisteredProviderSession<'run> {
         self.registered
     }
 }
+
+impl<'run> WorthQueryRegisteredProviderSession<'run> {
+    #[doc(hidden)]
+    pub fn into_parts_for_test(
+        self,
+    ) -> (
+        super::super::WorthQueryRegisteredProviderAttempt<'run>,
+        crate::domain_computation::provider_session::WorthQueryProviderSessionBoundMutationRun,
+    ) {
+        (self.registered, self.mutation_run)
+    }
+}

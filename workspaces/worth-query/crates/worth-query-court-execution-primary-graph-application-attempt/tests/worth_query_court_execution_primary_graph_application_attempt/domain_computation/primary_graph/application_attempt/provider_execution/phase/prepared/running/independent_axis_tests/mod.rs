@@ -207,13 +207,7 @@ pub fn release(
     worth_query_execution::court_doors_for_test::domain_computation::provider_session::graph_obligation::mutation_progression::WorthQueryMutationRunBinding,
     WorthQueryApplicationSnapshotLease,
 ){
-    let WorthQueryRunningApplicationCommit {
-        lease,
-        running,
-        mutation_run,
-        attempt_basis,
-        ..
-    } = running;
+    let (_admission_rest, lease, _provider_attempt_rest, _outcome_identity_rest, _workflow_settlement_publication_rest, _authorization_rest, _idempotency_rest, running, mutation_run, attempt_basis, _aftermath_causality_rest,) = running.into_parts_for_test();
     (attempt_basis, running, mutation_run, lease)
 }
 

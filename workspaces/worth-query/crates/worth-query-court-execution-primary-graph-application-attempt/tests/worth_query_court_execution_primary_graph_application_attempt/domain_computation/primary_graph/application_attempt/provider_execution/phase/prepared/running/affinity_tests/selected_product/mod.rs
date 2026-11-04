@@ -24,19 +24,7 @@ fn an_exact_sibling_product_cannot_substitute_at_provider_plan_binding() {
                 ),
                 idempotency(193, 194),
             );
-            let WorthQueryRunningApplicationCommit {
-                admission: _admission,
-                lease,
-                provider_attempt: _provider_attempt,
-                authorization: _authorization,
-                idempotency: _idempotency,
-                running: mut direct_run,
-                mutation_run,
-                attempt_basis: _attempt_basis,
-                aftermath_causality: _aftermath_causality,
-                outcome_identity: _outcome_identity,
-                workflow_settlement_publication: _workflow_settlement_publication,
-            } = running;
+            let (_admission, lease, _provider_attempt, _outcome_identity, _workflow_settlement_publication, _authorization, _idempotency, mut direct_run, mutation_run, _attempt_basis, _aftermath_causality,) = running.into_parts_for_test();
             let sibling = fork_product(&world, lease.product());
             let sibling = world
                 .application
@@ -79,19 +67,7 @@ fn the_exact_selected_product_binds_at_provider_plan_boundary() {
                 ),
                 idempotency(195, 196),
             );
-            let WorthQueryRunningApplicationCommit {
-                admission: _admission,
-                lease,
-                provider_attempt: _provider_attempt,
-                authorization: _authorization,
-                idempotency: _idempotency,
-                running: mut direct_run,
-                mutation_run,
-                attempt_basis: _attempt_basis,
-                aftermath_causality: _aftermath_causality,
-                outcome_identity: _outcome_identity,
-                workflow_settlement_publication: _workflow_settlement_publication,
-            } = running;
+            let (_admission, lease, _provider_attempt, _outcome_identity, _workflow_settlement_publication, _authorization, _idempotency, mut direct_run, mutation_run, _attempt_basis, _aftermath_causality,) = running.into_parts_for_test();
             let result = direct_run
                 .admit_provider_execution_plan(&(*world.application.primary_graph_authority_for_test()))
                 .expect("the application authorities admit the provider plan")
