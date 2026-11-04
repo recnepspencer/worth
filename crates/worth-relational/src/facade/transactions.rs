@@ -7,7 +7,6 @@ pub use crate::transactions::data::{
     RelationalInvariantCheckMeaning, RelationalInvariantCustomProvenanceMeaning,
     RelationalInvariantDecisionMeaning, RelationalInvariantExecutionMeaning,
     RelationalInvariantMetadataMeaning, RelationalInvariantProofScopeMeaning,
-    RelationalValidationPreparationFailure,
 };
 
 pub use crate::execution::RelationalExecutionDenialCause;
