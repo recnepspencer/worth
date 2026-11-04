@@ -9,6 +9,10 @@
 !workspaces/worth-ui/crates/worth-ui-certification/tests/fixtures/topology_negative/inspection_role_purity_drift/crates/worth-ui-inspection/src/target/**
 !crates/worth-runtime-bridge/src/input/envelope/target/
 !crates/worth-runtime-bridge/src/input/envelope/target/native_basis.rs
+!workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/causal_inspection/application_inspection/target/
+!workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/causal_inspection/application_inspection/target/**
+!workspaces/worth-query/crates/worth-query-execution/src/court_doors_for_test/domain_computation/primary_graph/causal_inspection/application_inspection/target/
+!workspaces/worth-query/crates/worth-query-execution/src/court_doors_for_test/domain_computation/primary_graph/causal_inspection/application_inspection/target/**
 
 # AI / agent state
 .gemini/
