@@ -159,8 +159,7 @@ def main(argv=None):
         print(f'{update_callers(root)} control-callers lines added')
     elif args.step == 'bodies':
         from src_door_bodies import body_check
-        reports = sorted((root / 'plans/query-split/stage1').glob('src-court-doors-members-*.json'))
-        result = body_check(root, args.base, reports)
+        result = body_check(root, args.base)
         write_report(args.report, 'bodies', {k: v for k, v in result.items() if isinstance(v, list)})
         print(json.dumps({k: (len(v) if isinstance(v, list) else v) for k, v in result.items()}))
         return 1 if result['missing'] or result['extra'] else 0

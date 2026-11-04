@@ -104,6 +104,21 @@ class DoorBodyTests(unittest.TestCase):
                 path.write_text(text)
             self.assertEqual(normalized_doors(root), {})
 
+    def test_body_check_reads_renames_from_the_door_files(self):
+        import tempfile
+        from pathlib import Path
+        from src_door_bodies import LIBRARY, door_renames
+        doors = ('impl A {\n    #[doc(hidden)]\n    pub fn get_for_test(&self) -> u8 {\n        Self::get(self)\n    }\n'
+                 '    pub fn f_mut_for_test(&mut self) -> &mut u8 {\n        &mut self.f\n    }\n'
+                 '    pub fn s_into_for_test(self) -> u8 {\n        self.s\n    }\n'
+                 '    pub fn into_parts_for_test(self) -> (u8, u8) {\n        (self.f, self.s)\n    }\n}\n')
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / LIBRARY / 'm').mkdir(parents=True)
+            (root / LIBRARY / 'm' / 'x_court_doors_for_test.rs').write_text(doors)
+            self.assertEqual(door_renames(root), {'get_for_test': ('get', 'method'), 'f_mut_for_test': ('f', 'field'),
+                                                  's_into_for_test': ('s', 'into')})
+
     def test_only_generated_door_rewrites_are_reversed(self):
         from src_door_bodies import without_doors
         renames = {'get_for_test': ('get', 'method'), 'f_for_test': ('f', 'field')}

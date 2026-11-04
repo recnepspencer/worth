@@ -11,8 +11,8 @@ body still changes its digest. Item doors only change paths, which the move's no
 already reduces to their last segment.
 """
 from collections import Counter
-import json
 from pathlib import Path
+import re
 import subprocess
 
 from rust_source import tokens
@@ -23,28 +23,36 @@ LIBRARY = 'workspaces/worth-query/crates/worth-query-execution/src'
 CRATES = 'workspaces/worth-query/crates'
 
 
-def door_renames(reports):
-    """{generated door identifier: (original name, 'method' | 'field')} from member reports."""
+def door_files(root):
+    library = root / LIBRARY
+    return sorted(set(library.rglob('court_doors_for_test.rs')) | set(library.rglob('*_court_doors_for_test.rs')))
+
+
+DOOR = re.compile(r'pub fn (\w+)_for_test\b[^{]*\{\s*(.*?)\s*\}\n', re.S)
+
+
+def door_renames(root):
+    """{generated door identifier: (original name, 'method' | 'field' | 'into')}, read from the
+    door files themselves: a door is reversed only when its body is the plain delegation the
+    generator writes (`Self::m(..)`, `&self.f`, `&mut self.f`, `self.f`)."""
     renames = {}
-    for report in reports:
-        data = json.loads(Path(report).read_text(encoding='utf-8'))
-        for entry in data.get('method_doors', []):
-            name = entry.rsplit('::', 1)[-1]
-            renames[name + '_for_test'] = (name, 'method')
-        for entry in data.get('field_into_doors', []):
-            field = entry.split('.')[-1]
-            renames[field + '_into_for_test'] = (field, 'into')
-        for entry in data.get('field_doors', []):
-            field = entry.split('.')[-1].split(' ')[0]
-            renames[field + ('_mut_for_test' if entry.endswith('(mut)') else '_for_test')] = (field, 'field')
+    for path in door_files(root):
+        for name, body in DOOR.findall(path.read_text(encoding='utf-8')):
+            if re.match(rf'Self::{re.escape(name)}(::<.*?>)?\(', body, re.S):
+                renames[name + '_for_test'] = (name, 'method')
+            elif body == f'&self.{name}':
+                renames[name + '_for_test'] = (name, 'field')
+            elif name.endswith('_mut') and body == f'&mut self.{name[:-4]}':
+                renames[name + '_for_test'] = (name[:-4], 'field')
+            elif name.endswith('_into') and body == f'self.{name[:-5]}':
+                renames[name + '_for_test'] = (name[:-5], 'into')
     return renames
 
 
 def constructor_orders(root):
     """{struct name: (named, field order)} for every generated `new_for_test` door."""
-    import re
     orders = {}
-    for path in sorted((root / LIBRARY).rglob('court_doors_for_test.rs')):
+    for path in door_files(root):
         text = path.read_text(encoding='utf-8')
         for block in re.finditer(r'impl(?:<[^{]*?>)?\s+(\w+)[^{]*\{\s*#\[doc\(hidden\)\]\s*pub fn new_for_test\(([^)]*)\)', text):
             params = [p.split(':')[0].strip() for p in block.group(2).split(',') if ':' in p]
@@ -177,8 +185,8 @@ def current_sources(root):
             yield path.read_text(encoding='utf-8'), str(path.relative_to(root))
 
 
-def body_check(root, base, reports):
-    renames = door_renames(reports)
+def body_check(root, base):
+    renames = door_renames(root)
     orders = constructor_orders(root)
     before = multiset(base_sources(root, base), renames, orders)
     after = multiset(current_sources(root), renames, orders)
