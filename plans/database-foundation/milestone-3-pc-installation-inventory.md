@@ -370,3 +370,35 @@ Boundary-check now reports exactly the seven unchanged P-A-assigned BC9002 paths
 the three first-review findings are absent. The prior ten-finding log and failed
 private-constructor check remain in the evidence index. No broad or ignored lane
 is run for this correction. The previously qualified D7 paths are unchanged.
+
+
+## Corrected scope after aaa145bf73: Relational-only installation
+
+The coordinator's phase-map ruling supersedes the earlier requests above:
+Phases 3/4 admit only owner-proven InitialEmpty Signal and Bridge baseline.
+Producer, conditional and current resource-pool installation all allocate
+Signal/Bridge nodes, so they must be refused as unsupported seeds before Home
+creation. Nonempty producer/conditional/resource registries are not installed
+in this lane and their retirement is not part of this phase. Accepted outputs,
+same-build reuse and demand regeneration belong to Phase 6, not D12. D16 and
+durable sibling creation still start only after `D12 ADMISSION LANDED`.
+
+The current slice derives requirements once from the contribution contracts and
+schema resource declarations, before configuration or package/runtime creation.
+It consumes Host's existing exhaustive D15 support policy. The typed preparation
+refusal carries the existing durable-state admission family and support phase.
+Memory installation supplies no directory policy. Shared installation preflight
+seals handlers and validates resources/indexes; both recipes consume the existing
+resource installer and the same final registry/index transfer owner. An admitted
+empty Home resource batch needs no unsealed Bridge. Registries are transferred
+and consumed with their original runtime; none is cleared to manufacture close.
+
+Plan, complete input inventory and requirement map:
+[milestone-3-pc-relational-only-installation.md](milestone-3-pc-relational-only-installation.md).
+The producer directory court remains byte-for-byte unchanged, including every
+assertion and its ordinary test registration. No later-phase gate was found in
+nextest, CI/test-cost scripts, boundary config or its court; exact search and
+configuration evidence is in `target/lane-evidence/pc-relational-only-gate-inventory.log`.
+The coordinator clarification is pending. No ignore, cfg, feature or new filter
+convention is invented. Full Phase 3/4 gate completion cannot be claimed while
+that ordinary later-phase court remains ungated.

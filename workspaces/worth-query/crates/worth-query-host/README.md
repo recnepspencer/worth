@@ -24,6 +24,17 @@ branch. This README covers the host's deeper contracts.
 
 ## Directory Home publication custody
 
+Phases 3 and 4 support Relational-only Directory Homes: an owner-proven
+InitialEmpty Signal root and Bridge baseline. Declared producers, conditionals
+and resource pools require authored Signal/Bridge definitions and refuse during
+preparation with `WorthQueryInMemoryApplicationDenial::UnsupportedSeed`, carrying
+the existing `WorthQueryDurableStateAdmissionDenial::Unsupported` family and
+support phase. Refusal precedes contribution configuration, initialization and
+physical Home creation. MemoryOnly retains its ordinary installation behavior.
+Changing the build UUID with the same supported program/schema preserves the
+authored Home and history without executing a supplier. Accepted-output reuse
+and demand regeneration belong to Phase 6, after authored Signal/Bridge support.
+
 `WorthQueryApplicationHomeRequest::with_authorization_time_source(source)`
 installs a trusted `WorthQueryRuntimeTimeSource` for capability admission and
 revalidation. It applies to MemoryOnly and Directory Homes, including reopen.

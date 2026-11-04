@@ -4,6 +4,7 @@ use crate::equality_type_id::EqualityTypeId as TypeId;
 mod assembly;
 pub(in crate::domain_computation::primary_graph) mod home_attachment;
 mod input;
+mod owned_contributions;
 use super::{
     WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrimaryGraphBootstrap,
     WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
@@ -64,13 +65,10 @@ where
         conditional_evaluation_budget,
     } = input;
     validate_application_schema(&runtime, &installed_schema)?;
-    bootstrap.resources.validate_complete(&installed_schema)?;
+    let mutation_handlers = owned_contributions::preflight(&bootstrap, &installed_schema)?;
     let managed_indexes = bootstrap.managed_indexes.take_complete(&installed_schema)?;
     let resources = std::mem::take(&mut bootstrap.resources);
     let mutation_projection = bootstrap.retain_invariant_projection_authority();
-    let mutation_handlers = bootstrap
-        .mutation_handlers
-        .seal(&installed_schema, bootstrap.graph.binding_identity())?;
     let authorization = compile_authorization(&bootstrap, &installed_schema)?;
     let mut graph = publish_application_graph(
         phase,
@@ -83,7 +81,7 @@ where
     )?;
     let resources = resources.install(
         &phase.execution_request(),
-        graph.bridge.conditional_builder(),
+        Some(graph.bridge.conditional_builder()),
         graph.primary_provider.application_resource_support_ref(),
     )?;
     let graph = seal_application_graph(graph)?;
@@ -99,8 +97,7 @@ where
         Default::default(),
         Default::default(),
     )?;
-    application.conditional_cleanup.resources = resources;
-    application.managed_indexes = managed_indexes;
+    owned_contributions::transfer(&mut application, resources, managed_indexes);
     Ok(application)
 }
 pub(in crate::domain_computation::primary_graph) fn publish_application_runtime_with_conditionals<
@@ -134,9 +131,7 @@ where
     } = input;
     validate_application_schema(&runtime, &installed_schema)
         .map_err(super::super::conditional_operation::publication_denial)?;
-    bootstrap
-        .resources
-        .validate_complete(&installed_schema)
+    let mutation_handlers = owned_contributions::preflight(&bootstrap, &installed_schema)
         .map_err(super::super::conditional_operation::publication_denial)?;
     let managed_indexes = bootstrap
         .managed_indexes
@@ -144,10 +139,6 @@ where
         .map_err(super::super::conditional_operation::publication_denial)?;
     let resources = std::mem::take(&mut bootstrap.resources);
     let mutation_projection = bootstrap.retain_invariant_projection_authority();
-    let mutation_handlers = bootstrap
-        .mutation_handlers
-        .seal(&installed_schema, bootstrap.graph.binding_identity())
-        .map_err(super::super::conditional_operation::publication_denial)?;
     super::super::conditional_operation::require_complete_binding_inventory(
         expected_conditional_bindings,
         &bindings,
@@ -206,7 +197,7 @@ where
     let resources = resources
         .install(
             &phase.execution_request(),
-            graph.bridge.conditional_builder(),
+            Some(graph.bridge.conditional_builder()),
             graph.primary_provider.application_resource_support_ref(),
         )
         .map_err(super::super::conditional_operation::publication_denial)?;
@@ -225,8 +216,7 @@ where
         output_readiness_routes,
     )
     .map_err(super::super::conditional_operation::publication_denial)?;
-    application.conditional_cleanup.resources = resources;
-    application.managed_indexes = managed_indexes;
+    owned_contributions::transfer(&mut application, resources, managed_indexes);
     conditional_operations.reconstruct_all(&application)?;
     conditional_operations.reconcile_all(&mut application.bridge.conditional_lifecycle())?;
     *application

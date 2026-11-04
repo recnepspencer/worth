@@ -94,6 +94,7 @@ pub(super) fn prepared(
         build(),
         limits(),
         None,
+        |_, _| panic!("the Relational-only fixture has no authored component seed"),
     )
     .unwrap();
     let expected = query
@@ -258,6 +259,7 @@ pub(super) fn meaning() -> PreparedHomeApplication<HomeIdentitySchema, HomeProgr
         build(),
         limits(),
         None,
+        |_, _| panic!("the Relational-only fixture has no authored component seed"),
     )
     .unwrap()
 }

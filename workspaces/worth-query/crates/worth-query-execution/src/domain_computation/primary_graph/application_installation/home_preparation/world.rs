@@ -113,18 +113,15 @@ where
         QueryHomeWorldAttachmentRefused<Schema, Program>,
     > {
         let prepared = (|| {
-            let (provider, participation, authorization, handlers) =
+            let (provider, participation, authorization, handlers, resources) =
                 home_attachment::preflight_home_application(
                     phase,
-                    &self.bootstrap,
+                    &mut self.bootstrap,
                     &self.state.runtime,
                     &self.state.authority,
                     &self.state.installed,
                     root.basis().relational_basis(),
                 )?;
-            self.bootstrap
-                .managed_indexes
-                .validate_complete(&self.state.installed)?;
             self.bootstrap.readmit_home_initial_program(
                 phase,
                 &root,
@@ -161,10 +158,11 @@ where
                 participation,
                 authorization,
                 handlers,
+                resources,
                 product,
             ))
         })();
-        let (publication, provider, participation, authorization, handlers, product) =
+        let (publication, provider, participation, authorization, handlers, resources, product) =
             match prepared {
                 Ok(prepared) => prepared,
                 Err(cause) => {
@@ -203,10 +201,11 @@ where
                 None => crate::domain_computation::authorization::WorthQueryRuntimeClock::system(),
             },
             handlers,
+            resources,
+            managed_indexes,
             bridge,
             product,
         );
-        application.managed_indexes = managed_indexes;
         application.program_support = Some(
             super::super::super::program_occurrence::WorthQueryInstalledProgramSupport::installed(
                 state.support.roster,
