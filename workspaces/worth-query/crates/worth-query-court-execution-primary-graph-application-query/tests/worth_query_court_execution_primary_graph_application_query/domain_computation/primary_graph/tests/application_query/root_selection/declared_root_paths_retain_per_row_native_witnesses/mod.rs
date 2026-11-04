@@ -1,14 +1,12 @@
 //! declared root paths retain per row native witnesses.
-
 pub use crate::domain_computation::primary_graph::tests::application_query::root_selection::*;
 pub use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenialKind;
 pub use worth_query_execution::facade::domain_computation::WorthQuerySourceExpectationDenialKind;
-
+use worth_query_execution::publication_boundary::program_publication_access;
 #[test]
 fn declared_root_paths_retain_per_row_native_witnesses() {
     let host_request = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
     let world = installed_authorization_world(true);
     let request = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
@@ -107,7 +105,6 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
                 .unwrap()
         })
         .expect("the fixture read owns its installed host call");
-
     assert_eq!(
         result
             .rows()
@@ -160,18 +157,13 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
         (*first.adjacencies[0].relation_kind_for_test()),
         (*second.adjacencies[0].relation_kind_for_test())
     );
-
     let result = result.into_admitted_disclosed().into_output_demand_source();
     let dependencies = world
         .application
         .with_host_advancement(|phase| {
             world
                 .selected_product(&phase.test_host_request_for_test())
-                .retain_query_dependencies(
-                    &phase,
-                    &worth_query_execution::publication_boundary::program_publication_access(),
-                    &result,
-                )
+                .retain_query_dependencies(&phase, &program_publication_access(), &result)
                 .expect("the complete sealed pairing is retained")
         })
         .unwrap();
@@ -187,7 +179,7 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
             selected
                 .require_current_required_set(
                     &phase,
-                    &worth_query_execution::publication_boundary::program_publication_access(),
+                    &program_publication_access(),
                     &request,
                     std::iter::empty(),
                     &serial_retained,
@@ -198,7 +190,7 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
             selected
                 .require_current_required_set(
                     &phase,
-                    &worth_query_execution::publication_boundary::program_publication_access(),
+                    &program_publication_access(),
                     &request,
                     std::iter::empty(),
                     &dependencies,
@@ -207,7 +199,7 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
             selected
                 .require_current_required_set(
                     &phase,
-                    &worth_query_execution::publication_boundary::program_publication_access(),
+                    &program_publication_access(),
                     &request,
                     std::iter::empty(),
                     &dependencies,
@@ -215,10 +207,10 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
                 .unwrap();
         })
         .unwrap();
-    crate::domain_computation::primary_graph::tests::application_query::root_selection::declared_root_paths_retain_per_row_native_witnesses::join_interruption::assert_original_join_cancellation(
+    join_interruption::assert_original_join_cancellation(
         &world,
         &dependencies,
-        &worth_query_execution::publication_boundary::program_publication_access(),
+        &program_publication_access(),
     );
     let graph = (*world.application.runtime_for_test())
         .primary_graph()
@@ -242,7 +234,6 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
             request_execution,
         )
         .expect("ordinary source binding retains root-path native facts");
-
     assert_eq!(
         source_facts
             .iter()
@@ -356,10 +347,10 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
         })
         .expect("the fixture read owns its installed host call");
     world.application.with_host_advancement(|phase| {
-        let capture = current.retain_query_dependencies(&phase, &worth_query_execution::publication_boundary::program_publication_access(), &result).err().unwrap();
+        let capture = current.retain_query_dependencies(&phase, &program_publication_access(), &result).err().unwrap();
         assert!(matches!(capture, worth_query_execution::publication_boundary::discovery_currentness::WorthQueryRequiredSetCurrentnessDenial::Source(ref cause)
             if cause.kind() == WorthQuerySourceExpectationDenialKind::ForeignOperation));
-        let denial = current.require_current_required_set(&phase, &worth_query_execution::publication_boundary::program_publication_access(), &request,
+        let denial = current.require_current_required_set(&phase, &program_publication_access(), &request,
             std::iter::empty(), &dependencies).unwrap_err();
         assert!(matches!(denial, worth_query_execution::publication_boundary::discovery_currentness::WorthQueryRequiredSetCurrentnessDenial::Output(ref cause)
             if cause.kind() == WorthQueryOutputDemandDenialKind::Superseded), "real native adjacency ABA refuses the complete original pairing: {denial:?}");
@@ -404,6 +395,5 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
         "rows reached through the same native adjacency granule both become stale"
     );
 }
-
 #[path = "join_interruption/mod.rs"]
 pub mod join_interruption;
