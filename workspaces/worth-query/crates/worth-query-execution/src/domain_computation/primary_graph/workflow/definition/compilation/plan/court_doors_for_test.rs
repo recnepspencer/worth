@@ -93,3 +93,42 @@ impl CompiledWorkflowPublicationPlan {
         }
     }
 }
+
+impl CompiledWorkflowConnection {
+    #[doc(hidden)]
+    pub fn new_for_test(
+        entity: EntityId,
+        source: EntityId,
+        target: EntityId,
+        kind: Arc<CompiledWorkflowConnectionKind>,
+    ) -> Self {
+        Self {
+            entity,
+            source,
+            target,
+            kind,
+        }
+    }
+}
+
+impl CompiledWorkflowNode {
+    #[doc(hidden)]
+    pub fn new_for_test(entity: EntityId, meaning: Arc<CompiledWorkflowNodeMeaning>) -> Self {
+        Self { entity, meaning }
+    }
+}
+
+impl CompiledWorkflowSemanticConnection {
+    #[doc(hidden)]
+    pub fn new_for_test(
+        source: usize,
+        target: usize,
+        kind: Arc<CompiledWorkflowConnectionKind>,
+    ) -> Self {
+        Self {
+            source,
+            target,
+            kind,
+        }
+    }
+}

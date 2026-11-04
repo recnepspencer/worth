@@ -13,7 +13,11 @@ fn completed_multi_root_custody_waits_for_token_and_active_record() {
     let mut state = DemandRegistryState::default();
     state.source_custody.insert(
         commit.clone(),
-        SourceCustody::new_for_test(Default::default(), occurrence, PreparedOutputRootKind::Discovered(TypeId::of_for_test::<()>()), None, None, Some(vec![first.clone(), second.clone()]), vec![(*first.identity_for_test()).clone(), (*second.identity_for_test()).clone()], Vec::new(), None, 1, true),
+        {
+// Bound in the original literal order, passed in the door's.
+let (cleanup, occurrence, root_kind, source, discovery, bound_sources, consumed_sources, retired_sources, retired, token_count, completed) = (Default::default(), occurrence, PreparedOutputRootKind::Discovered(TypeId::of_for_test::<()>()), None, None, Some(vec![first.clone(), second.clone()]), vec![(*first.identity_for_test()).clone(), (*second.identity_for_test()).clone()], Vec::new(), None, 1, true);
+SourceCustody::new_for_test(occurrence, root_kind, source, discovery, consumed_sources, retired_sources, bound_sources, retired, token_count, cleanup, completed)
+},
     );
     state.note_custody_for_test(&commit);
     state.prune_completed_custody().unwrap();
@@ -55,10 +59,14 @@ fn fully_superseded_multi_root_custody_prunes_after_its_last_token() {
     let mut state = DemandRegistryState::default();
     state.source_custody.insert(
         commit.clone(),
-        SourceCustody::new_for_test(Default::default(), receipt.product_branch().occurrence_for_test(), PreparedOutputRootKind::Discovered(TypeId::of_for_test::<()>()), None, None, Some(vec![first.clone(), second.clone()]), Vec::new(), vec![
+        {
+// Bound in the original literal order, passed in the door's.
+let (cleanup, occurrence, root_kind, source, discovery, bound_sources, consumed_sources, retired_sources, retired, token_count, completed) = (Default::default(), receipt.product_branch().occurrence_for_test(), PreparedOutputRootKind::Discovered(TypeId::of_for_test::<()>()), None, None, Some(vec![first.clone(), second.clone()]), Vec::new(), vec![
                 ((*first.identity_for_test()).clone(), superseded.clone()),
                 ((*second.identity_for_test()).clone(), superseded),
-            ], None, 1, false),
+            ], None, 1, false);
+SourceCustody::new_for_test(occurrence, root_kind, source, discovery, consumed_sources, retired_sources, bound_sources, retired, token_count, cleanup, completed)
+},
     );
     state.note_custody_for_test(&commit);
     state.prune_completed_custody().unwrap();

@@ -51,10 +51,11 @@ pub fn fixture(
     state.install_required_member_for_test(member);
     state.source_custody.insert(
         commit,
-        SourceCustody::new_for_test(receipt.product_branch().occurrence_for_test(), PreparedOutputRootKind::Discovered(EqualityTypeId::of_for_test::<()>()), None, None, Some(vec![BoundOutputSource {
-                scope,
-                identity: (*newest.source_for_test()).clone(),
-            }]), vec![(*newest.source_for_test()).clone()], Vec::new(), None, 0, Default::default(), true),
+        {
+// Bound in the original literal order, passed in the door's.
+let (occurrence, root_kind, source, discovery, bound_sources, consumed_sources, retired_sources, retired, token_count, cleanup, completed) = (receipt.product_branch().occurrence_for_test(), PreparedOutputRootKind::Discovered(EqualityTypeId::of_for_test::<()>()), None, None, Some(vec![BoundOutputSource::new_for_test(scope, (*newest.source_for_test()).clone())]), vec![(*newest.source_for_test()).clone()], Vec::new(), None, 0, Default::default(), true);
+SourceCustody::new_for_test(occurrence, root_kind, source, discovery, consumed_sources, retired_sources, bound_sources, retired, token_count, cleanup, completed)
+},
     );
     retain_owned_key(&mut state, &dependent);
     retain_owned_key(&mut state, &newest);

@@ -51,7 +51,7 @@ fn registry_product_retirement_prunes_rows_and_their_notes_together() {
         assert_eq!((*state.closed_cleanup_for_test()).len_for_test(), 3);
         assert!((*state.closed_cleanup_for_test()).valid_order_for_test());
     }
-    drop(WorthQueryOutputDemandInterest::new_for_test(held, false, WorthQueryOutputDemandNotifications { wake }, registry.clone()));
+    drop(WorthQueryOutputDemandInterest::new_for_test(held, false, WorthQueryOutputDemandNotifications::new_for_test(wake), registry.clone()));
     registry.drain_closed_cleanup_admitted().unwrap();
     let state = (*registry.state_for_test()).lock().unwrap();
     assert!((*state.records_for_test()).is_empty_for_test());
@@ -84,9 +84,13 @@ fn registry_product_retirement_sweep_names_its_registry_bound() {
                     .committed_product_publication()
                     .composite_commit()
                     .clone(),
-                SourceCustody::new_for_test(receipt.product_branch().occurrence_for_test(), PreparedOutputRootKind::Discovered(
+                {
+// Bound in the original literal order, passed in the door's.
+let (occurrence, root_kind, source, discovery, bound_sources, consumed_sources, retired_sources, retired, token_count, cleanup, completed) = (receipt.product_branch().occurrence_for_test(), PreparedOutputRootKind::Discovered(
                         worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId::of_for_test::<()>(),
-                    ), None, None, None, Vec::new(), Vec::new(), None, 1, Default::default(), false),
+                    ), None, None, None, Vec::new(), Vec::new(), None, 1, Default::default(), false);
+SourceCustody::new_for_test(occurrence, root_kind, source, discovery, consumed_sources, retired_sources, bound_sources, retired, token_count, cleanup, completed)
+},
             );
         }
         drop(state);

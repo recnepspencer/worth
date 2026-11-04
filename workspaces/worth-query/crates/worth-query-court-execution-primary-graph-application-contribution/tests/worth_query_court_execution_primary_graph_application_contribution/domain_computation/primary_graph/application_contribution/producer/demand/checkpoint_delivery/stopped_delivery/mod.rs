@@ -100,7 +100,7 @@ fn a_terminal_delivery_stop_releases_the_head_with_a_peer_still_present() {
         let (finish, claim, checkpoint) = registry.prepare_selected_checkpoint_finish_for_test(&owner).unwrap().claim_for_test().unwrap().unwrap();
         let Checkpoint::Published { receipt, delivery, ready_backing } = checkpoint else { panic!("published checkpoint") };
         let stop = world.application.deliver_output_checkpoint_with_finish_for_test(&phase, "terminal-delivery",
-            receipt, delivery, ready_backing, true, Some(PreparedSelectedDelivery { lowering: &lowering, ordinal: 0, preserved: false }),
+            receipt, delivery, ready_backing, true, Some(PreparedSelectedDelivery::new_for_test(&lowering, 0, false)),
             |checkpoint, denial| {
                 assert!(finish.finish_for_test(claim, checkpoint, denial.as_ref()).is_ok());
                 match denial { Some(stop) => Err(stop), None => Ok(WorthQueryOutputDemandAdvance::Pending) }

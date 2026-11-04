@@ -276,12 +276,7 @@ pub fn mixed_correspondence(
             ),
         ]
         .into_iter()
-        .map(|(role, posture, entity)| WorthQueryCheckpointOutputRole {
-            role: role.into(),
-            posture,
-            entity_name: "Account".into(),
-            entity,
-        })
+        .map(|(role, posture, entity)| WorthQueryCheckpointOutputRole::new_for_test(role.into(), posture, "Account".into(), entity))
         .collect::<Vec<_>>(),
         |_| Some(TypeId::of_for_test::<()>()),
         request_execution,

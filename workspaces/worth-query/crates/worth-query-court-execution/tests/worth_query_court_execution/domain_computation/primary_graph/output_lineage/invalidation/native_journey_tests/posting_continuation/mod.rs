@@ -142,17 +142,7 @@ fn native_projection_continuation_keeps_exact_bindings_and_rejects_source_races(
     });
 
     let second = RecordedSettlementIdentity::retain_for_test(&source, coordinate, 1);
-    let registration = |identity, body, continuation| SettlementRegistration {
-        computation: None,
-        work_membership: None,
-        identity,
-        facts: RetainedSourceFacts::for_test_for_test(false, body).with_posting_continuation_for_test(continuation),
-        output_facts: None,
-        read_basis: before.clone(),
-        stale_at_read_basis: OrdSet::new(),
-        requirement: None,
-        upstream: OrdSet::new(),
-    };
+    let registration = |identity, body, continuation| SettlementRegistration::new_for_test(None, None, identity, RetainedSourceFacts::for_test_for_test(false, body).with_posting_continuation_for_test(continuation), None, before.clone(), OrdSet::new(), None, OrdSet::new());
     // Exact completed-body correspondence, not data equality, permits sharing.
     owner
         .register_settlement_for_test(registration(

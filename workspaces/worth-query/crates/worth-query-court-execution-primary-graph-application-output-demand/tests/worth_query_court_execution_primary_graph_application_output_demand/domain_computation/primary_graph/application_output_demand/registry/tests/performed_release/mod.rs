@@ -40,7 +40,11 @@ fn unheld_performed_sources_release_the_oldest_in_commit_order() {
         let source = sources[index].clone();
         state.source_custody.insert(
             (*source.change_for_test()).product_commit().clone(),
-            SourceCustody::new_for_test(occurrence, PreparedOutputRootKind::Required(TypeId::of_for_test::<()>()), Some(source), None, None, Vec::new(), Vec::new(), None, 0, Default::default(), false),
+            {
+// Bound in the original literal order, passed in the door's.
+let (occurrence, root_kind, source, discovery, bound_sources, consumed_sources, retired_sources, retired, token_count, cleanup, completed) = (occurrence, PreparedOutputRootKind::Required(TypeId::of_for_test::<()>()), Some(source), None, None, Vec::new(), Vec::new(), None, 0, Default::default(), false);
+SourceCustody::new_for_test(occurrence, root_kind, source, discovery, consumed_sources, retired_sources, bound_sources, retired, token_count, cleanup, completed)
+},
         );
     }
     for slot in 1..=3 {

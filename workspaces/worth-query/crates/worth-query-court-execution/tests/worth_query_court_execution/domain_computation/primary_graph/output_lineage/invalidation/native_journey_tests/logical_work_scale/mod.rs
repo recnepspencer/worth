@@ -93,12 +93,7 @@ pub fn run_population(population: usize) -> WorthQueryNativeMarkingWork {
             committed.created_entity(reference).expect("actual Native create correspondence")).collect();
         release_test_commit_snapshot(runtime, &committed);
         let (before_handle, before) = snapshot(runtime);
-        let source = |entity, binding| SemanticSource {
-            runtime_authority: (*world.application.runtime_for_test()).authority_identity().as_u64(),
-            schema: (*world.application.installed_schema_for_test()).binding_identity().clone(),
-            scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity),
-            output_binding: binding,
-        };
+        let source = |entity, binding| SemanticSource::new_for_test((*world.application.runtime_for_test()).authority_identity().as_u64(), (*world.application.installed_schema_for_test()).binding_identity().clone(), worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity), binding);
         let identities: Vec<_> = entities.iter().map(|entity|
             RecordedSettlementIdentity::retain_for_test(&source(*entity, OutputBindingIdentity::declared_for_test("LabelOutput")), coordinate, 0)).collect();
         // This oracle reads Native revisions directly; it does not call the

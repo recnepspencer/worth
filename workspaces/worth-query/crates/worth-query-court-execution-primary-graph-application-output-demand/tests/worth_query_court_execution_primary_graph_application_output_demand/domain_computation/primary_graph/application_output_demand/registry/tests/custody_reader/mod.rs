@@ -43,11 +43,19 @@ fn registry_binding_reader_ignores_logically_absent_completed_custody() {
             let mut state = (*registry.state_for_test()).lock().unwrap();
             state.source_custody.insert(
                 current_commit.clone(),
-                SourceCustody::new_for_test(occurrence, PreparedOutputRootKind::Discovered(EqualityTypeId::of_for_test::<()>()), Some(source.clone()), None, None, Vec::new(), Vec::new(), None, 1, Default::default(), false),
+                {
+// Bound in the original literal order, passed in the door's.
+let (occurrence, root_kind, source, discovery, bound_sources, consumed_sources, retired_sources, retired, token_count, cleanup, completed) = (occurrence, PreparedOutputRootKind::Discovered(EqualityTypeId::of_for_test::<()>()), Some(source.clone()), None, None, Vec::new(), Vec::new(), None, 1, Default::default(), false);
+SourceCustody::new_for_test(occurrence, root_kind, source, discovery, consumed_sources, retired_sources, bound_sources, retired, token_count, cleanup, completed)
+},
             );
             state.source_custody.insert(
                 completed_commit.clone(),
-                SourceCustody::new_for_test(occurrence, PreparedOutputRootKind::Discovered(EqualityTypeId::of_for_test::<()>()), None, None, Some(vec![newer.clone()]), vec![(*newer.identity_for_test()).clone()], Vec::new(), None, 0, Default::default(), true),
+                {
+// Bound in the original literal order, passed in the door's.
+let (occurrence, root_kind, source, discovery, bound_sources, consumed_sources, retired_sources, retired, token_count, cleanup, completed) = (occurrence, PreparedOutputRootKind::Discovered(EqualityTypeId::of_for_test::<()>()), None, None, Some(vec![newer.clone()]), vec![(*newer.identity_for_test()).clone()], Vec::new(), None, 0, Default::default(), true);
+SourceCustody::new_for_test(occurrence, root_kind, source, discovery, consumed_sources, retired_sources, bound_sources, retired, token_count, cleanup, completed)
+},
             );
             drop(state);
             registry.complete_prepared_source_for_test(&completed);

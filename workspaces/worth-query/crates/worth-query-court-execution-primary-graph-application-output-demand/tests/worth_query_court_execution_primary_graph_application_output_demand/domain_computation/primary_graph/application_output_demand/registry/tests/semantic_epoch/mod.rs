@@ -170,10 +170,11 @@ fn recovery_rejoins_the_older_key_that_retains_newer_semantic_custody() {
     );
     state.source_custody.insert(
         commit.clone(),
-        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::SourceCustody::new_for_test(occurrence, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::source_custody::PreparedOutputRootKind::Discovered(TypeId::of_for_test::<()>()), None, None, Some(vec![worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::BoundOutputSource {
-                scope,
-                identity: (*retained.source_for_test()).clone(),
-            }]), vec![(*retained.source_for_test()).clone()], Vec::new(), None, 1, Default::default(), false),
+        {
+// Bound in the original literal order, passed in the door's.
+let (occurrence, root_kind, source, discovery, bound_sources, consumed_sources, retired_sources, retired, token_count, cleanup, completed) = (occurrence, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::source_custody::PreparedOutputRootKind::Discovered(TypeId::of_for_test::<()>()), None, None, Some(vec![worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::BoundOutputSource::new_for_test(scope, (*retained.source_for_test()).clone())]), vec![(*retained.source_for_test()).clone()], Vec::new(), None, 1, Default::default(), false);
+worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::SourceCustody::new_for_test(occurrence, root_kind, source, discovery, consumed_sources, retired_sources, bound_sources, retired, token_count, cleanup, completed)
+},
     );
     drop(state);
 

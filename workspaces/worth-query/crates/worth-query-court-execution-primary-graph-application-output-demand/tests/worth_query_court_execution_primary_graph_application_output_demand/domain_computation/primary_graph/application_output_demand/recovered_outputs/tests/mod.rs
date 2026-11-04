@@ -38,10 +38,7 @@ pub fn unrelated_restored_selection(population: u64) {
         .unwrap();
     metadata.slots_for_test::<Vec<worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryCheckpointOutputRole>>((population + 1) as usize, &execution).unwrap();
     let records = (0..=population)
-            .map(|number| WorthQueryReadmittedAcceptedOutput {
-                checkpoint: WorthQueryAcceptedOutputCheckpointIdentity::new_for_test(worth_relational::facade::mvcc::RequiredOutputProducingImplementation::from_checkpoint([0x11; 16], [0x22; 32]).unwrap(), ("producer".to_owned()).into(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture::Performed, [0x31; 32], scope, partition(number), None, [0x41; 32], (Vec::new()).into(), None, 0, None),
-                correspondence: Arc::clone(&correspondence),
-            })
+            .map(|number| WorthQueryReadmittedAcceptedOutput::new_for_test(WorthQueryAcceptedOutputCheckpointIdentity::new_for_test(worth_relational::facade::mvcc::RequiredOutputProducingImplementation::from_checkpoint([0x11; 16], [0x22; 32]).unwrap(), ("producer".to_owned()).into(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture::Performed, [0x31; 32], scope, partition(number), None, [0x41; 32], (Vec::new()).into(), None, 0, None), Arc::clone(&correspondence)))
             .collect();
     let recovered =
         WorthQueryRecoveredOutputs::from_records_for_test(records, metadata, &execution).unwrap();

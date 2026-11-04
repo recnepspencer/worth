@@ -24,11 +24,19 @@ pub fn retained_source(
         .unwrap();
     let source = WorthQueryPerformedOutputDemandSource::new_for_test(receipt, change, observation, None);
     let scope = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::source_custody::real_scope_and_occurrence().0;
-    SourceCustody::new_for_test((*source.receipt_for_test()).product_branch().occurrence_for_test(), PreparedOutputRootKind::Discovered(EqualityTypeId::of_for_test::<()>()), Some(source), None, Some(vec![BoundOutputSource { scope, identity }]), Vec::new(), Vec::new(), None, 1, Default::default(), false)
+    {
+// Bound in the original literal order, passed in the door's.
+let (occurrence, root_kind, source, discovery, bound_sources, consumed_sources, retired_sources, retired, token_count, cleanup, completed) = ((*source.receipt_for_test()).product_branch().occurrence_for_test(), PreparedOutputRootKind::Discovered(EqualityTypeId::of_for_test::<()>()), Some(source), None, Some(vec![BoundOutputSource::new_for_test(scope, identity)]), Vec::new(), Vec::new(), None, 1, Default::default(), false);
+SourceCustody::new_for_test(occurrence, root_kind, source, discovery, consumed_sources, retired_sources, bound_sources, retired, token_count, cleanup, completed)
+}
 }
 
 pub fn repeat_source(initial: &SourceCustody) -> SourceCustody {
-    SourceCustody::new_for_test((*initial.occurrence_for_test()), (*initial.root_kind_for_test()).clone(), (*initial.source_for_test()).clone(), None, (*initial.bound_sources_for_test()).clone(), Vec::new(), Vec::new(), None, 1, Default::default(), false)
+    {
+// Bound in the original literal order, passed in the door's.
+let (occurrence, root_kind, source, discovery, bound_sources, consumed_sources, retired_sources, retired, token_count, cleanup, completed) = ((*initial.occurrence_for_test()), (*initial.root_kind_for_test()).clone(), (*initial.source_for_test()).clone(), None, (*initial.bound_sources_for_test()).clone(), Vec::new(), Vec::new(), None, 1, Default::default(), false);
+SourceCustody::new_for_test(occurrence, root_kind, source, discovery, consumed_sources, retired_sources, bound_sources, retired, token_count, cleanup, completed)
+}
 }
 
 #[test]

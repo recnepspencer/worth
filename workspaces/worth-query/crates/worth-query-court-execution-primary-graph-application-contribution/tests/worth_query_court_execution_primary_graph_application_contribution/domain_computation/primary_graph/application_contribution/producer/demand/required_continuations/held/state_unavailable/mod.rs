@@ -16,12 +16,7 @@ fn absent_admitted_demand_refuses_with_required_successor_state_unavailable() {
     let principal = world.authenticate("alice", Duration::from_secs(60), &scope);
     // This is the emptied state after custody releases its admitted demand.
     // No fabricated interest, provenance or authority participates in the call.
-    let mut successor = TypedRequiredSuccessor::<IdentityExecutionSchema, RetainedFamily> {
-        demand: None,
-        pending_claim: None,
-        pending_provenance: None,
-        predecessor: None,
-    };
+    let mut successor = TypedRequiredSuccessor::<IdentityExecutionSchema, RetainedFamily>::new_for_test(None, None, None, None);
     world
         .application
         .with_host_advancement(|phase| {

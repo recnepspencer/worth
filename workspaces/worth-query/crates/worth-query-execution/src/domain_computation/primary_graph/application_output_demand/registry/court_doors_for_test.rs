@@ -746,3 +746,18 @@ impl DemandRecord {
         &mut self.wake
     }
 }
+
+impl WorthQueryReadmittedAcceptedOutput {
+    #[doc(hidden)]
+    pub fn new_for_test(
+        checkpoint: WorthQueryAcceptedOutputCheckpointIdentity,
+        correspondence: std::sync::Arc<
+            crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
+        >,
+    ) -> Self {
+        Self {
+            checkpoint,
+            correspondence,
+        }
+    }
+}

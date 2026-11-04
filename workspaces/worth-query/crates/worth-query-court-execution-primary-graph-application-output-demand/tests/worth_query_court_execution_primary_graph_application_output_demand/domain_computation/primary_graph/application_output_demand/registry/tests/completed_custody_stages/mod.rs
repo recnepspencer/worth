@@ -24,7 +24,11 @@ pub fn completed_stage(claimed_with_ready: bool) {
     let mut state = DemandRegistryState::default();
     state.source_custody.insert(
         commit.clone(),
-        SourceCustody::new_for_test(Default::default(), receipt.product_branch().occurrence_for_test(), PreparedOutputRootKind::Discovered(TypeId::of_for_test::<()>()), None, None, Some(vec![bound.clone()]), vec![bound.identity_into_for_test()], Vec::new(), None, 0, true),
+        {
+// Bound in the original literal order, passed in the door's.
+let (cleanup, occurrence, root_kind, source, discovery, bound_sources, consumed_sources, retired_sources, retired, token_count, completed) = (Default::default(), receipt.product_branch().occurrence_for_test(), PreparedOutputRootKind::Discovered(TypeId::of_for_test::<()>()), None, None, Some(vec![bound.clone()]), vec![bound.identity_into_for_test()], Vec::new(), None, 0, true);
+SourceCustody::new_for_test(occurrence, root_kind, source, discovery, consumed_sources, retired_sources, bound_sources, retired, token_count, cleanup, completed)
+},
     );
     let output = if claimed_with_ready {
         let completion = ReadyCompletion::for_test(WorthQueryCompletedOutputDemand::new_for_test(WorthQueryAcceptedOutputAuthority::Committed(receipt), worth_query_execution::facade::domain_computation::WorthQueryOutputReadinessDeliveryEvidence::without_execution_for_test()));

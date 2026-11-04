@@ -34,3 +34,20 @@ where
         )
     }
 }
+
+impl<'a> PreparedSelectedDelivery<'a> {
+    #[doc(hidden)]
+    pub fn new_for_test(
+        lowering: &'a std::sync::Arc<
+            worth_runtime_bridge::facade::BridgeInstalledConditionalLowering,
+        >,
+        ordinal: usize,
+        preserved: bool,
+    ) -> Self {
+        Self {
+            lowering,
+            ordinal,
+            preserved,
+        }
+    }
+}

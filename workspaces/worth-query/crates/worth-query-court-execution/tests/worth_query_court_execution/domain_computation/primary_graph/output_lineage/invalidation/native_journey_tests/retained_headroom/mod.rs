@@ -13,12 +13,7 @@ fn unrelated_publications_keep_shared_upstream_and_consumer_without_hypothetical
             .unwrap().entity_id_for_test();
         let (_, product, _) = selected.into_parts_for_test();
         let coordinate = ProductCoordinate::new_for_test(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation().get());
-        let source = |binding| SemanticSource {
-            runtime_authority: (*world.application.runtime_for_test()).authority_identity().as_u64(),
-            schema: (*world.application.installed_schema_for_test()).binding_identity(),
-            scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity),
-            output_binding: OutputBindingIdentity::declared_for_test(binding),
-        };
+        let source = |binding| SemanticSource::new_for_test((*world.application.runtime_for_test()).authority_identity().as_u64(), (*world.application.installed_schema_for_test()).binding_identity(), worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity), OutputBindingIdentity::declared_for_test(binding));
         let upstream = RecordedSettlementIdentity::retain_for_test(&source("StatusOutput"), coordinate, 0);
         let consumer = RecordedSettlementIdentity::retain_for_test(&source("DownstreamOutput"), coordinate, 0);
         let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();

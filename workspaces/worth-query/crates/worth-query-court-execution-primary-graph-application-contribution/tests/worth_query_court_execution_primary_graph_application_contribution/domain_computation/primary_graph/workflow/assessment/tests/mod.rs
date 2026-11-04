@@ -87,25 +87,7 @@ fn performed_entity_kind_dependency_uses_a_distinct_durable_shape() {
     let layout = primary.workflow();
     let dependent = entity(7);
     let kind = worth_relational::facade::identity::KindId::new(19);
-    let make_meaning = |fact| WorkflowAssessmentEvidenceMeaning {
-        identity: String::new(),
-        producer: String::new(),
-        family: String::new(),
-        query: String::new(),
-        parameter_type: String::new(),
-        result_type: String::new(),
-        binding: String::new(),
-        subject: dependent,
-        proposal_identity: String::new(),
-        coverage_identity: String::new(),
-        source_identity: String::new(),
-        passing: true,
-        publication_identity: String::new(),
-        output_content_identity: String::new(),
-        program_revision: String::new(),
-        retained_bytes: 0,
-        currentness_facts: std::sync::Arc::from([fact]),
-    };
+    let make_meaning = |fact| WorkflowAssessmentEvidenceMeaning::new_for_test(String::new(), String::new(), String::new(), String::new(), String::new(), String::new(), String::new(), dependent, String::new(), String::new(), String::new(), true, String::new(), String::new(), String::new(), 0, std::sync::Arc::from([fact]));
     let evidence = CreatedEntityRef {
         partition_id: worth_relational::facade::identity::PartitionId::main(),
         kind_id: (*layout.assessment_evidence.entity_kind_for_test()),

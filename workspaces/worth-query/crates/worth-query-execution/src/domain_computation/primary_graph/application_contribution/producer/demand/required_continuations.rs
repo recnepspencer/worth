@@ -366,3 +366,5 @@ fn capacity_denial() -> WorthQueryOutputDemandDenial {
         "required continuation exceeds retained capacity",
     )
 }
+
+mod court_doors_for_test;

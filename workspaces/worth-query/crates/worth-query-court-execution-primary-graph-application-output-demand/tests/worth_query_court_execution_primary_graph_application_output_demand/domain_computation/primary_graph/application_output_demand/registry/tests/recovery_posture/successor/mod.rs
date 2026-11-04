@@ -19,10 +19,7 @@ fn stale_ready_successor_admission_forces_a_new_execution_cycle() {
         { let __source_scope = Some(scope); let __wake = Arc::clone(&wake); let mut __base = record(
                 occurrence,
                 DemandState::Output(WorthQueryOutputProgress::new_for_test(
-                    WorthQueryOutputCheckpoint::Ready(ReadyCompletion::for_test(WorthQueryCompletedOutputDemand {
-                        authority: WorthQueryAcceptedOutputAuthority::Committed(receipt.clone()),
-                        readiness: worth_query_execution::facade::domain_computation::WorthQueryOutputReadinessDeliveryEvidence::for_test_for_test(),
-                    })),
+                    WorthQueryOutputCheckpoint::Ready(ReadyCompletion::for_test(WorthQueryCompletedOutputDemand::new_for_test(WorthQueryAcceptedOutputAuthority::Committed(receipt.clone()), worth_query_execution::facade::domain_computation::WorthQueryOutputReadinessDeliveryEvidence::for_test_for_test()))),
                 )),
                 1,
             ); *__base.source_scope_mut_for_test() = __source_scope; *__base.wake_mut_for_test() = __wake; __base },
@@ -70,12 +67,7 @@ fn stale_ready_successor_admission_forces_a_new_execution_cycle() {
         let mut state = (*registry.state_for_test()).lock().unwrap();
         let mut record = (*state.records_mut_for_test()).get_mut(&demand_key).unwrap();
         (*record.state_mut_for_test()) = DemandState::Running;
-        (*record.performed_source_mut_for_test()) = Some(WorthQueryPerformedOutputDemandSource {
-            receipt: performed,
-            change: Arc::new(change),
-            observation,
-            output_source_identity: None,
-        });
+        (*record.performed_source_mut_for_test()) = Some(WorthQueryPerformedOutputDemandSource::new_for_test(performed, Arc::new(change), observation, None));
     }
     registry.relinquish_execution(&replacement);
     let state = (*registry.state_for_test()).lock().unwrap();
@@ -144,10 +136,7 @@ fn failed_successor_admission_preserves_ready_custody() {
         { let __source_scope = Some(scope); let mut __base = record(
                 occurrence,
                 DemandState::Output(WorthQueryOutputProgress::new_for_test(
-                    WorthQueryOutputCheckpoint::Ready(ReadyCompletion::for_test(WorthQueryCompletedOutputDemand {
-                        authority: WorthQueryAcceptedOutputAuthority::Committed(receipt.clone()),
-                        readiness: worth_query_execution::facade::domain_computation::WorthQueryOutputReadinessDeliveryEvidence::for_test_for_test(),
-                    })),
+                    WorthQueryOutputCheckpoint::Ready(ReadyCompletion::for_test(WorthQueryCompletedOutputDemand::new_for_test(WorthQueryAcceptedOutputAuthority::Committed(receipt.clone()), worth_query_execution::facade::domain_computation::WorthQueryOutputReadinessDeliveryEvidence::for_test_for_test()))),
                 )),
                 1,
             ); *__base.source_scope_mut_for_test() = __source_scope; __base },

@@ -42,15 +42,7 @@ fn ready_output_reopens_and_only_its_exact_restored_predecessor_refreshes_it() {
             )
             .unwrap(), ("producer".to_owned()).into(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture::Performed, [1; 32], scope, [2; 32], None, [3; 32], (Vec::new()).into(), None, 0, None);
     let completion = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryCompletedOutputDemand::new_for_test(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryAcceptedOutputAuthority::Restored(
-            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::restoration::WorthQueryRestoredAcceptedOutput {
-                checkpoint,
-                correspondence: Arc::new(correspondence),
-                observation,
-                source_scope: scope,
-                source_identity: WorthQueryCheckpointSourceIdentity::new_for_test([1; 32]),
-                observed_source_facts: Arc::<[_]>::from([]).into(),
-                native_output_witness: None,
-            },
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::restoration::WorthQueryRestoredAcceptedOutput::new_for_test(checkpoint, Arc::new(correspondence), observation, scope, WorthQueryCheckpointSourceIdentity::new_for_test([1; 32]), Arc::<[_]>::from([]).into(), None),
         ), WorthQueryOutputReadinessDeliveryEvidence::without_execution_for_test());
     let wake = Arc::new(DemandWake::new_for_test(Mutex::new(0), Condvar::new()));
     (*(*registry.state_for_test()).lock().unwrap().records_mut_for_test()).insert_for_test(

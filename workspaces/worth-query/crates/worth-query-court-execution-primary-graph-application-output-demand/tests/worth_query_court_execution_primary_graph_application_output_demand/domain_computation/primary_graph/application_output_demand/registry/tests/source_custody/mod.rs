@@ -29,7 +29,11 @@ fn newer_root_retires_only_its_matching_source() {
         Some(Ordering::Equal)
     );
     assert_eq!(root_revision_order(&older, &sibling), None);
-    let mut custody = SourceCustody::new_for_test(occurrence, PreparedOutputRootKind::Discovered(TypeId::of_for_test::<()>()), None, None, Some(vec![older.clone(), sibling.clone()]), Vec::new(), Vec::new(), None, 0, Default::default(), false);
+    let mut custody = {
+// Bound in the original literal order, passed in the door's.
+let (occurrence, root_kind, source, discovery, bound_sources, consumed_sources, retired_sources, retired, token_count, cleanup, completed) = (occurrence, PreparedOutputRootKind::Discovered(TypeId::of_for_test::<()>()), None, None, Some(vec![older.clone(), sibling.clone()]), Vec::new(), Vec::new(), None, 0, Default::default(), false);
+SourceCustody::new_for_test(occurrence, root_kind, source, discovery, consumed_sources, retired_sources, bound_sources, retired, token_count, cleanup, completed)
+};
     custody.retire_superseded_roots_for_test(&[newer, sibling.clone()]);
     assert_eq!(
         custody.source_denial_for_test(&(*older.identity_for_test())).unwrap().kind(),

@@ -43,12 +43,7 @@ fn retained_selection_compares_a_fresh_meaning_without_revision_identity() {
         CanonicalDigestId::new([3; 32]),
         CanonicalDigestId::new([4; 32]),
     );
-    let carrier = |meaning| WorthQueryObservedSourceSelection {
-        runtime_authority: authority.as_u64(),
-        schema_binding: binding.clone(),
-        meaning,
-        managed: None,
-    };
+    let carrier = |meaning| WorthQueryObservedSourceSelection::new_for_test(authority.as_u64(), binding.clone(), meaning, None);
     let before = carrier(meaning(vec![entity(2)], 4));
     let revision_only = carrier(meaning(vec![entity(2)], 9));
     let different = carrier(meaning(vec![entity(3)], 9));

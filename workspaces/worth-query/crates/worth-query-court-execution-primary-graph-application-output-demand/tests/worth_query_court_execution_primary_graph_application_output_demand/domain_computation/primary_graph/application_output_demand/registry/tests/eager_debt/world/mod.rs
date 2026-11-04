@@ -246,16 +246,17 @@ impl<'a> World<'a> {
             let identity = (*keys[1].source_for_test()).clone();
             state.source_custody.insert(
                 context.commit(id),
-                SourceCustody::new_for_test(context.completed.product_branch().occurrence_for_test(), PreparedOutputRootKind::Discovered(EqualityTypeId::of_for_test::<()>()), (id == 0).then(|| context.source.clone()), None, entry.bound.map(|_| {
-                        vec![BoundOutputSource {
-                            scope: context.scope,
-                            identity: identity.clone(),
-                        }]
+                {
+// Bound in the original literal order, passed in the door's.
+let (occurrence, root_kind, source, discovery, bound_sources, consumed_sources, retired_sources, retired, token_count, cleanup, completed) = (context.completed.product_branch().occurrence_for_test(), PreparedOutputRootKind::Discovered(EqualityTypeId::of_for_test::<()>()), (id == 0).then(|| context.source.clone()), None, entry.bound.map(|_| {
+                        vec![BoundOutputSource::new_for_test(context.scope, identity.clone())]
                     }), if entry.consumed {
                         vec![identity]
                     } else {
                         vec![]
-                    }, vec![], None, entry.tokens, Default::default(), entry.completed),
+                    }, vec![], None, entry.tokens, Default::default(), entry.completed);
+SourceCustody::new_for_test(occurrence, root_kind, source, discovery, consumed_sources, retired_sources, bound_sources, retired, token_count, cleanup, completed)
+},
             );
         }
         if !late {

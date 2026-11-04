@@ -71,17 +71,11 @@ fn current_source_registration_rejects_native_movement_while_ordinary_replay_rem
         })
         .expect("the fixture read owns its installed host call");
     let identity = RecordedSettlementIdentity::retain_for_test(&source, coordinate, 0);
-    let registration = |identity| SettlementRegistration {
-        work_membership: None,
-        computation: None,
-        identity,
-        facts: RetainedSourceFacts::for_test_for_test(false, Arc::clone(&facts)),
-        output_facts: None,
-        read_basis: before.clone(),
-        stale_at_read_basis: OrdSet::new(),
-        requirement: None,
-        upstream: OrdSet::new(),
-    };
+    let registration = |identity| {
+// Bound in the original literal order, passed in the door's.
+let (work_membership, computation, identity, facts, output_facts, read_basis, stale_at_read_basis, requirement, upstream) = (None, None, identity, RetainedSourceFacts::for_test_for_test(false, Arc::clone(&facts)), None, before.clone(), OrdSet::new(), None, OrdSet::new());
+SettlementRegistration::new_for_test(computation, work_membership, identity, facts, output_facts, read_basis, stale_at_read_basis, requirement, upstream)
+};
     let prepared = owner
         .prepare_current_settlement_for_test(registration(Arc::clone(&identity)), &before)
         .expect("the exact current native source can prepare");
