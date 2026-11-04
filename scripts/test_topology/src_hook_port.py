@@ -6,12 +6,15 @@ Usage:
 The codemod compiles the `#[cfg(test)]` items its moved tests call: in its output for the later
 tree (CODEMOD_ROOT at CODEMOD_REV), those gates are gone from the library while LATER_REV still
 has them. For every library file, each such removed gate (keyed by the line it gated) is removed
-here too, where this tree still gates that same line once. Reports gates it could not place.
+here too, where this tree still gates that same line (visibility aside) exactly once. A gated
+line this tree no longer has (its module moved to a court) needs nothing; a line gated more than
+once is reported.
 """
 import argparse
 import difflib
 import json
 from pathlib import Path
+import re
 import subprocess
 
 LIBRARY = 'workspaces/worth-query/crates/worth-query-execution/src/'
@@ -23,6 +26,11 @@ def show(rev, path, cwd=None):
     return result.stdout if result.returncode == 0 else None
 
 
+def bare(line):
+    """A line without its leading visibility: the door work may have widened it."""
+    return re.sub(r'^pub(?:\([^)]*\))?\s+', '', line.strip())
+
+
 def compiled_gates(original, compiled):
     """Stripped lines that `original` gates with #[cfg(test)] and `compiled` no longer does."""
     a, b = original.splitlines(), compiled.splitlines()
@@ -31,7 +39,7 @@ def compiled_gates(original, compiled):
         if tag in ('delete', 'replace'):
             for i in range(i1, i2):
                 if a[i].strip() == GATE and i + 1 < len(a):
-                    removed.append(a[i + 1].strip())
+                    removed.append(bare(a[i + 1]))
     return removed
 
 
@@ -51,12 +59,12 @@ def port(root, later, codemod_root, codemod_rev):
             continue
         lines = here.read_text(encoding='utf-8').splitlines(keepends=True)
         for target in gated:
-            spots = [i for i in range(len(lines) - 1) if lines[i].strip() == GATE and lines[i + 1].strip() == target]
+            spots = [i for i in range(len(lines) - 1) if lines[i].strip() == GATE and bare(lines[i + 1]) == target]
             if len(spots) == 1:
                 del lines[spots[0]]
                 applied += 1
-            elif spots or not any(line.strip() == target for line in lines):
-                unplaced.append(f'{path}: {target}')
+            elif len(spots) > 1:
+                unplaced.append(f'{path}: {target} (gated {len(spots)} times)')
         here.write_text(''.join(lines), encoding='utf-8')
     return applied, unplaced
 
