@@ -71,7 +71,8 @@ pub fn completed_stage(claimed_with_ready: bool) {
     );
     if claimed_with_ready {
         {
-            let DemandState::Output(output) = &mut (*(*state.records_mut_for_test()).get_mut(&row_key).unwrap().state_mut_for_test())
+            let record = (*state.records_mut_for_test()).get_mut(&row_key).unwrap();
+            let DemandState::Output(output) = &mut (*record.state_mut_for_test())
             else {
                 panic!("the actual checkpoint row is retained")
             };
