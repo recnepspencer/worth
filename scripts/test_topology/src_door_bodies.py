@@ -50,12 +50,15 @@ def door_renames(root):
 
 
 def constructor_orders(root):
-    """{struct name: (named, field order)} for every generated `new_for_test` door."""
+    """{struct name: (named, field order)} for every generated `new_for_test` door; parameters
+    are read by balanced tokens, so `fn() -> T` in a type does not end the list."""
+    from src_door_sites import Source, split_top
     orders = {}
     for path in door_files(root):
         text = path.read_text(encoding='utf-8')
-        for block in re.finditer(r'impl(?:<[^{]*?>)?\s+(\w+)[^{]*\{\s*#\[doc\(hidden\)\]\s*pub fn new_for_test\(([^)]*)\)', text):
-            params = [p.split(':')[0].strip() for p in block.group(2).split(',') if ':' in p]
+        for block in re.finditer(r'impl(?:<[^{]*?>)?\s+(\w+)[^{]*\{\s*#\[doc\(hidden\)\]\s*pub fn new_for_test\(', text):
+            source = Source(text[block.end() - 1:])
+            params = [source.value(a) for a, _b in split_top(source, 0)]
             named = not all(re.fullmatch(r'field\d+', p) for p in params)
             orders[block.group(1)] = (named, params)
     return orders

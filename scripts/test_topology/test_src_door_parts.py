@@ -28,6 +28,18 @@ class PartsDoorTests(unittest.TestCase):
         first = source.close[brace] + 2
         self.assertFalse(simple_postfix(source, first, statement_end(source, first) - 1))
 
+    def test_constructor_orders_read_function_pointer_types(self):
+        import tempfile
+        from pathlib import Path
+        from src_door_bodies import LIBRARY, constructor_orders
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / LIBRARY / 'e').mkdir(parents=True)
+            (root / LIBRARY / 'e' / 'court_doors_for_test.rs').write_text(
+                'impl<S> E<S> {\n    #[doc(hidden)]\n    pub fn new_for_test(\n        a: u8,\n'
+                '        _marker: PhantomData<fn() -> S>,\n        b: u8,\n    ) -> Self {\n        Self { a, _marker, b }\n    }\n}\n')
+            self.assertEqual(constructor_orders(root), {'E': (True, ['a', '_marker', 'b'])})
+
 
 if __name__ == '__main__':
     unittest.main()
