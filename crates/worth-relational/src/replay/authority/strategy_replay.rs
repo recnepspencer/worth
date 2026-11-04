@@ -182,6 +182,9 @@ fn rebuild_strategy_basis_runtime(
         Err(RelationalRecoveryStop::Request(cause)) => {
             return Err(RelationalRecoveryStop::Request(cause))
         }
+        Err(RelationalRecoveryStop::AdmissionImage(cause)) => {
+            return Err(RelationalRecoveryStop::AdmissionImage(cause))
+        }
         Err(RelationalRecoveryStop::Allocation(error)) => {
             return Err(RelationalRecoveryStop::Allocation(error))
         }

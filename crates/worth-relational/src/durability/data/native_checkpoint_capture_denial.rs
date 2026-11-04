@@ -5,6 +5,7 @@ use super::DurabilityError;
 /// Runtime capture refusal. Allocation custody is not a durable recovery record.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum RelationalNativeCheckpointCaptureDenial {
+    AdmissionImage(crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal),
     Durability(DurabilityError),
     OwnerUnavailable,
     OriginalAuthorityUnavailable,
@@ -29,6 +30,9 @@ impl From<ExecutionAllocationDenial> for RelationalNativeCheckpointCaptureDenial
 impl std::fmt::Display for RelationalNativeCheckpointCaptureDenial {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::AdmissionImage(cause) => {
+                write!(formatter, "native checkpoint admission image: {cause:?}")
+            }
             Self::RetentionCapacityExhausted => {
                 formatter.write_str("native checkpoint retention capacity exhausted")
             }
@@ -50,7 +54,8 @@ impl std::error::Error for RelationalNativeCheckpointCaptureDenial {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Self::Allocation(error) => Some(error),
-            Self::Durability(_)
+            Self::AdmissionImage(_)
+            | Self::Durability(_)
             | Self::Request(_)
             | Self::OwnerUnavailable
             | Self::OriginalAuthorityUnavailable

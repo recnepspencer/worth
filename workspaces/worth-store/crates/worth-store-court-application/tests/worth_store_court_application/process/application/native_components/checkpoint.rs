@@ -2,10 +2,8 @@ use worth_execution::{
     CancellationSource, ExecutionAllocationPolicy, ExecutionRequest, SerialMemoryBudget,
     SerialRequest,
 };
-use worth_relational::facade::{
-    durability::RelationalCheckpointArtifactPolicy, history::BranchId,
-    runtime::RelationalRuntimeApi,
-};
+use worth_relational::facade::durability::RelationalCheckpointArtifactPolicy;
+use worth_relational::facade::{history::BranchId, runtime::RelationalRuntimeApi};
 
 #[test]
 fn a_late_capture_cannot_regress_the_selected_transition_frontier_or_membership() {
@@ -35,16 +33,15 @@ fn a_late_capture_cannot_regress_the_selected_transition_frontier_or_membership(
             aspect_contract_declarations: KindAspectContractDeclarations::new(Vec::new()),
         })
         .unwrap();
-    let home = worth_store_testkit_application_oracle::facade::home_opening::open(
-        worth_store_testkit_application_oracle::facade::home_opening::request(
-            directory.path().join("home"),
-            RelationalRuntimeApi::builder().schema_setup(move |schema| {
-                schema.schema_registry(registry);
-            }),
-        ),
+    let fixture = super::coupled_home::open(
+        &directory.path().join("home"),
+        RelationalRuntimeApi::builder().schema_setup(move |schema| {
+            schema.schema_registry(registry);
+        }),
+        true,
         &execution,
-    )
-    .unwrap();
+    );
+    let home = fixture.home;
     let (_, basis) = home
         .relational()
         .runtime()
@@ -68,16 +65,22 @@ fn a_late_capture_cannot_regress_the_selected_transition_frontier_or_membership(
             ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    transaction
+    let committed = transaction
         .commit(&execution, home.relational().runtime())
         .unwrap();
+    home.relational()
+        .runtime()
+        .snapshots()
+        .release_snapshot(&committed.snapshot)
+        .unwrap();
+    // Native capture precedes Store's exclusive publication-inventory fence.
+    // Two simultaneous prepared Store selections are intentionally refused.
     let earlier = home
         .relational()
         .runtime()
-        .durability_authority()
-        .native_checkpoint_with_policy(
+        .complete_checkpoint_service()
+        .prepare(
             &execution,
-            ExecutionAllocationPolicy::SystemAllocation,
             RelationalCheckpointArtifactPolicy::ExternalMembers {
                 current_members: &[],
                 source: None,
@@ -94,7 +97,10 @@ fn a_late_capture_cannot_regress_the_selected_transition_frontier_or_membership(
         .fork_branch(&execution, BranchId("later".into()), source)
         .unwrap();
     let selected = home.checkpoint(&execution).unwrap();
-    assert!(selected.covered_transitions().0 > earlier.covered_branch_transitions().unwrap().0);
+    assert!(
+        selected.covered_transitions().0
+            > earlier.checkpoint().covered_branch_transitions().unwrap().0
+    );
     let refused = home
         .publish_captured_relational_checkpoint_for_test(earlier, &execution)
         .unwrap_err();
@@ -117,7 +123,8 @@ fn a_late_capture_cannot_regress_the_selected_transition_frontier_or_membership(
         .unwrap();
     assert_eq!(record.version().generation(), selected.generation());
     drop(record);
-    home.close(&execution);
+    home.close(&execution)
+        .unwrap_or_else(|refused| panic!("World close: {:?}", refused.reason()));
 }
 
 #[test]
@@ -129,7 +136,8 @@ fn selected_checkpoint_survives_observer_drop_online_history_and_mutation_before
     let request = crate::workload::serial_request();
     let execution = ExecutionRequest::serial(&request);
     let branch = BranchId("main".into());
-    let home = crate::durable_run::open(directory.path(), &execution).unwrap();
+    let fixture = super::coupled_home::workload(directory.path(), true, &execution);
+    let home = fixture.home;
     let created = crate::workload::commit(
         home.relational().runtime(),
         &execution,
@@ -170,15 +178,26 @@ fn selected_checkpoint_survives_observer_drop_online_history_and_mutation_before
     assert_eq!(expected_history.len(), 3);
     home.checkpoint(&execution).unwrap();
     assert!(matches!(
-        home.close(&execution),
+        home.close(&execution)
+            .unwrap_or_else(|refused| panic!("World close: {:?}", refused.reason())),
         ApplicationHomeCloseOutcome::Closed {
             checkpoint: Ok(_),
             ..
         }
     ));
-    let home = crate::durable_run::open(directory.path(), &execution).unwrap();
-    assert_eq!(home.relational().cold_storage_reads().member_reads, 0);
-    let prior_generation = crate::selected_checkpoint::generation(&home);
+    // Preserve the Native opening boundary observation before World admits its
+    // own retained components. World admission has separate source demands.
+    let native = crate::durable_run::open(directory.path(), &execution).unwrap();
+    assert_eq!(native.relational().cold_storage_reads().member_reads, 0);
+    assert!(matches!(
+        native.close(&execution),
+        ApplicationHomeCloseOutcome::Closed { .. }
+    ));
+    let fixture = super::coupled_home::workload(directory.path(), false, &execution);
+    let home = fixture.home;
+    let operation = home.checkpoint_operation(Default::default()).unwrap();
+    let prior_generation =
+        crate::selected_checkpoint::generation_from_serving(home.physical_serving_for_test());
     let mut unrelated = crate::batches::create(4);
     let worth_relational::facade::transactions::MutationIntent::Create(
         worth_relational::facade::transactions::CreateIntent::Entity(spec),
@@ -208,7 +227,7 @@ fn selected_checkpoint_survives_observer_drop_online_history_and_mutation_before
             cancellation.cancel();
             gate
         });
-        let result = home.checkpoint_with_step_observer_for_test(
+        let result = operation.checkpoint_with_step_observer_for_test(
             &ExecutionRequest::serial(&interrupted),
             |registration| {
                 if registration.kind() == AnchoredRecordStepKind::Anchor {
@@ -231,8 +250,8 @@ fn selected_checkpoint_survives_observer_drop_online_history_and_mutation_before
     gate.release();
     let terminal_deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
     loop {
-        let observation = home
-            .checkpoint_observation()
+        let observation = operation
+            .checkpoint_observation_for_test()
             .expect("the Home still owns this attempt");
         if let Some(terminal) = observation.physical_terminal() {
             assert!(
@@ -248,7 +267,8 @@ fn selected_checkpoint_survives_observer_drop_online_history_and_mutation_before
         );
         std::thread::sleep(std::time::Duration::from_millis(1));
     }
-    let selected_generation = crate::selected_checkpoint::generation(&home);
+    let selected_generation =
+        crate::selected_checkpoint::generation_from_serving(home.physical_serving_for_test());
     assert_eq!(selected_generation, prior_generation + 1);
     drop(observer);
     assert_eq!(
@@ -272,15 +292,15 @@ fn selected_checkpoint_survives_observer_drop_online_history_and_mutation_before
         .release_snapshot(&changed.snapshot)
         .unwrap();
     assert!(
-        !home
-            .checkpoint_observation()
+        !operation
+            .checkpoint_observation_for_test()
             .unwrap()
             .acknowledgement_complete
     );
     let recovered = home.recover_checkpoint(&execution).unwrap();
     assert_eq!(recovered.generation(), selected_generation);
     assert_eq!(
-        crate::selected_checkpoint::generation(&home),
+        crate::selected_checkpoint::generation_from_serving(home.physical_serving_for_test()),
         selected_generation,
         "ack recovery must not republish the manifest"
     );
@@ -292,14 +312,21 @@ fn selected_checkpoint_survives_observer_drop_online_history_and_mutation_before
         .unwrap();
     assert_eq!(exact_history.len(), expected_history.len() + 1);
     let artifacts = crate::workload::artifacts_of(&execution, home.relational().runtime());
+    let sealed = home
+        .seal_world(&execution)
+        .unwrap_or_else(|refused| panic!("World seal: {:?}", refused.reason()));
+    let _retired_operation = sealed
+        .retire_checkpoint_operation(operation, &execution)
+        .unwrap();
     assert!(matches!(
-        home.close(&execution),
+        sealed.finish_close(&execution),
         ApplicationHomeCloseOutcome::Closed {
             checkpoint: Ok(_),
             ..
         }
     ));
-    let home = crate::durable_run::open(directory.path(), &execution).unwrap();
+    let fixture = super::coupled_home::workload(directory.path(), false, &execution);
+    let home = fixture.home;
     assert_eq!(
         crate::workload::artifacts_of(&execution, home.relational().runtime()),
         artifacts
@@ -313,7 +340,8 @@ fn selected_checkpoint_survives_observer_drop_online_history_and_mutation_before
         exact_history
     );
     assert!(matches!(
-        home.close(&execution),
+        home.close(&execution)
+            .unwrap_or_else(|refused| panic!("World close: {:?}", refused.reason())),
         ApplicationHomeCloseOutcome::Closed { .. }
     ));
 }

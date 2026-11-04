@@ -396,7 +396,8 @@ pub use crate::diagnostics::{
     FoundationalSupportReportArtifactKind,
 };
 pub use crate::durability::{
-    ApplicationHomeBinding, ApplicationHomeBindingDescriptionDenial, CompositeAttemptAssociation,
+    ApplicationHomeBinding, ApplicationHomeBindingDescriptionDenial, CheckpointAdmissionCut,
+    CheckpointAdmissionScope, CheckpointProductBindingIdentity, CompositeAttemptAssociation,
     CompositeAttemptAssociationOwnerMismatch, DurableArtifactRetention,
     DurableCompositeCommitIdentity, DurableCompositePublicationAttemptIdentity, DurableIdentity,
     DurableOwnerFamily, DurableProductBranchIdentity, DurableProductBranchIncarnation,
@@ -405,9 +406,10 @@ pub use crate::durability::{
     DurableProductUnpublishedOwnerEffectsIdentity, DurableQueryOutputSettlement,
     DurableStateFamily, DurableWorldBootstrapAttemptIdentity, DurableWorldOwnerIdentity,
     HomeIdentity, HomeIdentityDenial, HomeIncarnation, HomeIncarnationExhausted,
-    HomeProgramBinding, MemoryProductBranchReference, RecordedCompositePublicationAttemptIdentity,
-    RecordedProductBranchReference, RetentionClass, UnsupportedDurableOwnerTag,
-    WorldDurableJournal, WorldOwnerCoordinate, WorldOwnerSlotIdentity,
+    HomeProgramBinding, MemoryProductBranchReference, NativeCheckpointBranchObservation,
+    NativeCheckpointBranchReference, NativeCheckpointBranchTarget,
+    RecordedCompositePublicationAttemptIdentity, RecordedProductBranchReference, RetentionClass,
+    UnsupportedDurableOwnerTag, WorldDurableJournal, WorldOwnerCoordinate, WorldOwnerSlotIdentity,
 };
 pub use crate::durable_publication::DurablePublicationFate;
 pub use crate::execution::{

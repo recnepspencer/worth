@@ -23,6 +23,8 @@ pub(crate) fn readmit(
     SymbolTableSnapshot::readmit_current(execution, payload).map_err(|stop| match stop {
         RelationalRecoveryStop::Request(cause) => Failure::Request(cause),
         RelationalRecoveryStop::Allocation(_) => failure(Cause::MemoryExhausted),
-        RelationalRecoveryStop::Durability(_) => failure(Cause::Damaged),
+        RelationalRecoveryStop::Durability(_) | RelationalRecoveryStop::AdmissionImage(_) => {
+            failure(Cause::Damaged)
+        }
     })
 }

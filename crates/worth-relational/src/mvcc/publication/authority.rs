@@ -226,6 +226,11 @@ fn prepare_versioned_publication(
                         "original input capture: {cause:?}"
                     ))
                 }
+                crate::durability::data::RelationalRecoveryStop::AdmissionImage(cause) => {
+                    PublicationPreparationDenial::Invalid(format!(
+                        "original input capture: {cause:?}"
+                    ))
+                }
             })?;
         envelope
             .retain_recorded_original_inputs(recorded)

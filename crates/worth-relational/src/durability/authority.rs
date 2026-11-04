@@ -9,7 +9,9 @@ pub use associated_effects::{
 };
 mod checkpoint_capture;
 pub(in crate::durability) mod checkpoint_complete;
-pub use checkpoint_complete::CompleteRelationalNativeCheckpoint;
+pub use checkpoint_complete::{
+    CapturedRelationalCheckpointAdmissionImage, CompleteRelationalNativeCheckpoint,
+};
 pub(in crate::durability) mod checkpoint_components;
 mod checkpoint_image;
 mod checkpoint_lineage_basis;

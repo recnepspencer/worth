@@ -127,6 +127,9 @@ pub(crate) fn capture_stop(
     stop: RelationalRecoveryStop,
 ) -> RelationalNativeCheckpointCaptureDenial {
     match stop {
+        RelationalRecoveryStop::AdmissionImage(cause) => {
+            RelationalNativeCheckpointCaptureDenial::AdmissionImage(cause)
+        }
         RelationalRecoveryStop::Request(cause) => {
             RelationalNativeCheckpointCaptureDenial::Request(cause)
         }

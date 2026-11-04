@@ -154,6 +154,7 @@ impl RelationalPreparationHistory {
                 crate::durability::data::RelationalRecoveryStop::Request(cause) => crate::transactions::data::TransactionCommitError::execution(cause.into()),
                 crate::durability::data::RelationalRecoveryStop::Allocation(cause) => crate::execution::allocation_commit_error(crate::transactions::data::TransactionCommitError::conflict(crate::transactions::data::CommitConflict::new(crate::transactions::data::ConflictClass::ExecutionAllocationDenied { denial: cause }))),
                 crate::durability::data::RelationalRecoveryStop::Durability(cause) => crate::transactions::data::TransactionCommitError::publication(crate::publication::data::PublicationError::new(crate::publication::bundle::PublicationStage::BundleAssembly, cause.detail)),
+                crate::durability::data::RelationalRecoveryStop::AdmissionImage(cause) => crate::transactions::data::TransactionCommitError::publication(crate::publication::data::PublicationError::new(crate::publication::bundle::PublicationStage::BundleAssembly, format!("original payload capture: {cause:?}"))),
             })?;
         RelationalCanonicalPublicationRoutes::reserve(
             &self.canonical_routes,

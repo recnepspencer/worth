@@ -7,6 +7,7 @@ use worth_relational::facade::durability::{
 /// An allocation refusal never authorizes a different capture policy.
 #[derive(Debug)]
 pub enum WorthQueryCheckpointCaptureDenial {
+    AdmissionImage(Box<worth_relational::facade::durability::RelationalCheckpointAdmissionRefusal>),
     ForeignPhase(super::super::WorthQueryForeignAdvancementPhase),
     NativeOwnerUnavailable,
     OriginalAuthorityUnavailable,
@@ -23,6 +24,9 @@ pub enum WorthQueryCheckpointCaptureDenial {
 impl From<RelationalNativeCheckpointCaptureDenial> for WorthQueryCheckpointCaptureDenial {
     fn from(error: RelationalNativeCheckpointCaptureDenial) -> Self {
         match error {
+            RelationalNativeCheckpointCaptureDenial::AdmissionImage(error) => {
+                Self::AdmissionImage(Box::new(error))
+            }
             RelationalNativeCheckpointCaptureDenial::Durability(error) => error.into(),
             RelationalNativeCheckpointCaptureDenial::OwnerUnavailable => {
                 Self::NativeOwnerUnavailable
@@ -67,6 +71,9 @@ impl From<ExecutionAllocationDenial> for WorthQueryCheckpointCaptureDenial {
 impl std::fmt::Display for WorthQueryCheckpointCaptureDenial {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::AdmissionImage(error) => {
+                write!(formatter, "checkpoint Native admission image: {error:?}")
+            }
             Self::NativeOwnerUnavailable => {
                 formatter.write_str("checkpoint Native owner unavailable")
             }

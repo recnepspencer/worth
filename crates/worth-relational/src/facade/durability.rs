@@ -1,3 +1,4 @@
+pub use crate::durability::authority::CapturedRelationalCheckpointAdmissionImage;
 pub use crate::durability::authority::{
     FreshRelationalSourceAdmission, ObservedRelationalMemoryCommit,
     ReadmittedRelationalAssociatedEffect, ReadmittedRelationalCreatedEntity,
@@ -14,6 +15,11 @@ pub use crate::durability::canonical_commit_artifact::{
     RelationalCanonicalCommitArtifact, RelationalCanonicalCommitArtifactDigest,
     RelationalCanonicalCommitArtifactEncodeDenial, RelationalCanonicalCommitArtifactFrameRefusal,
     RelationalCanonicalCommitArtifactRefusal, RelationalCanonicalCommitArtifacts,
+};
+pub use crate::durability::checkpoint_admission::{
+    CheckpointAdmissionAuthenticationMismatch, CheckpointAdmissionBindingMismatch,
+    CheckpointAdmissionMeaning, RelationalCheckpointAdmissionArtifact,
+    RelationalCheckpointAdmissionRefusal,
 };
 pub use crate::durability::data::CompleteRelationalNativeCheckpoint;
 pub use crate::durability::data::{

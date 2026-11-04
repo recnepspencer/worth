@@ -19,6 +19,7 @@ mod home_recovery;
 mod linear;
 mod managed_access;
 mod managed_source;
+mod native_checkpoint_originals;
 pub use managed_access::{
     AdmittedManagedIndexCoverage, BorrowedManagedCoverageFrame, BorrowedRealizedFootprintFrame,
     CapturedRealizedFootprint, ManagedCoverageDisposition, ManagedCoverageFrontier,
@@ -26,6 +27,7 @@ pub use managed_access::{
     ManagedIndexCoverageDenial, ManagedIndexCoverageIssuer, RealizedFootprintAuthority,
     RealizedFootprintDenial, RealizedFootprintIssuer, VerifiedRealizedFootprint,
 };
+pub use native_checkpoint_originals::NativeCheckpointOriginalsVerified;
 mod phase;
 pub mod prelude;
 mod proof;

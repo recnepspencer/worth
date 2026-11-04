@@ -296,7 +296,9 @@ fn original_input_denial(
     };
     match stop {
         Stop::Allocation(_) => RuntimeWorldBranchAdmissionDenial::CapacityExhausted,
-        Stop::Durability(_) => RuntimeWorldBranchAdmissionDenial::OwnerUnavailable,
+        Stop::Durability(_) | Stop::AdmissionImage(_) => {
+            RuntimeWorldBranchAdmissionDenial::OwnerUnavailable
+        }
         Stop::Request(cause) => match cause {
             Cause::DeadlineElapsed => RuntimeWorldBranchAdmissionDenial::DeadlineBeforeEffect,
             Cause::Cancelled | Cause::NestedStopped => {

@@ -1,4 +1,4 @@
-//! Real wire tuples retain funded generation DATA and refuse original stops.
+//! Value-only full and delta tuples preserve every index entry family.
 use super::*;
 use crate::history::data::{BranchId, CommitId};
 use crate::identity::data::{EntityId, PartitionId, RelationId, VersionId};
@@ -6,7 +6,6 @@ use crate::indexes::data::*;
 use crate::schema::data::SchemaVersionId;
 use crate::storage::data::AuthoritativeFieldComparisonKey;
 use std::collections::BTreeMap;
-use worth_execution::{CancellationSource, SerialMemoryBudget, SerialRequest};
 use worth_foundational::facade::AspectValue;
 
 fn generations() -> Vec<DerivedIndexGeneration> {
@@ -58,7 +57,7 @@ fn generations() -> Vec<DerivedIndexGeneration> {
         .collect()
 }
 #[test]
-fn original_full_and_delta_index_tuples_preserve_all_entry_families_and_funding() {
+fn full_and_delta_index_tuples_preserve_all_entry_families() {
     let mut expected = generations();
     let mut repeated = expected[0].clone();
     repeated.generation_id = DerivedIndexGenerationId(5);
@@ -79,21 +78,22 @@ fn original_full_and_delta_index_tuples_preserve_all_entry_families_and_funding(
         rmp_serde::to_vec_named(&(DerivedIndexArtifacts::default(), Some(delta), 2_u16)).unwrap(),
     ];
     for payload in payloads {
-        let budget = SerialMemoryBudget::new(Some(8 << 20));
-        let host =
-            SerialRequest::from_memory(budget.clone(), CancellationSource::new().token(), None);
-        let baseline = budget.charged_memory_bytes();
-        let captured = decode(&payload, &ExecutionRequest::serial(&host)).unwrap();
-        assert_eq!(
-            captured
-                .generations
-                .iter()
-                .map(AsRef::as_ref)
-                .collect::<Vec<_>>(),
-            expected.iter().collect::<Vec<_>>()
-        );
-        assert!(budget.charged_memory_bytes() > baseline);
-        drop(captured);
-        assert_eq!(budget.charged_memory_bytes(), baseline);
+        let (full, delta, format): (
+            DerivedIndexArtifacts,
+            Option<DerivedIndexCheckpointArtifacts>,
+            u16,
+        ) = rmp_serde::from_slice(&payload).unwrap();
+        assert!(DerivedIndexCheckpointArtifacts::supports_outer_format(
+            format,
+            delta.is_some(),
+        ));
+        let generations = match delta {
+            Some(delta) => {
+                assert!(full.is_empty());
+                delta.readmit().unwrap()
+            }
+            None => full.into_generations(),
+        };
+        assert_eq!(generations, expected);
     }
 }

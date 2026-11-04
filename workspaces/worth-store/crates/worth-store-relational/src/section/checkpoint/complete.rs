@@ -39,6 +39,21 @@ impl RelationalStoreSection {
     ) -> Result<PreparedCompleteRelationalSection, Denial> {
         self.complete_checkpoint_preparation().prepare(execution)
     }
+
+    #[cfg(feature = "certification-test-authority")]
+    pub(crate) fn frame_complete_checkpoint(
+        &self,
+        complete: CompleteRelationalNativeCheckpoint,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<PreparedCompleteRelationalSection, Denial> {
+        let mut publication =
+            SectionPublication::prepare_complete(&self.cold_source, &complete, execution)?;
+        publication.selection = Some(self.checkpoint_selection.clone());
+        Ok(PreparedCompleteRelationalSection {
+            complete,
+            publication,
+        })
+    }
 }
 
 impl RelationalSectionCompleteCheckpointPreparation {

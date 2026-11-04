@@ -216,6 +216,10 @@ pub(super) fn map_checkpoint_recovery_stop(
 ) -> WorthQueryPrimaryGraphInstallationDenial {
     use worth_relational::facade::durability::RelationalRecoveryStop;
     match stop {
+        RelationalRecoveryStop::AdmissionImage(cause) => primary_graph_denial(
+            WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
+            format!("native checkpoint admission image refused: {cause:?}"),
+        ),
         RelationalRecoveryStop::Durability(error) => primary_graph_denial(
             WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
             format!("native checkpoint recovery denied: {error:?}"),
