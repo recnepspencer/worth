@@ -55,8 +55,8 @@ pub(super) fn admit_genuine_all_create(runtime: &Application) {
                 implementation: worth_relational::facade::mvcc::RequiredOutputProducingImplementation::from_checkpoint([0x11; 16], [0x22; 32]).unwrap(),
                 family: producer.to_owned(),
                 source_scope: anchor.entity_id(),
-                source_partition: [42; 32],
-                source_epoch: [43; 32],
+                source_partition: worth_foundational::CanonicalDigestId::new([42; 32]),
+                source_epoch: worth_foundational::CanonicalDigestId::new([43; 32]),
             };
             let roles = vec![RequiredOutputRoleTarget {
                 role: "all-created".into(),

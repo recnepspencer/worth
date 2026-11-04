@@ -4,10 +4,7 @@ use crate::domain_computation::primary_graph::application_contribution::producer
 use crate::domain_computation::primary_graph::application_contribution::producer::execution::prepared_plan::OwnerPlan;
 impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     #[inline(never)]
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand::progression) fn execute_running_output<
-        'owner,
-        Family,
-    >(
+    pub(super) fn execute_running_output<'owner, Family>(
         &'owner self,
         phase: &'owner WorthQueryAdvancementPhase<'owner>,
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,

@@ -103,7 +103,7 @@ fn insert(
         let route = Arc::new(PublicationRoute {
             family: meaning.family.clone(),
             source: meaning.source_scope,
-            partition: meaning.source_partition,
+            partition: *meaning.source_partition.bytes(),
             _funding: funding,
         });
         return node(route, publication, None, None, lease, context);
@@ -168,7 +168,7 @@ fn compare(
         .family
         .cmp(&meaning.family)
         .then_with(|| route.source.cmp(&meaning.source_scope))
-        .then_with(|| route.partition.cmp(&meaning.source_partition)))
+        .then_with(|| route.partition.cmp(meaning.source_partition.bytes())))
 }
 
 fn height(node: &Option<Arc<PositionNode>>) -> u8 {

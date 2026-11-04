@@ -146,7 +146,7 @@ pub(crate) fn native_meaning_fixture(family: &str) -> RequiredOutputPublicationM
             0,
             1,
         ),
-        source_partition: [0; 32],
-        source_epoch: [0; 32],
+        source_partition: worth_foundational::CanonicalDigestId::new([0; 32]),
+        source_epoch: worth_foundational::CanonicalDigestId::new([0; 32]),
     }
 }

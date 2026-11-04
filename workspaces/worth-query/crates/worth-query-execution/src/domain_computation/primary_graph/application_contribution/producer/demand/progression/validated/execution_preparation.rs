@@ -3,10 +3,7 @@ use super::*;
 
 impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     #[inline(never)]
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand::progression) fn prepare_running_output_with_schedule<
-        'owner,
-        Family,
-    >(
+    pub(super) fn prepare_running_output_with_schedule<'owner, Family>(
         &'owner self,
         phase: &'owner WorthQueryAdvancementPhase<'owner>,
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,

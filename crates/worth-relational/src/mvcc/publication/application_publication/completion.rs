@@ -7,8 +7,8 @@ pub struct RequiredOutputPublicationMeaning {
     pub implementation: super::RequiredOutputProducingImplementation,
     pub family: String,
     pub source_scope: EntityId,
-    pub source_partition: [u8; 32],
-    pub source_epoch: [u8; 32],
+    pub source_partition: worth_foundational::CanonicalDigestId,
+    pub source_epoch: worth_foundational::CanonicalDigestId,
 }
 
 impl RequiredOutputPublicationMeaning {

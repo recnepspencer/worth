@@ -49,7 +49,7 @@ pub(super) fn refuse_mixed_and_created_subset(
         let meaning = RequiredOutputPublicationMeaning {
             implementation: row.producing_implementation.expect("the actual producer publication retains its original implementation"),
             family: settled.output_family_identity().to_owned(), source_scope: anchor,
-            source_partition: row.source_partition_identity.unwrap(), source_epoch: locator.source(),
+            source_partition: worth_foundational::CanonicalDigestId::new(row.source_partition_identity.unwrap()), source_epoch: worth_foundational::CanonicalDigestId::new(locator.source()),
         };
         drop(lineage);
         let created: Vec<_> = roles.iter().filter(|role| role.posture == RequiredOutputRolePosture::Create).cloned().collect();
