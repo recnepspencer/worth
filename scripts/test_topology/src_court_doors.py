@@ -8,6 +8,7 @@ Usage:
     python scripts/test_topology/src_court_doors.py bodies [--base REV] [--root .] [--report DIR]
     python scripts/test_topology/src_court_doors.py normalize [--root .]
     python scripts/test_topology/src_court_doors.py callers [--root .]
+    python scripts/test_topology/src_court_doors.py inventory [--root .] [--report DIR]
 
 `items` re-exports every library item the courts and testkits name, once, from
 `worth_query_execution::court_doors_for_test::<path>` (src_door_items), makes it `pub` with
@@ -138,7 +139,7 @@ def write_report(report, name, data):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('step', choices=('items', 'interface', 'members', 'normalize', 'bodies', 'callers'))
+    parser.add_argument('step', choices=('items', 'interface', 'members', 'normalize', 'bodies', 'callers', 'inventory'))
     parser.add_argument('--base', default='038ff2869d')
     parser.add_argument('--dry-run', action='store_true', help='members: write nothing, report and validate')
     parser.add_argument('check', nargs='?', type=Path)
@@ -154,6 +155,13 @@ def main(argv=None):
         for path, text in changed.items():
             path.write_text(text, encoding='utf-8', newline='\n')
         print(f'{len(changed)} door files normalized')
+    elif args.step == 'inventory':
+        from src_door_inventory import inventory, markdown
+        data = inventory(root)
+        args.report.mkdir(parents=True, exist_ok=True)
+        (args.report / 'src-court-doors-inventory.json').write_text(json.dumps(data, indent=2) + '\n', encoding='utf-8')
+        (args.report / 'src-court-doors-inventory.md').write_text(markdown(data), encoding='utf-8')
+        print({k: v for k, v in data.items() if not isinstance(v, list)})
     elif args.step == 'callers':
         from src_door_callers import update_callers
         print(f'{update_callers(root)} control-callers lines added')

@@ -61,6 +61,26 @@ class CourtDoorTests(unittest.TestCase):
                 '# Moved worth-query-execution courts and testkits reach the library only through its sealed doors.',
                 f'{OWNER} {moved}'])
 
+    def test_inventory_classifies_doors_and_lists_authority(self):
+        import tempfile
+        from pathlib import Path
+        from src_door_inventory import LIBRARY, inventory
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / LIBRARY / 'court_doors_for_test' / 'a').mkdir(parents=True)
+            (root / LIBRARY / 'court_doors_for_test' / 'a' / 'mod.rs').write_text(
+                'pub use crate::a::RunAuthority;\npub use crate::a::Plain;\n')
+            (root / LIBRARY / 'a').mkdir()
+            (root / LIBRARY / 'a' / 'court_doors_for_test.rs').write_text(
+                'impl RunAuthority {\n    pub fn mint_for_test() -> Self {\n        Self::mint()\n    }\n}\n\n'
+                'impl Plain {\n    pub fn f_for_test(&self) -> &u8 {\n        &self.f\n    }\n'
+                '    pub fn new_for_test(f: u8) -> Self {\n        Self { f }\n    }\n}\n')
+            data = inventory(root)
+            self.assertEqual((data['item_doors'], data['member_doors']), (2, 3))
+            self.assertEqual(data['member_kinds'], {'constructor': 1, 'field': 1, 'method': 1})
+            self.assertEqual(data['authority_member_doors'], ['a/court_doors_for_test.rs: impl RunAuthority :: mint_for_test (method)'])
+            self.assertEqual(data['authority_item_doors'], ['crate::a::RunAuthority'])
+
 
 if __name__ == '__main__':
     unittest.main()
