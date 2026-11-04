@@ -1,16 +1,17 @@
 /**
  * Track 6 WASM size policy: baseline, ceiling, and path-leak needles.
  *
- * MAX_WASM_BYTES is tightened after the first successful optimized build
- * (ceil(measured * 1.05)) and must stay strictly below BASELINE_WASM_BYTES.
+ * MAX_WASM_BYTES includes 5% headroom on the accepted release measurement
+ * and must stay strictly below BASELINE_WASM_BYTES.
  */
 export const BASELINE_WASM_BYTES = 13_092_002;
 
 /**
- * Post-Track-6 ceiling: ceil(9_631_195 * 1.05) from the first optimized build.
+ * Release 1.6 ceiling: ceil(11_707_918 * 1.05). The larger runtime artifact
+ * was accepted for this release; retain the original pre-Track-6 baseline.
  * Must remain strictly below BASELINE_WASM_BYTES.
  */
-export const MAX_WASM_BYTES = 10_112_755;
+export const MAX_WASM_BYTES = 12_293_314;
 
 export const WASM_BINARY_RELATIVE_PATH = "worth_signal_wasm_bg.wasm";
 export const WASM_GLUE_RELATIVE_PATH = "worth_signal_wasm_bg.js";

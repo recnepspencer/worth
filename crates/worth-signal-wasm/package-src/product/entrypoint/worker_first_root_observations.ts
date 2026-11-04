@@ -39,6 +39,9 @@ export function createWorkerFirstRootObservationManager(options) {
     async syncLifecycle(bridge) {
       await syncLifecycle(bridge);
     },
+    hasSubscriptions() {
+      return subscriptions.size > 0;
+    },
     async replaceContext(bridge, nextContext, deliveryPacket = null) {
       const previousContext = currentContext;
       currentContext = nextContext;

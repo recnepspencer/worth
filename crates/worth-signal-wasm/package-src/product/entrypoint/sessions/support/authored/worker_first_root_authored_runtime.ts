@@ -20,11 +20,13 @@ import {
   readWorkerFirstAuthoredReadableValue,
 } from "./worker_first_authored_readable_state.js";
 import { assertAuthoredReadableReads } from "./worker_first_authored_readable_reads.js";
+import { createHostRefreshCurrentness } from "./worker_first_host_refresh_currentness.js";
 import {
   captureWorkerFirstAuthoredCallback,
 } from "./worker_first_authored_callback_authoring.js";
 import { buildWorkerFirstHostDependencyReport } from "./worker_first_host_dependency_report.js";
 import {
+  refreshWorkerFirstAuthoredReadables,
   refreshWorkerFirstAuthoredCallbackReadables,
   refreshWorkerFirstAuthoredReadableSignals,
 } from "./worker_first_authored_readable_refresh.js";
@@ -55,6 +57,7 @@ import {
   readmitStaleAuthoredOntoActiveTip,
 } from "./worker_first_authored_tip_catalog.js";
 import { outputProjectionSpec } from "../../../../output_projection_ids.js";
+import { pendingWorkerInputIds } from "./worker_first_authored_readback_currentness.js";
 
 export function createWorkerFirstRootAuthoredRuntime(
   bridge,
@@ -71,6 +74,7 @@ export function createWorkerFirstRootAuthoredRuntime(
 }
 
 class WorkerFirstRootAuthoredRuntime {
+  #hostRefreshes = createHostRefreshCurrentness();
   #bridge;
   #activeImportContext;
   #requireActive;
@@ -201,11 +205,11 @@ class WorkerFirstRootAuthoredRuntime {
   /** Host-only tip recompute for callback readables that depend on changed ids. */
   refreshAuthoredCallbackTipsFromHost(changedIds = [], changedHostDependencyIds = []) {
     return refreshAuthoredCallbackTipsFromHost({
-      authoredInputs: this.#authoredInputs,
       authoredReadables: this.#authoredReadables,
       authoredCallbacks: this.#authoredCallbacks,
       changedIds,
       changedHostDependencyIds,
+      readSignalValue: (id) => this.readSignalValue(id),
       captureCallback: (callback, family) => this.#captureCallback(callback, family),
     });
   }
@@ -239,20 +243,19 @@ class WorkerFirstRootAuthoredRuntime {
     writeWorkerFirstAuthoredInputBaselineValue(this.#authoredInputs, id, value);
   }
 
-  async refreshReadables(changedIds = [], changedHostDependencyIds = []) {
-    await refreshWorkerFirstAuthoredCallbackReadables({
-      bridge: this.#bridge,
-      authoredInputs: this.#authoredInputs,
-      authoredReadables: this.#authoredReadables,
-      authoredCallbacks: this.#authoredCallbacks,
-      changedIds,
-      changedHostDependencyIds,
+  acknowledgementReadbackIds() {
+    return [...this.#authoredReadables].filter(([, state]) =>
+      state.invalidatedMessage === null && state.publicationState !== "pending").map(([id]) => id);
+  }
+  hostDependencyReadback() { return this.#hostRefreshes; }
+
+  async refreshReadables(changedIds = [], changedHostDependencyIds = [], bridge = this.#bridge) {
+    await refreshWorkerFirstAuthoredReadables({
+      hostRefreshes: this.#hostRefreshes,
+      pendingInputIds: () => pendingWorkerInputIds(this.#authoredInputs, this.#activeImportContext()),
+      bridge, authoredInputs: this.#authoredInputs, authoredReadables: this.#authoredReadables,
+      authoredCallbacks: this.#authoredCallbacks, changedIds, changedHostDependencyIds,
       captureCallback: (callback, family) => this.#captureCallback(callback, family),
-      awaitPublication: (id) => this.#publications.awaitPublication(id),
-    });
-    await refreshWorkerFirstAuthoredReadableSignals({
-      bridge: this.#bridge,
-      authoredReadables: this.#authoredReadables,
       awaitPublication: (id) => this.#publications.awaitPublication(id),
     });
   }
@@ -310,17 +313,21 @@ class WorkerFirstRootAuthoredRuntime {
 
   async refreshAllReadables() {
     const refreshDeps = {
+      hostRefreshes: this.#hostRefreshes,
+      pendingInputIds: () => pendingWorkerInputIds(this.#authoredInputs, this.#activeImportContext()),
       bridge: this.#bridge,
       authoredReadables: this.#authoredReadables,
       awaitPublication: (id) => this.#publications.awaitPublication(id),
     };
     await refreshWorkerFirstAuthoredReadableSignals(refreshDeps);
     await refreshWorkerFirstAuthoredCallbackReadables({
+      hostRefreshes: this.#hostRefreshes,
       bridge: this.#bridge,
       authoredInputs: this.#authoredInputs,
       authoredReadables: this.#authoredReadables,
       authoredCallbacks: this.#authoredCallbacks,
       changedIds: null,
+      pendingInputIds: () => pendingWorkerInputIds(this.#authoredInputs, this.#activeImportContext()),
       changedHostDependencyIds: null,
       captureCallback: (callback, family) => this.#captureCallback(callback, family),
       skipDirectReadableRefresh: true,

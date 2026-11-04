@@ -61,7 +61,7 @@ function requireMutationRoute(route) {
 }
 
 function requireMutationMethod(method) {
-  if (method !== "POST" && method !== "PUT" && method !== "DELETE") {
+  if (method !== "POST" && method !== "PUT" && method !== "PATCH" && method !== "DELETE") {
     throw new TypeError(
       `mutation response lens proof cannot classify method "${method}"`,
     );

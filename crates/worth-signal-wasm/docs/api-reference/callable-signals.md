@@ -51,6 +51,11 @@ code.
 `LinkedSignalHandle<TValue, TSource>` adds `relink()`. Computed and output
 handles are read-only.
 
+`effect`, `watch`, and `read` accept a branded callable signal handle regardless
+of its value type, including the metadata returned by `form.summarySignal()`.
+Passing the handle's public `.id` is also supported. An ordinary function or an
+object with an `id` property is not a signal handle.
+
 ## Authoring Methods
 
 | Method | Result |

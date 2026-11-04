@@ -110,6 +110,8 @@ export interface FormController<
   TFieldHandles extends Record<string, FormFieldHandle> = Record<string, FormFieldHandle>,
 > extends FormControllerPresentationBindings, FormControllerActionBindings {
   readonly fields: TFieldHandles;
+  /** Atomically set/clear declared fields after validating the complete batch. */
+  setFields(values: Readonly<Record<string, SignalValue>>, options?: { readonly clearDraft?: readonly string[]; readonly touch?: readonly string[] }): void | Promise<void>;
   declaration(): {
     readonly formId: string;
     readonly contract: string;

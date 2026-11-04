@@ -1,6 +1,5 @@
-import { buildActiveImportContext } from "./sessions/support/worker_first_root_import_context.js";
+import { applyAcknowledgedWorkerMutation } from "./worker_first_mutation_acknowledgement.js";
 import {
-  preserveImportTipsAcrossContextReplace,
   stampTransactionOpsWithTipEpochs,
   tipWritesFromTransactionOps,
 } from "./sessions/support/authored/worker_first_host_tip_commit.js";
@@ -113,49 +112,7 @@ async function applyImportMutation(deps, controller, transactionOps, outputIds) 
   await deps.ready();
   deps.requireActive("importedGraph.apply");
   deps.requireControllerActive(controller, "importedGraph.apply");
-  await deps.observations.syncLifecycle(deps.bridge);
-  const projectionPacket = await deps.bridge.applyTransactionProjection({
-    transactionOps,
-    outputIds,
-  });
-  deps.requireControllerActive(controller, "importedGraph.apply");
-  const activeImportController = deps.activeImportController();
-  const activeImportContext = deps.activeImportContext();
-  if (activeImportController === null || activeImportContext === null) {
-    throw new TypeError(
-      "worker-first root importedGraph.apply() requires an active imported graph context",
-    );
-  }
-  const nextImportContext = await buildActiveImportContext(
-    deps.bridge,
-    activeImportContext.definition,
-    activeImportContext.snapshot,
-  );
-  preserveImportTipsAcrossContextReplace(
-    activeImportContext,
-    nextImportContext,
-    transactionOps,
-  );
-  deps.setActiveImportContext(nextImportContext);
-  await deps.refreshBranchCache();
-  const deliveryPacket = await deps.observations.syncLifecycle(deps.bridge)
-    .then(() => deps.bridge.deliverLatestObservation())
-    .catch(() => null);
-  await deps.observations.replaceContext(
-    deps.bridge,
-    deps.activeImportContext(),
-    deliveryPacket,
-  );
-  if (typeof activeImportController.refreshFromRootRuntime === "function") {
-    await activeImportController.refreshFromRootRuntime();
-  }
-  deps.authoredRuntime.applyCommittedInputs(transactionOps);
-  const authoredOpIds = extractChangedSignalIds(transactionOps);
-  await deps.authoredRuntime.refreshReadables(authoredOpIds);
-  // Tip already notified at ingress; replaceContext/deliverCurrent skip equal values.
-  deps.requireControllerActive(activeImportController, "importedGraph.apply");
-  await deps.publishDiagnosticsChanged();
-  return projectionPacket.transaction.runSummary;
+  return applyAcknowledgedWorkerMutation(deps, transactionOps);
 }
 
 async function applyActiveTransaction(deps, transactionOps) {
@@ -205,26 +162,7 @@ async function applyWorkerOwnedTransaction(deps, transactionOps) {
   requireAuthoredTransactionOpsPublicationReady(deps.authoredRuntime, transactionOps);
   const authoredOpIds = extractChangedSignalIds(transactionOps);
   await deps.authoredRuntime.ensureAuthoredInputsPresentOnWorker(authoredOpIds);
-  const activeImportController = deps.activeImportController();
-  const activeImportContext = deps.activeImportContext();
-  if (activeImportController === null || activeImportContext === null) {
-    await deps.observations.syncLifecycle(deps.bridge);
-    const transaction = await deps.bridge.applyTransaction(transactionOps);
-    await deps.refreshBranchCache();
-    deps.authoredRuntime.applyCommittedInputs(transactionOps);
-    await deps.authoredRuntime.refreshReadables(authoredOpIds);
-    const deliveryPacket = await deps.bridge.deliverLatestObservation().catch(() => null);
-    // Worker confirmation only — tip already notified; equal values do not re-pulse.
-    deps.observations.deliverCurrent(deliveryPacket);
-    await deps.publishDiagnosticsChanged();
-    return transaction.runSummary;
-  }
-  return applyImportMutation(
-    deps,
-    activeImportController,
-    transactionOps,
-    activeImportContext.definition.descriptors.map((entry) => entry.publishedId),
-  );
+  return applyAcknowledgedWorkerMutation(deps, transactionOps);
 }
 
 function requireAuthoredTransactionOpsPublicationReady(authoredRuntime, transactionOps) {

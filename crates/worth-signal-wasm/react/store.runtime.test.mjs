@@ -197,11 +197,13 @@ test("createReactSignalsStore enters root read on every snapshot, keeps stable s
 
     const unsubscribeSignal = store.subscribeSignal(handle, () => {});
     assert.ok(watchCallback, "subscribeSignal should establish one runtime watch");
+    assert.equal(store.getSignalSnapshot(handle), changedBeforeSubscribe,
+      "first subscription revalidation preserves an unchanged reference");
     // Subscribed and current: the read is the authority check, the snapshot is
     // the cached reference.
     countValue = { total: 7 };
     assert.equal(store.getSignalSnapshot(handle), changedBeforeSubscribe);
-    assert.equal(readCalls, 5);
+    assert.equal(readCalls, 6);
 
     diagnosticsVersion += 1;
     diagnosticsCallback?.();
@@ -212,9 +214,9 @@ test("createReactSignalsStore enters root read on every snapshot, keeps stable s
     const third = store.getSignalSnapshot(handle);
     assert.deepEqual(third, { total: 7 });
     assert.notEqual(third, changedBeforeSubscribe);
-    assert.equal(readCalls, 6);
-    assert.equal(store.getSignalSnapshot(handle), third);
     assert.equal(readCalls, 7);
+    assert.equal(store.getSignalSnapshot(handle), third);
+    assert.equal(readCalls, 8);
 
     signals.transaction(() => {});
     await flushMicrotasks();
@@ -234,6 +236,35 @@ test("createReactSignalsStore enters root read on every snapshot, keeps stable s
     store.dispose();
     assert.equal(diagnosticsCallback, null);
   } finally {
+    await cleanup();
+  }
+});
+
+test("first subscription includes changes made while the watch is attaching", async () => {
+  const { createReactSignalsStore, cleanup } = await loadStoreModule();
+  let value = { count: 0 };
+  const signals = {
+    read: () => ({ ...value }),
+    watch(_target, notify) {
+      value = { count: 1 };
+      notify({ triggerMatched: true, meaningfulChange: true });
+      return { free() {} };
+    },
+    nuke() {},
+    diagnostics: () => ({
+      latestObservation: () => null,
+      latestFlow: () => null,
+      performanceSummary: () => ({}),
+    }),
+  };
+  const store = createReactSignalsStore(signals);
+  try {
+    assert.deepEqual(store.getSignalSnapshot("count"), { count: 0 });
+    const stop = store.subscribeSignal("count", () => {});
+    assert.deepEqual(store.getSignalSnapshot("count"), { count: 1 });
+    stop();
+  } finally {
+    store.dispose();
     await cleanup();
   }
 });

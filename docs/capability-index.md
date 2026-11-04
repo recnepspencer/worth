@@ -1239,3 +1239,11 @@ configuration owner. Actual grant/revoke and creation maintain stable occurrence
 slots without rebuilding warm roots. See the [Bank declaration](../workspaces/worth-query-bank-world/crates/bank-domain/src/queries/current_accounts.rs),
 [provider](../workspaces/worth-query-bank-world/crates/bank-server/src/application_definition/current_accounts/provider.rs)
 and [ordinary receiver courts](../workspaces/worth-query-bank-world/crates/worth-query-bank-court-external-rail-server/tests/worth_query_bank_court_external_rail_server/server/ordinary_reads/current_accounts/mod.rs).
+
+## Browser signal facade
+
+The JavaScript `worth-signals-wasm` facade declares browser endpoint resources.
+[Route authoring](../crates/worth-signal-wasm/docs/api-reference/route-authoring.md)
+includes explicit `PATCH` transport for update semantics, with canonical request
+identity and mutation-response reconciliation proofs. This is the browser signal
+package surface, separate from the native query facades indexed above.
