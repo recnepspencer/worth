@@ -248,15 +248,21 @@ fn a_stable_alias_is_compared_by_the_witness_of_its_origin() {
         let alias_facts: Arc<[Fact]> = Arc::from([source_entity(1), source_entity(3)]);
         stage.retain(
             alias_generation,
-            |row| RecordedOutput {
-                producing_implementation: None,
-                required_publication: None,
-                native_prior_checkpoint: None,
-                computation_source: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false),
-                performed_origin: Some(Arc::clone(&origin)),
-                consumed_outputs: Arc::clone(&consumed),
-                prepared_input_reuse_key: Some(input_key(&selection, ALIAS_INPUT)),
-                ..row
+            |row| {
+                // The update's field values first, in written order, then its base.
+                let computation_source = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false);
+                let performed_origin = Some(Arc::clone(&origin));
+                let consumed_outputs = Arc::clone(&consumed);
+                let prepared_input_reuse_key = Some(input_key(&selection, ALIAS_INPUT));
+                let mut row = row;
+                (*row.producing_implementation_mut_for_test()) = None;
+                (*row.required_publication_mut_for_test()) = None;
+                (*row.native_prior_checkpoint_mut_for_test()) = None;
+                (*row.computation_source_mut_for_test()) = computation_source;
+                (*row.performed_origin_mut_for_test()) = performed_origin;
+                (*row.consumed_outputs_mut_for_test()) = consumed_outputs;
+                (*row.prepared_input_reuse_key_mut_for_test()) = prepared_input_reuse_key;
+                row
             },
             &alias_facts,
         );

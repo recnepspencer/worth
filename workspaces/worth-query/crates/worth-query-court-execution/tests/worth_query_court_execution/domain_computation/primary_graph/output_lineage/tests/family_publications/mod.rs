@@ -178,9 +178,12 @@ impl Court {
     ) {
         let base_source = self.source.clone();
         let bindings = &(*self.lineage.binding_identities_for_test());
-        let source = |binding| SemanticSource {
-            output_binding: bindings.identity_for_test(binding).unwrap(),
-            ..base_source.clone()
+        // The update's field value first, then its base, as the literal evaluated them.
+        let source = |binding| {
+            let output_binding = bindings.identity_for_test(binding).unwrap();
+            let mut source = base_source.clone();
+            (*source.output_binding_mut_for_test()) = output_binding;
+            source
         };
         let origin = (*(*self.lineage.by_source_for_test())[&source(TypeId::of_for_test::<Origin>())]
             [&(*self.coordinate.occurrence_for_test())][&origin_generation][0]
