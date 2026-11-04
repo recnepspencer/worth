@@ -39,6 +39,28 @@ class CourtDoorTests(unittest.TestCase):
         self.assertIn('pub use crate::domain_computation::a::b::Item;', leaf)
         self.assertNotIn('*', leaf)
 
+    def test_callers_register_door_readers_and_move_only_this_family(self):
+        import tempfile
+        from pathlib import Path
+        from src_door_callers import CRATES, OWNER, updated
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            lib = root / OWNER / 'src'
+            lib.mkdir(parents=True)
+            (lib / 'a.rs').write_text('pub fn get_for_test() {}\n')
+            court = root / CRATES / 'worth-query-court-execution/tests/c/domain_computation/x'
+            court.mkdir(parents=True)
+            (court / 'mod.rs').write_text('fn t() { get_for_test(); }\n')
+            (court / 'plain.rs').write_text('fn t() {}\n')
+            moved = f'{CRATES}/worth-query-court-execution/tests/c/domain_computation/x/mod.rs'
+            stale = f'{OWNER} {OWNER}src/domain_computation/x/mod.rs'
+            foreign = 'crates/other/ crates/other-court/tests/gone.rs'
+            gone = f'{OWNER} {OWNER}src/domain_computation/y.rs'
+            self.assertEqual(updated(root, [stale, foreign, gone]), [f'{OWNER} {moved}', foreign])
+            self.assertEqual(updated(root, []), [
+                '# Moved worth-query-execution courts and testkits reach the library only through its sealed doors.',
+                f'{OWNER} {moved}'])
+
 
 if __name__ == '__main__':
     unittest.main()

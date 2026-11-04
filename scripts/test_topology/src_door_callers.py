@@ -4,8 +4,9 @@ The seal rule lets a `*_for_test` / `*ForTest` name be referenced only by its ow
 the files `tools/boundary-check/config/control-callers.txt` lists for that owner. Every court
 or testkit file naming a door the library declares (the `court_doors_for_test` module, its
 member doors, and the library's existing test doors) gets an entry with the library as owner.
-Entries whose caller file no longer exists are moved to the file's new home when exactly one
-moved file has the same module path, and dropped otherwise.
+An entry whose caller file no longer exists and lay in this crate family (the library or one
+of its courts and testkits) is moved to the file's new home when exactly one moved file has the
+same module path, and dropped otherwise. Every other entry is left as it is.
 """
 from pathlib import Path
 import re
@@ -38,6 +39,12 @@ def moved_files(root):
                   for f in d.rglob('*.rs'))
 
 
+def in_family(path):
+    name = path.split('/')[3] if path.startswith(CRATES + '/') and path.count('/') > 3 else ''
+    return name == 'worth-query-execution' or (
+        name.startswith(('worth-query-court-', 'worth-query-testkit-')) and 'execution' in name)
+
+
 def module_key(path):
     tail = path.split('/domain_computation/', 1)
     return 'domain_computation/' + tail[1] if len(tail) == 2 else None
@@ -54,7 +61,7 @@ def updated(root, lines):
     out, present = [], set()
     for line in lines:
         parts = line.split()
-        if len(parts) != 2 or line.startswith('#') or (root / parts[1]).exists():
+        if len(parts) != 2 or line.startswith('#') or (root / parts[1]).exists() or not in_family(parts[1]):
             out.append(line)
             present.add(tuple(parts))
             continue
