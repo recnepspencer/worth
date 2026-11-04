@@ -1,5 +1,29 @@
 # Failure attribution and resolution
 
+## Resume3d7ccf16b0 through b8c3d86727
+
+Correction through d61b52fe28 adds these resolved failures; the current index
+contains28 terminal lanes:
+
+| Failure/evidence | Root cause and wrong side | Fix / final state |
+|---|---|---|
+| admission_data_final_review REJECT, P2 | Whole-string UTF-8 validation, comparison and copying could exceed the image's declared <=64KiB request polling interval; product algorithm was wrong | Use the existing raw slice cursor with bounded UTF-8 validation/copy and bounded comparison windows, preserving family wire grammar and admitting grants before allocation. New public long-family control and all nine image courts pass9/0/0 |
+| native-image-bounded-family-check FAIL101 | New fixture treated ExecutionRequest::run's optional lease argument as MapKernelContext; fixture implementation was wrong | Follow the existing nested run_native_with_checkpoint pattern and retain the exact typed inner stop plus bounded-slack assertion. Corrected check passes; bounded-family public courts pass9/0/0 |
+
+The current-resume lane list is admission-data-lanes.md (23 terminal lanes).
+
+| Failure/evidence | Root cause and wrong side | Fix / final state |
+|---|---|---|
+| native-image-selector-check FAIL101 | Our new selector owner incorrectly passed OriginalResultMemory where reserve_in_scope demanded a resource lease; product implementation was wrong | Corrected scoped check passed; final implementation uses ExecutionRequest::reserve_retained_memory, retaining its classified inner stops and explicit native-only accounting mode. Final native-image-probe-check passes |
+| native-image-inorder-selector-check FAIL101 | Our new public fixture passed &&str into ClientKey::raw, whose Into<String> contract takes &str; fixture implementation was wrong | Pass *family without changing the original assertions; corrected check and affected public courts pass2/0/0 |
+| admission_binary_encoding_review REJECT, medium | Our byte probe inherited Serde's human-readable mode instead of the actual MessagePack mode; product codec was wrong | Carry the actual flag; fixed_byte_probe_obeys_the_underlying_serializer_mode passes in corrected codec lane3/0/0 |
+| admission_selector_data_review REJECT, medium | Our borrowed-field recursion scanned complete child subtrees again at each ancestor, causing n-log-n marker work and missing traversal charges; product algorithm was wrong | Replaced with exact framing plus streaming DeserializeSeed; bounded outer roster scans are explicitly charged. Streaming public lane passes7/0/0; final in-order affected courts pass2/0/0 |
+| Self-review: ancestor-bound text charging | Carrying ancestor key bounds could repeatedly charge a long ancestor's text despite the streaming marker fix; product cost model was wrong | Use one in-order predecessor. Each family is compared at most twice; three genuine original publications exercise both sides of the balanced selector |
+| Self-review: Serde collect_str default | A rejected probe could format/allocate a temporary string via the default trait method; product adapter was wrong | Reject collect_str without formatting and forward the actual serializer's method; fixed_byte_probe_does_not_format_nonbyte_tuple_values passes1/0/0 |
+
+All executed test cases in these resume lanes passed. This is not a full-task
+green claim: operational admission and the remaining queue are unfinished.
+
 All lane paths/counts are in checkpoint-admission-lane-index.md. This ledger
 distinguishes product, test and orchestration faults; open work remains P-A's.
 
