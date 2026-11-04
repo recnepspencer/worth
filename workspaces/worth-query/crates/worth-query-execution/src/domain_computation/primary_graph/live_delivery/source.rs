@@ -2,14 +2,13 @@ use std::collections::{BTreeMap, VecDeque};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
 
-mod custody;
+pub(crate) mod custody;
 mod partition;
-mod predicate;
+pub(crate) mod predicate;
 mod publication;
 mod reservation;
-mod subscription;
+pub(crate) mod subscription;
 pub(in crate::domain_computation::primary_graph) use subscription::WorthQueryLiveSubscriptionCapacityExhausted;
-#[cfg(test)]
 mod testing;
 
 use crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation;
@@ -24,7 +23,7 @@ use worth_execution::ExecutionRequest;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 
 #[derive(Debug)]
-pub(in crate::domain_computation::primary_graph) enum WorthQueryLiveAdmissionDenial {
+pub enum WorthQueryLiveAdmissionDenial {
     Execution(Cause),
     Unavailable(&'static str),
 }
@@ -45,7 +44,7 @@ use crate::domain_computation::primary_graph::WorthQueryCommittedProductPublicat
 const RETAINED_COMMIT_BATCH_CAPACITY: usize = 64;
 
 #[derive(Clone, Eq, Hash, Ord, PartialEq, PartialOrd)]
-struct WorthQueryLiveProductKey {
+pub struct WorthQueryLiveProductKey {
     branch: worth_runtime_world::facade::ProductBranchIdentity,
     incarnation: worth_runtime_world::facade::ProductBranchIncarnation,
 }
@@ -66,22 +65,21 @@ impl WorthQueryLiveProductKey {
     }
 }
 
-pub(in crate::domain_computation::primary_graph) struct WorthQueryLiveDeliverySource {
+pub struct WorthQueryLiveDeliverySource {
     state: Arc<Mutex<WorthQueryLiveDeliverySourceState>>,
     batch_capacity: AtomicUsize,
-    #[cfg(test)]
     after_reservation: Mutex<Option<Arc<dyn Fn() + Send + Sync>>>,
 }
 
 #[derive(Default)]
-struct WorthQueryLiveDeliverySourceState {
+pub struct WorthQueryLiveDeliverySourceState {
     partitions: BTreeMap<WorthQueryLiveProductKey, WorthQueryLiveProductPartition>,
     published_commit_count: usize,
     subscriber_count: usize,
     closed: bool,
 }
 
-struct WorthQueryLiveProductPartition {
+pub struct WorthQueryLiveProductPartition {
     batches: VecDeque<Arc<WorthQueryLiveCommitBatchCell>>,
     allocated_batch_capacity: usize,
     next_sequence: u64,
@@ -142,7 +140,6 @@ impl WorthQueryLiveDeliverySource {
         Self {
             state: Arc::new(Mutex::new(WorthQueryLiveDeliverySourceState::default())),
             batch_capacity: AtomicUsize::new(batch_capacity),
-            #[cfg(test)]
             after_reservation: Mutex::new(None),
         }
     }
@@ -203,7 +200,6 @@ impl WorthQueryLiveDeliverySource {
             active: true,
         };
         drop(state);
-        #[cfg(test)]
         if let Some(hook) = self
             .after_reservation
             .lock()
@@ -290,5 +286,4 @@ impl WorthQueryLiveDeliverySource {
     }
 }
 
-#[cfg(test)]
-mod count_tests;
+mod court_doors_for_test;

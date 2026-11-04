@@ -10,7 +10,7 @@ use std::sync::{
 };
 use std::time::Duration;
 
-mod caller_pass;
+pub(crate) mod caller_pass;
 mod managed_source;
 pub use managed_source::WorthQueryManagedSourceRevalidationPauseForTest;
 mod source_publication;
@@ -20,8 +20,7 @@ pub use source_publication::{
 };
 
 #[derive(Clone, Default)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationAttemptOperationControl
-{
+pub struct WorthQueryApplicationAttemptOperationControl {
     pub(in crate::domain_computation::primary_graph) caller_pass:
         Arc<caller_pass::CallerPassControl>,
     pub(super) coupled_participant_fault: Arc<std::sync::atomic::AtomicU8>,
@@ -296,3 +295,5 @@ mod arrival_tests {
         assert!(!aborted.wait_for_arrivals());
     }
 }
+
+mod court_doors_for_test;

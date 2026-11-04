@@ -28,7 +28,7 @@ pub(in crate::domain_computation::primary_graph) struct DeclaredCoupledOutputDem
         fn(&dyn Any, &dyn Any) -> Result<CoupledSourceArguments, Denial>,
 }
 #[derive(Default)]
-pub(in crate::domain_computation::primary_graph) struct DeclaredCoupledOutputDemands {
+pub struct DeclaredCoupledOutputDemands {
     pub(in crate::domain_computation::primary_graph) values: Vec<DeclaredCoupledOutputDemand>,
     _memory: Vec<worth_execution::ExecutionMemoryReservation>,
     failure: std::cell::RefCell<Option<Denial>>,

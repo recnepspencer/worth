@@ -33,7 +33,6 @@ pub struct WorthQueryProductRuntime {
     pub(crate) signal_lifecycle:
         worth_signal::facade::branch::SignalBranchLifecyclePort<(), (), ()>,
     pub(crate) owner_cleanup: WorthQueryProductBranchOwnerCleanupRegistry,
-    #[cfg(test)]
     pub(crate) default_branch: ProductBranchIdentity,
     pub(crate) default_occurrence: ProductBranchIncarnation,
     next_public_branch_ordinal: Arc<std::sync::atomic::AtomicU64>,
@@ -80,7 +79,6 @@ impl WorthQueryProductRuntime {
             signal_basis,
             signal_lifecycle,
             owner_cleanup,
-            #[cfg(test)]
             default_branch,
             default_occurrence,
             next_public_branch_ordinal: Arc::new(std::sync::atomic::AtomicU64::new(1)),
@@ -106,7 +104,6 @@ impl WorthQueryProductRuntime {
         branch.occurrence().owner_identity() == self.owner.owner_identity()
     }
 
-    #[cfg(test)]
     pub(crate) fn default_branch(&self) -> &ProductBranchIdentity {
         &self.default_branch
     }
@@ -139,3 +136,5 @@ impl WorthQueryProductRuntime {
 }
 
 mod operation_control;
+
+mod court_doors_for_test;

@@ -48,7 +48,7 @@ impl FactBytes for Admitted {
         self.bytes.len()
     }
 }
-pub(in crate::domain_computation::primary_graph) fn encode_funded(
+pub fn encode_funded(
     facts: &(impl FactSequence + ?Sized),
     control: StorageControl<'_, '_>,
 ) -> Result<ExecutionImmutableBytes, FactDecodeDenial> {

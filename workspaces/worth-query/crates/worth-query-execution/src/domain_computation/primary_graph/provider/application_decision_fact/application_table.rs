@@ -9,7 +9,7 @@ use std::{collections::BTreeMap, sync::Arc};
 
 mod preimage;
 
-pub(in crate::domain_computation) struct ApplicationFactTable {
+pub struct ApplicationFactTable {
     prefix: Option<Prefix>,
     overlay: BTreeMap<String, Decision>,
     count: usize,
@@ -220,3 +220,5 @@ fn request(fact: &Decision) -> crate::domain_computation::WorthQueryDecisionFact
         .expect("completed native or freshly authorized structural locator");
     WorthQueryDecisionFactRequest::new(family, locator).expect("installed native decision family")
 }
+
+mod court_doors_for_test;

@@ -9,7 +9,7 @@ use worth_relational::facade::transactions::EntityReference;
 use super::super::read_set::WorthQueryCompleteApplicationReadSet;
 use super::super::WorthQueryProjectedApplicationMutation;
 
-mod emission;
+pub(crate) mod emission;
 pub(in crate::domain_computation::primary_graph) use emission::{
     WorthQueryAdmittedApplicationEmissionBatch, WorthQueryApplicationEmission,
 };
@@ -43,7 +43,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationOpt
         Option<AspectValue>,
 }
 
-pub(in crate::domain_computation::primary_graph) enum WorthQueryApplicationRealizedEffect {
+pub enum WorthQueryApplicationRealizedEffect {
     CreateEntity {
         kind: KindId,
         key: String,
@@ -129,11 +129,10 @@ impl<Schema, Operation, Input, Scope>
     }
 }
 
-#[cfg(test)]
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>
 {
-    pub(in crate::domain_computation::primary_graph) fn with_consumed_output_for_test(
+    pub fn with_consumed_output_for_test(
         mut self,
         evidence: crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence,
     ) -> Self {
@@ -171,7 +170,7 @@ pub struct WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, S
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum WorthQueryApplicationCreationPartition {
+pub enum WorthQueryApplicationCreationPartition {
     Issued,
     Context(worth_relational::facade::identity::PartitionId),
 }
@@ -201,15 +200,11 @@ impl<Schema, Operation, Input, Scope>
             .belongs_to(runtime_authority, binding_identity)
     }
 
-    pub(in crate::domain_computation::primary_graph) fn product_branch(
-        &self,
-    ) -> crate::basis::WorthQueryProductBranch {
+    pub fn product_branch(&self) -> crate::basis::WorthQueryProductBranch {
         self.read_set.lease.product().product_branch()
     }
 
-    pub(in crate::domain_computation::primary_graph) fn with_output_demand_observation(
-        mut self,
-    ) -> Self {
+    pub fn with_output_demand_observation(mut self) -> Self {
         self.retain_output_demand_observation = true;
         self
     }
@@ -227,3 +222,5 @@ impl<Schema, Operation, Input, Scope>
         self
     }
 }
+
+mod court_doors_for_test;

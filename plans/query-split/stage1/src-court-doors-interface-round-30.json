@@ -1,0 +1,6 @@
+{
+ "interface_items": [
+  "domain_computation::primary_graph::application_attempt::read_set::original_read::CompletedOriginalRead",
+  "domain_computation::primary_graph::application_query::managed_index::refinement::RefinementCallbacks"
+ ]
+}

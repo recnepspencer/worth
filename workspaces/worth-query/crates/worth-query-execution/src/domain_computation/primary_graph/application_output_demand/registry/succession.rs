@@ -20,7 +20,7 @@ use super::WorthQueryOutputProgress;
 
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
 
-pub(super) struct Succession {
+pub struct Succession {
     predecessor: [u8; 32],
     reopened: Option<WorthQueryOutputProgress>,
 }
@@ -190,3 +190,5 @@ fn replaced_ready(record: &DemandRecord) -> bool {
             && (!matches!(output.advancement(), WorthQueryOutputAdvancement::Stopped { .. })
                 || super::refreshed_rejoin::superseded(record)))
 }
+
+mod court_doors_for_test;

@@ -8,23 +8,23 @@ use worth_relational::facade::{
     transactions::RelationalExecutionDenialCause as Cause,
 };
 mod currentness;
-mod key;
+pub(crate) mod key;
 mod member;
 pub(in crate::domain_computation::primary_graph) mod member_work;
-mod selection;
+pub(crate) mod selection;
 pub(in crate::domain_computation::primary_graph) use key::AggregateKey;
 pub(in crate::domain_computation::primary_graph) use selection::AggregateSelection;
 
 /// Only Native acquisition can construct this body. Source custody is separate
 /// from semantic truth: stored incident lineage is not part of an orbit answer.
 #[derive(Debug)]
-pub(in crate::domain_computation) struct AggregateObservation<Member = EntityId> {
+pub struct AggregateObservation<Member = EntityId> {
     key: AggregateKey<Member>,
     native: PinnedAggregateRead<Member>,
     source: super::projection_read_origin::ProjectionReadOrigin,
     _allocation: Option<Arc<super::source_facts::SourceFactsAllocation>>,
 }
-pub(in crate::domain_computation::primary_graph) struct AggregateQuery<'a> {
+pub struct AggregateQuery<'a> {
     pub allocation: Option<&'a Arc<super::source_facts::SourceFactsAllocation>>,
     pub subject: &'a str,
     pub entity_kind: KindId,
@@ -133,9 +133,7 @@ impl<Member> AggregateObservation<Member> {
     pub(in crate::domain_computation::primary_graph) fn key(&self) -> &AggregateKey<Member> {
         &self.key
     }
-    pub(in crate::domain_computation::primary_graph) fn native(
-        &self,
-    ) -> &PinnedAggregateRead<Member> {
+    pub fn native(&self) -> &PinnedAggregateRead<Member> {
         &self.native
     }
     pub(in crate::domain_computation::primary_graph) fn source(
@@ -144,3 +142,5 @@ impl<Member> AggregateObservation<Member> {
         &self.source
     }
 }
+
+mod court_doors_for_test;

@@ -7,7 +7,6 @@ use worth_relational::facade::history::CommitId;
 
 use super::super::RecordedSettlementIdentity;
 
-#[cfg(test)]
 mod read_observation;
 
 /// Native matching and closure diagnostics. Posting visits precede filtering;
@@ -35,7 +34,7 @@ pub enum WorthQueryNativeMarkingPrecision {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(super) struct NativeMarkingReport {
+pub struct NativeMarkingReport {
     pub(super) commit: CommitId,
     pub(super) precision: WorthQueryNativeMarkingPrecision,
 }
@@ -44,3 +43,5 @@ pub(super) struct AppliedNativeMarking {
     pub(super) affected: OrdSet<Arc<RecordedSettlementIdentity>>,
     pub(super) report: NativeMarkingReport,
 }
+
+mod court_doors_for_test;

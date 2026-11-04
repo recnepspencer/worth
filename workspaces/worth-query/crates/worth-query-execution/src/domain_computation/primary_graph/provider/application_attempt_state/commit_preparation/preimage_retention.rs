@@ -2,7 +2,7 @@
 
 mod authored_anchors;
 mod relations;
-mod selection;
+pub(crate) mod selection;
 pub(crate) use relations::WorthQueryRetainedRelationPreImageSeal;
 
 pub(crate) use selection::WorthQueryRetainedPreImageSeal;

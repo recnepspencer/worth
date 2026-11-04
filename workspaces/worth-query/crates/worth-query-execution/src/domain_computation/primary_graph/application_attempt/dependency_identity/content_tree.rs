@@ -22,7 +22,7 @@ type Tree = ReductionTree<Summary, fn(&Summary, &Summary) -> Summary>;
 #[derive(Clone, Debug)]
 pub(in crate::domain_computation::primary_graph) struct FactContent(Arc<Content>);
 
-pub(in crate::domain_computation::primary_graph) struct CompletedFactRoutes {
+pub struct CompletedFactRoutes {
     body: FactPayload,
     routes: Arc<FactRoutes>,
 }
@@ -291,7 +291,6 @@ impl FactContent {
     }
 }
 
-#[cfg(test)]
 pub(super) fn dependency_identity(
     key: [u8; 32],
     facts: &[super::super::WorthQueryApplicationObservedFact],
@@ -309,3 +308,5 @@ pub(super) fn dependency_identity(
         .identity(key)
         .map(|(digest, root)| (digest, work.combine(root)))
 }
+
+mod court_doors_for_test;

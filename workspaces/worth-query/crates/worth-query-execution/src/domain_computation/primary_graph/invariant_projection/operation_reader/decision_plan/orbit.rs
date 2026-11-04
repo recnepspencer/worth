@@ -1,6 +1,5 @@
 //! Record the two actual Native observations that jointly answer an orbit.
-#[cfg(test)]
-mod tests;
+
 use super::super::decision_reads::structural_walks::WalkRecordDenial;
 use super::*;
 use crate::domain_computation::primary_graph::aggregate_identity::WorthQueryAggregateIdentity;

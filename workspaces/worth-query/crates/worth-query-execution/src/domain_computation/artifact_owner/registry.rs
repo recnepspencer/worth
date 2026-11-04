@@ -308,3 +308,5 @@ impl Drop for WorthQueryWorkflowArtifactRegistry {
         self.close(WorthQueryArtifactDisposition::Cancelled);
     }
 }
+
+mod court_doors_for_test;

@@ -3,7 +3,7 @@ use worth_relational::facade::{
     runtime::RelationalAppliedCandidateReadQualification, snapshots::SnapshotHandle,
 };
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub(super) enum ProjectionReadOrigin {
+pub enum ProjectionReadOrigin {
     Committed(SnapshotHandle),
     Applied(RelationalAppliedCandidateReadQualification),
 }
@@ -30,7 +30,7 @@ impl PartialEq<SnapshotHandle> for ProjectionReadOrigin {
 /// Borrowed provenance while an acquisition is in progress. Only a funded
 /// retained result clones the committed snapshot's variable-width branch name.
 #[derive(Clone, Copy)]
-pub(super) enum ProjectionReadOriginRef<'a> {
+pub enum ProjectionReadOriginRef<'a> {
     Committed(&'a SnapshotHandle),
     Applied(RelationalAppliedCandidateReadQualification),
 }
@@ -76,3 +76,5 @@ impl From<SnapshotHandle> for ProjectionReadOrigin {
         Self::Committed(snapshot)
     }
 }
+
+mod court_doors_for_test;

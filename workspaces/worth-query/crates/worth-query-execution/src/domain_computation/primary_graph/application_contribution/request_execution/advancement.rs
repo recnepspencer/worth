@@ -77,19 +77,17 @@ impl WorthQueryAdvancementDenial {
 }
 
 mod phase_custody;
-mod runner;
+pub(crate) mod runner;
 pub use phase_custody::{WorthQueryAdvancementPhase, WorthQueryForeignAdvancementPhase};
 mod bootstrap_opening;
 pub use bootstrap_opening::with_bootstrap_advancement_from_request;
 mod bootstrap_custody;
 pub use bootstrap_custody::WorthQueryBootstrapAdvancementPhase;
-mod opening_custody;
+pub(crate) mod opening_custody;
 use opening_custody::OpeningCustody;
 
 impl QueryRequestExecution<'_> {
-    pub(in crate::domain_computation::primary_graph) fn execution_request(
-        &self,
-    ) -> Result<ExecutionRequest<'_, '_>, Resource> {
+    pub fn execution_request(&self) -> Result<ExecutionRequest<'_, '_>, Resource> {
         match &self.form {
             Form::Leased { lease, .. } | Form::Serial { lease, .. } => lease
                 .as_ref()
@@ -239,8 +237,7 @@ pub use observation::{
     WorthQueryAdvancementObservationForTest,
 };
 
-#[cfg(test)]
-pub(crate) fn with_test_advancement<R>(
+pub fn with_test_advancement<R>(
     body: impl for<'scope> FnOnce(test_host_policy::TestHostRequest<'scope>) -> R,
 ) -> R {
     let policy =
@@ -252,12 +249,8 @@ pub(crate) fn with_test_advancement<R>(
     .expect("the declared fixture policy admits its host call")
 }
 
-#[cfg(test)]
-mod standalone_test_custody;
-
 /// Positive fixture authoring has its own finite allowance, outside measured host calls.
-#[cfg(test)]
-pub(crate) fn with_test_bootstrap_advancement<R>(
+pub fn with_test_bootstrap_advancement<R>(
     work: u64,
     body: impl for<'scope> FnOnce(test_host_policy::TestHostRequest<'scope>) -> R,
 ) -> R {
@@ -272,12 +265,9 @@ pub(crate) fn with_test_bootstrap_advancement<R>(
     .expect("the declared fixture bootstrap allowance admits authoring")
 }
 
-#[cfg(test)]
-mod tests;
-
 pub(in crate::domain_computation::primary_graph) use observation::record_caller_pass_for_test;
 
-#[cfg(test)]
-mod test_host_policy;
-#[cfg(test)]
+pub(crate) mod test_host_policy;
 pub(crate) use test_host_policy::TestHostRequest;
+
+mod court_doors_for_test;

@@ -11,8 +11,7 @@ use worth_query_installation::facade::WorthQueryInstalledApplicationQueryBinding
 /// The exact row meanings share their original immutable footprints; the roster
 /// owns its original request's fixed backing. Native disclosed rows are
 /// retained only when the original one-shot explicitly requests them.
-pub(in crate::domain_computation::primary_graph::application_query) struct WorthQueryRetainedObservedParameters
-{
+pub struct WorthQueryRetainedObservedParameters {
     admitted: WorthQueryAdmittedApplicationQueryParameters,
     binding: Option<WorthQueryInstalledApplicationQueryBindingObservation>,
     rows: worth_execution::ExecutionArray<Arc<WorthQueryObservedSourceMeaning>>,
@@ -73,9 +72,6 @@ impl WorthQueryRetainedObservedParameters {
     }
 }
 
-#[cfg(test)]
-mod tests;
-
 impl std::ops::Deref for WorthQueryRetainedObservedParameters {
     type Target = WorthQueryAdmittedApplicationQueryParameters;
 
@@ -83,3 +79,5 @@ impl std::ops::Deref for WorthQueryRetainedObservedParameters {
         &self.admitted
     }
 }
+
+mod court_doors_for_test;

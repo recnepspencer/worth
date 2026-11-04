@@ -10,7 +10,7 @@ use worth_query_installation::facade::ApplicationSchema;
 
 mod coupled_assembly;
 pub(in crate::domain_computation::primary_graph) use coupled_assembly::DeclaredProducerAssembly;
-mod demand;
+pub(crate) mod demand;
 mod denial_value;
 pub(in crate::domain_computation::primary_graph) use demand::MatchedRequiredPredecessors;
 pub(in crate::domain_computation::primary_graph) use demand::{CurrentBasis, CurrentProof};
@@ -26,14 +26,14 @@ pub use denial_value::{
     WorthQueryProducerDenialValue, WorthQueryProjectedProducerDenial,
     WorthQueryUndeclaredProducerDenial,
 };
-mod execution;
+pub(crate) mod execution;
 pub(in crate::domain_computation::primary_graph) use execution::unpublished::PendingProducerPublication;
-mod invocation;
+pub(crate) mod invocation;
 pub(in crate::domain_computation::primary_graph) use execution::prepared_plan::OwnerPlan;
 use execution::{InstalledProducerExecutor, TypedInstalledProducer};
 pub(in crate::domain_computation::primary_graph) use invocation::ProducerInvocationAuthority;
-mod output_equivalence_contract;
-mod output_evaluation;
+pub(crate) mod output_equivalence_contract;
+pub(crate) mod output_evaluation;
 pub use output_equivalence_contract::WorthQueryProducerOutputEquivalence;
 pub use output_evaluation::WorthQueryProducerEvaluationIneligibility;
 pub(in crate::domain_computation::primary_graph) use output_evaluation::{
@@ -45,7 +45,7 @@ pub use input_reuse_contract::{
 };
 
 #[derive(Clone, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum WorthQueryProducerCommitAuthority {
+pub enum WorthQueryProducerCommitAuthority {
     Ordinary,
     ProgramOutput,
     SelectedProgram {
@@ -58,7 +58,7 @@ pub(in crate::domain_computation::primary_graph) use readiness::{
     evaluate_output_readiness, install_output_readiness_routes, PendingOutputReadiness,
     TypedPendingOutputReadiness, WorthQueryInstalledOutputReadinessRoutes,
 };
-mod scheduling;
+pub(crate) mod scheduling;
 mod source_qualification;
 pub(in crate::domain_computation::primary_graph) use scheduling::{
     schedule_output_producer, schedule_output_producer_on_selected,
@@ -223,7 +223,7 @@ where
     }
 }
 
-mod registry;
+pub(crate) mod registry;
 pub(super) use registry::DeclaredProducerBinding;
 pub(in crate::domain_computation::primary_graph) use registry::InstalledProducerEdition;
 pub(in crate::domain_computation::primary_graph) use registry::PendingProducerRegistry;

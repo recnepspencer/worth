@@ -1,0 +1,27 @@
+//! Doors under `domain_computation::primary_graph::output_lineage::invalidation`.
+#[path = "commit_touches/mod.rs"]
+pub mod commit_touches;
+#[path = "computation_changes/mod.rs"]
+pub mod computation_changes;
+#[path = "delivery/mod.rs"]
+pub mod delivery;
+#[path = "derived/mod.rs"]
+pub mod derived;
+#[path = "fact_key/mod.rs"]
+pub mod fact_key;
+#[path = "full_verification/mod.rs"]
+pub mod full_verification;
+#[path = "mark_state/mod.rs"]
+pub mod mark_state;
+#[path = "owner/mod.rs"]
+pub mod owner;
+#[path = "publication/mod.rs"]
+pub mod publication;
+#[path = "query_coverage/mod.rs"]
+pub mod query_coverage;
+#[path = "settlement/mod.rs"]
+pub mod settlement;
+#[path = "source_alignment/mod.rs"]
+pub mod source_alignment;
+#[path = "verification/mod.rs"]
+pub mod verification;

@@ -1,16 +1,16 @@
 mod authoritative_clock_progression;
 mod bridge_clock_outcome;
-mod clock_source_observation;
-mod commit_watch;
+pub(crate) mod clock_source_observation;
+pub(crate) mod commit_watch;
 mod due_wake_retention;
 mod evaluation_affinity;
 mod evaluation_binding;
 mod evaluation_predecessor;
-mod installed_operation;
-mod operation_cell;
+pub(crate) mod installed_operation;
+pub(crate) mod operation_cell;
 mod operation_totals;
 mod pending_invalidations;
-mod registry;
+pub(crate) mod registry;
 mod resource_observation;
 mod runtime_rebinding;
 mod temporal_operation;
@@ -29,6 +29,3 @@ pub(in crate::domain_computation::primary_graph) use installed_operation::{
 };
 pub(in crate::domain_computation::primary_graph) use registry::WorthQueryConditionalOperationRegistry;
 pub(in crate::domain_computation::primary_graph) use operation_cell::WorthQueryConditionalOperationCell;
-
-#[cfg(test)]
-mod tests;

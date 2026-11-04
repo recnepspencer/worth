@@ -22,10 +22,7 @@ pub struct WorthQueryApplicationPreviewRequest {
     identity: String,
 }
 
-#[cfg(test)]
-mod counted_read_stops;
-#[cfg(test)]
-mod discard_fault;
+pub(crate) mod discard_fault;
 
 impl WorthQueryApplicationPreviewRequest {
     pub fn new(identity: impl Into<String>) -> Self {
@@ -69,7 +66,6 @@ pub struct WorthQueryApplicationPreviewSession {
     _runtime: Box<dyn PreviewRuntimeDestructionCustody>,
     runtime_authority: u64,
     source_commit: CompositeCommitIdentity,
-    #[cfg(test)]
     discard_fault: std::rc::Rc<std::cell::Cell<bool>>,
 }
 
@@ -139,7 +135,7 @@ impl WorthQueryApplicationPreviewSession {
         mut self,
     ) -> Result<(), (Self, worth_runtime_bridge::facade::BridgeSpeculationError)> {
         let residue = vec![BridgePreviewResidueClass::TemporaryDiagnosticsResidue];
-        #[cfg(test)]
+        // Armed only by a court through `reject_discard_for_test`.
         let residue = if self.discard_fault.get() {
             vec![BridgePreviewResidueClass::AuthoritativeDiagnosticsResidue]
         } else {
@@ -256,8 +252,9 @@ where
             _runtime: Box::new(self.clone()),
             runtime_authority: self.runtime().runtime.authority_identity().as_u64(),
             source_commit: observation.selected_commit().clone(),
-            #[cfg(test)]
             discard_fault: Default::default(),
         })
     }
 }
+
+mod court_doors_for_test;

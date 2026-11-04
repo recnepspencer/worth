@@ -18,8 +18,7 @@ use super::WorthQueryOutputDemandRegistry;
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
 
 /// The typed successor, erased so the registry stays independent of schema.
-pub(in crate::domain_computation::primary_graph) type HeldRequiredSuccessor =
-    Box<dyn Any + Send + Sync>;
+pub type HeldRequiredSuccessor = Box<dyn Any + Send + Sync>;
 
 impl WorthQueryOutputDemandRegistry {
     /// Keep `successor` on the row `key_of` names. Returns what the caller
@@ -115,3 +114,5 @@ impl RequiredUpstreamSuccessor {
         self.held
     }
 }
+
+mod court_doors_for_test;

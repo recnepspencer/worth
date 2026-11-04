@@ -9,7 +9,7 @@ use super::plan::{
     CompiledWorkflowSemanticPlan,
 };
 
-pub(super) struct ColdCompiledWorkflowDefinition {
+pub struct ColdCompiledWorkflowDefinition {
     pub(super) lineage: EntityId,
     pub(super) definition: EntityId,
     pub(super) start_node: EntityId,
@@ -21,14 +21,14 @@ pub(super) struct ColdCompiledWorkflowDefinition {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(super) struct WorkflowDefinitionPublicationRevisions {
+pub struct WorkflowDefinitionPublicationRevisions {
     pub(super) start: Option<VersionId>,
     pub(super) nodes: Option<VersionId>,
     pub(super) connections: Option<VersionId>,
 }
 
 #[derive(Clone)]
-pub(super) struct WorkflowDefinitionPublicationBinding {
+pub struct WorkflowDefinitionPublicationBinding {
     pub(super) lineage: EntityId,
     pub(super) definition: EntityId,
     pub(super) start_node: EntityId,
@@ -40,7 +40,7 @@ pub(super) struct WorkflowDefinitionPublicationBinding {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(super) enum WorkflowDefinitionPublicationBindingDenial {
+pub enum WorkflowDefinitionPublicationBindingDenial {
     MissingStartNode,
     UnknownConnectionEndpoint,
     BindingCardinalityMismatch,
@@ -171,7 +171,7 @@ impl WorkflowDefinitionPublicationBinding {
     }
 }
 
-pub(super) fn separate_compiled_definition(
+pub fn separate_compiled_definition(
     compiled: ColdCompiledWorkflowDefinition,
 ) -> Result<
     (
@@ -309,3 +309,5 @@ fn semantic_retained_bytes(
 #[cfg(test)]
 #[path = "publication_binding/tests.rs"]
 mod tests;
+
+mod court_doors_for_test;

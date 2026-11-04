@@ -22,7 +22,7 @@ pub(crate) struct WorthQueryProviderSessionAffinity<'run> {
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub(in crate::domain_computation) struct WorthQueryProviderSessionAffinityIdentity(u64);
+pub struct WorthQueryProviderSessionAffinityIdentity(u64);
 
 impl WorthQueryProviderSessionAffinityIdentity {
     pub(super) fn from_token(token: &WorthQueryProviderSessionToken) -> Self {
@@ -31,7 +31,7 @@ impl WorthQueryProviderSessionAffinityIdentity {
 }
 
 #[derive(Clone, Copy)]
-pub(in crate::domain_computation) struct WorthQueryProviderSessionAffinityView<'session> {
+pub struct WorthQueryProviderSessionAffinityView<'session> {
     #[allow(dead_code)]
     identity: WorthQueryProviderSessionAffinityIdentity,
     #[allow(dead_code)]
@@ -109,16 +109,12 @@ impl<'run> WorthQueryProviderSessionAffinity<'run> {
 
 impl<'session> WorthQueryProviderSessionAffinityView<'session> {
     #[allow(dead_code)]
-    pub(in crate::domain_computation) const fn identity(
-        self,
-    ) -> WorthQueryProviderSessionAffinityIdentity {
+    pub const fn identity(self) -> WorthQueryProviderSessionAffinityIdentity {
         self.identity
     }
 
     #[allow(dead_code)]
-    pub(in crate::domain_computation) fn plan(
-        self,
-    ) -> &'session WorthQueryProviderExecutionPlanContract {
+    pub fn plan(self) -> &'session WorthQueryProviderExecutionPlanContract {
         self.plan
     }
 }

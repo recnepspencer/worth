@@ -5,7 +5,7 @@ use super::{
     WorthQueryApplicationObservedRelation,
 };
 
-pub(super) fn remains_equal(
+pub fn remains_equal(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
@@ -26,6 +26,3 @@ pub(super) fn remains_equal(
         )?
         .is_some_and(|current| current == expected))
 }
-
-#[cfg(test)]
-mod tests;

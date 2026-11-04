@@ -70,11 +70,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub(in crate::domain_computation::primary_graph) fn resolve_admitted_guarded_workflow_operation_custody<
-        Operation,
-        Input,
-        Scope,
-    >(
+    pub fn resolve_admitted_guarded_workflow_operation_custody<Operation, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,

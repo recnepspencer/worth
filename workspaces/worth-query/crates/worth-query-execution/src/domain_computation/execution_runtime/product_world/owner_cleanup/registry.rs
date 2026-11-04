@@ -10,20 +10,20 @@ use super::{
 };
 use crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime;
 
-struct CleanupEntry {
+pub struct CleanupEntry {
     record: Mutex<Option<WorthQueryProductBranchOwnerCleanupRecord>>,
     scope: CleanupScope,
 }
 
 #[derive(Clone)]
-pub(crate) enum CleanupScope {
+pub enum CleanupScope {
     Creation,
     Application,
     WorkspaceRetirement,
     ApplicationRetirement(WorthQueryRetiredProductOccurrence),
 }
 
-struct CleanupRegistryState {
+pub struct CleanupRegistryState {
     maximum: Option<usize>,
     next_identity: u64,
     reserved: usize,
@@ -31,7 +31,7 @@ struct CleanupRegistryState {
 }
 
 #[derive(Clone)]
-pub(crate) struct WorthQueryProductBranchOwnerCleanupRegistry {
+pub struct WorthQueryProductBranchOwnerCleanupRegistry {
     state: Arc<Mutex<CleanupRegistryState>>,
     pub(super) follower: Arc<OnceLock<Weak<dyn WorthQueryProductRetentionFollower>>>,
 }
@@ -50,10 +50,7 @@ impl WorthQueryProductBranchOwnerCleanupRegistry {
     }
 
     /// The one follower every history release these cleanups make reaches.
-    pub(crate) fn follow_product_retention(
-        &self,
-        follower: Weak<dyn WorthQueryProductRetentionFollower>,
-    ) {
+    pub fn follow_product_retention(&self, follower: Weak<dyn WorthQueryProductRetentionFollower>) {
         assert!(
             self.follower.set(follower).is_ok(),
             "one provider follows a product World's history releases"
@@ -271,28 +268,18 @@ impl WorthQueryProductBranchOwnerCleanupRegistry {
         }
     }
 
-    #[cfg(test)]
     fn after_component_progress(&self) {
         testing::run_after_component_progress();
     }
 
-    #[cfg(not(test))]
-    fn after_component_progress(&self) {}
-
-    #[cfg(test)]
     fn after_install(&self) {
         testing::run_after_install();
     }
 
-    #[cfg(not(test))]
-    fn after_install(&self) {}
-
-    #[cfg(test)]
     pub(crate) fn replace_after_install_hook(&self, hook: Option<Box<dyn Fn()>>) {
         testing::replace_after_install_hook(hook);
     }
 
-    #[cfg(test)]
     pub(crate) fn replace_after_component_progress_hook(&self, hook: Option<Box<dyn Fn()>>) {
         testing::replace_after_component_progress_hook(hook);
     }
@@ -302,7 +289,7 @@ impl WorthQueryProductBranchOwnerCleanupRegistry {
 // install consumes self and disarms Drop before callbacks; Drop decrements only
 // an armed reservation. Each decrement therefore owns one distinct reserved slot.
 #[must_use = "cleanup capacity must be installed or released"]
-pub(crate) struct WorthQueryProductBranchOwnerCleanupReservation {
+pub struct WorthQueryProductBranchOwnerCleanupReservation {
     registry: WorthQueryProductBranchOwnerCleanupRegistry,
     identity: u64,
     entry: Arc<CleanupEntry>,
@@ -347,7 +334,6 @@ impl WorthQueryProductBranchOwnerCleanupReservation {
 #[path = "registry/retry.rs"]
 mod retry;
 use retry::RetryRecordGuard;
-#[cfg(test)]
 #[path = "registry/testing.rs"]
 mod testing;
 
@@ -365,13 +351,8 @@ impl Drop for WorthQueryProductBranchOwnerCleanupReservation {
     }
 }
 
-fn lock<T>(mutex: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
+pub fn lock<T>(mutex: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
     mutex.lock().unwrap_or_else(|error| error.into_inner())
 }
 
-#[cfg(test)]
-#[path = "registry/canonical_retirement.rs"]
-mod canonical_retirement;
-
-#[cfg(test)]
-mod retirement_tests;
+mod court_doors_for_test;

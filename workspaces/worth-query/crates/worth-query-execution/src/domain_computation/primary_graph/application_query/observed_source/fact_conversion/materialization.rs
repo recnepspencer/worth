@@ -76,7 +76,7 @@ impl PreparedSourceFactMaterialization<'_, '_, '_> {
     }
 }
 
-pub(super) fn merge_facts(
+pub fn merge_facts(
     facts: Vec<Fact>,
     control: SourceFactExpansionControl<'_, '_>,
     subject: &str,

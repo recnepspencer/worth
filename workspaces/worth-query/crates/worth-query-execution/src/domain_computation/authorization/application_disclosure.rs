@@ -1,7 +1,7 @@
-pub(in crate::domain_computation) mod contract;
-mod decision;
+pub(crate) mod contract;
+pub(crate) mod decision;
 mod influence_validation;
-mod pending_access;
+pub(crate) mod pending_access;
 mod receipt;
 pub(in crate::domain_computation) use pending_access::{
     prepare_funded_pending_disclosure, prepare_pending_disclosure,

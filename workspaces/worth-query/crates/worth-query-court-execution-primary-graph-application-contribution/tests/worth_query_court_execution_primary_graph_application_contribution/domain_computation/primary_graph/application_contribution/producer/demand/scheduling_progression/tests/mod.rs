@@ -1,0 +1,235 @@
+pub use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::scheduling_interruption::bridge_deferral::BridgeDeferralWorthQueryOutputDemandRegistryForTest;
+pub use std::sync::Arc;
+pub use worth_runtime_bridge::facade::BridgeInstalledConditionalLowering;
+pub use worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly;
+pub use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenialKind;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputSchedulingResult;
+pub use worth_query_execution::facade::domain_computation::WorthQuerySelectedApplicationProducer;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::demand::progression::denial;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::demand::scheduling_progression::scheduling_refusal;
+pub use crate::domain_computation::primary_graph::application_contribution::producer::demand::scheduling_progression::tests;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputDemandRegistry;
+pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
+pub use std::sync::mpsc;
+pub use std::sync::Mutex;
+pub use std::time::Duration;
+pub use worth_runtime_bridge::facade::*;
+
+pub struct Compute;
+pub struct Block {
+    pub entered: mpsc::SyncSender<()>,
+    pub release: Mutex<mpsc::Receiver<()>>,
+}
+impl BridgeConditionalProviderSemantics for Compute {
+    type SemanticContract = ();
+    fn semantic_contract(&self) {}
+    fn retained_heap_bytes(
+        &self,
+        _: &(),
+    ) -> Result<BridgeConditionalProviderHeapRetention, BridgeConditionalProviderRetentionOverflow>
+    {
+        Ok(BridgeConditionalProviderHeapRetention::none())
+    }
+}
+impl BridgeConditionalComputeProvider for Compute {
+    fn compute(
+        &self,
+        context: &mut dyn std::any::Any,
+    ) -> Result<worth_signal::facade::NodeEvaluationResult, String> {
+        if let Some(block) = context.downcast_ref::<Block>() {
+            block.entered.send(()).unwrap();
+            block
+                .release
+                .lock()
+                .unwrap()
+                .recv_timeout(Duration::from_secs(5))
+                .expect("the controller releases the occupied slot");
+            return Err("the competing attempt releases its slot before computation".to_owned());
+        }
+        Ok(worth_signal::facade::NodeEvaluationResult::from_version(
+            worth_signal::facade::AspectVersion::from_updates([(
+                worth_signal::facade::Aspect::new(0),
+                if context.is::<Block>() { 1 } else { 2 },
+            )]),
+        ))
+    }
+}
+pub struct UnusedSink;
+impl InvalidationSink for UnusedSink {
+    fn deliver_invalidation(
+        &self,
+        _: BridgeSignalInvalidationDelivery,
+        _: worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<BridgeDeliveryReceipt, SignalBridgeSinkError> {
+        panic!("source-free evaluation never delivers a patch")
+    }
+}
+pub fn installation() -> (
+    BridgeSealedRuntimeAssembly,
+    Arc<BridgeInstalledConditionalLowering>,
+) {
+    use worth_foundational::facade::AspectKey;
+    use worth_foundational::facade::FieldKey;
+    use worth_foundational::facade::ScalarAspectType;
+    use worth_signal::facade::SignalConditionalArtifactReuse;
+    use worth_signal::facade::SignalConditionalVersionComparator;
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
+    let bridge = RuntimeBridge::builder()
+        .with_relational_source(
+            (*(*(*world.application.runtime_for_test()).product_runtime_for_test())
+                .source_for_test())
+            .clone(),
+        )
+        .with_signal_sink(UnusedSink)
+        .register_mapping(BridgeMappingRegistration::new(
+            BridgeMappingId::from_stable_name("scheduling-busy"),
+            TruthPatchScope::for_entity_field(
+                MappingSelector::exact("scheduling-busy"),
+                AspectKey::new("probe").unwrap(),
+                FieldKey::new("value".to_owned()).unwrap(),
+            ),
+            SnapshotReadContract::scalar(
+                AspectKey::new("probe").unwrap(),
+                ScalarAspectType::String,
+            ),
+            SignalInvalidationScope::from_stable_name("scheduling-busy"),
+            CoarseRoutingMode::Direct,
+        ))
+        .build()
+        .unwrap();
+    let mut builder = BridgeConditionalRuntimeBuilder::with_owned_signal_graph(
+        bridge,
+        worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development(),
+    )
+    .unwrap();
+    let lowering = builder
+        .install_owned_conditional(BridgeOwnedConditionalInstallationRequest {
+            contract: BridgeConditionalContract::new(BridgeConditionalContractParts {
+                identity: Arc::from("scheduling-busy"),
+                dependency_count: 0,
+                condition_dependency_ordinals: vec![],
+                condition: BridgeConditionalCondition::Always,
+                dependency_comparator: SignalConditionalVersionComparator::Exact,
+                output_comparator: SignalConditionalVersionComparator::Exact,
+                artifact_reuse: SignalConditionalArtifactReuse::NotReusable,
+            }),
+            location: BridgeConditionalLocation::operation("scheduling-busy"),
+            dependencies: vec![],
+            providers: BridgeConditionalProviderSet::new().compute(Compute),
+        })
+        .unwrap();
+    (builder.seal().unwrap(), lowering)
+}
+pub fn operation(
+    lowering: &Arc<BridgeInstalledConditionalLowering>,
+    attempt: u64,
+) -> BridgeConditionalExecutionRequest<'_> {
+    BridgeConditionalExecutionRequest {
+        lowering,
+        query_binding_identity: "scheduling-busy",
+        query_capability_identity: 1,
+        snapshot_identity: "source-free",
+        truth_branch_identity: None,
+        bridge_snapshot_identity: None,
+        execution_identity: "scheduling-busy",
+        attempt,
+    }
+}
+
+#[test]
+fn busy_signal_slot_defers_with_custody_then_a_later_advance_completes() {
+    let (owner, lowering) = installation();
+    let policy = BridgeExecutionPolicyBaseline::operational().request_policy();
+    let serial = worth_execution::SerialRequest::from_policy(
+        &policy,
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let request = worth_execution::ExecutionRequest::serial(&serial);
+    let basis = owner
+        .admit_conditional_signal_basis(&lowering, owner.admitted_signal_basis())
+        .unwrap();
+    let session = owner
+        .admit_conditional_evaluation(
+            BridgeConditionalEvaluationAdmissionRequest::source_free_at_signal_basis(&basis),
+            request,
+        )
+        .unwrap();
+    let (entered, ready) = mpsc::sync_channel(1);
+    let (release, released) = mpsc::sync_channel(1);
+    std::thread::scope(|threads| {
+        let first = threads.spawn(|| {
+            owner.execute_admitted_conditional(
+                request,
+                &session,
+                operation(&lowering, 1),
+                &mut Block {
+                    entered,
+                    release: Mutex::new(released),
+                },
+            )
+        });
+        ready
+            .recv_timeout(Duration::from_secs(5))
+            .expect("compute occupies the actual Signal slot");
+        let denial = owner
+            .execute_admitted_conditional(request, &session, operation(&lowering, 2), &mut ())
+            .err()
+            .unwrap();
+        release.send(()).unwrap();
+        assert!(first.join().unwrap().is_err());
+        assert_eq!(
+            denial.kind(),
+            BridgeConditionalDenialKind::SignalExecution(BridgeSignalDenial::ConditionalExecution(
+                worth_signal::facade::branch::SignalConditionalServiceExecutionDenial::SlotBusy
+            ))
+        );
+        WorthQueryOutputDemandRegistry::verify_bridge_scheduling_for_test(
+            scheduling_refusal("scheduling-busy", denial),
+            || {
+                let result = owner
+                    .execute_admitted_conditional(
+                        request,
+                        &session,
+                        operation(&lowering, 3),
+                        &mut (),
+                    )
+                    .unwrap();
+                assert!(matches!(
+                    result.signal().class(),
+                    worth_signal::facade::SignalConditionalDecisionClass::ComputedChanged
+                ));
+                WorthQueryOutputSchedulingResult::Scheduled
+            },
+            true,
+        );
+    });
+}
+
+#[test]
+fn non_temporary_bridge_refusal_remains_terminal() {
+    let (owner, lowering) = installation();
+    // A native lowering from another owner is intrinsically foreign.
+    let (foreign, _) = installation();
+    let denial = foreign
+        .admit_conditional_signal_basis(&lowering, owner.admitted_signal_basis())
+        .err()
+        .unwrap();
+    let native = denial.kind();
+    let result = scheduling_refusal("scheduling-busy", denial);
+    assert_eq!(
+        result.as_ref().err().unwrap().kind(),
+        WorthQueryOutputDemandDenialKind::BridgeConditional(Box::new(native))
+    );
+    WorthQueryOutputDemandRegistry::verify_bridge_scheduling_for_test(
+        result,
+        || panic!("terminal row cannot retry"),
+        false,
+    );
+}
+
+#[path = "counted_read_stops/mod.rs"]
+pub mod counted_read_stops;

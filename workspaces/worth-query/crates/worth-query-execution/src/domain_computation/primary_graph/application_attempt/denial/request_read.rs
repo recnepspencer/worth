@@ -120,3 +120,5 @@ pub(super) fn relational_read_kind(
         Err(Control::TimedOut) => WorthQueryApplicationAttemptDenialKind::DeadlineExceeded,
     }
 }
+
+mod court_doors_for_test;

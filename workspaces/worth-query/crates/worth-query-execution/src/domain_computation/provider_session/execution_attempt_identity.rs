@@ -7,7 +7,7 @@ static NEXT_EXECUTION_ATTEMPT: AtomicU64 = AtomicU64::new(1);
 pub struct WorthQueryExecutionAttemptIdentity(Arc<str>);
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) struct WorthQueryClosedExecutionAttemptIdentity(Arc<str>);
+pub struct WorthQueryClosedExecutionAttemptIdentity(Arc<str>);
 
 impl WorthQueryExecutionAttemptIdentity {
     pub(super) fn mint() -> Self {

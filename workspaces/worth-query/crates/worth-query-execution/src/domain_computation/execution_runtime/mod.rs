@@ -7,9 +7,6 @@ mod runtime_identity;
 mod runtime_root;
 pub(in crate::domain_computation) mod source_invalidation;
 
-#[cfg(test)]
-mod tests;
-
 pub use application_query_resources::WorthQueryApplicationQueryResourceProfile;
 pub use branch_coordination_resources::WorthQueryBranchCoordinationResourceProfile;
 pub use installation_authority::WorthQueryExecutionInstallationAuthority;

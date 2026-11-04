@@ -114,5 +114,4 @@ pub(super) fn admit_associated_yield(
     }
 }
 
-#[cfg(test)]
 mod test_phase_custody;

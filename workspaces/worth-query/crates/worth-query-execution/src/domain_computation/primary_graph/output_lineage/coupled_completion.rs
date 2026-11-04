@@ -7,7 +7,7 @@ use crate::domain_computation::primary_graph::{
     application_query::AppliedSourcePublication, WorthQueryApplicationCommitReceipt,
 };
 #[derive(Clone)]
-pub(in crate::domain_computation::primary_graph) struct CoupledOutputCompletion {
+pub struct CoupledOutputCompletion {
     source: AppliedSourcePublication,
     receipt: Arc<worth_execution::ExecutionArray<OnceLock<WorthQueryApplicationCommitReceipt>>>,
 }

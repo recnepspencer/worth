@@ -17,10 +17,10 @@ mod commit_resolution;
 pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) mod coupled;
 mod fresh;
 mod invariant;
-mod mutation_cleanup;
-pub(in crate::domain_computation::primary_graph::application_attempt) mod progressed;
-mod registered;
-mod session_admission;
+pub(crate) mod mutation_cleanup;
+pub(crate) mod progressed;
+pub(crate) mod registered;
+pub(crate) mod session_admission;
 
 pub(in crate::domain_computation::primary_graph::application_attempt) use authorized::WorthQueryManagedEquivalentCommitReceiptPermit;
 pub(in crate::domain_computation::primary_graph::application_attempt) use commit_resolution::WorthQueryFreshCommitReceiptPermit;
@@ -30,8 +30,7 @@ pub(in crate::domain_computation) use registered::{
     WorthQueryProviderAttemptRegistrationContext, WorthQueryRegisteredProviderAttempt,
 };
 
-pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) struct WorthQueryProgressedApplicationCommit
-{
+pub struct WorthQueryProgressedApplicationCommit {
     outcome: WorthQueryProviderProgressionOutcome,
     workflow_settlement_publication: Option<super::LocalWorkflowSettlementPublication>,
     lease: WorthQueryApplicationSnapshotLease,
@@ -65,7 +64,7 @@ struct WorthQueryProviderProgression<'a, Schema, Operation, Input, Scope> {
     >,
 }
 
-struct WorthQueryProviderProgressionCompletion {
+pub struct WorthQueryProviderProgressionCompletion {
     outcome: WorthQueryProviderProgressionOutcome,
     cleanup: WorthQueryApplicationMutationCleanupOwner,
 }
@@ -89,8 +88,7 @@ impl WorthQueryProviderProgressionCompletion {
     }
 }
 
-pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution::phase)
-struct WorthQueryApplicationCommitProgressionAuthority<
+pub struct WorthQueryApplicationCommitProgressionAuthority<
     'a,
     'provider,
     Schema,
@@ -166,12 +164,7 @@ impl<'a, 'provider, Schema, Operation, Input, Scope>
     }
 }
 
-pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) fn progress_application_commit<
-    Schema,
-    Operation,
-    Input,
-    Scope,
->(
+pub fn progress_application_commit<Schema, Operation, Input, Scope>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     phase: &WorthQueryAdvancementPhase<'_>,
 
@@ -315,3 +308,5 @@ where
     };
     registered_session.progress(execution, phase, &authority, allocation_policy)
 }
+
+mod court_doors_for_test;

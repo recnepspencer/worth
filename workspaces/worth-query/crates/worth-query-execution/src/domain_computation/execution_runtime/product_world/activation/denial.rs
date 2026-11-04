@@ -1,5 +1,5 @@
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) enum WorthQueryProductActivationDenial {
+pub enum WorthQueryProductActivationDenial {
     CapacityExhausted,
     AllocationRejected,
     UnknownProductBranch,

@@ -38,7 +38,7 @@ impl WorthQueryPrimaryGraphLayout {
 }
 
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation) struct WorthQueryPrimaryPrincipalBindingLayout {
+pub struct WorthQueryPrimaryPrincipalBindingLayout {
     pub(in crate::domain_computation::primary_graph) mapping_kind: KindId,
     pub(in crate::domain_computation::primary_graph) identity_locator: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) status_locator: AspectFieldLocator,
@@ -100,3 +100,5 @@ pub(super) fn lower_principal_bindings(
     }
     Ok(bindings)
 }
+
+mod court_doors_for_test;

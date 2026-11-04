@@ -142,10 +142,7 @@ impl WorthQueryApplicationIdempotencyBinding {
         encode_identity(self.key_identity)
     }
 
-    pub(in crate::domain_computation::primary_graph) const fn bind_source(
-        mut self,
-        source_identity: Option<&[u8; 32]>,
-    ) -> Self {
+    pub const fn bind_source(mut self, source_identity: Option<&[u8; 32]>) -> Self {
         self.source_identity = match source_identity {
             Some(identity) => Some(*identity),
             None => None,
@@ -153,26 +150,17 @@ impl WorthQueryApplicationIdempotencyBinding {
         self
     }
 
-    pub(in crate::domain_computation::primary_graph) const fn bind_source_partition(
-        mut self,
-        partition_identity: &[u8; 32],
-    ) -> Self {
+    pub const fn bind_source_partition(mut self, partition_identity: &[u8; 32]) -> Self {
         self.source_partition_identity = Some(*partition_identity);
         self
     }
 
-    pub(in crate::domain_computation::primary_graph) const fn bind_producer_dependency(
-        mut self,
-        dependency_identity: &[u8; 32],
-    ) -> Self {
+    pub const fn bind_producer_dependency(mut self, dependency_identity: &[u8; 32]) -> Self {
         self.producer_dependency_identity = Some(*dependency_identity);
         self
     }
 
-    pub(in crate::domain_computation::primary_graph) const fn bind_operation(
-        self,
-        operation_identity: &[u8; 32],
-    ) -> Self {
+    pub const fn bind_operation(self, operation_identity: &[u8; 32]) -> Self {
         Self {
             key_identity: self.key_identity,
             intent_identity: self.intent_identity,
@@ -198,10 +186,7 @@ impl WorthQueryApplicationIdempotencyBinding {
         }
     }
 
-    pub(in crate::domain_computation::primary_graph) fn bind_operation_scope(
-        self,
-        binding: &WorthQueryOperationScopeBinding,
-    ) -> Self {
+    pub fn bind_operation_scope(self, binding: &WorthQueryOperationScopeBinding) -> Self {
         let principal = binding.principal();
         let scope = binding.scope();
         Self {
@@ -242,10 +227,7 @@ impl WorthQueryApplicationIdempotencyBinding {
         }
     }
 
-    pub(in crate::domain_computation::primary_graph) const fn bind_preconditions(
-        self,
-        precondition_identity: Option<&[u8; 32]>,
-    ) -> Self {
+    pub const fn bind_preconditions(self, precondition_identity: Option<&[u8; 32]>) -> Self {
         Self {
             key_identity: self.key_identity,
             intent_identity: self.intent_identity,
@@ -274,10 +256,7 @@ impl WorthQueryApplicationIdempotencyBinding {
         }
     }
 
-    pub(in crate::domain_computation::primary_graph) const fn bind_governed_input(
-        self,
-        governed_input_identity: Option<&[u8; 32]>,
-    ) -> Self {
+    pub const fn bind_governed_input(self, governed_input_identity: Option<&[u8; 32]>) -> Self {
         Self {
             key_identity: self.key_identity,
             intent_identity: self.intent_identity,
@@ -376,3 +355,5 @@ impl WorthQueryApplicationIdempotencyBinding {
         }
     }
 }
+
+mod court_doors_for_test;

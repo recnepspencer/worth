@@ -48,7 +48,6 @@ impl WorthQueryAdmittedOperation {
             handler.record_completed_handler_facts(boundary, computation);
         } else {
             crate::domain_computation::primary_graph::observe_discarded(&computation);
-            #[cfg(test)]
             crate::domain_computation::primary_graph::SealedComputationRun::keep_in_test(
                 match computation {
                     SealedComputationRetention::Produced(run) => Some(run),
@@ -70,8 +69,6 @@ impl WorthQueryAdmittedOperation {
                     .coupled_handler()
                     .and_then(|handler| handler.computation_prior())
             });
-        #[cfg(test)]
-        let prior = prior.or_else(ComputationPrior::handed_in_test);
-        prior
+        prior.or_else(ComputationPrior::handed_in_test)
     }
 }

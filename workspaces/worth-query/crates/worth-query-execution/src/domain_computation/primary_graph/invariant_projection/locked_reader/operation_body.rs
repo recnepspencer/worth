@@ -63,10 +63,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
         self.body_scalar_observe(identity, locator, |value| Ok(expected.matches(value)))
     }
 
-    pub(in crate::domain_computation::primary_graph::invariant_projection) fn body_scalar_observe<
-        Entity,
-        Output,
-    >(
+    pub fn body_scalar_observe<Entity, Output>(
         &mut self,
         identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
         locator: &AspectFieldLocator,

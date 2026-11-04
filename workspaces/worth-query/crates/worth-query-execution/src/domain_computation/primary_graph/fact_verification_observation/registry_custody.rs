@@ -19,7 +19,7 @@ pub struct WorthQueryRegistryCustodyForTest {
     pub prerequisites: usize,
 }
 
-pub(in crate::domain_computation::primary_graph) fn registry_custody(
+pub fn registry_custody(
     transition: WorthQueryRegistryCustodyTransitionForTest,
     settlements: usize,
     prerequisites: usize,

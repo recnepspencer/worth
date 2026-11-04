@@ -6,7 +6,7 @@ use worth_relational::facade::transactions::{
     CommitExecutionDenialKind, TransactionCommitError as Error,
 };
 
-pub(in crate::domain_computation::primary_graph) fn validation_denial(error: &Error) -> Denial {
+pub fn validation_denial(error: &Error) -> Denial {
     commit_denial(
         error,
         Stage::InvariantExecution,
@@ -14,7 +14,7 @@ pub(in crate::domain_computation::primary_graph) fn validation_denial(error: &Er
     )
 }
 
-pub(in crate::domain_computation::primary_graph) fn preparation_denial(error: &Error) -> Denial {
+pub fn preparation_denial(error: &Error) -> Denial {
     commit_denial(error, Stage::ProviderCommit, Denial::PreparationUnavailable)
 }
 
@@ -68,6 +68,3 @@ fn commit_denial(error: &Error, stage: Stage, ordinary: Denial) -> Denial {
         | Error::DurabilityUnresolved { .. } => ordinary,
     }
 }
-
-#[cfg(test)]
-mod tests;

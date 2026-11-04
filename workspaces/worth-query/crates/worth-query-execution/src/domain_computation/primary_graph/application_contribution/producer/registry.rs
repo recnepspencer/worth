@@ -7,7 +7,7 @@ use std::sync::Arc;
 use worth_query_declaration::facade::application_operation::ApplicationMutationOutputRoleFamilyDescriptor;
 use worth_query_installation::facade::ApplicationSchema;
 
-mod checkpoint;
+pub(crate) mod checkpoint;
 mod codec_transition;
 mod coupled_selection;
 mod declaration;
@@ -29,7 +29,7 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallation
 /// work denial.
 
 #[derive(Clone)]
-pub(in crate::domain_computation::primary_graph::application_contribution) struct DeclaredProducerBinding
+pub struct DeclaredProducerBinding
 {
     pub(in crate::domain_computation::primary_graph::application_contribution) owner: String,
     pub(in crate::domain_computation::primary_graph::application_contribution) identity: String,
@@ -78,20 +78,18 @@ pub(in crate::domain_computation::primary_graph::application_contribution) struc
 }
 
 mod history_group;
-mod operation_binding_uniqueness;
-mod output_family_inventory;
+pub(crate) mod operation_binding_uniqueness;
+pub(crate) mod output_family_inventory;
 mod pending;
 mod pending_factory;
-mod scope_ownership;
-mod semantic_edition;
-#[cfg(test)]
-mod tests;
+pub(crate) mod scope_ownership;
+pub(crate) mod semantic_edition;
 
 use operation_binding_uniqueness::duplicate_operation_binding;
 pub(in crate::domain_computation::primary_graph) use pending::PendingProducerRegistry;
 pub(in crate::domain_computation::primary_graph) use semantic_edition::InstalledProducerEdition;
 
-pub(super) struct InstalledProducerProvider<Schema> {
+pub struct InstalledProducerProvider<Schema> {
     pub(super) declaration: DeclaredProducerBinding,
     pub(super) edition: InstalledProducerEdition,
     value: Arc<dyn Any + Send + Sync>,
@@ -295,3 +293,5 @@ fn denial(
 ) -> WorthQueryPrimaryGraphInstallationDenial {
     WorthQueryPrimaryGraphInstallationDenial::new(kind, subject)
 }
+
+mod court_doors_for_test;

@@ -374,3 +374,5 @@ mod charged_bytes;
 mod managed_index;
 
 mod managed_source_query;
+
+mod court_doors_for_test;

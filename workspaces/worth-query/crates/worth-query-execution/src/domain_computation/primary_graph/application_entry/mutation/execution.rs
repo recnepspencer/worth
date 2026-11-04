@@ -146,9 +146,7 @@ where
         )
     }
 
-    pub(in crate::domain_computation::primary_graph) fn execute_mutation_handler_report_observing_contact<
-        Binding,
-    >(
+    pub fn execute_mutation_handler_report_observing_contact<Binding>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         identities: &ApplicationMutationIdentities<'_, Schema, Binding>,

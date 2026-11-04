@@ -8,7 +8,7 @@ use super::{
     WorthQueryWorkflowArtifactRegistry, WorthQueryWorkflowArtifactRegistryEvidence,
 };
 
-pub(crate) struct WorthQueryFrozenWorkflowArtifactAuthority {
+pub struct WorthQueryFrozenWorkflowArtifactAuthority {
     authority: Option<WorthQueryWorkflowArtifactAuthority>,
     production_generation: WorthQueryArtifactProductionGeneration,
 }
@@ -92,3 +92,5 @@ impl Drop for WorthQueryFrozenWorkflowArtifactAuthority {
         }
     }
 }
+
+mod court_doors_for_test;

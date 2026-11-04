@@ -25,22 +25,22 @@ use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationOperation, WorthQueryPrimaryGraphApplicationRuntime,
 };
 
-mod entry_custody;
+pub(crate) mod entry_custody;
 pub(in crate::domain_computation::primary_graph) use entry_custody::{
     CurrentCommitProgram, ReadmittedCommitProgram,
 };
-mod currentness;
+pub(crate) mod currentness;
 mod domain_value_write;
-mod local_workflow_settlement;
-mod native_reference_invariants;
+pub(crate) mod local_workflow_settlement;
+pub(crate) mod native_reference_invariants;
 use currentness::{
     readmit_current_basis, select_current_product, validate_elevation_currentness,
     validate_operation_currentness, validate_workflow_deadline,
 };
-pub(super) mod running;
+pub(crate) mod running;
 pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) use local_workflow_settlement::LocalWorkflowSettlementPublication;
 
-pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) struct WorthQueryPreparedApplicationCommit<
+pub struct WorthQueryPreparedApplicationCommit<
     Schema,
     Operation,
     Input,
@@ -78,17 +78,12 @@ impl WorthQueryEarlyEquivalentCommitReceiptPermit {
     }
 }
 
-pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) enum WorthQueryApplicationCommitPreparation<
-    Schema,
-    Operation,
-    Input,
-    Scope,
-> {
+pub enum WorthQueryApplicationCommitPreparation<Schema, Operation, Input, Scope> {
     Ready(WorthQueryPreparedApplicationCommit<Schema, Operation, Input, Scope>),
     Terminal(WorthQueryApplicationCommitOutcome),
 }
 
-pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) struct WorthQueryApplicationCommitPreparationRequest<
+pub struct WorthQueryApplicationCommitPreparationRequest<
     'a,
     'phase,
     'request,
@@ -308,3 +303,5 @@ pub(in crate::domain_computation::primary_graph) use running::progression::coupl
     inspect_coupled_application, prepare_coupled_application, register_coupled_application,
     ApprovedCoupledWriter, CommitPreparedCoupledWriter, InspectedCoupledWriter,
 };
+
+mod court_doors_for_test;

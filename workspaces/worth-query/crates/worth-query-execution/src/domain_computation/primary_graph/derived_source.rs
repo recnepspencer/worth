@@ -9,7 +9,7 @@ use worth_relational::facade::{
 };
 mod commitment;
 mod currentness;
-mod dependencies;
+pub(crate) mod dependencies;
 mod key;
 mod read;
 pub(in crate::domain_computation::primary_graph) use dependencies::DerivedSourceDependencies;

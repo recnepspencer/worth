@@ -331,3 +331,5 @@ fn validate_action(
     };
     canonical(Arc::clone(identity)).map(|_| ())
 }
+
+mod court_doors_for_test;

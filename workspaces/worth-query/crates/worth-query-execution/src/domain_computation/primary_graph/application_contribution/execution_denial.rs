@@ -340,3 +340,5 @@ pub(in crate::domain_computation) fn advancement_checkpoint_stop(
         }
     }
 }
+
+mod court_doors_for_test;

@@ -145,3 +145,5 @@ impl WorthQueryOutputDemandRegistry {
         state.note_custody(source_commit);
     }
 }
+
+mod court_doors_for_test;

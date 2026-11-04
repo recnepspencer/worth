@@ -1,7 +1,5 @@
 //! Closed application commit receipt.
 
-#[cfg(test)]
-mod certification;
 mod committed_changes;
 mod construction;
 mod description;
@@ -205,9 +203,7 @@ impl WorthQueryApplicationCommitReceipt {
         self.output_correspondence.outputs_of()
     }
 
-    pub(in crate::domain_computation::primary_graph) fn output_correspondence(
-        &self,
-    ) -> &WorthQueryApplicationOutputCorrespondence {
+    pub fn output_correspondence(&self) -> &WorthQueryApplicationOutputCorrespondence {
         self.output_correspondence.as_ref()
     }
 
@@ -384,3 +380,5 @@ impl WorthQueryApplicationCommitReceipt {
 }
 
 pub(in crate::domain_computation::primary_graph) use committed_changes::MaterializedCommittedField;
+
+mod court_doors_for_test;

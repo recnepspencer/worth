@@ -1,7 +1,7 @@
 //! Portable performed locator or original recovered metadata; neither grants Ready.
 use crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity;
 
-pub(super) enum NativePriorCheckpointLocator {
+pub enum NativePriorCheckpointLocator {
     Performed { producer: String, source: [u8; 32] },
     Recovered(WorthQueryAcceptedOutputCheckpointIdentity),
 }
@@ -43,3 +43,5 @@ impl NativePriorCheckpointLocator {
         }
     }
 }
+
+mod court_doors_for_test;

@@ -9,12 +9,12 @@ use super::tree_report::{
     WorthQueryPartitionedTreeRun as Run,
 };
 
-pub(super) enum EditDisposition<Tree> {
+pub enum EditDisposition<Tree> {
     Completed(Tree),
     Rebuild(Cause),
 }
 
-pub(super) struct TreeAttempt<T, E> {
+pub struct TreeAttempt<T, E> {
     outcome: Result<T, E>,
     work: Metrics,
 }
@@ -115,3 +115,5 @@ impl<T> TreeAttempt<T, ReductionRunFailure<worth_execution::MapKernelStop>> {
         })
     }
 }
+
+mod court_doors_for_test;

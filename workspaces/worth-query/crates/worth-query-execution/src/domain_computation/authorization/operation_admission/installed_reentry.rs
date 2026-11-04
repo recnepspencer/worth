@@ -131,3 +131,6 @@ fn mutation_denial(
         _ => HandlerDenial::Projection(denial.into()),
     }
 }
+
+#[path = "installed_reentry_court_doors_for_test.rs"]
+mod court_doors_for_test;

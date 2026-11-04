@@ -1,0 +1,10 @@
+#[path = "composite_dispatch_tests/mod.rs"]
+pub mod composite_dispatch_tests;
+#[path = "denial/mod.rs"]
+pub mod denial;
+#[path = "redispatch_denial_tests/mod.rs"]
+pub mod redispatch_denial_tests;
+#[path = "safe_retry_affinity_tests/mod.rs"]
+pub mod safe_retry_affinity_tests;
+#[path = "tests/mod.rs"]
+pub mod tests;

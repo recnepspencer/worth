@@ -1,5 +1,5 @@
-mod application_facts;
-mod application_table;
+pub(crate) mod application_facts;
+pub(crate) mod application_table;
 use super::super::WorthQueryApplicationAttemptDenial as SelfDenial;
 use crate::domain_computation::{
     WorthQueryDecisionReadSetDenialKind as BindingKind,
@@ -15,7 +15,7 @@ use worth_execution::ExecutionRequest;
 use crate::domain_computation::authorization::WorthQueryPrincipalCurrentnessDependency;
 
 #[derive(Clone)]
-pub(in crate::domain_computation) enum WorthQueryPrimaryGraphApplicationDecisionFact {
+pub enum WorthQueryPrimaryGraphApplicationDecisionFact {
     Application {
         read_scope: SharedReadScope,
         fact: SharedObservedFact,
@@ -36,10 +36,7 @@ pub(in crate::domain_computation) enum WorthQueryPrimaryGraphApplicationDecision
 }
 
 impl WorthQueryPrimaryGraphApplicationDecisionFact {
-    pub(in crate::domain_computation) const fn application(
-        read_scope: SharedReadScope,
-        fact: SharedObservedFact,
-    ) -> Self {
+    pub const fn application(read_scope: SharedReadScope, fact: SharedObservedFact) -> Self {
         Self::Application { read_scope, fact }
     }
 
@@ -140,7 +137,6 @@ impl WorthQueryPrimaryGraphApplicationDecisionFact {
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     ) -> Result<bool, super::super::WorthQueryApplicationAttemptDenial> {
-        #[cfg(test)]
         let _scope = super::super::application_attempt::consult_observation::ReadConsultScopeForTest::enter_for_test(
             super::super::application_attempt::consult_observation::Door::Equality,
         );
@@ -272,3 +268,5 @@ fn retained_observation(
 fn binding_failure(detail: &'static str) -> BindingFailure {
     BindingFailure::new(BindingKind::ProviderRejected, detail)
 }
+
+mod court_doors_for_test;

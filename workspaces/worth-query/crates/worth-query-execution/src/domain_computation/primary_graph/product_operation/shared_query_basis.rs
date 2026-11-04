@@ -5,12 +5,12 @@ use crate::domain_computation::primary_graph::application_query::resource_lifecy
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
-pub(in crate::domain_computation) struct SharedSelectedProductOperation<'runtime, Schema> {
+pub struct SharedSelectedProductOperation<'runtime, Schema> {
     selected: WorthQuerySelectedProductOperation<'runtime, Schema>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum SelectedQueryBasisRetentionStop {
+pub enum SelectedQueryBasisRetentionStop {
     Basis,
     Admission(CompanionPreflightStop),
 }
@@ -30,9 +30,7 @@ impl<'runtime, Schema> WorthQuerySelectedProductOperation<'runtime, Schema> {
 }
 
 impl<'runtime, Schema> SharedSelectedProductOperation<'runtime, Schema> {
-    pub(in crate::domain_computation) fn selected(
-        &self,
-    ) -> &WorthQuerySelectedProductOperation<'runtime, Schema> {
+    pub fn selected(&self) -> &WorthQuerySelectedProductOperation<'runtime, Schema> {
         &self.selected
     }
 }
@@ -77,3 +75,5 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         Ok((product.retained_clone(), basis))
     }
 }
+
+mod court_doors_for_test;

@@ -28,7 +28,7 @@ impl ResolvedConsumedPredecessor {
     }
 }
 
-mod matched_predecessors;
+pub(crate) mod matched_predecessors;
 pub(in crate::domain_computation::primary_graph) use matched_predecessors::MatchedRequiredPredecessors;
 pub(in crate::domain_computation::primary_graph) use matched_predecessors::ReboundConsumedOutput;
 

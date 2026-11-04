@@ -12,7 +12,6 @@ use crate::domain_computation::application_aftermath::WorthQueryInboundCleanupRe
 impl<Schema: worth_query_installation::facade::ApplicationSchema>
     WorthQueryPrimaryGraphApplicationRuntime<Schema>
 {
-    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn retained_accepted_for_cleanup_test(
         &self,
         correlation: &crate::domain_computation::application_aftermath::ExternalEffectCorrelationIdentity,
@@ -28,7 +27,6 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
             .accepted_by_correlation(correlation)
     }
 
-    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn stale_publication_claim_for_cleanup_test(
         &self,
         accepted: &std::sync::Arc<
@@ -112,3 +110,5 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
         Ok(settled.combine(compact))
     }
 }
+
+mod court_doors_for_test;

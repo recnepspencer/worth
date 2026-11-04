@@ -15,7 +15,7 @@ pub struct WorthQueryGraphReadDependencyEvidence {
     ordering_comparisons: usize,
 }
 
-pub(in crate::domain_computation) struct WorthQueryObservedGraphReadWork {
+pub struct WorthQueryObservedGraphReadWork {
     pub examined_candidates: usize,
     pub projected_records: usize,
     pub projected_fields: usize,

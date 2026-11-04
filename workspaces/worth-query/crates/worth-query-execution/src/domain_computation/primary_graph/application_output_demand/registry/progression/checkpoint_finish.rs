@@ -1,7 +1,7 @@
 //! Ordinary checkpoint restoration returns custody whenever its claim moved.
 use super::*;
 
-pub(in crate::domain_computation::primary_graph) enum CheckpointFinishStop {
+pub enum CheckpointFinishStop {
     Restored(WorthQueryOutputDemandDenial),
     Returned(WorthQueryOutputDemandDenial, WorthQueryOutputCheckpoint),
 }
@@ -74,3 +74,5 @@ impl WorthQueryOutputDemandRegistry {
         }
     }
 }
+
+mod court_doors_for_test;

@@ -12,7 +12,7 @@ use crate::domain_computation::primary_graph::application_query::derived_view::{
 use worth_runtime_world::facade::CompositeCommitIdentity;
 
 mod aftermath;
-pub(super) mod registry;
+pub(crate) mod registry;
 mod settlement;
 mod stops;
 pub(in crate::domain_computation::primary_graph) use registry::WorthQueryApplicationPublicationRecoveryReservation;
@@ -47,17 +47,11 @@ impl WorthQueryPrimaryGraphProvider {
         })
     }
 
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn has_pending_application_publication_for_test(
-        &self,
-    ) -> bool {
+    pub fn has_pending_application_publication_for_test(&self) -> bool {
         self.pending_application_publication_count_for_test() != 0
     }
 
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn pending_application_publication_count_for_test(
-        &self,
-    ) -> usize {
+    pub fn pending_application_publication_count_for_test(&self) -> usize {
         self.pending_application_publications
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
@@ -215,7 +209,6 @@ fn publish_with_snapshot(
             after,
         )?;
     }
-    #[cfg(test)]
     if provider.take_panicked_pending_application_publication() {
         panic!("injected unwind after performed World publication reached terminal cutover");
     }
@@ -282,3 +275,5 @@ fn prepare_writer(
     aftermath::seal(execution, provider, runtime, pending, after)?;
     Ok(())
 }
+
+mod court_doors_for_test;

@@ -1,0 +1,82 @@
+use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::*;
+pub struct Family;
+pub const INITIAL: WorthQueryProducerApplicability = WorthQueryProducerApplicability::new(
+    "optional-birth",
+    WorthQueryProducerLifecyclePosture::Initial,
+);
+pub const KEEP: WorthQueryProducerApplicability = WorthQueryProducerApplicability::new(
+    "optional-birth",
+    WorthQueryProducerLifecyclePosture::Preserve,
+);
+impl<Schema: BirthSchema> WorthQueryProducerOutputFamily<Schema> for Family {
+    type Source = PlanarReadBinding<Schema>;
+    type Entity = PresentNode;
+    const IDENTITY: &'static str = "worth.query.test.optional-aspect-family.v1";
+    const SUPPORTED: &'static [WorthQueryProducerApplicability] = &[INITIAL, KEEP];
+    fn profile_kind(_: &PlanarReadResult) -> &'static str {
+        "optional-birth"
+    }
+}
+pub struct Initial<Schema>(PhantomData<fn() -> Schema>);
+pub struct Preserve<Schema>(PhantomData<fn() -> Schema>);
+pub struct Provider {
+    pub incomplete: bool,
+}
+macro_rules! producer {
+    ($producer:ident, $keep:literal, $role:ident, $posture:ident, $identity:literal, $input:ident) => {
+        impl<Schema: BirthSchema> WorthQueryApplicationProducerBinding<Schema>
+            for $producer<Schema>
+        {
+            type Operation = Binding<Schema, $keep>;
+            type OutputFamily = Family;
+            type Provider = Provider;
+            type OutputRole = $role<Schema>;
+            const IDENTITY: &'static str = $identity;
+            const APPLICABILITY: &'static [WorthQueryProducerApplicability] = &[$posture];
+            const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement] = &[];
+
+            // Prior-output selection uses the admitted operation scope. The
+            // shared handlers use neither the execution key nor principal.
+            const INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> = if Schema::INPUT_REUSE
+            {
+                Some(WorthQueryProducerInputReuseContract::canonical_bitwise(
+                    WorthQueryDecisionContextDependencies::SCOPE,
+                ))
+            } else {
+                None
+            };
+            const REUSE_POLICY: &'static str = "exact-source";
+        }
+        impl<Schema: BirthSchema> WorthQueryApplicationProducerProvider<Schema, $producer<Schema>>
+            for Provider
+        {
+            type DenialValue = WorthQueryUndeclaredProducerDenial;
+            const SEMANTIC_IDENTITY: &'static str = $identity;
+            fn operation_input(&self, source: &PlanarReadResult) -> $input {
+                $input {
+                    scope_key: source.body_key.clone(),
+                    incomplete: self.incomplete,
+                }
+            }
+            fn idempotency_key(&self, _: &PlanarReadResult, identity: &[u8; 32]) -> u64 {
+                u64::from_be_bytes(identity[..8].try_into().unwrap())
+            }
+        }
+    };
+}
+producer!(
+    Initial,
+    false,
+    BornPresent,
+    INITIAL,
+    "worth.query.test.optional-initial.v1",
+    Input
+);
+producer!(
+    Preserve,
+    true,
+    KeptPresent,
+    KEEP,
+    "worth.query.test.optional-preserve.v1",
+    KeepInput
+);

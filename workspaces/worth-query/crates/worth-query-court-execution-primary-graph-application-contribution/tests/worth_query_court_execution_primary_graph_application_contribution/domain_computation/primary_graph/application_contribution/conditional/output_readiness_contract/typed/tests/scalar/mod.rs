@@ -1,0 +1,128 @@
+//! Actual installed Scalar field meaning, with unchanged raw Foundational fences.
+use crate::domain_computation::primary_graph::application_contribution::conditional::output_readiness_contract::typed::tests::*;
+worth_query_declaration::worth_query_application_schema!(schema Scalar {
+    owner: Scalar, version: (1,0), members: |schema| {
+        schema.entity(Entity::reference())
+            .aspect(Entity::reference(), Identity::reference())
+            .field(Entity::reference(), Key::reference())
+            .optional_aspect(Entity::reference(), Publication::reference())
+            .scalar_aspect_field(Entity::reference(), Value::reference())
+    }
+});
+impl Fixture for Scalar {}
+worth_query_declaration::worth_query_field!(Value for S: Fixture, Entity, Publication:
+    u64 => schema::U64ApplicationValueBinding, read_write, no_equality);
+worth_query_declaration::worth_query_field!(Alias for S: Fixture, Entity, Publication:
+    u64 => schema::U64ApplicationValueBinding, read_write, no_equality);
+
+#[test]
+fn scalar_readiness_uses_exact_declared_and_installed_binding() {
+    let declaration = Scalar::declaration().unwrap();
+    let package = domain::WorthQueryPortableDomainPackage::new(
+        domain::WorthQueryPortableDomainIdentity::new(Scalar::OWNER, 1, 0),
+    )
+    .application_schema(declaration.clone())
+    .validate()
+    .unwrap();
+    let admitted = domain::WorthQueryInstallationAdmissionProfile::new("readiness", "scalar")
+        .admit(package)
+        .unwrap();
+    let installed = domain::WorthQueryInstalledPackageIndex::build(
+        domain::WorthQueryInstallationRuntimeIdentity::fresh(),
+        domain::WorthQueryInstallationGeneration::initial(),
+        [admitted],
+    )
+    .unwrap()
+    .bind_application_schema(declaration.clone())
+    .unwrap();
+    let field =
+        FieldExpectation::declared_for_test(declaration.erased(), Value::reference::<Scalar>())
+            .unwrap();
+    field.seal_for_test(&installed).unwrap();
+    assert!(matches!(
+        (*field.aspect_for_test()).shape(),
+        AspectShape::Scalar(domain::ScalarAspectType::UInt64)
+    ));
+    assert_eq!((*field.aspect_for_test()).absence(), AbsenceLaw::Optional);
+    assert!(field.mask_for_test().is_whole_aspect());
+    assert_eq!(
+        (*field.native_binding_for_test()),
+        domain::AspectBinding::EntityField {
+            field: domain::FieldKey::new("Value").unwrap(),
+        }
+    );
+    let raw = domain::AspectMask::new([domain::CanonicalFieldPath::single(
+        domain::FieldKey::new("Value").unwrap(),
+    )]);
+    assert_eq!(
+        (*field.aspect_for_test()).admits_projection_mask(&raw),
+        Err(worth_foundational::facade::MaskAdmissibilityDenial::FieldMaskRequiresStruct)
+    );
+    let alias =
+        FieldExpectation::declared_for_test(declaration.erased(), Alias::reference::<Scalar>())
+            .unwrap_err();
+    assert_eq!(
+        alias.field_locus_for_test(),
+        Some(&schema::ApplicationFieldBindingLocus::new(
+            "Entity",
+            "Publication",
+            "Alias"
+        ))
+    );
+    let contract = WorthQueryOutputReadinessContractBuilder::for_field(
+        declaration.erased(),
+        Value::reference::<Scalar>(),
+        domain::WorthQueryDomainOperationIdentity::new("scalar-readiness", 1),
+        "scalar-ready",
+        scalar_query(),
+        domain::WorthQueryOperationProjectionRole::new("realization").unwrap(),
+        domain::WorthQueryExecutionStrategyName::new("scalar-readiness").unwrap(),
+        "typed-scalar-readiness-v1",
+    )
+    .unwrap()
+    .field_dependency(
+        declaration.erased(),
+        Value::reference::<Scalar>(),
+        WorthQueryReadinessFieldUse::DeliveryAndEligibility,
+    )
+    .unwrap()
+    .build_typed::<(), (), ()>()
+    .unwrap();
+    let node = &contract.definition().semantics().conditional_nodes[0];
+    let ordinal = contract
+        .delivery_ordinal(&installed, node, Value::reference::<Scalar>())
+        .unwrap();
+    assert_eq!(
+        node.dependencies()[ordinal].binding(),
+        &(*field.native_binding_for_test())
+    );
+    assert_eq!(
+        node.dependencies()[ordinal].projection_mask(),
+        &field.mask_for_test()
+    );
+    assert_eq!(
+        node.dependencies()[ordinal].relevant_changes(),
+        &[domain::AuthoritativeAspectChangeKind::WholeAspectSet]
+    );
+    assert!(contract
+        .delivery_ordinal(&installed, node, Alias::reference::<Scalar>())
+        .is_err());
+}
+
+pub fn scalar_query() -> CanonicalQueryBundle {
+    let query = DetailQueryBuilder::new(RootEntityKey::new("Entity").unwrap())
+        .project(AspectFieldSelector::new("Publication", "Value").unwrap())
+        .build()
+        .unwrap()
+        .into_raw();
+    let shape = DetailResultShapeBuilder::new()
+        .field(AuthoredResultShapeField::new("Publication", "Value", "value").unwrap())
+        .build()
+        .unwrap()
+        .into_raw();
+    canonicalize_request(
+        AuthoredQueryBundleRequest::for_ordinary_read(query, shape, QueryBindingDescriptor::new())
+            .unwrap(),
+    )
+    .unwrap()
+}

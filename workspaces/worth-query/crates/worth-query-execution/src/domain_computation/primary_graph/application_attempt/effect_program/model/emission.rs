@@ -10,7 +10,7 @@ use worth_query_declaration::facade::application_schema::{
 use worth_query_declaration::facade::portable_identity::WorthQueryPortableTypeIdentity;
 
 #[derive(Clone)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationEmission {
+pub struct WorthQueryApplicationEmission {
     effect: &'static str,
     payload_type: WorthQueryPortableTypeIdentity,
     payload_type_id: TypeId,
@@ -30,10 +30,7 @@ struct WorthQueryExternalPayloadProjection {
 }
 
 impl WorthQueryApplicationEmission {
-    pub(in crate::domain_computation::primary_graph::application_attempt) fn new<Binding>(
-        effect: &'static str,
-        payload: Binding::Value,
-    ) -> Self
+    pub fn new<Binding>(effect: &'static str, payload: Binding::Value) -> Self
     where
         Binding: ApplicationStructuredValueBinding,
         Binding::Value: Send + Sync,
@@ -137,18 +134,16 @@ impl WorthQueryApplicationEmission {
             .flatten()
     }
 
-    #[cfg(test)]
     pub(crate) const fn effect(&self) -> &'static str {
         self.effect
     }
 
-    #[cfg(test)]
     pub(crate) fn payload<Payload: 'static>(&self) -> Option<&Payload> {
         self.payload.downcast_ref()
     }
 }
 
-pub(in crate::domain_computation::primary_graph) struct WorthQueryAdmittedApplicationEmissionBatch {
+pub struct WorthQueryAdmittedApplicationEmissionBatch {
     emissions: Vec<WorthQueryApplicationEmission>,
     memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
@@ -251,3 +246,5 @@ impl WorthQueryAdmittedApplicationEmissionBatch {
         Ok(Some(projection.bytes.to_vec()))
     }
 }
+
+mod court_doors_for_test;

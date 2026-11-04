@@ -1,24 +1,24 @@
 //! Receiver-owned evidence about every closure-scoped installed-owner acquisition.
 use super::WorthQueryRelationalSourceOwner;
 #[derive(Clone)]
-pub(in crate::domain_computation) struct ReadLockProbeForTest {
+pub struct ReadLockProbeForTest {
     owner: WorthQueryRelationalSourceOwner,
 }
 impl WorthQueryRelationalSourceOwner {
-    pub(in crate::domain_computation) fn read_lock_probe_for_test(&self) -> ReadLockProbeForTest {
+    pub fn read_lock_probe_for_test(&self) -> ReadLockProbeForTest {
         ReadLockProbeForTest {
             owner: self.clone(),
         }
     }
 }
 impl ReadLockProbeForTest {
-    pub(in crate::domain_computation) fn is_locked_for_test(&self) -> bool {
+    pub fn is_locked_for_test(&self) -> bool {
         self.owner.lock_is_held_for_test()
     }
-    pub(in crate::domain_computation) fn acquisitions_for_test(&self) -> u64 {
+    pub fn acquisitions_for_test(&self) -> u64 {
         self.owner.lock_acquisitions_for_test()
     }
-    pub(in crate::domain_computation) fn with_owner_lock_for_test<T>(
+    pub fn with_owner_lock_for_test<T>(
         &self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
         read: impl FnOnce() -> T,
@@ -48,10 +48,7 @@ impl ReadLockProbeForTest {
     ) {
         self.owner.release_query_snapshot(snapshot);
     }
-    pub(in crate::domain_computation) fn count_bridge_lock_for_test(
-        &self,
-        request: &worth_execution::ExecutionRequest<'_, '_>,
-    ) {
+    pub fn count_bridge_lock_for_test(&self, request: &worth_execution::ExecutionRequest<'_, '_>) {
         let basis = self.owner.with_runtime(request, |runtime| {
             runtime
                 .observe_branch(&runtime.main_branch_identity())

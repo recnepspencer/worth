@@ -18,7 +18,7 @@ use worth_query_installation::facade::{
     ApplicationSchema, ApplicationSchemaBindingIdentity, WorthQueryInstalledDocumentHistory,
 };
 
-mod producer_invocation;
+pub(crate) mod producer_invocation;
 pub(in crate::domain_computation::primary_graph) use producer_invocation::{
     HistoryBorrowedReadStop, HistoryProducerCutover, HistoryProducerInvocation,
 };

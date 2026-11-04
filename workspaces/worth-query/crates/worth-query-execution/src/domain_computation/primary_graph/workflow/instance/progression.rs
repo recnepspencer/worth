@@ -1,19 +1,17 @@
 use im::OrdMap;
-#[cfg(test)]
 use std::collections::BTreeMap;
 
 use worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome;
 use worth_relational::facade::identity::EntityId;
 
 mod accounting;
-mod captured_inputs;
+pub(crate) mod captured_inputs;
 mod collection;
-mod locator;
+pub(crate) mod locator;
 mod navigation;
 mod replay;
 mod retention;
-#[cfg(test)]
-mod scaling;
+
 mod update;
 use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
@@ -40,7 +38,7 @@ pub(in crate::domain_computation::primary_graph) use update::{
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) struct SettledWorkflowTransition {
+pub struct SettledWorkflowTransition {
     node: EntityId,
     occurrence: u64,
     outcome: ApplicationWorkflowControlOutcome,
@@ -90,7 +88,7 @@ impl SettledWorkflowTransition {
 /// must still prove its source revision and live facts current before use. A
 /// cold rebuild of a completed instance excludes its final terminal settlement.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) struct WorkflowInstanceProgress {
+pub struct WorkflowInstanceProgress {
     captured_inputs: Option<OrdMap<EntityId, captured_inputs::RetainedCapturedInputs>>,
     head: EntityId,
     next_occurrence: u64,
@@ -107,7 +105,7 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowInstanceProgress
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-struct WorkflowPathFrame {
+pub struct WorkflowPathFrame {
     source: EntityId,
 }
 
@@ -146,7 +144,6 @@ impl WorkflowInstanceProgress {
             ))
     }
 
-    #[cfg(test)]
     fn reconstruct_with(
         settled: &mut [SettledWorkflowTransition],
         start: EntityId,
@@ -288,7 +285,6 @@ impl WorkflowInstanceProgress {
         self.finish_advance(successor)
     }
 
-    #[cfg(test)]
     fn advance_with(
         &mut self,
         transition: SettledWorkflowTransition,
@@ -398,3 +394,5 @@ fn denial(subject: &'static str) -> WorthQueryApplicationAttemptDenial {
 #[cfg(test)]
 #[path = "progression/tests.rs"]
 mod tests;
+
+mod court_doors_for_test;

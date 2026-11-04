@@ -92,3 +92,6 @@ where
         }
     }
 }
+
+#[path = "predecode_admission_court_doors_for_test.rs"]
+mod court_doors_for_test;

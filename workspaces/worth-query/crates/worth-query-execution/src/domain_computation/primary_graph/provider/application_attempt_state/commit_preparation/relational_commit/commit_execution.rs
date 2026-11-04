@@ -9,17 +9,17 @@ mod managed_source;
 mod managed_unpublished;
 mod managed_views;
 pub(in crate::domain_computation::primary_graph::provider) use managed_unpublished::ManagedUnpublishedAttempt;
-mod precommit_snapshot;
+pub(crate) mod precommit_snapshot;
 mod product_publication;
 mod required_origin;
-mod stops;
-mod touched_records;
+pub(crate) mod stops;
+pub(crate) mod touched_records;
 use stops::failure;
 use stops::index_preparation_stop;
 use stops::native_output_witness_stop;
 use stops::transaction_commit_stop;
 pub(in crate::domain_computation::primary_graph::provider) use touched_records::PreparedTouchedRecords;
-mod publication;
+pub(crate) mod publication;
 pub(in crate::domain_computation::primary_graph) use publication::WorthQueryPrimaryGraphCommittedApplication;
 
 use super::super::WorthQueryPreparedApplicationCommit;
@@ -139,7 +139,6 @@ pub(super) fn commit(
         _ => None,
     };
     let source_fact_rebase = source_fact_rebase.with_predecessor(predecessor);
-    #[cfg(test)]
     provider.fault_port.candidate_ready_for_native_preparation();
     let mut candidate = provider
         .graph
@@ -191,7 +190,6 @@ pub(super) fn commit(
     )).map_err(stops::source_rebase_preparation_stop)?;
     let ordinary_index_budget =
         crate::domain_computation::primary_graph::index_maintenance_budget::ordinary_index_maintenance_budget();
-    #[cfg(test)]
     let ordinary_index_budget = if provider.take_tight_index_maintenance_budget() {
         worth_relational::facade::indexes::DerivedIndexMaintenanceBudget {
             maximum_work_units: Some(1),

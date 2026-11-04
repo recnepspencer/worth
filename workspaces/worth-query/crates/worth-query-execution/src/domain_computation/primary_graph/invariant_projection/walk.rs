@@ -18,8 +18,7 @@ mod result;
 use crate::domain_computation::primary_graph::structural_walk::{
     memory, StructuralWalkObservation, StructuralWalkQuery,
 };
-#[cfg(test)]
-mod tests;
+
 pub use result::{
     WorthQueryInvariantProjectionWalk, WorthQueryInvariantProjectionWalkIter,
     WorthQueryInvariantProjectionWalkStep,

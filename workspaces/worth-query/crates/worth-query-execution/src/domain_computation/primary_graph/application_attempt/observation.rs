@@ -9,21 +9,17 @@ use worth_relational::facade::storage::RecordLifecycleState;
 
 use super::{WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind};
 
-mod aspect_presence;
-mod predecode_admission;
+pub(crate) mod aspect_presence;
+pub(crate) mod predecode_admission;
 pub(in crate::domain_computation::primary_graph) use aspect_presence::{
     observe_aspect_presence, observe_aspect_presence_in_view,
 };
-#[cfg(test)]
-mod read_rendezvous;
-#[cfg(test)]
+pub(crate) mod read_rendezvous;
 pub(in crate::domain_computation::primary_graph) use read_rendezvous::ReadRendezvous;
-#[cfg(test)]
 std::thread_local! {
     static NATIVE_FIELD_CONTACTS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
 }
-#[cfg(test)]
-pub(in crate::domain_computation::primary_graph) fn take_native_field_contacts() -> usize {
+pub fn take_native_field_contacts() -> usize {
     NATIVE_FIELD_CONTACTS.with(|count| count.replace(0))
 }
 pub(in crate::domain_computation::primary_graph) use predecode_admission::{
@@ -32,7 +28,7 @@ pub(in crate::domain_computation::primary_graph) use predecode_admission::{
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum WorthQueryApplicationFieldObservation {
+pub enum WorthQueryApplicationFieldObservation {
     Present(worth_foundational::facade::AspectValue),
     Absent,
     AspectAbsent,
@@ -65,7 +61,7 @@ impl From<worth_relational::facade::runtime::RelationalProjectedFieldObservation
     }
 }
 
-pub(in crate::domain_computation::primary_graph) fn observe_field(
+pub fn observe_field(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
@@ -76,7 +72,6 @@ pub(in crate::domain_computation::primary_graph) fn observe_field(
     Option<WorthQueryApplicationFieldObservation>,
     worth_relational::facade::transactions::RelationalExecutionDenialCause,
 > {
-    #[cfg(test)]
     NATIVE_FIELD_CONTACTS.with(|count| count.set(count.get() + 1));
     let Some(field) = locator.field_path().fields().first().cloned() else {
         return Ok(None);
@@ -93,14 +88,13 @@ pub(in crate::domain_computation::primary_graph) fn observe_field(
             let value = record
                 .observe_aspect_field(locator.aspect().aspect_key(), &field)
                 .expect("the requested field belongs to its exact projection");
-            #[cfg(test)]
             read_rendezvous::reached();
             WorthQueryApplicationFieldObservation::from(value)
         })
     })
 }
 
-pub(in crate::domain_computation::primary_graph) fn observe_field_value(
+pub fn observe_field_value(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
@@ -117,7 +111,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_field_value(
     )
 }
 
-pub(super) fn exact_relations(
+pub fn exact_relations(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,

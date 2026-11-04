@@ -5,11 +5,11 @@ use std::{
     time::Duration,
 };
 use worth_relational::facade::identity::EntityId;
-mod native_rendezvous;
+pub(crate) mod native_rendezvous;
 pub(in crate::domain_computation::primary_graph) use native_rendezvous::NativeReadRendezvousGuardForTest;
 thread_local! { static ACTIVE: RefCell<Option<Arc<DispatchWitness>>> = const { RefCell::new(None) }; }
 #[derive(Default)]
-pub(in crate::domain_computation::primary_graph) struct DispatchWitness {
+pub struct DispatchWitness {
     state: Mutex<State>,
     finished: Condvar,
     native_reads: Mutex<Option<Arc<dyn native_rendezvous::NativeReadRendezvousControl>>>,
@@ -29,12 +29,12 @@ struct State {
     map_prefix: usize,
 }
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation::primary_graph) struct InterruptionPoint {
+pub struct InterruptionPoint {
     pub(in crate::domain_computation::primary_graph) root: EntityId,
     pub(in crate::domain_computation::primary_graph) completed: Vec<EntityId>,
     pub(in crate::domain_computation::primary_graph) fresh: bool,
 }
-pub(in crate::domain_computation::primary_graph) enum Interrupt {
+pub enum Interrupt {
     Cancel {
         root: EntityId,
         earlier: Vec<EntityId>,
@@ -59,16 +59,14 @@ pub(in crate::domain_computation::primary_graph) enum Interrupt {
             worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource,
     },
 }
-pub(in crate::domain_computation::primary_graph) struct WitnessScope(Option<Arc<DispatchWitness>>);
+pub struct WitnessScope(Option<Arc<DispatchWitness>>);
 impl Drop for WitnessScope {
     fn drop(&mut self) {
         ACTIVE.set(self.0.take());
     }
 }
 impl DispatchWitness {
-    pub(in crate::domain_computation::primary_graph) fn install(
-        later: Option<EntityId>,
-    ) -> (Arc<Self>, WitnessScope) {
+    pub fn install(later: Option<EntityId>) -> (Arc<Self>, WitnessScope) {
         let witness = Arc::new(Self::default());
         witness.state.lock().unwrap().later = later;
         let previous = ACTIVE.replace(Some(Arc::clone(&witness)));
@@ -188,10 +186,7 @@ impl DispatchWitness {
         state.completions.push(root);
         self.finished.notify_all();
     }
-    pub(in crate::domain_computation::primary_graph::application_query) fn applied(
-        root: EntityId,
-        dependencies: &impl std::fmt::Debug,
-    ) {
+    pub fn applied(root: EntityId, dependencies: &impl std::fmt::Debug) {
         if let Some(witness) = Self::carried() {
             witness
                 .state
@@ -235,14 +230,10 @@ impl DispatchWitness {
             );
         }
     }
-    pub(in crate::domain_computation::primary_graph) fn interruption_point(
-        &self,
-    ) -> Option<InterruptionPoint> {
+    pub fn interruption_point(&self) -> Option<InterruptionPoint> {
         self.state.lock().unwrap().point.clone()
     }
-    pub(in crate::domain_computation::primary_graph) fn observations(
-        &self,
-    ) -> (Vec<EntityId>, Vec<EntityId>) {
+    pub fn observations(&self) -> (Vec<EntityId>, Vec<EntityId>) {
         let state = self.state.lock().unwrap();
         assert!(
             !state.watchdog_failed,
@@ -250,15 +241,13 @@ impl DispatchWitness {
         );
         (state.entries.clone(), state.completions.clone())
     }
-    pub(in crate::domain_computation::primary_graph) fn dependencies(
-        &self,
-    ) -> Vec<(EntityId, String)> {
+    pub fn dependencies(&self) -> Vec<(EntityId, String)> {
         self.state.lock().unwrap().applied.clone()
     }
-    pub(in crate::domain_computation::primary_graph) fn map_observation(
-        &self,
-    ) -> (u64, usize, std::collections::BTreeMap<EntityId, u64>) {
+    pub fn map_observation(&self) -> (u64, usize, std::collections::BTreeMap<EntityId, u64>) {
         let state = self.state.lock().unwrap();
         (state.map_charge, state.map_prefix, state.costs.clone())
     }
 }
+
+mod court_doors_for_test;

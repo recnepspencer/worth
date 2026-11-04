@@ -122,7 +122,3 @@ where
         let _ = self.terminate(BridgeExecutionBasisTerminalDisposition::Abandoned);
     }
 }
-
-#[cfg(test)]
-#[path = "lifecycle_tests.rs"]
-mod lifecycle_tests;

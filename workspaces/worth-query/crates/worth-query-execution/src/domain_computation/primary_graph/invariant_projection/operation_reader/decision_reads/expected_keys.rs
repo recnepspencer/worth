@@ -4,7 +4,7 @@ use crate::domain_computation::primary_graph::application_attempt::{
 };
 use std::{collections::BTreeSet, sync::Arc};
 
-pub(in crate::domain_computation::primary_graph) struct ExpectedFactKeys {
+pub struct ExpectedFactKeys {
     walks: super::structural_walks::IssuedWalkValues,
     aggregates: super::aggregates::IssuedAggregateValues,
     components: super::components::IssuedComponentValues,
@@ -115,9 +115,7 @@ impl ExpectedFactKeys {
     ) -> impl Iterator<Item = &Key> {
         union(self.handler.iter(), self.computation.keys())
     }
-    pub(in crate::domain_computation::primary_graph) fn attribution(
-        &self,
-    ) -> &ComputationFactAttribution {
+    pub fn attribution(&self) -> &ComputationFactAttribution {
         &self.computation
     }
 }
@@ -141,3 +139,5 @@ fn union<'a>(
         (None, None) => None,
     })
 }
+
+mod court_doors_for_test;

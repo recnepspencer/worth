@@ -8,7 +8,6 @@ use worth_query_admission::{
     facade::graph_obligation::WorthQueryGraphWorkPlanIdentity,
     integration::WorthQueryExecutionCapacityReleaseReceipt,
 };
-#[cfg(test)]
 mod court;
 
 pub(in crate::domain_computation) struct WorthQueryInspectionReadCompletion {

@@ -32,3 +32,5 @@ impl SourceInvalidationOwner {
             .filter(|report| Some(report.commit) == selected.commit_id()))
     }
 }
+
+mod court_doors_for_test;

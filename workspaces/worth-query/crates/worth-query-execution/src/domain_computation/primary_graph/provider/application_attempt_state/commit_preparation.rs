@@ -12,8 +12,8 @@ use super::super::{
 
 mod coupled;
 pub(super) use coupled::CoupledCommitPreparation;
-mod preimage_retention;
-mod relational_commit;
+pub(crate) mod preimage_retention;
+pub(crate) mod relational_commit;
 pub(in crate::domain_computation::primary_graph) use preimage_retention::WorthQueryPreImageRetentionWork;
 pub(crate) use preimage_retention::{
     WorthQueryRetainedPreImageSeal, WorthQueryRetainedRelationPreImageSeal,

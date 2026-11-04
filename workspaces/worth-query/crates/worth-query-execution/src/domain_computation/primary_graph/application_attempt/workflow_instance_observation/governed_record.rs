@@ -5,7 +5,7 @@ use crate::domain_computation::primary_graph::application_discovery::{
 };
 use worth_query_installation::facade::WorthQueryApplicationWorkflowResourceCeiling;
 
-pub(in crate::domain_computation::primary_graph) struct WorkflowRecord {
+pub struct WorkflowRecord {
     pub(in crate::domain_computation::primary_graph) state: State,
     pub(in crate::domain_computation::primary_graph) instance: EntityId,
     pub(in crate::domain_computation::primary_graph) lineage: EntityId,
@@ -21,7 +21,7 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowRecord {
         Option<PublishedWorkflowInstanceRef>,
 }
 /// Capability admission and full subject/Spec validation occur before this native record read.
-pub(in crate::domain_computation::primary_graph) fn observe<Schema>(
+pub fn observe<Schema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
@@ -209,3 +209,5 @@ pub(in crate::domain_computation::primary_graph) fn observe<Schema>(
         reference,
     })
 }
+
+mod court_doors_for_test;

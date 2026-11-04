@@ -9,8 +9,7 @@ use crate::domain_computation::primary_graph::application_output_demand::WorthQu
 use crate::domain_computation::primary_graph::application_query::WorthQueryObservedSourceEpoch;
 use crate::domain_computation::primary_graph::output_lineage::AcceptedCurrentCandidate;
 
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) struct PerformedMembers
-{
+pub struct PerformedMembers {
     entries: Vec<PerformedMember>,
     // Counts new committed producer publications, not checkpoint delivery or replay.
     commit_generation: u64,
@@ -27,35 +26,32 @@ struct PerformedMember {
 /// Only this owner can mint permission to enter the authoritative Fresh path.
 /// Private fields make constructing an unchecked permission outside this
 /// module impossible, including from NeedsDisclosure or a rejoined Ready.
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) struct FreshReadiness
-{
+pub struct FreshReadiness {
     member: usize,
 }
 
 /// Publication permission for an attached member key. Ordinary execution
 /// keeps its key; selected execution must attach the actual admitted successor.
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) struct PublicationReadiness
-{
+pub struct PublicationReadiness {
     member: usize,
 }
 
 mod captured_input;
-pub(super) mod certification;
+pub(crate) mod certification;
 pub(super) use certification::certify_required_ready;
 pub(in crate::domain_computation::primary_graph) use certification::CurrentBasis;
 pub(in crate::domain_computation::primary_graph) use certification::CurrentProof;
 mod member_keys;
 use captured_input::CapturedDecisionInput;
-mod ordinary;
-mod publication;
-mod reinspection;
+pub(crate) mod ordinary;
+pub(crate) mod publication;
+pub(crate) mod reinspection;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) use ordinary::DecisionInput;
 pub(super) use reinspection::InspectionStamp;
 pub(super) use reinspection::ReinspectionCredit;
 
 impl PerformedMembers {
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) fn start(
-    ) -> Self {
+    pub fn start() -> Self {
         Self {
             entries: Vec::new(),
             commit_generation: 0,
@@ -144,11 +140,7 @@ impl PerformedMembers {
     }
 }
 
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) struct SelectedDecisionInput<
-    'a,
-    'runtime,
-    Schema,
-> {
+pub struct SelectedDecisionInput<'a, 'runtime, Schema> {
     pub shared: &'a SharedSelectedProductOperation<'runtime, Schema>,
     pub positioned: &'a PositionedRelationalSnapshot,
     pub runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -175,3 +167,5 @@ impl<Schema: ApplicationSchema + 'static> SelectedDecisionInput<'_, '_, Schema> 
             })
     }
 }
+
+mod court_doors_for_test;

@@ -11,8 +11,8 @@ use super::{
 
 mod native_prior;
 mod prior_output;
-mod republication;
-pub(in crate::domain_computation::primary_graph) enum PriorOutputOrigin {
+pub(crate) mod republication;
+pub enum PriorOutputOrigin {
     Recovered {
         source_identity: RecordedSourceIdentity,
         checkpoint: Option<crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity>,
@@ -21,7 +21,7 @@ pub(in crate::domain_computation::primary_graph) enum PriorOutputOrigin {
 }
 
 /// A recorded checkpoint output and the source facts its verification covers.
-pub(in crate::domain_computation::primary_graph) struct RestoredRecord {
+pub struct RestoredRecord {
     pub(in crate::domain_computation::primary_graph) identity:
         Arc<super::RecordedSettlementIdentity>,
     pub(in crate::domain_computation::primary_graph) facts: super::RetainedSourceFacts,
@@ -287,3 +287,5 @@ impl WorthQueryApplicationOutputLineage {
         Arc::clone(recorded.native_output_witness.get_or_init(|| witness))
     }
 }
+
+mod court_doors_for_test;

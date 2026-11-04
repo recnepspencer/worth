@@ -15,8 +15,7 @@ struct Issued {
     contracts: Arc<Contracts>,
     cookie: u64,
 }
-pub(in crate::domain_computation::primary_graph::invariant_projection::operation_reader) enum WalkRecordDenial
-{
+pub enum WalkRecordDenial {
     Execution(Cause),
     Conflict,
 }
@@ -65,11 +64,7 @@ impl DecisionReads {
     ) {
         self.failed_walk = true;
     }
-    pub(in crate::domain_computation::primary_graph::invariant_projection::operation_reader) fn record_walk<
-        Schema,
-        Relation,
-        Entity,
-    >(
+    pub fn record_walk<Schema, Relation, Entity>(
         &mut self,
         walk: &crate::domain_computation::primary_graph::invariant_projection::WorthQueryInvariantProjectionWalk<Schema, Relation, Entity>,
         admission: Admission,

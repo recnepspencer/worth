@@ -10,7 +10,7 @@ use worth_query_installation::facade::{
 
 /// Every child read borrows the original control. Explicitly accounted reads
 /// also retain their original meter and cumulative reservation.
-pub(in crate::domain_computation::primary_graph) struct ValueDecodeSession<'a> {
+pub struct ValueDecodeSession<'a> {
     pub(super) on_refusal: Option<&'a dyn Fn(Stop)>,
     pub(super) state: &'a super::state::ValueDecodeState,
     pub(super) checkpoint: Option<&'a dyn Fn(u64) -> Result<(), MapKernelStop>>,
@@ -102,9 +102,7 @@ impl<'a> ValueDecodeSession<'a> {
         }
     }
 
-    pub(in crate::domain_computation::primary_graph) fn decode<
-        Binding: ApplicationReadableScalarValueBinding,
-    >(
+    pub fn decode<Binding: ApplicationReadableScalarValueBinding>(
         &self,
         entity: &str,
         aspect: &str,
@@ -205,3 +203,5 @@ impl<'a> ValueDecodeSession<'a> {
         self.decode_installed::<Binding>(binding, raw)
     }
 }
+
+mod court_doors_for_test;

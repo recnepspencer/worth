@@ -1,8 +1,5 @@
 //! Commit-owner selection of retained prior truth.
 
-#[cfg(test)]
-mod tests;
-
 use std::collections::BTreeSet;
 
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
@@ -20,7 +17,7 @@ use crate::domain_computation::application_aftermath::{
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationDecisionFact;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-struct WorthQueryObservedPreImageCandidate {
+pub struct WorthQueryObservedPreImageCandidate {
     read_scope: WorthQueryOperationGraphReadScope,
     value: AspectValue,
     target_record: RecordRef,
@@ -42,12 +39,12 @@ pub(crate) struct WorthQueryRetainedPreImageSeal {
     total_encoded_bytes: usize,
 }
 
-pub(super) struct WorthQueryRetainedPreImageSelection {
+pub struct WorthQueryRetainedPreImageSelection {
     retained: WorthQueryRetainedPreImage,
     candidates_materialized: usize,
 }
 
-pub(super) fn retain_from_attempt<'fact>(
+pub fn retain_from_attempt<'fact>(
     demand: &InstalledPreImageDemand,
     facts: impl Iterator<Item = &'fact WorthQueryPrimaryGraphApplicationDecisionFact>,
     mutation: &ValidatedMutationFootprint,
@@ -201,7 +198,7 @@ impl WorthQueryObservedPreImageCandidate {
     }
 }
 
-fn retain_matching(
+pub fn retain_matching(
     demand: &InstalledPreImageDemand,
     candidates: &[WorthQueryObservedPreImageCandidate],
     mutation_is_empty: bool,
@@ -343,3 +340,5 @@ impl WorthQueryRetainedPreImageFieldSeal {
         )
     }
 }
+
+mod court_doors_for_test;

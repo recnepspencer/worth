@@ -6,9 +6,7 @@ use worth_query_installation::facade::ApplicationSchema;
 use super::super::ProducerInvocationAuthority;
 use super::super::WorthQueryProducerCommitAuthority;
 use super::disclosure::validate_disclosure;
-#[cfg(test)]
 use super::own_effect_observation;
-#[cfg(test)]
 use super::own_effect_observation::Stage;
 use super::FamilySourceQuery;
 use super::FamilySourceValue;
@@ -28,7 +26,7 @@ use caller_pass::CallerPass;
 mod refresh;
 mod rejoin;
 mod required_fresh;
-mod required_wave;
+pub(crate) mod required_wave;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) use required_wave::performed::DecisionInput;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) use required_wave::performed::PerformedMembers;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) use required_wave::performed::SelectedDecisionInput;
@@ -336,7 +334,7 @@ where
     }
 }
 
-pub(super) fn denial(
+pub fn denial(
     kind: WorthQueryOutputDemandDenialKind,
     subject: impl Into<std::borrow::Cow<'static, str>>,
 ) -> WorthQueryOutputDemandDenial {
@@ -344,3 +342,5 @@ pub(super) fn denial(
 }
 
 mod caller_pass_observation;
+
+mod court_doors_for_test;

@@ -269,3 +269,5 @@ where
         self.termination_failed
     }
 }
+
+mod court_doors_for_test;

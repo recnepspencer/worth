@@ -1,0 +1,313 @@
+use std::sync::Mutex;
+
+use crate::domain_computation::managed_run::tests::*;
+
+pub type ProductionAuthority =
+    Arc<worth_query_execution::facade::domain_computation::WorthQueryArtifactProductionAuthority>;
+
+pub struct FreezeProbeProvider {
+    pub authority: Arc<Mutex<Option<ProductionAuthority>>>,
+    pub result: Arc<Mutex<Option<FreezeProbeResult>>>,
+    pub disposals: Arc<AtomicUsize>,
+}
+
+pub struct FreezeProbeExecution {
+    pub authority: Arc<Mutex<Option<ProductionAuthority>>>,
+    pub result: Arc<Mutex<Option<FreezeProbeResult>>>,
+    pub disposals: Arc<AtomicUsize>,
+    pub retained: Option<WorthQueryGraphProviderRetainedMemory>,
+}
+
+pub enum FreezeProbeResult {
+    Registered,
+    Denied(worth_query_execution::facade::domain_computation::WorthQueryArtifactDenial),
+}
+
+impl WorthQueryGraphParticipationProvider<ManagedGraph> for FreezeProbeProvider {
+    type Execution = FreezeProbeExecution;
+
+    fn execution_resource_support(
+        &self,
+    ) -> worth_query_admission::facade::resource_admission::WorthQueryExecutionResourceSupport {
+        worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::provider_session::tests::execution_resource_support_with_yield(
+            "yield-production-freeze-provider",
+            8,
+        )
+    }
+
+    fn begin(
+        &self,
+        _call: &WorthQueryGraphProviderCall,
+        start: &mut WorthQueryGraphProviderExecutionStart,
+    ) -> Result<
+        WorthQueryCooperativeGraphProviderExecution<Self::Execution>,
+        WorthQueryGraphProviderFailure,
+    > {
+        admit_provider_execution(
+            start,
+            FreezeProbeExecution {
+                authority: Arc::clone(&self.authority),
+                result: Arc::clone(&self.result),
+                disposals: Arc::clone(&self.disposals),
+                retained: None,
+            },
+        )
+    }
+}
+
+impl WorthQueryGraphProviderExecution for FreezeProbeExecution {
+    fn advance(
+        &mut self,
+        step: &mut WorthQueryGraphProviderStep,
+    ) -> Result<WorthQueryGraphProviderStepDisposition, WorthQueryGraphProviderFailure> {
+        step.perform_work_unit(|| Ok(()))?;
+        self.retained = Some(step.retain_bytes(3).map_err(step_failure)?);
+        step.record_checkpoint_available().map_err(step_failure)?;
+        Ok(WorthQueryGraphProviderStepDisposition::continue_work())
+    }
+
+    fn suspend(
+        &mut self,
+    ) -> Result<
+        Box<dyn worth_query_execution::facade::domain_computation::WorthQueryGraphProviderCheckpoint>,
+        WorthQueryGraphProviderFailure,
+    >{
+        let authority = self
+            .authority
+            .lock()
+            .expect("freeze probe authority lock remains available")
+            .clone()
+            .expect("workflow installs production authority before provider suspension");
+        let admission =
+            worth_query_execution::facade::domain_computation::WorthQueryArtifactProductionAuthority::admit(
+                &authority,
+                WorthQueryArtifactProductionEvidence::new(
+                    "suspension-race-provenance",
+                    "suspension-race-dependency",
+                ),
+            );
+        let result =
+            worth_query_execution::facade::domain_computation::WorthQueryArtifactProductionAuthority::register_exact(
+                &authority,
+                admission,
+                FreezeProbeArtifact(Arc::clone(&self.disposals)),
+            );
+        *self
+            .result
+            .lock()
+            .expect("freeze probe result lock remains available") = Some(match result {
+            Ok(handle) => {
+                drop(handle);
+                FreezeProbeResult::Registered
+            }
+            Err(denial) => FreezeProbeResult::Denied(denial),
+        });
+        Ok(Box::new(FreezeProbeCheckpoint {
+            _retained: self
+                .retained
+                .take()
+                .expect("freeze checkpoint transfers governed retained memory once"),
+        }))
+    }
+
+    fn dispose(&mut self) -> Result<(), WorthQueryGraphProviderFailure> {
+        Ok(())
+    }
+}
+
+pub struct FreezeProbeCheckpoint {
+    pub _retained: WorthQueryGraphProviderRetainedMemory,
+}
+
+impl worth_query_execution::facade::domain_computation::WorthQueryGraphProviderCheckpoint
+    for FreezeProbeCheckpoint
+{
+    fn retained_bytes(&self) -> u64 {
+        3
+    }
+
+    fn restore(
+        &self,
+        _call: &WorthQueryGraphProviderCall,
+        _memory: &mut WorthQueryGraphProviderRestoreMemory,
+    ) -> Result<
+        WorthQueryCooperativeGraphProviderExecution<Box<dyn WorthQueryGraphProviderExecution>>,
+        WorthQueryGraphProviderFailure,
+    > {
+        Err(WorthQueryGraphProviderFailure::new(
+            "Phase 6.3 freeze probe must never restore",
+        ))
+    }
+}
+
+pub struct FreezeProbeArtifact(Arc<AtomicUsize>);
+
+impl WorthQueryArtifactProviderResource for FreezeProbeArtifact {
+    const PROVIDER_FAMILY: &'static str = "WORTH.tests.affinity.provider";
+
+    fn canonical_semantic_projection(&self) -> Vec<u8> {
+        b"yield-freeze-probe".to_vec()
+    }
+
+    fn retained_bytes(&self) -> usize {
+        8
+    }
+
+    fn dispose(&mut self) {
+        self.0.fetch_add(1, Ordering::AcqRel);
+    }
+}
+
+#[test]
+fn workflow_freezes_artifact_production_before_provider_suspension() {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
+        let phase = &active_phase;
+        let execution = phase;
+
+        let authority = Arc::new(Mutex::new(None));
+        let result = Arc::new(Mutex::new(None));
+        let disposals = Arc::new(AtomicUsize::new(0));
+        let provider = FreezeProbeProvider {
+            authority: Arc::clone(&authority),
+            result: Arc::clone(&result),
+            disposals: Arc::clone(&disposals),
+        };
+        let (running, graph, production) = freeze_probe_workflow(provider, resource_request);
+        let installed_running_phase = execution.phase_for_workflow_for_test(&running);
+
+        *authority
+            .lock()
+            .expect("freeze probe authority lock remains available") = Some(production);
+        let active = running
+            .begin_stage_graph_execution(
+                &installed_running_phase,
+                "producer",
+                &graph,
+                WorthQueryManagedGraphCallRequest::new(
+                    WorthQueryGraphProviderCallKind::Observe,
+                    "yield-production-freeze",
+                ),
+            )
+            .expect("freeze probe provider should begin");
+        let paused = match active.advance(&installed_running_phase) {
+            WorthQueryWorkflowGraphStepOutcome::Continue(paused) => paused,
+            _ => panic!("freeze probe provider did not reach its safe point"),
+        };
+        let yielded = match paused.yield_run() {
+            worth_query_execution::facade::domain_computation::WorthQueryWorkflowYieldOutcome::Yielded(yielded) => yielded,
+            _ => panic!("rejected suspension-time production prevented an eligible yield"),
+        };
+        let denial = match result
+            .lock()
+            .expect("freeze probe result lock remains available")
+            .take()
+            .expect("provider suspension must attempt artifact production")
+        {
+            FreezeProbeResult::Denied(denial) => denial,
+            FreezeProbeResult::Registered => {
+                panic!("provider registered an artifact after workflow yield began")
+            }
+        };
+        assert_eq!(
+            denial.kind(),
+            worth_query_execution::facade::domain_computation::WorthQueryArtifactDenialKind::ProductionClosed
+        );
+        let release = match denial.rejected_resource_release() {
+        Some(worth_query_execution::facade::domain_computation::WorthQueryArtifactProviderReleasePosture::Complete(
+            evidence,
+        )) => evidence,
+        posture => panic!("rejected suspension-time artifact reported {posture:?}"),
+    };
+        assert_eq!(
+        release.disposal(),
+        worth_query_execution::facade::domain_computation::WorthQueryArtifactProviderDisposalDisposition::Completed
+    );
+        assert_eq!(
+        release.destructor(),
+        worth_query_execution::facade::domain_computation::WorthQueryArtifactProviderDestructorDisposition::Completed
+    );
+        assert_eq!(disposals.load(Ordering::Acquire), 1);
+        assert_eq!(
+            yielded
+                .inspection()
+                .artifact_evidence()
+                .produced_artifact_count(),
+            0
+        );
+        assert_eq!(yielded.inspection().artifact_evidence().retained_bytes(), 0);
+        match yielded.cleanup() {
+            worth_query_execution::facade::domain_computation::WorthQueryWorkflowYieldCleanupOutcome::Complete(_) => {}
+            _ => panic!("artifact-free freeze probe did not clean up"),
+        }
+    });
+}
+
+pub fn freeze_probe_workflow(
+    provider: FreezeProbeProvider,
+    resource_request: worth_execution::ExecutionRequest<'_, '_>,
+) -> (
+    worth_query_execution::facade::domain_computation::WorthQueryRunningWorkflowRun,
+    WorthQueryInstalledGraphParticipationAuthority,
+    ProductionAuthority,
+) {
+    let installer = WorthQueryExecutionRuntimeInstaller::new();
+    let provider_anchor = Arc::new(
+        worth_query_execution::facade::integration::WorthQueryGraphProviderAnchor::install::<
+            ManagedGraph,
+            _,
+        >(provider),
+    );
+    let provider_support = provider_anchor.resource_support().clone();
+    let graph = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::workflow_provider_steps::installed_graph(
+        &installer,
+        "yield-production-freeze-graph",
+        provider_anchor,
+    );
+    let runtime =
+        worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::workflow_provider_steps::installed_runtime(installer, "yield production freeze");
+    let operation_resources = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::provider_session::tests::admitted_yield_plan(
+        "yield-production-freeze",
+        8,
+    );
+    let stage_resources = admitted_plan_with_graph_support(
+        "yield-production-freeze:producer",
+        8,
+        graph.role(),
+        provider_support,
+    );
+    let resources = WorthQueryAdmittedWorkflowResourcePlan::assemble(
+        operation_resources,
+        BTreeMap::from([("producer".to_owned(), stage_resources)]),
+    );
+    let output =
+        worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::artifact_owner::authority_affinity_tests::installed_artifact_contract_for_managed_run();
+    let operation = workflow_authority_with_stage_graph_and_output_artifact(
+        &runtime,
+        &resources,
+        "producer",
+        &graph,
+        WorthQueryOperationGraphAccess::Observe,
+        output,
+    );
+    let running = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::workflow_provider_steps::admitted_workflow(
+        &runtime,
+        &operation,
+        resources,
+        resource_request,
+    );
+    let production = running
+        .artifacts()
+        .production_authority("producer")
+        .expect("producer role should validate")
+        .expect("producer output contract should install");
+    (running, graph, production)
+}
+
+pub fn step_failure(
+    denial: worth_query_execution::facade::domain_computation::WorthQueryGraphProviderStepDenial,
+) -> WorthQueryGraphProviderFailure {
+    WorthQueryGraphProviderFailure::new(denial.detail())
+}

@@ -26,15 +26,9 @@ use crate::domain_computation::{
     WorthQueryManagedTruthReadRequest,
 };
 
-#[cfg(test)]
-#[path = "running/affinity_tests.rs"]
-mod affinity_tests;
-#[cfg(test)]
-#[path = "running/independent_axis_tests.rs"]
-mod independent_axis_tests;
-pub(in super::super) mod progression;
+pub(crate) mod progression;
 
-pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) struct WorthQueryRunningApplicationCommit<
+pub struct WorthQueryRunningApplicationCommit<
     Schema,
     Operation,
     Input,
@@ -61,12 +55,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt::provider_e
     >,
 }
 
-pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) fn start_managed_application_commit<
-    Schema,
-    Operation,
-    Input,
-    Scope,
->(
+pub fn start_managed_application_commit<Schema, Operation, Input, Scope>(
     phase: &WorthQueryAdvancementPhase<'_>,
 
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -245,3 +234,5 @@ where
     )
     .map_err(|detail| denied_with_detail(DenialStage::InvariantExecution, detail))
 }
+
+mod court_doors_for_test;

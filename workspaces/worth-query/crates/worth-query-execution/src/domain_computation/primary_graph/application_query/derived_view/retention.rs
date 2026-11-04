@@ -20,7 +20,6 @@ mod denial;
 mod member_token;
 mod publication;
 mod reconcile;
-#[cfg(test)]
 mod reconstruction_observation;
 mod refresh;
 mod source;

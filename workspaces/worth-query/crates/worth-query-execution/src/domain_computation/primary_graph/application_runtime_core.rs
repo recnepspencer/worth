@@ -1,7 +1,7 @@
 //! State owned once by an application runtime, independent of its application types.
 use super::*;
 
-pub(in crate::domain_computation) struct WorthQueryApplicationRuntimeCore {
+pub struct WorthQueryApplicationRuntimeCore {
     pub(super) execution: Option<WorthQueryExecutionRuntime>,
     pub(in crate::domain_computation::primary_graph) application_readiness_schema_token: String,
     pub(super) publication: WorthQueryPrimaryGraphPublication,
@@ -70,7 +70,6 @@ impl WorthQueryApplicationRuntimeCore {
             .expect("a live application owns its source meanings")
     }
 
-    #[cfg(test)]
     pub(in crate::domain_computation) fn execution_mut(
         &mut self,
     ) -> &mut WorthQueryExecutionRuntime {
@@ -224,3 +223,6 @@ impl WorthQueryApplicationRuntimeCore {
         &self.installed_operations
     }
 }
+
+#[path = "application_runtime_core_court_doors_for_test.rs"]
+mod court_doors_for_test;

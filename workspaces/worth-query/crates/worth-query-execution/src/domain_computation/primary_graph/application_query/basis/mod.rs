@@ -1,12 +1,10 @@
 mod admission;
 mod admission_denial;
-mod execution_custody;
-#[cfg(test)]
-mod historical_authority;
+pub(crate) mod execution_custody;
+pub(crate) mod historical_authority;
 mod index_currency_denial;
 mod product_admission;
 mod selected_indexes;
-#[cfg(test)]
 mod truth_view_admission;
 
 pub(super) use admission::{
@@ -14,10 +12,8 @@ pub(super) use admission::{
     admit_application_query_permission_basis_with_native_access,
 };
 pub(super) use admission_denial::admission_denial;
-#[cfg(test)]
 pub(super) use admission_denial::{map_basis_denial, map_registration_denial};
 pub(in crate::domain_computation::primary_graph) use execution_custody::WorthQueryApplicationQueryBasisCustody;
-#[cfg(test)]
 pub(crate) use historical_authority::WorthQueryApplicationHistoricalRead;
 pub(super) use index_currency_denial::map_index_currency_denial;
 pub(in crate::domain_computation::primary_graph) use selected_indexes::PreparedSelectedReadIndexes;

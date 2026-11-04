@@ -2,7 +2,7 @@
 //! The checkpoint handoff consumes the sealed paid inspection; storage carries its Ready.
 use super::*;
 use crate::domain_computation::primary_graph::application_output_demand::RequiredWorkClaim;
-pub(in super::super) enum MemberInput<Ready> {
+pub enum MemberInput<Ready> {
     /// The popped claim pays its registry selection at first inspection.
     Queued {
         claim: RequiredWorkClaim,
@@ -97,3 +97,5 @@ impl RequiredFrontier {
         Ok(())
     }
 }
+
+mod court_doors_for_test;

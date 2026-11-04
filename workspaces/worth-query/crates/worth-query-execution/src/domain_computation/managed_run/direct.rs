@@ -256,10 +256,7 @@ impl WorthQueryRunningDirectRun {
         self.affinity.yield_is_installed()
     }
 
-    pub(super) fn terminal(
-        self,
-        kind: WorthQueryManagedRunTerminalKind,
-    ) -> WorthQueryDirectRunTerminal {
+    pub fn terminal(self, kind: WorthQueryManagedRunTerminalKind) -> WorthQueryDirectRunTerminal {
         let (affinity, provider_work, provider_cleanup) = self.affinity.into_terminal_parts();
         WorthQueryDirectRunTerminal {
             affinity,
@@ -304,3 +301,5 @@ impl std::fmt::Debug for WorthQueryDirectRunCompletionRejection {
             .finish()
     }
 }
+
+mod court_doors_for_test;

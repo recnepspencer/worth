@@ -16,7 +16,7 @@ mod coupled_settlement;
 pub(in crate::domain_computation::primary_graph) use coupled_preparation::{
     CoupledApplicationMember, CoupledProducerPreparation,
 };
-mod commit_preparation;
+pub(crate) mod commit_preparation;
 pub(in crate::domain_computation::primary_graph::provider) mod coupled_publication;
 pub(in crate::domain_computation::primary_graph::provider) use commit_preparation::publish_recovered;
 pub(in crate::domain_computation::primary_graph::provider) use commit_preparation::ManagedUnpublishedAttempt;
@@ -25,7 +25,7 @@ pub(super) use phase::{
     WorthQueryApprovedApplicationCandidate, WorthQueryRetiredApplicationAttemptPhase,
 };
 mod registered_reads;
-mod registration;
+pub(crate) mod registration;
 mod retained_basis;
 pub(in crate::domain_computation) use registered_reads::RegisteredPrimaryRead;
 mod staged;
@@ -40,7 +40,6 @@ pub(in crate::domain_computation::primary_graph) use commit_preparation::{
 pub(crate) use commit_preparation::{
     WorthQueryRetainedPreImageSeal, WorthQueryRetainedRelationPreImageSeal,
 };
-#[cfg(test)]
 use phase::WorthQueryApplicationAttemptPhase;
 use phase::{WorthQueryApplicationAttemptState, WorthQueryPrimaryGraphOverlay};
 pub(super) use retained_basis::{
@@ -66,7 +65,7 @@ impl WorthQueryApplicationAttemptLookupKey {
 }
 
 #[derive(Default)]
-pub(super) struct WorthQueryPrimaryGraphApplicationAttemptStore {
+pub struct WorthQueryPrimaryGraphApplicationAttemptStore {
     attempts: BTreeMap<WorthQueryApplicationAttemptLookupKey, WorthQueryApplicationAttemptEntry>,
     next_registration: u64,
     next_overlay: u64,
@@ -283,7 +282,6 @@ impl WorthQueryPrimaryGraphApplicationAttemptStore {
             .flatten()
     }
 
-    #[cfg(test)]
     pub(super) fn resource_count(&self) -> usize {
         self.attempts
             .values()
@@ -346,3 +344,5 @@ mod tests;
 pub(in crate::domain_computation::primary_graph) use commit_preparation::{
     PreparedRebaseDenial, PreparedSourceFactRebase,
 };
+
+mod court_doors_for_test;

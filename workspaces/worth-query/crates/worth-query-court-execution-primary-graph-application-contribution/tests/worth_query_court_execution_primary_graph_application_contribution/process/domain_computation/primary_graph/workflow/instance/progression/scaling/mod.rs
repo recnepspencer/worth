@@ -1,0 +1,207 @@
+use worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome;
+use worth_relational::facade::identity::EntityId;
+use im::OrdMap;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::instance::progression::SettledWorkflowTransition;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::instance::progression::WorkflowInstanceProgress;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::instance::progression::locator::WorkflowTransitionLocator;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::instance::progression::locator::WorkflowTransitionProgressObservation;
+use worth_relational::facade::identity::PartitionId;
+
+pub fn entity(slot: u64) -> EntityId {
+    EntityId::new(PartitionId::new(7), slot, 1)
+}
+
+pub fn populated(count: u64) -> WorkflowInstanceProgress {
+    let mut progress = WorkflowInstanceProgress::new_for_test(
+        None,
+        entity(count + 1),
+        count,
+        OrdMap::new(),
+        0,
+        OrdMap::new(),
+        false,
+        OrdMap::new(),
+        OrdMap::new(),
+        OrdMap::new(),
+        OrdMap::new(),
+        0,
+    );
+    for occurrence in 0..count {
+        let node = entity(occurrence);
+        (*progress.retry_counts_mut_for_test())
+            .insert((node, ApplicationWorkflowControlOutcome::Completed), 1);
+        progress.retain_observation_for_test(WorkflowTransitionProgressObservation::new_for_test(
+            WorkflowTransitionLocator::new_for_test(
+                entity(count + occurrence),
+                SettledWorkflowTransition::new_for_test(
+                    node,
+                    occurrence,
+                    ApplicationWorkflowControlOutcome::Completed,
+                    None,
+                ),
+            ),
+            Some(entity(count * 2 + occurrence)),
+        ));
+    }
+    progress
+}
+
+pub fn update_last(progress: &mut WorkflowInstanceProgress, count: u64) {
+    let node = entity(count - 1);
+    (*progress.retry_counts_mut_for_test())
+        .insert((node, ApplicationWorkflowControlOutcome::Completed), 2);
+    progress.retain_observation_for_test(WorkflowTransitionProgressObservation::new_for_test(
+        WorkflowTransitionLocator::new_for_test(
+            entity(count * 3),
+            SettledWorkflowTransition::new_for_test(
+                node,
+                count,
+                ApplicationWorkflowControlOutcome::Completed,
+                None,
+            ),
+        ),
+        Some(entity(count * 3 + 1)),
+    ));
+}
+
+#[test]
+fn progress_snapshots_share_maps_and_preserve_isolated_values() {
+    for count in [100, 1_000, 10_000] {
+        let source = populated(count);
+        let mut advanced = source.clone();
+        assert!((*source.retry_counts_for_test()).ptr_eq(&(*advanced.retry_counts_for_test())));
+        assert!((*source.latest_transitions_for_test())
+            .ptr_eq(&(*advanced.latest_transitions_for_test())));
+        assert!((*source.latest_assessment_evidence_for_test())
+            .ptr_eq(&(*advanced.latest_assessment_evidence_for_test())));
+        update_last(&mut advanced, count);
+        assert_eq!(
+            source
+                .latest_transition_for_test(entity(count - 1))
+                .unwrap()
+                .settlement_for_test()
+                .occurrence_for_test(),
+            count - 1
+        );
+        assert_eq!(
+            advanced
+                .latest_transition_for_test(entity(count - 1))
+                .unwrap()
+                .settlement_for_test()
+                .occurrence_for_test(),
+            count
+        );
+        assert_ne!(source, advanced);
+        let mut duplicate = source.clone();
+        update_last(&mut duplicate, count);
+        assert_eq!(advanced, duplicate);
+    }
+}
+
+#[test]
+fn ten_thousand_back_settlements_keep_warm_navigation_state_bounded() {
+    let first = entity(1);
+    let second = entity(2);
+    let mut progress = populated(0);
+    for cycle in 0..10_000_u64 {
+        progress
+            .advance_with_for_test(
+                SettledWorkflowTransition::new_for_test(
+                    first,
+                    cycle * 2,
+                    ApplicationWorkflowControlOutcome::Completed,
+                    None,
+                ),
+                &mut |_, _, _| Ok(second),
+            )
+            .expect("forward settlement is contiguous");
+        progress
+            .advance_with_for_test(
+                SettledWorkflowTransition::new_for_test(
+                    second,
+                    cycle * 2 + 1,
+                    ApplicationWorkflowControlOutcome::NavigatedBack,
+                    None,
+                ),
+                &mut |_, _, _| panic!("Back derives its predecessor without forward selection"),
+            )
+            .expect("Back settlement is contiguous");
+    }
+    assert_eq!(progress.head_for_test(), first);
+    assert_eq!(progress.next_occurrence_for_test(), 20_000);
+    assert_eq!((*progress.path_depth_for_test()), 0);
+    assert!((*progress.path_for_test()).is_empty());
+    assert_eq!((*progress.back_edge_iterations_for_test()).len(), 1);
+    assert_eq!(
+        (*progress.back_edge_iterations_for_test()).get(&(second, first)),
+        Some(&10_000)
+    );
+    let snapshot = progress.clone();
+    assert!((*snapshot.back_edge_iterations_for_test())
+        .ptr_eq(&(*progress.back_edge_iterations_for_test())));
+}
+
+#[test]
+fn progress_snapshot_and_update_allocation_bounds() {
+    let output = worth_query_testkit_execution_primary_graph_application_attempt_2::process_deadline::output(
+        std::process::Command::new(std::env::current_exe().unwrap())
+            .arg("isolated_progress_allocation_probe")
+            .arg("--test-threads=1")
+            .arg("--nocapture")
+            .env("WORTH_QUERY_PROGRESS_ALLOCATION_PROBE", "1"),
+    )
+    .unwrap();
+    assert!(
+        output.status.success(),
+        "{}\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    print!("{}", String::from_utf8_lossy(&output.stdout));
+}
+
+#[test]
+fn isolated_progress_allocation_probe() {
+    if std::env::var_os("WORTH_QUERY_PROGRESS_ALLOCATION_PROBE").is_none() {
+        return;
+    }
+    use stats_alloc::Region;
+    use stats_alloc::INSTRUMENTED_SYSTEM;
+    for count in [100, 1_000, 10_000] {
+        let construction = Region::new(&INSTRUMENTED_SYSTEM);
+        let source = populated(count);
+        let allocation = construction.change();
+        let live = allocation.bytes_allocated - allocation.bytes_deallocated;
+        assert!(
+            live > 0,
+            "allocation probe requires the instrumented allocator"
+        );
+        assert!(
+            source.retained_charge_bytes_for_test() >= live,
+            "charge {} below live {live} at {count}",
+            source.retained_charge_bytes_for_test()
+        );
+        let snapshot = Region::new(&INSTRUMENTED_SYSTEM);
+        let mut advanced = source.clone();
+        let cloned = snapshot.change();
+        assert_eq!(
+            cloned.allocations, 0,
+            "snapshot must share its three maps at {count}"
+        );
+        assert_eq!(cloned.bytes_allocated, 0);
+        let update = Region::new(&INSTRUMENTED_SYSTEM);
+        update_last(&mut advanced, count);
+        let changed = update.change();
+        // Three 64-pair trees, each with at most four copied levels at 10k.
+        // This bounds real allocations; a whole-map clone exceeds it at 1k.
+        assert!(changed.allocations <= 12, "{count}: {changed:?}");
+        assert!(changed.bytes_allocated <= 100_000, "{count}: {changed:?}");
+        let mut duplicate = source.clone();
+        update_last(&mut duplicate, count);
+        let comparison = Region::new(&INSTRUMENTED_SYSTEM);
+        assert_eq!(advanced, duplicate);
+        let compared = comparison.change();
+        assert!(compared.bytes_allocated <= 16_384, "{count}: {compared:?}");
+        println!("progress entries={count}: snapshot_bytes={}, update_allocations={}, update_bytes={}, comparison_bytes={}, live_bytes={live}, charged_bytes={}", cloned.bytes_allocated, changed.allocations, changed.bytes_allocated, compared.bytes_allocated, source.retained_charge_bytes_for_test());
+    }
+}

@@ -313,3 +313,5 @@ impl<Query> WorthQueryApplicationOutputDemandDisclosure<Query> {
         &self.observed_sources
     }
 }
+
+mod court_doors_for_test;

@@ -37,7 +37,7 @@ struct SupportLifecycleState {
 }
 
 #[derive(Clone)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryProgramSupportLifecycle {
+pub struct WorthQueryProgramSupportLifecycle {
     state: Arc<Mutex<SupportLifecycleState>>,
 }
 
@@ -175,16 +175,13 @@ enum SupportUse {
     Custody,
 }
 
-pub(in crate::domain_computation::primary_graph) struct WorthQueryProgramSupportInterpretation {
+pub struct WorthQueryProgramSupportInterpretation {
     lifecycle: WorthQueryProgramSupportLifecycle,
     revision: ApplicationProgramRevision,
 }
 
 impl WorthQueryProgramSupportInterpretation {
-    pub(in crate::domain_computation::primary_graph) fn same_support_as(
-        &self,
-        other: &Self,
-    ) -> bool {
+    pub fn same_support_as(&self, other: &Self) -> bool {
         self.revision == other.revision
             && Arc::ptr_eq(&self.lifecycle.state, &other.lifecycle.state)
     }
@@ -222,7 +219,7 @@ impl Drop for WorthQueryProgramSupportCustody {
     }
 }
 
-pub(in crate::domain_computation::primary_graph) struct WorthQueryProgramSupportRetirementAttempt {
+pub struct WorthQueryProgramSupportRetirementAttempt {
     lifecycle: WorthQueryProgramSupportLifecycle,
     revision: ApplicationProgramRevision,
     finished: bool,
@@ -320,3 +317,5 @@ impl Drop for WorthQueryProgramSupportRetirementAttempt {
         }
     }
 }
+
+mod court_doors_for_test;

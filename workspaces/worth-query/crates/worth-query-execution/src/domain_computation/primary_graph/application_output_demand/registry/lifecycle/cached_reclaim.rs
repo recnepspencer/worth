@@ -30,9 +30,7 @@ impl WorthQueryOutputDemandRegistry {
     /// Release one product observation nothing holds: retire a closed
     /// cached row, or with none left release an unheld performed source.
     /// Whether one was released.
-    pub(in crate::domain_computation::primary_graph) fn reclaim_unheld_observation(
-        &self,
-    ) -> Result<bool, WorthQueryOutputDemandDenial> {
+    pub fn reclaim_unheld_observation(&self) -> Result<bool, WorthQueryOutputDemandDenial> {
         let mut retired = Vec::new();
         let mut claims = Vec::new();
         let mut released = None;

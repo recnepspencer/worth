@@ -15,13 +15,11 @@ use worth_relational::facade::mvcc::{
 mod installed_touches;
 mod struct_aspect;
 use installed_touches::resolve_installed_touches;
-#[cfg(test)]
-mod tests;
 
 use super::super::schema_layout::WorthQueryPrimaryGraphLayout;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(super) struct WorthQueryInstalledTouchAdmissionEvidence {
+pub struct WorthQueryInstalledTouchAdmissionEvidence {
     projection_work: ValidatedMutationTouchProjectionWork,
     validated_application_touches: usize,
     installed_touch_scopes: usize,
@@ -65,7 +63,7 @@ enum ResolvedApplicationTouch {
     RemoveEntityAspect(KindId, worth_foundational::facade::AspectKey),
 }
 
-pub(super) fn admit_validated_application_touches(
+pub fn admit_validated_application_touches(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     candidate: &ValidatedRelationalProposal,
     layout: &WorthQueryPrimaryGraphLayout,
@@ -252,7 +250,7 @@ fn application_relation_touch(
 }
 
 #[derive(Debug)]
-pub(super) enum TouchAdmissionFailure {
+pub enum TouchAdmissionFailure {
     Contract,
     Projection(worth_relational::facade::mvcc::ValidatedMutationTouchProjectionError),
 }
@@ -291,3 +289,5 @@ impl TouchAdmissionFailure {
         }
     }
 }
+
+mod court_doors_for_test;

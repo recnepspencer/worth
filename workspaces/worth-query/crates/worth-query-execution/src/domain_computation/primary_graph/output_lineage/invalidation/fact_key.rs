@@ -10,7 +10,7 @@ use crate::domain_computation::primary_graph::application_attempt::WorthQueryApp
 /// Exact reverse-posting selectors. These are derived addresses, not facts or
 /// revision evidence; a match identifies the retained fact to verify.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub(super) enum FactPostingKey {
+pub enum FactPostingKey {
     SourcePublication(
         std::sync::Arc<
             crate::domain_computation::primary_graph::application_contribution::OutputSourceAddress,

@@ -183,3 +183,5 @@ impl<Schema, Relation, Entity> std::fmt::Debug
             .finish_non_exhaustive()
     }
 }
+
+mod court_doors_for_test;

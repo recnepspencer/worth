@@ -11,7 +11,7 @@ use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
 
 /// The stage of a demand's row. Reading it claims nothing and moves nothing,
 /// so a demand can decide what it does before it begins the row.
-pub(in crate::domain_computation::primary_graph) enum OutputRowStage {
+pub enum OutputRowStage {
     /// Another call is scheduling, executing or advancing the row.
     Driven,
     Stopped(WorthQueryOutputDemandDenial),
@@ -25,10 +25,7 @@ pub(in crate::domain_computation::primary_graph) enum OutputRowStage {
 }
 
 impl WorthQueryOutputDemandRegistry {
-    pub(in crate::domain_computation::primary_graph) fn row_stage(
-        &self,
-        interest: &WorthQueryOutputDemandInterest,
-    ) -> OutputRowStage {
+    pub fn row_stage(&self, interest: &WorthQueryOutputDemandInterest) -> OutputRowStage {
         let state = self
             .state
             .lock()

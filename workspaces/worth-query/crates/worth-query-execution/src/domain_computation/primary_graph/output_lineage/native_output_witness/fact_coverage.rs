@@ -48,3 +48,5 @@ impl SealedNativeOutputWitness {
         Ok(false)
     }
 }
+
+mod court_doors_for_test;

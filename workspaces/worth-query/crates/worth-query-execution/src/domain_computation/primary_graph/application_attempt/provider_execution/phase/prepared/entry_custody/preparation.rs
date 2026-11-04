@@ -1,11 +1,6 @@
 use super::*;
 
-pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) fn prepare_application_commit<
-    Schema,
-    Operation,
-    Input,
-    Scope,
->(
+pub fn prepare_application_commit<Schema, Operation, Input, Scope>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     request: WorthQueryApplicationCommitPreparationRequest<
         '_,

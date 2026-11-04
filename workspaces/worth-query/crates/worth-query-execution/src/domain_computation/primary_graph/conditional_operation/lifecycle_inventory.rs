@@ -2,7 +2,7 @@ use std::sync::Weak;
 
 use super::inspection::WorthQueryConditionalRuntimeInspection;
 
-pub(in crate::domain_computation::primary_graph) struct WorthQueryConditionalOperationLiveness {
+pub struct WorthQueryConditionalOperationLiveness {
     pub(super) binding: Weak<()>,
     pub(super) lease: Weak<super::installation::ConditionalClockLease>,
     pub(super) wakes: Vec<Weak<()>>,
@@ -86,3 +86,5 @@ pub(super) fn retained_resource_counts(
         direct_deliveries: 0,
     }
 }
+
+mod court_doors_for_test;

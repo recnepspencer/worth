@@ -1,0 +1,159 @@
+//! Logical marking owner proof with real Native rows and an independent
+//! field-revision oracle. This does not measure public producer contacts.
+use worth_query_execution::facade::domain_computation::WorthQueryNativeMarkingPrecision;
+use worth_query_execution::facade::domain_computation::WorthQueryNativeMarkingWork;
+use crate::domain_computation::primary_graph::output_lineage::invalidation::native_journey_tests::*;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::Account;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountIdentity;
+use worth_relational::facade::identity::PartitionId;
+use worth_relational::facade::symbols::ClientKey;
+use worth_relational::facade::transactions::CreateIntent;
+use worth_relational::facade::transactions::CreatedEntityRef;
+use worth_relational::facade::transactions::EntitySpec;
+
+#[test]
+fn neutral_native_population_keeps_logical_marking_local_and_matches_revision_oracle() {
+    {
+        let mut expected_counts = None;
+        for population in [1, 10, 100, 1000] {
+            let counts = run_population(population);
+            assert!(counts.matched_fact_postings >= counts.marked_fact_ordinals);
+            if let Some(expected) = expected_counts {
+                assert_eq!(
+                    counts, expected,
+                    "neutral population {population} changed logical work"
+                );
+            } else {
+                expected_counts = Some(counts);
+            }
+        }
+    }
+}
+
+pub fn run_population(population: usize) -> WorthQueryNativeMarkingWork {
+    let world = crate::domain_computation::primary_graph::output_lineage::invalidation::native_journey_tests::population_world::install(population);
+    world.application.with_host_advancement(|phase| {
+ let custody = phase.test_host_request_for_test();
+ let phase_custody = &custody;
+ let execution = &phase_custody.borrowed_request_for_test();
+
+    let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
+    let (_, product, _) = selected.into_parts_for_test();
+    let coordinate = ProductCoordinate::new_for_test(product.observation_for_test().lifecycle_incarnation(), product.observation_for_test().reference_generation().get());
+    let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
+    let handle = graph.integration_handle_for_test();
+    let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
+    let kind = graph
+        .layout_for_test()
+        .entity_kind_for_test(Account::reference().name())
+        .unwrap();
+    let locator = |entity, aspect, field| {
+        let installed = graph.layout_for_test().field_locator_for_test(entity, aspect, field).unwrap();
+        // The independent oracle reads Native authority, matching the field
+        // meaning rather than the layout's effective projection posture.
+        AspectFieldLocator::new(
+            LocatorAuthority::Authoritative,
+            installed.aspect().aspect_key().clone(),
+            installed.field_path().clone(),
+        )
+    };
+    let identity_ref = AccountIdentity::reference();
+    let status_ref = AccountStatus::reference();
+    let label_ref = AccountLabel::reference();
+    let identity = locator(
+        identity_ref.entity(),
+        identity_ref.aspect(),
+        identity_ref.field(),
+    );
+    let status = locator(status_ref.entity(), status_ref.aspect(), status_ref.field());
+    let label = locator(label_ref.entity(), label_ref.aspect(), label_ref.field());
+    handle.with_runtime_mut_for_test(execution, |runtime| {
+        let references: Vec<_> = (0..population).map(|ordinal| CreatedEntityRef {
+            partition_id: PartitionId::main(), kind_id: kind,
+            client_key: ClientKey::raw(format!("logical-marking-{ordinal}")),
+        }).collect();
+        let batch = references.iter().enumerate().fold(
+            WorkerIntentBatch::new("logical-marking-neutral-population"),
+            |batch, (ordinal, reference)| {
+                let value = |text: String| AspectValue::String(InternedString::Raw(text));
+                batch.push(MutationIntent::Create(CreateIntent::Entity(EntitySpec {
+                    partition_id: reference.partition_id, kind_id: reference.kind_id,
+                    client_key: reference.client_key.clone(),
+                    fields: AspectFieldPatch::from(BTreeMap::from([
+                        (identity.clone(), value(format!("logical-marking-{ordinal}"))),
+                        (status.clone(), value("neutral".to_owned())),
+                        (label.clone(), value("before".to_owned())),
+                    ])),
+                })))
+            },
+        );
+        let committed = write_batch(execution, runtime, batch);
+        let entities: Vec<_> = references.iter().map(|reference|
+            committed.created_entity(reference).expect("actual Native create correspondence")).collect();
+        release_test_commit_snapshot(runtime, &committed);
+        let (before_handle, before) = snapshot(runtime);
+        let source = |entity, binding| SemanticSource::new_for_test((*world.application.runtime_for_test()).authority_identity_for_test().as_u64(), (*world.application.installed_schema_for_test()).binding_identity().clone(), worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity), binding);
+        let identities: Vec<_> = entities.iter().map(|entity|
+            RecordedSettlementIdentity::retain_for_test(&source(*entity, OutputBindingIdentity::declared_for_test("LabelOutput")), coordinate, 0)).collect();
+        // This oracle reads Native revisions directly; it does not call the
+        // marking verifier or derive expected ordinals from actor postings.
+        let old_revisions: Vec<_> = entities.iter().map(|entity| {
+            let truth = runtime.read_truth().project_snapshot(&before_handle).unwrap();
+            [truth.entity_field_revision(execution, *entity, &label).unwrap(),
+             truth.entity_field_revision(execution, *entity, &status).unwrap()]
+        }).collect();
+        for (entity, output) in entities.iter().zip(&identities) {
+            register(owner, output.clone(), Arc::from([
+                field_fact(execution, runtime, &before_handle, *entity, label.clone()),
+                field_fact(execution, runtime, &before_handle, *entity, status.clone()),
+            ]), &before, OrdSet::new());
+        }
+        let downstream = RecordedSettlementIdentity::retain_for_test(
+            &source(entities[0], OutputBindingIdentity::declared_for_test("DownstreamOutput")), coordinate, 0,
+        );
+        register(owner, downstream.clone(), Arc::from([]), &before,
+            OrdSet::unit(identities[0].clone()));
+        write_field(execution, runtime, entities[0], label.clone(), "after");
+        let (after_handle, after) = snapshot(runtime);
+let report = owner.native_marking_report_for_test(&after)
+            .unwrap().expect("exact Native publication owns a delivery report");
+
+
+        let WorthQueryNativeMarkingPrecision::Exact(counts) = (*report.precision_for_test()) else {
+            panic!("the actual declared field change must have exact logical counts");
+        };
+        for ((entity, output), old) in entities.iter().zip(&identities).zip(old_revisions) {
+            let truth = runtime.read_truth().project_snapshot(&after_handle).unwrap();
+            let now = [truth.entity_field_revision(execution, *entity, &label).unwrap(),
+                truth.entity_field_revision(execution, *entity, &status).unwrap()];
+            let changed: OrdSet<_> = old.iter().zip(now).enumerate()
+                .filter_map(|(ordinal, (old, now))| (*old != now).then_some(ordinal)).collect();
+            match currentness(owner, &after, output) {
+                SourceSettlementCurrentness::Clean => assert!(changed.is_empty()),
+                SourceSettlementCurrentness::Dirty(ordinals) => {
+                    assert!(!changed.is_empty());
+                    assert_eq!(ordinals, changed);
+                }
+                _ => panic!("direct field output must match the independent Native oracle"),
+            }
+        }
+        assert!(matches!(currentness(owner, &after, &downstream),
+            SourceSettlementCurrentness::PendingUpstream(edges) if edges == OrdSet::unit(identities[0].clone())));
+        assert!(owner.native_marking_report_for_test(&before).unwrap().is_none(),
+            "a historical image cannot report the newer Native delivery");
+        let late = RecordedSettlementIdentity::retain_for_test(
+            &source(entities[0], OutputBindingIdentity::declared_for_test("LateOutput")), coordinate, 0,
+        );
+        register(owner, late, Arc::from([field_fact(execution, runtime, &after_handle, entities[0], label.clone())]),
+            &after, OrdSet::new());
+        assert_eq!(owner.native_marking_report_for_test(&after).unwrap(), Some(report),
+            "a derived registration preserves the original delivery report");
+        for snapshot in [before_handle, after_handle] {
+            runtime.snapshots().release_snapshot(&snapshot).unwrap();
+        }
+        counts
+    })
+
+ }).expect("the native journey owns its installed host call")
+}

@@ -5,7 +5,7 @@ use super::{
 };
 
 #[derive(Clone, Copy)]
-pub(crate) struct TestHostRequest<'scope> {
+pub struct TestHostRequest<'scope> {
     active: &'scope ActiveAdvancement<'scope>,
     installed: Option<(
         AdvancementSource,
@@ -25,7 +25,7 @@ impl<'scope> TestHostRequest<'scope> {
         }
     }
 
-    pub(crate) fn borrowed_request_for_test(&self) -> ExecutionRequest<'_, '_> {
+    pub fn borrowed_request_for_test(&self) -> ExecutionRequest<'_, '_> {
         self.active
             .execution
             .execution_request()
@@ -41,7 +41,7 @@ impl<'scope> TestHostRequest<'scope> {
         Ok(self.borrowed_request_for_test())
     }
 
-    pub(crate) fn bootstrap_for_test(&self) -> WorthQueryBootstrapAdvancementPhase<'_> {
+    pub fn bootstrap_for_test(&self) -> WorthQueryBootstrapAdvancementPhase<'_> {
         WorthQueryBootstrapAdvancementPhase::new(self.borrowed_request_for_test())
     }
 
@@ -120,3 +120,5 @@ impl<'scope> TestHostRequest<'scope> {
         )
     }
 }
+
+mod court_doors_for_test;

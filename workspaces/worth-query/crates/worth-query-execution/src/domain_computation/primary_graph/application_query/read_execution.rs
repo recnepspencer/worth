@@ -2,24 +2,22 @@ use crate::domain_computation::primary_graph::read_observation::WorthQueryInvari
 use worth_query_declaration::facade::application_query::ApplicationQueryCardinality;
 pub(super) mod applied_source;
 mod cardinality;
-mod denial;
-#[cfg(test)]
-pub(in crate::domain_computation::primary_graph) mod dispatch_witness;
+pub(crate) mod denial;
+pub(crate) mod dispatch_witness;
 use cardinality::{validate_cardinality_and_limit, validate_read_cardinality};
-mod entry_observation;
-mod interruption;
+pub(crate) mod entry_observation;
+pub(crate) mod interruption;
 pub(super) use interruption::ReadInterruption;
 mod kernel_capacity;
 mod kernel_outcome;
-mod live_target;
+pub(crate) mod live_target;
 mod pinning;
-pub(super) mod prepared_pair;
-pub(super) mod read_plan;
+pub(crate) mod prepared_pair;
+pub(crate) mod read_plan;
 use pinning::pin_runtime_read;
 mod root_selection;
-mod tree_materialization;
-mod work_observation;
-#[cfg(test)]
+pub(crate) mod tree_materialization;
+pub(crate) mod work_observation;
 pub(in crate::domain_computation::primary_graph) use entry_observation::component_native_acquisitions_on_this_thread_for_test;
 pub use entry_observation::{
     query_read_kernel_entries_by_root_on_this_thread_for_test,
@@ -47,7 +45,7 @@ use tree_materialization::materialize_result_tree;
 use tree_materialization::{OrderedCollectionWindow, ResultTreeCollectionSelection};
 use worth_relational::facade::indexes::{DerivedIndexGenerationId, RelatedEntityOrderingBoundary};
 
-pub(super) struct RawOneShotRows {
+pub struct RawOneShotRows {
     pub(super) material_source: Option<
         std::sync::Arc<
             crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation,
@@ -74,15 +72,15 @@ pub(super) struct RawOneShotRows {
     pub(super) actual_work: usize,
 }
 
-pub(super) struct RawNonLiveKernelOutcome {
+pub struct RawNonLiveKernelOutcome {
     pub(super) raw: RawOneShotRows,
 }
 
-pub(super) struct RawLiveKernelOutcome {
+pub struct RawLiveKernelOutcome {
     pub(super) raw: RawOneShotRows,
 }
 
-pub(super) fn read_bounded_root_rows<
+pub fn read_bounded_root_rows<
     Schema,
     Query,
     Parameters,
@@ -205,7 +203,9 @@ pub(super) fn read_prepared_root_rows(
     })
 }
 
-mod continuation_page;
+pub(crate) mod continuation_page;
 pub(super) use continuation_page::read_continuation_page;
 
 pub(in crate::domain_computation::primary_graph::application_query) use tree_materialization::validate_relation_cardinality;
+
+mod court_doors_for_test;

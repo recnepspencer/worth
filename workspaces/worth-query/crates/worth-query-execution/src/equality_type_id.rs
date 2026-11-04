@@ -31,7 +31,7 @@
 /// assert!(members.contains(&identity::EqualityTypeId::of::<u8>()));
 /// ```
 #[derive(PartialEq, Eq, Hash)]
-pub(crate) struct EqualityTypeId(std::any::TypeId);
+pub struct EqualityTypeId(std::any::TypeId);
 
 impl EqualityTypeId {
     #[expect(
@@ -67,3 +67,5 @@ impl std::fmt::Debug for EqualityTypeId {
         self.0.fmt(formatter)
     }
 }
+
+mod court_doors_for_test;

@@ -114,7 +114,7 @@ impl Eq for ComputationInstallation {}
 /// the feature, computation and owner types, so a state is never another
 /// owner's, nor another installation's of the same owner type.
 #[derive(Clone, Debug)]
-pub(super) struct RetainedBasis {
+pub struct RetainedBasis {
     installation: ComputationInstallation,
     edition: InstalledProducerEdition,
     input_digest: [u8; 32],
@@ -138,16 +138,14 @@ impl RetainedBasis {
     }
 
     /// This basis over another input value.
-    #[cfg(test)]
-    pub(super) fn with_input_digest_for_test(&self, input_digest: [u8; 32]) -> Self {
+    pub fn with_input_digest_for_test(&self, input_digest: [u8; 32]) -> Self {
         Self {
             input_digest,
             ..self.clone()
         }
     }
 
-    #[cfg(test)]
-    pub(super) fn with_value_bindings_for_test(
+    pub fn with_value_bindings_for_test(
         &self,
         value_bindings: worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
     ) -> Self {
@@ -178,7 +176,7 @@ impl RetainedBasis {
 /// One owner call's charge on the reader and the declared work spent after
 /// it on the call's behalf.
 #[derive(Clone)]
-pub(super) struct RetainedCall {
+pub struct RetainedCall {
     pub(super) charge: ComputationCallCharge,
     pub(super) declared_units: Option<u64>,
 }
@@ -197,7 +195,7 @@ impl<Key> Clone for RetainedPartition<Key> {
     }
 }
 /// One partition of a run.
-pub(super) struct RetainedPartition<Key> {
+pub struct RetainedPartition<Key> {
     pub(super) key: Arc<Key>,
     pub(super) gather: ComputationCallCharge,
 }
@@ -205,7 +203,7 @@ pub(super) struct RetainedPartition<Key> {
 /// The typed state: everything a later run of the same owner needs to skip
 /// the membership, the unchanged items' keys and routes, and the unchanged
 /// partitions.
-pub(super) struct RetainedPartitions<Key, Item, Reduced> {
+pub struct RetainedPartitions<Key, Item, Reduced> {
     pub(super) items: Items<Item>,
     pub(super) digests: ItemDigests,
     /// The membership's call, and the declared work its items' digests spent.
@@ -225,7 +223,7 @@ pub(super) struct RetainedPartitions<Key, Item, Reduced> {
 pub(super) use super::typed_prior::TypedPrior;
 
 /// One run's state, retained on the record its attempt published.
-pub(in crate::domain_computation) struct RetainedComputation {
+pub struct RetainedComputation {
     pub(super) basis: RetainedBasis,
     pub(super) typed: Arc<dyn Any + Send + Sync>,
     pub(super) facts: SealedComputationFacts,
@@ -242,7 +240,7 @@ impl RetainedComputation {
 }
 
 /// A sealed run's state on its way to the record its attempt publishes.
-pub(in crate::domain_computation) struct SealedComputationRun {
+pub struct SealedComputationRun {
     pub(in crate::domain_computation::primary_graph) state: RetainedComputation,
     /// The custodied prior an incremental run built from. Publication consumes
     /// this holder before testing whether its exact displaced record is sole
@@ -315,3 +313,5 @@ pub(in crate::domain_computation::primary_graph) struct CompletedComputationRun 
     /// Actual fact-index allocation, grown by sealing before index creation.
     pub(super) attribution_memory: Option<QueryMemoryReservation>,
 }
+
+mod court_doors_for_test;

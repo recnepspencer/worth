@@ -10,7 +10,7 @@ use worth_relational::facade::identity::EntityId;
 /// that was never published is not a permissive default: readers that find it
 /// empty refuse the work they were about to do.
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryProgramActivationCell {
+pub struct WorthQueryProgramActivationCell {
     identity: Arc<OnceLock<EntityId>>,
     candidate: Arc<OnceLock<EntityId>>,
 }
@@ -25,10 +25,7 @@ impl WorthQueryProgramActivationCell {
 
     /// Publishes the activation record's identity, naming the identity already
     /// carried when one is present.
-    pub(in crate::domain_computation::primary_graph) fn publish(
-        &self,
-        identity: EntityId,
-    ) -> Result<(), EntityId> {
+    pub fn publish(&self, identity: EntityId) -> Result<(), EntityId> {
         match self.identity.set(identity) {
             Ok(()) => Ok(()),
             Err(rejected) => Err(self.identity.get().copied().unwrap_or(rejected)),
@@ -109,3 +106,5 @@ mod tests {
         assert_eq!(reader.published(), Some(activation_record(4)));
     }
 }
+
+mod court_doors_for_test;

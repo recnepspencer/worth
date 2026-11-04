@@ -76,10 +76,7 @@ impl<Schema, Set, Entity> WorthQueryInvariantProjectionComponent<Schema, Set, En
                 _marker: PhantomData,
             })
     }
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn aggregate(
-        &self,
-    ) -> &Arc<AggregateObservation> {
+    pub fn aggregate(&self) -> &Arc<AggregateObservation> {
         &self.aggregate
     }
 }

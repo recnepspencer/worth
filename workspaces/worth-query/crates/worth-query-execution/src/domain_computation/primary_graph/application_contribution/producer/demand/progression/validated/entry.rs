@@ -36,7 +36,6 @@ where
     {
         use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandAdvanceAdmission as Admission;
         let waiting = || {
-            #[cfg(test)]
             own_effect_observation::record(Stage::CheckpointWait);
             CallerPass::Answer(WorthQueryOutputDemandAdvance::Pending)
         };

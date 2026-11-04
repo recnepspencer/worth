@@ -1,6 +1,6 @@
 //! Required publication after the authoritative commit has succeeded.
 
-mod committed_application;
+pub(crate) mod committed_application;
 mod provider_result;
 
 pub(in crate::domain_computation::primary_graph) use committed_application::WorthQueryPrimaryGraphCommittedApplication;

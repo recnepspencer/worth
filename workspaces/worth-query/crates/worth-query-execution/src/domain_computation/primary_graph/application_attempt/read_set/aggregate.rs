@@ -1,6 +1,5 @@
 //! Seal consumes the original issued aggregate; a descriptive selector is insufficient.
-#[cfg(test)]
-mod tests;
+
 use super::super::{
     fact::WorthQueryApplicationObservedFact as Fact, read_scope::WorthQueryApplicationReadScope,
     snapshot_lease::WorthQueryApplicationSnapshotLease,
@@ -11,7 +10,7 @@ use crate::domain_computation::primary_graph::{
     invariant_projection::ExpectedFactKeys,
 };
 
-pub(super) fn observe<Schema, Operation, Input, Scope>(
+pub fn observe<Schema, Operation, Input, Scope>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     admission: &crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<
         Schema,

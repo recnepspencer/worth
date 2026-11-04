@@ -1,0 +1,107 @@
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::capability_access_fixture::admit_touch_account_capability;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::governed_live_query::governed_live_account_parameters;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::capability_world_installation::installed_capability_live_world;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::live_account_query::live_account_parameters;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::Account;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountIdentity;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::application_queries::AccountSummaryParameters;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::Activity;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::governed_live_query::GovernedLiveAccountActivityCause;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::GovernedLiveAccountActivityQuery;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::governed_live_query::GovernedLiveAccountActivityResult;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::live_account_query::LiveAccountActivityCause;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::LiveAccountActivityQuery;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::live_account_query::LiveAccountActivityResult;
+use worth_query_execution::facade::domain_computation::WorthQueryApplicationLiveControls;
+use worth_query_execution::facade::domain_computation::WorthQueryApplicationLiveOpenDenialKind;
+use worth_query_execution::facade::domain_computation::WorthQueryPrincipalResolutionMode;
+use std::time::Duration;
+use std::time::UNIX_EPOCH;
+use worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource;
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+
+#[test]
+fn foreign_phase_refuses_both_live_doors_before_cancelled_read_admission() {
+    for governed in [false, true] {
+        let issuer = installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
+        let receiver = if governed {
+            installed_capability_live_world()
+        } else {
+            installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system())
+        };
+        if governed {
+            receiver.authorization_time.script([
+                UNIX_EPOCH + Duration::from_secs(100),
+                UNIX_EPOCH + Duration::from_secs(100),
+            ]);
+        }
+        let cancellation = WorthQueryCancellationSource::new();
+        let request = WorthQueryRequestScope::new(
+            Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
+            cancellation.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
+        let external = receiver.authenticate("alice", Duration::from_secs(60), &request);
+        let (principal, account, capability, selected) = receiver
+            .application
+            .with_application_advancement(&request, |receiver_phase| {
+                let custody = receiver_phase.test_host_request_for_test();
+                let principal = receiver
+                    .selected_product(&custody)
+                    .resolve_authenticated_principal(
+                        &receiver_phase,
+                        &receiver.binding,
+                        &external,
+                        &request,
+                        WorthQueryPrincipalResolutionMode::Ordinary,
+                    )
+                    .unwrap();
+                let account = receiver
+                    .selected_product(&custody)
+                    .resolve_entity(
+                        &receiver_phase,
+                        AccountIdentity::reference(),
+                        "account-1".to_owned(),
+                        &request,
+                        WorthQueryPrincipalResolutionMode::Ordinary,
+                    )
+                    .unwrap();
+                let capability = governed.then(|| {
+                    admit_touch_account_capability(&custody, &receiver, &principal, &request)
+                        .unwrap()
+                });
+                let selected = receiver.selected_product(&custody);
+                (principal, account, capability, selected)
+            })
+            .unwrap();
+        let before = receiver
+            .application
+            .provider_session_resource_count_for_test();
+        cancellation.cancel();
+        issuer.application.with_application_advancement(&live_scope(), |phase| {
+            let controls = WorthQueryApplicationLiveControls::bounded(request.clone(), 4, 16).unwrap();
+            let denial = if governed {
+                let query = receiver.application.installed_schema().certification_query(GovernedLiveAccountActivityQuery::reference()).unwrap();
+                selected.open_governed_application_query_live::<
+                    GovernedLiveAccountActivityQuery, AccountSummaryParameters, GovernedLiveAccountActivityResult,
+                    _, _, Account, Activity, GovernedLiveAccountActivityCause, _, _, _,
+                >(&phase, query, &principal, account, capability.unwrap(), governed_live_account_parameters("account-1"), controls)
+                .err().expect("a foreign phase cannot open a governed live lease")
+            } else {
+                let query = receiver.application.installed_schema().certification_query(LiveAccountActivityQuery::reference()).unwrap();
+                selected.open_application_query_live::<
+                    LiveAccountActivityQuery, AccountSummaryParameters, LiveAccountActivityResult,
+                    _, _, Account, Activity, LiveAccountActivityCause,
+                >(&phase, query, &principal, account, live_account_parameters("account-1"), controls)
+                .err().expect("a foreign phase cannot open an ordinary live lease")
+            };
+            assert_eq!(denial.kind(), WorthQueryApplicationLiveOpenDenialKind::ForeignAdvancementPhase);
+        }).unwrap();
+        assert_eq!(
+            receiver
+                .application
+                .provider_session_resource_count_for_test(),
+            before
+        );
+    }
+}

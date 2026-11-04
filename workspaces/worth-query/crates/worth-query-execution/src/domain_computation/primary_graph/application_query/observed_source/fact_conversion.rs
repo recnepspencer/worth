@@ -3,9 +3,9 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationObservedFact as Fact, WorthQueryPrimaryGraphLayout,
 };
 
-mod control;
+pub(crate) mod control;
 mod field_preparation;
-mod materialization;
+pub(crate) mod materialization;
 pub(in crate::domain_computation::primary_graph) use control::SourceFactExpansionControl;
 mod retention_validation;
 mod source_fact_locator;
@@ -229,8 +229,7 @@ fn adjacency_fact(adjacency: &WorthQueryObservedAdjacencyRevision, control: crat
     })
 }
 
-#[cfg(test)]
-mod tests;
+mod court_doors_for_test;
 
 pub(super) fn applied_facts(
     footprint: &WorthQueryObservedSourceFootprint,

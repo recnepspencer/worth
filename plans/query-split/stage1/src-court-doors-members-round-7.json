@@ -1,0 +1,9 @@
+{
+ "authority_doors": [],
+ "constructor_doors": [
+  "domain_computation::primary_graph::source_facts::SourceFacts::new"
+ ],
+ "field_doors": [],
+ "method_doors": [],
+ "unplaced": []
+}

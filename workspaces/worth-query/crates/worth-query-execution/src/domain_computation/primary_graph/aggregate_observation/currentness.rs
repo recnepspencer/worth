@@ -129,3 +129,5 @@ pub(super) fn support_stop(stop: PinnedAggregateReadDenial) -> Failure {
         _ => Failure::Unavailable,
     }
 }
+
+mod court_doors_for_test;

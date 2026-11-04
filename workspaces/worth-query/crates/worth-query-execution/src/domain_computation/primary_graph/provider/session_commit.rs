@@ -1,8 +1,8 @@
 //! Named responsibilities for committing one prepared provider session.
 
 mod evidence;
-mod outbox_commit;
-mod receipt_basis_retention;
+pub(crate) mod outbox_commit;
+pub(crate) mod receipt_basis_retention;
 
 pub(in crate::domain_computation::primary_graph) use super::application_attempt_state::{
     WorthQueryMutationWorkCommitSeal, WorthQueryPreImageRetentionWork,

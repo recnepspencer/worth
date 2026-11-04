@@ -140,6 +140,3 @@ fn mismatch_or(
         WorthQueryProducerDenialDecodeDenial::TypeMismatch { expected, observed }
     }
 }
-
-#[cfg(test)]
-mod tests;

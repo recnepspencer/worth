@@ -1,12 +1,12 @@
 pub(in crate::domain_computation::primary_graph) use selected_execution_finish::RunningSelectedExecution;
 mod cached_reclaim;
 
-mod closed_retirement;
-pub(super) mod completed_custody;
+pub(crate) mod closed_retirement;
+pub(crate) mod completed_custody;
 
-mod performed_release;
+pub(crate) mod performed_release;
 pub(super) mod release;
-mod selected_execution_finish;
+pub(crate) mod selected_execution_finish;
 
 use super::*;
 
@@ -113,9 +113,7 @@ impl WorthQueryOutputDemandRegistry {
 
     // Completed cleanup notes contain coordinates, not a performed source or
     // its observation. The paid drain may retain those notes after release.
-    pub(in crate::domain_computation::primary_graph) fn retained_source_custody_count(
-        &self,
-    ) -> usize {
+    pub fn retained_source_custody_count(&self) -> usize {
         self.state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
@@ -158,11 +156,7 @@ impl WorthQueryOutputDemandRegistry {
             })
     }
 
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn relinquish_execution(
-        &self,
-        interest: &WorthQueryOutputDemandInterest,
-    ) {
+    pub fn relinquish_execution(&self, interest: &WorthQueryOutputDemandInterest) {
         let mut state = self
             .state
             .lock()
@@ -222,3 +216,5 @@ impl WorthQueryOutputDemandInterest {
             .is_some_and(|order| order != std::cmp::Ordering::Less)
     }
 }
+
+mod court_doors_for_test;

@@ -17,10 +17,6 @@ use crate::domain_computation::artifact_owner::{
 };
 use crate::domain_computation::WorthQueryExecutionResourceAttemptEvidence;
 
-#[cfg(test)]
-#[path = "workflow_yield/corruption_tests.rs"]
-mod corruption_tests;
-
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryWorkflowYieldDenialKind {
     InstallationGenerationStale,
@@ -302,6 +298,7 @@ impl WorthQueryYieldedWorkflowCleanupAssociation {
     }
 }
 
-#[cfg(test)]
 #[path = "workflow_yield/test_phase_custody.rs"]
 mod test_phase_custody;
+
+mod court_doors_for_test;

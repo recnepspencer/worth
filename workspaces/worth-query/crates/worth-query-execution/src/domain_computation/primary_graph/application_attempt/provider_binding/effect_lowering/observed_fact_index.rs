@@ -22,7 +22,6 @@ pub(in crate::domain_computation::primary_graph::application_attempt::provider_b
 }
 
 impl<'facts, Facts: FactSequence + ?Sized> ObservedFactIndex<'facts, Facts> {
-    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph::application_attempt::provider_binding) fn new(
         facts: &'facts Facts,
     ) -> Self {

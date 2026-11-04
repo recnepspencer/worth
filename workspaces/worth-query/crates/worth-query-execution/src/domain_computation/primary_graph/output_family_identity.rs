@@ -2,7 +2,7 @@
 use std::borrow::{Borrow, Cow};
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub(super) struct OutputFamilyIdentity(Cow<'static, str>);
+pub struct OutputFamilyIdentity(Cow<'static, str>);
 
 impl OutputFamilyIdentity {
     pub(super) const fn declared(identity: &'static str) -> Self {
@@ -25,3 +25,5 @@ impl Borrow<str> for OutputFamilyIdentity {
         self.as_str()
     }
 }
+
+mod court_doors_for_test;

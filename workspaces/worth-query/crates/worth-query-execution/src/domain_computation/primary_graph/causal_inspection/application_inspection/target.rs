@@ -10,7 +10,7 @@ use std::{
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, MapKernelFailure};
 use worth_query_installation::facade::WorthQueryInstalledApplicationInspectionContract;
 
-pub(in crate::domain_computation) struct WorthQueryApplicationInspectionTarget {
+pub struct WorthQueryApplicationInspectionTarget {
     original: InspectionOriginal,
     contract: WorthQueryInstalledApplicationInspectionContract,
     connection_source: Option<Arc<Self>>,
@@ -25,7 +25,7 @@ enum InspectionOriginal {
     Source(super::source_original::SourceOriginal),
 }
 
-pub(super) enum InspectionTargetDenial {
+pub enum InspectionTargetDenial {
     ForeignBinding,
     Storage(CaptureStop<RetainedStorageDenial>),
 }
@@ -241,3 +241,5 @@ fn clone_bytes(
         .size();
     u64::try_from(arc).ok()?.checked_add(backing)
 }
+
+mod court_doors_for_test;

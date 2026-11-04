@@ -6,14 +6,12 @@ use crate::domain_computation::primary_graph::application_attempt::retained_deci
 /// Ordinary admitted facts keep their original order. Projected decision and
 /// producer-source facts retain separate canonical maps until completion.
 #[derive(Debug)]
-pub(in crate::domain_computation::primary_graph::application_attempt::read_set) enum SourceFacts {
+pub enum SourceFacts {
     Admitted(Vec<WorthQueryApplicationObservedFact>),
     Projected(Option<RetainedSourceFacts>, Option<RetainedSourceFacts>),
 }
 impl SourceFacts {
-    pub(in crate::domain_computation::primary_graph::application_attempt::read_set) fn len(
-        &self,
-    ) -> usize {
+    pub fn len(&self) -> usize {
         match self {
             Self::Admitted(facts) => facts.len(),
             Self::Projected(handler, source) => {
@@ -23,17 +21,13 @@ impl SourceFacts {
         }
     }
     /// Every dependent read precedes the producer's prepared-source suffix.
-    pub(in crate::domain_computation::primary_graph::application_attempt::read_set) fn handler_len(
-        &self,
-    ) -> usize {
+    pub fn handler_len(&self) -> usize {
         match self {
             Self::Admitted(_) => 0,
             Self::Projected(handler, _) => handler.as_ref().map_or(0, RetainedSourceFacts::len),
         }
     }
-    pub(in crate::domain_computation::primary_graph::application_attempt::read_set) fn into_values(
-        self,
-    ) -> SourceFactValues {
+    pub fn into_values(self) -> SourceFactValues {
         match self {
             Self::Admitted(facts) => SourceFactValues::Admitted(facts.into_iter()),
             Self::Projected(handler, source) => SourceFactValues::Projected(
@@ -43,8 +37,7 @@ impl SourceFacts {
         }
     }
 }
-pub(in crate::domain_computation::primary_graph::application_attempt::read_set) enum SourceFactValues
-{
+pub enum SourceFactValues {
     Admitted(std::vec::IntoIter<WorthQueryApplicationObservedFact>),
     Projected(
         Option<RetainedSourceFactValues>,

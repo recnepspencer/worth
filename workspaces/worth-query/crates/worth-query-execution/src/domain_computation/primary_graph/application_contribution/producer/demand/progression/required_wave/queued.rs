@@ -14,7 +14,7 @@ use crate::domain_computation::primary_graph::application_output_demand::Selecte
 /// Popped work for one advance. Each token backs its selected required root.
 /// Held items requeue when this advance ends: only a cause
 /// covered by a Current proof on this wave is acknowledged.
-pub(super) struct QueuedRequiredRoots {
+pub struct QueuedRequiredRoots {
     drained: bool,
     roots: Vec<Option<SelectedRequiredWork>>,
     held: Vec<SelectedRequiredWork>,
@@ -351,3 +351,5 @@ mod tests {
         ));
     }
 }
+
+mod court_doors_for_test;

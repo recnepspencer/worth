@@ -17,22 +17,18 @@ use crate::domain_computation::primary_graph::output_lineage::RecordedSettlement
 
 /// Bound to the exact source root checked by the cutoff, and to the new
 /// lineage address whose marks this source image will install.
-pub(in crate::domain_computation::primary_graph) struct PreparedCurrentSettlementRegistration<
-    'selected,
-> {
+pub struct PreparedCurrentSettlementRegistration<'selected> {
     prepared: PreparedSettlementRegistration,
     identity: Arc<RecordedSettlementIdentity>,
     selected: &'selected PositionedRelationalSnapshot,
 }
 
-pub(in crate::domain_computation::primary_graph) struct CurrentSettlementRegistrationCleanup {
+pub struct CurrentSettlementRegistrationCleanup {
     _prepared: SettlementRegistrationCleanup,
     _identity: Arc<RecordedSettlementIdentity>,
 }
 
-pub(in crate::domain_computation::primary_graph) struct StoppedCurrentSettlementRegistration<
-    'selected,
-> {
+pub struct StoppedCurrentSettlementRegistration<'selected> {
     stopped: StoppedSettlementRegistration,
     identity: Arc<RecordedSettlementIdentity>,
     selected: &'selected PositionedRelationalSnapshot,
@@ -89,7 +85,6 @@ impl<'selected> StoppedCurrentSettlementRegistration<'selected> {
 }
 
 impl SourceInvalidationOwner {
-    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn prepare_current_settlement<'selected>(
         &self,
         registration: SettlementRegistration,
@@ -142,3 +137,5 @@ impl SourceInvalidationOwner {
         })
     }
 }
+
+mod court_doors_for_test;

@@ -52,7 +52,7 @@ impl WorthQueryApplicationBridgeInstallation {
     }
 }
 
-pub(crate) struct WorthQueryInstalledApplicationBridge {
+pub struct WorthQueryInstalledApplicationBridge {
     ordinary: RuntimeBridge,
     conditional: std::sync::Arc<std::sync::RwLock<BridgeSealedRuntimeAssembly>>,
 }
@@ -62,9 +62,7 @@ impl WorthQueryInstalledApplicationBridge {
         &self.ordinary
     }
 
-    pub(crate) fn conditional(
-        &self,
-    ) -> std::sync::RwLockReadGuard<'_, BridgeSealedRuntimeAssembly> {
+    pub fn conditional(&self) -> std::sync::RwLockReadGuard<'_, BridgeSealedRuntimeAssembly> {
         self.conditional
             .read()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
@@ -274,3 +272,5 @@ fn bridge_denial(subject: impl Into<String>) -> WorthQueryPrimaryGraphInstallati
         subject,
     )
 }
+
+mod court_doors_for_test;

@@ -1,6 +1,5 @@
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph::application_query) enum WorthQueryApplicationReadExecutionDenialKind
-{
+pub enum WorthQueryApplicationReadExecutionDenialKind {
     Content(worth_relational::facade::content::RelationalContentDenial),
     ExecutionRequest(crate::domain_computation::WorthQueryProviderSessionDenialKind),
     PredicateIndexUnavailable,
@@ -22,7 +21,7 @@ pub(in crate::domain_computation::primary_graph::application_query) enum WorthQu
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationReadExecutionDenial {
+pub struct WorthQueryApplicationReadExecutionDenial {
     kind: WorthQueryApplicationReadExecutionDenialKind,
     subject: String,
 }
@@ -38,9 +37,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn read_exec
 }
 
 impl WorthQueryApplicationReadExecutionDenial {
-    pub(in crate::domain_computation::primary_graph::application_query) const fn kind(
-        &self,
-    ) -> WorthQueryApplicationReadExecutionDenialKind {
+    pub const fn kind(&self) -> WorthQueryApplicationReadExecutionDenialKind {
         self.kind
     }
 

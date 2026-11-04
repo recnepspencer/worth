@@ -5,7 +5,7 @@ use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 use worth_relational::facade::identity::EntityId;
 mod funding;
 
-pub(in crate::domain_computation) struct WorthQueryObservedScopeSelector {
+pub struct WorthQueryObservedScopeSelector {
     locator: AspectFieldLocator,
     value: AspectValue,
     subject: EntityId,
@@ -37,3 +37,5 @@ impl<Schema, Entity> WorthQueryApplicationEntityIdentity<Schema, Entity> {
         })
     }
 }
+
+mod court_doors_for_test;

@@ -11,7 +11,7 @@ use worth_relational::facade::{
     snapshots::SnapshotHandle,
 };
 
-pub(super) enum NativeProjectionRead<'a> {
+pub enum NativeProjectionRead<'a> {
     Committed(&'a mut RelationalRuntime),
     Applied {
         before: &'a RelationalPinnedRead,
@@ -170,3 +170,5 @@ impl NativeProjectionRead<'_> {
         }
     }
 }
+
+mod court_doors_for_test;
