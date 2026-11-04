@@ -64,3 +64,12 @@ impl WorthQueryLiveDeliverySource {
         Self::close(self)
     }
 }
+
+impl WorthQueryLiveDeliverySourceState {
+    #[doc(hidden)]
+    pub fn partitions_mut_for_test(
+        &mut self,
+    ) -> &mut BTreeMap<WorthQueryLiveProductKey, WorthQueryLiveProductPartition> {
+        &mut self.partitions
+    }
+}
