@@ -178,24 +178,31 @@ export function createReactSignalsStore<TSignals extends SignalsLike>(
 
     if (!entry.runtimeHandle) {
       entry.establishingSubscription = true;
-      entry.runtimeHandle = signals.watch(entry.target, (notice) => {
-        if (entry.establishingSubscription) {
-          return;
-        }
-        if (!notice.triggerMatched || !notice.meaningfulChange) {
-          return;
-        }
-        entry.version += 1;
-        entry.snapshotVersion = -1;
-        if (!entry.notifyQueued) {
-          entry.notifyQueued = true;
-          enqueueMicrotask(() => {
-            entry.notifyQueued = false;
-            notifyAll(entry.listeners);
-          });
-        }
-      });
-      entry.establishingSubscription = false;
+      try {
+        entry.runtimeHandle = signals.watch(entry.target, (notice) => {
+          if (entry.establishingSubscription) {
+            return;
+          }
+          if (!notice.triggerMatched || !notice.meaningfulChange) {
+            return;
+          }
+          entry.version += 1;
+          entry.snapshotVersion = -1;
+          if (!entry.notifyQueued) {
+            entry.notifyQueued = true;
+            enqueueMicrotask(() => {
+              entry.notifyQueued = false;
+              notifyAll(entry.listeners);
+            });
+          }
+        });
+      } finally {
+        entry.establishingSubscription = false;
+      }
+      // The render snapshot predates the watch. Revalidate after attachment,
+      // including changes made during watch setup, without discarding the
+      // previous value's reference when the fresh value compares equal.
+      entry.version += 1;
     }
 
     entry.listeners.add(listener);

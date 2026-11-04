@@ -1,3 +1,4 @@
+import "./signals_runtime/authoring/readable_signal_runtime_snapshot.test.mjs";
 import "./signals_runtime/authoring/linked_writable_derived_state.test.mjs";
 import "./signals_runtime/local_truth/local_truth_schema_and_commit.test.mjs";
 import "./signals_runtime/local_truth/local_truth_merge_semantics.test.mjs";
@@ -39,8 +40,13 @@ import "./signals_runtime/entrypoint/construction/worker_first_callable_root_sur
 import "./signals_runtime/entrypoint/construction/worker_first_root_adapter_restore.test.mjs";
 import "./signals_runtime/entrypoint/construction/worker_first_root_observation_delivery.test.mjs";
 import "./signals_runtime/entrypoint/construction/worker_first_tip_react_notify.test.mjs";
+import "./signals_runtime/entrypoint/construction/react_subscription_snapshot_freshness.test.mjs";
+import "./signals_runtime/entrypoint/construction/worker_readback_batching.test.mjs";
+import "./signals_runtime/entrypoint/construction/worker_acknowledgement_traffic.test.mjs";
+import "./signals_runtime/entrypoint/construction/worker_burst_tip_currentness.test.mjs";
 import "./signals_runtime/entrypoint/construction/worker_first_tip_react_notify_negatives.test.mjs";
 import "./signals_runtime/entrypoint/construction/worker_first_await_settlement_authored_drain.test.mjs";
+import "./signals_runtime/entrypoint/construction/worker_first_pending_authored_shutdown.test.mjs";
 import "./signals_runtime/entrypoint/bridge/worker_runtime_bridge_bootstrap.test.mjs";
 import "./signals_runtime/entrypoint/bridge/worker_runtime_bridge_committed_projection.test.mjs";
 import "./signals_runtime/entrypoint/bridge/worker_runtime_bridge_diagnostics_surface.test.mjs";
@@ -71,6 +77,8 @@ import "./signals_runtime/publication/repeated_dynamic_instance_identity.test.mj
 import "./signals_runtime/publication/scoped_graph_manual_scope_equivalence.test.mjs";
 import "./signals_runtime/inputs/public_graph_input_output_contract.test.mjs";
 import "./signals_runtime/forms/form_kernel_patch_plan.test.mjs";
+import "./signals_runtime/forms/form_summary_source_continuity.test.mjs";
+import "./signals_runtime/forms/form_atomic_field_updates.test.mjs";
 import "./signals_runtime/forms/form_phase_one_kernel_authority.test.mjs";
 import "./signals_runtime/forms/form_validation_readiness.test.mjs";
 import "./signals_runtime/forms/form_availability_admission.test.mjs";

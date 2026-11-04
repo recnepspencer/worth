@@ -2,8 +2,10 @@
   "name": "worth-signals-wasm-dev",
   "private": true,
   "type": "module",
+  "packageManager": "npm@12.2.1",
   "engines": {
-    "node": "24.x"
+    "node": ">=24.22.2 <25",
+    "npm": ">=12.2.1 <13"
   },
   "scripts": {
     "docs:surface-report": "node package/product/documentation/public_surface_report.mjs",

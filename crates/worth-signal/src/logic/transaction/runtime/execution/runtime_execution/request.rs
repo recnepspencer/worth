@@ -146,21 +146,11 @@ where
         F: for<'ctx> Fn(&mut EvaluationContext<'ctx, Ctx>) -> Result<O, SignalError> + Sync,
         O: IntoEvaluationOutput,
     {
-        let pending = self
-            .targets
-            .iter()
-            .copied()
-            .filter(|node| {
-                !matches!(
-                    self.runtime.graph.get_state(*node),
-                    Ok(crate::data::node::NodeState::Clean)
-                )
-            })
-            .collect::<Vec<_>>();
-        if !pending.is_empty() {
+        // A clean target can still have unsettled upstream dependencies.
+        if !self.targets.is_empty() {
             self.runtime.execute_evaluation(
                 ExecutionIntent::Targets {
-                    targets: &pending,
+                    targets: &self.targets,
                     request_mode: self.request_mode,
                 },
                 runtime_ctx,

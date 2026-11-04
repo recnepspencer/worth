@@ -2,7 +2,7 @@
 "name" = "worth-signal-wasm"
 "edition" = { "workspace" = true }
 "rust-version" = { "workspace" = true }
-"version" = "1.5.0"
+"version" = "1.6.3"
 "description" = "WebAssembly facade for Worth Signal"
 "repository" = "https://github.com/recnepspencer/forge"
 "license" = "BUSL-1.1"

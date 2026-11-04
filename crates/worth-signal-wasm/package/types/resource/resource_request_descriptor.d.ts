@@ -30,7 +30,7 @@ export interface ResourceRequestTarget {
   readonly url: string | null;
 }
 
-export type ResourceRequestMethod = "GET" | "POST" | "PUT" | "DELETE";
+export type ResourceRequestMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
 export interface ResourceRequestDescriptor<TParams> {
   readonly family: ResourceFamilyIdentity;
