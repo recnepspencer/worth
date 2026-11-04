@@ -1,18 +1,7 @@
 //! Sealed test doors over this module's private members.
 use super::*;
 
-impl<
-        'runtime,
-        Schema,
-        Query,
-        Parameters,
-        QueryResult,
-        Principal,
-        PrincipalIdentity,
-        Scope,
-        Target,
-        Binding,
-    >
+impl<'runtime, Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, Scope, Target, Binding,>
     WorthQueryApplicationLiveLease<
         'runtime,
         Schema,
@@ -34,18 +23,7 @@ where
     }
 }
 
-impl<
-        'runtime,
-        Schema,
-        Query,
-        Parameters,
-        QueryResult,
-        Principal,
-        PrincipalIdentity,
-        Scope,
-        Target,
-        Binding,
-    >
+impl<'runtime, Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, Scope, Target, Binding,>
     WorthQueryApplicationLiveLease<
         'runtime,
         Schema,
@@ -67,18 +45,7 @@ where
     }
 }
 
-impl<
-        'runtime,
-        Schema,
-        Query,
-        Parameters,
-        QueryResult,
-        Principal,
-        PrincipalIdentity,
-        Scope,
-        Target,
-        Binding,
-    >
+impl<'runtime, Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, Scope, Target, Binding,>
     WorthQueryApplicationLiveLease<
         'runtime,
         Schema,
@@ -102,18 +69,7 @@ where
     }
 }
 
-impl<
-        'runtime,
-        Schema,
-        Query,
-        Parameters,
-        QueryResult,
-        Principal,
-        PrincipalIdentity,
-        Scope,
-        Target,
-        Binding,
-    >
+impl<'runtime, Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, Scope, Target, Binding,>
     WorthQueryApplicationLiveLease<
         'runtime,
         Schema,
@@ -139,17 +95,7 @@ where
     }
 }
 
-impl<
-        Schema,
-        Query,
-        Parameters,
-        QueryResult,
-        Principal,
-        PrincipalIdentity,
-        Scope,
-        Target,
-        Binding,
-    >
+impl<Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, Scope, Target, Binding,>
     WorthQueryApplicationLiveLease<
         '_,
         Schema,
@@ -176,18 +122,7 @@ where
     }
 }
 
-impl<
-        'runtime,
-        Schema,
-        Query,
-        Parameters,
-        QueryResult,
-        Principal,
-        PrincipalIdentity,
-        Scope,
-        Target,
-        Binding,
-    >
+impl<'runtime, Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, Scope, Target, Binding,>
     WorthQueryApplicationLiveLease<
         'runtime,
         Schema,
@@ -212,18 +147,7 @@ where
     }
 }
 
-impl<
-        'runtime,
-        Schema,
-        Query,
-        Parameters,
-        QueryResult,
-        Principal,
-        PrincipalIdentity,
-        Scope,
-        Target,
-        Binding,
-    >
+impl<'runtime, Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, Scope, Target, Binding,>
     WorthQueryApplicationLiveLease<
         'runtime,
         Schema,
@@ -249,18 +173,7 @@ where
     }
 }
 
-impl<
-        'runtime,
-        Schema,
-        Query,
-        Parameters,
-        QueryResult,
-        Principal,
-        PrincipalIdentity,
-        Scope,
-        Target,
-        Binding,
-    >
+impl<'runtime, Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, Scope, Target, Binding,>
     WorthQueryApplicationLiveLease<
         'runtime,
         Schema,
@@ -282,18 +195,7 @@ where
     }
 }
 
-impl<
-        'runtime,
-        Schema,
-        Query,
-        Parameters,
-        QueryResult,
-        Principal,
-        PrincipalIdentity,
-        Scope,
-        Target,
-        Binding,
-    >
+impl<'runtime, Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, Scope, Target, Binding,>
     WorthQueryApplicationLiveLease<
         'runtime,
         Schema,
