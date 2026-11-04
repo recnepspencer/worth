@@ -7,9 +7,6 @@ use worth_query_execution::court_doors_for_test::domain_computation::primary_gra
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::fact_verification_observation::input_cutoff::reach;
 use WorthQueryInputCutoffGateForTest as Gate;
 use WorthQueryInputCutoffOutcomeForTest as Outcome;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::fact_verification_observation::input_cutoff::Scope;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::fact_verification_observation::input_cutoff::finish;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::fact_verification_observation::input_cutoff::reach;
 use worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation;
 use worth_query_execution::facade::domain_computation::fact_verification_on_this_thread_for_test as take;
 

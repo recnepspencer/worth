@@ -1,7 +1,5 @@
 use worth_query_execution::facade::domain_computation::WorthQueryInvalidationEquivalenceForTest;
 use worth_query_execution::facade::domain_computation::WorthQueryInvalidationResources;
-use worth_query_execution::facade::domain_computation::WorthQueryInvalidationEquivalenceForTest;
-use worth_query_execution::facade::domain_computation::WorthQueryInvalidationResources;
 pub fn resources() -> WorthQueryInvalidationResources {
     let resources = WorthQueryInvalidationResources::new();
     resources.attach_runtime_observations_for_test();

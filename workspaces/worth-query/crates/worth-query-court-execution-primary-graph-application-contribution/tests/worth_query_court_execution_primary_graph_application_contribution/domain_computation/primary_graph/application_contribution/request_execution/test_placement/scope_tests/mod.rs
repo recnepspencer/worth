@@ -6,11 +6,6 @@ use std::num::NonZeroUsize;
 use worth_query_execution::facade::domain_computation::WorthQueryExecutionPlacementForTest;
 use worth_query_execution::facade::domain_computation::bound_advancement_requests_on_this_thread_for_test;
 use worth_query_execution::facade::domain_computation::place_managed_computations_on_this_thread_for_test;
-use worth_foundational::ExecutionBudget;
-use std::num::NonZeroUsize;
-use worth_query_execution::facade::domain_computation::WorthQueryExecutionPlacementForTest;
-use worth_query_execution::facade::domain_computation::bound_advancement_requests_on_this_thread_for_test;
-use worth_query_execution::facade::domain_computation::place_managed_computations_on_this_thread_for_test;
 use worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation as Observation;
 #[test]
 fn unwinding_clears_placement_and_budget_before_the_thread_is_reused() {
