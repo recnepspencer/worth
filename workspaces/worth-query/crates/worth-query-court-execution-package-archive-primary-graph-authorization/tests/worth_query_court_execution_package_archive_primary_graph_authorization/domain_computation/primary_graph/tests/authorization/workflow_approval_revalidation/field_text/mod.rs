@@ -71,7 +71,7 @@ pub fn originals(meaning: &WorkflowApprovalMeaning) -> [String; 5] {
         &meaning.authorization_support,
         &meaning.authorization_dependencies,
     ]
-    .map(|text| text.as_str().to_owned())
+    .map(|text| text.as_str_for_test().to_owned())
 }
 pub fn locators(
     layout: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::schema::layout::WorthQueryWorkflowLayout,
