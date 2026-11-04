@@ -2,8 +2,8 @@
 
 The seal rule lets a `*_for_test` / `*ForTest` name be referenced only by its owner and by
 the files `tools/boundary-check/config/control-callers.txt` lists for that owner. Every court
-or testkit file naming a door the library declares (the `court_doors_for_test` module, its
-member doors, and the library's existing test doors) gets an entry with the library as owner.
+or testkit file naming a control another crate declares (the library's doors and existing test
+doors, a family testkit's controls, or a root crate's) gets an entry with that crate as owner.
 An entry whose caller file no longer exists and lay in this crate family (the library or one
 of its courts and testkits) is moved to the file's new home when exactly one moved file has the
 same module path, and dropped otherwise. Every other entry is left as it is.
@@ -20,9 +20,9 @@ TEST_NAME = re.compile(r'^\w+(?:_for_test|ForTest)$')
 DECLARING = ('fn', 'struct', 'enum', 'trait', 'type', 'const', 'static', 'mod', 'union', 'macro_rules')
 
 
-def declared_doors(root):
+def declared_in(directory):
     names = set()
-    for path in sorted((root / OWNER / 'src').rglob('*.rs')):
+    for path in sorted(Path(directory).rglob('*.rs')):
         stream = tokens(path.read_text(encoding='utf-8'))
         for i in range(len(stream) - 1):
             if stream[i].value in DECLARING and TEST_NAME.match(stream[i + 1].value):
@@ -30,6 +30,24 @@ def declared_doors(root):
             if stream[i].value == 'macro_rules' and i + 2 < len(stream) and TEST_NAME.match(stream[i + 2].value):
                 names.add(stream[i + 2].value)
     return names
+
+
+def declared_doors(root):
+    return declared_in(root / OWNER / 'src')
+
+
+def control_owners(root):
+    """{control name: owner dir} for names one crate declares: the library, each testkit of
+    the family, and the repository's root crates the moved tests also reach."""
+    owners, seen = {}, {}
+    crates = [root / OWNER] + [d for d in sorted((root / CRATES).iterdir())
+                               if d.name.startswith('worth-query-testkit-') and 'execution' in d.name]
+    if (root / 'crates').is_dir():
+        crates += [d for d in sorted((root / 'crates').iterdir()) if (d / 'src').is_dir()]
+    for directory in crates:
+        for name in declared_in(directory / 'src'):
+            seen.setdefault(name, set()).add(str(directory.relative_to(root)) + '/')
+    return {name: next(iter(dirs)) for name, dirs in seen.items() if len(dirs) == 1}
 
 
 def moved_files(root):
@@ -72,14 +90,17 @@ def updated(root, lines):
                 out.append(' '.join(entry))
                 present.add(entry)
     added = []
+    owners = control_owners(root)
     for f in files:
         rel = str(f.relative_to(root))
+        own = '/'.join(rel.split('/')[:4]) + '/'
         names = {t.value for t in tokens(f.read_text(encoding='utf-8')) if t.kind == 'ident'}
-        if names & doors and (OWNER, rel) not in present:
-            added.append(f'{OWNER} {rel}')
-            present.add((OWNER, rel))
+        for owner in sorted({owners[n] for n in names if n in owners} - {own}):
+            if (owner, rel) not in present:
+                added.append(f'{owner} {rel}')
+                present.add((owner, rel))
     if added:
-        out.append('# Moved worth-query-execution courts and testkits reach the library only through its sealed doors.')
+        out.append('# Moved worth-query-execution courts and testkits reach the library only through its sealed doors, and testkit or root-crate controls only as listed.')
         out.extend(sorted(added))
     return out
 

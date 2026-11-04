@@ -57,8 +57,15 @@ class CourtDoorTests(unittest.TestCase):
             foreign = 'crates/other/ crates/other-court/tests/gone.rs'
             gone = f'{OWNER} {OWNER}src/domain_computation/y.rs'
             self.assertEqual(updated(root, [stale, foreign, gone]), [f'{OWNER} {moved}', foreign])
+            kit = root / CRATES / 'worth-query-testkit-execution-k/src'
+            kit.mkdir(parents=True)
+            (kit / 'lib.rs').write_text('pub struct GuardForTest;\n')
+            (court / 'guard.rs').write_text('fn t(_: GuardForTest) {}\n')
+            guard = f'{CRATES}/worth-query-court-execution/tests/c/domain_computation/x/guard.rs'
+            self.assertIn(f'{CRATES}/worth-query-testkit-execution-k/ {guard}', updated(root, []))
+            (court / 'guard.rs').unlink()
             self.assertEqual(updated(root, []), [
-                '# Moved worth-query-execution courts and testkits reach the library only through its sealed doors.',
+                '# Moved worth-query-execution courts and testkits reach the library only through its sealed doors, and testkit or root-crate controls only as listed.',
                 f'{OWNER} {moved}'])
 
     def test_inventory_classifies_doors_and_lists_authority(self):
