@@ -166,8 +166,8 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
         Some(checkpoint_identity([0x31; 32]))
     );
     assert_eq!(
-        lineage
-            .qualified_output_for_test::<RestoredOutputBinding>(*(
+        (*lineage
+            .qualified_output_for_test::<RestoredOutputBinding>(
                 runtime_authority,
                 &(*source.schema_for_test()),
                 scope,

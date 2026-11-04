@@ -183,10 +183,10 @@ fn replacing_a_sole_member_key_with_a_prefix_collision_matches_a_fresh_run() {
     let next = next.sealed.unwrap().unwrap();
     let full = full.sealed.unwrap().unwrap();
     let keys = |sealed: &SealedComputationRun| {
-        (*(*sealed
+        (*(*(*sealed
             .state_for_test())
             .typed_for_test())
-            .downcast_ref::<RetainedPartitions<Parity, Number, u64>>(*()
+            .downcast_ref::<RetainedPartitions<Parity, Number, u64>>()
             .unwrap()
             .partitions_for_test())
             .values_for_test()
