@@ -8,6 +8,7 @@ An entry whose caller file no longer exists and lay in this crate family (the li
 of its courts and testkits) is moved to the file's new home when exactly one moved file has the
 same module path, and dropped otherwise. Every other entry is left as it is.
 """
+import os
 from pathlib import Path
 import re
 
@@ -191,3 +192,43 @@ def relocate_denial_exclusions(root):
         out.append(line)
     path.write_text('\n'.join(out), encoding='utf-8', newline='\n')
     return written
+
+
+DOCS = ('docs/build-an-application.md', 'docs/how-it-works.md',
+        'workspaces/worth-query/crates/worth-query/docs/foundations/invariants-and-read-observations.md',
+        'workspaces/worth-query/crates/worth-query/docs/modeling/relation-laws.md')
+LINK = re.compile(r'\]\(([^)\s#]*worth-query-execution/src/[^)\s#]+)(#[^)\s]*)?\)')
+
+
+def relocate_doc_links(root):
+    """Relative doc links to library test files the move relocated point at the moved file of the
+    same module; a module split between a court and testkits links to its one court half."""
+    files = [str(f.relative_to(root)) for f in moved_files(root)]
+    by_stem = {}
+    for f in files:
+        by_stem.setdefault(re.sub(r'(\.rs|/mod\.rs)$', '', module_key(f) or ''), []).append(f)
+    count = 0
+    for doc in DOCS:
+        path = root / doc
+        if not path.exists():
+            continue
+        text = path.read_text(encoding='utf-8')
+
+        def moved(match):
+            nonlocal count
+            target = (path.parent / match.group(1)).resolve()
+            if target.exists():
+                return match.group(0)
+            stem = re.sub(r'(\.rs|/mod\.rs)$', '', module_key(str(target)) or '')
+            found = by_stem.get(stem, [])
+            if len(found) > 1:  # split between a court (the tests) and testkits (support)
+                found = [f for f in found if f.split('/')[3].startswith('worth-query-court-')]
+            if len(found) != 1:
+                return match.group(0)
+            count += 1
+            rel = os.path.relpath(root / found[0], path.parent)
+            return f']({rel}{match.group(2) or ""})'
+        new = LINK.sub(moved, text)
+        if new != text:
+            path.write_text(new, encoding='utf-8', newline='\n')
+    return count

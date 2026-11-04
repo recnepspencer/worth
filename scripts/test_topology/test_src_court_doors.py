@@ -137,6 +137,22 @@ class CourtDoorTests(unittest.TestCase):
             self.assertIn(f'  "{OWNER}src",\n{MOVED_NOTE}\n  "{moved}",', text)
             self.assertEqual(relocate_denial_exclusions(root), 0)
 
+    def test_doc_links_follow_the_moved_court_file(self):
+        import tempfile
+        from pathlib import Path
+        from src_door_callers import CRATES, DOCS, relocate_doc_links
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for crate, tail in [('worth-query-court-execution', 'tests/c'), ('worth-query-testkit-execution-k', 'src')]:
+                moved = root / CRATES / crate / tail / 'domain_computation/a/walks/mod.rs'
+                moved.parent.mkdir(parents=True)
+                moved.write_text('')
+            (root / 'docs').mkdir()
+            (root / DOCS[0]).write_text('[w](../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/a/walks.rs#L3)')
+            self.assertEqual(relocate_doc_links(root), 1)
+            self.assertEqual((root / DOCS[0]).read_text(),
+                             f'[w](../{CRATES}/worth-query-court-execution/tests/c/domain_computation/a/walks/mod.rs#L3)')
+
 
 if __name__ == '__main__':
     unittest.main()
