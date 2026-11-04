@@ -11,7 +11,9 @@ From `cargo check` diagnostics over the courts and testkits:
 - E0451 / E0423 (struct literal over private fields): `new_for_test(..)` in the first literal's
   field order; a functional update sets its fields through mutable doors instead;
 - E0599 at a site already naming a door that was never written: the door alone
-  (src_door_missing).
+  (src_door_missing);
+- E0451 on a `let` destructuring pattern: a tuple pattern over the parts door
+  (src_door_patterns).
 All site analysis is on `rust_source` tokens (src_door_sites). `dry_run` writes nothing and
 reports what it would do; every changed file is validated first (tokenizer balance for sites,
 rustfmt for door files), and nothing is written if any validation fails.
@@ -24,6 +26,7 @@ import re
 from module_tree import read_tree
 from src_door_members_text import constructor_door, field_door, method_door, struct_shape
 from src_door_missing import missing
+from src_door_patterns import destructured
 from src_door_sites import (Source, assigned_after, borrowed_mut, enclosing_brace, field_sites,
                             is_pattern, literal_parts, path_before)
 from src_door_traits import header_parts
@@ -217,4 +220,5 @@ def constructed(plan, root, diagnostic, site, source, span):
 
 
 HANDLERS = {'E0624': method, 'E0616': field, 'E0596': mutable_read, 'E0594': mutable_read,
-            'E0507': moved_read, 'E0451': constructed, 'E0423': constructed, 'E0599': missing}
+            'E0507': moved_read, 'E0423': constructed, 'E0599': missing,
+            'E0451': lambda *site: constructed(*site) or destructured(*site)}
