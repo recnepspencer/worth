@@ -32,20 +32,26 @@ DOOR = re.compile(r'pub fn (\w+)_for_test\b[^{]*\{\s*(.*?)\s*\}\n', re.S)
 
 
 def door_renames(root):
-    """{generated door identifier: (original name, 'method' | 'field' | 'into')}, read from the
-    door files themselves: a door is reversed only when its body is the plain delegation the
-    generator writes (`Self::m(..)`, `&self.f`, `&mut self.f`, `self.f`)."""
+    """{generated door identifier: (original name, kind)}, read from the door files themselves:
+    a door is reversed only when its body is the plain delegation the generator writes
+    (`Self::m(..)`, `&self.f`, `&mut self.f`, `self.f`). A name that is a field door on one type
+    and a method door on another gets the kind 'field+method', decided at each site."""
     renames = {}
+
+    def add(door, name, kind):
+        if door in renames and renames[door][1] != kind:
+            kind = '+'.join(sorted(set(renames[door][1].split('+')) | {kind}))
+        renames[door] = (name, kind)
     for path in door_files(root):
         for name, body in DOOR.findall(path.read_text(encoding='utf-8')):
             if re.match(rf'Self::{re.escape(name)}(::<.*?>)?\(', body, re.S):
-                renames[name + '_for_test'] = (name, 'method')
+                add(name + '_for_test', name, 'method')
             elif body == f'&self.{name}':
-                renames[name + '_for_test'] = (name, 'field')
+                add(name + '_for_test', name, 'field')
             elif name.endswith('_mut') and body == f'&mut self.{name[:-4]}':
-                renames[name + '_for_test'] = (name[:-4], 'field')
+                add(name + '_for_test', name[:-4], 'field')
             elif name.endswith('_into') and body == f'self.{name[:-5]}':
-                renames[name + '_for_test'] = (name[:-5], 'into')
+                add(name + '_for_test', name[:-5], 'into')
     return renames
 
 
@@ -130,17 +136,19 @@ def canonical_literals(values, orders):
 
 
 def without_doors(values, renames, orders=None):
-    """Token values with the generated member door rewrites reversed."""
+    """Token values with the generated member door rewrites reversed (and trailing commas, which
+    formatting adds, dropped)."""
+    values = [v for k, v in enumerate(values) if not (v == ',' and k + 1 < len(values) and values[k + 1] in (')', ']', '}'))]
     values, drop = list(values), set()
     for i, value in enumerate(values):
         if value not in renames:
             continue
         name, kind = renames[value]
         values[i] = name
-        if kind == 'into' and values[i + 1:i + 3] == ['(', ')']:
+        if 'into' in kind and values[i + 1:i + 3] == ['(', ')']:
             drop |= {i + 1, i + 2}
             continue
-        if kind != 'field' or values[i + 1:i + 4] != ['(', ')', ')']:
+        if 'field' not in kind or values[i + 1:i + 4] != ['(', ')', ')']:
             continue
         depth, j = 0, i + 3
         while j >= 0:

@@ -40,6 +40,14 @@ class PartsDoorTests(unittest.TestCase):
                 '        _marker: PhantomData<fn() -> S>,\n        b: u8,\n    ) -> Self {\n        Self { a, _marker, b }\n    }\n}\n')
             self.assertEqual(constructor_orders(root), {'E': (True, ['a', '_marker', 'b'])})
 
+    def test_body_check_reads_shared_door_names_by_site_and_ignores_trailing_commas(self):
+        from src_door_bodies import without_doors
+        renames = {'state_for_test': ('state', 'field+method')}
+        field = ['(', '*', 'a', '.', 'state_for_test', '(', ')', ')', '.', 'f', '(', 'x', ',', ')']
+        method = ['a', '.', 'state_for_test', '(', ')']
+        self.assertEqual(without_doors(field, renames), ['a', '.', 'state', '.', 'f', '(', 'x', ')'])
+        self.assertEqual(without_doors(method, renames), ['a', '.', 'state', '(', ')'])
+
 
 if __name__ == '__main__':
     unittest.main()
