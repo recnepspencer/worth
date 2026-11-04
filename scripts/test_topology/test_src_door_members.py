@@ -131,6 +131,17 @@ class DoorBodyTests(unittest.TestCase):
             self.assertEqual(door_renames(root), {'get_for_test': ('get', 'method'), 'f_mut_for_test': ('f', 'field'),
                                                   's_into_for_test': ('s', 'into')})
 
+    def test_missing_door_messages_name_the_door_and_type(self):
+        from src_door_missing import MISSING
+        cases = {"no method named `work_for_test` found for mutable reference `&mut Read<'_, S>` in the current scope":
+                 ('work', 'Read'),
+                 'no function or associated item named `mint_for_test` found for struct `a::b::Authority`':
+                 ('mint', 'Authority'),
+                 'no method named `kind` found for type `!` in the current scope': None}
+        for message, expected in cases.items():
+            match = MISSING.search(message)
+            self.assertEqual(match.groups() if match else None, expected)
+
     def test_only_generated_door_rewrites_are_reversed(self):
         from src_door_bodies import without_doors
         renames = {'get_for_test': ('get', 'method'), 'f_for_test': ('f', 'field')}
