@@ -99,14 +99,14 @@ impl WorthQueryOutputDemandDenial {
         }
     }
 
-    pub(in crate::domain_computation::primary_graph) fn close_read_cleanup<S: worth_query_installation::facade::ApplicationSchema>(
+    pub(in crate::domain_computation::primary_graph) fn close_read_cleanup<R: recovery_release::WorthQueryProductRecoveryClose + ?Sized>(
         &mut self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
-        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<S>,
+        runtime: &R,
     ) -> Result<(), crate::domain_computation::primary_graph::application_output_demand::denial::read_cleanup::WorthQueryOutputReadCloseDenial> {
         if let Some(cleanup) = self.cleanup.as_mut() {
             cleanup.close_read(phase, &mut |recovery| {
-                runtime.close_product_publication_recovery_in_advancement(phase, recovery)
+                runtime.close_recovery_in_advancement(phase, recovery)
             })?;
         }
         Ok(())
@@ -379,4 +379,5 @@ mod court_doors_for_test;
 pub(in crate::domain_computation::primary_graph) mod diagnostic;
 pub(in crate::domain_computation::primary_graph) mod posture;
 pub(crate) mod read_cleanup;
+pub(crate) mod recovery_release;
 pub(crate) mod bridge_deferral;

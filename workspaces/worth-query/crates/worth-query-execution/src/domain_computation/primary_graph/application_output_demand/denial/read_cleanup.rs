@@ -1,9 +1,7 @@
 //! A read request's transferred native cleanup custody and why it can remain undisposed.
-use crate::domain_computation::primary_graph::application_contribution::producer::demand::*;
+use super::recovery_release::WorthQueryProductRecoveryClose;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
-use crate::domain_computation::primary_graph::{
-    WorthQueryAdvancementPhase, WorthQueryPrimaryGraphApplicationRuntime,
-};
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 
 /// Why a read request's native cleanup or recovery custody remains undisposed.
 #[derive(Debug)]
@@ -24,7 +22,9 @@ pub struct WorthQueryOutputReadCleanup {
     pub(in crate::domain_computation::primary_graph) custody: crate::domain_computation::primary_graph::application_output_demand::denial::cleanup_custody::DemandCleanupCustody,
 }
 impl WorthQueryOutputReadCleanup {
-    pub(in crate::domain_computation::primary_graph) fn from_custody(custody: crate::domain_computation::primary_graph::application_output_demand::denial::cleanup_custody::DemandCleanupCustody) -> Self {
+    pub(in crate::domain_computation::primary_graph) fn from_custody(
+        custody: crate::domain_computation::primary_graph::application_output_demand::denial::cleanup_custody::DemandCleanupCustody,
+    ) -> Self {
         Self { custody }
     }
     pub fn producer_outcome(
@@ -32,13 +32,13 @@ impl WorthQueryOutputReadCleanup {
     ) -> Option<&crate::domain_computation::primary_graph::WorthQueryApplicationUncommitted> {
         self.custody.outcome()
     }
-    pub fn close_in_advancement<S: ApplicationSchema>(
+    pub fn close_in_advancement<R: WorthQueryProductRecoveryClose + ?Sized>(
         &mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+        runtime: &R,
     ) -> Result<(), WorthQueryOutputReadCloseDenial> {
         self.custody.close_read(phase, &mut |recovery| {
-            runtime.close_product_publication_recovery_in_advancement(phase, recovery)
+            runtime.close_recovery_in_advancement(phase, recovery)
         })
     }
     pub fn retired_component_count(&mut self) -> usize {

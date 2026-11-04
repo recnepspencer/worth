@@ -78,3 +78,16 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         }
     }
 }
+
+impl<S: ApplicationSchema>
+    crate::domain_computation::primary_graph::application_output_demand::denial::recovery_release::WorthQueryProductRecoveryClose
+    for WorthQueryPrimaryGraphApplicationRuntime<S>
+{
+    fn close_recovery_in_advancement(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        recovery: Recovery,
+    ) -> Result<WorthQueryProductBranchOwnerCleanupReceipt, Failure> {
+        self.close_product_publication_recovery_in_advancement(phase, recovery)
+    }
+}
