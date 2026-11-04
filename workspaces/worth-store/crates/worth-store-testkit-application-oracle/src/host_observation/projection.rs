@@ -117,6 +117,7 @@ pub struct CustodyProjection {
     pub cause: Option<super::custody::CustodyCause>,
     pub expected: Option<HeadProjection>,
     pub actions: Option<Vec<super::custody::CustodyAction>>,
+    pub original_effect: Option<super::custody::OriginalOwnerEffect>,
 }
 pub fn observe(
     runtime: &OracleRuntime,
@@ -215,9 +216,9 @@ pub fn observe(
             .unwrap();
         for row in page.rows() {
             let id = row.handle().identity();
-            let (effects, settlement, cause, expected, actions) =
+            let (effects, settlement, cause, expected, actions, original_effect) =
                 if row.state() == RuntimeWorldRecoveryRecordState::Busy {
-                    (None, None, None, None, None)
+                    (None, None, None, None, None, None)
                 } else {
                     let recovery = runtime
                         .runtime()
@@ -237,6 +238,15 @@ pub fn observe(
                                 .map(super::custody::CustodyAction::observe)
                                 .collect(),
                         ),
+                        effect.native_semantic_result().map(|native| {
+                            super::custody::OriginalOwnerEffect {
+                                attempt_owner: owner(effect.attempt_identity().owner_identity()),
+                                attempt: effect.attempt_identity().ordinal(),
+                                native: super::native_semantic::NativeSemanticProjection::observe(
+                                    native,
+                                ),
+                            }
+                        }),
                     )
                 };
             custody.push(CustodyProjection {
@@ -247,6 +257,7 @@ pub fn observe(
                 cause,
                 expected,
                 actions,
+                original_effect,
             });
         }
         cursor = page.next_after().cloned();

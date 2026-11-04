@@ -101,14 +101,28 @@ fn run(seed: u64) {
                 "seed {seed} step {index}: an original retry must not run the handler"
             );
         }
+        let reference_state =
+            host_observation::projection::observe(reference.runtime(), &execution);
         match (&actual.mutation, &expected) {
             (None, None) => (),
-            (Some(h), Some(r)) => host_observation::receipts::compare(map.identities_mut(), h, r)
-                .unwrap_or_else(|cause| {
-                    panic!(
-                        "seed {seed} step {index} receipt: {cause:?}; Home={h:?}; reference={r:?}"
-                    )
-                }),
+            (Some(h), Some(r)) => host_observation::receipts::compare(
+                map.identities_mut(),
+                h,
+                r,
+                actual.state.as_ref().unwrap(),
+                &reference_state,
+            )
+            .unwrap_or_else(|cause| {
+                println!(
+                    "ORACLE_CUSTODY_NATIVE home {}",
+                    serde_json::to_string(&actual.state.as_ref().unwrap().custody).unwrap()
+                );
+                println!(
+                    "ORACLE_CUSTODY_NATIVE reference {}",
+                    serde_json::to_string(&reference_state.custody).unwrap()
+                );
+                panic!("seed {seed} step {index} receipt: {cause:?}; Home={h:?}; reference={r:?}")
+            }),
             (None, Some(_)) | (Some(_), None) => {
                 panic!("seed {seed} step {index} response fate presence")
             }
@@ -118,9 +132,16 @@ fn run(seed: u64) {
             Some(protocol::Disposition::Continued(r)),
         ) = (&actual.disposition, &expected_disposition)
         {
-            host_observation::receipts::compare(map.identities_mut(), h, r).unwrap_or_else(
-                |cause| panic!("seed {seed} step {index} original continuation: {cause:?}"),
-            );
+            host_observation::receipts::compare(
+                map.identities_mut(),
+                h,
+                r,
+                actual.state.as_ref().unwrap(),
+                &reference_state,
+            )
+            .unwrap_or_else(|cause| {
+                panic!("seed {seed} step {index} original continuation: {cause:?}")
+            });
             assert_eq!(
                 actual.contacts - directory_contacts,
                 0,
@@ -147,7 +168,7 @@ fn run(seed: u64) {
             host_observation::comparison::compare(
                 &mut map,
                 actual.state.as_ref().unwrap(),
-                &host_observation::projection::observe(reference.runtime(), &execution),
+                &reference_state,
             )
             .unwrap_or_else(|cause| {
                 panic!(

@@ -120,6 +120,10 @@ pub(super) fn checkpoint(
                 .unwrap_or_else(|cause| panic!("actual current checkpoint: {cause:?}"));
         }
         CheckpointKind::Automatic => {
+            // This entire command stays inactive until P-A FUNDING LANDED.
+            // The independent bracket proves a particular ordinary mutation
+            // caused count crossing and acknowledgement without a manual call.
+            super::automatic::run();
             // The actual opening policy schedules maintenance after mutations.
             let observation = home.inspect_checkpoint(execution).unwrap();
             assert!(

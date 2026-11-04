@@ -1,3 +1,4 @@
+use super::super::mutation_partition::ApplicationMutationPartitions;
 use super::PublishedApplicationGraph;
 use crate::domain_computation::authorization::WorthQueryInstalledAuthorizationRegistry;
 use crate::domain_computation::authorization::WorthQueryRuntimeClock;
@@ -30,6 +31,14 @@ pub(super) fn assemble_application_runtime<Schema>(
 where
     Schema: worth_query_installation::facade::ApplicationSchema,
 {
+    let execution = phase.execution_request();
+    let mutation_partitions = graph
+        .primary_provider
+        .graph
+        .with_runtime(&execution, |native| {
+            ApplicationMutationPartitions::readmit(native, &execution)
+        })
+        .map_err(super::super::super::bootstrap::request_read_denial::read)?;
     let product_runtime = crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime::install(
         graph.primary_provider.graph.prepare_product_source(&phase.execution_request(), &graph.relational_branch_identity)
             .map_err(|denial| WorthQueryPrimaryGraphInstallationDenial::new(
@@ -58,6 +67,7 @@ where
         output_readiness_routes,
         product_runtime,
         Some(conditional_cleanup_owner),
+        mutation_partitions,
     ))
 }
 
@@ -73,6 +83,7 @@ pub(super) fn assemble_application_runtime_with_product<Schema>(
     output_readiness_routes: crate::domain_computation::primary_graph::application_contribution::WorthQueryInstalledOutputReadinessRoutes,
     product_runtime: crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime,
     conditional_cleanup_owner: Option<super::super::conditional_cleanup::OwnedConditionalCleanup>,
+    mutation_partitions: ApplicationMutationPartitions,
 ) -> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: worth_query_installation::facade::ApplicationSchema,
@@ -155,7 +166,7 @@ where
         output_producer_routes,
         output_readiness_routes,
         next_output_producer_attempt: std::sync::atomic::AtomicU64::new(1),
-        next_application_mutation_partition: std::sync::atomic::AtomicU32::new(1),
+        mutation_partitions,
         output_demands: super::super::super::application_output_demand::WorthQueryOutputDemandRegistry::default(),
         recovered_outputs: Default::default(),
         program_required_bindings,

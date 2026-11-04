@@ -31,6 +31,41 @@ fn identity_correspondence_keeps_both_directions_and_refusal_is_atomic() {
 }
 
 #[test]
+fn record_identity_admission_preserves_partition_correspondence_atomically() {
+    use worth_relational::facade::identity::{EntityId, PartitionId};
+    use ObservedDurableIdentity::{Entity as E, NativePartition as P};
+    let mut map = DurableIdentityCorrespondence::default();
+    map.admit(
+        E(EntityId::new(PartitionId(1), 0, 0)),
+        E(EntityId::new(PartitionId(9), 0, 0)),
+    )
+    .unwrap();
+    assert_eq!(map.len(), 2);
+    assert!(matches!(
+        map.admit(
+            E(EntityId::new(PartitionId(1), 1, 0)),
+            E(EntityId::new(PartitionId(10), 0, 0))
+        ),
+        Err(IdentityDivergence::HomeRemapped { .. })
+    ));
+    assert_eq!(
+        map.len(),
+        2,
+        "refused record cannot install either identity"
+    );
+    assert!(matches!(
+        map.admit(P(PartitionId(2)), P(PartitionId(9))),
+        Err(IdentityDivergence::ReferenceCollision { .. })
+    ));
+    map.admit(
+        E(EntityId::new(PartitionId(1), 1, 0)),
+        E(EntityId::new(PartitionId(9), 1, 0)),
+    )
+    .unwrap();
+    assert_eq!(map.len(), 3);
+}
+
+#[test]
 fn every_seed_generates_the_complete_host_vocabulary_and_explicit_owner_gates() {
     for seed in [0, 1, u64::MAX] {
         let script = HostScript::generate(seed);

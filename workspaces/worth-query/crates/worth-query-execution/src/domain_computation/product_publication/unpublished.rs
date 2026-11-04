@@ -88,6 +88,25 @@ impl WorthQueryProductUnpublishedApplication {
         self.effects.effects().owner_effect_count()
     }
 
+    /// Original correlation data, never permission to publish another attempt.
+    pub fn attempt_identity(
+        &self,
+    ) -> &worth_runtime_world::facade::CompositePublicationAttemptIdentity {
+        self.effects.effects().attempt_identity()
+    }
+
+    /// Immutable original Native meaning, when this record retains a full result.
+    /// Borrowing it retains no snapshot or performed-publication capability.
+    pub fn native_semantic_result(
+        &self,
+    ) -> Option<&worth_relational::facade::transactions::RelationalCommitSemanticResult> {
+        self.effects
+            .effects()
+            .component_results()
+            .relational_commit_result()
+            .map(|result| result.semantic_result())
+    }
+
     pub fn live_obligation_count(&self) -> usize {
         self.effects.effects().live_obligation_count()
     }

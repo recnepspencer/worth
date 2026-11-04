@@ -1,5 +1,6 @@
 //! Preflight the same application assembly while Host retains bootstrap custody.
 use super::super::super::managed_bridge::WorthQueryInstalledApplicationBridge;
+use super::super::mutation_partition::ApplicationMutationPartitions;
 use super::*;
 use crate::domain_computation::authorization::WorthQueryRuntimeClock;
 use crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime;
@@ -19,6 +20,7 @@ pub(in crate::domain_computation::primary_graph) fn preflight_home_application<
         WorthQueryInstalledGraphParticipationAuthority,
         WorthQueryInstalledAuthorizationRegistry,
         super::super::super::handler::InstalledMutationHandlerRegistry<Schema>,
+        ApplicationMutationPartitions,
     ),
     WorthQueryPrimaryGraphInstallationDenial,
 > {
@@ -29,6 +31,11 @@ pub(in crate::domain_computation::primary_graph) fn preflight_home_application<
         .seal(installed, bootstrap.graph.binding_identity())?;
     let authorization = compile_authorization(bootstrap, installed)?;
     let graph = bootstrap.graph.integration_handle();
+    let mutation_partitions = graph
+        .with_runtime(&phase.execution_request(), |native| {
+            ApplicationMutationPartitions::readmit(native, &phase.execution_request())
+        })
+        .map_err(super::super::super::bootstrap::request_read_denial::read)?;
     graph.with_runtime(&phase.execution_request(), |native| {
         graph.ensure_primary_indexes_for_basis(&phase.execution_request(), native, basis)
             .map_err(|cause| match cause {
@@ -67,7 +74,13 @@ pub(in crate::domain_computation::primary_graph) fn preflight_home_application<
         );
     let participation =
         super::super::graph_participation::install(authority, truth_partition_role, anchor)?;
-    Ok((provider, participation, authorization, handlers))
+    Ok((
+        provider,
+        participation,
+        authorization,
+        handlers,
+        mutation_partitions,
+    ))
 }
 
 pub(in crate::domain_computation::primary_graph) fn finish_home_application<
@@ -85,6 +98,7 @@ pub(in crate::domain_computation::primary_graph) fn finish_home_application<
     handlers: super::super::super::handler::InstalledMutationHandlerRegistry<Schema>,
     bridge: WorthQueryInstalledApplicationBridge,
     product: WorthQueryProductRuntime,
+    mutation_partitions: ApplicationMutationPartitions,
 ) -> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     let projection = bootstrap.retain_invariant_projection_authority();
     let checkpoint_restore_work = bootstrap.recovered_checkpoint_restore_work();
@@ -118,5 +132,6 @@ pub(in crate::domain_computation::primary_graph) fn finish_home_application<
         Default::default(),
         product,
         None,
+        mutation_partitions,
     )
 }

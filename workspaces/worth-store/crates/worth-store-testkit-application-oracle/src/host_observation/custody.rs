@@ -6,6 +6,13 @@ use super::{
 use crate::facade::{DurableIdentityCorrespondence, ObservedDurableIdentity as Id};
 use serde::{Deserialize, Serialize};
 
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct OriginalOwnerEffect {
+    pub attempt_owner: worth_foundational::facade::WorldOwnerCoordinate,
+    pub attempt: u64,
+    pub native: super::native_semantic::NativeSemanticProjection,
+}
+
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub enum CustodyCause {
     OpenAttemptRetained,
@@ -92,16 +99,30 @@ pub fn compare(
             part: ProjectionPart::CustodyState,
             index,
         };
-        if h.effects != r.effects
-            || h.settlement != r.settlement
-            || h.cause != r.cause
-            || h.actions != r.actions
-        {
+        if h.effects != r.effects || h.settlement != r.settlement || h.cause != r.cause {
             return Err(bad());
         }
+        compare_actions(h, r).map_err(|()| bad())?;
         match (&h.expected, &r.expected) {
             (None, None) => (),
             (Some(h), Some(r)) => compare_head(map, h, r)?,
+            (None, Some(_)) | (Some(_), None) => return Err(bad()),
+        }
+        match (&h.original_effect, &r.original_effect) {
+            (None, None) => (),
+            (Some(h), Some(r)) => {
+                map.admit(
+                    Id::WorldAttempt {
+                        owner: h.attempt_owner,
+                        ordinal: h.attempt,
+                    },
+                    Id::WorldAttempt {
+                        owner: r.attempt_owner,
+                        ordinal: r.attempt,
+                    },
+                )?;
+                super::native_semantic::compare(map, &h.native, &r.native)?;
+            }
             (None, Some(_)) | (Some(_), None) => return Err(bad()),
         }
         map.admit(Id::WorldOwner(h.owner), Id::WorldOwner(r.owner))?;
@@ -117,4 +138,41 @@ pub fn compare(
         )?;
     }
     Ok(())
+}
+
+fn compare_actions(h: &CustodyProjection, r: &CustodyProjection) -> Result<(), ()> {
+    if h.actions == r.actions {
+        return Ok(());
+    }
+    // The owner contract derives these two live postures from the actual
+    // durable-open custody (World recovery/product_unpublished/actions.rs).
+    // Phase 4's unresolved meaning does not grant Home a live Memory release.
+    use worth_foundational::facade::WorldOwnerCoordinate as O;
+    let home = match h.owner {
+        O::Home { .. } => true,
+        O::MemoryOnly { .. } => false,
+    };
+    let memory = match r.owner {
+        O::Home { .. } => false,
+        O::MemoryOnly { .. } => true,
+    };
+    if home
+        && memory
+        && h.cause == Some(CustodyCause::CallerAbandoned)
+        && r.cause == Some(CustodyCause::CallerAbandoned)
+        && h.settlement == Some(false)
+        && r.settlement == Some(false)
+        && h.original_effect.is_some()
+        && r.original_effect.is_some()
+        && h.actions.as_deref() == Some(&[CustodyAction::Inspect, CustodyAction::ReopenRequired])
+        && r.actions.as_deref()
+            == Some(&[
+                CustodyAction::StartFreshCompositePublication,
+                CustodyAction::ReleaseObligations,
+                CustodyAction::Inspect,
+            ])
+    {
+        return Ok(());
+    }
+    Err(())
 }

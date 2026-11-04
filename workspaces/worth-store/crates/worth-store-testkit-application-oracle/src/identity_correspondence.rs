@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use worth_foundational::facade::WorldOwnerCoordinate;
 use worth_relational::facade::{
     history::{BranchId, CommitId},
-    identity::{EntityId, LineageId, RelationId, VersionId},
+    identity::{EntityId, LineageId, PartitionId, RelationId, VersionId},
 };
 
 /// Only objects observed in the compared durable prefix enter this vocabulary.
@@ -16,6 +16,7 @@ pub enum ObservedDurableIdentity {
     NativeCommit(CommitId),
     NativeVersion(VersionId),
     NativeBranch(BranchId),
+    NativePartition(PartitionId),
     WorldOwner(WorldOwnerCoordinate),
     WorldBranch {
         owner: WorldOwnerCoordinate,
@@ -52,6 +53,7 @@ pub enum IdentityFamily {
     NativeCommit,
     NativeVersion,
     NativeBranch,
+    NativePartition,
     WorldOwner,
     WorldBranch,
     WorldIncarnation,
@@ -70,6 +72,7 @@ impl ObservedDurableIdentity {
             Self::NativeCommit(_) => IdentityFamily::NativeCommit,
             Self::NativeVersion(_) => IdentityFamily::NativeVersion,
             Self::NativeBranch(_) => IdentityFamily::NativeBranch,
+            Self::NativePartition(_) => IdentityFamily::NativePartition,
             Self::WorldOwner(_) => IdentityFamily::WorldOwner,
             Self::WorldBranch { .. } => IdentityFamily::WorldBranch,
             Self::WorldIncarnation { .. } => IdentityFamily::WorldIncarnation,
@@ -113,34 +116,52 @@ impl DurableIdentityCorrespondence {
         home: ObservedDurableIdentity,
         reference: ObservedDurableIdentity,
     ) -> Result<(), IdentityDivergence> {
+        self.check_pair(&home, &reference)?;
+        let partitions = record_partitions(&home, &reference);
+        if let Some((h, r)) = &partitions {
+            self.check_pair(h, r)?;
+        }
+        if let Some((h, r)) = partitions {
+            self.insert_pair(h, r);
+        }
+        self.insert_pair(home, reference);
+        Ok(())
+    }
+    fn check_pair(
+        &self,
+        home: &ObservedDurableIdentity,
+        reference: &ObservedDurableIdentity,
+    ) -> Result<(), IdentityDivergence> {
         if home.family() != reference.family() {
             return Err(IdentityDivergence::Family {
                 home: home.family(),
                 reference: reference.family(),
             });
         }
-        if let Some(prior) = self.home_to_reference.get(&home) {
-            if prior != &reference {
+        if let Some(prior) = self.home_to_reference.get(home) {
+            if prior != reference {
                 return Err(IdentityDivergence::HomeRemapped {
-                    home,
+                    home: home.clone(),
                     prior: prior.clone(),
-                    proposed: reference,
+                    proposed: reference.clone(),
                 });
             }
         }
-        if let Some(prior) = self.reference_to_home.get(&reference) {
-            if prior != &home {
+        if let Some(prior) = self.reference_to_home.get(reference) {
+            if prior != home {
                 return Err(IdentityDivergence::ReferenceCollision {
-                    reference,
+                    reference: reference.clone(),
                     prior: prior.clone(),
-                    proposed: home,
+                    proposed: home.clone(),
                 });
             }
         }
+        Ok(())
+    }
+    fn insert_pair(&mut self, home: ObservedDurableIdentity, reference: ObservedDurableIdentity) {
         self.home_to_reference
             .insert(home.clone(), reference.clone());
         self.reference_to_home.insert(reference, home);
-        Ok(())
     }
     pub fn len(&self) -> usize {
         self.home_to_reference.len()
@@ -148,4 +169,39 @@ impl DurableIdentityCorrespondence {
     pub fn is_empty(&self) -> bool {
         self.home_to_reference.is_empty()
     }
+}
+
+fn record_partitions(
+    h: &ObservedDurableIdentity,
+    r: &ObservedDurableIdentity,
+) -> Option<(ObservedDurableIdentity, ObservedDurableIdentity)> {
+    use ObservedDurableIdentity as I;
+    let (h, r) = match h {
+        I::Entity(h) => {
+            let I::Entity(r) = r else {
+                unreachable!("admission checked the same identity family");
+            };
+            (h.partition_id, r.partition_id)
+        }
+        I::Relation(h) => {
+            let I::Relation(r) = r else {
+                unreachable!("admission checked the same identity family");
+            };
+            (h.partition_id, r.partition_id)
+        }
+        I::Lineage(_)
+        | I::NativeCommit(_)
+        | I::NativeVersion(_)
+        | I::NativeBranch(_)
+        | I::NativePartition(_)
+        | I::WorldOwner(_)
+        | I::WorldBranch { .. }
+        | I::WorldIncarnation { .. }
+        | I::WorldCommit { .. }
+        | I::WorldBootstrap { .. }
+        | I::WorldAttempt { .. }
+        | I::WorldCustody { .. }
+        | I::QueryOutcome(_) => return None,
+    };
+    Some((I::NativePartition(h), I::NativePartition(r)))
 }

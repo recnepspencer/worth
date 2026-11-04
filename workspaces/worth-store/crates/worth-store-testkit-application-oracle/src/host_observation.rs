@@ -1,10 +1,13 @@
 //! Genuine production Host fixture and passive semantic observations.
 pub mod branch_comparison;
+pub mod checkpoint_causality;
 pub mod comparison;
 pub mod concurrent_mutation;
 pub mod custody;
+pub mod fates;
 pub mod idempotency;
 pub mod image_comparison;
+pub mod native_semantic;
 pub mod occurrence;
 pub mod opening;
 pub mod projection;

@@ -648,6 +648,10 @@ unpublished carrier returns, fresh reads select the predecessor World image;
 cancelled continuation returns custody and fresh continuation adopts the settled
 Native image with no provider/rule replay. This is pending recovery evidence,
 not competing-winner interference or crash persistence.
+The existing unpublished application's `attempt_identity()` and
+`native_semantic_result()` expose its original World correlation and retained
+Native meaning when available. These borrowed observations grant no publication,
+release or replay authority; retain the original owning recovery posture.
 See the
 [current limits](build-an-application.md#prepare-candidate-structural-source-changes)
 and [Native audience](../workspaces/worth-query/crates/worth-query/docs/modeling/schema-validation.md).

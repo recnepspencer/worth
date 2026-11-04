@@ -68,6 +68,7 @@ fn semantic_comparison_refuses_wrong_custody_targets_causes_and_native_occurrenc
         cause: Some(custody::CustodyCause::CallerAbandoned),
         expected: Some(head),
         actions: Some(vec![custody::CustodyAction::Inspect]),
+        original_effect: None,
     };
     let good = retained(home.head.clone());
     let expected = retained(reference.head.clone());

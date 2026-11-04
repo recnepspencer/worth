@@ -1,5 +1,5 @@
 use crate::equality_type_id::EqualityTypeId as TypeId;
-use std::sync::atomic::{AtomicU32, AtomicU64};
+use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationSchema};
 
@@ -179,7 +179,7 @@ pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(super) output_readiness_routes:
         super::application_contribution::WorthQueryInstalledOutputReadinessRoutes,
     pub(super) next_output_producer_attempt: AtomicU64,
-    pub(super) next_application_mutation_partition: AtomicU32,
+    pub(super) mutation_partitions: mutation_partition::ApplicationMutationPartitions,
     pub(super) output_demands: super::application_output_demand::WorthQueryOutputDemandRegistry,
     pub(super) recovered_outputs: super::application_output_demand::WorthQueryRecoveredOutputs,
     pub(super) program_required_bindings: std::collections::HashSet<TypeId>,

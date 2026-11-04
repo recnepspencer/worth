@@ -47,6 +47,7 @@ pub struct ReceiptProjection {
 pub struct MutationProjection {
     pub fate: MutationFate,
     pub receipt: Option<ReceiptProjection>,
+    pub unresolved: Option<super::fates::UnresolvedEvidence>,
 }
 pub fn observe(outcome: &MutationOutcome, original_before: &HeadProjection) -> MutationProjection {
     let (fate, receipt) = match outcome {
@@ -108,7 +109,11 @@ pub fn observe(outcome: &MutationOutcome, original_before: &HeadProjection) -> M
             None,
         ),
     };
-    MutationProjection { fate, receipt }
+    MutationProjection {
+        fate,
+        receipt,
+        unresolved: super::fates::UnresolvedEvidence::observe(outcome, original_before),
+    }
 }
 pub fn observe_original(
     receipt: &WorthQueryRecoveredApplicationCommitReceipt,
@@ -128,23 +133,24 @@ pub fn observe_original(
             attempt: receipt.attempt_identity().ordinal(),
         }),
     );
-    MutationProjection { fate, receipt }
+    MutationProjection {
+        fate,
+        receipt,
+        unresolved: None,
+    }
 }
 pub fn compare(
     map: &mut DurableIdentityCorrespondence,
     h: &MutationProjection,
     r: &MutationProjection,
+    home_state: &super::projection::StateProjection,
+    reference_state: &super::projection::StateProjection,
 ) -> Result<(), HostDivergence> {
     let bad = || HostDivergence::Meaning {
         part: ProjectionPart::Receipt,
         index: 0,
     };
-    if h.fate != r.fate {
-        return Err(HostDivergence::Meaning {
-            part: ProjectionPart::Outcome,
-            index: 0,
-        });
-    }
+    super::fates::FateCorrespondence::admit(map, h, r, home_state, reference_state)?;
     match (&h.receipt, &r.receipt) {
         (None, None) => Ok(()),
         (None, Some(_)) | (Some(_), None) => Err(bad()),
