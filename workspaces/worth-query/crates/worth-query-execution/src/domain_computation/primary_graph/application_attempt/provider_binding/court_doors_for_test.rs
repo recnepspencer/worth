@@ -30,3 +30,10 @@ impl WorthQueryPreparedApplicationProviderAttempt {
         )
     }
 }
+
+impl WorthQueryPreparedApplicationProviderAttempt {
+    #[doc(hidden)]
+    pub fn effects_into_for_test(self) -> effect_accumulator::WorthQueryRegisteredProviderEffects {
+        self.effects
+    }
+}
