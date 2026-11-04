@@ -32,7 +32,7 @@ fn certified_placement_perturbs_the_actual_owned_wave() {
                         .into_slots_for_test()
                         .pop()
                         .unwrap()
-                        .into_value::<(u64, bool)>()
+                        .into_value_for_test::<(u64, bool)>()
                 })
                 .collect::<Vec<_>>();
             assert_eq!(report.accounted_cost(), None);

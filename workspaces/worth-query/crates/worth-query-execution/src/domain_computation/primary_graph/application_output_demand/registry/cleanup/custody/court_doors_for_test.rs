@@ -7,3 +7,10 @@ impl DemandRegistryState {
         Self::drain_completed_custody(self)
     }
 }
+
+impl DemandRegistryState {
+    #[doc(hidden)]
+    pub fn drain_next_foreign_custody_for_test(&mut self) {
+        Self::drain_next_foreign_custody(self)
+    }
+}

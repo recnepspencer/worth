@@ -117,7 +117,7 @@ pub fn assert_publication_credit(replay: bool, publish: bool) {
                     };
                     let publication = commit_receipt("actual publication", outcome)
                         .unwrap_or_else(|_| panic!("receipt retained"));
-                    record.publication_for_test(permission, publication, |member| member.performed());
+                    record.publication_for_test(permission, publication, |member| member.performed_for_test());
                 }
                 assert!(
                     record.reinspection_for_test(&a, inspected).unwrap().is_none(),
@@ -131,7 +131,7 @@ pub fn assert_publication_credit(replay: bool, publish: bool) {
                 );
                 let mut frontier = queue();
                 assert_eq!(
-                    frontier.queued_member_for_test(0).unwrap().refused(credit),
+                    frontier.queued_member_for_test(0).unwrap().refused_for_test(credit),
                     publish && !replay
                 );
                 let inspected_again = record.inspection_for_test();
@@ -140,7 +140,7 @@ pub fn assert_publication_credit(replay: bool, publish: bool) {
                     credit.is_none(),
                     "one publication cannot pay for two inspections"
                 );
-                assert!(!frontier.queued_member_for_test(0).unwrap().refused(credit));
+                assert!(!frontier.queued_member_for_test(0).unwrap().refused_for_test(credit));
                 assert!(matches!(frontier.members[0].state, MemberState::Pending));
             })
             .expect("the owner proof owns its request");

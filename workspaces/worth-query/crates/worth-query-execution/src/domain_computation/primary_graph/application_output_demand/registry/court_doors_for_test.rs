@@ -620,3 +620,104 @@ impl SourceCustody {
         Self::source_denial(self, identity)
     }
 }
+
+impl DemandRegistryState {
+    #[doc(hidden)]
+    pub fn closed_cleanup_for_test(&self) -> &cleanup::ClosedCleanupQueue {
+        &self.closed_cleanup
+    }
+}
+
+impl DemandRecord {
+    #[doc(hidden)]
+    pub fn pending_cleanup_queued_for_test(&self) -> &bool {
+        &self.pending_cleanup_queued
+    }
+}
+
+impl SourceCustody {
+    #[doc(hidden)]
+    pub fn retired_sources_for_test(&self) -> &Vec<(SourceEpoch, WorthQueryOutputDemandDenial)> {
+        &self.retired_sources
+    }
+}
+
+impl DemandRegistryState {
+    #[doc(hidden)]
+    pub fn source_preparations_for_test(
+        &self,
+    ) -> &HashMap<worth_runtime_world::facade::ProductBranchIncarnation, SourcePreparationState>
+    {
+        &self.source_preparations
+    }
+}
+
+impl DemandRegistryState {
+    #[doc(hidden)]
+    pub fn closed_cleanup_mut_for_test(&mut self) -> &mut cleanup::ClosedCleanupQueue {
+        &mut self.closed_cleanup
+    }
+}
+
+impl SourceCustody {
+    #[doc(hidden)]
+    pub fn consumed_sources_mut_for_test(&mut self) -> &mut Vec<SourceEpoch> {
+        &mut self.consumed_sources
+    }
+}
+
+impl DemandRecord {
+    #[doc(hidden)]
+    pub fn interests_mut_for_test(&mut self) -> &mut usize {
+        &mut self.interests
+    }
+}
+
+impl SourceCustody {
+    #[doc(hidden)]
+    pub fn prepared_count_for_test(&self) -> usize {
+        Self::prepared_count(self)
+    }
+}
+
+impl DemandRecord {
+    #[doc(hidden)]
+    pub fn closed_cleanup_for_test(&self) -> &cleanup::ClosedCleanupLinks {
+        &self.closed_cleanup
+    }
+}
+
+impl DemandWake {
+    #[doc(hidden)]
+    pub fn generation_for_test(&self) -> &Mutex<u64> {
+        &self.generation
+    }
+}
+
+impl DemandRecord {
+    #[doc(hidden)]
+    pub fn held_successor_for_test(&self) -> &Option<held_successor::HeldRequiredSuccessor> {
+        &self.held_successor
+    }
+}
+
+impl DemandRecord {
+    #[doc(hidden)]
+    pub fn required_interests_for_test(&self) -> &usize {
+        &self.required_interests
+    }
+}
+
+impl PerformedOutputObligation {
+    #[doc(hidden)]
+    pub fn source_for_test(&self) -> &SourceEpoch {
+        &self.source
+    }
+}
+
+impl PerformedOutputObligation {
+    #[doc(hidden)]
+    pub fn source_commit_for_test(&self) -> &worth_runtime_world::facade::CompositeCommitIdentity {
+        &self.source_commit
+    }
+}

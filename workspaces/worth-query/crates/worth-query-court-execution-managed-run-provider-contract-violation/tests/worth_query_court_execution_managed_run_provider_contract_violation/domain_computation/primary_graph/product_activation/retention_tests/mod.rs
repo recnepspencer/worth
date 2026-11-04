@@ -16,7 +16,7 @@ fn activation_capacity_follows_reserved_and_retired_gate_allocations() {
         .budgets_for_test()
         .live_product_branches();
     let registry = WorthQueryProductActivationRegistry::new(limit).unwrap();
-    registry.reserve_for_test().unwrap().commit(product.observation());
+    registry.reserve_for_test().unwrap().commit_for_test(product.observation_for_test());
     let held_gate = registry.gate_for_test(product.branch_identity()).unwrap();
     let mut pending = (1..limit.get().expect("explicit finite branch policy"))
         .map(|_| registry.reserve_for_test().unwrap())
@@ -29,7 +29,7 @@ fn activation_capacity_follows_reserved_and_retired_gate_allocations() {
     // Removing membership cannot reclaim backing still held by an operation.
     assert!(registry.release_for_test(
         product.branch_identity(),
-        product.observation().lifecycle_incarnation()
+        product.observation_for_test().lifecycle_incarnation()
     ));
     assert!(matches!(
         registry.gate_for_test(product.branch_identity()),
@@ -74,7 +74,7 @@ fn foreign_product_is_denied_by_owner_affinity_before_local_coordination() {
         (*local
             .application
             .product_runtime_for_test())
-            .admit_product_branch(selection.branch_identity()),
+            .admit_product_branch_for_test(selection.branch_identity()),
         Err(
             worth_query_execution::facade::domain_computation::WorthQueryProductBranchAdmissionDenial::Refused(
                 AdmissionRefusal::ForeignOwner

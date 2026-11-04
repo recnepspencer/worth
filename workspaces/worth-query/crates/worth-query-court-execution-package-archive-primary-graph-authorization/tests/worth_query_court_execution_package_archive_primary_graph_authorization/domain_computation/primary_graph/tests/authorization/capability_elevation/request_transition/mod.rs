@@ -150,12 +150,12 @@ fn proposed_grant_must_independently_authorize_the_governed_upper_bound() {
             let host_custody = phase.test_host_request_for_test();
 
             let principal = authenticated_principal(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                 &world,
                 &request,
             );
             let access = request_access(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                 &world,
                 &principal,
                 &request,
@@ -169,7 +169,7 @@ fn proposed_grant_must_independently_authorize_the_governed_upper_bound() {
             let denial = world
                 .application
                 .authorize_elevation_request(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     access,
                     &request_operation(&world),
                     Default::default(),

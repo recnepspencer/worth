@@ -13,10 +13,10 @@ pub use std::sync::Arc;
 pub fn body(
     run: &SealedComputationRun,
 ) -> Arc<worth_query_execution::court_doors_for_test::domain_computation::primary_graph::structural_walk::StructuralWalkObservation>{
-    let bodies: Vec<_> = (*run
+    let bodies: Vec<_> = (*(*run
         .state_for_test())
-        .facts
-        .facts()
+        .facts_for_test())
+        .facts_for_test()
         .filter_map(|(_, fact, _)| match fact {
             Fact::StructuralWalk { observation } => Some(Arc::clone(observation)),
             _ => None,
@@ -47,7 +47,7 @@ fn actual_retained_walk_runs_fresh_before_incremental_shortcuts_in_both_postures
             accounted,
             Cause::FirstRun,
         );
-        assert!((*first.state_for_test()).facts.has_structural_walk());
+        assert!((*(*first.state_for_test()).facts_for_test()).has_structural_walk_for_test());
         let original = body(&first);
         let prior = ComputationPrior::new_for_test(worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::edition(), Ok(Arc::new((*first.state_for_test()))), None);
         let next = crate::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::structural_walk::attempt::run(

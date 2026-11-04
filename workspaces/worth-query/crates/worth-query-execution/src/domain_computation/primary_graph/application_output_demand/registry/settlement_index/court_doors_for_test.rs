@@ -12,3 +12,13 @@ impl SettlementIndex {
         Self::fill_prepared(posting, expected, identity, key)
     }
 }
+
+impl DemandRegistryState {
+    #[doc(hidden)]
+    pub fn reserve_settlement_vacancy_for_test(
+        &mut self,
+        identity: &Arc<RecordedSettlementIdentity>,
+    ) -> Result<(Posting, Box<PendingVacancyCleanup>), WorthQueryOutputDemandDenial> {
+        Self::reserve_settlement_vacancy(self, identity)
+    }
+}

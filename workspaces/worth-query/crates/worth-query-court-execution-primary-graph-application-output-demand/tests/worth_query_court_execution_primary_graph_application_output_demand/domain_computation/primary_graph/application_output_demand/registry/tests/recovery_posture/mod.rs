@@ -31,7 +31,7 @@ fn retryable_publication_stale_does_not_keep_a_closed_required_interest() {
         generation: Mutex::new(0),
         changed: Condvar::new(),
     });
-    (*registry.state_for_test()).lock().unwrap().records.insert(
+    (*(*registry.state_for_test()).lock().unwrap().records_for_test()).insert_for_test(
         demand_key.clone(),
         DemandRecord {
             required_interests: 1,
@@ -51,17 +51,17 @@ fn retryable_publication_stale_does_not_keep_a_closed_required_interest() {
         WorthQueryOutputDemandRecoveryPosture::Retryable
     );
     assert!(matches!(
-        (*registry.state_for_test()).lock().unwrap().records[&demand_key].state,
+        (*(*(*registry.state_for_test()).lock().unwrap().records_for_test())[&demand_key].state_for_test()),
         DemandState::Scheduled
     ));
     drop(demand_interest);
 
-    assert!(!(*registry
+    assert!(!(*(*registry
         .state_for_test())
         .lock()
         .unwrap()
-        .records
-        .contains_key(&demand_key));
+        .records_for_test())
+        .contains_key_for_test(&demand_key));
 }
 #[test]
 fn running_budget_failure_stays_with_its_request_and_leaves_the_row_claimable() {
@@ -71,7 +71,7 @@ fn running_budget_failure_stays_with_its_request_and_leaves_the_row_claimable() 
         generation: Mutex::new(0),
         changed: Condvar::new(),
     });
-    (*registry.state_for_test()).lock().unwrap().records.insert(
+    (*(*registry.state_for_test()).lock().unwrap().records_for_test()).insert_for_test(
         demand_key.clone(),
         DemandRecord {
             required_interests: 1,
@@ -110,7 +110,7 @@ fn no_change_checkpoint_keeps_its_real_receipt_across_claims() {
         generation: Mutex::new(0),
         changed: Condvar::new(),
     });
-    (*registry.state_for_test()).lock().unwrap().records.insert(
+    (*(*registry.state_for_test()).lock().unwrap().records_for_test()).insert_for_test(
         demand_key.clone(),
         DemandRecord {
             required_interests: 1,
@@ -182,7 +182,7 @@ fn closed_occurrence_stops_a_claim_without_losing_published_identity() {
         generation: Mutex::new(0),
         changed: Condvar::new(),
     });
-    (*registry.state_for_test()).lock().unwrap().records.insert(
+    (*(*registry.state_for_test()).lock().unwrap().records_for_test()).insert_for_test(
         demand_key.clone(),
         DemandRecord {
             required_interests: 1,
@@ -213,7 +213,7 @@ fn closed_occurrence_stops_a_claim_without_losing_published_identity() {
         .expect_err("branch close must win over the claimed completion");
     assert_eq!(cause.kind(), WorthQueryOutputDemandDenialKind::Closed);
     let state = (*registry.state_for_test()).lock().unwrap();
-    let DemandState::Output(output) = &state.records[&demand_key].state else {
+    let DemandState::Output(output) = &(*(*state.records_for_test())[&demand_key].state_for_test()) else {
         panic!("published identity must survive the terminal denial while interest remains")
     };
     assert_eq!(

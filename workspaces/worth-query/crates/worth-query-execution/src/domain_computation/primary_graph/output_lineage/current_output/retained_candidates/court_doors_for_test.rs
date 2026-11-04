@@ -27,3 +27,44 @@ impl WorthQueryApplicationOutputLineage {
         )
     }
 }
+
+impl WorthQueryRetainedOutputCandidate {
+    #[doc(hidden)]
+    pub fn correspondence_for_test(
+        &self,
+    ) -> &Arc<crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence>
+    {
+        &self.correspondence
+    }
+}
+
+impl WorthQueryRetainedOutputCandidate {
+    #[doc(hidden)]
+    pub fn native_output_witness_for_test(
+        &self,
+    ) -> &Option<
+        Arc<
+            OnceLock<
+                crate::domain_computation::primary_graph::output_lineage::SealedNativeOutputWitness,
+            >,
+        >,
+    > {
+        &self.native_output_witness
+    }
+}
+
+impl WorthQueryRetainedOutputCandidate {
+    #[doc(hidden)]
+    pub fn observed_source_facts_for_test(
+        &self,
+    ) -> &Option<super::super::super::ComparableSourceFacts> {
+        &self.observed_source_facts
+    }
+}
+
+impl WorthQueryRetainedOutputCandidate {
+    #[doc(hidden)]
+    pub fn source_identity_for_test(&self) -> &Option<RecordedSourceIdentity> {
+        &self.source_identity
+    }
+}

@@ -32,10 +32,10 @@ fn response_loss_and_interleaving_preserve_one_preimage_and_outbox_bundle() {
         .admit_product_branch_for_test(world.application.product_runtime().default_branch_for_test())
         .unwrap();
     let commit_count = || {
-        (*world
+        (*(*world
             .application
             .primary_provider_for_test())
-            .graph
+            .graph_for_test())
             .with_runtime(request_execution, |runtime| {
                 runtime.history().immutable_commit_count()
             })
@@ -162,14 +162,14 @@ fn response_loss_and_interleaving_preserve_one_preimage_and_outbox_bundle() {
     let occurrence = (*world
         .application
         .primary_provider_for_test())
-        .observe_completed_application(&commit)
+        .observe_completed_application_for_test(&commit)
         .expect("response loss and receipt disposal preserve the performed source");
     assert_eq!(
-        occurrence.commit_evidence().original_authority(),
+        occurrence.commit_evidence().original_authority_for_test(),
         &original_meaning
     );
     assert_eq!(
-        occurrence.commit_evidence().retained_preimage(),
+        occurrence.commit_evidence().retained_preimage_for_test(),
         original_preimage.as_ref()
     );
 }

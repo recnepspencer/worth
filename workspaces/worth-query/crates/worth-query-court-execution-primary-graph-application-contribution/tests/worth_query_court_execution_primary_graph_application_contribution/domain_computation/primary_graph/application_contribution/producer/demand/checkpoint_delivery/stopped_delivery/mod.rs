@@ -50,7 +50,7 @@ fn a_terminal_delivery_stop_releases_the_head_with_a_peer_still_present() {
         .product_runtime()
         .admit_product_branch_for_test(world.application.product_runtime().default_branch_for_test())
         .unwrap();
-    let occurrence = branch.observation().lifecycle_incarnation();
+    let occurrence = branch.observation_for_test().lifecycle_incarnation();
     let root = worth_relational::facade::identity::EntityId::new(
         worth_relational::facade::identity::PartitionId::main(),
         1,
@@ -65,7 +65,7 @@ fn a_terminal_delivery_stop_releases_the_head_with_a_peer_still_present() {
     // Build a genuine lowering, with no dependencies. The foreign root is
     // refused before this lowering or its compute can be used.
     let mut builder = BridgeConditionalRuntimeBuilder::with_owned_signal_graph(
-        (*world.application.bridge_for_test()).ordinary().clone(),
+        (*world.application.bridge_for_test()).ordinary_for_test().clone(),
         worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development(),
     )
     .unwrap();
@@ -86,28 +86,28 @@ fn a_terminal_delivery_stop_releases_the_head_with_a_peer_still_present() {
         })
         .unwrap();
     world.application.with_application_advancement(&request, |phase| {
-        let owner = registry.admit(key.clone(), None, scope, occurrence, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind::Ordinary, None, None).map(|(interest, _pause)| interest).unwrap();
-        let peer = registry.admit(key.clone(), None, scope, occurrence, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind::Ordinary, None, None).map(|(interest, _pause)| interest).unwrap();
-        assert!(matches!(registry.begin(&owner), Admission::Schedule(None)));
-        registry.finish_scheduling(&owner, None, &mut Ok(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputSchedulingResult::Scheduled));
-        let finish = registry.prepare_selected_execution_finish(&owner).unwrap();
-        assert!(matches!(registry.begin(&owner), Admission::Execute { .. }));
+        let owner = registry.admit_for_test(key.clone(), None, scope, occurrence, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind::Ordinary, None, None).map(|(interest, _pause)| interest).unwrap();
+        let peer = registry.admit_for_test(key.clone(), None, scope, occurrence, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind::Ordinary, None, None).map(|(interest, _pause)| interest).unwrap();
+        assert!(matches!(registry.begin_for_test(&owner), Admission::Schedule(None)));
+        registry.finish_scheduling_for_test(&owner, None, &mut Ok(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputSchedulingResult::Scheduled));
+        let finish = registry.prepare_selected_execution_finish_for_test(&owner).unwrap();
+        assert!(matches!(registry.begin_for_test(&owner), Admission::Execute { .. }));
         assert!(RunningSelectedExecution::new(finish).publish_for_test(Checkpoint::Published {
             receipt: foreign_receipt, delivery: Delivery::Change(change),
             ready_backing: PreparedReadyBacking::for_registry_test_for_test(),
         }).is_ok());
         assert_eq!(registry.publication_counts_for_registry_test(), (1, 1));
-        let (finish, claim, checkpoint) = registry.prepare_selected_checkpoint_finish(&owner).unwrap().claim().unwrap().unwrap();
+        let (finish, claim, checkpoint) = registry.prepare_selected_checkpoint_finish_for_test(&owner).unwrap().claim_for_test().unwrap().unwrap();
         let Checkpoint::Published { receipt, delivery, ready_backing } = checkpoint else { panic!("published checkpoint") };
         let stop = world.application.deliver_output_checkpoint_with_finish_for_test(&phase, "terminal-delivery",
             receipt, delivery, ready_backing, true, Some(PreparedSelectedDelivery { lowering: &lowering, ordinal: 0, preserved: false }),
             |checkpoint, denial| {
-                assert!(finish.finish(claim, checkpoint, denial.as_ref()).is_ok());
+                assert!(finish.finish_for_test(claim, checkpoint, denial.as_ref()).is_ok());
                 match denial { Some(stop) => Err(stop), None => Ok(WorthQueryOutputDemandAdvance::Pending) }
             }).err().expect("the foreign root refuses real delivery");
         assert!(matches!(stop.kind(), WorthQueryOutputDemandDenialKind::ProductDelivery(ref cause) if **cause == DeliveryDenialKind::ForeignProductRoot));
         assert_eq!(registry.publication_counts_for_registry_test(), (0, 0));
-        assert!(matches!(registry.publication_head_selection(occurrence).unwrap(), PublicationHeadSelection::Live(_)));
-        assert!(matches!(registry.begin(&peer), Admission::Failed(ref cause) if cause.kind() == stop.kind()));
+        assert!(matches!(registry.publication_head_selection_for_test(occurrence).unwrap(), PublicationHeadSelection::Live(_)));
+        assert!(matches!(registry.begin_for_test(&peer), Admission::Failed(ref cause) if cause.kind() == stop.kind()));
     }).unwrap();
 }

@@ -94,7 +94,7 @@ pub fn context(live: bool) -> ElevatedQueryContext {
                 .expect("the context read belongs to its installed world");
             let execution = &borrowed_execution;
             let principal =
-                authenticated_principal(&(phase_custody).test_host_request(), &world, &request);
+                authenticated_principal(&(phase_custody).test_host_request_for_test(), &world, &request);
             let committer = crate::domain_computation::primary_graph::tests::authorization::capability_elevation::approval_transition::authenticated(
                 phase_custody,
                 &world,
@@ -109,7 +109,7 @@ pub fn context(live: bool) -> ElevatedQueryContext {
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
-                    &phase_custody.phase_for_application(&world.application),
+                    &phase_custody.phase_for_application_for_test(&world.application),
                     AccountIdentity::reference(),
                     "account-1".to_owned(),
                     &request,

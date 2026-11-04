@@ -13,8 +13,8 @@ use worth_query_testkit_execution_primary_graph_application_contribution::domain
 fn accepted_current_cannot_bypass_original_own_write_evidence() {
     worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::output_lineage::own_write_fixture::with_committed_own_write(|world, receipt, cell, _| {
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let handle = graph.integration_handle();
-    let owner = &handle.source_owner.invalidation_owner;
+    let handle = graph.integration_handle_for_test();
+    let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
     let retained_product = world.application.with_host_advancement(|phase| { let phase_custody = &phase.test_host_request_for_test();    world.selected_product(phase_custody, ) }).expect("the fixture read owns its installed host call");
     let retained_snapshot = world.application.with_host_advancement(|phase| {   let borrowed_execution = phase.execution_request_for_for_test(&(*world.application.product_runtime_for_test())).expect("fixture borrows its runtime request"); let execution = &borrowed_execution; handle.with_runtime(execution, |runtime| {
         let basis = runtime.admit_branch_basis(&runtime.main_branch_identity()).unwrap();
@@ -39,7 +39,7 @@ fn accepted_current_cannot_bypass_original_own_write_evidence() {
             .unwrap(),
             "the performed own write is evidence of a changed decision input");
 
-        let answer = candidate.certify_current_for_test(execution, owner, runtime, product.read_lease_ref(), &snapshot, &selected).unwrap();
+        let answer = candidate.certify_current_for_test(execution, owner, runtime, product.read_lease_ref_for_test(), &snapshot, &selected).unwrap();
         assert!(
             matches!(answer, CurrentAcceptedResult::NeedsDisclosure),
             "the output computed from x=1 cannot be Current after its own write of x=2"
@@ -47,7 +47,7 @@ fn accepted_current_cannot_bypass_original_own_write_evidence() {
         drop(answer);
         runtime.snapshots().release_snapshot(&snapshot).unwrap();
     }) }).expect("the fixture read owns its installed host call");
-    world.application.with_host_advancement(|phase| { let phase_custody = &phase.test_host_request_for_test();    resolved_account(&(phase_custody).test_host_request(), world, "2", &live_scope()) }).expect("the fixture read owns its installed host call");
+    world.application.with_host_advancement(|phase| { let phase_custody = &phase.test_host_request_for_test();    resolved_account(&(phase_custody).test_host_request_for_test(), world, "2", &live_scope()) }).expect("the fixture read owns its installed host call");
     });
 }
 

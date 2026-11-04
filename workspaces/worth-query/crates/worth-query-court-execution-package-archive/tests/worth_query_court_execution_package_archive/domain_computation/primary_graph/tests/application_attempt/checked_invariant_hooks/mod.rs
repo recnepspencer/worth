@@ -107,7 +107,7 @@ pub fn run_case(
         publications: (*world
             .application
             .primary_provider_for_test())
-            .published_application_commit_count(),
+            .published_application_commit_count_for_test(),
     }
 }
 

@@ -42,3 +42,10 @@ impl WorthQueryPendingApplicationPublicationRegistry {
         Self::reserve(registry, occurrence, binding)
     }
 }
+
+impl WorthQueryApplicationPublicationRecoverySlot {
+    #[doc(hidden)]
+    pub fn inspect_idempotency_for_test(&self) -> Option<WorthQueryPendingApplicationIdempotency> {
+        Self::inspect_idempotency(self)
+    }
+}

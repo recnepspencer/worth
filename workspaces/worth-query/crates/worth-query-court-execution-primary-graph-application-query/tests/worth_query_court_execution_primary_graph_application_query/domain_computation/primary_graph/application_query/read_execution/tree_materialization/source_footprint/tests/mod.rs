@@ -87,18 +87,18 @@ pub fn managed_order_matches_legacy_for_stable_keys_and_full_equality(
     let grant = SourceFactsAllocation::open(&execution).unwrap();
     let storage = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::read_execution::tree_materialization::source_footprint::material_storage::MaterialFootprintStorage::new_for_test(&execution, Some(&grant));
     let mut earlier = (*base.aspects_for_test())[0].clone();
-    earlier.entity_name = "first-stable-value".to_owned();
+    (*earlier.entity_name_mut_for_test()) = "first-stable-value".to_owned();
     let mut later = earlier.clone();
-    later.entity_name = "second-stable-value".to_owned();
+    (*later.entity_name_mut_for_test()) = "second-stable-value".to_owned();
     later.native_revision = Some(RelationalFieldRevision::new(
         VersionId(12),
         RelationalFieldPresence::Present,
     ));
     let mut other = earlier.clone();
-    other.field = FieldKey::new("other-field").unwrap();
+    (*other.field_mut_for_test()) = FieldKey::new("other-field").unwrap();
     let a = adjacency((*base.root_for_test()), RelationalAdjacencyDirection::Incoming);
     let mut b = a.clone();
-    (*b.endpoints_for_test()).push(EntityId::new(PartitionId::main(), 9, 2));
+    (*b.endpoints_mut_for_test()).push(EntityId::new(PartitionId::main(), 9, 2));
     for rotation in 0..5 {
         let mut input = WorthQueryObservedSourceFootprint {
             root: (*base.root_for_test()),

@@ -27,11 +27,11 @@ fn current_output_door_preserves_stops_at_every_consult() {
         .runtime_for_test())
         .primary_graph()
         .unwrap()
-        .integration_handle()
+        .integration_handle_for_test()
         .output_lineage
         .lock()
         .unwrap()
-        .install_output_families(std::collections::BTreeMap::from([(
+        .install_output_families_for_test(std::collections::BTreeMap::from([(
             TestCurrentOutputFamily::IDENTITY.to_owned().into(),
             Vec::new(),
         )]));

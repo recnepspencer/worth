@@ -26,12 +26,12 @@ fn an_unrelated_error_cannot_take_an_earlier_requests_stop() {
                             .collect(),
                         )
                         .unwrap();
-                        let held = managed.request.reserve(0).unwrap();
-                        let nested = managed
-                            .request
-                            .dispatch()
+                        let held = (*managed.request_for_test()).reserve(0).unwrap();
+                        let nested = (*managed
+                            .request_for_test())
+                            .dispatch_for_test()
                             .unwrap()
-                            .map(10, &map, held, |_, context| {
+                            .map_for_test(10, &map, held, |_, context| {
                                 context.checkpoint(2)?;
                                 Err::<u64, _>(MapKernelFailure::Domain(()))
                             })
@@ -81,12 +81,12 @@ fn taken_partition_denials_leave_siblings_for_owner_completion() {
                         .collect(),
                     )
                     .unwrap();
-                    let held = managed.request.reserve(0).unwrap();
-                    let dispatch = managed.request.dispatch().unwrap();
+                    let held = (*managed.request_for_test()).reserve(0).unwrap();
+                    let dispatch = (*managed.request_for_test()).dispatch_for_test().unwrap();
                     transport
-                        .call(|| {
+                        .call_for_test(|| {
                             let outcome = dispatch
-                                .map(10, &map, held, |_, context| {
+                                .map_for_test(10, &map, held, |_, context| {
                                     context.checkpoint(2)?;
                                     Err::<u64, _>(MapKernelFailure::Domain(()))
                                 })
@@ -113,7 +113,7 @@ fn taken_partition_denials_leave_siblings_for_owner_completion() {
             denied
                 .pop()
                 .unwrap()
-                .into_value::<Result<u64, MapStop<()>>>(),
+                .into_value_for_test::<Result<u64, MapStop<()>>>(),
             Err(MapStop::Failure {
                 identity: PartitionIdentity::new(1),
                 cause: MapKernelFailure::Domain(())
@@ -121,7 +121,7 @@ fn taken_partition_denials_leave_siblings_for_owner_completion() {
         );
         let mut sibling = members.next().unwrap().unwrap().into_slots_for_test();
         assert_eq!(
-            sibling.pop().unwrap().into_value::<(u64, bool)>(),
+            sibling.pop().unwrap().into_value_for_test::<(u64, bool)>(),
             (2, false)
         );
 

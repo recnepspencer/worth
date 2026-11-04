@@ -20,3 +20,10 @@ impl WorthQueryDirectExecutionResourceAttempt {
         Self::binding_authority(self)
     }
 }
+
+impl WorthQueryDirectExecutionResourceAttempt {
+    #[doc(hidden)]
+    pub fn release_for_test(self) -> WorthQueryDirectExecutionAttemptReleaseReceipt {
+        Self::release(self)
+    }
+}

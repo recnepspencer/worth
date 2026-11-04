@@ -36,7 +36,7 @@ fn unheld_performed_sources_release_the_oldest_in_commit_order() {
         current = replacement;
     }
     let oldest = (*sources[0].change_for_test()).product_commit().clone();
-    let occurrence = (*sources[0].receipt_for_test()).product_branch().occurrence();
+    let occurrence = (*sources[0].receipt_for_test()).product_branch().occurrence_for_test();
     assert!(sources
         .windows(2)
         .all(|pair| (*pair[0].change_for_test()).product_commit() < (*pair[1].change_for_test()).product_commit()));
@@ -62,8 +62,8 @@ fn unheld_performed_sources_release_the_oldest_in_commit_order() {
     }
     for slot in 1..=3 {
         let mut row = record(occurrence, DemandState::Admitted, 0);
-        (*row.source_commits_for_test()).push(oldest.clone());
-        (*state.records_for_test()).insert(key("release-proof", 1, slot), row);
+        (*row.source_commits_mut_for_test()).push(oldest.clone());
+        (*state.records_for_test()).insert_for_test(key("release-proof", 1, slot), row);
     }
 
     let released = state.release_unheld_performed_source_for_test().unwrap();
@@ -72,6 +72,6 @@ fn unheld_performed_sources_release_the_oldest_in_commit_order() {
     assert_eq!(state.source_custody.len(), 7);
     assert!((*state
         .records_for_test())
-        .values()
-        .all(|row| !row.source_commits.contains(&oldest)));
+        .values_for_test()
+        .all(|row| !(*row.source_commits_for_test()).contains(&oldest)));
 }

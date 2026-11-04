@@ -7,3 +7,10 @@ impl<Ready> RequiredFrontier<Ready> {
         Self::queued_member(self, index)
     }
 }
+
+impl<Ready> QueuedMember<'_, Ready> {
+    #[doc(hidden)]
+    pub fn refused_for_test(self, credit: Option<ReinspectionCredit>) -> bool {
+        Self::refused(self, credit)
+    }
+}

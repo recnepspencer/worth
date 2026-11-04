@@ -82,3 +82,5 @@ pub(in super::super) fn install_physical(
     }
     Ok(())
 }
+
+mod court_doors_for_test;

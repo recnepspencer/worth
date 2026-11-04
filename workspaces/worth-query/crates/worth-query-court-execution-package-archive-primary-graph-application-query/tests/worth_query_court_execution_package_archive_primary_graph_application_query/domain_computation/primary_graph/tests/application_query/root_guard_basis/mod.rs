@@ -101,13 +101,13 @@ fn empty_indexed_root_set_stales_when_its_scoped_guard_becomes_a_match() {
     let selection = empty.result_set_observation().selection_for_test();
     assert_eq!((*selection.aspects_for_test()).len(), 1);
     let guard = &(*selection.aspects_for_test())[0];
-    assert_eq!(guard.entity, account.entity_id_for_test());
+    assert_eq!((*guard.entity_for_test()), account.entity_id_for_test());
     let fact = WorthQueryApplicationObservedFact::SourceFieldRevision {
-        entity_id: guard.entity,
+        entity_id: (*guard.entity_for_test()),
         locator: AspectFieldLocator::new(
             LocatorAuthority::Authoritative,
-            guard.aspect.clone(),
-            CanonicalFieldPath::single(guard.field.clone()),
+            (*guard.aspect_for_test()).clone(),
+            CanonicalFieldPath::single((*guard.field_for_test()).clone()),
         ),
         native_revision: guard.native_revision,
     };
@@ -133,7 +133,7 @@ fn empty_indexed_root_set_stales_when_its_scoped_guard_becomes_a_match() {
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request_for_test();
             assert!(!graph
-                .integration_handle()
+                .integration_handle_for_test()
                 .with_runtime(request_execution, |runtime| {
                     fact.source_currentness_in_for_test(
                         runtime,
@@ -142,7 +142,7 @@ fn empty_indexed_root_set_stales_when_its_scoped_guard_becomes_a_match() {
                     )
                     .unwrap()
                     .unwrap()
-                    .movement()
+                    .movement_for_test()
                         == Movement::Unmoved
                 }))
         })
@@ -193,7 +193,7 @@ fn empty_indexed_root_set_stales_when_its_scoped_guard_becomes_a_match() {
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request_for_test();
             assert!(!graph
-                .integration_handle()
+                .integration_handle_for_test()
                 .with_runtime(request_execution, |runtime| {
                     fact.source_currentness_in_for_test(
                         runtime,
@@ -202,7 +202,7 @@ fn empty_indexed_root_set_stales_when_its_scoped_guard_becomes_a_match() {
                     )
                     .unwrap()
                     .unwrap()
-                    .movement()
+                    .movement_for_test()
                         == Movement::Unmoved
                 }))
         })
@@ -239,9 +239,9 @@ pub fn change_account_status(
 ) {
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let field = AccountStatus::reference();
-    let locator = graph
-        .layout
-        .field_locator(field.entity(), field.aspect(), field.field())
+    let locator = (*graph
+        .layout_for_test())
+        .field_locator_for_test(field.entity(), field.aspect(), field.field())
         .unwrap()
         .clone();
     let fields = AspectFieldPatch::from(BTreeMap::from([(

@@ -55,3 +55,15 @@ impl RequiredWorkMembership {
         Self::prepare_hint(self, hint)
     }
 }
+
+impl super::super::DemandRegistryState {
+    #[doc(hidden)]
+    pub fn fixture_page_required_discontinuity_for_test(
+        &mut self,
+        occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
+        branch: &worth_relational::facade::history::BranchId,
+        epoch: worth_relational::facade::history::CommitId,
+    ) -> Result<(), WorthQueryOutputDemandDenial> {
+        Self::fixture_page_required_discontinuity(self, occurrence, branch, epoch)
+    }
+}

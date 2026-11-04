@@ -33,7 +33,7 @@ fn reserved_command_is_visible_across_branches_and_released_with_its_slot() {
         .expect("Reserved already owns the command key");
     assert!(Arc::ptr_eq(&slot, &(*reservation.slot_for_test())));
     assert!(
-        matches!(slot.inspect_idempotency(), Some(WorthQueryPendingApplicationIdempotency::Pending(recorded)) if recorded == binding)
+        matches!(slot.inspect_idempotency_for_test(), Some(WorthQueryPendingApplicationIdempotency::Pending(recorded)) if recorded == binding)
     );
     assert!(
         WorthQueryPendingApplicationPublicationRegistry::reserve_for_test(&registry, second, Some(binding))

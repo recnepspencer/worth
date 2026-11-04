@@ -147,14 +147,14 @@ pub fn persist_as_the_retired_code_did(
     world: &IdentityWorld,
 ) -> DerivedIndexId {
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let correlation = graph
-        .layout
+    let correlation = (*graph
+        .layout_for_test())
         .provider_inbound_completion()
         .correlation
         .clone();
     graph
-        .integration_handle()
-        .with_runtime_mut(execution, |runtime| {
+        .integration_handle_for_test()
+        .with_runtime_mut_for_test(execution, |runtime| {
             let head = main_head(runtime);
             let retired = runtime
                 .index_authority()
@@ -186,8 +186,8 @@ pub fn assert_retired_index_is_inert(
     retired: DerivedIndexId,
 ) {
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let handle = graph.integration_handle();
-    assert!(!handle.primary_index_ids.contains(&retired));
+    let handle = graph.integration_handle_for_test();
+    assert!(!(*handle.primary_index_ids_for_test()).contains(&retired));
     handle.with_runtime(request_execution, |runtime| {
         let lookup = runtime.index_access().definition_lookup_snapshot();
         assert_eq!(
@@ -226,11 +226,11 @@ pub fn set_principal_identity(
     identity: u64,
 ) {
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let locator = graph
-        .layout
-        .principal_binding(world.binding.binding())
+    let locator = (*(*graph
+        .layout_for_test())
+        .principal_binding_for_test(world.binding.binding())
         .unwrap()
-        .principal_identity_locator
+        .principal_identity_locator_for_test())
         .clone();
     publish_relational_mutation_on_application(
         execution,
@@ -254,7 +254,7 @@ pub fn with_runtime<T>(
 ) -> T {
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     graph
-        .integration_handle()
+        .integration_handle_for_test()
         .with_runtime(request_execution, read)
 }
 

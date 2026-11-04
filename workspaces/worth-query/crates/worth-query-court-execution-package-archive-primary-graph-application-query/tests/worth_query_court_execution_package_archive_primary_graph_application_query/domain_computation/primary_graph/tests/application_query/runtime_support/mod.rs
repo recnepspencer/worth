@@ -43,7 +43,7 @@ fn live_support_requires_the_exact_contract_and_both_equality_indexes() {
 
     let supported = primary_graph_support_inventory(
         query.read_graph(),
-        &graph.layout,
+        &(*graph.layout_for_test()),
         query.continuation(),
         Some(live),
         &requirements,
@@ -69,7 +69,7 @@ fn live_support_requires_the_exact_contract_and_both_equality_indexes() {
     assert_live_support_absent(
         primary_graph_support_inventory(
             query.read_graph(),
-            &graph.layout,
+            &(*graph.layout_for_test()),
             query.continuation(),
             None,
             &requirements,
@@ -131,7 +131,7 @@ fn provider_mechanism_deletion_mints_no_support_row() {
         assert_support_present(
             primary_graph_support_inventory(
                 query.read_graph(),
-                &graph.layout,
+                &(*graph.layout_for_test()),
                 query.continuation(),
                 query.live(),
                 &isolated,
@@ -174,7 +174,7 @@ fn continuation_ordering_requires_the_installed_seek_mechanism() {
     assert_support_present(
         primary_graph_support_inventory(
             query.read_graph(),
-            &graph.layout,
+            &(*graph.layout_for_test()),
             query.continuation(),
             query.live(),
             &ordering,
@@ -184,7 +184,7 @@ fn continuation_ordering_requires_the_installed_seek_mechanism() {
     assert_support_absent(
         primary_graph_support_inventory(
             query.read_graph(),
-            &graph.layout,
+            &(*graph.layout_for_test()),
             None,
             query.live(),
             &ordering,
@@ -222,7 +222,7 @@ fn query_runtime_mechanism_deletion_denies_plan_review() {
         let isolated = isolated_requirement(&requirements, kind.clone());
         let inventory = primary_graph_support_inventory(
             query.read_graph(),
-            &graph.layout,
+            &(*graph.layout_for_test()),
             query.continuation(),
             query.live(),
             &isolated,

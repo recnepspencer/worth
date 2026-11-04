@@ -145,3 +145,12 @@ where
         Self::graph_work_resource_support_ref(self)
     }
 }
+
+impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    #[doc(hidden)]
+    pub fn output_producer_routes_mut_for_test(
+        &mut self,
+    ) -> &mut super::super::application_contribution::WorthQueryInstalledOutputProducerRoutes {
+        &mut self.output_producer_routes
+    }
+}

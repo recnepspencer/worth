@@ -41,27 +41,27 @@ fn original_governed_input_is_owned_by_the_committed_occurrence() {
     let occurrence = (*world
         .application
         .primary_provider_for_test())
-        .observe_completed_application(&source_commit)
+        .observe_completed_application_for_test(&source_commit)
         .expect("the provider retains the performed source independently of receipts");
     assert_eq!(
         occurrence
-            .committed_product_publication()
+            .committed_product_publication_for_test()
             .composite_commit(),
         &source_publication
     );
-    let original = occurrence.commit_evidence().original_authority();
+    let original = occurrence.commit_evidence().original_authority_for_test();
     assert_eq!(original.installed_operation(), &source_operation);
     assert_eq!(original.idempotency_binding(), source_key);
     let input = original
-        .retained_governed_input::<CapabilityTouchInput>()
+        .retained_governed_input_for_test::<CapabilityTouchInput>()
         .expect("original input belongs to committed source evidence");
     assert_eq!(input.account, "account-1");
     assert_eq!(input.amount, 50);
     assert_eq!(input.caller_time, 100);
-    assert!(original.retained_governed_input::<String>().is_none());
+    assert!(original.retained_governed_input_for_test::<String>().is_none());
     assert!(original
-        .retained_governed_input_carrier()
+        .retained_governed_input_carrier_for_test()
         .expect("the input retains its canonical association")
-        .governed_identity()
+        .governed_identity_for_test()
         .is_some());
 }

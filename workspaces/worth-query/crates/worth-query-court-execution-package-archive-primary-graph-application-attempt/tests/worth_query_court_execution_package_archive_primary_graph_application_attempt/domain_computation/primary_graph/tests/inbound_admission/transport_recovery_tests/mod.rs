@@ -48,7 +48,7 @@ fn callback_winner_is_recognized_before_transport_world_publication() {
     let in_flight = (*world
         .application
         .primary_provider_for_test())
-        .begin_external_dispatch_in_flight(&owner)
+        .begin_external_dispatch_in_flight_for_test(&owner)
         .unwrap()
         .unwrap();
     let completed =
@@ -72,10 +72,10 @@ fn callback_winner_is_recognized_before_transport_world_publication() {
     let before = (*world
         .application
         .primary_provider_for_test())
-        .lookup_completed_inbound(&correlation)
+        .lookup_completed_inbound_for_test(&correlation)
         .unwrap()
         .unwrap()
-        .completion_world_commit()
+        .completion_world_commit_for_test()
         .clone();
     world
         .application
@@ -96,10 +96,10 @@ fn callback_winner_is_recognized_before_transport_world_publication() {
     let after = (*world
         .application
         .primary_provider_for_test())
-        .lookup_completed_inbound(&correlation)
+        .lookup_completed_inbound_for_test(&correlation)
         .unwrap()
         .unwrap()
-        .completion_world_commit()
+        .completion_world_commit_for_test()
         .clone();
     assert_eq!(before, after);
 }

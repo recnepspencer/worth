@@ -26,10 +26,10 @@ fn a_carried_stop_after_a_recomputed_slot_has_the_full_runs_bill() {
             .downcast_ref::<worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::retained::RetainedPartitions<Parity, Number, u64>>()
             .unwrap();
         assert_eq!(
-            typed
-                .partitions
-                .values()
-                .map(|p| p.key.0)
+            (*typed
+                .partitions_for_test())
+                .values_for_test()
+                .map(|p| (*p.key_for_test()).0)
                 .collect::<Vec<_>>(),
             [0, 1],
             "the recomputed even slot precedes the carried odd slot"

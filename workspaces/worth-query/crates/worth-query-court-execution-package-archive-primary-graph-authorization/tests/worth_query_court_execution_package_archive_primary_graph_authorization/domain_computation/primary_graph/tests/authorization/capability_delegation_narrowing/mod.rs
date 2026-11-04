@@ -58,7 +58,7 @@ fn every_stored_narrowing_axis_is_enforced_by_production_admission() {
             .with_host_advancement(|phase| {
                 let host_custody = phase.test_host_request_for_test();
                 break_narrowing_axis(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     &world,
                     axis,
                 )
@@ -70,7 +70,7 @@ fn every_stored_narrowing_axis_is_enforced_by_production_admission() {
             .with_host_advancement(|phase| {
                 let host_custody = phase.test_host_request_for_test();
                 authenticated_principal(
-                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                     &world,
                     &request,
                 )
@@ -82,7 +82,7 @@ fn every_stored_narrowing_axis_is_enforced_by_production_admission() {
             .with_host_advancement(|phase| {
                 let host_custody = phase.test_host_request_for_test();
                 admitted_capability_access(
-                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                     &world,
                     &principal,
                     &request,

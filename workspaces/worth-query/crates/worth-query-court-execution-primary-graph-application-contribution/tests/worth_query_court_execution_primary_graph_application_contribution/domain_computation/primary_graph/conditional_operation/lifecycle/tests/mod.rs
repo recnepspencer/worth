@@ -197,7 +197,7 @@ fn parked_operation_does_not_hold_registry_lookup_or_another_operation_cell() {
     let (completed_tx, completed_rx) = std::sync::mpsc::sync_channel(1);
     std::thread::scope(|scope| {
         scope.spawn(move || {
-            let _active = first.lock_operation();
+            let _active = first.lock_operation_for_test();
             parked_tx.send(()).unwrap();
             release_rx.recv().unwrap();
         });
@@ -208,7 +208,7 @@ fn parked_operation_does_not_hold_registry_lookup_or_another_operation_cell() {
                 .unwrap()
                 .admit_clock_for_test("second", &second_lease)
                 .unwrap();
-            let active = second.lock_operation();
+            let active = second.lock_operation_for_test();
             completed_tx
                 .send(active.binding_identity().to_string())
                 .unwrap();

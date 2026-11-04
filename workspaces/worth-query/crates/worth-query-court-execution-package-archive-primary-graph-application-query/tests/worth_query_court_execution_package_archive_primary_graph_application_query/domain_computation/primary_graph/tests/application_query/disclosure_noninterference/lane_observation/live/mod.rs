@@ -37,7 +37,7 @@ pub fn observe(
                 context.request,
             );
             let capability = admit_touch_account_capability(
-                &(phase_custody).test_host_request(),
+                &(phase_custody).test_host_request_for_test(),
                 context.world,
                 context.principal,
                 context.request,
@@ -46,7 +46,7 @@ pub fn observe(
 
             context
         .world
-        .selected_product(&(phase_custody).test_host_request(), )
+        .selected_product(&(phase_custody).test_host_request_for_test(), )
         .open_governed_application_query_live::<
             GovernedLiveAccountActivityQuery,
             AccountSummaryParameters,
@@ -59,7 +59,7 @@ pub fn observe(
             _,
             _,
             _,
-        >(&phase_custody.phase_for_application(&context.world.application),
+        >(&phase_custody.phase_for_application_for_test(&context.world.application),
             query,
             context.principal,
             account,

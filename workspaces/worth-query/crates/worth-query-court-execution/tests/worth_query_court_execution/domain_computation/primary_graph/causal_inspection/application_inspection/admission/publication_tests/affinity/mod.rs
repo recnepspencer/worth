@@ -8,7 +8,7 @@ pub fn assert_subject_affinity<Schema, Scope>(
     other_subject: EntityId,
 ) {
     let target = &(*read.target_for_test());
-    let subject = (*read.scope_for_test()).entity_id();
+    let subject = (*read.scope_for_test()).entity_id_for_test();
     assert_ne!(
         subject, other_subject,
         "the issued principal and query scope are genuine distinct records"
@@ -38,9 +38,9 @@ pub fn assert_subject_affinity<Schema, Scope>(
     assert!(binding(target, other_subject).is_none());
     let other_target = WorthQueryApplicationInspectionTarget::capture_for_test(
         execution,
-        target.original().unwrap(),
+        target.original_for_test().unwrap(),
         None,
-        target.contract().clone(),
+        target.contract_for_test().clone(),
         &mut None,
     )
     .unwrap_or_else(|_| panic!("the same original can be retained by a separate genuine target"));

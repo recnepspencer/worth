@@ -105,10 +105,10 @@ fn projection_orbits_preserve_successor_order_name_and_all_member_scope() {
             .collect::<Vec<_>>()
     );
     let (_lease, scope, _, _) =
-        snapshot.into_lease_and_realized_scope_for_test(selected.product().retained_clone());
+        snapshot.into_lease_and_realized_scope_for_test(selected.product().retained_clone_for_test());
     for member in orbit.members() {
         assert!(
-            scope.contains(member.entity_id()),
+            scope.contains_for_test(member.entity_id()),
             "every returned member has actual scope proof"
         );
     }

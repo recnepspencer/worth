@@ -33,8 +33,8 @@ fn full_verification_uses_native_facts_and_retains_the_exact_captured_image() {
         .entity_id_for_test();
     let (_, product, _) = selected.into_parts_for_test();
     let coordinate = ProductCoordinate {
-        occurrence: product.observation().lifecycle_incarnation(),
-        generation: product.observation().reference_generation().get(),
+        occurrence: product.observation_for_test().lifecycle_incarnation(),
+        generation: product.observation_for_test().reference_generation().get(),
     };
     let source = SemanticSource {
         runtime_authority: (*world.application.runtime_for_test()).authority_identity().as_u64(),
@@ -44,15 +44,15 @@ fn full_verification_uses_native_facts_and_retains_the_exact_captured_image() {
     };
     let identity = RecordedSettlementIdentity::retain_for_test(&source, coordinate, 0);
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let handle = graph.integration_handle();
-    let owner = &handle.source_owner.invalidation_owner;
+    let handle = graph.integration_handle_for_test();
+    let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
     let label_ref = AccountLabel::reference();
     let label = graph
-        .layout()
-        .field_locator(label_ref.entity(), label_ref.aspect(), label_ref.field())
+        .layout_for_test()
+        .field_locator_for_test(label_ref.entity(), label_ref.aspect(), label_ref.field())
         .unwrap()
         .clone();
-    handle.with_runtime_mut(request_execution, |runtime| {
+    handle.with_runtime_mut_for_test(request_execution, |runtime| {
         let (old_handle, old_basis) = snapshot(runtime);
         use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::consumed_output::ConsumedOutputEvidence;
         use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::consumed_output::verification::ConsumedOutputVerification;
@@ -83,11 +83,11 @@ fn full_verification_uses_native_facts_and_retains_the_exact_captured_image() {
             OrdSet::new(),
         );
         let old = owner
-            .capture_full_verification(runtime, &old_handle, &old_basis)
+            .capture_full_verification_for_test(runtime, &old_handle, &old_basis)
             .unwrap();
 
         assert_eq!(
-            old.verify_root(request_execution, &identity, None),
+            old.verify_root_for_test(request_execution, &identity, None),
             Err(FullVerificationStop::OutputEvidenceUnavailable),
             "source-only test registration cannot manufacture full output evidence"
         );
@@ -101,11 +101,11 @@ fn full_verification_uses_native_facts_and_retains_the_exact_captured_image() {
         );
         let (changed_handle, changed_basis) = snapshot(runtime);
         let captured = owner
-            .capture_full_verification(runtime, &changed_handle, &changed_basis)
+            .capture_full_verification_for_test(runtime, &changed_handle, &changed_basis)
             .unwrap();
 
         assert_eq!(
-            captured.verify_root(request_execution, &identity, None),
+            captured.verify_root_for_test(request_execution, &identity, None),
             Ok(FullVerificationDecision::Changed)
         );
         // A later same-position registration replaces the actor's row. The
@@ -128,21 +128,21 @@ fn full_verification_uses_native_facts_and_retains_the_exact_captured_image() {
             SourceSettlementCurrentness::Clean
         ));
         assert_eq!(
-            captured.verify_root(request_execution, &identity, None),
+            captured.verify_root_for_test(request_execution, &identity, None),
             Err(FullVerificationStop::ActorImageChanged),
             "an intervening actor edit cannot manufacture an equivalence mismatch"
         );
         let fresh = owner
-            .capture_full_verification(runtime, &changed_handle, &changed_basis)
+            .capture_full_verification_for_test(runtime, &changed_handle, &changed_basis)
             .unwrap();
 
         assert_eq!(
-            fresh.verify_root(request_execution, &identity, None),
+            fresh.verify_root_for_test(request_execution, &identity, None),
             Err(FullVerificationStop::OutputEvidenceUnavailable)
         );
         assert!(
             owner
-                .capture_full_verification(runtime, &old_handle, &changed_basis)
+                .capture_full_verification_for_test(runtime, &old_handle, &changed_basis)
                 .is_err(),
             "Native and actor provenance cannot be substituted"
         );

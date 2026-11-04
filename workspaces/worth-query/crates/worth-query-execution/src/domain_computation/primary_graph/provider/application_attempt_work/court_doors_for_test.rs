@@ -84,3 +84,17 @@ impl WorthQueryApplicationAttemptWorkSnapshot {
         &self.staged_session_preparations
     }
 }
+
+impl WorthQueryApplicationAttemptWorkSnapshot {
+    #[doc(hidden)]
+    pub fn since_for_test(self, earlier: Self) -> Self {
+        Self::since(self, earlier)
+    }
+}
+
+impl WorthQueryApplicationAttemptWorkSnapshot {
+    #[doc(hidden)]
+    pub fn retained_resolutions_for_test(&self) -> &u64 {
+        &self.retained_resolutions
+    }
+}

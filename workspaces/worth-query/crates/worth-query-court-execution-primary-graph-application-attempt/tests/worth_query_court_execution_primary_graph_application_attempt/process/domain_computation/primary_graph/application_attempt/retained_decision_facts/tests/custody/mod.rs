@@ -194,7 +194,7 @@ fn final_array_and_key_charges_survive_child_drop_and_exhausted_iterator() {
     ));
     drop(parent.reserve_memory(budget - final_quote - 3).unwrap());
     let mut records = records.into_iter();
-    assert_eq!(records.next().unwrap().key.locator(), b"a");
+    assert_eq!((*records.next().unwrap().key_for_test()).locator_for_test(), b"a");
     for record in records.by_ref() {
         drop(record);
     }

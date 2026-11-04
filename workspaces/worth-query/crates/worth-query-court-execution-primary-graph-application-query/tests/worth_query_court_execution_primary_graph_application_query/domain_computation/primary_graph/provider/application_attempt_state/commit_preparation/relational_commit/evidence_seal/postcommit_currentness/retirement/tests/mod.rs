@@ -36,13 +36,13 @@ fn external_deleted_input_and_live_adjacency_anchor_keep_their_own_comparison() 
             let host_custody = phase.test_host_request_for_test();
 
             let (owned, _, own_reads) = reads(
-                &host_custody.phase_for_application(&world.application),
+                &host_custody.phase_for_application_for_test(&world.application),
                 execution,
                 &world,
                 "account-2",
             );
             let (external, _, external_reads) = reads(
-                &host_custody.phase_for_application(&world.application),
+                &host_custody.phase_for_application_for_test(&world.application),
                 execution,
                 &world,
                 "account-1",
@@ -50,7 +50,7 @@ fn external_deleted_input_and_live_adjacency_anchor_keep_their_own_comparison() 
             delete(&host_custody.borrowed_request_for_test(), &world, owned);
             let facts = [own_reads, external_reads.clone()].concat();
             let rebased = rebase_current(
-                &host_custody.phase_for_application(&world.application),
+                &host_custody.phase_for_application_for_test(&world.application),
                 &host_custody.borrowed_request_for_test(),
                 &world,
                 facts,
@@ -63,13 +63,13 @@ fn external_deleted_input_and_live_adjacency_anchor_keep_their_own_comparison() 
                 "external anchors and fields are not converted to retirement truth"
             );
             let native = normal_rebase(
-                &host_custody.phase_for_application(&world.application),
+                &host_custody.phase_for_application_for_test(&world.application),
                 execution,
                 &world,
                 rebased.clone(),
             );
             assert!(selection(
-                &host_custody.phase_for_application(&world.application),
+                &host_custody.phase_for_application_for_test(&world.application),
                 execution,
                 &world,
                 &native
@@ -77,7 +77,7 @@ fn external_deleted_input_and_live_adjacency_anchor_keep_their_own_comparison() 
             delete(&host_custody.borrowed_request_for_test(), &world, external);
             assert!(
                 !selection(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     execution,
                     &world,
                     &native
@@ -109,10 +109,10 @@ pub fn reads(
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let identity = AccountIdentity::reference();
     let note = AccountNote::reference();
-    let kind = graph.layout.entity_kind(identity.entity()).unwrap();
-    let locator = graph
-        .layout
-        .field_locator(identity.entity(), identity.aspect(), identity.field())
+    let kind = (*graph.layout_for_test()).entity_kind_for_test(identity.entity()).unwrap();
+    let locator = (*graph
+        .layout_for_test())
+        .field_locator_for_test(identity.entity(), identity.aspect(), identity.field())
         .unwrap()
         .clone();
     let locator = worth_foundational::facade::AspectFieldLocator::new(
@@ -120,18 +120,18 @@ pub fn reads(
         locator.aspect().aspect_key().clone(),
         locator.field_path().clone(),
     );
-    let absent = graph
-        .layout
-        .field_locator(note.entity(), note.aspect(), note.field())
+    let absent = (*graph
+        .layout_for_test())
+        .field_locator_for_test(note.entity(), note.aspect(), note.field())
         .unwrap()
         .clone();
-    let relation = graph
-        .layout
+    let relation = (*(*graph
+        .layout_for_test())
         .relation(AccountAllActivity::reference().name())
         .unwrap()
-        .kind;
+        .kind_for_test());
     let (aspect_revision, field_revision, adjacency_revision, relations) = graph
-        .integration_handle()
+        .integration_handle_for_test()
         .with_runtime(execution, |runtime| {
             let view = runtime
                 .read_truth()
@@ -212,7 +212,7 @@ pub fn reads(
             comparison_work_limit: 16,
             endpoints: AdmittedAdjacencyEndpoints::from_exact_iterator_for_test(
                 relations.len(),
-                relations.iter().map(|relation| relation.to),
+                relations.iter().map(|relation| (*relation.to_for_test())),
                 StorageControl::new_for_test(
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                     Some(&request),
@@ -258,7 +258,7 @@ pub fn rebase_current(
         .runtime_for_test())
         .primary_graph()
         .unwrap()
-        .integration_handle()
+        .integration_handle_for_test()
         .with_runtime(execution, |runtime| {
             rebase(
                 runtime,
@@ -281,7 +281,7 @@ pub fn normal_rebase(
         .runtime_for_test())
         .primary_graph()
         .unwrap()
-        .integration_handle()
+        .integration_handle_for_test()
         .with_runtime(execution, |runtime| {
             exact(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::rebase(execution, runtime, selected.application_basis_for_test().snapshot_handle(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::evidence_seal::postcommit_currentness::PreparedSourceFactRebase::admit_for_test(facts, [].into(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new_for_test(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(), &BTreeSet::new(), true))
         })
@@ -308,7 +308,7 @@ pub fn selection(
         .runtime_for_test())
         .primary_graph()
         .unwrap()
-        .integration_handle()
+        .integration_handle_for_test()
         .with_runtime(execution, |runtime| {
             matches!(
                 compare_retained_output_dependencies(

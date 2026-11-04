@@ -44,11 +44,11 @@ fn empty_path_union_stales_when_a_matching_edge_is_inserted() {
         .certification_query(CrossRootQuery::reference())
         .unwrap();
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let primary_kind = graph
-        .layout
+    let primary_kind = (*(*graph
+        .layout_for_test())
         .relation(worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountPrimaryActivity::reference().name())
         .unwrap()
-        .kind;
+        .kind_for_test());
     let selected = world
         .application
         .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
@@ -58,7 +58,7 @@ fn empty_path_union_stales_when_a_matching_edge_is_inserted() {
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request_for_test();
             graph
-                .integration_handle()
+                .integration_handle_for_test()
                 .with_runtime(request_execution, |runtime| {
                     let primary_target = runtime
                         .read_truth()
@@ -79,7 +79,7 @@ fn empty_path_union_stales_when_a_matching_edge_is_inserted() {
                     ]
                     .into_iter()
                     .flat_map(|name| {
-                        let kind = graph.layout.relation(name).unwrap().kind;
+                        let kind = (*(*graph.layout_for_test()).relation(name).unwrap().kind_for_test());
                         runtime
                             .read_truth()
                             .visible_relations_of_kind(
@@ -186,7 +186,7 @@ fn empty_path_union_stales_when_a_matching_edge_is_inserted() {
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request_for_test();
             assert!(!graph
-                .integration_handle()
+                .integration_handle_for_test()
                 .with_runtime(request_execution, |runtime| {
                     fact.source_currentness_in_for_test(
                         runtime,
@@ -195,7 +195,7 @@ fn empty_path_union_stales_when_a_matching_edge_is_inserted() {
                     )
                     .unwrap()
                     .unwrap()
-                    .movement()
+                    .movement_for_test()
                         == Movement::Unmoved
                 }))
         })

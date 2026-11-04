@@ -61,36 +61,36 @@ fn both_scheduling_finishes_preserve_claims_and_custody_on_interruption() {
                 );
                 {
                     let state = (*fixture.registry.state_for_test()).lock().unwrap();
-                    let row = &state.records[&(*fixture.interest.key_for_test())];
-                    assert_eq!(row.prerequisites.len(), 1);
-                    assert_eq!(row.prerequisites[0].as_ref(), &(*fixture.upstream.key_for_test()));
-                    assert_eq!(row.framework_required_count, 1, "dependent claim retained");
+                    let row = &(*state.records_for_test())[&(*fixture.interest.key_for_test())];
+                    assert_eq!((*row.prerequisites_for_test()).len(), 1);
+                    assert_eq!((*row.prerequisites_for_test())[0].as_ref(), &(*fixture.upstream.key_for_test()));
+                    assert_eq!((*row.framework_required_count_for_test()), 1, "dependent claim retained");
                     assert_eq!(
-                        state.records[&(*fixture.upstream.key_for_test())].framework_required_count,
+                        (*(*state.records_for_test())[&(*fixture.upstream.key_for_test())].framework_required_count_for_test()),
                         1
                     );
-                    assert_eq!(state.records[&(*fixture.dependent.key_for_test())].prerequisites.len(), 1);
-                    assert_eq!(row.performed_obligations.len(), 1);
-                    assert_eq!(row.performed_obligations[0].source_commit, fixture.commit);
+                    assert_eq!((*(*state.records_for_test())[&(*fixture.dependent.key_for_test())].prerequisites_for_test()).len(), 1);
+                    assert_eq!((*row.performed_obligations_for_test()).len(), 1);
+                    assert_eq!((*(*row.performed_obligations_for_test())[0].source_commit_for_test()), fixture.commit);
                     assert_eq!(
-                        row.performed_obligations[0].source,
-                        (*fixture.interest.key_for_test()).source
+                        (*(*row.performed_obligations_for_test())[0].source_for_test()),
+                        (*(*fixture.interest.key_for_test()).source_for_test())
                     );
-                    let source = row
-                        .performed_source
+                    let source = (*row
+                        .performed_source_for_test())
                         .as_ref()
                         .expect("performed source retained");
-                    assert_eq!(Arc::as_ptr(&source.change).cast::<()>(), fixture.change);
+                    assert_eq!(Arc::as_ptr(&(*source.change_for_test())).cast::<()>(), fixture.change);
                     assert_eq!(
-                        *source
-                            .receipt
+                        *(*source
+                            .receipt_for_test())
                             .committed_product_publication()
                             .composite_commit(),
                         fixture.commit
                     );
-                    assert!(!row.pending_cleanup_queued);
+                    assert!(!(*row.pending_cleanup_queued_for_test()));
                     if reopened {
-                        let DemandState::Output(output) = &row.state else {
+                        let DemandState::Output(output) = &(*row.state_for_test()) else {
                             panic!("a reopened Ready is given back, not discarded");
                         };
                         assert!(matches!(
@@ -102,11 +102,11 @@ fn both_scheduling_finishes_preserve_claims_and_custody_on_interruption() {
                             panic!("the exact accepted Ready remains");
                         };
                         assert_eq!(std::ptr::from_ref(&**ready).cast::<()>(), fixture.ready);
-                        assert!(row.successor_of.is_none());
+                        assert!((*row.successor_of_for_test()).is_none());
                     } else {
-                        assert!(matches!(row.state, DemandState::Admitted));
+                        assert!(matches!((*row.state_for_test()), DemandState::Admitted));
                         assert_eq!(
-                            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::succession::Succession::predecessor_of_for_test(&row.successor_of),
+                            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::succession::Succession::predecessor_of_for_test(&(*row.successor_of_for_test())),
                             Some(*fixture.receipt.idempotency_binding().key_identity())
                         );
                     }
@@ -135,15 +135,15 @@ fn other_scheduling_stops_still_fail_the_row_and_release_obligations() {
         );
         assert_eq!(denial.recovery_posture(), Posture::Terminal);
         let state = (*fixture.registry.state_for_test()).lock().unwrap();
-        let row = &state.records[&(*fixture.interest.key_for_test())];
-        assert!(matches!(&row.state, DemandState::Failed(stored)
+        let row = &(*state.records_for_test())[&(*fixture.interest.key_for_test())];
+        assert!(matches!(&(*row.state_for_test()), DemandState::Failed(stored)
             if stored == &denial));
         assert_eq!(
-            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::required_stop::head_stop(&state.records, &(*fixture.interest.key_for_test())),
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::required_stop::head_stop(&(*state.records_for_test()), &(*fixture.interest.key_for_test())),
             Some(denial)
         );
-        assert!(row.performed_source.is_none());
-        assert!(row.performed_obligations.is_empty());
+        assert!((*row.performed_source_for_test()).is_none());
+        assert!((*row.performed_obligations_for_test()).is_empty());
     }
 }
 #[test]
@@ -206,15 +206,15 @@ fn a_new_key_stays_claimable_after_a_caller_resource_stop() {
     use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationResourceDenial as Resource;
     for finish in [Finish::Ordinary, Finish::Selected] {
         let fixture = Fixture::new(false);
-        (*fixture
+        (*(*(*fixture
             .registry
             .state_for_test())
             .lock()
             .unwrap()
-            .records
+            .records_for_test())
             .get_mut(&(*fixture.interest.key_for_test()))
             .unwrap()
-            .successor_of = None;
+            .successor_of_mut_for_test()) = None;
         let kind = WorthQueryOutputDemandDenialKind::ExecutionRequest(Advance::Resource(
             Resource::WorkExhausted,
         ));

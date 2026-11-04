@@ -15,14 +15,14 @@ fn performed_completion_reaches_the_canonical_subscription_once_and_terminal_tur
     let world = installed_world();
     let dispatch = { world.commit_dispatch(51, "route-observed-notice") };
     let outbox = dispatch.dispatch_outbox().unwrap();
-    let owner = &(*world
+    let owner = &(*(*(*(*world
         .application
         .primary_provider_for_test())
-        .graph
-        .source_owner
-        .invalidation_owner;
+        .graph_for_test())
+        .source_owner_for_test())
+        .invalidation_owner_for_test());
     let branch = &dispatch.commit_reference().branch_id;
-    let before = owner.latest_position();
+    let before = owner.latest_position_for_test();
     let envelope = signed_envelope_for_seconds(outbox, [0xb1; 32], outbox.payload(), false, 1);
     let request = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
     assert_eq!(
@@ -33,9 +33,9 @@ fn performed_completion_reaches_the_canonical_subscription_once_and_terminal_tur
             .posture(),
         WorthQueryInboundReceiptPosture::Performed,
     );
-    let after = owner.latest_position();
+    let after = owner.latest_position_for_test();
     let unwatched = BTreeSet::new();
-    let batch = owner.touched_commits_after(
+    let batch = owner.touched_commits_after_for_test(
         branch,
         before,
         Some(CommitId(u64::MAX)),
@@ -46,17 +46,17 @@ fn performed_completion_reaches_the_canonical_subscription_once_and_terminal_tur
         },
     );
     assert_eq!(
-        batch.commits.len(),
+        (*batch.commits_for_test()).len(),
         1,
         "one performed completion reaches the canonical subscription"
     );
     assert_ne!(
-        batch.commits[0].commit,
+        (*(*batch.commits_for_test())[0].commit_for_test()),
         dispatch.commit_reference().commit_id,
         "the subscription carries the completion commit, not the old dispatch",
     );
-    assert_eq!(batch.next_cursor, after);
-    assert!(batch.caught_up_to_latest);
+    assert_eq!((*batch.next_cursor_for_test()), after);
+    assert!((*batch.caught_up_to_latest_for_test()));
 
     let replay = world
         .application
@@ -69,7 +69,7 @@ fn performed_completion_reaches_the_canonical_subscription_once_and_terminal_tur
             | WorthQueryInboundReceiptPosture::AlreadyCompleted
     ));
     assert_eq!(
-        owner.latest_position(),
+        owner.latest_position_for_test(),
         after,
         "retry must not publish the completion twice",
     );

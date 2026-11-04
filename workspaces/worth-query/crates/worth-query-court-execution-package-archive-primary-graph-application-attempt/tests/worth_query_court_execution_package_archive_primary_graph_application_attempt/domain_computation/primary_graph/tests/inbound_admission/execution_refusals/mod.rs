@@ -62,7 +62,7 @@ fn inbound_publication_consumers_keep_real_execution_refusals_and_retry_posture(
                         world
                             .application
                             .observe_committed_dispatch_outbox(
-                                &host_custody.phase_for_application(&world.application),
+                                &host_custody.phase_for_application_for_test(&world.application),
                                 &receipt,
                             )
                             .unwrap()
@@ -120,7 +120,7 @@ fn inbound_publication_consumers_keep_real_execution_refusals_and_retry_posture(
                         assert_eq!(observed, expected_preparation);
                         let observed =
                             PublicationDenial::CompletionPreparation(observed).retry_denial_for_test();
-                        match (expected, observed.pending_reason()) {
+                        match (expected, observed.pending_reason_for_test()) {
                             (
                                 Ok(kind),
                                 ReceiptPending::ExecutionDenied {
@@ -177,7 +177,7 @@ fn inbound_publication_consumers_keep_real_execution_refusals_and_retry_posture(
                         );
                         let pending = denial.pending_reason_for_test();
                         let recovery = worth_query_execution::facade::domain_computation::WorthQueryRecoveryHandleDenial::from(
-                        pending.dispatch_preparation_denial().redispatch_denial(),
+                        pending.dispatch_preparation_denial_for_test().redispatch_denial_for_test(),
                     ).kind();
                         use worth_query_execution::facade::domain_computation::WorthQueryRecoveryHandleDenialKind as Recovery;
                         match (expected, recovery) {

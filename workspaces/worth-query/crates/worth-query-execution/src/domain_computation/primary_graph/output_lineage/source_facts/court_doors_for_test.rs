@@ -31,3 +31,10 @@ impl RetainedSourceFacts {
         Self::with_posting_continuation(self, continuation)
     }
 }
+
+impl RetainedSourceFacts {
+    #[doc(hidden)]
+    pub fn postconditions_for_test(&self) -> &FactPayload {
+        Self::postconditions(self)
+    }
+}

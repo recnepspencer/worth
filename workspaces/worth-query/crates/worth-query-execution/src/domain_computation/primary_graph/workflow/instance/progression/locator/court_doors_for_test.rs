@@ -34,3 +34,10 @@ impl WorkflowInstanceProgress {
         Self::retain_observation(self, observation)
     }
 }
+
+impl WorkflowTransitionLocator {
+    #[doc(hidden)]
+    pub fn settlement_for_test(self) -> SettledWorkflowTransition {
+        Self::settlement(self)
+    }
+}

@@ -11,3 +11,17 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
         Self::materialize_rich::<Q, P, R, S>(self, execution, query)
     }
 }
+
+impl PreparedRichMaterialization {
+    #[doc(hidden)]
+    pub fn artifact_for_test(&self) -> &WorthQueryApplicationRichMaterialization {
+        &self.artifact
+    }
+}
+
+impl PreparedRichMaterialization {
+    #[doc(hidden)]
+    pub fn artifact_mut_for_test(&mut self) -> &mut WorthQueryApplicationRichMaterialization {
+        &mut self.artifact
+    }
+}

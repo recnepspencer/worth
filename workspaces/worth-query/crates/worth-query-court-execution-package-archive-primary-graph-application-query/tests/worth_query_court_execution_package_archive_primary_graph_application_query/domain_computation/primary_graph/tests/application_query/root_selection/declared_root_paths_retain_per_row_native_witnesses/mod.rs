@@ -225,7 +225,7 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
             product,
             &(*observed_source.query_identifier_for_test()),
             &(*observed_source.query_identity_for_test()),
-            &graph.layout,
+            &(*graph.layout_for_test()),
             None,
             request_execution,
         )
@@ -243,7 +243,7 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
     );
     assert!(source_facts.iter().any(|fact| matches!(fact,
         WorthQueryApplicationObservedFact::SourceFieldRevision { entity_id, .. }
-            if *entity_id == account.entity_id()
+            if *entity_id == account.entity_id_for_test()
     )));
     let kind = (*first.adjacencies[0].relation_kind_for_test());
     let selected = world
@@ -255,7 +255,7 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request_for_test();
             graph
-                .integration_handle()
+                .integration_handle_for_test()
                 .with_runtime(request_execution, |runtime| {
                     runtime
                         .read_truth()
@@ -266,7 +266,7 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
                         )
                         .expect("fixture read request remains live")
                         .into_iter()
-                        .find(|relation| relation.source == account.entity_id())
+                        .find(|relation| relation.source == account.entity_id_for_test())
                         .map(|relation| (relation.relation_id, relation.target))
                         .unwrap()
                 })
@@ -289,7 +289,7 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
                             partition_id: PartitionId::main(),
                             kind_id: kind,
                             client_key: ClientKey::raw("root-path-relation-aba-replacement"),
-                            source: EntityReference::Existing(account.entity_id()),
+                            source: EntityReference::Existing(account.entity_id_for_test()),
                             target: EntityReference::Existing(target),
                             fields: AspectFieldPatch::default(),
                         },
@@ -320,7 +320,7 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
             let host_custody = phase.test_host_request_for_test();
             assert!(
                 !graph
-                    .integration_handle()
+                    .integration_handle_for_test()
                     .with_runtime(request_execution, |runtime| {
                         fact.source_currentness_in_for_test(
                             runtime,
@@ -329,7 +329,7 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
                         )
                         .unwrap()
                         .unwrap()
-                        .movement()
+                        .movement_for_test()
                             == Movement::Unmoved
                     }),
                 "same endpoints after relation ABA must stale even a merged adjacency fact"

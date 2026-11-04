@@ -19,7 +19,7 @@ fn held_completed_evidence_preserves_exact_old_replay_without_eviction() {
             .with_host_advancement(|phase| {
                 let host_custody = phase.test_host_request_for_test();
                 authenticated_principal(
-                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                     &world,
                     &request,
                 )
@@ -30,7 +30,7 @@ fn held_completed_evidence_preserves_exact_old_replay_without_eviction() {
             .with_host_advancement(|phase| {
                 let host_custody = phase.test_host_request_for_test();
                 resolved_account(
-                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                     &world,
                     "open",
                     &request,
@@ -42,7 +42,7 @@ fn held_completed_evidence_preserves_exact_old_replay_without_eviction() {
             .with_host_advancement(|phase| {
                 let host_custody = phase.test_host_request_for_test();
                 admitted_program(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     &world,
                     &principal,
                     &account,
@@ -56,7 +56,7 @@ fn held_completed_evidence_preserves_exact_old_replay_without_eviction() {
             .with_host_advancement(|phase| {
                 let host_custody = phase.test_host_request_for_test();
                 admitted_program(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     &world,
                     &principal,
                     &account,
@@ -82,8 +82,8 @@ fn held_completed_evidence_preserves_exact_old_replay_without_eviction() {
                 .with_host_advancement(|phase| {
                     let host_custody = phase.test_host_request_for_test();
                     resolved_account(
-                        &(host_custody.phase_for_application(&world.application))
-                            .test_host_request(),
+                        &(host_custody.phase_for_application_for_test(&world.application))
+                            .test_host_request_for_test(),
                         &world,
                         &state,
                         &request,
@@ -96,7 +96,7 @@ fn held_completed_evidence_preserves_exact_old_replay_without_eviction() {
                 .with_host_advancement(|phase| {
                     let host_custody = phase.test_host_request_for_test();
                     admitted_program(
-                        &host_custody.phase_for_application(&world.application),
+                        &host_custody.phase_for_application_for_test(&world.application),
                         &world,
                         &principal,
                         &account,
@@ -126,8 +126,8 @@ fn held_completed_evidence_preserves_exact_old_replay_without_eviction() {
                 let host_custody = phase.test_host_request_for_test();
                 world
                     .selected_product(
-                        &(host_custody.phase_for_application(&world.application))
-                            .test_host_request(),
+                        &(host_custody.phase_for_application_for_test(&world.application))
+                            .test_host_request_for_test(),
                     )
                     .product()
                     .selected_commit()
@@ -153,8 +153,8 @@ fn held_completed_evidence_preserves_exact_old_replay_without_eviction() {
                 assert_eq!(
                     world
                         .selected_product(
-                            &(host_custody.phase_for_application(&world.application))
-                                .test_host_request(),
+                            &(host_custody.phase_for_application_for_test(&world.application))
+                                .test_host_request_for_test(),
                         )
                         .product()
                         .selected_commit(),

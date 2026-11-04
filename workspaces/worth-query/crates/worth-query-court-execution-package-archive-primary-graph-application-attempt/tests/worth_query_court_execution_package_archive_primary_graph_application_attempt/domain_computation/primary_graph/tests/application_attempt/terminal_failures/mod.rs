@@ -87,7 +87,7 @@ fn missing_owner_candidate_is_denied_before_semantic_invariant_execution() {
         (*world
             .application
             .primary_provider_for_test())
-            .published_application_commit_count(),
+            .published_application_commit_count_for_test(),
         0,
         "owner validation denial must precede commit and outbox publication"
     );
@@ -193,7 +193,7 @@ fn zero_semantic_invariants_still_require_relational_candidate_validation() {
         (*world
             .application
             .primary_provider_for_test())
-            .published_application_commit_count(),
+            .published_application_commit_count_for_test(),
         0,
         "zero-requirement owner denial must precede commit and outbox publication"
     );

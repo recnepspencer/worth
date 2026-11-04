@@ -32,8 +32,8 @@ fn stale_successor_is_denied_without_mutating_newer_or_unrelated_records() {
     let mut state = DemandRegistryState::default();
     (*state
         .records_for_test())
-        .insert(newer.clone(), record(occurrence, DemandState::Admitted, 0));
-    (*state.records_for_test()).insert(
+        .insert_for_test(newer.clone(), record(occurrence, DemandState::Admitted, 0));
+    (*state.records_for_test()).insert_for_test(
         unrelated.clone(),
         record(occurrence, DemandState::Admitted, 0),
     );
@@ -42,13 +42,13 @@ fn stale_successor_is_denied_without_mutating_newer_or_unrelated_records() {
         .expect_err("an older revision cannot supersede an admitted newer revision");
 
     assert_eq!(denial.kind(), WorthQueryOutputDemandDenialKind::Superseded);
-    assert_eq!((*state.records_for_test()).len(), 2);
-    assert!(matches!((*state.records_for_test())[&newer].state, DemandState::Admitted));
+    assert_eq!((*state.records_for_test()).len_for_test(), 2);
+    assert!(matches!((*(*state.records_for_test())[&newer].state_for_test()), DemandState::Admitted));
     assert!(matches!(
-        (*state.records_for_test())[&unrelated].state,
+        (*(*state.records_for_test())[&unrelated].state_for_test()),
         DemandState::Admitted
     ));
-    assert_eq!(*(*state.records_for_test())[&newer].wake.generation.lock().unwrap(), 0);
+    assert_eq!(*(*(*(*state.records_for_test())[&newer].wake_for_test()).generation_for_test()).lock().unwrap(), 0);
 }
 #[test]
 fn newer_successor_supersedes_only_its_older_occurrence() {
@@ -58,8 +58,8 @@ fn newer_successor_supersedes_only_its_older_occurrence() {
     let mut state = DemandRegistryState::default();
     (*state
         .records_for_test())
-        .insert(older.clone(), record(occurrence, DemandState::Scheduled, 1));
-    (*state.records_for_test()).insert(
+        .insert_for_test(older.clone(), record(occurrence, DemandState::Scheduled, 1));
+    (*state.records_for_test()).insert_for_test(
         unrelated.clone(),
         record(occurrence, DemandState::Admitted, 1),
     );
@@ -68,15 +68,15 @@ fn newer_successor_supersedes_only_its_older_occurrence() {
         .expect("a newer revision supersedes its predecessor");
 
     assert!(matches!(
-        &(*state.records_for_test())[&older].state,
+        &(*(*state.records_for_test())[&older].state_for_test()),
         DemandState::Failed(denial)
             if denial.kind() == WorthQueryOutputDemandDenialKind::Superseded
     ));
     assert!(matches!(
-        (*state.records_for_test())[&unrelated].state,
+        (*(*state.records_for_test())[&unrelated].state_for_test()),
         DemandState::Admitted
     ));
-    assert_eq!(*(*state.records_for_test())[&older].wake.generation.lock().unwrap(), 1);
+    assert_eq!(*(*(*(*state.records_for_test())[&older].wake_for_test()).generation_for_test()).lock().unwrap(), 1);
 }
 #[test]
 fn scheduling_failure_is_terminal_and_last_interest_releases_the_record() {
@@ -87,7 +87,7 @@ fn scheduling_failure_is_terminal_and_last_interest_releases_the_record() {
         generation: Mutex::new(0),
         changed: Condvar::new(),
     });
-    (*registry.state_for_test()).lock().unwrap().records.insert(
+    (*(*registry.state_for_test()).lock().unwrap().records_for_test()).insert_for_test(
         demand_key.clone(),
         DemandRecord {
             wake: Arc::clone(&wake),
@@ -103,17 +103,17 @@ fn scheduling_failure_is_terminal_and_last_interest_releases_the_record() {
     registry.finish_scheduling_for_test(&demand_interest, None, &mut Err(denial));
 
     assert!(matches!(
-        &(*registry.state_for_test()).lock().unwrap().records[&demand_key].state,
+        &(*(*(*registry.state_for_test()).lock().unwrap().records_for_test())[&demand_key].state_for_test()),
         DemandState::Failed(failure)
             if failure.kind() == WorthQueryOutputDemandDenialKind::ProducerUnavailable
     ));
     drop(demand_interest);
-    assert!(!(*registry
+    assert!(!(*(*registry
         .state_for_test())
         .lock()
         .unwrap()
-        .records
-        .contains_key(&demand_key));
+        .records_for_test())
+        .contains_key_for_test(&demand_key));
 }
 #[test]
 fn required_failure_is_released_with_its_last_interest() {
@@ -124,7 +124,7 @@ fn required_failure_is_released_with_its_last_interest() {
         generation: Mutex::new(0),
         changed: Condvar::new(),
     });
-    (*registry.state_for_test()).lock().unwrap().records.insert(
+    (*(*registry.state_for_test()).lock().unwrap().records_for_test()).insert_for_test(
         demand_key.clone(),
         DemandRecord {
             required_interests: 1,
@@ -142,12 +142,12 @@ fn required_failure_is_released_with_its_last_interest() {
     drop(demand_interest);
 
     assert!(
-        !(*registry
+        !(*(*registry
             .state_for_test())
             .lock()
             .unwrap()
-            .records
-            .contains_key(&demand_key),
+            .records_for_test())
+            .contains_key_for_test(&demand_key),
         "a failed required attempt is not a permanent owner obligation"
     );
 }
@@ -160,7 +160,7 @@ fn retiring_occurrence_closes_live_work_and_completion_cannot_resurrect_it() {
         generation: Mutex::new(0),
         changed: Condvar::new(),
     });
-    (*registry.state_for_test()).lock().unwrap().records.insert(
+    (*(*registry.state_for_test()).lock().unwrap().records_for_test()).insert_for_test(
         demand_key.clone(),
         DemandRecord {
             wake: Arc::clone(&wake),
@@ -177,17 +177,17 @@ fn retiring_occurrence_closes_live_work_and_completion_cannot_resurrect_it() {
     );
 
     assert!(matches!(
-        &(*registry.state_for_test()).lock().unwrap().records[&demand_key].state,
+        &(*(*(*registry.state_for_test()).lock().unwrap().records_for_test())[&demand_key].state_for_test()),
         DemandState::Failed(denial)
             if denial.kind() == WorthQueryOutputDemandDenialKind::Closed
     ));
     drop(demand_interest);
-    assert!(!(*registry
+    assert!(!(*(*registry
         .state_for_test())
         .lock()
         .unwrap()
-        .records
-        .contains_key(&demand_key));
+        .records_for_test())
+        .contains_key_for_test(&demand_key));
 }
 #[test]
 fn deferred_scheduling_returns_to_admitted_while_no_effect_is_terminal() {
@@ -196,7 +196,7 @@ fn deferred_scheduling_returns_to_admitted_while_no_effect_is_terminal() {
     let deferred_key = key("deferred", 5, 1);
     let terminal_key = key("no-effect", 5, 2);
     for demand_key in [&deferred_key, &terminal_key] {
-        (*registry.state_for_test()).lock().unwrap().records.insert(
+        (*(*registry.state_for_test()).lock().unwrap().records_for_test()).insert_for_test(
             demand_key.clone(),
             record(occurrence, DemandState::Scheduling, 1),
         );
@@ -204,12 +204,12 @@ fn deferred_scheduling_returns_to_admitted_while_no_effect_is_terminal() {
     let deferred = interest(
         &registry,
         deferred_key.clone(),
-        Arc::clone(&(*registry.state_for_test()).lock().unwrap().records[&deferred_key].wake),
+        Arc::clone(&(*(*(*registry.state_for_test()).lock().unwrap().records_for_test())[&deferred_key].wake_for_test())),
     );
     let terminal = interest(
         &registry,
         terminal_key.clone(),
-        Arc::clone(&(*registry.state_for_test()).lock().unwrap().records[&terminal_key].wake),
+        Arc::clone(&(*(*(*registry.state_for_test()).lock().unwrap().records_for_test())[&terminal_key].wake_for_test())),
     );
     let no_effect_denial = WorthQueryOutputDemandDenial::new_for_test(
         WorthQueryOutputDemandDenialKind::NoEffect,
@@ -229,11 +229,11 @@ fn deferred_scheduling_returns_to_admitted_while_no_effect_is_terminal() {
 
     let state = (*registry.state_for_test()).lock().unwrap();
     assert!(matches!(
-        state.records[&deferred_key].state,
+        (*(*state.records_for_test())[&deferred_key].state_for_test()),
         DemandState::Admitted
     ));
     assert!(matches!(
-        &state.records[&terminal_key].state,
+        &(*(*state.records_for_test())[&terminal_key].state_for_test()),
         DemandState::Failed(denial) if denial.kind() == WorthQueryOutputDemandDenialKind::NoEffect
     ));
 }
@@ -242,7 +242,7 @@ fn retiring_occurrence_removes_unheld_cached_work_and_marks_preparation_closed()
     let registry = WorthQueryOutputDemandRegistry::default();
     let occurrence = occurrence();
     let scheduled = key("scheduled", 1, 1);
-    (*registry.state_for_test()).lock().unwrap().records.insert(
+    (*(*registry.state_for_test()).lock().unwrap().records_for_test()).insert_for_test(
         scheduled.clone(),
         record(occurrence, DemandState::Scheduled, 0),
     );
@@ -251,19 +251,19 @@ fn retiring_occurrence_removes_unheld_cached_work_and_marks_preparation_closed()
     registry.release_product_occurrence_for_test(occurrence);
 
     let state = (*registry.state_for_test()).lock().unwrap();
-    assert!(!state.records.contains_key(&scheduled));
-    assert!(state.source_preparations[&occurrence].retired);
+    assert!(!(*state.records_for_test()).contains_key_for_test(&scheduled));
+    assert!((*(*state.source_preparations_for_test())[&occurrence].retired_for_test()));
     assert!(state
         .source_custody
         .values()
-        .all(|custody| custody.prepared_count() == 0));
+        .all(|custody| custody.prepared_count_for_test() == 0));
     drop(state);
     drop(preparation);
-    assert!((*registry
+    assert!((*(*registry
         .state_for_test())
         .lock()
         .unwrap()
-        .source_preparations
+        .source_preparations_for_test())
         .is_empty());
 }
 #[test]
@@ -275,7 +275,7 @@ fn denied_executor_releases_the_shared_claim_for_its_peer() {
         generation: Mutex::new(0),
         changed: Condvar::new(),
     });
-    (*registry.state_for_test()).lock().unwrap().records.insert(
+    (*(*registry.state_for_test()).lock().unwrap().records_for_test()).insert_for_test(
         demand_key.clone(),
         DemandRecord {
             wake: Arc::clone(&wake),

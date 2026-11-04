@@ -32,8 +32,8 @@ fn world_recovery_metadata_carries_the_original_computation_and_absence() {
             output_binding: OutputBindingIdentity::declared_for_test("()"),
         };
     let coordinate = ProductCoordinate {
-        occurrence: product.observation().lifecycle_incarnation(),
-        generation: product.observation().reference_generation().get() + 1,
+        occurrence: product.observation_for_test().lifecycle_incarnation(),
+        generation: product.observation_for_test().reference_generation().get() + 1,
     };
     let owner = Arc::new(Mutex::new(WorthQueryApplicationOutputLineage::default()));
     // These are private vacant addresses, never publication authority.
@@ -50,7 +50,7 @@ fn world_recovery_metadata_carries_the_original_computation_and_absence() {
         let identity = RecordedSettlementIdentity::retain_for_test(&source, coordinate, 0);
         let record_cell = Arc::new(OnceLock::new());
         (*lineage
-            .by_source_for_test())
+            .by_source_mut_for_test())
             .entry(source.clone())
             .or_default()
             .entry((*coordinate.occurrence_for_test()))
@@ -58,8 +58,8 @@ fn world_recovery_metadata_carries_the_original_computation_and_absence() {
             .insert((*coordinate.generation_for_test()), vec![Arc::clone(&record_cell)]);
         let partition_cell =
             (*lineage
-                .partition_index_for_test())
-                .insert_vacancy(source.clone(), coordinate, None);
+                .partition_index_mut_for_test())
+                .insert_vacancy_for_test(source.clone(), coordinate, None);
         PreparedOutputLineageSlot {
                 owner: Arc::clone(&owner),
                 output_binding_type: TypeId::of_for_test::<()>(),

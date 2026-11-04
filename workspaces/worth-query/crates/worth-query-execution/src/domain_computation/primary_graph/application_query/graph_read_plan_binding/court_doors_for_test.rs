@@ -131,3 +131,21 @@ impl<'a, Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, S
         &mut self.continuation_index_id
     }
 }
+
+impl<'a, Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, Scope>
+    WorthQueryAdmittedApplicationQueryPlan<
+        'a,
+        Schema,
+        Query,
+        Parameters,
+        QueryResult,
+        Principal,
+        PrincipalIdentity,
+        Scope,
+    >
+{
+    #[doc(hidden)]
+    pub fn basis_for_test(&self) -> &WorthQueryApplicationQueryBasisCustody {
+        &self.basis
+    }
+}

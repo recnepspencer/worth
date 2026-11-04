@@ -219,7 +219,7 @@ pub(super) struct QueryDispatch<'d> {
 }
 
 impl QueryDispatch<'_> {
-    pub(in super::super) fn native_lease_for_test(&self) -> &ExecutionResourceLease<'_> {
+    pub fn native_lease_for_test(&self) -> &ExecutionResourceLease<'_> {
         let DispatchForm::Leased(lease) = &self.form;
         lease
     }

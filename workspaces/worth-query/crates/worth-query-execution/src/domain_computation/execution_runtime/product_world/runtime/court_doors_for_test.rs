@@ -21,3 +21,19 @@ impl WorthQueryProductRuntime {
         &self.owner_cleanup
     }
 }
+
+impl WorthQueryProductRuntime {
+    #[doc(hidden)]
+    pub fn source_for_test(&self) -> &RuntimeBridgeRelationalSource {
+        &self.source
+    }
+}
+
+impl WorthQueryProductRuntime {
+    #[doc(hidden)]
+    pub fn owner_cleanup_mut_for_test(
+        &mut self,
+    ) -> &mut WorthQueryProductBranchOwnerCleanupRegistry {
+        &mut self.owner_cleanup
+    }
+}

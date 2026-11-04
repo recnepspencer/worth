@@ -42,7 +42,7 @@ fn insert_retire_changes_only_paths_preserving_order_history_range_and_fresh_clo
     let charge = &calls[2].1 .0;
     let edit = prior
         .shape_for_test()
-        .prepare_transition(
+        .prepare_transition_for_test(
             &BTreeSet::from([read(8)]),
             &BTreeSet::from([read(1)]),
             &execution,
@@ -59,10 +59,10 @@ fn insert_retire_changes_only_paths_preserving_order_history_range_and_fresh_clo
     assert!(next.contains_in(entity, &(2..3)));
     assert!(!next.contains_in(entity, &(3..4)));
     let expected = vec![read(0), read(2), read(3), read(4), read(5), read(8)];
-    assert_eq!(next.shape.calls().collect::<Vec<_>>(), expected);
+    assert_eq!((*next.shape_for_test()).calls().collect::<Vec<_>>(), expected);
     for (ordinal, read) in expected.iter().enumerate() {
-        assert_eq!(next.shape.ordinal(*read), Some(ordinal));
-        assert_eq!(next.shape.call_at(ordinal), Some(*read));
+        assert_eq!((*next.shape_for_test()).ordinal(*read), Some(ordinal));
+        assert_eq!((*next.shape_for_test()).call_at(ordinal), Some(*read));
     }
     assert_eq!(
         (*prior.shape_for_test()).calls().collect::<Vec<_>>(),
@@ -72,7 +72,7 @@ fn insert_retire_changes_only_paths_preserving_order_history_range_and_fresh_clo
     assert!(!edit.maps(0..6, 0..6));
     assert!(!edit.maps(2..6, 2..6));
     assert!(edit.matches_prior(prior.shape_for_test()));
-    assert!(!edit.matches_prior(next.shape()));
+    assert!(!edit.matches_prior(next.shape_for_test()));
     assert!(edit.closes_fresh(&BTreeSet::from([read(8)])));
     assert!(!edit.closes_fresh(&BTreeSet::new()));
     assert!(!edit.closes_fresh(&BTreeSet::from([read(1), read(8)])));
@@ -86,7 +86,7 @@ fn insert_retire_changes_only_paths_preserving_order_history_range_and_fresh_clo
         for end in start + 1..=truth.len() {
             let summary = next.summary(start..end, true).unwrap();
             assert_eq!(
-                summary.declared,
+                (*summary.declared_for_test()),
                 Some(
                     truth[start..end]
                         .iter()
@@ -95,10 +95,10 @@ fn insert_retire_changes_only_paths_preserving_order_history_range_and_fresh_clo
                 )
             );
             assert_eq!(
-                summary.accounting.unwrap().consumed,
+                (*(*summary.accounting_for_test()).unwrap().consumed_for_test()),
                 truth[start..end]
                     .iter()
-                    .map(|(_, (charge, _))| (*charge.accounting_for_test()).unwrap().consumed)
+                    .map(|(_, (charge, _))| (*(*charge.accounting_for_test()).unwrap().consumed_for_test()))
                     .sum::<usize>()
             );
         }
@@ -110,8 +110,8 @@ fn insert_retire_changes_only_paths_preserving_order_history_range_and_fresh_clo
         let mut full = Budget::bounded_for_test(remaining);
         let expected = truth.iter().position(|(_, (charge, _))| {
             let charge = (*charge.accounting_for_test()).unwrap();
-            if full.can_afford_for_test(charge.demand) {
-                assert!(full.consume_for_test(charge.consumed));
+            if full.can_afford_for_test((*charge.demand_for_test())) {
+                assert!(full.consume_for_test((*charge.consumed_for_test())));
                 false
             } else {
                 true
@@ -119,21 +119,21 @@ fn insert_retire_changes_only_paths_preserving_order_history_range_and_fresh_clo
         });
         let mut ranged = Budget::bounded_for_test(remaining);
         let actual = next
-            .visit(0..truth.len(), &BTreeSet::new(), &mut |visit| -> Result<
+            .visit_for_test(0..truth.len(), &BTreeSet::new(), &mut |visit| -> Result<
                 bool,
                 usize,
             > {
                 match visit {
                     CallVisit::Range(_, sum) => {
                         let cost = (*sum.accounting_for_test()).unwrap();
-                        Ok(ranged.carry_for_test(cost.demand, cost.consumed))
+                        Ok(ranged.carry_for_test((*cost.demand_for_test()), (*cost.consumed_for_test())))
                     }
                     CallVisit::Leaf(at, _, charge, _) => {
                         let charge = (*charge.accounting_for_test()).unwrap();
-                        if !ranged.can_afford_for_test(charge.demand) {
+                        if !ranged.can_afford_for_test((*charge.demand_for_test())) {
                             return Err(at);
                         }
-                        assert!(ranged.consume_for_test(charge.consumed));
+                        assert!(ranged.consume_for_test((*charge.consumed_for_test())));
                         Ok(true)
                     }
                 }
@@ -146,23 +146,23 @@ fn insert_retire_changes_only_paths_preserving_order_history_range_and_fresh_clo
         );
     }
     let back = next
-        .shape()
-        .prepare_transition(
+        .shape_for_test()
+        .prepare_transition_for_test(
             &BTreeSet::from([read(1)]),
             &BTreeSet::from([read(8)]),
             &execution,
         )
         .unwrap();
     let returned = next
-        .edited(
+        .edited_for_test(
             &back,
             std::iter::once((read(1), &calls[1].1 .0, calls[1].1 .1)),
             &execution,
         )
         .unwrap();
-    assert!(returned.shape.calls().eq((*prior.shape_for_test()).calls()));
+    assert!((*returned.shape_for_test()).calls().eq((*prior.shape_for_test()).calls()));
     assert_eq!(
-        returned.summary(0..calls.len(), true).unwrap().declared,
+        (*returned.summary(0..calls.len(), true).unwrap().declared_for_test()),
         (*prior.summary(0..calls.len(), true).unwrap().declared_for_test())
     );
 }
@@ -196,15 +196,15 @@ fn refused_shape_edit_leaves_original_and_shape_views_usable() {
     );
     assert!(prior
         .shape_for_test()
-        .prepare_transition(&BTreeSet::from([read(8)]), &BTreeSet::new(), &narrow)
+        .prepare_transition_for_test(&BTreeSet::from([read(8)]), &BTreeSet::new(), &narrow)
         .is_err());
     assert!(prior
         .shape_for_test()
-        .prepare_transition(&BTreeSet::new(), &BTreeSet::from([read(99)]), &execution)
+        .prepare_transition_for_test(&BTreeSet::new(), &BTreeSet::from([read(99)]), &execution)
         .is_err());
     assert!(prior
         .shape_for_test()
-        .prepare_transition(
+        .prepare_transition_for_test(
             &BTreeSet::from([read(1)]),
             &BTreeSet::from([read(1)]),
             &execution
@@ -212,7 +212,7 @@ fn refused_shape_edit_leaves_original_and_shape_views_usable() {
         .is_err());
     let edit = prior
         .shape_for_test()
-        .prepare_transition(&BTreeSet::from([read(8)]), &BTreeSet::new(), &execution)
+        .prepare_transition_for_test(&BTreeSet::from([read(8)]), &BTreeSet::new(), &execution)
         .unwrap();
     assert!(
         prior.edited_for_test(&edit, std::iter::empty(), &execution).is_err(),
@@ -226,7 +226,7 @@ fn refused_shape_edit_leaves_original_and_shape_views_usable() {
         )
         .is_err());
     drop(edit);
-    assert_eq!(shape.len(), calls.len());
+    assert_eq!(shape.len_for_test(), calls.len());
     drop(prior);
     assert!(execution.reserve(1 << 24).is_err());
     drop(shape);

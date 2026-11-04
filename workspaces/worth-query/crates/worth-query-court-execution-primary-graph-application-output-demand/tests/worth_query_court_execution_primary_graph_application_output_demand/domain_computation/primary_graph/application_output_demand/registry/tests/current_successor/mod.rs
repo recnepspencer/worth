@@ -15,7 +15,7 @@ fn registry_current_successor_pin_acknowledges_only_its_native_current_proof() {
         let other = key("foreign-answer", 2, 2);
         let (old_member, answer_member, other_member) = {
             let mut state = (*registry.state_for_test()).lock().unwrap();
-            state.records.insert(
+            (*state.records_for_test()).insert_for_test(
                 old.clone(),
                 record(
                     occurrence(),
@@ -26,29 +26,29 @@ fn registry_current_successor_pin_acknowledges_only_its_native_current_proof() {
                     1,
                 ),
             );
-            state.records.insert(
+            (*state.records_for_test()).insert_for_test(
                 newest.clone(),
                 record(occurrence(), worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::closed_retirement::ready(), 1),
             );
-            state.records.insert(
+            (*state.records_for_test()).insert_for_test(
                 other.clone(),
                 record(occurrence(), worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::closed_retirement::ready(), 1),
             );
             for key in [&old, &newest, &other] {
                 retain_owned_key(&mut state, key);
-                let member = state.prepare_required_member(key).unwrap();
-                state.install_required_member(member);
+                let member = state.prepare_required_member_for_test(key).unwrap();
+                state.install_required_member_for_test(member);
             }
             (
-                Arc::clone(state.records[&old].work_membership.as_ref().unwrap()),
-                Arc::clone(state.records[&newest].work_membership.as_ref().unwrap()),
-                Arc::clone(state.records[&other].work_membership.as_ref().unwrap()),
+                Arc::clone((*(*state.records_for_test())[&old].work_membership_for_test()).as_ref().unwrap()),
+                Arc::clone((*(*state.records_for_test())[&newest].work_membership_for_test()).as_ref().unwrap()),
+                Arc::clone((*(*state.records_for_test())[&other].work_membership_for_test()).as_ref().unwrap()),
             )
         };
         let mut work = old_member.fixture_selected_work();
         registry.pin_current_required_successor_for_test(&mut work).unwrap();
         // The cause stays on the predecessor even though its answer is newer.
-        assert_eq!(work.key(), &old);
+        assert_eq!(work.key_for_test(), &old);
         CurrentProof::with_current_fixture_basis(
             if foreign {
                 &other_member
@@ -56,15 +56,15 @@ fn registry_current_successor_pin_acknowledges_only_its_native_current_proof() {
                 &answer_member
             },
             |proof| {
-                let result = work.acknowledge_current_admitted(proof);
+                let result = work.acknowledge_current_admitted_for_test(proof);
                 if foreign {
                     assert!(
                         matches!(result, Err(ref denial) if denial.kind() == WorthQueryOutputDemandDenialKind::ForeignDemand)
                     );
-                    assert!(old_member.fixture_is_unresolved());
+                    assert!(old_member.fixture_is_unresolved_for_test());
                 } else {
                     assert!(result.is_ok());
-                    assert!(!old_member.fixture_is_unresolved());
+                    assert!(!old_member.fixture_is_unresolved_for_test());
                 }
             },
         );

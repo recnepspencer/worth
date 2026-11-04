@@ -36,8 +36,8 @@ fn principal_target_retarget_aba_does_not_revive_older_approval() {
         .runtime_for_test())
         .primary_graph()
         .unwrap()
-        .layout()
-        .principal_binding(world.binding.binding())
+        .layout_for_test()
+        .principal_binding_for_test(world.binding.binding())
         .unwrap();
     let other = world
         .application
@@ -62,7 +62,7 @@ fn principal_target_retarget_aba_does_not_revive_older_approval() {
                 &host_custody.borrowed_request_for_test(),
                 &world,
                 principal.target_relation_id_for_test(),
-                binding.relation_kind,
+                (*binding.relation_kind_for_test()),
                 principal.mapping_entity_id_for_test(),
                 other,
             )
@@ -76,7 +76,7 @@ fn principal_target_retarget_aba_does_not_revive_older_approval() {
                 &host_custody.borrowed_request_for_test(),
                 &world,
                 principal.target_relation_id_for_test(),
-                binding.relation_kind,
+                (*binding.relation_kind_for_test()),
                 principal.mapping_entity_id_for_test(),
                 principal.principal_entity_id_for_test(),
             )

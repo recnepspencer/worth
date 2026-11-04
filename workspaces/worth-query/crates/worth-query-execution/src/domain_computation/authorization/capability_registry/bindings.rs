@@ -165,3 +165,5 @@ pub(in crate::domain_computation::authorization) const fn field_binding(
         ApplicationCapabilityFieldDimension::Bound(binding) => Some(binding),
     }
 }
+
+mod court_doors_for_test;

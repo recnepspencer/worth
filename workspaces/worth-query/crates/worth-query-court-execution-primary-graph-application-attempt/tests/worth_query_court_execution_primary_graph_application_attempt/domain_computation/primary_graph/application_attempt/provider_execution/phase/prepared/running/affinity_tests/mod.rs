@@ -101,7 +101,7 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
                 .is_err());
             assert!(substitute_lease.release_for_test());
 
-            let foreign_branch_snapshot = lease.handle_for_test().with_runtime_mut(
+            let foreign_branch_snapshot = lease.handle_for_test().with_runtime_mut_for_test(
                 &phase
                     .execution_request_for_for_test(&(*world.application.product_runtime_for_test()))
                     .expect("fixture issuer"),
@@ -136,7 +136,7 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
                 lease.product(),
             )
             .is_err());
-            assert!(lease.handle_for_test().with_runtime_mut(
+            assert!(lease.handle_for_test().with_runtime_mut_for_test(
                 &phase
                     .execution_request_for_for_test(&(*world.application.product_runtime_for_test()))
                     .expect("fixture issuer"),

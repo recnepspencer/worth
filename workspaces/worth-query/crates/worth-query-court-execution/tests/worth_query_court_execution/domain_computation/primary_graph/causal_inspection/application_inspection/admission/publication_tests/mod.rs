@@ -107,7 +107,7 @@ fn cancelled_after_consuming_completion_cannot_publish_and_keeps_original_payer(
                                 crate::domain_computation::primary_graph::causal_inspection::application_inspection::admission::publication_tests::affinity::assert_subject_affinity(
                                     &read,
                                     &execution,
-                                    principal.principal_for_test().principal_entity_id(),
+                                    principal.principal_for_test().principal_entity_id_for_test(),
                                 );
                                 let report = read
                                     .materialize_for_test(&execution)
@@ -119,23 +119,23 @@ fn cancelled_after_consuming_completion_cannot_publish_and_keeps_original_payer(
                             },
                         )
                         .unwrap_or_else(|_| panic!("issued identity continuation succeeds"));
-                    let (_, product, basis) = selected.into_parts();
+                    let (_, product, basis) = selected.into_parts_for_test();
                     drop(product);
                     let completed = terminal
-                        .complete(&execution, basis.release())
+                        .complete_for_test(&execution, basis.release())
                         .unwrap_or_else(|_| panic!("actual session completes after release"));
                     (completed, report)
                 };
                 let (mut completed, report) = complete();
                 let (mut other, _) = complete();
                 drop(complete);
-                completed.assert_completion_facts(&mut other, &execution, &report);
+                completed.assert_completion_facts_for_test(&mut other, &execution, &report);
                 completed_actual_terminal = true;
                 assert!(memory.as_ref().unwrap().bytes() > 0);
                 cancellation.cancel();
                 failed = Some(
                     completed
-                        .publish(&execution, &original, report, &mut memory)
+                        .publish_for_test(&execution, &original, report, &mut memory)
                         .err()
                         .expect("cancelled final publication cannot return prepared success"),
                 );

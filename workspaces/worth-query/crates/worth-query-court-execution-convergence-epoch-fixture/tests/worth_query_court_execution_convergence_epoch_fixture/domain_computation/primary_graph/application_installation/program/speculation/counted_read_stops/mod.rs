@@ -289,7 +289,7 @@ fn failed_preview_discard_retains_original_owner_after_every_readmission_stop() 
                     };
                     let (preview, denial) = preview.discard().unwrap_err();
                     assert_eq!(denial.kind(), worth_runtime_bridge::facade::BridgeSpeculationErrorKind::PreviewResidueClassificationMismatch);
-                    assert_eq!(preview.handle.execution_record().digest(), original);
+                    assert_eq!((*preview.handle_for_test()).execution_record().digest(), original);
                     assert!(observer.admit_active_session().is_some());
                     *retained.borrow_mut() = Some(preview);
                     cause.map_or(Ok(()), Err)
@@ -298,7 +298,7 @@ fn failed_preview_discard_retains_original_owner_after_every_readmission_stop() 
             drop(fault);
             let preview = retained.into_inner().unwrap();
             let readmitted = runtime.with_host_advancement(|phase| preview.readmit(&phase, &runtime)).unwrap().unwrap();
-            assert_eq!(readmitted.session.handle.execution_record().digest(), original);
+            assert_eq!((*(*readmitted.session_for_test()).handle_for_test()).execution_record().digest(), original);
             readmitted.discard().unwrap();
             assert!(observer.admit_active_session().is_none());
             answer

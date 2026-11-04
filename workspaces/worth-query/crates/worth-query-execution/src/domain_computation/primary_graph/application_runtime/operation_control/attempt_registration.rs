@@ -295,3 +295,5 @@ mod arrival_tests {
         assert!(!aborted.wait_for_arrivals());
     }
 }
+
+mod court_doors_for_test;

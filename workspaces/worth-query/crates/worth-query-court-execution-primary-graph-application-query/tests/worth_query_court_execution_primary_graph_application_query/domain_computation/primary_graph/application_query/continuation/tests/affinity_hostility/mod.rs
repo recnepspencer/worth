@@ -81,7 +81,7 @@ fn wrong_provider_descriptor_denies_before_fresh_admission() {
             context.issue(&host_custody)
         })
         .expect("the fixture read owns its installed host call");
-    (*continuation.provider_identity_for_test()).push_str(".foreign");
+    (*continuation.provider_identity_mut_for_test()).push_str(".foreign");
     let acquisitions = context.basis_acquisitions();
     let request = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
 

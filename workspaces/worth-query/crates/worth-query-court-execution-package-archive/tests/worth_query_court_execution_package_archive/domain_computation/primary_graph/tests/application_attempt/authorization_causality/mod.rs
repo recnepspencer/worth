@@ -185,14 +185,14 @@ pub fn revoke_account_ownership(
     world: &AuthorizationWorld,
     account: worth_relational::facade::identity::EntityId,
 ) {
-    let graph = (*world.application.primary_provider_for_test()).graph.clone();
-    let relation_kind = graph
-        .layout
+    let graph = (*(*world.application.primary_provider_for_test()).graph_for_test()).clone();
+    let relation_kind = (*(*graph
+        .layout_for_test())
         .relation(AccountOwner::reference().name())
         .expect("account ownership is installed")
-        .kind;
+        .kind_for_test());
     let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
-    let relation = graph.with_runtime_mut(execution, |runtime| {
+    let relation = graph.with_runtime_mut_for_test(execution, |runtime| {
         let snapshot = selected.application_basis_for_test().snapshot_handle();
         runtime
             .read_truth()

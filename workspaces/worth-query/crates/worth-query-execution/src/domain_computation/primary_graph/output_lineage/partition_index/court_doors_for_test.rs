@@ -47,3 +47,29 @@ impl WorthQueryApplicationOutputLineage {
         )
     }
 }
+
+impl OutputPartitionIndex {
+    #[doc(hidden)]
+    pub fn insert_for_test(
+        &mut self,
+        source: SemanticSource,
+        occurrence: ProductBranchIncarnation,
+        generation: u64,
+        partition: Option<[u8; 32]>,
+        slot: usize,
+    ) {
+        Self::insert(self, source, occurrence, generation, partition, slot)
+    }
+}
+
+impl OutputPartitionIndex {
+    #[doc(hidden)]
+    pub fn insert_vacancy_for_test(
+        &mut self,
+        source: SemanticSource,
+        coordinate: ProductCoordinate,
+        partition: Option<[u8; 32]>,
+    ) -> Arc<OnceLock<usize>> {
+        Self::insert_vacancy(self, source, coordinate, partition)
+    }
+}

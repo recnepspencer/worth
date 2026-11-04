@@ -30,7 +30,7 @@ pub fn colliding(
     kept: PartitionItemId,
     key: &Parity,
 ) -> ComputationPrior {
-    let typed = std::mem::replace(&mut (*sealed.state_mut_for_test()).typed, Arc::new(()))
+    let typed = std::mem::replace(&mut (*(*sealed.state_mut_for_test()).typed_mut_for_test()), Arc::new(()))
         .downcast::<RetainedPartitions<Parity, Number, u64>>()
         .expect("the run retains its partitions");
     let mut typed = Arc::try_unwrap(typed)
@@ -39,20 +39,20 @@ pub fn colliding(
     let mut foreign = digest_of(key);
     foreign[31] ^= 1;
     let mut routing = ComputationPartitionRouting::default();
-    for (identity, partition) in typed.partitions.iter() {
-        for item in typed.routing.members(*identity) {
+    for (identity, partition) in (*typed.partitions_for_test()).iter_for_test() {
+        for item in (*typed.routing_for_test()).members_for_test(*identity) {
             let digest = if item == kept {
                 foreign
             } else {
-                digest_of(&partition.key)
+                digest_of(&(*partition.key_for_test()))
             };
             routing
                 .route_for_test(item, digest, |_| Ok(()))
                 .expect("the item routes");
         }
     }
-    typed.routing = Arc::new(routing);
-    (*sealed.state_for_test()).typed = Arc::new(typed);
+    (*typed.routing_mut_for_test()) = Arc::new(routing);
+    (*(*sealed.state_for_test()).typed_mut_for_test()) = Arc::new(typed);
     moved_facts(sealed, false)
 }
 
@@ -109,20 +109,20 @@ fn replacing_a_sole_member_key_with_a_prefix_collision_matches_a_fresh_run() {
         .sealed
         .unwrap()
         .unwrap();
-    let typed = std::mem::replace(&mut (*sealed.state_mut_for_test()).typed, Arc::new(()))
+    let typed = std::mem::replace(&mut (*(*sealed.state_mut_for_test()).typed_mut_for_test()), Arc::new(()))
         .downcast::<RetainedPartitions<Parity, Number, u64>>()
         .unwrap();
     let mut typed = Arc::try_unwrap(typed).ok().unwrap();
-    let identity = typed.routing.partition_of(PartitionItemId(1)).unwrap();
+    let identity = (*typed.routing_for_test()).partition_of_for_test(PartitionItemId(1)).unwrap();
     let b_digest = digest_of(&Parity(0));
     let mut a_digest = b_digest;
     a_digest[31] ^= 1;
     assert_eq!(&a_digest[..8], &b_digest[..8]);
     assert_ne!(a_digest, b_digest);
-    let partition = typed.partitions.get(&identity).unwrap();
+    let partition = (*typed.partitions_for_test()).get_for_test(&identity).unwrap();
     let replacement = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::retained::RetainedPartition {
         key: Arc::new(Parity(42)),
-        gather: partition.gather.clone(),
+        gather: (*partition.gather_for_test()).clone(),
     };
     let request = live_scope();
     let execution = QueryRequestExecution::open_for_test(
@@ -133,9 +133,9 @@ fn replacing_a_sole_member_key_with_a_prefix_collision_matches_a_fresh_run() {
         ),
         &request,
     );
-    typed
-        .partitions
-        .put(
+    (*typed
+        .partitions_for_test())
+        .put_for_test(
             identity,
             replacement,
             execution.allocation_policy_for_test().unwrap(),
@@ -143,8 +143,8 @@ fn replacing_a_sole_member_key_with_a_prefix_collision_matches_a_fresh_run() {
         .unwrap();
     execution
         .with_native_lease_for_test(|lease| {
-            typed
-                .tree
+            (*typed
+                .tree_mut_for_test())
                 .update_native(identity, 62, Some(lease), || execution.checkpoint_for_test())
         })
         .unwrap()
@@ -153,14 +153,14 @@ fn replacing_a_sole_member_key_with_a_prefix_collision_matches_a_fresh_run() {
     routing
         .route_for_test(PartitionItemId(1), a_digest, |_| Ok(()))
         .unwrap();
-    typed.routing = Arc::new(routing);
-    (*sealed.state_for_test()).typed = Arc::new(typed);
+    (*typed.routing_mut_for_test()) = Arc::new(routing);
+    (*(*sealed.state_for_test()).typed_mut_for_test()) = Arc::new(typed);
     // Only the key call read this fact. Membership, item value and gathering
     // stayed unchanged, so a compact-identity-only test would carry A's leaf.
-    let (key, fact) = (*sealed
+    let (key, fact) = (*(*sealed
         .state_for_test())
-        .facts
-        .facts()
+        .facts_for_test())
+        .facts_for_test()
         .find(|(_, _, readers)| {
             readers
                 .reads()
@@ -171,7 +171,7 @@ fn replacing_a_sole_member_key_with_a_prefix_collision_matches_a_fresh_run() {
     let WorthQueryApplicationObservedFact::Field { entity_id, .. } = fact else {
         panic!("key field");
     };
-    (*sealed.state_for_test()).facts.replace_fact(
+    (*(*sealed.state_for_test()).facts_for_test()).replace_fact_for_test(
         &key,
         WorthQueryApplicationObservedFact::SourceEntity { entity_id },
     );
@@ -183,14 +183,14 @@ fn replacing_a_sole_member_key_with_a_prefix_collision_matches_a_fresh_run() {
     let next = next.sealed.unwrap().unwrap();
     let full = full.sealed.unwrap().unwrap();
     let keys = |sealed: &SealedComputationRun| {
-        (*sealed
+        (*(*sealed
             .state_for_test())
-            .typed
-            .downcast_ref::<RetainedPartitions<Parity, Number, u64>>()
+            .typed_for_test())
+            .downcast_ref::<RetainedPartitions<Parity, Number, u64>>(*()
             .unwrap()
-            .partitions
-            .values()
-            .map(|partition| partition.key.0)
+            .partitions_for_test())
+            .values_for_test()
+            .map(|partition| (*partition.key_for_test()).0)
             .collect::<Vec<_>>()
     };
     assert_eq!(keys(&next), keys(&full), "retained typed keys agree");

@@ -26,7 +26,7 @@ pub fn owner_path_fixture() -> (
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
-                    &phase_custody.phase_for_application(&world.application),
+                    &phase_custody.phase_for_application_for_test(&world.application),
                     AccountStatus::reference(),
                     "open".to_owned(),
                     &live_scope(),
@@ -36,10 +36,10 @@ pub fn owner_path_fixture() -> (
         })
         .expect("the fixture read owns its installed host call");
     let field = AccountStatus::reference();
-    let graph = (*world.application.primary_provider_for_test()).graph.clone();
-    let locator = graph
-        .layout
-        .field_locator(field.entity(), field.aspect(), field.field())
+    let graph = (*(*world.application.primary_provider_for_test()).graph_for_test()).clone();
+    let locator = (*graph
+        .layout_for_test())
+        .field_locator_for_test(field.entity(), field.aspect(), field.field())
         .unwrap()
         .clone();
     let operation = world
@@ -70,8 +70,8 @@ pub fn owner_path_fixture() -> (
     let fact = WorthQueryPrimaryGraphApplicationDecisionFact::application(
         read_scope.into(),
         WorthQueryApplicationObservedFact::Field {
-            entity_id: account.entity_id(),
-            kind: account.entity_kind(),
+            entity_id: account.entity_id_for_test(),
+            kind: account.entity_kind_for_test(),
             locator: locator.clone(),
             value: AspectValue::String(InternedString::from("open")),
         }
@@ -85,7 +85,7 @@ pub fn owner_path_fixture() -> (
                 .expect("fixture borrows its runtime request");
             let execution = &borrowed_execution;
 
-            validated_status_footprint(execution, &world, account.entity_id(), locator)
+            validated_status_footprint(execution, &world, account.entity_id_for_test(), locator)
         })
         .expect("the fixture read owns its installed host call");
     let Some(InstalledCorrectionMechanism::RecordedInverse(inverse)) =
@@ -97,7 +97,7 @@ pub fn owner_path_fixture() -> (
         inverse.preimage_demand().clone(),
         fact,
         footprint,
-        account.entity_id(),
+        account.entity_id_for_test(),
     )
 }
 
@@ -107,8 +107,8 @@ pub fn validated_status_footprint(
     entity: EntityId,
     locator: AspectFieldLocator,
 ) -> ValidatedMutationFootprint {
-    let graph = (*world.application.primary_provider_for_test()).graph.clone();
-    let validated = graph.with_runtime_mut(request_execution, |runtime| {
+    let graph = (*(*world.application.primary_provider_for_test()).graph_for_test()).clone();
+    let validated = graph.with_runtime_mut_for_test(request_execution, |runtime| {
         let fields = AspectFieldPatch::from(BTreeMap::from([(
             locator,
             AspectValue::String(InternedString::from("frozen")),

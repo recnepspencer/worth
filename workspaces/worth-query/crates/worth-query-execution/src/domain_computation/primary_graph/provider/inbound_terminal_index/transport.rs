@@ -118,3 +118,5 @@ impl WorthQueryInboundTerminalIndex {
         self.retain_sealed(sealed, protection)
     }
 }
+
+mod court_doors_for_test;

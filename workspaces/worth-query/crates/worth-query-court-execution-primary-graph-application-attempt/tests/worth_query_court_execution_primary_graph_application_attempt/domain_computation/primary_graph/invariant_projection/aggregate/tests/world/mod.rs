@@ -225,11 +225,11 @@ impl AggregateWorld {
             ._runtime
             .select_product_branch_for_test(execution, self._runtime.product_runtime().default_branch_for_test())
             .expect("aggregate product basis");
-        let product = selected.product().publication_binding();
+        let product = selected.product().publication_binding_for_test();
         let completed = self.authority.project_with_work_limit_for_test(
             execution,
             Some(maximum_work),
-            product.observation().basis().relational_basis().clone(),
+            product.observation_for_test().basis().relational_basis().clone(),
             |reader| {
                 let result = reader.summarize_exclusive_incoming(
                     AggregateContribution::reference(),
@@ -237,7 +237,7 @@ impl AggregateWorld {
                     &self.target,
                 );
                 denial.set(result.as_ref().err().map(|error| error.kind()));
-                work.set(reader.work);
+                work.set((*reader.work_for_test()));
                 result
             },
             None,
@@ -276,7 +276,7 @@ impl AggregateWorld {
         let locator = (*self
             .authority
             .layout_for_test())
-            .field_locator("AggregateSource", "SourceFacts", "SourceAmount")
+            .field_locator_for_test("AggregateSource", "SourceFacts", "SourceAmount")
             .expect("amount field is installed")
             .clone();
         let fields =

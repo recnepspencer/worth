@@ -71,15 +71,15 @@ pub fn native_prepared_records_are_admitted_before_effects_and_shared_until_last
                     .clone()
             })
             .expect("the fixture read owns its installed host call");
-        let graph = (*world.application.primary_provider_for_test()).graph.clone();
-        let kind = graph
-            .layout
-            .entity_kind(Account::reference().name())
+        let graph = (*(*world.application.primary_provider_for_test()).graph_for_test()).clone();
+        let kind = (*graph
+            .layout_for_test())
+            .entity_kind_for_test(Account::reference().name())
             .unwrap();
         let locator = |entity, aspect, field| {
-            graph
-                .layout
-                .field_locator(entity, aspect, field)
+            (*graph
+                .layout_for_test())
+                .field_locator_for_test(entity, aspect, field)
                 .unwrap()
                 .clone()
         };
@@ -122,10 +122,10 @@ pub fn native_prepared_records_are_admitted_before_effects_and_shared_until_last
         let candidate = world
             .application
             .with_host_advancement(|phase| {
-                graph.with_runtime_mut(&phase.borrowed_request_for_test(), |runtime| {
+                graph.with_runtime_mut_for_test(&phase.borrowed_request_for_test(), |runtime| {
                     let mut transaction = runtime
                         .begin_branch_transaction(
-                            product.relational_basis(),
+                            product.relational_basis_for_test(),
                             RelationalTransactionIntent::ordinary(),
                         )
                         .unwrap();
@@ -254,13 +254,13 @@ pub fn native_prepared_records_are_admitted_before_effects_and_shared_until_last
             Err(memory) if memory == worth_execution::MemoryLimitDenial::Capacity { requested: 1, admitted: 0, level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 } }
         ));
         let publication = product
-            .publication_binding()
-            .prepare_relational_candidate(candidate, &live_scope(), false)
+            .publication_binding_for_test()
+            .prepare_relational_candidate_for_test(candidate, &live_scope(), false)
             .expect("the actual product owner admits the prepared native candidate");
         let outcome = world
             .application
             .with_application_advancement(&live_scope(), |phase| {
-                publication.execute(
+                publication.execute_for_test(
                     phase
                         .execution_request_for_for_test(world.application.product_runtime())
                         .unwrap(),

@@ -30,7 +30,7 @@ fn concurrent_force_termination_cannot_be_reported_as_a_consumed_transition() {
     let handle = probe_handle_with_runtime_instance(91);
     let registry = handle.registry_arc_for_test();
     let slot = handle.registry_slot_for_test();
-    assert!(registry.mark_terminal(slot, WorthQueryRecoveryResourceTerminal::ForceTerminated));
+    assert!(registry.mark_terminal_for_test(slot, WorthQueryRecoveryResourceTerminal::ForceTerminated));
 
     let denied = handle
         .consume_for_test(WorthQueryRecoveryResourceTerminal::Consumed)
@@ -40,10 +40,10 @@ fn concurrent_force_termination_cannot_be_reported_as_a_consumed_transition() {
         WorthQueryRecoveryHandleDenialKind::AlreadyTerminal
     );
     assert_eq!(
-        registry.terminal_of(slot),
+        registry.terminal_of_for_test(slot),
         Some(WorthQueryRecoveryResourceTerminal::ForceTerminated)
     );
-    registry.assert_no_live_handles();
+    registry.assert_no_live_handles_for_test();
 }
 
 // R8.31 — the "fresh" in `require_fresh_effect_authority` has to mean fresh at
@@ -65,7 +65,7 @@ fn effect_authority_minted_before_expiry_denies_after_the_deadline() {
     // The handle really is past its deadline against the runtime's own clock,
     // so this is not a test that passes because nothing expired.
     assert!(matches!(
-        worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::recovery_progression::expiry::evaluate_expiry(&handle, registry.clock()).expect("clock samples"),
+        worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::recovery_progression::expiry::evaluate_expiry(&handle, registry.clock_for_test()).expect("clock samples"),
         worth_query_execution::facade::domain_computation::WorthQueryRecoveryExpiryEvaluation::Expired(_)
     ));
 
@@ -74,7 +74,7 @@ fn effect_authority_minted_before_expiry_denies_after_the_deadline() {
     assert_eq!(denied.kind(), WorthQueryRecoveryHandleDenialKind::Expired);
 
     drop(handle);
-    registry.assert_no_live_handles();
+    registry.assert_no_live_handles_for_test();
 }
 
 #[test]
@@ -91,7 +91,7 @@ fn inspect_authority_minted_before_expiry_denies_after_the_deadline() {
     assert_eq!(denied.kind(), WorthQueryRecoveryHandleDenialKind::Expired);
 
     drop(handle);
-    registry.assert_no_live_handles();
+    registry.assert_no_live_handles_for_test();
 }
 
 #[test]
@@ -114,8 +114,8 @@ fn effect_authority_denies_a_different_runtime_with_the_same_registry_slot() {
 
     drop(handle_a);
     drop(handle_b);
-    registry_a.assert_no_live_handles();
-    registry_b.assert_no_live_handles();
+    registry_a.assert_no_live_handles_for_test();
+    registry_b.assert_no_live_handles_for_test();
 }
 
 #[test]
@@ -138,8 +138,8 @@ fn inspect_authority_denies_a_different_runtime_with_the_same_registry_slot() {
 
     drop(handle_a);
     drop(handle_b);
-    registry_a.assert_no_live_handles();
-    registry_b.assert_no_live_handles();
+    registry_a.assert_no_live_handles_for_test();
+    registry_b.assert_no_live_handles_for_test();
 }
 
 #[test]
@@ -161,7 +161,7 @@ fn effect_authority_denies_a_different_handle_in_the_same_runtime() {
 
     drop(handle_a);
     drop(handle_b);
-    registry.assert_no_live_handles();
+    registry.assert_no_live_handles_for_test();
 }
 
 #[test]
@@ -183,7 +183,7 @@ fn inspect_authority_denies_a_different_handle_in_the_same_runtime() {
 
     drop(handle_a);
     drop(handle_b);
-    registry.assert_no_live_handles();
+    registry.assert_no_live_handles_for_test();
 }
 
 // Q8.20-C4 — the two foreignness denials must not collapse into one another.
@@ -222,15 +222,15 @@ fn admission_time_foreignness_and_proof_use_foreignness_are_different_causes() {
 
     drop(handle_a);
     drop(handle_b);
-    registry_a.assert_no_live_handles();
-    registry_b.assert_no_live_handles();
+    registry_a.assert_no_live_handles_for_test();
+    registry_b.assert_no_live_handles_for_test();
 }
 
 pub fn colliding_slot_handles() -> (WorthQueryRecoveryHandle, WorthQueryRecoveryHandle) {
     let handle_a = probe_handle_with_runtime_instance(11);
     let handle_b = probe_handle_with_runtime_instance(22);
-    assert_eq!(handle_a.registry_slot_for_test().as_u64(), 1);
-    assert_eq!(handle_b.registry_slot_for_test().as_u64(), 1);
+    assert_eq!(handle_a.registry_slot_for_test().as_u64_for_test(), 1);
+    assert_eq!(handle_b.registry_slot_for_test().as_u64_for_test(), 1);
     assert_ne!(handle_a.runtime_authority_for_test(), handle_b.runtime_authority_for_test());
     (handle_a, handle_b)
 }

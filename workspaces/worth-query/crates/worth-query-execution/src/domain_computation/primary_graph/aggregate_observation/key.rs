@@ -87,3 +87,5 @@ impl<Member> AggregateKey<Member> {
         self.definition
     }
 }
+
+mod court_doors_for_test;

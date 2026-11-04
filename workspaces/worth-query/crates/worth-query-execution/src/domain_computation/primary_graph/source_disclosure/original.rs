@@ -23,3 +23,5 @@ impl OriginalSourceDisclosure {
         self.0.same_capture(&other.0)
     }
 }
+
+mod court_doors_for_test;

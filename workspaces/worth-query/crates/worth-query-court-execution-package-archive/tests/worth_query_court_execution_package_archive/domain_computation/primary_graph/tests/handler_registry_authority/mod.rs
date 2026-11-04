@@ -83,7 +83,7 @@ fn handler_sealing_consumes_the_retained_installed_catalog() {
 
         (*bootstrap
             .mutation_handlers_for_test())
-            .seal(&schema, (*bootstrap.graph_for_test()).binding_identity())
+            .seal_for_test(&schema, (*bootstrap.graph_for_test()).binding_identity())
             .unwrap();
 
         assert_eq!(DECLARATION_CALLS.load(Ordering::SeqCst), 2);

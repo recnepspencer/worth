@@ -225,26 +225,26 @@ impl<'a> World<'a> {
                 .collect();
 
             if row.source {
-                (*record.source_commits_for_test()).push(context.commit(1));
+                (*record.source_commits_mut_for_test()).push(context.commit(1));
             }
             let wake = Arc::clone(&(*record.wake_for_test()));
-            state.records.insert(keys[id].clone(), record);
-            let member = state.prepare_required_member(&keys[id]).unwrap();
-            state.install_required_member(member);
+            (*state.records_for_test()).insert_for_test(keys[id].clone(), record);
+            let member = state.prepare_required_member_for_test(&keys[id]).unwrap();
+            state.install_required_member_for_test(member);
             retain_owned_key(&mut state, &keys[id]);
             owners.push((row.owners != 0).then(|| interest(&registry, keys[id].clone(), wake)));
         }
         for (&id, row) in &model.rows {
             if !row.claims.is_empty() {
-                let upstream = state.records[&keys[id]].prerequisites.clone();
+                let upstream = (*(*state.records_for_test())[&keys[id]].prerequisites_for_test()).clone();
                 let batch = state
-                    .prepare_claim_readthrough(&keys[id], &upstream)
+                    .prepare_claim_readthrough_for_test(&keys[id], &upstream)
                     .unwrap();
                 if let Some(batch) = &batch {
-                    batch.install();
-                    batch.publish();
+                    batch.install_for_test();
+                    batch.publish_for_test();
                 }
-                state.records.get_mut(&keys[id]).unwrap().claim_batch = batch;
+                (*(*state.records_for_test()).get_mut(&keys[id]).unwrap().claim_batch_mut_for_test()) = batch;
             }
         }
         for (&id, entry) in &model.custody {
@@ -312,18 +312,18 @@ impl<'a> World<'a> {
             )
             .map(|(interest, _pause)| interest)?;
         // This request row is unrelated to the compared domain; release through real Drop.
-        (*self.registry
+        (*(*(*self.registry
             .state_for_test())
             .lock()
             .unwrap()
-            .records
-            .get_mut(&interest.key)
+            .records_for_test())
+            .get_mut(&(*interest.key_for_test()))
             .unwrap()
-            .state = DemandState::Failed(WorthQueryOutputDemandDenial::new_for_test(
+            .state_mut_for_test()) = DemandState::Failed(WorthQueryOutputDemandDenial::new_for_test(
             WorthQueryOutputDemandDenialKind::NoEffect,
             "oracle request completed",
         ));
-        interest.requires_output = false;
+        (*interest.requires_output_mut_for_test()) = false;
         drop(interest);
         Ok(())
     }

@@ -10,7 +10,7 @@ fn unwind_after_performed_publication_preserves_one_exact_retriable_record() {
     let _live = (*world
         .application
         .primary_provider_for_test())
-        .observe_application_commit_causality(selected.product());
+        .observe_application_commit_causality_for_test(selected.product());
     let request = live_scope();
     let principal = world
         .application
@@ -114,10 +114,10 @@ fn unwind_after_performed_publication_preserves_one_exact_retriable_record() {
     let emissions = (*world
         .application
         .primary_provider_for_test())
-        .committed_application_emissions(recovered.committed_product_publication());
+        .committed_application_emissions_for_test(recovered.committed_product_publication());
     assert_eq!(emissions.len(), 1);
     assert_eq!(
-        emissions[0].payload::<String>().map(String::as_str),
+        emissions[0].payload_for_test::<String>().map(String::as_str),
         Some("post-performed-effect")
     );
 }

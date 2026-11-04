@@ -223,7 +223,7 @@ fn mandatory_review_receipt_cannot_cross_runtime_authority() {
             target
                 .application
                 .authorize_mandatory_review(
-                    &host_custody.phase_for_application(&target.application),
+                    &host_custody.phase_for_application_for_test(&target.application),
                     mandatory,
                     access,
                     &operation,
@@ -290,7 +290,7 @@ fn mandatory_review_receipt_rejects_a_different_selected_review() {
             world
                 .application
                 .authorize_mandatory_review(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     mandatory,
                     access,
                     &operation,

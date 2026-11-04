@@ -359,3 +359,5 @@ const fn lower_rule_effect(
         ApplicationAuthorizationPathEffect::Deny => BridgeAuthorizationRuleEffect::Prohibited,
     }
 }
+
+mod court_doors_for_test;

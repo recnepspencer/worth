@@ -39,7 +39,7 @@ pub fn whole_rows() -> Option<u64> {
     WHOLE_ROWS.with(std::cell::Cell::get)
 }
 impl DemandRecords {
-    pub(super) fn occurrence_visits_for_test(&self) -> u64 {
+    pub fn occurrence_visits_for_test(&self) -> u64 {
         self.4.get()
     }
 
@@ -232,7 +232,7 @@ mod observation {
     }
 
     impl DemandRecords {
-        pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn publication_count_for_test(
+        pub fn publication_count_for_test(
             &self,
         ) -> usize {
             self.3

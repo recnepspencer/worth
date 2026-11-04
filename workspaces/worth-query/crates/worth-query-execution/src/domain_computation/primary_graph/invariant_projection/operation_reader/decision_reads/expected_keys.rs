@@ -137,3 +137,5 @@ fn union<'a>(
         (None, None) => None,
     })
 }
+
+mod court_doors_for_test;

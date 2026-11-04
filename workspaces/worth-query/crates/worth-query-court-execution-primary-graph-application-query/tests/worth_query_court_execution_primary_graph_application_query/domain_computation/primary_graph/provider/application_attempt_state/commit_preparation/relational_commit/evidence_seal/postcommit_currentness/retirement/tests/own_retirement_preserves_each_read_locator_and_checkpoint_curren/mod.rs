@@ -13,7 +13,7 @@ fn own_retirement_preserves_each_read_locator_and_checkpoint_currentness() {
 let host_custody = phase.test_host_request_for_test();
 
 let (entity, kind, facts) = reads(
-            &host_custody.phase_for_application(&world.application),
+            &host_custody.phase_for_application_for_test(&world.application),
             execution,
             &world,
             "account-2",
@@ -21,7 +21,7 @@ let (entity, kind, facts) = reads(
         let locators = facts.iter().map(Fact::locator_identity_for_test).collect::<Vec<_>>();
         assert!(
             rebase_current(
-                &host_custody.phase_for_application(&world.application),
+                &host_custody.phase_for_application_for_test(&world.application),
                 &host_custody.borrowed_request_for_test(),
                 &world,
                 facts.clone(),
@@ -32,7 +32,7 @@ let (entity, kind, facts) = reads(
         );
         delete(&host_custody.borrowed_request_for_test(), &world, entity);
         let retired = rebase_current(
-            &host_custody.phase_for_application(&world.application),
+            &host_custody.phase_for_application_for_test(&world.application),
             &host_custody.borrowed_request_for_test(),
             &world,
             facts.clone(),
@@ -53,7 +53,7 @@ let (entity, kind, facts) = reads(
         );
         assert!(retired.iter().all(|fact| matches!(fact, Fact::RetiredOutputEntity { entity_id, kind: actual, .. } if *entity_id == entity && *actual == kind)));
         assert!(selection(
-            &host_custody.phase_for_application(&world.application),
+            &host_custody.phase_for_application_for_test(&world.application),
             execution,
             &world,
             &retired
@@ -72,13 +72,13 @@ let (entity, kind, facts) = reads(
         .unwrap();
         assert_eq!(restored.iter().cloned().collect::<Vec<_>>(), retired.as_slice());
         assert!(selection(
-            &host_custody.phase_for_application(&world.application),
+            &host_custody.phase_for_application_for_test(&world.application),
             execution,
             &world,
             &restored
         ));
         let external = rebase_current(
-            &host_custody.phase_for_application(&world.application),
+            &host_custody.phase_for_application_for_test(&world.application),
             &host_custody.borrowed_request_for_test(),
             &world,
             facts,
@@ -88,7 +88,7 @@ let (entity, kind, facts) = reads(
         assert!(!matches!(external[0], Fact::RetiredOutputEntity { .. }));
         assert!(
             !selection(
-                &host_custody.phase_for_application(&world.application),
+                &host_custody.phase_for_application_for_test(&world.application),
                 execution,
                 &world,
                 &external
@@ -122,7 +122,7 @@ let (entity, kind, facts) = reads(
             ),
             (
                 reads(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     execution,
                     &world,
                     "account-1",
@@ -133,7 +133,7 @@ let (entity, kind, facts) = reads(
             ),
         ] {
             assert!(!selection(
-                &host_custody.phase_for_application(&world.application),
+                &host_custody.phase_for_application_for_test(&world.application),
                 execution,
                 &world,
                 &[Fact::RetiredOutputEntity {
@@ -150,7 +150,7 @@ let (entity, kind, facts) = reads(
             *deleted_at = worth_relational::facade::identity::VersionId(deleted_at.as_u64() + 1);
         }
         assert!(!selection(
-            &host_custody.phase_for_application(&world.application),
+            &host_custody.phase_for_application_for_test(&world.application),
             execution,
             &world,
             &[changed_deletion]

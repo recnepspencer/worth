@@ -138,8 +138,8 @@ fn two_real_relation_deletes_share_one_ordered_provisional_step_through_commit()
             .with_host_advancement(|phase| {
                 let host_custody = phase.test_host_request_for_test();
                 authenticated(
-                    &host_custody.phase_for_application(&world.application),
-                    &(host_custody.phase_for_application(&world.application))
+                    &host_custody.phase_for_application_for_test(&world.application),
+                    &(host_custody.phase_for_application_for_test(&world.application))
                         .borrowed_request_for_test(),
                     &world,
                     "alice",
@@ -155,7 +155,7 @@ fn two_real_relation_deletes_share_one_ordered_provisional_step_through_commit()
                 .with_host_advancement(|phase| {
                     let host_custody = phase.test_host_request_for_test();
                     resolved_principal(
-                        &host_custody.phase_for_application(&world.application),
+                        &host_custody.phase_for_application_for_test(&world.application),
                         &host_custody.borrowed_request_for_test(),
                         &world,
                         1,
@@ -168,8 +168,8 @@ fn two_real_relation_deletes_share_one_ordered_provisional_step_through_commit()
                 .with_host_advancement(|phase| {
                     let host_custody = phase.test_host_request_for_test();
                     resolved_account(
-                        &(host_custody.phase_for_application(&world.application))
-                            .test_host_request(),
+                        &(host_custody.phase_for_application_for_test(&world.application))
+                            .test_host_request_for_test(),
                         &world,
                         status,
                         &request,
@@ -181,7 +181,7 @@ fn two_real_relation_deletes_share_one_ordered_provisional_step_through_commit()
                 .with_host_advancement(|phase| {
                     let host_custody = phase.test_host_request_for_test();
                     link_program(
-                        &host_custody.phase_for_application(&world.application),
+                        &host_custody.phase_for_application_for_test(&world.application),
                         &world,
                         &actor,
                         &principal,
@@ -207,7 +207,7 @@ fn two_real_relation_deletes_share_one_ordered_provisional_step_through_commit()
             .with_host_advancement(|phase| {
                 let host_custody = phase.test_host_request_for_test();
                 resolved_principal(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     &host_custody.borrowed_request_for_test(),
                     &world,
                     1,
@@ -220,7 +220,7 @@ fn two_real_relation_deletes_share_one_ordered_provisional_step_through_commit()
             .with_host_advancement(|phase| {
                 let host_custody = phase.test_host_request_for_test();
                 resolved_account(
-                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                     &world,
                     "open",
                     &request,
@@ -232,7 +232,7 @@ fn two_real_relation_deletes_share_one_ordered_provisional_step_through_commit()
             .with_host_advancement(|phase| {
                 let host_custody = phase.test_host_request_for_test();
                 resolved_account(
-                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                     &world,
                     "unrelated",
                     &request,
@@ -250,11 +250,11 @@ fn two_real_relation_deletes_share_one_ordered_provisional_step_through_commit()
                 let host_custody = phase.test_host_request_for_test();
                 world
                     .selected_product(
-                        &(host_custody.phase_for_application(&world.application))
-                            .test_host_request(),
+                        &(host_custody.phase_for_application_for_test(&world.application))
+                            .test_host_request_for_test(),
                     )
                     .authorize_operation(
-                        &host_custody.phase_for_application(&world.application),
+                        &host_custody.phase_for_application_for_test(&world.application),
                         &actor,
                         &principal,
                         &operation,
@@ -271,7 +271,7 @@ fn two_real_relation_deletes_share_one_ordered_provisional_step_through_commit()
                 world
                     .invariant
                     .project_admitted_operation(
-                        &host_custody.phase_for_application(&world.application),
+                        &host_custody.phase_for_application_for_test(&world.application),
                         &admission,
                         |reader, principal| {
                             reader
@@ -291,14 +291,14 @@ fn two_real_relation_deletes_share_one_ordered_provisional_step_through_commit()
                 world
                     .application
                     .begin_projected_application_read_attempt(
-                        &host_custody.phase_for_application(&world.application),
+                        &host_custody.phase_for_application_for_test(&world.application),
                         admission,
                         projection,
                         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                     )
                     .unwrap()
                     .complete_projected_dependencies(
-                        &host_custody.phase_for_application(&world.application),
+                        &host_custody.phase_for_application_for_test(&world.application),
                         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                     )
                     .unwrap()
@@ -335,13 +335,13 @@ fn two_real_relation_deletes_share_one_ordered_provisional_step_through_commit()
             .with_host_advancement(|phase| {
                 let host_custody = phase.test_host_request_for_test();
                 assert_membership_absent(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     &world,
                     &actor,
                     &principal,
                     &resolved_account(
-                        &(host_custody.phase_for_application(&world.application))
-                            .test_host_request(),
+                        &(host_custody.phase_for_application_for_test(&world.application))
+                            .test_host_request_for_test(),
                         &world,
                         "open",
                         &request,
@@ -356,13 +356,13 @@ fn two_real_relation_deletes_share_one_ordered_provisional_step_through_commit()
             .with_host_advancement(|phase| {
                 let host_custody = phase.test_host_request_for_test();
                 assert_membership_absent(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     &world,
                     &actor,
                     &principal,
                     &resolved_account(
-                        &(host_custody.phase_for_application(&world.application))
-                            .test_host_request(),
+                        &(host_custody.phase_for_application_for_test(&world.application))
+                            .test_host_request_for_test(),
                         &world,
                         "unrelated",
                         &request,

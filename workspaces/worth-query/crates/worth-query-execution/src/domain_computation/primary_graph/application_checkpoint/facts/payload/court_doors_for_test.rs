@@ -14,3 +14,17 @@ impl FactPayload {
         Self::is_empty(self)
     }
 }
+
+impl FactPayload {
+    #[doc(hidden)]
+    pub fn same_backing_for_test(&self, other: &Self) -> bool {
+        Self::same_backing(self, other)
+    }
+}
+
+impl FactPayload {
+    #[doc(hidden)]
+    pub fn len_for_test(&self) -> usize {
+        Self::len(self)
+    }
+}

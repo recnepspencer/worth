@@ -23,7 +23,7 @@ pub fn insert(
     checkpoint: Checkpoint,
 ) {
     let occurrence = checkpoint.receipt().unwrap().product_branch().occurrence_for_test();
-    (*registry.state_for_test()).lock().unwrap().records.insert(
+    (*(*registry.state_for_test()).lock().unwrap().records_for_test()).insert_for_test(
         key.clone(),
         record(
             occurrence,
@@ -45,7 +45,7 @@ pub fn owner(
     registry: &WorthQueryOutputDemandRegistry,
     key: WorthQueryOutputDemandKey,
 ) -> WorthQueryOutputDemandInterest {
-    let wake = Arc::clone(&(*registry.state_for_test()).lock().unwrap().records[&key].wake);
+    let wake = Arc::clone(&(*(*(*registry.state_for_test()).lock().unwrap().records_for_test())[&key].wake_for_test()));
     interest(registry, key, wake)
 }
 pub fn returned(
@@ -84,7 +84,7 @@ fn old_cell_cannot_finish_a_replacement_row_with_the_same_numeric_claim() {
         unreachable!()
     };
     assert!(
-        original.same(&ready_backing.generation_for_test()),
+        original.same_for_test(&ready_backing.generation_for_test()),
         "actual old cell returned"
     );
     assert!(
@@ -94,7 +94,7 @@ fn old_cell_cannot_finish_a_replacement_row_with_the_same_numeric_claim() {
         "the genuine replacement cell is lawful under the equal ordinal"
     );
     let state = (*registry.state_for_test()).lock().unwrap();
-    let DemandState::Output(output) = &state.records[&key].state else {
+    let DemandState::Output(output) = &(*(*state.records_for_test())[&key].state_for_test()) else {
         unreachable!()
     };
     assert!(!output.owns_checkpoint_for_test(&old_checkpoint));
@@ -121,7 +121,7 @@ fn foreign_registry_and_missing_record_return_the_exact_claimed_cell() {
         foreign.finish_checkpoint_owned_for_test(&owner, claim, checkpoint, None),
         WorthQueryOutputDemandDenialKind::ForeignDemand,
     );
-    let removed = (*registry.state_for_test()).lock().unwrap().records.remove(&key);
+    let removed = (*(*registry.state_for_test()).lock().unwrap().records_for_test()).remove_for_test(&key);
     drop(removed);
     let checkpoint = returned(
         registry.finish_checkpoint_owned_for_test(&owner, claim, checkpoint, None),
@@ -130,7 +130,7 @@ fn foreign_registry_and_missing_record_return_the_exact_claimed_cell() {
     let Checkpoint::Published { ready_backing, .. } = &checkpoint else {
         unreachable!()
     };
-    assert!(original.same(&ready_backing.generation_for_test()));
+    assert!(original.same_for_test(&ready_backing.generation_for_test()));
 }
 
 #[test]
@@ -150,8 +150,8 @@ fn cleanup_claim_keeps_the_original_stop_and_refuses_a_second_borrow() {
     assert_eq!(stop.kind(), WorthQueryOutputDemandDenialKind::Closed);
     let (cleanup_claim, checkpoint) = {
         let mut state = (*registry.state_for_test()).lock().unwrap();
-        let mut row = state.records.get_mut(&key).unwrap();
-        let DemandState::Output(output) = &mut row.state else {
+        let mut row = (*state.records_for_test()).get_mut(&key).unwrap();
+        let DemandState::Output(output) = &mut (*row.state_mut_for_test()) else {
             unreachable!()
         };
         let claimed = output
@@ -162,7 +162,7 @@ fn cleanup_claim_keeps_the_original_stop_and_refuses_a_second_borrow() {
             output.claim_stopped_checkpoint_for_close_for_test().is_none(),
             "no double loan"
         );
-        row.finish();
+        row.finish_for_test();
         claimed
     };
     assert!(matches!(registry.begin_for_test(&owner), Admission::Failed(ref denial) if denial == &stop));
@@ -173,7 +173,7 @@ fn cleanup_claim_keeps_the_original_stop_and_refuses_a_second_borrow() {
     {
         let state = (*registry.state_for_test()).lock().unwrap();
         assert!(matches!(
-            state.records[&key].idle_disposition(false),
+            (*state.records_for_test())[&key].idle_disposition_for_test(false),
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::disposition::IdleRowDisposition::InFlight
         ));
     }

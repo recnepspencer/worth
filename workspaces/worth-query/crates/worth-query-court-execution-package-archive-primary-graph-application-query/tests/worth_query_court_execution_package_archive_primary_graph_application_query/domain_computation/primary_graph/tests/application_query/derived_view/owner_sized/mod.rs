@@ -46,11 +46,11 @@ fn owner_sized_image_grows_from_actual_census_and_preserves_clean_arcs() {
             let resolve = |label: &str| {
                 world
                     .selected_product(
-                        &(host_custody.phase_for_application(&world.application))
-                            .test_host_request(),
+                        &(host_custody.phase_for_application_for_test(&world.application))
+                            .test_host_request_for_test(),
                     )
                     .resolve_entity(
-                        &host_custody.phase_for_application(&world.application),
+                        &host_custody.phase_for_application_for_test(&world.application),
                         AccountLabel::reference(),
                         label.to_owned(),
                         &request,
@@ -62,10 +62,10 @@ fn owner_sized_image_grows_from_actual_census_and_preserves_clean_arcs() {
             let secondary = resolve("secondary");
             let owner = world
                 .selected_product(
-                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                 )
                 .resolve_entity(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     PrincipalIdentityField::reference(),
                     1_u64,
                     &request,
@@ -73,11 +73,11 @@ fn owner_sized_image_grows_from_actual_census_and_preserves_clean_arcs() {
                 )
                 .unwrap();
             let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-            let kind = graph
-                .layout
+            let kind = (*(*graph
+                .layout_for_test())
                 .relation(AccountOwner::reference().name())
                 .unwrap()
-                .kind;
+                .kind_for_test());
             let bind = |account, key| {
                 worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::product_publication::publish_relational_mutation(
                     &host_custody.borrowed_request_for_test(),
@@ -96,7 +96,7 @@ fn owner_sized_image_grows_from_actual_census_and_preserves_clean_arcs() {
             };
             bind(primary.entity_id_for_test(), "first-owner-member");
             let selected = world.selected_product(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
             );
             let view = world
                 .application
@@ -110,11 +110,11 @@ fn owner_sized_image_grows_from_actual_census_and_preserves_clean_arcs() {
                 .unwrap();
             let read_census = || {
                 let current = world.selected_product(
-                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                 );
                 let principal = current
                     .resolve_authenticated_principal(
-                        &host_custody.phase_for_application(&world.application),
+                        &host_custody.phase_for_application_for_test(&world.application),
                         &world.binding,
                         &external,
                         &request,
@@ -123,7 +123,7 @@ fn owner_sized_image_grows_from_actual_census_and_preserves_clean_arcs() {
                     .unwrap();
                 let scope = current
                     .resolve_entity(
-                        &host_custody.phase_for_application(&world.application),
+                        &host_custody.phase_for_application_for_test(&world.application),
                         PrincipalIdentityField::reference(),
                         1_u64,
                         &request,
@@ -134,10 +134,10 @@ fn owner_sized_image_grows_from_actual_census_and_preserves_clean_arcs() {
                 world
                     .application
                     .execute_application_query_one_shot(
-                        &host_custody.phase_for_application(&world.application),
+                        &host_custody.phase_for_application_for_test(&world.application),
                         current
                             .admit_application_query(
-                                &host_custody.phase_for_application(&world.application),
+                                &host_custody.phase_for_application_for_test(&world.application),
                                 &query,
                                 &access,
                                 ApplicationQueryParameterSet::new(),
@@ -149,11 +149,11 @@ fn owner_sized_image_grows_from_actual_census_and_preserves_clean_arcs() {
             };
             let read_entry = |label: &str| {
                 let current = world.selected_product(
-                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                 );
                 let principal = current
                     .resolve_authenticated_principal(
-                        &host_custody.phase_for_application(&world.application),
+                        &host_custody.phase_for_application_for_test(&world.application),
                         &world.binding,
                         &external,
                         &request,
@@ -165,10 +165,10 @@ fn owner_sized_image_grows_from_actual_census_and_preserves_clean_arcs() {
                 world
                     .application
                     .execute_application_query_one_shot(
-                        &host_custody.phase_for_application(&world.application),
+                        &host_custody.phase_for_application_for_test(&world.application),
                         current
                             .admit_application_query(
-                                &host_custody.phase_for_application(&world.application),
+                                &host_custody.phase_for_application_for_test(&world.application),
                                 &entry,
                                 &access,
                                 ApplicationQueryParameterSet::new(),
@@ -185,7 +185,7 @@ fn owner_sized_image_grows_from_actual_census_and_preserves_clean_arcs() {
             assert_eq!(census.rows()[0].members.len(), 1);
             let principal = selected
                 .resolve_authenticated_principal(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     &world.binding,
                     &external,
                     &request,
@@ -217,7 +217,7 @@ fn owner_sized_image_grows_from_actual_census_and_preserves_clean_arcs() {
                                 .retain_selection_for_test(request_execution)
                                 .unwrap()
                                 .admit_application_query(
-                                    &host_custody.phase_for_application(&world.application),
+                                    &host_custody.phase_for_application_for_test(&world.application),
                                     &entry,
                                     &access,
                                     ApplicationQueryParameterSet::new(),
@@ -246,14 +246,14 @@ fn owner_sized_image_grows_from_actual_census_and_preserves_clean_arcs() {
             let quote = before.storage_quote().unwrap();
             assert_eq!(quote.entries(), 1);
 
-            let prepared = graph.managed_derived_views().prepare_publication(
+            let prepared = graph.managed_derived_views_for_test().prepare_publication_for_test(
                 publication_basis(selected.product()),
                 &[ViewChange::Adjacency(owner.entity_id_for_test(), kind, 0)],
                 100_000,
             );
             bind(secondary.entity_id_for_test(), "second-owner-member");
             let after = world.selected_product(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
             );
             prepared.apply(after.product().selected_commit());
             let census = read_census();

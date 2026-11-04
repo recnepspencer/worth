@@ -137,3 +137,5 @@ mod tests {
         assert!(receiver.interleaving.lock().unwrap().is_none());
     }
 }
+
+mod court_doors_for_test;

@@ -126,8 +126,8 @@ pub fn definition(definition_slot: u64) -> CompiledWorkflowDefinition {
         .enumerate()
         .map(|(ordinal, semantic)| CompiledWorkflowConnection {
             entity: entity(definition_slot + ordinal as u64 + 1),
-            source: nodes[(*semantic.source_for_test())].entity(),
-            target: nodes[(*semantic.target_for_test())].entity(),
+            source: nodes[(*semantic.source_for_test())].entity_for_test(),
+            target: nodes[(*semantic.target_for_test())].entity_for_test(),
             kind: Arc::clone(&(*semantic.kind_for_test())),
         })
         .collect::<Vec<_>>();

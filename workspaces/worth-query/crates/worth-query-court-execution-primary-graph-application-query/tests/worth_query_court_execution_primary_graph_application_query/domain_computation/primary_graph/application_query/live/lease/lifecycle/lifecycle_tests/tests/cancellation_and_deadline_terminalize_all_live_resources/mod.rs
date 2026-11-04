@@ -23,8 +23,8 @@ fn native_value_decode_refusal_cancels_live_custody_before_delivery_consumption(
         229,
         93,
     );
-    (*lease.queue_for_test()).fill(
-        &(*context.world.application.primary_provider_for_test()).live_delivery,
+    (*lease.queue_mut_for_test()).fill_for_test(
+        &(*(*context.world.application.primary_provider_for_test()).live_delivery_for_test()),
         (*lease.basis_for_test()).as_mut().expect("opening owns its native basis"),
         LiveAccountActivityCause::effect(),
         (*lease.controls_for_test()).buffer_capacity(),
@@ -173,7 +173,7 @@ fn read_stops_survive_a_failed_live_lease_termination() {
         // Hold the real owned read work away from finalization: Bridge can end,
         // but the managed read cannot finish without this completion evidence.
         let _held_work = (*lease
-            .initial_read_work_for_test())
+            .initial_read_work_mut_for_test())
             .take()
             .expect("an open lease owns read work");
         let expired = context.already_expired_request();
@@ -187,7 +187,7 @@ fn read_stops_survive_a_failed_live_lease_termination() {
                 let host = phase.test_host_request_for_test();
                 let installed_phase = lease.fixture_phase_for_test(&host);
                 let execution = installed_phase
-                    .execution_request_for(context.world.application.product_runtime())
+                    .execution_request_for_for_test(context.world.application.product_runtime())
                     .unwrap();
                 execution
                     .run(

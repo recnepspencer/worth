@@ -42,3 +42,10 @@ impl WorthQueryApplicationCommitAuthorityBinding {
         Self::retained_governed_input_carrier(self)
     }
 }
+
+impl WorthQueryRetainedGovernedInput {
+    #[doc(hidden)]
+    pub fn governed_identity_for_test(&self) -> Option<[u8; 32]> {
+        Self::governed_identity(self)
+    }
+}

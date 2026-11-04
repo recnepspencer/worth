@@ -42,7 +42,7 @@ fn optional_aspect_initialization_coalesces_presence_without_dropping_attributio
             .ok()
             .unwrap();
     assert_eq!(
-        keys.iter().cloned().collect::<BTreeSet<_>>(),
+        keys.iter_for_test().cloned().collect::<BTreeSet<_>>(),
         BTreeSet::from([first, other_aspect, other_entity])
     );
 }

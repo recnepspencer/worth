@@ -11,12 +11,12 @@ fn refresh_preserves_the_stop_at_every_counted_consult() {
         .runtime_for_test())
         .primary_graph()
         .unwrap()
-        .integration_handle();
+        .integration_handle_for_test();
     let setup_host = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();
     let setup = ExecutionRequest::serial(&setup_host);
     let discard = || {
-        handle.source_owner.with_runtime_mut(&setup, |runtime| {
-            for index in handle.primary_index_ids.iter() {
+        (*handle.source_owner_for_test()).with_runtime_mut(&setup, |runtime| {
+            for index in (*handle.primary_index_ids_for_test()).iter() {
                 runtime
                     .index_authority()
                     .discard_generations(

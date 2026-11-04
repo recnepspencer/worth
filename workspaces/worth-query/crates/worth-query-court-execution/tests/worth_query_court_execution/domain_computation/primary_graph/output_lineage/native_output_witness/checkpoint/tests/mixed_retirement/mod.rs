@@ -33,8 +33,8 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
     let live = resolve("account-1");
     let retired = resolve("account-2");
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let layout = graph.layout();
-    let handle = graph.integration_handle();
+    let layout = graph.layout_for_test();
+    let handle = graph.integration_handle_for_test();
     let correspondence = mixed_correspondence(request_execution, live, retired);
     let foreign = installed_authorization_world(true);
     let foreign_selected = foreign
@@ -46,7 +46,7 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request_for_test();
             let request_execution = &host_custody.borrowed_request_for_test();
-            handle.with_runtime_mut(request_execution, |runtime| {
+            handle.with_runtime_mut_for_test(request_execution, |runtime| {
                 let before = snapshot(runtime);
                 let prepare = || {
                     PreparedNativeOutputWitness::prepare_republication_for_test(&correspondence, layout)
@@ -77,25 +77,25 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
                 let equivalent = prepare()
                     .finish_for_test(&correspondence, runtime, &committed)
                     .unwrap();
-                assert!(witness.same_output_as(equivalent.get().unwrap()).unwrap());
+                assert!(witness.same_output_as_for_test(equivalent.get().unwrap()).unwrap());
                 let mut changed = prepare()
                     .finish_for_test(&correspondence, runtime, &committed)
                     .unwrap();
                 let changed = Arc::get_mut(&mut changed).unwrap().get_mut().unwrap();
-                changed.roles[1].posture = WorthQueryApplicationOutputPosture::Preserve;
+                (*(*changed.roles_for_test())[1].posture_mut_for_test()) = WorthQueryApplicationOutputPosture::Preserve;
                 assert!(
-                    !witness.same_output_as(changed).unwrap(),
+                    !witness.same_output_as_for_test(changed).unwrap(),
                     "matching entity and revisions cannot erase a retirement posture"
                 );
-                changed.roles[1].posture = WorthQueryApplicationOutputPosture::Retire;
+                (*(*changed.roles_for_test())[1].posture_mut_for_test()) = WorthQueryApplicationOutputPosture::Retire;
                 let metadata =
                     worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::native_output_witness::retirement::native_metadata(runtime, &committed, retired, request_execution)
                         .unwrap()
                         .unwrap();
                 assert_ne!((*metadata.created_at_for_test()), (*metadata.deleted_at_for_test()));
-                changed.roles[1].retirement.as_mut().unwrap().created_at = (*metadata.deleted_at_for_test());
+                (*(*(*changed.roles_for_test())[1].retirement_for_test()).as_mut().unwrap().created_at_mut_for_test()) = (*metadata.deleted_at_for_test());
                 assert!(
-                    !witness.same_output_as(changed).unwrap(),
+                    !witness.same_output_as_for_test(changed).unwrap(),
                     "the original creation version belongs to exact retirement equality"
                 );
                 assert_eq!((*metadata.deleted_at_for_test()), committed.version_id());
@@ -112,13 +112,13 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
                     Some((*metadata.kind_for_test()))
                 );
                 assert!(witness
-                    .unchanged_in(runtime, &committed, request_execution)
+                    .unchanged_in_for_test(runtime, &committed, request_execution)
                     .unwrap());
                 assert!(!witness
-                    .unchanged_in(runtime, &before, request_execution)
+                    .unchanged_in_for_test(runtime, &before, request_execution)
                     .unwrap());
                 assert!(!witness
-                    .unchanged_in(
+                    .unchanged_in_for_test(
                         runtime,
                         foreign_selected.application_basis_for_test().snapshot_handle(),
                         request_execution
@@ -126,7 +126,7 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
                     .unwrap());
 
                 assert!(
-                    witness.prepare_fact_projection().unwrap().is_none(),
+                    witness.prepare_fact_projection_for_test().unwrap().is_none(),
                     "mixed retired output stays checkpoint-ineligible"
                 );
                 let facts = [Fact::RetiredOutputEntity {
@@ -151,7 +151,7 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
                 .unwrap()
                 .is_none());
                 let external_dead = Fact::SourceEntity { entity_id: retired };
-                assert!(!witness.covers_content_fact(&external_dead).unwrap());
+                assert!(!witness.covers_content_fact_for_test(&external_dead).unwrap());
                 assert!(!external_dead
                     .remains_equal_in_for_test(
                         runtime,
@@ -161,7 +161,7 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
                     .unwrap());
                 assert!(
                     !witness
-                        .checkpoint_facts_current_in(
+                        .checkpoint_facts_current_in_for_test(
                             &host_custody.borrowed_request_for_test(),
                             runtime,
                             &committed,
@@ -185,18 +185,18 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
                 let missing = WorthQueryApplicationOutputCorrespondence::default();
                 assert!(prepare().finish_for_test(&missing, runtime, &committed).is_none());
                 let mut wrong_kind = prepare();
-                (*wrong_kind.roles_for_test())[1].kind = KindId::new((*metadata.kind_for_test()).as_u32() + 1);
+                (*(*wrong_kind.roles_for_test())[1].kind_mut_for_test()) = KindId::new((*metadata.kind_for_test()).as_u32() + 1);
                 assert!(wrong_kind
                     .finish_for_test(&correspondence, runtime, &committed)
                     .is_none());
                 let mut wrong_posture = prepare();
-                (*wrong_posture.roles_for_test())[1].posture = WorthQueryApplicationOutputPosture::Preserve;
+                (*(*wrong_posture.roles_for_test())[1].posture_mut_for_test()) = WorthQueryApplicationOutputPosture::Preserve;
                 assert!(wrong_posture
                     .finish_for_test(&correspondence, runtime, &committed)
                     .is_none());
                 let label_ref = AccountLabel::reference();
                 let label = layout
-                    .field_locator(label_ref.entity(), label_ref.aspect(), label_ref.field())
+                    .field_locator_for_test(label_ref.entity(), label_ref.aspect(), label_ref.field())
                     .unwrap()
                     .clone();
                 change_label(request_execution, runtime, live, label.clone());
@@ -213,7 +213,7 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
                 );
                 assert!(
                     !witness
-                        .unchanged_in(runtime, &later, request_execution)
+                        .unchanged_in_for_test(runtime, &later, request_execution)
                         .unwrap(),
                     "live aspects still invalidate the mixed proof"
                 );
@@ -233,20 +233,20 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
                 let aba = snapshot(runtime);
                 assert!(
                     !witness
-                        .unchanged_in(runtime, &aba, request_execution)
+                        .unchanged_in_for_test(runtime, &aba, request_execution)
                         .unwrap(),
                     "same-value ABA keeps its changed revision"
                 );
                 assert!(
                     witness
-                        .unchanged_in(runtime, &committed, request_execution)
+                        .unchanged_in_for_test(runtime, &committed, request_execution)
                         .unwrap(),
                     "the original held native observation remains exact after ABA"
                 );
                 runtime.snapshots().release_snapshot(&aba).unwrap();
                 assert!(
                     !witness
-                        .unchanged_in(runtime, &aba, request_execution)
+                        .unchanged_in_for_test(runtime, &aba, request_execution)
                         .unwrap(),
                     "released basis cannot authorize a witness"
                 );

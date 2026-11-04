@@ -62,7 +62,7 @@ fn cancellation_inside_a_native_read_stops_the_public_commit_door() {
         (*world
             .application
             .primary_provider_for_test())
-            .published_application_commit_count(),
+            .published_application_commit_count_for_test(),
         0
     );
 }

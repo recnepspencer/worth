@@ -15,7 +15,7 @@ fn genuinely_interleaved_equivalent_sessions_validate_retry_cleanup_separately()
                     .invariant
                     .active_snapshot_count_for_test(&active_phase.borrowed_request_for_test());
                 let (left, right) = equivalent_programs(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     &world,
                     "racing-equivalent",
                 );

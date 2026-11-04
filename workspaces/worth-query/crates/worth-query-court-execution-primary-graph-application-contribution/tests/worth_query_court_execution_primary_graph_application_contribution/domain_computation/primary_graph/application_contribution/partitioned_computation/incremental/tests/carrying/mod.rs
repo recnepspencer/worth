@@ -91,7 +91,7 @@ fn another_input_or_edition_or_an_evicted_state_runs_in_full() {
     let first = first_run(&world, &installed);
     let total = *first.outcome.as_ref().unwrap();
     let mut state = (*first.sealed.unwrap().unwrap().state_for_test());
-    state.basis = state.basis.with_input_digest_for_test([0; 32]);
+    (*state.basis_mut_for_test()) = (*state.basis_for_test()).with_input_digest_for_test([0; 32]);
     let state = std::sync::Arc::new(state);
     let cases = [
         (
@@ -134,16 +134,16 @@ fn growing_past_the_ceiling_is_denied_as_a_full_run_is_denied() {
             declared,
             "cost declared before the run"
         );
-        let moved = (*first
+        let moved = (*(*first
             .sealed
             .as_ref()
             .unwrap()
             .as_ref()
             .unwrap()
             .state_for_test())
-            .facts
-            .facts()
-            .find_map(|(_, _, readers)| match readers.partitions() {
+            .facts_for_test())
+            .facts_for_test()
+            .find_map(|(_, _, readers)| match readers.partitions_for_test() {
                 [partition] => Some(*partition),
                 _ => None,
             })

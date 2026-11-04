@@ -135,7 +135,7 @@ fn cleanup_verification_of_a_completed_inbound_keeps_the_terminal_owner() {
     let sealed = (*world
         .application
         .primary_provider_for_test())
-        .lookup_completed_inbound(&correlation)
+        .lookup_completed_inbound_for_test(&correlation)
         .unwrap()
         .expect("the terminal owner holds the completion");
     world
@@ -146,7 +146,7 @@ fn cleanup_verification_of_a_completed_inbound_keeps_the_terminal_owner() {
         (*world
             .application
             .primary_provider_for_test())
-            .lookup_completed_inbound(&correlation)
+            .lookup_completed_inbound_for_test(&correlation)
             .unwrap(),
         Some(sealed)
     );

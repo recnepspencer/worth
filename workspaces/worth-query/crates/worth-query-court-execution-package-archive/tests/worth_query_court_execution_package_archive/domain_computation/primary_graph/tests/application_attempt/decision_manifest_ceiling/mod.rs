@@ -18,12 +18,12 @@ fn projection_capability_does_not_widen_the_installed_decision_manifest() {
             let borrowed_execution = host_custody.borrowed_request_for_test();
             let execution = &borrowed_execution;
             let principal = authenticated_principal(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                 &world,
                 &request,
             );
             let account = resolved_account(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                 &world,
                 "open",
                 &request,
@@ -35,10 +35,10 @@ fn projection_capability_does_not_widen_the_installed_decision_manifest() {
                 .unwrap();
             let admission = world
                 .selected_product(
-                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                 )
                 .authorize_operation(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     &principal,
                     &account,
                     &operation,

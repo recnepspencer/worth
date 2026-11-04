@@ -28,7 +28,7 @@ fn approval_command_cannot_select_a_different_elevation_subject() {
             world
                 .application
                 .authorize_elevation_approval(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     requested,
                     access,
                     &approval_operation(&world),

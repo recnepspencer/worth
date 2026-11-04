@@ -13,11 +13,11 @@ let host_custody = active_phase.test_host_request_for_test();
         let phase = &active_phase;
 
         let baseline = world.invariant.active_snapshot_count_for_test(&active_phase.borrowed_request_for_test());
-        let (victim, peer) = equivalent_programs(&host_custody.phase_for_application(&world.application), &world, "stale-interleaved");
+        let (victim, peer) = equivalent_programs(&host_custody.phase_for_application_for_test(&world.application), &world, "stale-interleaved");
         let victim = start(phase, &world.application, victim, idempotency(147, 148));
         let peer = start(phase, &world.application, peer, idempotency(149, 150));
         let both_attempts = world.invariant.active_snapshot_count_for_test(&active_phase.borrowed_request_for_test());
-        let winner = equivalent_programs(&host_custody.phase_for_application(&world.application), &world, "stale-winner").0;
+        let winner = equivalent_programs(&host_custody.phase_for_application_for_test(&world.application), &world, "stale-winner").0;
         assert!(matches!(
             world
                 .application

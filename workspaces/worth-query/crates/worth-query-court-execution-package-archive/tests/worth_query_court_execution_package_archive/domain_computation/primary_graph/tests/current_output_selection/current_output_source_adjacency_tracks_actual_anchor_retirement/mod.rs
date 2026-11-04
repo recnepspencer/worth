@@ -18,16 +18,16 @@ fn current_output_source_adjacency_tracks_actual_anchor_retirement() {
         })
         .expect("the fixture read owns its installed host call");
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let kind = graph
-        .layout
+    let kind = (*(*graph
+        .layout_for_test())
         .relation(AccountOwner::reference().name())
         .unwrap()
-        .kind;
+        .kind_for_test());
     let original = world
         .application
         .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
         .expect("the fixture read owns its installed host call");
-    let fact = world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request_for_test(); graph.integration_handle().with_runtime(request_execution, |runtime| {
+    let fact = world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request_for_test(); graph.integration_handle_for_test().with_runtime(request_execution, |runtime| {
         let revision = runtime
             .read_truth()
             .project_snapshot(original.application_basis_for_test().snapshot_handle())
@@ -48,10 +48,10 @@ fn current_output_source_adjacency_tracks_actual_anchor_retirement() {
             endpoints: worth_query_execution::facade::domain_computation::WorthQueryApplicationSourceAdjacencyEndpoints::from_observed(&(Vec::new()), worth_execution::ExecutionAllocationPolicy::SystemAllocation, None).unwrap(),
         }
     }) }).expect("the fixture read owns its installed host call");
-    world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request_for_test(); graph.integration_handle().with_runtime(request_execution, |runtime| {
+    world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request_for_test(); graph.integration_handle_for_test().with_runtime(request_execution, |runtime| {
         let snapshot = original.application_basis_for_test().snapshot_handle();
         assert_eq!(
-            fact.source_currentness_in(runtime, &host_custody.borrowed_request_for_test(), snapshot).unwrap().map(|movement| movement.movement()),
+            fact.source_currentness_in_for_test(runtime, &host_custody.borrowed_request_for_test(), snapshot).unwrap().map(|movement| movement.movement_for_test()),
             Ok(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::movement::Movement::Unmoved)
         );
 
@@ -61,16 +61,16 @@ fn current_output_source_adjacency_tracks_actual_anchor_retirement() {
         .application
         .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
         .expect("the fixture read owns its installed host call");
-    world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request_for_test(); graph.integration_handle().with_runtime(request_execution, |runtime| {
+    world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request_for_test(); graph.integration_handle_for_test().with_runtime(request_execution, |runtime| {
         let snapshot = retired.application_basis_for_test().snapshot_handle();
         assert_eq!(
-            fact.source_currentness_in(runtime, &host_custody.borrowed_request_for_test(), snapshot).unwrap().map(|movement| movement.movement()),
+            fact.source_currentness_in_for_test(runtime, &host_custody.borrowed_request_for_test(), snapshot).unwrap().map(|movement| movement.movement_for_test()),
             Ok(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::movement::Movement::Moved)
         );
 
         // Retirement in a later basis does not rewrite the old source basis.
         assert_eq!(
-            fact.source_currentness_in(runtime, &host_custody.borrowed_request_for_test(), original.application_basis_for_test().snapshot_handle()).unwrap().map(|movement| movement.movement()),
+            fact.source_currentness_in_for_test(runtime, &host_custody.borrowed_request_for_test(), original.application_basis_for_test().snapshot_handle()).unwrap().map(|movement| movement.movement_for_test()),
             Ok(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::movement::Movement::Unmoved)
         );
     }) }).expect("the fixture read owns its installed host call");

@@ -36,7 +36,7 @@ fn cancellation_at_registration_binding_is_cancelled_not_denied() {
             };
             let head_before = head();
             let (program, _) = equivalent_programs(
-                &host_custody.phase_for_application(&world.application),
+                &host_custody.phase_for_application_for_test(&world.application),
                 &world,
                 &request,
                 "interrupted-registration",
@@ -81,7 +81,7 @@ fn cancellation_at_registration_binding_is_cancelled_not_denied() {
                 panic!("a cancelled request must not register its provider attempt")
             };
             let WorthQueryProviderProgressionCompletion { outcome, cleanup } =
-                failure.into_completion();
+                failure.into_completion_for_test();
             assert!(
                 matches!(outcome, WorthQueryProviderProgressionOutcome::Cancelled),
                 "the binding's request stop is a control outcome, never a denial"
@@ -107,7 +107,7 @@ fn cancellation_at_registration_binding_is_cancelled_not_denied() {
                 (*world
                     .application
                     .primary_provider_for_test())
-                    .application_attempt_resource_count(),
+                    .application_attempt_resource_count_for_test(),
                 0
             );
             assert_eq!(

@@ -107,3 +107,5 @@ impl WorthQueryRealizedProjectionScope {
                 .any(|(sequence, range)| sequence.contains_in(entity_id, range))
     }
 }
+
+mod court_doors_for_test;

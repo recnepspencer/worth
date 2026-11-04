@@ -71,30 +71,30 @@ pub fn context_effects(
     };
     let transition = CreatedEntityRef {
         partition_id: source.partition_id,
-        kind_id: (*layout.transition_for_test()).entity_kind,
+        kind_id: (*(*layout.transition_for_test()).entity_kind_for_test()),
         client_key: ClientKey::raw("transition"),
     };
     let mut fields = BTreeMap::from([
         (
-            (*layout.transition_for_test()).identity.clone(),
+            (*(*layout.transition_for_test()).identity_for_test()).clone(),
             text_value("native-context-fixture"),
         ),
         (
-            (*layout.transition_for_test()).protocol_version.clone(),
+            (*(*layout.transition_for_test()).protocol_version_for_test()).clone(),
             AspectValue::UInt64(3),
         ),
-        ((*layout.transition_for_test()).occurrence.clone(), AspectValue::UInt64(0)),
-        ((*layout.transition_for_test()).outcome.clone(), AspectValue::UInt64(1)),
+        ((*(*layout.transition_for_test()).occurrence_for_test()).clone(), AspectValue::UInt64(0)),
+        ((*(*layout.transition_for_test()).outcome_for_test()).clone(), AspectValue::UInt64(1)),
         (
-            (*layout.transition_for_test()).live_membership_partition.clone(),
+            (*(*layout.transition_for_test()).live_membership_partition_for_test()).clone(),
             AspectValue::UInt64(0),
         ),
         (
-            (*layout.transition_for_test()).live_membership_slot.clone(),
+            (*(*layout.transition_for_test()).live_membership_slot_for_test()).clone(),
             AspectValue::UInt64(0),
         ),
         (
-            (*layout.transition_for_test()).live_membership_generation.clone(),
+            (*(*layout.transition_for_test()).live_membership_generation_for_test()).clone(),
             AspectValue::UInt64(0),
         ),
     ]);
@@ -150,22 +150,22 @@ pub fn context_effects(
 pub fn corrupt(layout: &WorthQueryWorkflowLayout, effects: &mut Vec<Effect>, defect: Option<&str>) {
     for effect in &mut *effects {
         if let Effect::CreateEntity { kind, fields, .. } = effect {
-            if *kind == (*layout.transition_for_test()).entity_kind {
+            if *kind == (*(*layout.transition_for_test()).entity_kind_for_test()) {
                 if defect == Some("count") {
                     fields.insert(
-                        (*layout.transition_for_test()).output_count.clone(),
+                        (*(*layout.transition_for_test()).output_count_for_test()).clone(),
                         AspectValue::UInt64(1),
                     );
                 }
                 if defect == Some("overflow") {
                     fields.insert(
-                        (*layout.transition_for_test()).output_count.clone(),
+                        (*(*layout.transition_for_test()).output_count_for_test()).clone(),
                         AspectValue::UInt64(u64::MAX),
                     );
                 }
                 if defect == Some("downgrade") {
                     fields.insert(
-                        (*layout.transition_for_test()).protocol_version.clone(),
+                        (*(*layout.transition_for_test()).protocol_version_for_test()).clone(),
                         AspectValue::UInt64(2),
                     );
                 }
@@ -212,10 +212,10 @@ pub fn attach_structural_parent(
         })
     };
     for (kind, key) in [
-        ((*layout.lineage_for_test()).entity_kind, "lineage"),
-        ((*layout.definition_for_test()).entity_kind, "definition"),
-        ((*layout.node_for_test()).entity_kind, "node"),
-        ((*layout.instance_for_test()).entity_kind, "instance"),
+        ((*(*layout.lineage_for_test()).entity_kind_for_test()), "lineage"),
+        ((*(*layout.definition_for_test()).entity_kind_for_test()), "definition"),
+        ((*(*layout.node_for_test()).entity_kind_for_test()), "node"),
+        ((*(*layout.instance_for_test()).entity_kind_for_test()), "instance"),
     ] {
         effects.push(Effect::CreateEntity {
             kind,
@@ -224,10 +224,10 @@ pub fn attach_structural_parent(
             partition: Partition::Context(partition),
         });
     }
-    let lineage = reference((*layout.lineage_for_test()).entity_kind, "lineage");
-    let definition = reference((*layout.definition_for_test()).entity_kind, "definition");
-    let node = reference((*layout.node_for_test()).entity_kind, "node");
-    let instance = reference((*layout.instance_for_test()).entity_kind, "instance");
+    let lineage = reference((*(*layout.lineage_for_test()).entity_kind_for_test()), "lineage");
+    let definition = reference((*(*layout.definition_for_test()).entity_kind_for_test()), "definition");
+    let node = reference((*(*layout.node_for_test()).entity_kind_for_test()), "node");
+    let instance = reference((*(*layout.instance_for_test()).entity_kind_for_test()), "instance");
     for (kind, from, to) in [
         (
             (*layout.lineage_definition_relation_for_test()),
@@ -253,11 +253,11 @@ pub fn attach_structural_parent(
         (
             (*layout.instance_transition_relation_for_test()),
             instance,
-            reference((*layout.transition_for_test()).entity_kind, "transition"),
+            reference((*(*layout.transition_for_test()).entity_kind_for_test()), "transition"),
         ),
         (
             (*layout.transition_node_relation_for_test()),
-            reference((*layout.transition_for_test()).entity_kind, "transition"),
+            reference((*(*layout.transition_for_test()).entity_kind_for_test()), "transition"),
             node,
         ),
     ] {

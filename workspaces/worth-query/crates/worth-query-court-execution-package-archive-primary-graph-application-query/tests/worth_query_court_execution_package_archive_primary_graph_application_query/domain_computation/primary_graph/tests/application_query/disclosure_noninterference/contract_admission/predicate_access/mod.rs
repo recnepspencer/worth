@@ -16,8 +16,8 @@ fn result_disclosure_rule_cannot_open_a_predicate_read() {
             let host_custody = phase.test_host_request_for_test();
 
             let capability = admit_touch_account_capability(
-                &(host_custody.phase_for_application(&context.world.application))
-                    .test_host_request(),
+                &(host_custody.phase_for_application_for_test(&context.world.application))
+                    .test_host_request_for_test(),
                 &context.world,
                 &context.principal,
                 &context.request,
@@ -28,11 +28,11 @@ fn result_disclosure_rule_cannot_open_a_predicate_read() {
             let denial = context
                 .world
                 .selected_product(
-                    &(host_custody.phase_for_application(&context.world.application))
-                        .test_host_request(),
+                    &(host_custody.phase_for_application_for_test(&context.world.application))
+                        .test_host_request_for_test(),
                 )
                 .admit_governed_application_query(
-                    &host_custody.phase_for_application(&context.world.application),
+                    &host_custody.phase_for_application_for_test(&context.world.application),
                     &query,
                     &access,
                     capability,

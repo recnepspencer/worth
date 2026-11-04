@@ -83,3 +83,17 @@ impl WorthQueryRecoveryHandleRegistry {
         Self::terminal_of(self, slot)
     }
 }
+
+impl WorthQueryRecoveryRegistrySlot {
+    #[doc(hidden)]
+    pub fn as_u64_for_test(self) -> u64 {
+        Self::as_u64(self)
+    }
+}
+
+impl WorthQueryRecoveryHandleRegistry {
+    #[doc(hidden)]
+    pub fn clock_for_test(&self) -> &WorthQueryRuntimeClock {
+        Self::clock(self)
+    }
+}

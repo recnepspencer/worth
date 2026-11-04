@@ -223,8 +223,8 @@ fn actual_missing_changed_and_wrong_concrete_bindings_refuse_at_field_locus() {
     )
     .unwrap();
     let denial = twin.seal_for_test(&installed).unwrap_err();
-    assert_eq!(denial.field_locus().unwrap().field(), "Record");
-    assert!(denial.detail().contains("installed value binding"));
+    assert_eq!(denial.field_locus_for_test().unwrap().field(), "Record");
+    assert!(denial.detail_for_test().contains("installed value binding"));
 }
 
 #[test]

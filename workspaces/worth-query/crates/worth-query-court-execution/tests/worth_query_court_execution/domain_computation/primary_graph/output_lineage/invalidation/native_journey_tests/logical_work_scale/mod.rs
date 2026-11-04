@@ -38,21 +38,21 @@ pub fn run_population(population: usize) -> WorthQueryNativeMarkingWork {
  let phase_custody = &custody;
  let execution = &phase_custody.borrowed_request_for_test();
 
-    let selected = world.selected_product(&(phase_custody).test_host_request());
+    let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
     let (_, product, _) = selected.into_parts_for_test();
     let coordinate = ProductCoordinate {
-        occurrence: product.observation().lifecycle_incarnation(),
-        generation: product.observation().reference_generation().get(),
+        occurrence: product.observation_for_test().lifecycle_incarnation(),
+        generation: product.observation_for_test().reference_generation().get(),
     };
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let handle = graph.integration_handle();
-    let owner = &handle.source_owner.invalidation_owner;
+    let handle = graph.integration_handle_for_test();
+    let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
     let kind = graph
-        .layout()
-        .entity_kind(Account::reference().name())
+        .layout_for_test()
+        .entity_kind_for_test(Account::reference().name())
         .unwrap();
     let locator = |entity, aspect, field| {
-        let installed = graph.layout().field_locator(entity, aspect, field).unwrap();
+        let installed = graph.layout_for_test().field_locator_for_test(entity, aspect, field).unwrap();
         // The independent oracle reads Native authority, matching the field
         // meaning rather than the layout's effective projection posture.
         AspectFieldLocator::new(
@@ -71,7 +71,7 @@ pub fn run_population(population: usize) -> WorthQueryNativeMarkingWork {
     );
     let status = locator(status_ref.entity(), status_ref.aspect(), status_ref.field());
     let label = locator(label_ref.entity(), label_ref.aspect(), label_ref.field());
-    handle.with_runtime_mut(execution, |runtime| {
+    handle.with_runtime_mut_for_test(execution, |runtime| {
         let references: Vec<_> = (0..population).map(|ordinal| CreatedEntityRef {
             partition_id: PartitionId::main(), kind_id: kind,
             client_key: ClientKey::raw(format!("logical-marking-{ordinal}")),
@@ -124,11 +124,11 @@ pub fn run_population(population: usize) -> WorthQueryNativeMarkingWork {
             OrdSet::unit(identities[0].clone()));
         write_field(execution, runtime, entities[0], label.clone(), "after");
         let (after_handle, after) = snapshot(runtime);
-let report = owner.native_marking_report(&after)
+let report = owner.native_marking_report_for_test(&after)
             .unwrap().expect("exact Native publication owns a delivery report");
 
 
-        let WorthQueryNativeMarkingPrecision::Exact(counts) = report.precision else {
+        let WorthQueryNativeMarkingPrecision::Exact(counts) = (*report.precision_for_test()) else {
             panic!("the actual declared field change must have exact logical counts");
         };
         for ((entity, output), old) in entities.iter().zip(&identities).zip(old_revisions) {
@@ -148,14 +148,14 @@ let report = owner.native_marking_report(&after)
         }
         assert!(matches!(currentness(owner, &after, &downstream),
             SourceSettlementCurrentness::PendingUpstream(edges) if edges == OrdSet::unit(identities[0].clone())));
-        assert!(owner.native_marking_report(&before).unwrap().is_none(),
+        assert!(owner.native_marking_report_for_test(&before).unwrap().is_none(),
             "a historical image cannot report the newer Native delivery");
         let late = RecordedSettlementIdentity::retain_for_test(
             &source(entities[0], OutputBindingIdentity::declared_for_test("LateOutput")), coordinate, 0,
         );
         register(owner, late, Arc::from([field_fact(execution, runtime, &after_handle, entities[0], label.clone())]),
             &after, OrdSet::new());
-        assert_eq!(owner.native_marking_report(&after).unwrap(), Some(report),
+        assert_eq!(owner.native_marking_report_for_test(&after).unwrap(), Some(report),
             "a derived registration preserves the original delivery report");
         for snapshot in [before_handle, after_handle] {
             runtime.snapshots().release_snapshot(&snapshot).unwrap();

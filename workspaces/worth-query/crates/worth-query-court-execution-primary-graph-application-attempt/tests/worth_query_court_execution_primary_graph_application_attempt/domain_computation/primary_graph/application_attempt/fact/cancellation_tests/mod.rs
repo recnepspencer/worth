@@ -190,29 +190,29 @@ pub fn with_indexed_fact<R>(
     let snapshot = selected.application_basis_for_test().snapshot_handle();
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let field = AccountStatus::reference();
-    let layout = graph
-        .layout
-        .equality_field(field.entity(), field.aspect(), field.field())
+    let layout = (*graph
+        .layout_for_test())
+        .equality_field_for_test(field.entity(), field.aspect(), field.field())
         .unwrap();
-    let relation_kind = graph
-        .layout
+    let relation_kind = (*(*graph
+        .layout_for_test())
         .relation(AccountOwner::reference().name())
         .unwrap()
-        .kind;
+        .kind_for_test());
     let source = CancellationSource::new();
     let serial = SerialRequest::from_memory(SerialMemoryBudget::new(None), source.token(), None);
     let execution = ExecutionRequest::serial(&serial);
     let outcome = graph
-        .integration_handle()
+        .integration_handle_for_test()
         .with_runtime(&execution, |runtime| {
             std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                 let fact = observe_indexed_entity_selection(
                     runtime,
                     &execution,
                     snapshot,
-                    layout.equality_index_id.unwrap(),
-                    layout.entity_kind,
-                    layout.locator.clone(),
+                    (*layout.equality_index_id_for_test()).unwrap(),
+                    (*layout.entity_kind_for_test()),
+                    (*layout.locator_for_test()).clone(),
                     StringApplicationValueBinding::encode(&"open".to_owned()).unwrap(),
                     2,
                 )

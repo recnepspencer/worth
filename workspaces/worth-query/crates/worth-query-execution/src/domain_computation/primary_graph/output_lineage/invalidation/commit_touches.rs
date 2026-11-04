@@ -250,3 +250,5 @@ mod relation_interest_tests {
         assert!(watched_entities(&[membership], CommitTouchEntities::Slice(&recycled)).is_empty());
     }
 }
+
+mod court_doors_for_test;

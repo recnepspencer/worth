@@ -77,7 +77,7 @@ fn scope_revocation_after_product_admission_denies_before_projection() {
                 &phase,
                 &host_custody.borrowed_request_for_test(),
                 &world,
-                account.entity_id(),
+                account.entity_id_for_test(),
             )
         })
         .expect("the fixture read owns its installed host call");

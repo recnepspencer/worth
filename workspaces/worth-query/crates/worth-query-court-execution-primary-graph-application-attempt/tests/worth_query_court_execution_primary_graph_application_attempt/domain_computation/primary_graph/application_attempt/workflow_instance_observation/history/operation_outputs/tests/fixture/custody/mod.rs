@@ -6,7 +6,7 @@ impl Context {
         let host = payer();
         let execution = worth_execution::ExecutionRequest::serial(&host);
         let graph = (*self.world.application.runtime_for_test()).primary_graph().unwrap();
-        let layout = graph.layout.workflow();
+        let layout = (*graph.layout_for_test()).workflow();
         let edge = self.read(|execution, runtime, snapshot, layout| {
             let entry = (*observe_adjacency(
                 runtime,
@@ -43,7 +43,7 @@ impl Context {
                 UpdateEntityFieldsIntent {
                     entity_id: (*edge.from_for_test()),
                     fields: AspectFieldPatch::from(BTreeMap::from([(
-                        layout.operation_output.role.clone(),
+                        (*layout.operation_output.role_for_test()).clone(),
                         text_value("rewritten"),
                     )])),
                 },
@@ -51,7 +51,7 @@ impl Context {
             MutationIntent::Relation(RelationMutationIntent::UpdateEndpoints(
                 UpdateRelationEndpointsIntent {
                     relation_id: (*edge.relation_id_for_test()),
-                    kind_id: layout.operation_output.target,
+                    kind_id: (*layout.operation_output.target_for_test()),
                     source: EntityReference::Existing((*edge.from_for_test())),
                     target: EntityReference::Existing(alternate),
                 },
@@ -69,13 +69,13 @@ impl Context {
                     self.world.application.product_runtime().default_branch_for_test(),
                 )
                 .unwrap()
-                .into_parts();
+                .into_parts_for_test();
             let candidate = graph
-                .integration_handle()
-                .with_runtime_mut(&execution, |runtime| {
+                .integration_handle_for_test()
+                .with_runtime_mut_for_test(&execution, |runtime| {
                     let mut transaction = runtime
                         .begin_branch_transaction(
-                            product.relational_basis(),
+                            product.relational_basis_for_test(),
                             worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
                         )
                         .unwrap();

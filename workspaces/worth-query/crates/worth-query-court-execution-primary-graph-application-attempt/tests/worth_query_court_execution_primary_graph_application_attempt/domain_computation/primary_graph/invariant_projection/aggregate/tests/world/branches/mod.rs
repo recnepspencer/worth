@@ -44,7 +44,7 @@ impl AggregateWorld {
     ) -> Result<(i64, u64), WorthQueryInvariantAggregateDenialKind> {
         let observed = Cell::new(None);
         let identity = self.relational_identity(phase_custody, branch);
-        let (_, basis) = (*self.authority.graph_for_test()).with_runtime_mut(
+        let (_, basis) = (*self.authority.graph_for_test()).with_runtime_mut_for_test(
             &phase_custody.borrowed_request_for_test(),
             |runtime| {
                 runtime
@@ -111,7 +111,7 @@ impl AggregateWorld {
             .as_ref()
             .expect("contributions read")
             .iter()
-            .find(|relation| (*relation.from_for_test()).entity_id == source)
+            .find(|relation| (*(*relation.from_for_test()).entity_id_for_test()) == source)
             .expect("the source contributes")
             .relation_id_for_test())
     }
@@ -143,7 +143,7 @@ impl AggregateWorld {
         let execution = phase_custody.borrowed_request_for_test();
         (*self.authority
             .graph_for_test())
-            .with_runtime_mut(&execution, |runtime| {
+            .with_runtime_mut_for_test(&execution, |runtime| {
                 let admitted = runtime
                     .admit_branch_basis(&identity)
                     .expect("the branch binding admits");

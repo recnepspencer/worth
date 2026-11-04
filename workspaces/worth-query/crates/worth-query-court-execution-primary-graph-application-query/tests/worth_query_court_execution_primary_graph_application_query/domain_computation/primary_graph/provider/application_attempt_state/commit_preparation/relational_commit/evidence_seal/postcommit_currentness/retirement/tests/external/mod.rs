@@ -13,11 +13,11 @@ fn external_pair_and_adjacency_remain_current_after_owned_endpoint_retirement() 
             let borrowed_execution = host_custody.borrowed_request_for_test();
             let execution = &borrowed_execution;
             let selected = world.selected_product(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
             );
             let owned = selected
                 .resolve_entity(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     ActivityIdentity::reference(),
                     "activity-primary".to_owned(),
                     &live_scope(),
@@ -26,22 +26,22 @@ fn external_pair_and_adjacency_remain_current_after_owned_endpoint_retirement() 
                 .unwrap()
                 .entity_id_for_test();
             let (anchor, _, _) = reads(
-                &host_custody.phase_for_application(&world.application),
+                &host_custody.phase_for_application_for_test(&world.application),
                 execution,
                 &world,
                 "account-1",
             );
             let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-            let relation = graph
-                .layout
+            let relation = (*(*graph
+                .layout_for_test())
                 .relation(AccountAllActivity::reference().name())
                 .unwrap()
-                .kind;
-            let kind = graph
-                .layout
-                .entity_kind(ActivityIdentity::reference().entity())
+                .kind_for_test());
+            let kind = (*graph
+                .layout_for_test())
+                .entity_kind_for_test(ActivityIdentity::reference().entity())
                 .unwrap();
-            let relations = graph.integration_handle().with_runtime(&phase.borrowed_request_for_test(), |runtime| {
+            let relations = graph.integration_handle_for_test().with_runtime(&phase.borrowed_request_for_test(), |runtime| {
                 worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::adjacency::observe_adjacency(
                     runtime,
                     execution,
@@ -53,16 +53,16 @@ fn external_pair_and_adjacency_remain_current_after_owned_endpoint_retirement() 
                 ).unwrap()
                 .unwrap()
             });
-            let removed = relations
+            let removed = (*relations
                 .iter()
-                .find(|entry| entry.to == owned)
+                .find(|entry| (*entry.to_for_test()) == owned)
                 .unwrap()
-                .relation_id;
-            let retained = relations
+                .relation_id_for_test());
+            let retained = (*relations
                 .iter()
-                .find(|entry| entry.to != owned)
+                .find(|entry| (*entry.to_for_test()) != owned)
                 .unwrap()
-                .relation_id;
+                .relation_id_for_test());
             let facts = vec![
                 Fact::Entity {
                     entity_id: owned,
@@ -76,7 +76,7 @@ fn external_pair_and_adjacency_remain_current_after_owned_endpoint_retirement() 
                     maximum_work_units: 16,
                     relations: relations
                         .iter()
-                        .filter(|entry| entry.to == owned)
+                        .filter(|entry| (*entry.to_for_test()) == owned)
                         .cloned()
                         .collect(),
                 },
@@ -109,7 +109,7 @@ fn external_pair_and_adjacency_remain_current_after_owned_endpoint_retirement() 
                     ))),
             );
             let retired = rebase_current(
-                &host_custody.phase_for_application(&world.application),
+                &host_custody.phase_for_application_for_test(&world.application),
                 &host_custody.borrowed_request_for_test(),
                 &world,
                 facts,
@@ -124,14 +124,14 @@ fn external_pair_and_adjacency_remain_current_after_owned_endpoint_retirement() 
                 matches!(retired[4], Fact::Adjacency { anchor: actual, .. } if actual == anchor)
             );
             let native = normal_rebase(
-                &host_custody.phase_for_application(&world.application),
+                &host_custody.phase_for_application_for_test(&world.application),
                 execution,
                 &world,
                 retired,
             );
             assert!(
                 selection(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     execution,
                     &world,
                     &native
@@ -149,7 +149,7 @@ fn external_pair_and_adjacency_remain_current_after_owned_endpoint_retirement() 
             );
             assert!(
                 !selection(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     execution,
                     &world,
                     &native
@@ -171,7 +171,7 @@ fn a_retired_entity_changes_each_revision_fact_read_without_its_entity_fact() {
             let borrowed_execution = host_custody.borrowed_request_for_test();
             let execution = &borrowed_execution;
             let (entity, _, facts) = reads(
-                &host_custody.phase_for_application(&world.application),
+                &host_custody.phase_for_application_for_test(&world.application),
                 execution,
                 &world,
                 "account-1",
@@ -190,10 +190,10 @@ fn a_retired_entity_changes_each_revision_fact_read_without_its_entity_fact() {
             assert_eq!(revisions.len(), 3);
             let probe = |fact: &Fact| {
                 let selected = world.selected_product(
-                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                 );
                 let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-                graph.integration_handle().with_runtime(
+                graph.integration_handle_for_test().with_runtime(
                     &phase.borrowed_request_for_test(),
                     |runtime| {
                         fact.source_currentness_in_for_test(
@@ -206,7 +206,7 @@ fn a_retired_entity_changes_each_revision_fact_read_without_its_entity_fact() {
             };
             for fact in &revisions {
                 assert_eq!(
-                    probe(fact).unwrap().unwrap().movement(),
+                    probe(fact).unwrap().unwrap().movement_for_test(),
                     Movement::Unmoved,
                     "{fact:?}"
                 );
@@ -217,7 +217,7 @@ fn a_retired_entity_changes_each_revision_fact_read_without_its_entity_fact() {
             for fact in &revisions {
                 let movement = probe(fact).unwrap().unwrap();
                 assert_eq!(
-                    movement.movement(),
+                    movement.movement_for_test(),
                     Movement::Moved,
                     "a retired entity changed this fact: {fact:?}"
                 );

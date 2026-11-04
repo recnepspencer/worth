@@ -231,7 +231,7 @@ fn program_output_producer_names_an_operation_not_installed_as_conditional() {
                 let host_custody = phase.test_host_request_for_test();
 
                 authenticated_principal(
-                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                     &world,
                     &request,
                 )
@@ -243,7 +243,7 @@ fn program_output_producer_names_an_operation_not_installed_as_conditional() {
                 let host_custody = phase.test_host_request_for_test();
 
                 resolved_account(
-                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                     &world,
                     "open",
                     &request,
@@ -257,8 +257,8 @@ fn program_output_producer_names_an_operation_not_installed_as_conditional() {
 
                 world
                     .selected_product(
-                        &(host_custody.phase_for_application(&world.application))
-                            .test_host_request(),
+                        &(host_custody.phase_for_application_for_test(&world.application))
+                            .test_host_request_for_test(),
                     )
                     .product()
                     .selected_commit()
@@ -271,7 +271,7 @@ fn program_output_producer_names_an_operation_not_installed_as_conditional() {
                 let host_custody = phase.test_host_request_for_test();
 
                 admitted_program_required_program(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     &world,
                     &principal,
                     &account,
@@ -320,8 +320,8 @@ fn program_output_producer_names_an_operation_not_installed_as_conditional() {
                 assert_eq!(
                     world
                         .selected_product(
-                            &(host_custody.phase_for_application(&world.application))
-                                .test_host_request(),
+                            &(host_custody.phase_for_application_for_test(&world.application))
+                                .test_host_request_for_test(),
                         )
                         .product()
                         .selected_commit(),

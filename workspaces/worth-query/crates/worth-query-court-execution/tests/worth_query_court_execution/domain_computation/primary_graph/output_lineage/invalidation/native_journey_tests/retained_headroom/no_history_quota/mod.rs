@@ -15,9 +15,9 @@ fn no_position_policy_preserves_funded_history_and_original_reader_currentness()
         worth_runtime_world::facade::RuntimeWorldBudgets::without_policy_limits(),
         clock,
         resources,
-        execution.policy,
+        (*execution.policy_for_test()),
     );
-    let configured = match execution.authority {
+    let configured = match (*execution.authority_for_test()) {
         Some(authority) => configured.with_execution_authority(authority),
         None => configured,
     };
@@ -29,8 +29,8 @@ fn no_position_policy_preserves_funded_history_and_original_reader_currentness()
             "open".into(), &live_scope(), WorthQueryPrincipalResolutionMode::Ordinary).unwrap().entity_id_for_test();
         let (_, product, _) = selected.into_parts_for_test();
         let coordinate = ProductCoordinate {
-            occurrence: product.observation().lifecycle_incarnation(),
-            generation: product.observation().reference_generation().get(),
+            occurrence: product.observation_for_test().lifecycle_incarnation(),
+            generation: product.observation_for_test().reference_generation().get(),
         };
         let source = SemanticSource {
             runtime_authority: (*world.application.runtime_for_test()).authority_identity().as_u64(),
@@ -41,33 +41,33 @@ fn no_position_policy_preserves_funded_history_and_original_reader_currentness()
         let row = RecordedSettlementIdentity::retain_for_test(&source, coordinate, 0);
         let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
         let status_ref = AccountStatus::reference();
-        let status = graph.layout().field_locator(status_ref.entity(), status_ref.aspect(), status_ref.field()).unwrap().clone();
+        let status = graph.layout_for_test().field_locator_for_test(status_ref.entity(), status_ref.aspect(), status_ref.field()).unwrap().clone();
         let label_ref = AccountLabel::reference();
-        let label = graph.layout().field_locator(label_ref.entity(), label_ref.aspect(), label_ref.field()).unwrap().clone();
-        let handle = graph.integration_handle();
-        let owner = &handle.source_owner.invalidation_owner;
+        let label = graph.layout_for_test().field_locator_for_test(label_ref.entity(), label_ref.aspect(), label_ref.field()).unwrap().clone();
+        let handle = graph.integration_handle_for_test();
+        let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
         let execution = custody.borrowed_request_for_test();
-        handle.with_runtime_mut(&execution, |runtime| {
+        handle.with_runtime_mut_for_test(&execution, |runtime| {
             let (original_handle, before) = snapshot(runtime);
             let original_fact = field_fact(&execution, runtime, &original_handle, entity, status.clone());
             register(owner, row.clone(), Arc::from([original_fact.clone()]), &before, OrdSet::new());
 
-            let cell = owner.cell_for_read(&before).unwrap().unwrap();
+            let cell = owner.cell_for_read_for_test(&before).unwrap().unwrap();
             let historical = cell.read_image();
             for index in 0..300 {
                 write_field(&execution, runtime, entity, label.clone(), &format!("unrelated-{index}"));
             }
             let (after_handle, after) = snapshot(runtime);
             let image = cell.read_image();
-            assert!(image.payload().past.len() > 256);
-            assert_eq!(image.payload().past.get(&historical.position()).unwrap().root_id, historical.root_id());
+            assert!((*image.payload().past_for_test()).len() > 256);
+            assert_eq!((*(*image.payload().past_for_test()).get(&historical.position()).unwrap().root_id_for_test()), historical.root_id());
 
             assert!(matches!(currentness(owner, &after, &row), SourceSettlementCurrentness::Clean));
             assert_eq!(field_fact(&execution, runtime, &original_handle, entity, status.clone()), original_fact);
-            let batch = owner.touched_commits_after(after.branch_id(), historical.position(), after.commit_id(), 300,
+            let batch = owner.touched_commits_after_for_test(after.branch_id(), historical.position(), after.commit_id(), 300,
                 CommitTouchInterest { entities: CommitTouchEntities::Slice(&[]), every_commit: true });
-            assert_eq!(batch.commits.len(), 300);
-            assert!(batch.caught_up_to_latest);
+            assert_eq!((*batch.commits_for_test()).len(), 300);
+            assert!((*batch.caught_up_to_latest_for_test()));
             write_field(&execution, runtime, entity, status, "closed");
             let (changed_handle, changed) = snapshot(runtime);
             assert!(matches!(currentness(owner, &changed, &row), SourceSettlementCurrentness::Dirty(_)));

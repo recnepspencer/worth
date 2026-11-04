@@ -49,7 +49,7 @@ fn revocation_after_a_queued_live_cause_terminates_delivery() {
             _,
             _,
             _,
-        >(&host_custody.phase_for_application(&context.world.application),
+        >(&host_custody.phase_for_application_for_test(&context.world.application),
             context.query,
             &context.principal,
             context.account,
@@ -72,7 +72,7 @@ fn revocation_after_a_queued_live_cause_terminates_delivery() {
             let host_custody = phase.test_host_request_for_test();
             assert_authorization_denied(
                 lease.next(
-                    &host_custody.phase_for_application(&context.world.application),
+                    &host_custody.phase_for_application_for_test(&context.world.application),
                     &context.principal,
                     &context.request,
                 ),
@@ -89,7 +89,7 @@ fn revocation_after_a_queued_live_cause_terminates_delivery() {
             let host_custody = phase.test_host_request_for_test();
             assert!(matches!(
                 lease.next(
-                    &host_custody.phase_for_application(&context.world.application),
+                    &host_custody.phase_for_application_for_test(&context.world.application),
                     &context.principal,
                     &context.request
                 ),
@@ -136,7 +136,7 @@ fn query_time_expiry_after_a_queued_live_cause_terminates_delivery() {
             _,
             _,
             _,
-        >(&host_custody.phase_for_application(&context.world.application),
+        >(&host_custody.phase_for_application_for_test(&context.world.application),
             context.query,
             &context.principal,
             context.account,
@@ -157,7 +157,7 @@ fn query_time_expiry_after_a_queued_live_cause_terminates_delivery() {
             let host_custody = phase.test_host_request_for_test();
             assert_authorization_denied(
                 lease.next(
-                    &host_custody.phase_for_application(&context.world.application),
+                    &host_custody.phase_for_application_for_test(&context.world.application),
                     &context.principal,
                     &context.request,
                 ),
@@ -174,7 +174,7 @@ fn query_time_expiry_after_a_queued_live_cause_terminates_delivery() {
             let host_custody = phase.test_host_request_for_test();
             assert!(matches!(
                 lease.next(
-                    &host_custody.phase_for_application(&context.world.application),
+                    &host_custody.phase_for_application_for_test(&context.world.application),
                     &context.principal,
                     &context.request
                 ),

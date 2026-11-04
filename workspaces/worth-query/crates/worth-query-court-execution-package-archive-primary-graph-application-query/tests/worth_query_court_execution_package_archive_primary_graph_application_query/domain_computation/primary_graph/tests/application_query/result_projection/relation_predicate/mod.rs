@@ -105,8 +105,8 @@ fn filters_siblings_before_child_projection() {
     assert_eq!((*source.aspects_for_test()).len(), 4);
     assert!(
         (*source.aspects_for_test()).iter().any(|aspect| {
-            aspect.entity == account.entity_id()
-                && aspect.aspect.as_str() == AccountStatus::reference().aspect()
+            (*aspect.entity_for_test()) == account.entity_id_for_test()
+                && (*aspect.aspect_for_test()).as_str() == AccountStatus::reference().aspect()
         }),
         "the root predicate is a source dependency even when its field is not projected"
     );

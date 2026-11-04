@@ -33,7 +33,7 @@ fn decode_scope_keeps_worker_only_native_and_preserves_an_accounted_ancestor() {
     let native = ValueDecodeState::new(Default::default());
     native
         .run_for_test(&request, |session| {
-            assert!(session.checkpoint.is_none());
+            assert!((*session.checkpoint_for_test()).is_none());
             assert!((*native.memory_for_test()).borrow().is_none());
         })
         .unwrap();
@@ -52,7 +52,7 @@ fn decode_scope_keeps_worker_only_native_and_preserves_an_accounted_ancestor() {
         .run(ExecutionWorkCeiling::new(None), |_| {
             accounted
                 .run_for_test(&request, |session| {
-                    assert!(session.checkpoint.is_some());
+                    assert!((*session.checkpoint_for_test()).is_some());
                     assert!((*accounted.memory_for_test()).borrow().is_some());
                 })
                 .unwrap();

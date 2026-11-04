@@ -32,9 +32,9 @@ fn causal_fact_survives_post_commit_snapshot_failure_via_relational_owner_read()
             let provider = &(*world.application.primary_provider_for_test());
             let request = phase.borrowed_request_for_test();
             let basis = selected.product().relational_basis_for_test();
-            provider.graph.with_runtime_mut(&request, |runtime| {
+            (*provider.graph_for_test()).with_runtime_mut_for_test(&request, |runtime| {
                 let snapshot = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(runtime, basis).unwrap();
-                let resolution = provider.resolve_aftermath_causality_in_snapshot(
+                let resolution = provider.resolve_aftermath_causality_in_snapshot_for_test(
                     &request, runtime, basis, &snapshot, &pending, None,
                 );
                 worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);

@@ -175,16 +175,16 @@ pub fn mutation_work(
             );
             let request = live_scope();
             let principal =
-                authenticated_principal(&(phase_custody).test_host_request(), &world, &request);
+                authenticated_principal(&(phase_custody).test_host_request_for_test(), &world, &request);
             let account = resolved_account(
-                &(phase_custody).test_host_request(),
+                &(phase_custody).test_host_request_for_test(),
                 &world,
                 "open",
                 &request,
             );
 
             admitted_program(
-                &phase_custody.phase_for_application(&world.application),
+                &phase_custody.phase_for_application_for_test(&world.application),
                 &world,
                 &principal,
                 &account,
@@ -336,15 +336,15 @@ pub fn grow_unrelated_accounts(
     if count == 0 {
         return;
     }
-    let graph = (*world.application.primary_provider_for_test()).graph.clone();
-    let kind = graph
-        .layout
-        .entity_kind(Account::reference().name())
+    let graph = (*(*world.application.primary_provider_for_test()).graph_for_test()).clone();
+    let kind = (*graph
+        .layout_for_test())
+        .entity_kind_for_test(Account::reference().name())
         .expect("account kind is installed");
     let locator = |entity: &str, aspect: &str, field: &str| {
-        graph
-            .layout
-            .field_locator(entity, aspect, field)
+        (*graph
+            .layout_for_test())
+            .field_locator_for_test(entity, aspect, field)
             .expect("scale field is installed")
             .clone()
     };

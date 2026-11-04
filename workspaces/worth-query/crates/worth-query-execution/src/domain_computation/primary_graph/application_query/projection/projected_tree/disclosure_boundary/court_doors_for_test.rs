@@ -24,3 +24,19 @@ impl WorthQueryApplicationDisclosedProjectionTree {
         Self::take(self)
     }
 }
+
+impl WorthQueryApplicationDisclosedProjectionTree {
+    #[doc(hidden)]
+    pub fn retain_projection_for_test(
+        &mut self,
+        disclosure: worth_execution::ExecutionArray<(
+            std::sync::Arc<
+                worth_query_declaration::facade::application_query::ApplicationQueryResultSlotKey,
+            >,
+            bool,
+        )>,
+        memory: Option<worth_execution::ExecutionMemoryReservation>,
+    ) -> Option<std::sync::Arc<OriginalProjection>> {
+        Self::retain_projection(self, disclosure, memory)
+    }
+}

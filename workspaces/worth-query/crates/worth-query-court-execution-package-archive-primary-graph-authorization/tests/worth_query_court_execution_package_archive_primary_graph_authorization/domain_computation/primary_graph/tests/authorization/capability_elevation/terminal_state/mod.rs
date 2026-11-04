@@ -44,15 +44,15 @@ pub fn elevation_status(
         .runtime_for_test())
         .primary_graph()
         .unwrap()
-        .layout()
-        .field_locator(field.entity(), field.aspect(), field.field())
+        .layout_for_test()
+        .field_locator_for_test(field.entity(), field.aspect(), field.field())
         .unwrap()
         .clone();
     let value = observed_field(
         execution,
         &world.application,
-        identity.entity_id(),
-        identity.entity_kind(),
+        identity.entity_id_for_test(),
+        identity.entity_kind_for_test(),
         &locator,
     );
     CapabilityElevationStatusBinding::decode(&value).unwrap()
@@ -70,8 +70,8 @@ pub fn review_status(
         .runtime_for_test())
         .primary_graph()
         .unwrap()
-        .layout()
-        .field_locator(field.entity(), field.aspect(), field.field())
+        .layout_for_test()
+        .field_locator_for_test(field.entity(), field.aspect(), field.field())
         .unwrap()
         .clone();
     let value = observed_field(execution, &world.application, review, kind, &locator);
@@ -86,15 +86,15 @@ pub fn has_exact_reviewer(
 ) -> bool {
     let (review, _) = resolved_review(phase_custody, execution, world);
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let relation_kind = graph
-        .layout()
+    let relation_kind = (*graph
+        .layout_for_test()
         .relation(CapabilityReviewer::reference().name())
         .unwrap()
-        .kind;
+        .kind_for_test());
     let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
     graph
-        .integration_handle()
-        .with_runtime_mut(execution, |runtime| {
+        .integration_handle_for_test()
+        .with_runtime_mut_for_test(execution, |runtime| {
             let snapshot = selected.application_basis_for_test().snapshot_handle();
             runtime
                 .read_truth()
@@ -138,21 +138,21 @@ pub fn has_exact_approver(
         )
         .unwrap();
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let relation_kind = graph
-        .layout()
+    let relation_kind = (*graph
+        .layout_for_test()
         .relation(CapabilityElevationApprover::reference().name())
         .unwrap()
-        .kind;
+        .kind_for_test());
     let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
     graph
-        .integration_handle()
-        .with_runtime_mut(execution, |runtime| {
+        .integration_handle_for_test()
+        .with_runtime_mut_for_test(execution, |runtime| {
             let snapshot = selected.application_basis_for_test().snapshot_handle();
             runtime
                 .read_truth()
                 .bounded_incoming_relations_of_kind_at_version(
                     execution,
-                    elevation.entity_id(),
+                    elevation.entity_id_for_test(),
                     relation_kind,
                     snapshot.version_id(),
                     4,
@@ -163,7 +163,7 @@ pub fn has_exact_approver(
                     let relations = read.into_records();
                     relations.len() == 1
                         && relations[0].source == approver
-                        && relations[0].target == elevation.entity_id()
+                        && relations[0].target == elevation.entity_id_for_test()
                 })
         })
 }
@@ -188,7 +188,7 @@ pub fn resolved_review(
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
-    (identity.entity_id(), identity.entity_kind())
+    (identity.entity_id_for_test(), identity.entity_kind_for_test())
 }
 
 pub fn observed_field<Schema>(
@@ -206,9 +206,9 @@ where
         .select_product_branch_for_test(execution, runtime.product_runtime().default_branch_for_test())
         .expect("the selected product branch remains admitted");
     graph
-        .integration_handle()
-        .with_runtime_mut(execution, |relational| {
-            let snapshot = selected.application_basis().snapshot_handle();
+        .integration_handle_for_test()
+        .with_runtime_mut_for_test(execution, |relational| {
+            let snapshot = selected.application_basis_for_test().snapshot_handle();
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::observation::observe_field_value(
                 relational, execution, snapshot, entity, kind, locator,
             )

@@ -56,8 +56,8 @@ pub fn installed_field(
         .runtime_for_test())
         .primary_graph()
         .unwrap()
-        .layout()
-        .field_locator(entity, aspect, field)
+        .layout_for_test()
+        .field_locator_for_test(entity, aspect, field)
         .unwrap()
         .clone()
 }
@@ -83,7 +83,7 @@ pub fn grant(
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap()
-        .entity_id()
+        .entity_id_for_test()
 }
 
 pub fn account(
@@ -107,7 +107,7 @@ pub fn account(
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap()
-        .entity_id()
+        .entity_id_for_test()
 }
 
 pub fn update_grant_field(
@@ -197,15 +197,15 @@ pub fn replace_parent(
 }
 
 pub fn relation_kind(world: &AuthorizationWorld, name: &str) -> KindId {
-    (*world
+    (*(*world
         .application
         .runtime_for_test())
         .primary_graph()
         .unwrap()
-        .layout()
+        .layout_for_test()
         .relation(name)
         .unwrap()
-        .kind
+        .kind_for_test())
 }
 
 pub fn relation_source(
@@ -218,8 +218,8 @@ pub fn relation_source(
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
     graph
-        .integration_handle()
-        .with_runtime_mut(execution, |runtime| {
+        .integration_handle_for_test()
+        .with_runtime_mut_for_test(execution, |runtime| {
             let snapshot = selected.application_basis_for_test().snapshot_handle();
 
             runtime
@@ -313,8 +313,8 @@ pub fn current_relation(
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
     graph
-        .integration_handle()
-        .with_runtime_mut(execution, |runtime| {
+        .integration_handle_for_test()
+        .with_runtime_mut_for_test(execution, |runtime| {
             let snapshot = selected.application_basis_for_test().snapshot_handle();
 
             runtime

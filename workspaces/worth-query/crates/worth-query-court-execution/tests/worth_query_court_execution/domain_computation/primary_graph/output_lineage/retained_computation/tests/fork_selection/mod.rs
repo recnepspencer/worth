@@ -71,8 +71,8 @@ fn nested_forks_select_the_captured_generation_and_stop_at_local_absence() {
         output_binding: OutputBindingIdentity::declared_for_test("()"),
     };
     let parent = ProductCoordinate {
-        occurrence: product.observation().lifecycle_incarnation(),
-        generation: product.observation().reference_generation().get(),
+        occurrence: product.observation_for_test().lifecycle_incarnation(),
+        generation: product.observation_for_test().reference_generation().get(),
     };
     let partition = [0x71; 32];
     let restored =
@@ -85,13 +85,13 @@ fn nested_forks_select_the_captured_generation_and_stop_at_local_absence() {
             None,
         );
         };
-    restored(&mut lineage, product.observation());
+    restored(&mut lineage, product.observation_for_test());
     let captured =
         Arc::clone(&(*lineage.by_source_for_test())[&source][&(*parent.occurrence_for_test())][&(*parent.generation_for_test())][0]);
-    captured.get().unwrap().mutable.lock().unwrap().computation =
+    (*(*captured.get().unwrap().mutable_for_test()).lock().unwrap().computation_mut_for_test()) =
         lineage.retain_computation_for_test(sealed_run_for_lineage_test());
-    lineage.register_fork_for_test(product.observation(), &child);
-    lineage.register_fork_for_test(admitted_child.observation(), &nested);
+    lineage.register_fork_for_test(product.observation_for_test(), &child);
+    lineage.register_fork_for_test(admitted_child.observation_for_test(), &nested);
     let select =
         |lineage: &WorthQueryApplicationOutputLineage,
          observation: &worth_runtime_world::facade::ProductBranchObservation| {
@@ -129,7 +129,7 @@ fn nested_forks_select_the_captured_generation_and_stop_at_local_absence() {
     assert!(!Arc::ptr_eq(&local, &captured));
     assert!(
         matches!(
-            local.get().unwrap().mutable.lock().unwrap().computation,
+            (*(*local.get().unwrap().mutable_for_test()).lock().unwrap().computation_for_test()),
             RecordedComputation::Absent(PriorAbsence::Restored)
         ),
         "local typed absence stops ancestor reuse"

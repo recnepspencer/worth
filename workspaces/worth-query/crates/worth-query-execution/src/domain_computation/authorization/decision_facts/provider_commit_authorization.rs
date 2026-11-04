@@ -136,3 +136,5 @@ impl WorthQueryRegisteredCommitAuthorization {
         )
     }
 }
+
+mod court_doors_for_test;

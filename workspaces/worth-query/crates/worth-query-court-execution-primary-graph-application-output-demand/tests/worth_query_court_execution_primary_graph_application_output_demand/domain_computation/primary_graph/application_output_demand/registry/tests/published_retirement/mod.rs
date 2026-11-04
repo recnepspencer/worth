@@ -61,18 +61,18 @@ fn last_published_interest_releases_its_own_prerequisite_claims() {
             let mut state = (*registry.state_for_test()).lock().unwrap();
             let claims = vec![Arc::new(upstream_key.clone())];
 
-            state.records.get_mut(&output_key).unwrap().prerequisites = claims;
-            state
-                .records
+            (*(*state.records_for_test()).get_mut(&output_key).unwrap().prerequisites_mut_for_test()) = claims;
+            (*(*state
+                .records_for_test())
                 .get_mut(&upstream_key)
                 .unwrap()
-                .framework_required_count += 1;
+                .framework_required_count_mut_for_test()) += 1;
         }
         drop(output);
         let state = (*registry.state_for_test()).lock().unwrap();
-        assert!(!state.records.contains_key(&output_key));
-        assert_eq!(state.records[&upstream_key].framework_required_count, 0);
-        assert_eq!(state.records[&upstream_key].interests, 1);
+        assert!(!(*state.records_for_test()).contains_key_for_test(&output_key));
+        assert_eq!((*(*state.records_for_test())[&upstream_key].framework_required_count_for_test()), 0);
+        assert_eq!((*(*state.records_for_test())[&upstream_key].interests_for_test()), 1);
         drop(state);
         drop(upstream);
     });
@@ -96,37 +96,37 @@ fn one_remaining_interest_keeps_the_undelivered_publication() {
         {
             let mut state = (*registry.state_for_test()).lock().unwrap();
 
-            state.records.get_mut(&output_key).unwrap().prerequisites = claims.clone();
-            state
-                .records
+            (*(*state.records_for_test()).get_mut(&output_key).unwrap().prerequisites_mut_for_test()) = claims.clone();
+            (*(*state
+                .records_for_test())
                 .get_mut(&upstream_key)
                 .unwrap()
-                .framework_required_count += 1;
+                .framework_required_count_mut_for_test()) += 1;
         }
         drop(first);
         {
             let state = (*registry.state_for_test()).lock().unwrap();
-            assert_eq!(state.records[&output_key].interests, 1);
+            assert_eq!((*(*state.records_for_test())[&output_key].interests_for_test()), 1);
             assert_eq!(
-                state.records[&output_key].prerequisites, claims,
+                (*(*state.records_for_test())[&output_key].prerequisites_for_test()), claims,
                 "the remaining interest still owns the exact prerequisite claim"
             );
-            assert_eq!(state.records[&upstream_key].framework_required_count, 1);
+            assert_eq!((*(*state.records_for_test())[&upstream_key].framework_required_count_for_test()), 1);
 
             assert!(
-                matches!(&state.records[&output_key].state, DemandState::Output(output)
+                matches!(&(*(*state.records_for_test())[&output_key].state_for_test()), DemandState::Output(output)
                 if matches!((*output.checkpoint_for_test()), Some(WorthQueryOutputCheckpoint::Published { .. })))
             );
         }
         drop(second);
-        assert!(!(*registry
+        assert!(!(*(*registry
             .state_for_test())
             .lock()
             .unwrap()
-            .records
-            .contains_key(&output_key));
+            .records_for_test())
+            .contains_key_for_test(&output_key));
         assert_eq!(
-            (*registry.state_for_test()).lock().unwrap().records[&upstream_key].framework_required_count,
+            (*(*(*registry.state_for_test()).lock().unwrap().records_for_test())[&upstream_key].framework_required_count_for_test()),
             0
         );
         drop(upstream);

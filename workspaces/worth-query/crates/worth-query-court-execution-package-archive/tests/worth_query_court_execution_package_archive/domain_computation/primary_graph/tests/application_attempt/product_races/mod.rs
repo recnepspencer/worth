@@ -36,10 +36,10 @@ fn unrelated_product_drift_preserves_the_prepared_attempt_and_changed_facts_stal
         .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
         .expect("the fixture read owns its installed host call");
     let commit_count = || {
-        (*world
+        (*(*world
             .application
             .primary_provider_for_test())
-            .graph
+            .graph_for_test())
             .with_runtime(request_execution, |runtime| {
                 runtime.history().immutable_commit_count()
             })

@@ -53,7 +53,7 @@ fn occupied_real_registration_cleans_the_conflict_and_preserves_an_interleaved_p
             let phase = &active_phase;
 
             let (victim, peer) = equivalent_programs(
-                &host_custody.phase_for_application(&world.application),
+                &host_custody.phase_for_application_for_test(&world.application),
                 &world,
                 &live_scope(),
                 "occupied-registration",
@@ -114,18 +114,18 @@ pub fn reject_occupied_registration(
     .unwrap_or_else(|_| panic!("the real victim session must reach provider registration"));
     let reserved_affinity = (*admitted_session
         .staged_for_test())
-        .bind_application_attempt(reservation_basis)
+        .bind_application_attempt_for_test(reservation_basis)
         .expect("the real terminal session must bind its captured attempt basis");
     let reservation = (*world
         .application
         .primary_provider_for_test())
-        .reserve_application_attempt(&reserved_affinity)
+        .reserve_application_attempt_for_test(&reserved_affinity)
         .expect("the rightful reservation must occupy the actual attempt store");
     assert_eq!(
         (*world
             .application
             .primary_provider_for_test())
-            .application_attempt_resource_count(),
+            .application_attempt_resource_count_for_test(),
         2,
         "the peer registration and victim reservation must coexist before cleanup"
     );
@@ -146,7 +146,7 @@ pub fn reject_occupied_registration(
         Ok(_) => panic!("the actual occupied store must reject duplicate registration"),
         Err(failure) => failure,
     };
-    let WorthQueryProviderProgressionCompletion { outcome, cleanup } = failure.into_completion();
+    let WorthQueryProviderProgressionCompletion { outcome, cleanup } = failure.into_completion_for_test();
     assert!(matches!(
         outcome,
         worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::outcome::WorthQueryProviderProgressionOutcome::Denied(
@@ -157,7 +157,7 @@ pub fn reject_occupied_registration(
         (*world
             .application
             .primary_provider_for_test())
-            .application_attempt_resource_count(),
+            .application_attempt_resource_count_for_test(),
         1,
         "duplicate-registration cleanup must release only its exact stale reservation"
     );
@@ -231,7 +231,7 @@ pub fn while_peer_is_registered(
         (*world
             .application
             .primary_provider_for_test())
-            .application_attempt_resource_count(),
+            .application_attempt_resource_count_for_test(),
         1,
         "the peer must occupy the actual application-attempt store"
     );
@@ -241,7 +241,7 @@ pub fn while_peer_is_registered(
         (*world
             .application
             .primary_provider_for_test())
-            .application_attempt_resource_count(),
+            .application_attempt_resource_count_for_test(),
         1,
         "victim cleanup must preserve the exact registered peer"
     );
@@ -249,8 +249,8 @@ pub fn while_peer_is_registered(
     let commit_lane = (*world
         .application
         .primary_provider_for_test())
-        .application_branch_commit_lane(product.observation_for_test());
-    let coordination = commit_lane.enter();
+        .application_branch_commit_lane_for_test(product.observation_for_test());
+    let coordination = commit_lane.enter_for_test();
     let authority = WorthQueryApplicationCommitProgressionAuthority {
         application: &world.application,
         provider: &(*world.application.primary_provider_for_test()),
@@ -267,12 +267,12 @@ pub fn while_peer_is_registered(
         phase,
         &world.application,
         registered
-            .progress(
+            .progress_for_test(
                 &phase.borrowed_request_for_test(),
                 &authority,
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )
-            .finish(
+            .finish_for_test(
                 lease,
                 running,
                 None,

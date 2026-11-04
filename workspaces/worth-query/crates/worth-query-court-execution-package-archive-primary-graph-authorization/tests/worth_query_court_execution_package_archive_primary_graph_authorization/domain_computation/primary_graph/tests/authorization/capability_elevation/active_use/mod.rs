@@ -28,7 +28,7 @@ fn approved_receipt_rejects_another_elevation_and_a_narrowed_amount() {
                 world
                     .selected_product(&host_custody)
                     .admit_approved_elevation_access(
-                        &host_custody.phase_for_application(&world.application),
+                        &host_custody.phase_for_application_for_test(&world.application),
                         &approved,
                         &principal,
                         &capability,
@@ -69,7 +69,7 @@ fn approved_receipt_from_another_runtime_cannot_open_active_use() {
             world
                 .selected_product(&host_custody)
                 .admit_approved_elevation_access(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     &foreign,
                     &principal,
                     &capability,
@@ -111,7 +111,7 @@ fn approved_touch_elevation_cannot_authorize_a_disbursement_request() {
                 world
             .selected_product(&host_custody)
             .admit_approved_elevation_access(
-                &host_custody.phase_for_application(&world.application),
+                &host_custody.phase_for_application_for_test(&world.application),
                 &approved,
                 &principal,
                 &capability,
@@ -289,7 +289,7 @@ fn retargeted_direct_elevation_resource_stales_admitted_authority() {
             world
                 .application
                 .authorize_capability_operation(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     access,
                     &operation,
                     Default::default(),
@@ -361,7 +361,7 @@ fn additional_foreign_elevation_resource_stales_admitted_authority() {
             world
                 .application
                 .authorize_capability_operation(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     access,
                     &operation,
                     Default::default(),

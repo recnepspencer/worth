@@ -10,11 +10,11 @@ fn map_read_preserves_its_callers_work_stop_and_releases_transient_memory() {
             let borrowed_execution = host_custody.borrowed_request_for_test();
             let execution = &borrowed_execution;
             let old = world.selected_product(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
             );
             let unrelated = old
                 .resolve_entity(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     AccountStatus::reference(),
                     "unrelated".to_owned(),
                     &scope,
@@ -23,9 +23,9 @@ fn map_read_preserves_its_callers_work_stop_and_releases_transient_memory() {
                 .unwrap();
             let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
             let field = AccountStatus::reference();
-            let locator = graph
-                .layout
-                .field_locator(field.entity(), field.aspect(), field.field())
+            let locator = (*graph
+                .layout_for_test())
+                .field_locator_for_test(field.entity(), field.aspect(), field.field())
                 .unwrap()
                 .clone();
             drop(old);
@@ -44,12 +44,12 @@ fn map_read_preserves_its_callers_work_stop_and_releases_transient_memory() {
                 )),
             );
             let selected = world.selected_product(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
             );
             let external = world.authenticate("alice", Duration::from_secs(60), &scope);
             let principal = selected
                 .resolve_authenticated_principal(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     &world.binding,
                     &external,
                     &scope,
@@ -58,7 +58,7 @@ fn map_read_preserves_its_callers_work_stop_and_releases_transient_memory() {
                 .unwrap();
             let root = selected
                 .resolve_entity(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     AccountLabel::reference(),
                     "primary".to_owned(),
                     &scope,
@@ -80,7 +80,7 @@ fn map_read_preserves_its_callers_work_stop_and_releases_transient_memory() {
                 .retain_selection_for_test(execution)
                 .unwrap()
                 .admit_application_query(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     &first_query,
                     &access,
                     ApplicationQueryParameterSet::new(),
@@ -91,7 +91,7 @@ fn map_read_preserves_its_callers_work_stop_and_releases_transient_memory() {
                 .retain_selection_for_test(execution)
                 .unwrap()
                 .admit_application_query(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     &second_query,
                     &access,
                     ApplicationQueryParameterSet::new()
@@ -120,7 +120,7 @@ fn map_read_preserves_its_callers_work_stop_and_releases_transient_memory() {
             let (outcome, _) = execution
                 .run(
                     ExecutionWorkCeiling::new(Some(1)),
-                    |lease| map.run_owned(lease, |pair, context| pair.run(execution, context)),
+                    |lease| map.run_owned(lease, |pair, context| pair.run_for_test(execution, context)),
                 )
                 .unwrap();
             match outcome {

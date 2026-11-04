@@ -14,3 +14,10 @@ impl WorthQueryProgramActivationLayout {
         &self.program_revision_locator
     }
 }
+
+impl WorthQueryProgramActivationLayout {
+    #[doc(hidden)]
+    pub fn program_revision_locator_into_for_test(self) -> AspectFieldLocator {
+        self.program_revision_locator
+    }
+}

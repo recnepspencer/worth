@@ -13,7 +13,7 @@ pub fn body<Q>(
     source: &WorthQueryObservedSource<Q>,
     request: &WorthQueryRequestScope,
 ) -> Arc<ComponentSelection> {
-    let layout = (*world.application.runtime_for_test()).primary_graph().unwrap().layout();
+    let layout = (*world.application.runtime_for_test()).primary_graph().unwrap().layout_for_test();
     let facts = source
         .retained_checkpoint_facts_for_test(layout, Some(request), Allocation::SystemAllocation)
         .unwrap();

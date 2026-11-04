@@ -36,7 +36,7 @@ pub fn reducing_member(
                     context.poll()?;
                     Ok::<_, MapKernelFailure<()>>(*value)
                 };
-                let result = managed.request.dispatch().unwrap().reduce_retained(
+                let result = (*managed.request_for_test()).dispatch_for_test().unwrap().reduce_retained_for_test(
                     None, &map, (kernel, kernel), 0_u64, |left, right| left + right,
                     worth_query_execution::facade::application_contribution::WorthQueryPartitionedComputationFullCause::Unretained,
                 ).unwrap();
@@ -77,7 +77,7 @@ fn certification_preserves_nested_results_without_billing_the_advancement() {
                         .into_slots_for_test()
                         .pop()
                         .unwrap()
-                        .into_value::<Result<(u64, Option<(u64, u64)>), ()>>()
+                        .into_value_for_test::<Result<(u64, Option<(u64, u64)>), ()>>()
                         .unwrap()
                 })
                 .collect::<Vec<_>>();

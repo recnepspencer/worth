@@ -40,7 +40,7 @@ fn owner_read_denies_missing_foreign_and_every_commit_affinity_substitution() {
     let record = binding.record_for_test().clone();
     assert_eq!(
         provider
-            .observe_expected(execution, &binding, &commit, runtime_id)
+            .observe_expected_for_test(execution, &binding, &commit, runtime_id)
             .unwrap()
             .record(),
         &record
@@ -55,11 +55,11 @@ fn owner_read_denies_missing_foreign_and_every_commit_affinity_substitution() {
         )),
     );
     assert_eq!(
-        provider.observe_expected(execution, &absent, &commit, runtime_id),
+        provider.observe_expected_for_test(execution, &absent, &commit, runtime_id),
         Err(Denial::Missing)
     );
     assert_eq!(
-        provider.observe_expected(execution, &binding, &commit, runtime_id + 1),
+        provider.observe_expected_for_test(execution, &binding, &commit, runtime_id + 1),
         Err(Denial::ForeignRuntime)
     );
     assert_commit_affinity_substitutions(execution, provider, &binding, commit, runtime_id);
@@ -85,7 +85,7 @@ pub fn assert_commit_affinity_substitutions(
         Err(Denial::CommitMismatch)
     );
     let feature = BranchId("committed-outbox-feature".to_owned());
-    (*provider.graph_for_test()).with_runtime_mut(execution, |runtime| {
+    (*provider.graph_for_test()).with_runtime_mut_for_test(execution, |runtime| {
         let (_, basis) = runtime.observe_fork_source(&commit.branch_id).unwrap();
         runtime
             .fork_branch(execution, feature.clone(), basis)
@@ -109,7 +109,7 @@ pub fn assert_commit_affinity_substitutions(
             .push_batch(
                 WorkerIntentBatch::new("feature-outbox-head").push(
                     dispatch_outbox_create_intent(
-                        Some((*provider.graph_for_test()).layout.provider_dispatch_outbox()),
+                        Some((*(*provider.graph_for_test()).layout_for_test()).provider_dispatch_outbox_for_test()),
                         Some(&feature_record),
                     )
                     .unwrap(),
@@ -142,7 +142,7 @@ fn fresh_later_head_still_reports_the_rows_exact_creation_commit() {
     assert_ne!(first_commit, later_commit);
 
     let observed = provider
-        .observe_expected(execution, &first_binding, &first_commit, runtime_id)
+        .observe_expected_for_test(execution, &first_binding, &first_commit, runtime_id)
         .expect("the current snapshot retains the older live outbox row");
     assert_eq!(observed.commit_reference(), &first_commit);
     assert_eq!(observed.record(), &first);
@@ -167,14 +167,14 @@ fn every_later_valid_field_substitution_leaves_exact_commit_truth_unchanged() {
         let (binding, commit, runtime_id) = commit_record(execution, provider, 31);
         let record = binding.record_for_test().clone();
         let observed = provider
-            .observe_expected(execution, &binding, &commit, runtime_id)
+            .observe_expected_for_test(execution, &binding, &commit, runtime_id)
             .expect("original exact-commit row");
         let RecordRef::Entity(entity_id) = observed.record_ref() else {
             panic!("dispatch outbox is an entity record");
         };
-        provider.graph.with_runtime_mut(execution, |runtime| {
+        (*provider.graph_for_test()).with_runtime_mut_for_test(execution, |runtime| {
             let locator =
-                outbox_field_locator(provider.graph.layout.provider_dispatch_outbox(), field);
+                outbox_field_locator((*(*provider.graph_for_test()).layout_for_test()).provider_dispatch_outbox_for_test(), field);
             let mut transaction = {
                 let transaction_validation_input = runtime
                     .admit_branch_basis(&runtime.main_branch_identity())
@@ -205,7 +205,7 @@ fn every_later_valid_field_substitution_leaves_exact_commit_truth_unchanged() {
         });
 
         let exact = provider
-            .observe_expected(execution, &binding, &commit, runtime_id)
+            .observe_expected_for_test(execution, &binding, &commit, runtime_id)
             .expect("later head cannot replace exact-commit truth");
         assert_eq!(exact.record(), &record);
         assert_eq!(exact.commit_reference(), &commit);
@@ -222,12 +222,12 @@ fn later_deletion_cannot_erase_exact_commit_truth() {
     let (binding, commit, runtime_id) = commit_record(execution, provider, 32);
     let record = binding.record_for_test().clone();
     let observed = provider
-        .observe_expected(execution, &binding, &commit, runtime_id)
+        .observe_expected_for_test(execution, &binding, &commit, runtime_id)
         .expect("original exact-commit row");
     let RecordRef::Entity(entity_id) = observed.record_ref() else {
         panic!("dispatch outbox is an entity record");
     };
-    provider.graph.with_runtime_mut(execution, |runtime| {
+    (*provider.graph_for_test()).with_runtime_mut_for_test(execution, |runtime| {
         let mut transaction = {
             let transaction_validation_input = runtime
                 .admit_branch_basis(&runtime.main_branch_identity())
@@ -255,7 +255,7 @@ fn later_deletion_cannot_erase_exact_commit_truth() {
     });
 
     let exact = provider
-        .observe_expected(execution, &binding, &commit, runtime_id)
+        .observe_expected_for_test(execution, &binding, &commit, runtime_id)
         .expect("later deletion cannot erase retained exact-commit truth");
     assert_eq!(exact.record(), &record);
 }

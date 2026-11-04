@@ -115,10 +115,10 @@ fn native_query_observations_preserve_exact_binding_without_retaining_a_reader()
                 assert!((*result_set.source().footprint_for_test().aspects_for_test()).is_empty());
                 let completed = result.into_admitted_disclosed().into_output_demand_source();
                 let observation = completed.retain_inspection_observation().unwrap();
-                assert_eq!((*observation.source_for_test()).original_binding(), binding.as_ref());
+                assert_eq!((*observation.source_for_test()).original_binding_for_test(), binding.as_ref());
                 assert!(std::ptr::eq(
                     row.footprint_for_test(),
-                    (*observation.source_for_test()).original_row_footprints().next().unwrap()
+                    (*observation.source_for_test()).original_row_footprints_for_test().next().unwrap()
                 ));
                 observations.push(observation);
             }
@@ -199,9 +199,9 @@ fn native_query_observation_preserves_many_and_empty_rosters_separately_from_sel
                 .zip(set.original_row_footprints_for_test())
             {
                 assert!(std::ptr::eq(source.footprint_for_test(), footprint));
-                assert!(footprint.complete);
+                assert!((*footprint.complete_for_test()));
                 assert!(
-                    !footprint.aspects.is_empty(),
+                    !(*footprint.aspects_for_test()).is_empty(),
                     "the original projection reads are distinct from membership evidence"
                 );
             }
@@ -232,9 +232,9 @@ fn native_query_observation_preserves_many_and_empty_rosters_separately_from_sel
         })
         .unwrap();
     assert_eq!(registry.observe().active(), baseline);
-    assert_eq!((*many.source_for_test()).original_row_footprints().len(), 2);
-    assert_eq!((*empty.source_for_test()).original_row_footprints().len(), 0);
-    assert!((*empty.source_for_test()).original_binding().is_some());
+    assert_eq!((*many.source_for_test()).original_row_footprints_for_test().len(), 2);
+    assert_eq!((*empty.source_for_test()).original_row_footprints_for_test().len(), 0);
+    assert!((*empty.source_for_test()).original_binding_for_test().is_some());
     assert!(
         (*empty.source_for_test()).footprint_for_test().root_selection.is_some(),
         "absence still has genuine selection evidence"

@@ -132,14 +132,14 @@ fn non_correctable_source_keeps_disclosure_and_releases_its_native_input() {
         };
         let source_commit = receipt.commit_reference().clone();
         let source_branch = receipt.product_branch();
-        assert!((*world.application.primary_provider_for_test()).observe_completed_application(&source_commit).is_some());
+        assert!((*world.application.primary_provider_for_test()).observe_completed_application_for_test(&source_commit).is_some());
         let carrier = receipt.authority_binding().clone();
         drop(receipt);
         assert!(carrier.retained_governed_input_carrier_for_test().is_none());
         let disclosure = carrier.original_inspection_disclosure_for_test().expect("actual source captured inspection meaning");
-        assert_eq!(disclosure.scope().subject(), account.entity_id_for_test());
-        assert_eq!(disclosure.association().source_type(), std::any::TypeId::of::<OptionalOutputMutationBinding>());
-        assert_eq!(disclosure.disclosure().query(), world.application.installed_schema().installed_query_binding::<
+        assert_eq!(disclosure.scope_for_test().subject_for_test(), account.entity_id_for_test());
+        assert_eq!(disclosure.association_for_test().source_type(), std::any::TypeId::of::<OptionalOutputMutationBinding>());
+        assert_eq!(disclosure.disclosure_for_test().query_for_test(), world.application.installed_schema().installed_query_binding::<
             worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::current_output_source::TestAccountSourceBinding,
         >().unwrap().query().identity());
         let sibling = carrier.clone();
@@ -154,7 +154,7 @@ fn non_correctable_source_keeps_disclosure_and_releases_its_native_input() {
         assert!(sibling.original_inspection_disclosure_for_test().is_some());
         let closed = world.application.on_branch(source_branch).close(&phase).expect("the ordinary product occurrence closes");
         assert!(closed.is_complete());
-        assert!((*world.application.primary_provider_for_test()).observe_completed_application(&source_commit).is_some(), "native history still owns the completed source after ordinary close");
+        assert!((*world.application.primary_provider_for_test()).observe_completed_application_for_test(&source_commit).is_some(), "native history still owns the completed source after ordinary close");
         sibling
     }).unwrap();
     drop(world);

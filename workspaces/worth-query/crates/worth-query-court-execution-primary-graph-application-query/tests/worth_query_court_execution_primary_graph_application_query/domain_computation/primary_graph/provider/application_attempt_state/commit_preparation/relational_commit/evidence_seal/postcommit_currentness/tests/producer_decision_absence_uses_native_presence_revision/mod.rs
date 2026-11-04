@@ -10,13 +10,13 @@ fn producer_decision_absence_uses_native_presence_revision() {
         .expect("the fixture read owns its installed host call");
     let fact = WorthQueryApplicationObservedFact::AbsentField {
         entity_id: entity,
-        kind: (*world
+        kind: (*(*world
             .application
             .runtime_for_test())
             .primary_graph()
             .unwrap()
-            .layout
-            .entity_kind(AccountIdentity::reference().entity())
+            .layout_for_test())
+            .entity_kind_for_test(AccountIdentity::reference().entity())
             .unwrap(),
         locator: planned(&locator),
     };

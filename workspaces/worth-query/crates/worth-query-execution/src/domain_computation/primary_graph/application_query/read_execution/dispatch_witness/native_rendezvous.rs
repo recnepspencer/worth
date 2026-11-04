@@ -171,7 +171,7 @@ impl NativeReadRendezvousControl for NativeReadRendezvous {
     }
 }
 impl NativeReadRendezvousGuardForTest {
-    pub(in crate::domain_computation::primary_graph) fn assert_overlap_for_test(&self) {
+    pub fn assert_overlap_for_test(&self) {
         let state = self.gate.state.lock().unwrap();
         assert!(
             !state.watchdog_failed,

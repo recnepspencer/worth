@@ -47,3 +47,10 @@ impl ManagedIndexDirectory {
         Self::remove(self, id)
     }
 }
+
+impl RegisteredIndex {
+    #[doc(hidden)]
+    pub fn state_for_test(&self) -> &Arc<dyn Any + Send + Sync> {
+        &self.state
+    }
+}

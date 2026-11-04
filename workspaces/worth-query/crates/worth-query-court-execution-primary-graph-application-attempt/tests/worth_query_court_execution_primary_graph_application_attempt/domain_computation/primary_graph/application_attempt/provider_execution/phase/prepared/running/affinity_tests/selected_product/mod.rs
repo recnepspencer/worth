@@ -18,7 +18,7 @@ fn an_exact_sibling_product_cannot_substitute_at_provider_plan_binding() {
                 phase,
                 &world,
                 retained_program(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     &world,
                     "product-owner",
                 ),
@@ -42,7 +42,7 @@ fn an_exact_sibling_product_cannot_substitute_at_provider_plan_binding() {
                 .application
                 .select_product_branch_for_test(&phase.borrowed_request_for_test(), &sibling)
                 .expect("the exact sibling product remains selectable");
-            let (_, sibling_product, sibling_application_basis) = sibling.into_parts();
+            let (_, sibling_product, sibling_application_basis) = sibling.into_parts_for_test();
             drop(sibling_application_basis);
 
             let result = direct_run
@@ -73,7 +73,7 @@ fn the_exact_selected_product_binds_at_provider_plan_boundary() {
                 phase,
                 &world,
                 retained_program(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     &world,
                     "product-owner",
                 ),
@@ -153,10 +153,10 @@ fn foreign_installed_phase_refuses_provider_readmission_before_read_or_charge() 
             .with_application_advancement(&scope, |phase| {
                 let before = reads();
                 let plan = (*brun
-                    .running_for_test())
+                    .running_mut_for_test())
                     .admit_provider_execution_plan(&(*b.application.primary_graph_authority_for_test()))
                     .unwrap()
-                    .bind_application_product((*brun.lease_for_test()).product().retained_clone())
+                    .bind_application_product_for_test((*brun.lease_for_test()).product().retained_clone_for_test())
                     .unwrap();
                 let refusal = match plan.readmit(&phase) {
                     Err(refusal) => refusal,
@@ -181,7 +181,7 @@ fn foreign_installed_phase_refuses_provider_readmission_before_read_or_charge() 
                     &phase,
                     &a,
                     &mut (*arun.running_mut_for_test()),
-                    (*arun.lease_for_test()).product().retained_clone(),
+                    (*arun.lease_for_test()).product().retained_clone_for_test(),
                 );
                 assert_eq!(session.counters().provider_calls(), 2);
                 // The primary provider's readmission and preparation only mint and
@@ -191,8 +191,8 @@ fn foreign_installed_phase_refuses_provider_readmission_before_read_or_charge() 
                 let _ = session.abort();
             })
             .unwrap();
-        finish_uncommitted((*arun.mutation_run_for_test()), (*arun.running_for_test()), (*arun.lease_for_test()));
-        finish_uncommitted((*brun.mutation_run_for_test()), (*brun.running_for_test()), (*brun.lease_for_test()));
+        finish_uncommitted(arun.mutation_run_into_for_test(), arun.running_into_for_test(), (*arun.lease_for_test()));
+        finish_uncommitted(brun.mutation_run_into_for_test(), brun.running_into_for_test(), (*brun.lease_for_test()));
         place(previous);
     }
 }

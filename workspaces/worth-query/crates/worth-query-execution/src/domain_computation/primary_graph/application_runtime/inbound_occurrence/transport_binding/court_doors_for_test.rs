@@ -16,3 +16,10 @@ where
         Self::resolve_installed_transport_completion_binding(self, owner)
     }
 }
+
+impl WorthQueryInstalledTransportCompletionBinding {
+    #[doc(hidden)]
+    pub fn runtime_for_test(&self) -> WorthQueryRuntimeAuthorityIdentity {
+        Self::runtime(self)
+    }
+}

@@ -40,23 +40,23 @@ pub fn run(
  let execution = &phase_custody.borrowed_request_for_test();
 
     let (_, product, _) = world
-        .selected_product(&(phase_custody).test_host_request())
+        .selected_product(&(phase_custody).test_host_request_for_test())
         .into_parts_for_test();
     let coordinate = ProductCoordinate {
-        occurrence: product.observation().lifecycle_incarnation(),
-        generation: product.observation().reference_generation().get(),
+        occurrence: product.observation_for_test().lifecycle_incarnation(),
+        generation: product.observation_for_test().reference_generation().get(),
     };
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let handle = graph.integration_handle();
-    let owner = &handle.source_owner.invalidation_owner;
+    let handle = graph.integration_handle_for_test();
+    let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
     let kind = graph
-        .layout()
-        .entity_kind(Account::reference().name())
+        .layout_for_test()
+        .entity_kind_for_test(Account::reference().name())
         .unwrap();
     let locator = |entity, aspect, field| {
         graph
-            .layout()
-            .field_locator(entity, aspect, field)
+            .layout_for_test()
+            .field_locator_for_test(entity, aspect, field)
             .unwrap()
             .clone()
     };
@@ -66,7 +66,7 @@ pub fn run(
     let identity = locator(i.entity(), i.aspect(), i.field());
     let status = locator(s.entity(), s.aspect(), s.field());
     let label = locator(l.entity(), l.aspect(), l.field());
-    handle.with_runtime_mut(execution, |runtime| {
+    handle.with_runtime_mut_for_test(execution, |runtime| {
         let refs: Vec<_> = (0..(siblings + 1) * DEPTH).map(|n| CreatedEntityRef {
             partition_id: PartitionId::main(), kind_id: kind,
             client_key: ClientKey::raw(format!("scope-tree-{n}")),
@@ -99,7 +99,7 @@ pub fn run(
             // Each distinct Native scope above the leaf consumes exactly its
             // child's output. Sibling paths have no consumed edge in common.
             let leaf = n % DEPTH == 0;
-            owner.register_settlement(SettlementRegistration {
+            owner.register_settlement_for_test(SettlementRegistration {
                 computation: None,
                 work_membership: Some(Arc::clone(&members[n].1)),
                 identity: Arc::clone(&outputs[n]),
@@ -114,17 +114,17 @@ pub fn run(
 
 
 let initial = registries[n].next_required_work_for_test(owner).unwrap().unwrap();
-assert!(matches!(initial.kind(), SelectedRequiredWorkKind::Local { .. } | SelectedRequiredWorkKind::UnresolvedInitial));
+assert!(matches!(initial.kind_for_test(), SelectedRequiredWorkKind::Local { .. } | SelectedRequiredWorkKind::UnresolvedInitial));
                 initial.acknowledge_fixture();
             }
             assert!(registries[n].next_required_work_for_test(owner).unwrap().is_none());
         }
         write_field(execution, runtime, entities[0], label, "after");
         let (after_handle, after) = snapshot(runtime);
-let report = owner.native_marking_report(&after).unwrap().unwrap();
+let report = owner.native_marking_report_for_test(&after).unwrap().unwrap();
 
 
-        let WorthQueryNativeMarkingPrecision::Exact(counts) = report.precision else { panic!("the declared Native leaf touch is exact") };
+        let WorthQueryNativeMarkingPrecision::Exact(counts) = (*report.precision_for_test()) else { panic!("the declared Native leaf touch is exact") };
         assert_eq!(counts.marked_fact_ordinals, 1);
         assert_eq!(counts.visited_vertices, DEPTH as u64);
         assert_eq!(counts.downstream_edges, DEPTH as u64 - 1);
@@ -133,7 +133,7 @@ let report = owner.native_marking_report(&after).unwrap().unwrap();
             let candidate = registry.next_required_work_for_test(owner).unwrap();
             if n < DEPTH {
                 let candidate = candidate.expect("each ancestor has one Native pending cue");
-                assert!(matches!(candidate.kind(), SelectedRequiredWorkKind::Native { .. }));
+                assert!(matches!(candidate.kind_for_test(), SelectedRequiredWorkKind::Native { .. }));
                 candidate.acknowledge_fixture();
             } else {
                 assert!(candidate.is_none(), "sibling scope {n} contributes zero candidates, hence zero Ready selections");

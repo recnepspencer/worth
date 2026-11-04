@@ -51,3 +51,22 @@ impl<'a> QueryRequestExecution<'a> {
         Self::open(placement, request)
     }
 }
+
+impl QueryDispatch<'_> {
+    #[doc(hidden)]
+    pub fn map_for_test<T, K, R, E, Kernel>(
+        &self,
+        ceiling: u64,
+        map: &ExecutionMap<T, K>,
+        inputs: QueryMemoryReservation,
+        kernel: Kernel,
+    ) -> Result<MapOutcome<R, E>, WorkCeilingDenial>
+    where
+        T: Sync + ChargedBytes,
+        R: Send + ChargedBytes,
+        E: Send + ChargedBytes,
+        Kernel: Fn(&T, &mut MapKernelContext<'_, '_>) -> Result<R, MapKernelFailure<E>> + Sync,
+    {
+        Self::map::<T, K, R, E, Kernel>(self, ceiling, map, inputs, kernel)
+    }
+}

@@ -42,10 +42,10 @@ fn refused_maintenance_cleanup_probe() {
         .runtime_for_test())
         .primary_graph()
         .unwrap()
-        .integration_handle();
+        .integration_handle_for_test();
     let host = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();
     let execution = ExecutionRequest::serial(&host);
-    let basis = graph.with_runtime_mut(&execution, |runtime| {
+    let basis = graph.with_runtime_mut_for_test(&execution, |runtime| {
         let (_, before) = runtime
             .observe_branch(&runtime.main_branch_identity())
             .unwrap();
@@ -72,12 +72,12 @@ fn refused_maintenance_cleanup_probe() {
         .unwrap_or_else(|_| panic!("real exact basis must register"));
     assert_eq!(observer.observe().active(), 1);
     let stopped = execution.run(ExecutionWorkCeiling::new(Some(0)), |_| {
-        graph.with_runtime_mut(&execution, |runtime| {
+        graph.with_runtime_mut_for_test(&execution, |runtime| {
             let (_, basis) = runtime
                 .observe_branch(&runtime.main_branch_identity())
                 .unwrap();
             let refusal = graph
-                .ensure_primary_indexes_for_basis(&execution, runtime, &basis)
+                .ensure_primary_indexes_for_basis_for_test(&execution, runtime, &basis)
                 .unwrap_err();
             let Currency::Execution(cause) = refusal else {
                 panic!("maintenance keeps the native request stop")

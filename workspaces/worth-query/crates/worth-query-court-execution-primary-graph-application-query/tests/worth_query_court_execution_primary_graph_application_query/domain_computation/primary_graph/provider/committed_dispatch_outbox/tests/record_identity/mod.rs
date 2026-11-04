@@ -8,12 +8,12 @@ fn unrelated_identical_row_cannot_make_owner_mapping_ambiguous() {
     let world = installed_authorization_world(true);
     let provider = &(*world.application.primary_provider_for_test());
     let record = record_for(5);
-    provider
-        .graph
-        .with_runtime_mut(request_execution, |runtime| {
+    (*provider
+        .graph_for_test())
+        .with_runtime_mut_for_test(request_execution, |runtime| {
             let (intent, pending) =
             worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::outbox::bind_dispatch_outbox_create_intent(
-                Some(provider.graph.layout.provider_dispatch_outbox()),
+                Some((*(*provider.graph_for_test()).layout_for_test()).provider_dispatch_outbox_for_test()),
                 Some(&record),
                 worth_relational::facade::identity::PartitionId::main(),
             )
@@ -60,7 +60,7 @@ fn unrelated_identical_row_cannot_make_owner_mapping_ambiguous() {
                 "each exact create reference retains its own owner-minted identity"
             );
             let binding = WorthQueryCommittedDispatchOutboxBinding::fixture_from_commit_for_test(
-                provider.graph.layout.provider_dispatch_outbox(),
+                (*(*provider.graph_for_test()).layout_for_test()).provider_dispatch_outbox_for_test(),
                 Some(pending.record_for_test()),
                 &committed,
             )
@@ -73,7 +73,7 @@ fn unrelated_identical_row_cannot_make_owner_mapping_ambiguous() {
             );
             assert_eq!(
                 WorthQueryCommittedDispatchOutboxBinding::fixture_from_commit_for_test(
-                    provider.graph.layout.provider_dispatch_outbox(),
+                    (*(*provider.graph_for_test()).layout_for_test()).provider_dispatch_outbox_for_test(),
                     Some(&record_for(6)),
                     &committed,
                 ),
@@ -94,10 +94,10 @@ fn another_committed_record_ref_cannot_substitute_for_the_bound_outbox() {
     let first = record_for(61);
     let second = record_for(62);
     let (first_binding, second_binding, commit, runtime_id) =
-        provider.graph.with_runtime_mut(execution, |runtime| {
+        (*provider.graph_for_test()).with_runtime_mut_for_test(execution, |runtime| {
             let intent = |record: &WorthQueryDispatchOutboxRecord| {
                 dispatch_outbox_create_intent(
-                    Some(provider.graph.layout.provider_dispatch_outbox()),
+                    Some((*(*provider.graph_for_test()).layout_for_test()).provider_dispatch_outbox_for_test()),
                     Some(record),
                 )
                 .unwrap()
@@ -123,7 +123,7 @@ fn another_committed_record_ref_cannot_substitute_for_the_bound_outbox() {
             let committed = transaction.commit(execution, runtime).unwrap();
             let bind = |record| {
                 WorthQueryCommittedDispatchOutboxBinding::fixture_from_commit_for_test(
-                    provider.graph.layout.provider_dispatch_outbox(),
+                    (*(*provider.graph_for_test()).layout_for_test()).provider_dispatch_outbox_for_test(),
                     Some(record),
                     &committed,
                 )
@@ -140,11 +140,11 @@ fn another_committed_record_ref_cannot_substitute_for_the_bound_outbox() {
             (bind(&first), bind(&second), commit, runtime_id)
         });
     let substituted = WorthQueryCommittedDispatchOutboxBinding::fixture(
-        first_binding.record().clone(),
-        second_binding.record_ref().clone(),
+        first_binding.record_for_test().clone(),
+        second_binding.record_ref_for_test().clone(),
     );
     assert_eq!(
-        provider.observe_expected(execution, &substituted, &commit, runtime_id),
+        provider.observe_expected_for_test(execution, &substituted, &commit, runtime_id),
         Err(Denial::RecordMismatch)
     );
 }

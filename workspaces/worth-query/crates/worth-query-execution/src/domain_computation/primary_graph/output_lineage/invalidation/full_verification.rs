@@ -255,3 +255,5 @@ fn reserve_pending<T>(pending: &mut Vec<T>, additional: usize) -> Result<(), Ful
         .try_reserve_exact(target - pending.len())
         .map_err(|_| FullVerificationStop::OutputEvidenceUnavailable)
 }
+
+mod court_doors_for_test;

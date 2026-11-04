@@ -27,7 +27,7 @@ fn operation_graph_capacity_denial_and_drop_return_exact_reservations() {
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_authenticated_principal(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     &world.binding,
                     &external,
                     &request,
@@ -42,7 +42,7 @@ fn operation_graph_capacity_denial_and_drop_return_exact_reservations() {
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     AccountStatus::reference(),
                     "open".to_owned(),
                     &request,
@@ -57,11 +57,11 @@ fn operation_graph_capacity_denial_and_drop_return_exact_reservations() {
             let authorize = || {
                 world
                     .selected_product(
-                        &(host_custody.phase_for_application(&world.application))
-                            .test_host_request(),
+                        &(host_custody.phase_for_application_for_test(&world.application))
+                            .test_host_request_for_test(),
                     )
                     .authorize_operation(
-                        &host_custody.phase_for_application(&world.application),
+                        &host_custody.phase_for_application_for_test(&world.application),
                         &principal,
                         &account,
                         &operation,

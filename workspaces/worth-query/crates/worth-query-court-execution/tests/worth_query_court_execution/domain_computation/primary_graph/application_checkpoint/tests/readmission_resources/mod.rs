@@ -81,7 +81,7 @@ fn bootstrap_metadata_keeps_its_charge_and_refuses_an_unfunded_row() {
         use worth_query_execution::facade::application_contribution::WorthQueryMemoryLimitLevel as Level;
         use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionDenialKind as Provider;
         assert!(
-            matches!(denial.into_installation_denial().kind(), Kind::ExecutionDenied {
+            matches!(denial.into_installation_denial_for_test().kind(), Kind::ExecutionDenied {
             kind: Provider::ExecutionResource {
                 denial: Resource::MemoryLimit { requested, admitted, level: Level::Policy }, ..
             }
@@ -90,7 +90,7 @@ fn bootstrap_metadata_keeps_its_charge_and_refuses_an_unfunded_row() {
         assert_eq!(checkpoint.bytes(), original);
         drop(held);
         let retry = checkpoint.decode_with_execution_for_test(&execution).unwrap();
-        assert_eq!(retry.accepted_outputs.len(), 1);
+        assert_eq!((*retry.accepted_outputs_for_test()).len(), 1);
     })
     .unwrap();
 }

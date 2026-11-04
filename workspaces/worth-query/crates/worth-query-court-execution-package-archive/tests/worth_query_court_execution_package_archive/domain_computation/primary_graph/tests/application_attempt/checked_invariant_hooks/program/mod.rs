@@ -15,7 +15,7 @@ pub fn prepare(
         .with_host_advancement(|phase| {
             let host_request = phase.test_host_request_for_test();
             let execution = host_request
-                .execution_request_for(world.application.product_runtime())
+                .execution_request_for_for_test(world.application.product_runtime())
                 .unwrap();
             let selected = world
                 .application

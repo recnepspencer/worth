@@ -109,7 +109,7 @@ fn cancellation_during_compute_has_a_witness_and_a_safe_canonical_prefix() {
                         .into_slots_for_test()
                         .pop()
                         .unwrap()
-                        .into_value::<Result<usize, worth_execution::MapKernelStop>>()
+                        .into_value_for_test::<Result<usize, worth_execution::MapKernelStop>>()
                         .unwrap()
                 })
                 .collect();

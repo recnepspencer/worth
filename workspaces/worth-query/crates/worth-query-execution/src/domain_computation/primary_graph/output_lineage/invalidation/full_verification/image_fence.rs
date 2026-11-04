@@ -61,3 +61,5 @@ pub(super) fn observe_row(
     observed.insert(Arc::clone(identity));
     Ok(())
 }
+
+mod court_doors_for_test;

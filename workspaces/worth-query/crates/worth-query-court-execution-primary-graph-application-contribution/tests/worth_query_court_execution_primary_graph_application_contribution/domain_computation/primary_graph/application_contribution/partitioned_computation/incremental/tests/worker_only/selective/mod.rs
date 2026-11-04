@@ -92,11 +92,11 @@ fn native_value_key_and_membership_edits_carry_unaffected_partitions() {
         &installed,
         ComputationPrior::new_for_test(edition(), Err(Cause::FirstRun), None),
     );
-    let subject = (*previous
+    let subject = (*(*previous
         .sealed
         .state_for_test())
-        .facts
-        .facts()
+        .facts_for_test())
+        .facts_for_test()
         .find_map(|(_, fact, _)| {
             if let WorthQueryApplicationObservedFact::Field { entity_id, .. } = fact {
                 Some(*entity_id)
@@ -114,12 +114,12 @@ fn native_value_key_and_membership_edits_carry_unaffected_partitions() {
         ("urimar", vec![1]),     // remove an odd member
     ] {
         let field = AccountLabel::reference();
-        let locator = (*world
+        let locator = (*(*(*world
             .application
             .primary_provider_for_test())
-            .graph
-            .layout
-            .field_locator(field.entity(), field.aspect(), field.field())
+            .graph_for_test())
+            .layout_for_test())
+            .field_locator_for_test(field.entity(), field.aspect(), field.field())
             .unwrap()
             .clone();
         let request = live_scope();
@@ -150,15 +150,15 @@ fn native_value_key_and_membership_edits_carry_unaffected_partitions() {
             ComputationPrior::new_for_test(edition(), Err(Cause::FirstRun), None),
         );
         assert_eq!(edited.value, fresh.value);
-        let retained = (*edited
+        let retained = (*(*edited
             .sealed
             .state_for_test())
-            .typed
+            .typed_for_test())
             .downcast_ref::<worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::retained::RetainedPartitions<Parity, Number, u64>>(
             )
             .unwrap();
         assert_eq!(
-            retained.items.keys().map(|id| id.0).collect::<Vec<_>>(),
+            (*retained.items_for_test()).keys().map(|id| id.0).collect::<Vec<_>>(),
             (1..=source.len() as u64).collect::<Vec<_>>()
         );
         let warm = native_attempt(&world, &installed, retained_prior(edited.sealed));

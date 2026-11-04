@@ -19,16 +19,16 @@ fn native_invalidation_marks_the_second_and_third_downstream_levels() {
         .entity_id_for_test();
     let (_, product, _) = selected.into_parts_for_test();
     let coordinate = ProductCoordinate {
-        occurrence: product.observation().lifecycle_incarnation(),
-        generation: product.observation().reference_generation().get(),
+        occurrence: product.observation_for_test().lifecycle_incarnation(),
+        generation: product.observation_for_test().reference_generation().get(),
     };
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let handle = graph.integration_handle();
-    let owner = &handle.source_owner.invalidation_owner;
+    let handle = graph.integration_handle_for_test();
+    let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
     let status_ref = AccountStatus::reference();
     let status = graph
-        .layout()
-        .field_locator(status_ref.entity(), status_ref.aspect(), status_ref.field())
+        .layout_for_test()
+        .field_locator_for_test(status_ref.entity(), status_ref.aspect(), status_ref.field())
         .unwrap()
         .clone();
     let identities = [
@@ -49,7 +49,7 @@ fn native_invalidation_marks_the_second_and_third_downstream_levels() {
             0,
         )
     });
-    handle.with_runtime_mut(&execution, |runtime| {
+    handle.with_runtime_mut_for_test(&execution, |runtime| {
         write_field(&execution, runtime, entity, status.clone(), "prime");
         let (before_handle, before) = snapshot(runtime);
         for (level, identity) in identities.iter().enumerate() {

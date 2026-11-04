@@ -43,3 +43,5 @@ pub(super) struct AppliedNativeMarking {
     pub(super) affected: OrdSet<Arc<RecordedSettlementIdentity>>,
     pub(super) report: NativeMarkingReport,
 }
+
+mod court_doors_for_test;

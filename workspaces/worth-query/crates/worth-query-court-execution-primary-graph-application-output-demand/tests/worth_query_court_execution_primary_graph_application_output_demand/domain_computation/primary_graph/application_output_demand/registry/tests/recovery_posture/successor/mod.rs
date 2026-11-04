@@ -17,7 +17,7 @@ fn stale_ready_successor_admission_forces_a_new_execution_cycle() {
         generation: Mutex::new(0),
         changed: Condvar::new(),
     });
-    (*registry.state_for_test()).lock().unwrap().records.insert(
+    (*(*registry.state_for_test()).lock().unwrap().records_for_test()).insert_for_test(
         demand_key.clone(),
         DemandRecord {
 
@@ -49,18 +49,18 @@ fn stale_ready_successor_admission_forces_a_new_execution_cycle() {
         )
         .expect("the exact stale ready receipt admits its forced successor")
         .0;
-    assert_eq!(replacement.key, demand_key);
+    assert_eq!((*replacement.key_for_test()), demand_key);
     let state = (*registry.state_for_test()).lock().unwrap();
-    let record = &state.records[&demand_key];
-    assert!(matches!(record.state, DemandState::Admitted));
+    let record = &(*state.records_for_test())[&demand_key];
+    assert!(matches!((*record.state_for_test()), DemandState::Admitted));
     assert_eq!(
-        record
-            .successor_of
+        (*record
+            .successor_of_for_test())
             .as_ref()
             .map(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::succession::Succession::predecessor_for_test),
         Some(*receipt.idempotency_binding().key_identity())
     );
-    assert_eq!(record.interests, 2);
+    assert_eq!((*record.interests_for_test()), 2);
     drop(state);
 
     // A claimed refresh that stops without publishing returns the row to the
@@ -77,9 +77,9 @@ fn stale_ready_successor_admission_forces_a_new_execution_cycle() {
         .expect("the real performed application retains its read basis");
     {
         let mut state = (*registry.state_for_test()).lock().unwrap();
-        let mut record = state.records.get_mut(&demand_key).unwrap();
-        record.state = DemandState::Running;
-        record.performed_source = Some(WorthQueryPerformedOutputDemandSource {
+        let mut record = (*state.records_for_test()).get_mut(&demand_key).unwrap();
+        (*record.state_mut_for_test()) = DemandState::Running;
+        (*record.performed_source_mut_for_test()) = Some(WorthQueryPerformedOutputDemandSource {
             receipt: performed,
             change: Arc::new(change),
             observation,
@@ -88,11 +88,11 @@ fn stale_ready_successor_admission_forces_a_new_execution_cycle() {
     }
     registry.relinquish_execution(&replacement);
     let state = (*registry.state_for_test()).lock().unwrap();
-    let record = &state.records[&demand_key];
-    assert!(record.has_cached_ready());
-    assert!(record.successor_of.is_none());
+    let record = &(*state.records_for_test())[&demand_key];
+    assert!(record.has_cached_ready_for_test());
+    assert!((*record.successor_of_for_test()).is_none());
     assert!(
-        record.performed_source.is_some(),
+        (*record.performed_source_for_test()).is_some(),
         "the performed source attached during the refresh is kept"
     );
 }
@@ -114,7 +114,7 @@ fn stopped_ready_record_rejects_successor_without_reviving_custody() {
         WorthQueryOutputDemandDenialKind::Superseded,
         "newer source owns the cycle",
     ));
-    (*registry.state_for_test()).lock().unwrap().records.insert(
+    (*(*registry.state_for_test()).lock().unwrap().records_for_test()).insert_for_test(
         demand_key.clone(),
         DemandRecord {
             source_scope: Some(scope),
@@ -136,10 +136,10 @@ fn stopped_ready_record_rejects_successor_without_reviving_custody() {
     };
     assert_eq!(denial.kind(), WorthQueryOutputDemandDenialKind::Superseded);
     let state = (*registry.state_for_test()).lock().unwrap();
-    let record = &state.records[&demand_key];
-    assert_eq!(record.interests, 1);
+    let record = &(*state.records_for_test())[&demand_key];
+    assert_eq!((*record.interests_for_test()), 1);
     assert!(matches!(
-        &record.state,
+        &(*record.state_for_test()),
         DemandState::Output(output)
             if matches!(output.advancement_for_test(), WorthQueryOutputAdvancement::Stopped { .. })
                 && matches!((*output.checkpoint_for_test()), Some(WorthQueryOutputCheckpoint::Ready(_)))
@@ -154,7 +154,7 @@ fn failed_successor_admission_preserves_ready_custody() {
     let ready_key = key_with_identity("preserve", 8, 1, 80);
     let stale_request = key_with_identity("preserve", 7, 1, 70);
     let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(root(1));
-    (*registry.state_for_test()).lock().unwrap().records.insert(
+    (*(*registry.state_for_test()).lock().unwrap().records_for_test()).insert_for_test(
         ready_key.clone(),
         DemandRecord {
 
@@ -187,10 +187,10 @@ fn failed_successor_admission_preserves_ready_custody() {
     };
     assert_eq!(denial.kind(), WorthQueryOutputDemandDenialKind::Superseded);
     let state = (*registry.state_for_test()).lock().unwrap();
-    let record = &state.records[&ready_key];
-    assert_eq!(record.interests, 1);
+    let record = &(*state.records_for_test())[&ready_key];
+    assert_eq!((*record.interests_for_test()), 1);
     assert!(matches!(
-        &record.state,
+        &(*record.state_for_test()),
         DemandState::Output(output)
             if matches!((*output.checkpoint_for_test()), Some(WorthQueryOutputCheckpoint::Ready(_)))
     ));

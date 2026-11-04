@@ -61,13 +61,13 @@ fn governance_matches_only_the_managed_session_that_minted_it() {
             let host_custody = phase.test_host_request_for_test();
 
             let first = admit_plan(
-                &host_custody.phase_for_application(&context.world.application),
+                &host_custody.phase_for_application_for_test(&context.world.application),
                 &context,
                 &query,
                 &access,
             );
             let second = admit_plan(
-                &host_custody.phase_for_application(&context.world.application),
+                &host_custody.phase_for_application_for_test(&context.world.application),
                 &context,
                 &query,
                 &access,
@@ -84,13 +84,13 @@ fn governance_matches_only_the_managed_session_that_minted_it() {
                 second.graph_work_managed_run_identity()
             );
 
-            assert!(!(*first.governance_for_test()).computation_matches(
+            assert!(!(*first.governance_for_test()).computation_matches_for_test(
                 &foreign_plan.graph_work,
                 (*foreign_plan.runtime_authority_for_test()),
                 (*first.query_for_test()).identity(),
                 (*first.parameters_for_test()).identity(),
                 first.principal.principal_entity_id_for_test(),
-                (*first.scope_for_test()).entity_id(),
+                (*first.scope_for_test()).entity_id_for_test(),
             ));
         })
         .expect("the fixture block owns its installed host call")
@@ -114,7 +114,7 @@ fn governance_rejects_real_query_parameter_principal_and_scope_substitution() {
             let borrowed_execution = host_custody.borrowed_request_for_test();
             let execution = &borrowed_execution;
             let plan = admit_plan(
-                &host_custody.phase_for_application(&context.world.application),
+                &host_custody.phase_for_application_for_test(&context.world.application),
                 &context,
                 &query,
                 &access,
@@ -146,7 +146,7 @@ fn governance_rejects_real_query_parameter_principal_and_scope_substitution() {
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
-                    &host_custody.phase_for_application(&context.world.application),
+                    &host_custody.phase_for_application_for_test(&context.world.application),
                     AccountIdentity::reference(),
                     "account-2".to_owned(),
                     &context.request,
@@ -154,67 +154,67 @@ fn governance_rejects_real_query_parameter_principal_and_scope_substitution() {
                 )
                 .unwrap();
 
-            assert!(!(*plan.governance_for_test()).computation_matches(
+            assert!(!(*plan.governance_for_test()).computation_matches_for_test(
                 &plan.graph_work,
                 (*plan.runtime_authority_for_test()),
                 alternate_query.identity(),
                 (*plan.parameters_for_test()).identity(),
                 plan.principal.principal_entity_id_for_test(),
-                (*plan.scope_for_test()).entity_id(),
+                (*plan.scope_for_test()).entity_id_for_test(),
             ));
-            assert!(!(*plan.governance_for_test()).computation_matches(
+            assert!(!(*plan.governance_for_test()).computation_matches_for_test(
                 &plan.graph_work,
                 (*plan.runtime_authority_for_test()),
                 (*plan.query_for_test()).identity(),
                 alternate_parameters.identity(),
                 plan.principal.principal_entity_id_for_test(),
-                (*plan.scope_for_test()).entity_id(),
+                (*plan.scope_for_test()).entity_id_for_test(),
             ));
-            assert!(!(*plan.governance_for_test()).computation_matches(
+            assert!(!(*plan.governance_for_test()).computation_matches_for_test(
                 &plan.graph_work,
                 (*plan.runtime_authority_for_test()),
                 (*plan.query_for_test()).identity(),
                 (*plan.parameters_for_test()).identity(),
                 bob.principal_entity_id_for_test(),
-                (*plan.scope_for_test()).entity_id(),
+                (*plan.scope_for_test()).entity_id_for_test(),
             ));
-            assert!(!(*plan.governance_for_test()).computation_matches(
+            assert!(!(*plan.governance_for_test()).computation_matches_for_test(
                 &plan.graph_work,
                 (*plan.runtime_authority_for_test()),
                 (*plan.query_for_test()).identity(),
                 (*plan.parameters_for_test()).identity(),
                 plan.principal.principal_entity_id_for_test(),
-                account_two.entity_id(),
+                account_two.entity_id_for_test(),
             ));
 
             for matches in [
-                (*plan.governance_for_test()).readmission_matches(
+                (*plan.governance_for_test()).readmission_matches_for_test(
                     (*plan.runtime_authority_for_test()),
                     alternate_query.identity(),
                     (*plan.parameters_for_test()).identity(),
                     plan.principal.principal_entity_id_for_test(),
-                    (*plan.scope_for_test()).entity_id(),
+                    (*plan.scope_for_test()).entity_id_for_test(),
                 ),
-                (*plan.governance_for_test()).readmission_matches(
+                (*plan.governance_for_test()).readmission_matches_for_test(
                     (*plan.runtime_authority_for_test()),
                     (*plan.query_for_test()).identity(),
                     alternate_parameters.identity(),
                     plan.principal.principal_entity_id_for_test(),
-                    (*plan.scope_for_test()).entity_id(),
+                    (*plan.scope_for_test()).entity_id_for_test(),
                 ),
-                (*plan.governance_for_test()).readmission_matches(
+                (*plan.governance_for_test()).readmission_matches_for_test(
                     (*plan.runtime_authority_for_test()),
                     (*plan.query_for_test()).identity(),
                     (*plan.parameters_for_test()).identity(),
                     bob.principal_entity_id_for_test(),
-                    (*plan.scope_for_test()).entity_id(),
+                    (*plan.scope_for_test()).entity_id_for_test(),
                 ),
-                (*plan.governance_for_test()).readmission_matches(
+                (*plan.governance_for_test()).readmission_matches_for_test(
                     (*plan.runtime_authority_for_test()),
                     (*plan.query_for_test()).identity(),
                     (*plan.parameters_for_test()).identity(),
                     plan.principal.principal_entity_id_for_test(),
-                    account_two.entity_id(),
+                    account_two.entity_id_for_test(),
                 ),
             ] {
                 assert!(
@@ -258,7 +258,7 @@ pub fn governance_context(label: &str) -> GovernanceContext {
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
-                    &phase_custody.phase_for_application(&world.application),
+                    &phase_custody.phase_for_application_for_test(&world.application),
                     AccountIdentity::reference(),
                     "account-1".to_owned(),
                     &request,
@@ -372,13 +372,13 @@ pub fn governance_matches_plan(
         Account,
     >,
 ) -> bool {
-    (*owner.governance_for_test()).computation_matches(
+    (*owner.governance_for_test()).computation_matches_for_test(
         &candidate.graph_work,
         (*candidate.runtime_authority_for_test()),
         (*owner.query_for_test()).identity(),
         (*owner.parameters_for_test()).identity(),
         owner.principal.principal_entity_id_for_test(),
-        (*owner.scope_for_test()).entity_id(),
+        (*owner.scope_for_test()).entity_id_for_test(),
     )
 }
 

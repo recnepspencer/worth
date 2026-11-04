@@ -16,7 +16,7 @@ fn sealing_keeps_the_one_original_issued_body_and_requires_explicit_relation_fac
     let request = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
     world.application.with_host_advancement(|phase| {
         let host=phase.test_host_request_for_test();
-        let execution=host.execution_request_for(world.application.product_runtime()).unwrap();
+        let execution=host.execution_request_for_for_test(world.application.product_runtime()).unwrap();
         let (admission,root)=authorize(&world,&phase,&execution,&request,0,InspectWalk::reference(),None);
         let (_,projection,_)=world.invariant.project_admitted_operation(&phase,&admission,|reader,root| {
             reader.decision_walk(Next::reference(),Forward,root).unwrap();
@@ -25,23 +25,23 @@ fn sealing_keeps_the_one_original_issued_body_and_requires_explicit_relation_fac
         },Allocation::SystemAllocation).unwrap().into_parts();
         let attempt=world.application.begin_projected_application_read_attempt(&phase,admission,projection,Allocation::SystemAllocation).unwrap();
         let expected=(*attempt.expected_facts_for_test()).as_ref().unwrap();
-        let keys:Vec<_>=expected.iter().collect();
+        let keys:Vec<_>=expected.iter_for_test().collect();
         assert_eq!(keys.len(),1);
         let WorthQueryApplicationFactKey::StructuralWalk(key)=keys[0] else {panic!("the complete walk is one typed dependency")};
-        let original=std::sync::Arc::clone(expected.structural_walk(key,(*attempt.admission_for_test()).admission_identity(),
-            &(*attempt.admission_for_test()).retain_graph_contract(),(*attempt.lease_for_test()).snapshot()).unwrap());
+        let original=std::sync::Arc::clone(expected.structural_walk_for_test(key,(*attempt.admission_for_test()).admission_identity(),
+            &(*attempt.admission_for_test()).retain_graph_contract(),(*attempt.lease_for_test()).snapshot_for_test()).unwrap());
         let (other,_)=authorize(&world,&phase,&execution,&request,0,InspectWalk::reference(),None);
         let denial=worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::structural_walk::observe(&execution,&other,&(*attempt.lease_for_test()),&(*attempt.read_scope_for_test()),expected,key,None).err().unwrap();
         assert_eq!(denial.kind(),WorthQueryApplicationAttemptDenialKind::ProjectionAdmissionMismatch,
             "even identical graph truth and contracts cannot relabel the actual value to another admission");
         let completed=attempt.complete_projected_dependencies(&phase,Allocation::SystemAllocation).unwrap();
-        let values:Vec<_>=(*completed.facts_for_test()).iter().filter_map(|fact|match fact {
+        let values:Vec<_>=(*completed.facts_for_test()).iter_for_test().filter_map(|fact|match fact {
             Fact::StructuralWalk {observation}=>Some(observation),_=>None,
         }).collect();
         assert_eq!(values.len(),1);
         assert!(std::sync::Arc::ptr_eq(&original,values[0]),"seal consumed the exact original issued Arc");
-        assert_eq!(original.native().visits().len(),4);
-        assert_eq!(original.native().relations().len(),3);
+        assert_eq!(original.native_for_test().visits().len(),4);
+        assert_eq!(original.native_for_test().relations().len(),3);
         assert!(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::encoding::encode_funded(
             &(*completed.facts_for_test()),worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new_for_test(Allocation::SystemAllocation,Some(&request))).is_err(),
             "live walk facts deliberately have no checkpoint reconstruction door");
@@ -64,7 +64,7 @@ fn a_descriptor_without_this_projections_issued_value_cannot_be_completed() {
         .with_host_advancement(|phase| {
             let host = phase.test_host_request_for_test();
             let execution = host
-                .execution_request_for(world.application.product_runtime())
+                .execution_request_for_for_test(world.application.product_runtime())
                 .unwrap();
             let (admission, _) = authorize(
                 &world,
@@ -102,7 +102,7 @@ fn a_descriptor_without_this_projections_issued_value_cannot_be_completed() {
                 .expected_facts_for_test())
                 .as_ref()
                 .unwrap()
-                .iter()
+                .iter_for_test()
                 .find_map(|key| match key {
                     WorthQueryApplicationFactKey::StructuralWalk(key) => Some(key.clone()),
                     _ => None,
@@ -155,13 +155,13 @@ fn a_descriptor_without_this_projections_issued_value_cannot_be_completed() {
             );
             let denied = (*raw
                 .lease_for_test())
-                .handle()
+                .handle_for_test()
                 .with_runtime(&execution, |runtime| {
                     worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::fact_observation::observe_fact(
                         &execution,
                         runtime,
-                        (*raw.lease_for_test()).snapshot(),
-                        &(*raw.lease_for_test()).layout,
+                        (*raw.lease_for_test()).snapshot_for_test(),
+                        &(*(*raw.lease_for_test()).layout_for_test()),
                         &WorthQueryApplicationFactKey::StructuralWalk(descriptor),
                     )
                 })
@@ -200,7 +200,7 @@ fn failed_calls_veto_sealing_before_a_key_exists_and_after_a_successful_duplicat
         .with_host_advancement(|phase| {
             let host = phase.test_host_request_for_test();
             let execution = host
-                .execution_request_for(world.application.product_runtime())
+                .execution_request_for_for_test(world.application.product_runtime())
                 .unwrap();
             for succeeded_first in [false, true] {
                 let (admission, _) = authorize(

@@ -47,8 +47,8 @@ pub fn retirement_image(
         .entity_id_for_test();
     let (_, product, _) = selected.into_parts_for_test();
     let coordinate = ProductCoordinate {
-        occurrence: product.observation().lifecycle_incarnation(),
-        generation: product.observation().reference_generation().get(),
+        occurrence: product.observation_for_test().lifecycle_incarnation(),
+        generation: product.observation_for_test().reference_generation().get(),
     };
     let source = SemanticSource {
         runtime_authority: (*world.application.runtime_for_test()).authority_identity().as_u64(),
@@ -58,9 +58,9 @@ pub fn retirement_image(
     };
     let identity = RecordedSettlementIdentity::retain_for_test(&source, coordinate, 0);
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let handle = graph.integration_handle();
-    let owner = &handle.source_owner.invalidation_owner;
-    handle.with_runtime_mut(request_execution, |runtime| {
+    let handle = graph.integration_handle_for_test();
+    let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
+    handle.with_runtime_mut_for_test(request_execution, |runtime| {
         let (snapshot, basis) = snapshot(runtime);
         register(
             owner,
@@ -71,7 +71,7 @@ pub fn retirement_image(
         );
         let retire = || {
             assert_eq!(
-                owner.retire_settlements(std::slice::from_ref(&identity)),
+                owner.retire_settlements_for_test(std::slice::from_ref(&identity)),
                 vec![Arc::clone(&identity)]
             )
         };
@@ -80,7 +80,7 @@ pub fn retirement_image(
             retire();
         }
         let captured = owner
-            .capture_full_verification(runtime, &snapshot, &basis)
+            .capture_full_verification_for_test(runtime, &snapshot, &basis)
             .unwrap();
 
         if !retired_before_capture {
@@ -88,7 +88,7 @@ pub fn retirement_image(
         }
         let observed = OrdSet::unit(Arc::clone(&identity));
         assert_eq!(
-            captured.fence_semantic_image(&observed),
+            captured.fence_semantic_image_for_test(&observed),
             if retired_before_capture {
                 Ok(())
             } else {
@@ -97,7 +97,7 @@ pub fn retirement_image(
         );
         register(owner, identity, Arc::from([]), &basis, OrdSet::new());
         assert_eq!(
-            captured.fence_semantic_image(&observed),
+            captured.fence_semantic_image_for_test(&observed),
             Err(FullVerificationStop::ActorImageChanged)
         );
         drop(captured);

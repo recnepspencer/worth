@@ -56,8 +56,8 @@ pub fn cutoff_journey(
 ) {
     with_generated_own_write(|world, _, performed, _| {
         let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-        let handle = graph.integration_handle();
-        let owner = &handle.source_owner.invalidation_owner;
+        let handle = graph.integration_handle_for_test();
+        let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
         let record = performed.get().unwrap();
         let entity = world
             .application
@@ -77,35 +77,35 @@ pub fn cutoff_journey(
             .expect("installed host call opens");
         let status = AccountStatus::reference();
         let status = graph
-            .layout()
-            .field_locator(status.entity(), status.aspect(), status.field())
+            .layout_for_test()
+            .field_locator_for_test(status.entity(), status.aspect(), status.field())
             .unwrap()
             .clone();
         let label = AccountLabel::reference();
         let label = graph
-            .layout()
-            .field_locator(label.entity(), label.aspect(), label.field())
+            .layout_for_test()
+            .field_locator_for_test(label.entity(), label.aspect(), label.field())
             .unwrap()
             .clone();
-        let mut source = (*record.settlement_identity_for_test()).source().clone();
-        source.output_binding = OutputBindingIdentity::declared_for_test("Upstream");
+        let mut source = (*record.settlement_identity_for_test()).source_for_test().clone();
+        (*source.output_binding_mut_for_test()) = OutputBindingIdentity::declared_for_test("Upstream");
         let a0 =
-            RecordedSettlementIdentity::retain_for_test(&source, (*record.settlement_identity_for_test()).coordinate(), 0);
+            RecordedSettlementIdentity::retain_for_test(&source, (*record.settlement_identity_for_test()).coordinate_for_test(), 0);
         let a1 =
-            RecordedSettlementIdentity::retain_for_test(&source, (*record.settlement_identity_for_test()).coordinate(), 1);
-        source.output_binding = OutputBindingIdentity::declared_for_test("Consumer");
+            RecordedSettlementIdentity::retain_for_test(&source, (*record.settlement_identity_for_test()).coordinate_for_test(), 1);
+        (*source.output_binding_mut_for_test()) = OutputBindingIdentity::declared_for_test("Consumer");
         let consumer =
-            RecordedSettlementIdentity::retain_for_test(&source, (*record.settlement_identity_for_test()).coordinate(), 0);
-        handle.with_runtime_mut(request_execution, |runtime| {
+            RecordedSettlementIdentity::retain_for_test(&source, (*record.settlement_identity_for_test()).coordinate_for_test(), 0);
+        handle.with_runtime_mut_for_test(request_execution, |runtime| {
             let (before_handle, before) = snapshot(runtime);
             let prefix: Arc<[_]> = Arc::from([field_fact(request_execution, runtime, &before_handle, entity, label)]);
             register(owner, Arc::clone(&a0), Arc::from([field_fact(request_execution, runtime, &before_handle, entity, status.clone())]), &before, OrdSet::new());
             // b has an authentic equality chain. Both b rows become pending
             // when a changes; a's later equality clears them one level only,
             // leaving c's pending edge to b's predecessor in place.
-            source.output_binding = OutputBindingIdentity::declared_for_test("DownstreamOutput");
-            let b = RecordedSettlementIdentity::retain_for_test(&source, (*record.settlement_identity_for_test()).coordinate(), 0);
-            let b_successor = RecordedSettlementIdentity::retain_for_test(&source, (*record.settlement_identity_for_test()).coordinate(), 1);
+            (*source.output_binding_mut_for_test()) = OutputBindingIdentity::declared_for_test("DownstreamOutput");
+            let b = RecordedSettlementIdentity::retain_for_test(&source, (*record.settlement_identity_for_test()).coordinate_for_test(), 0);
+            let b_successor = RecordedSettlementIdentity::retain_for_test(&source, (*record.settlement_identity_for_test()).coordinate_for_test(), 1);
             register(owner, Arc::clone(&b), Arc::from([]), &before, OrdSet::unit(Arc::clone(&a0)));
             register_dependent_alias(owner, &before, &b, &b_successor, &a0);
             register(owner, Arc::clone(&consumer), Arc::clone(&prefix), &before, OrdSet::unit(Arc::clone(&b)));
@@ -129,7 +129,7 @@ pub fn cutoff_journey(
             }
             assert_pending(owner, &live, &consumer, &b);
             if matches!(successor, Successor::Equal) {
-                assert!(matches!(owner.consumed_output_currentness(
+                assert!(matches!(owner.consumed_output_currentness_for_test(
                     &live, &b,
                 ).unwrap(),
                     worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::derived::ConsumedOutputCurrentness::CanonicallyEqualClean(identity)
@@ -141,7 +141,7 @@ pub fn cutoff_journey(
                 // unrelated successor is not a consequence for this identity.
                 register(owner, Arc::clone(&consumer), Arc::clone(&prefix), &live, OrdSet::unit(Arc::clone(&a0)));
                 assert_pending(owner, &live, &consumer, &a0);
-                let upstream = owner.consumed_output_currentness(
+                let upstream = owner.consumed_output_currentness_for_test(
                     &live, &a0,
                 ).unwrap();
                 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::derived::ConsumedOutputCurrentness;
@@ -160,7 +160,7 @@ pub fn cutoff_journey(
 let basis = PreparedInputCutoffBasis::prepare_for_test(runtime, &live_handle).unwrap();
 
 let result = candidate.clone().verify_for_reuse_for_test(
-                request_execution, candidate.prepared_input_key_for_test().unwrap().continued_by_republication(), context, None,
+                request_execution, candidate.prepared_input_key_for_test().unwrap().continued_by_republication_for_test(), context, None,
                 runtime, &basis, owner,
             );
             if matches!(successor, Successor::Equal) {
@@ -174,7 +174,7 @@ request_execution,                    &prefix, &[], candidate.native_output_witn
                 // for every completed handler fact, after the own-evidence check.
                 for fact in prefix.iter() {
 
-assert_eq!(fact.source_currentness_in_for_test(runtime, request_execution, &live_handle).unwrap().unwrap().movement(), Movement::Unmoved);
+assert_eq!(fact.source_currentness_in_for_test(runtime, request_execution, &live_handle).unwrap().unwrap().movement_for_test(), Movement::Unmoved);
                 }
             } else {
                 assert!(matches!(result, Err(InputCutoffVerificationStop::PendingOutput(ref identity)) if identity == &a0),
@@ -218,7 +218,7 @@ pub fn register_dependent_alias(
         .expect("a clean dependent alias prepares at its actual native basis");
     drop(
         prepared
-            .install()
+            .install_for_test()
             .unwrap_or_else(|_| panic!("the selected dependent alias installs")),
     );
 }
@@ -286,8 +286,8 @@ fn retained_registration_consumes_the_equal_successor_at_the_live_image() {
 
     with_generated_own_write(|world, _, performed, _| {
         let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-        let handle = graph.integration_handle();
-        let owner = &handle.source_owner.invalidation_owner;
+        let handle = graph.integration_handle_for_test();
+        let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
         let record = performed.get().unwrap();
         let entity = world
             .application
@@ -307,20 +307,20 @@ fn retained_registration_consumes_the_equal_successor_at_the_live_image() {
             .expect("installed host call opens");
         let status = AccountStatus::reference();
         let status = graph
-            .layout()
-            .field_locator(status.entity(), status.aspect(), status.field())
+            .layout_for_test()
+            .field_locator_for_test(status.entity(), status.aspect(), status.field())
             .unwrap()
             .clone();
-        let mut source = (*record.settlement_identity_for_test()).source().clone();
-        source.output_binding = OutputBindingIdentity::declared_for_test("Upstream");
+        let mut source = (*record.settlement_identity_for_test()).source_for_test().clone();
+        (*source.output_binding_mut_for_test()) = OutputBindingIdentity::declared_for_test("Upstream");
         let a0 =
-            RecordedSettlementIdentity::retain_for_test(&source, (*record.settlement_identity_for_test()).coordinate(), 0);
+            RecordedSettlementIdentity::retain_for_test(&source, (*record.settlement_identity_for_test()).coordinate_for_test(), 0);
         let a1 =
-            RecordedSettlementIdentity::retain_for_test(&source, (*record.settlement_identity_for_test()).coordinate(), 1);
-        source.output_binding = OutputBindingIdentity::declared_for_test("Consumer");
+            RecordedSettlementIdentity::retain_for_test(&source, (*record.settlement_identity_for_test()).coordinate_for_test(), 1);
+        (*source.output_binding_mut_for_test()) = OutputBindingIdentity::declared_for_test("Consumer");
         let consumer =
-            RecordedSettlementIdentity::retain_for_test(&source, (*record.settlement_identity_for_test()).coordinate(), 0);
-        handle.with_runtime_mut(request_execution, |runtime| {
+            RecordedSettlementIdentity::retain_for_test(&source, (*record.settlement_identity_for_test()).coordinate_for_test(), 0);
+        handle.with_runtime_mut_for_test(request_execution, |runtime| {
             let (before_handle, before) = snapshot(runtime);
             register(
                 owner,

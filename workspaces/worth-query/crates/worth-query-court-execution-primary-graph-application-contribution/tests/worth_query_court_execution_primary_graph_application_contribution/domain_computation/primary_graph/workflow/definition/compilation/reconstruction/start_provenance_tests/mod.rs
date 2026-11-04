@@ -33,12 +33,12 @@ fn started_revision_actual_producer_is_immutable_but_current_revision_can_change
     assert_ne!(original, successor);
     let original_payer = payer();
     let execution = ExecutionRequest::leased(&original_payer);
-    let layout = (*world
+    let layout = (*(*world
         .application
         .runtime_for_test())
         .primary_graph()
         .unwrap()
-        .layout
+        .layout_for_test())
         .workflow()
         .clone();
     let actor = admitted_actor(&world);
@@ -49,7 +49,7 @@ fn started_revision_actual_producer_is_immutable_but_current_revision_can_change
         .runtime_for_test())
         .primary_graph()
         .unwrap()
-        .integration_handle();
+        .integration_handle_for_test();
     handle.with_runtime(&execution, |runtime| {
         assert_eq!(
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::instance::start_provenance::read(
@@ -69,8 +69,8 @@ fn started_revision_actual_producer_is_immutable_but_current_revision_can_change
                 &execution,
                 before.1.snapshot_handle(),
                 instance,
-                layout.instance.entity_kind,
-                &layout.instance.started_program_revision,
+                (*(*layout.instance_for_test()).entity_kind_for_test()),
+                &(*(*layout.instance_for_test()).started_program_revision_for_test()),
                 true
             ),
             original.to_string()
@@ -90,7 +90,7 @@ fn started_revision_actual_producer_is_immutable_but_current_revision_can_change
             .push_batch(
                 update(
                     instance,
-                    &layout.instance.started_program_revision,
+                    &(*(*layout.instance_for_test()).started_program_revision_for_test()),
                     replacement,
                 ),
                 execution.allocation_policy(),
@@ -122,7 +122,7 @@ fn started_revision_actual_producer_is_immutable_but_current_revision_can_change
         &world,
         update(
             instance,
-            &layout.instance.program_revision,
+            &(*(*layout.instance_for_test()).program_revision_for_test()),
             current_revision,
         ),
     );
@@ -158,8 +158,8 @@ fn started_revision_actual_producer_is_immutable_but_current_revision_can_change
                 &execution,
                 current.1.snapshot_handle(),
                 instance,
-                layout.instance.entity_kind,
-                &layout.instance.program_revision,
+                (*(*layout.instance_for_test()).entity_kind_for_test()),
+                &(*(*layout.instance_for_test()).program_revision_for_test()),
                 false
             ),
             successor.to_string()
@@ -169,7 +169,7 @@ fn started_revision_actual_producer_is_immutable_but_current_revision_can_change
             // only started_program_revision promises managed Symbol custody.
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::observation::predecode_admission::observe_field_value_borrowed(
                 runtime, &execution, before.1.snapshot_handle(), instance,
-                layout.instance.entity_kind, &layout.instance.program_revision,
+                (*(*layout.instance_for_test()).entity_kind_for_test()), &(*(*layout.instance_for_test()).program_revision_for_test()),
                 |value| value == Some(&AspectValue::String(InternedString::Raw(original.to_string()))),
             ).unwrap(),
             Some(true)
@@ -211,12 +211,12 @@ fn started_revision_current_capture_restore_retains_exact_data_after_original_pa
     let (support, original, _) = installed_provenance_support(world.application.installed_schema());
     let original_payer = payer();
     let execution = ExecutionRequest::leased(&original_payer);
-    let layout = (*world
+    let layout = (*(*world
         .application
         .runtime_for_test())
         .primary_graph()
         .unwrap()
-        .layout
+        .layout_for_test())
         .workflow()
         .clone();
     let recovery_config = (*world
@@ -224,7 +224,7 @@ fn started_revision_current_capture_restore_retains_exact_data_after_original_pa
         .runtime_for_test())
         .primary_graph()
         .unwrap()
-        .integration_handle()
+        .integration_handle_for_test()
         .with_runtime(&execution, |runtime| runtime.config()); // before managed revision text exists
     let instance = publish_instance(
         &world,
@@ -239,7 +239,7 @@ fn started_revision_current_capture_restore_retains_exact_data_after_original_pa
         .runtime_for_test())
         .primary_graph()
         .unwrap()
-        .integration_handle();
+        .integration_handle_for_test();
     let checkpoint = handle.with_runtime(&execution, |runtime| {
         runtime
             .durability_authority()
@@ -268,8 +268,8 @@ fn started_revision_current_capture_restore_retains_exact_data_after_original_pa
             &receiving,
             &snapshot,
             instance,
-            layout.instance.entity_kind,
-            &layout.instance.started_program_revision,
+            (*(*layout.instance_for_test()).entity_kind_for_test()),
+            &(*(*layout.instance_for_test()).started_program_revision_for_test()),
             true
         ),
         original.to_string()

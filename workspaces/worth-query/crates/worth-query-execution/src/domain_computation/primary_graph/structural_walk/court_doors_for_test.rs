@@ -14,3 +14,10 @@ impl StructuralWalkObservation {
         Self::source(self)
     }
 }
+
+impl StructuralWalkObservation {
+    #[doc(hidden)]
+    pub fn key_for_test(&self) -> &StructuralWalkKey {
+        Self::key(self)
+    }
+}

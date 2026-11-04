@@ -11,3 +11,13 @@ impl ConsumedOutputEvidence {
         Self::establish_restored_before_commit(self, execution, source_owner)
     }
 }
+
+impl ConsumedOutputEvidence {
+    #[doc(hidden)]
+    pub fn claim_verified_checkpoint_root_for_test(
+        &self,
+        owner: &SourceInvalidationOwner,
+    ) -> Result<bool, SettlementRegistrationStop> {
+        Self::claim_verified_checkpoint_root(self, owner)
+    }
+}

@@ -12,7 +12,7 @@ fn exact_request_commits_query_derived_state_and_returns_one_requested_receipt()
             .with_host_advancement(|phase| {
                 let host_custody = phase.test_host_request_for_test();
                 authenticated_principal(
-                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                     &world,
                     &request,
                 )
@@ -23,7 +23,7 @@ fn exact_request_commits_query_derived_state_and_returns_one_requested_receipt()
             .with_host_advancement(|phase| {
                 let host_custody = phase.test_host_request_for_test();
                 request_reads(
-                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                     &world,
                     &principal,
                     &request,
@@ -59,7 +59,7 @@ fn exact_request_commits_query_derived_state_and_returns_one_requested_receipt()
             .with_host_advancement(|phase| {
                 let host_custody = phase.test_host_request_for_test();
                 resolve_created_identities(
-                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                     &host_custody.borrowed_request_for_test(),
                     &world,
                     &request,
@@ -72,7 +72,7 @@ fn exact_request_commits_query_derived_state_and_returns_one_requested_receipt()
             .with_host_advancement(|phase| {
                 let host_custody = phase.test_host_request_for_test();
                 crate::domain_computation::primary_graph::tests::authorization::capability_elevation::admit_raw(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     &world,
                     &principal,
                     &request,

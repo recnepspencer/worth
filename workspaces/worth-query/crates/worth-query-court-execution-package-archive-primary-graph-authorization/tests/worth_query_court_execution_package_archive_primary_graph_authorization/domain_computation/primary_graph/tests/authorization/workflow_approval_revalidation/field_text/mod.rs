@@ -77,11 +77,11 @@ pub fn locators(
     layout: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::schema::layout::WorthQueryWorkflowLayout,
 ) -> [&AspectFieldLocator; 5] {
     [
-        &(*layout.approval_for_test()).authorization_request,
-        &(*layout.approval_for_test()).authorization_principal,
-        &(*layout.approval_for_test()).authorization_lineage,
-        &(*layout.approval_for_test()).authorization_support,
-        &(*layout.approval_for_test()).authorization_dependencies,
+        &(*(*layout.approval_for_test()).authorization_request_for_test()),
+        &(*(*layout.approval_for_test()).authorization_principal_for_test()),
+        &(*(*layout.approval_for_test()).authorization_lineage_for_test()),
+        &(*(*layout.approval_for_test()).authorization_support_for_test()),
+        &(*(*layout.approval_for_test()).authorization_dependencies_for_test()),
     ]
 }
 
@@ -106,10 +106,10 @@ fn five_admitted_envelopes_publish_original_json_and_keep_payer_until_last_nativ
             let expected = originals(&meaning); // Oracle copies precede native admission.
             let selected = world.selected_product(&host);
             let (_, product, _) = selected.into_parts_for_test();
-            let basis = product.relational_basis();
+            let basis = product.relational_basis_for_test();
             let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-            let handle = graph.integration_handle();
-            let retained_layout = graph.layout();
+            let handle = graph.integration_handle_for_test();
+            let retained_layout = graph.layout_for_test();
             let layout = retained_layout.workflow();
             let admitted_text = handle.with_runtime(&execution, |runtime| {
                 WorkflowApprovalFieldText::admit_for_test(runtime, &execution, basis, &meaning).unwrap()
@@ -125,7 +125,7 @@ fn five_admitted_envelopes_publish_original_json_and_keep_payer_until_last_nativ
             let label = AccountLabel::reference();
             let field = |entity, aspect, name| {
                 retained_layout
-                    .field_locator(entity, aspect, name)
+                    .field_locator_for_test(entity, aspect, name)
                     .unwrap()
                     .clone()
             };
@@ -134,7 +134,7 @@ fn five_admitted_envelopes_publish_original_json_and_keep_payer_until_last_nativ
             let membership_locator =
                 field(membership.entity(), membership.aspect(), membership.field());
             let label_locator = field(label.entity(), label.aspect(), label.field());
-            let account_kind = retained_layout.entity_kind(label.entity()).unwrap();
+            let account_kind = retained_layout.entity_kind_for_test(label.entity()).unwrap();
             let text = |value: &str| AspectValue::String(InternedString::Raw(value.to_owned()));
             let mut carriers = Vec::with_capacity(5);
             let mut batch = WorkerIntentBatch::new("five-envelope-transport");
@@ -167,7 +167,7 @@ fn five_admitted_envelopes_publish_original_json_and_keep_payer_until_last_nativ
                 .runtime_for_test())
                 .primary_graph()
                 .unwrap()
-                .integration_handle();
+                .integration_handle_for_test();
             let prepared = prepare_relational_mutation_on_application(
                 &execution,
                 &world.application,
@@ -204,7 +204,7 @@ fn five_admitted_envelopes_publish_original_json_and_keep_payer_until_last_nativ
                 })
                 .collect::<Vec<_>>();
             assert_eq!(symbols.len(), 5);
-            let pin = handle.with_runtime_mut(&execution, |runtime| {
+            let pin = handle.with_runtime_mut_for_test(&execution, |runtime| {
                 let pin = runtime
                     .read_truth()
                     .pin_read_capability(&commit.snapshot, &[], &execution)
@@ -271,12 +271,12 @@ fn original_cancellation_reaches_query_native_receiving_before_any_dictionary_or
         assert!(charge > 0);
         let selected = world.selected_product(&host);
         let (_, product, _) = selected.into_parts_for_test();
-        let basis = product.relational_basis();
+        let basis = product.relational_basis_for_test();
         let observer = host.borrowed_request_for_test();
-        let handle = (*world.application.runtime_for_test()).primary_graph().unwrap().integration_handle();
+        let handle = (*world.application.runtime_for_test()).primary_graph().unwrap().integration_handle_for_test();
         // Open the real receiver while live. Cancellation occurs inside, with
         // no intervening outer with_runtime check or new callback/test control.
-        handle.with_runtime_mut(&execution, |runtime| {
+        handle.with_runtime_mut_for_test(&execution, |runtime| {
             assert!(runtime.owner_component_services().basis_port().compare_current_exact(basis).is_ok());
             let before = runtime.snapshots().snapshot_for_observation(&basis.observation()).unwrap();
             let before_pin = runtime.read_truth().pin_read_capability(&before, &[], &observer).unwrap();
@@ -302,10 +302,10 @@ fn original_cancellation_reaches_query_native_receiving_before_any_dictionary_or
             // it does not reset the cancelled request or manufacture admission.
             let admitted_text = WorkflowApprovalFieldText::admit_for_test(runtime, &observer, basis, &meaning).unwrap();
             let fields = workflow_approval_fields(
-                (*world.application.runtime_for_test()).primary_graph().unwrap().layout().workflow(),
+                (*world.application.runtime_for_test()).primary_graph().unwrap().layout_for_test().workflow(),
                 &meaning, basis, &admitted_text,
             ).unwrap();
-            assert!(locators((*world.application.runtime_for_test()).primary_graph().unwrap().layout().workflow()).iter().all(|locator| {
+            assert!(locators((*world.application.runtime_for_test()).primary_graph().unwrap().layout_for_test().workflow()).iter().all(|locator| {
                 matches!(fields.get(*locator), Some(AspectValue::String(InternedString::Symbol(_))))
             }));
         });

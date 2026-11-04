@@ -29,7 +29,7 @@ pub fn moved_facts(sealed: SealedComputationRun, keys: bool) -> ComputationPrior
         matches!(read, ComputationRead::Membership)
             || keys && matches!(read, ComputationRead::ItemKey(_))
     };
-    let facts = state.facts.facts();
+    let facts = (*state.facts_for_test()).facts_for_test();
     let facts = facts.filter(|(_, _, readers)| readers.reads().any(moved));
     let facts = facts
         .map(|(key, fact, _)| (key.clone(), fact.clone()))
@@ -44,7 +44,7 @@ pub fn moved_facts(sealed: SealedComputationRun, keys: bool) -> ComputationPrior
             panic!("a moved fact is a field's fact: {fact:?}");
         };
         let moved = WorthQueryApplicationObservedFact::SourceEntity { entity_id };
-        state.facts.replace_fact(&key, moved);
+        (*state.facts_for_test()).replace_fact_for_test(&key, moved);
     }
     ComputationPrior::new_for_test(edition(), Ok(std::sync::Arc::new(state)), None)
 }
@@ -292,16 +292,16 @@ fn a_missing_call_measurement_is_recorded_as_unmeasured_at_the_discard() {
     let first = first_run(&world, &installed);
     let report = first.runs[0].1.unwrap();
     let sealed = first.sealed.unwrap().unwrap();
-    let typed = (*sealed
+    let typed = (*(*sealed
         .state_for_test())
-        .typed
+        .typed_for_test())
         .downcast_ref::<RetainedPartitions<Parity, Number, u64>>()
         .unwrap();
     let mut recording =
-        FullRecording::<Parity, Number>::new_for_test(RetainedBasisToken::new_for_test((*sealed.state_for_test()).basis.clone()));
+        FullRecording::<Parity, Number>::new_for_test(RetainedBasisToken::new_for_test((*(*sealed.state_for_test()).basis_for_test()).clone()));
     // A reader that could not measure the call supplies None here. This
     // invokes the production discard, with a real completed reduction tree.
-    recording.membership_for_test(None, &typed.items, Arc::clone(&typed.digests));
+    recording.membership_for_test(None, &(*typed.items_for_test()), Arc::clone(&(*typed.digests_for_test())));
     let request = live_scope();
     let execution = QueryRequestExecution::open_for_test(
         RuntimeWorldExecutionPlacement::Serial(
@@ -315,7 +315,7 @@ fn a_missing_call_measurement_is_recorded_as_unmeasured_at_the_discard() {
     let result = recording
         .complete_for_test::<u64, u64>(
             None,
-            typed.tree.clone(),
+            (*typed.tree_for_test()).clone(),
             &execution,
             Cause::FirstRun,
             report,

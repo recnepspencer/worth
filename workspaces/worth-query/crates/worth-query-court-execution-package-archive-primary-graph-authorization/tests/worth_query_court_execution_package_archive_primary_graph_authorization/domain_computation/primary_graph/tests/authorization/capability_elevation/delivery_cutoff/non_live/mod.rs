@@ -34,7 +34,7 @@ fn revocation_after_cursor_denies_the_next_page_from_current_truth() {
                 .world
                 .selected_product(&host_custody)
                 .admit_governed_application_query_continuation(
-                    &host_custody.phase_for_application(&context.world.application),
+                    &host_custody.phase_for_application_for_test(&context.world.application),
                     &context.query,
                     &access,
                     first,
@@ -56,7 +56,7 @@ fn revocation_after_cursor_denies_the_next_page_from_current_truth() {
                 .world
                 .application
                 .execute_application_query_continuation_page(
-                    &host_custody.phase_for_application(&context.world.application),
+                    &host_custody.phase_for_application_for_test(&context.world.application),
                     plan,
                 )
                 .unwrap()
@@ -73,8 +73,8 @@ fn revocation_after_cursor_denies_the_next_page_from_current_truth() {
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request_for_test();
             context.elevated_access(
-                &(host_custody.phase_for_application(&context.world.application))
-                    .test_host_request(),
+                &(host_custody.phase_for_application_for_test(&context.world.application))
+                    .test_host_request_for_test(),
             )
         })
         .expect("the fixture read owns its installed host call");
@@ -90,7 +90,7 @@ fn revocation_after_cursor_denies_the_next_page_from_current_truth() {
                 .world
                 .application
                 .readmit_governed_application_query_continuation(
-                    &host_custody.phase_for_application(&context.world.application),
+                    &host_custody.phase_for_application_for_test(&context.world.application),
                     &context.query,
                     &access,
                     pending,
@@ -136,7 +136,7 @@ fn revocation_after_selected_plan_denies_before_result_delivery() {
                 .world
                 .selected_product(&host_custody)
                 .admit_governed_application_query(
-                    &host_custody.phase_for_application(&context.world.application),
+                    &host_custody.phase_for_application_for_test(&context.world.application),
                     &context.query,
                     &access,
                     capability,
@@ -161,7 +161,7 @@ fn revocation_after_selected_plan_denies_before_result_delivery() {
                 .world
                 .application
                 .execute_application_query_one_shot(
-                    &host_custody.phase_for_application(&context.world.application),
+                    &host_custody.phase_for_application_for_test(&context.world.application),
                     plan,
                 )
                 .err()

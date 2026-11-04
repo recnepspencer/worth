@@ -22,14 +22,14 @@ pub fn scenario(rejoin: bool, late_hold: bool) {
             limits: worth_query_execution::facade::domain_computation::WorthQueryOutputDemandResourceProfile::standard().limits(),
             retained_program_basis: None,
         });
-        (*registry
+        (*(*(*registry
             .state_for_test())
             .lock()
             .unwrap()
-            .records
+            .records_for_test())
             .get_mut(&newest_key)
             .unwrap()
-            .readmission_source = Some(Arc::clone(&source));
+            .readmission_source_mut_for_test()) = Some(Arc::clone(&source));
         publish(&registry, &refreshing, receipt);
         if late_hold {
             drop(stale);
@@ -37,14 +37,14 @@ pub fn scenario(rejoin: bool, late_hold: bool) {
             let returned = registry.hold_required_successor_for_test(Box::new(refreshing), |successor| {
                 successor
                     .downcast_ref::<WorthQueryOutputDemandInterest>()
-                    .map(|interest| &interest.key)
+                    .map(|interest| &(*interest.key_for_test()))
             });
             assert!(
                 returned.is_some(),
                 "no stale owner awaits this late successor; the registry must give it back"
             );
             drop(returned);
-            assert!(!(*registry.state_for_test()).lock().unwrap().records.contains_key(&key));
+            assert!(!(*(*registry.state_for_test()).lock().unwrap().records_for_test()).contains_key_for_test(&key));
 
             return;
         }
@@ -52,11 +52,11 @@ pub fn scenario(rejoin: bool, late_hold: bool) {
         {
             let state = (*registry.state_for_test()).lock().unwrap();
             assert!(
-                state.records.contains_key(&newest_key),
+                (*state.records_for_test()).contains_key_for_test(&newest_key),
                 "the freshest Published answer still belongs to the stale owner"
             );
             assert!(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::refreshed_rejoin::awaited_by_stale_owner(
-                &state.records,
+                &(*state.records_for_test()),
                 &newest_key
             ));
         }
@@ -65,7 +65,7 @@ pub fn scenario(rejoin: bool, late_hold: bool) {
                 .rejoin_refreshed_for_test(&stale)
                 .unwrap()
                 .expect("the stale owner rejoins its exact latest answer");
-            assert_eq!(owner.key, newest_key);
+            assert_eq!((*owner.key_for_test()), newest_key);
             assert!(Arc::ptr_eq(&joined_source, &source));
             drop(joined_source);
             drop(stale);
@@ -121,7 +121,7 @@ pub fn scenario(rejoin: bool, late_hold: bool) {
             );
             drop(owner);
             assert!(
-                (*registry.state_for_test()).lock().unwrap().records[&newest_key].has_cached_ready(),
+                (*(*registry.state_for_test()).lock().unwrap().records_for_test())[&newest_key].has_cached_ready_for_test(),
                 "closing the owner keeps its delivered Ready cache"
             );
 
@@ -129,12 +129,12 @@ pub fn scenario(rejoin: bool, late_hold: bool) {
         } else {
             drop(stale);
             assert!(
-                !(*registry
+                !(*(*registry
                     .state_for_test())
                     .lock()
                     .unwrap()
-                    .records
-                    .contains_key(&newest_key),
+                    .records_for_test())
+                    .contains_key_for_test(&newest_key),
                 "closing the last stale owner retires its now idle Published answer"
             );
         }
@@ -169,19 +169,19 @@ fn closing_the_last_stale_owner_releases_its_held_successor() {
         assert!(registry
             .hold_required_successor_for_test(Box::new(successor), |successor| successor
                 .downcast_ref::<WorthQueryOutputDemandInterest>()
-                .map(|interest| &interest.key))
+                .map(|interest| &(*interest.key_for_test())))
             .is_none());
-        assert!((*registry.state_for_test()).lock().unwrap().records[&newest_key]
-            .held_successor
+        assert!((*(*(*registry.state_for_test()).lock().unwrap().records_for_test())[&newest_key]
+            .held_successor_for_test())
             .is_some());
         drop(stale);
         assert!(
-            !(*registry
+            !(*(*registry
                 .state_for_test())
                 .lock()
                 .unwrap()
-                .records
-                .contains_key(&newest_key),
+                .records_for_test())
+                .contains_key_for_test(&newest_key),
             "the last awaiting owner's release also closes its held successor"
         );
     });

@@ -31,7 +31,7 @@ fn query_graph_capacity_denial_and_drop_return_exact_reservation() {
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_authenticated_principal(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     &world.binding,
                     &external,
                     &request,
@@ -46,7 +46,7 @@ fn query_graph_capacity_denial_and_drop_return_exact_reservation() {
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     AccountStatus::reference(),
                     "open".to_owned(),
                     &request,
@@ -58,11 +58,11 @@ fn query_graph_capacity_denial_and_drop_return_exact_reservation() {
             let admit = || {
                 world
                     .selected_product(
-                        &(host_custody.phase_for_application(&world.application))
-                            .test_host_request(),
+                        &(host_custody.phase_for_application_for_test(&world.application))
+                            .test_host_request_for_test(),
                     )
                     .admit_application_query(
-                        &host_custody.phase_for_application(&world.application),
+                        &host_custody.phase_for_application_for_test(&world.application),
                         &query,
                         &access,
                         ApplicationQueryParameterSet::new()
@@ -91,7 +91,7 @@ fn query_graph_capacity_denial_and_drop_return_exact_reservation() {
             let completed = world
                 .application
                 .execute_application_query_one_shot(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     admit().unwrap(),
                 )
                 .expect("a successful read completes the exact returned reservation");

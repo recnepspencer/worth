@@ -91,3 +91,24 @@ impl WorthQueryObservedAdjacencyRevision {
         &self.relation_kind
     }
 }
+
+impl WorthQueryObservedFieldRevision {
+    #[doc(hidden)]
+    pub fn entity_name_mut_for_test(&mut self) -> &mut String {
+        &mut self.entity_name
+    }
+}
+
+impl WorthQueryObservedFieldRevision {
+    #[doc(hidden)]
+    pub fn field_mut_for_test(&mut self) -> &mut FieldKey {
+        &mut self.field
+    }
+}
+
+impl WorthQueryObservedAdjacencyRevision {
+    #[doc(hidden)]
+    pub fn endpoints_mut_for_test(&mut self) -> &mut Vec<EntityId> {
+        &mut self.endpoints
+    }
+}

@@ -121,3 +121,54 @@ where
         Self::fixture_phase(self, host)
     }
 }
+
+impl<'runtime, Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, Scope, Target, Binding,>
+    WorthQueryApplicationLiveLease<
+        'runtime,
+        Schema,
+        Query,
+        Parameters,
+        QueryResult,
+        Principal,
+        PrincipalIdentity,
+        Scope,
+        Target,
+        Binding,
+    >
+where
+    Binding: ApplicationQueryLiveCauseBinding<Schema, Query, Scope, Target>,
+{
+    #[doc(hidden)]
+    pub fn initial_read_work_mut_for_test(
+        &mut self,
+    ) -> &mut Option<crate::domain_computation::provider_session::WorthQueryObservedGraphReadWork>
+    {
+        &mut self.initial_read_work
+    }
+}
+
+impl<'runtime, Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, Scope, Target, Binding,>
+    WorthQueryApplicationLiveLease<
+        'runtime,
+        Schema,
+        Query,
+        Parameters,
+        QueryResult,
+        Principal,
+        PrincipalIdentity,
+        Scope,
+        Target,
+        Binding,
+    >
+where
+    Binding: ApplicationQueryLiveCauseBinding<Schema, Query, Scope, Target>,
+{
+    #[doc(hidden)]
+    pub fn queue_mut_for_test(
+        &mut self,
+    ) -> &mut WorthQueryLiveCauseQueue<
+        <Binding::PayloadBinding as ApplicationStructuredValueBinding>::Value,
+    > {
+        &mut self.queue
+    }
+}

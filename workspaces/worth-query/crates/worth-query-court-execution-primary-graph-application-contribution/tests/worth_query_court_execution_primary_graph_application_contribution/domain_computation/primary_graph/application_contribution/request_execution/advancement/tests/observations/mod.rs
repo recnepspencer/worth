@@ -87,7 +87,7 @@ fn member_host_refusals_do_not_add_thread_dependent_observations() {
                     .into_slots_for_test()
                     .pop()
                     .unwrap()
-                    .into_value::<Result<(), WorthQueryAdvancementDenial>>();
+                    .into_value_for_test::<Result<(), WorthQueryAdvancementDenial>>();
                 assert_eq!(refusal, Err(WorthQueryAdvancementDenial::NestedOpening));
             }
         })

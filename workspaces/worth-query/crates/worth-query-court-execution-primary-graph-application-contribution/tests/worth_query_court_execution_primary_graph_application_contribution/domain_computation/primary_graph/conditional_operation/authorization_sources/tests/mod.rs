@@ -35,12 +35,12 @@ fn governed_temporal_operation_uses_real_capability_progression() {
             let borrowed_execution = host_custody.borrowed_request_for_test();
             let execution = &borrowed_execution;
             let principal = authenticated_principal(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                 &world,
                 &request,
             );
             let account = resolved_account(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                 &world,
                 "open",
                 &request,
@@ -61,7 +61,7 @@ fn governed_temporal_operation_uses_real_capability_progression() {
             let input = admitted_input();
             let authorization = WorthQueryGovernedTemporalOperationAuthorization::new(capability);
             let selected = world.selected_product(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
             );
             let admission = authorization
                 .authorize(
@@ -96,12 +96,12 @@ fn governed_temporal_reconstruction_uses_real_capability_progression() {
             let borrowed_execution = host_custody.borrowed_request_for_test();
             let execution = &borrowed_execution;
             let principal = authenticated_principal(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                 &world,
                 &request,
             );
             let account = resolved_account(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                 &world,
                 "open",
                 &request,
@@ -123,7 +123,7 @@ fn governed_temporal_reconstruction_uses_real_capability_progression() {
                 WorthQueryGovernedTemporalQueryAuthorization::new(capability, admitted_input());
             let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
             let selected = world.selected_product(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
             );
             let (_, product, application_basis) = selected.into_parts_for_test();
             let plan = authorization

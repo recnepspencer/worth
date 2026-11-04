@@ -35,12 +35,12 @@ pub fn last_claim_closes(held_successor: bool) {
             let mut state = (*registry.state_for_test()).lock().unwrap();
             let claims = vec![Arc::new(stale_key.clone())];
 
-            state.records.get_mut(&dependent_key).unwrap().prerequisites = claims;
-            state
-                .records
+            (*(*state.records_for_test()).get_mut(&dependent_key).unwrap().prerequisites_mut_for_test()) = claims;
+            (*(*state
+                .records_for_test())
                 .get_mut(&stale_key)
                 .unwrap()
-                .framework_required_count += 1;
+                .framework_required_count_mut_for_test()) += 1;
         }
         drop(stale);
         let newest = admit(&registry, &newest_key);
@@ -49,13 +49,13 @@ pub fn last_claim_closes(held_successor: bool) {
             assert!(registry
                 .hold_required_successor_for_test(Box::new(newest), |held| held
                     .downcast_ref::<WorthQueryOutputDemandInterest>()
-                    .map(|interest| &interest.key))
+                    .map(|interest| &(*interest.key_for_test())))
                 .is_none());
         } else {
             drop(newest);
         }
         assert!(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::refreshed_rejoin::awaited_by_stale_owner(
-            &(*registry.state_for_test()).lock().unwrap().records,
+            &(*(*registry.state_for_test()).lock().unwrap().records_for_test()),
             &newest_key
         ));
         drop(dependent);
@@ -70,24 +70,24 @@ pub fn last_claim_closes(held_successor: bool) {
         {
             let state = (*registry.state_for_test()).lock().unwrap();
             assert!(
-                !state.records.contains_key(&newest_key),
+                !(*state.records_for_test()).contains_key_for_test(&newest_key),
                 "the last claim's release retires the answer and any held successor"
             );
             assert!(
-                !state.records.contains_key(&stale_key),
+                !(*state.records_for_test()).contains_key_for_test(&stale_key),
                 "the superseded row is retired too"
             );
-            assert!(state.records.iter().all(|(key, record)| key == &unrelated ||
-                !matches!(&record.state, DemandState::Output(output) if matches!((*output.checkpoint_for_test()),
+            assert!((*state.records_for_test()).iter_for_test().all(|(key, record)| key == &unrelated ||
+                !matches!(&(*record.state_for_test()), DemandState::Output(output) if matches!((*output.checkpoint_for_test()),
                     Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint::Published { .. })))));
         }
 
-        assert!((*registry
+        assert!((*(*registry
             .state_for_test())
             .lock()
             .unwrap()
-            .records
-            .contains_key(&unrelated));
+            .records_for_test())
+            .contains_key_for_test(&unrelated));
     });
 }
 

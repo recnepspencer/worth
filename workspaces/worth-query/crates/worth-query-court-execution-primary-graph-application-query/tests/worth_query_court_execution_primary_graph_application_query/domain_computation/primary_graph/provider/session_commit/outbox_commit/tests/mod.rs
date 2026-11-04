@@ -29,8 +29,8 @@ fn real_commit_mapping_denial_reaches_receipt_projection() {
     let binding = seal
         .binding()
         .expect("the committed create has one binding");
-    assert_eq!(binding.record(), evidence.committed_pending.record_for_test());
-    assert_eq!(binding.record_ref(), &evidence.expected_record_ref);
+    assert_eq!(binding.record_for_test(), evidence.committed_pending.record_for_test());
+    assert_eq!(binding.record_ref_for_test(), &evidence.expected_record_ref);
 
     assert_eq!(
         evidence
@@ -71,20 +71,20 @@ pub fn commit_only_other_outbox(
     let world = installed_authorization_world(true);
     let provider = &(*world.application.primary_provider_for_test());
     let (_, requested) = bind_dispatch_outbox_create_intent(
-        Some(provider.graph.layout.provider_dispatch_outbox()),
+        Some((*(*provider.graph_for_test()).layout_for_test()).provider_dispatch_outbox_for_test()),
         Some(&record(1)),
         worth_relational::facade::identity::PartitionId::main(),
     )
     .expect("requested outbox create binds");
     let (committed_intent, committed_pending) = bind_dispatch_outbox_create_intent(
-        Some(provider.graph.layout.provider_dispatch_outbox()),
+        Some((*(*provider.graph_for_test()).layout_for_test()).provider_dispatch_outbox_for_test()),
         Some(&record(2)),
         worth_relational::facade::identity::PartitionId::main(),
     )
     .expect("committed outbox create binds");
-    provider
-        .graph
-        .with_runtime_mut(request_execution, |runtime| {
+    (*provider
+        .graph_for_test())
+        .with_runtime_mut_for_test(request_execution, |runtime| {
             let mut transaction = {
                 let transaction_validation_input = runtime
                     .admit_branch_basis(&runtime.main_branch_identity())

@@ -314,3 +314,5 @@ fn publish_with_snapshot(
         .record(completed);
     Ok(settled)
 }
+
+mod court_doors_for_test;

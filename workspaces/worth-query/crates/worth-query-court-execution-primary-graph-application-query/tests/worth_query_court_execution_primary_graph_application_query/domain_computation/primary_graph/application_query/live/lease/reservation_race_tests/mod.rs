@@ -69,7 +69,7 @@ fn lease_opened_after_reservation_receives_the_exact_committed_successor() {
     (*world
         .application
         .primary_provider_for_test())
-        .set_application_commit_causality_reservation_hook(Some(Arc::new(move || {
+        .set_application_commit_causality_reservation_hook_for_test(Some(Arc::new(move || {
             parked_tx.send(()).unwrap();
             release_rx.lock().unwrap().recv().unwrap();
         })));
@@ -105,7 +105,7 @@ fn lease_opened_after_reservation_receives_the_exact_committed_successor() {
                 (*world
                     .application
                     .primary_provider_for_test())
-                    .set_application_commit_causality_reservation_hook(None);
+                    .set_application_commit_causality_reservation_hook_for_test(None);
 
                 let WorthQueryApplicationLiveOutcome::Delivered(update) =
                     lease.next(&phase, &principal, &request)
@@ -202,7 +202,7 @@ fn publication_without_a_joining_subscriber_releases_marker_and_observation() {
         (*world
             .application
             .primary_provider_for_test())
-            .active_application_commit_causality_partitions(),
+            .active_application_commit_causality_partitions_for_test(),
         0
     );
     // Compare before preparing the live attempt and after it finishes, with

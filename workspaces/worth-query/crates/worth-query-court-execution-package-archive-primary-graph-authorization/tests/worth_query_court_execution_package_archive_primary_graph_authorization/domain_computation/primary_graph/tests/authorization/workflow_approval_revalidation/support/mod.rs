@@ -19,12 +19,12 @@ fn copied_primary_dependencies_cannot_forge_delegation_target_support() {
             let borrowed_execution = host_custody.borrowed_request_for_test();
             let execution = &borrowed_execution;
             let principal = authenticated_principal(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                 &world,
                 &request,
             );
             let admission = admitted_capability_operation(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                 &world,
                 &principal,
                 &request,
@@ -71,12 +71,12 @@ fn delegation_support_comparator_rejects_independent_native_source_aba() {
             let borrowed_execution = host_custody.borrowed_request_for_test();
             let execution = &borrowed_execution;
             let principal = authenticated_principal(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                 &world,
                 &request,
             );
             let admission = admitted_capability_operation(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                 &world,
                 &principal,
                 &request,
@@ -106,7 +106,7 @@ fn delegation_support_comparator_rejects_independent_native_source_aba() {
             .unwrap();
             dependencies["support"] = dependencies["primary"].clone();
             dependencies["support"]["activation"] = serde_json::to_value(native_stamp_for_independent_grant(
-                &host_custody.phase_for_application(&world.application),
+                &host_custody.phase_for_application_for_test(&world.application),
                 execution,
                 &world,
             )).unwrap();
@@ -166,7 +166,7 @@ fn delegation_support_comparator_rejects_independent_native_source_aba() {
             );
 
             update_grant_field(
-                &host_custody.phase_for_application(&world.application),
+                &host_custody.phase_for_application_for_test(&world.application),
                 &world,
                 "unrelated-capability-0",
                 field(&world, CapabilityStatusField::reference()),
@@ -176,7 +176,7 @@ fn delegation_support_comparator_rejects_independent_native_source_aba() {
                 .unwrap(),
             );
             update_grant_field(
-                &host_custody.phase_for_application(&world.application),
+                &host_custody.phase_for_application_for_test(&world.application),
                 &world,
                 "unrelated-capability-0",
                 field(&world, CapabilityStatusField::reference()),
@@ -186,12 +186,12 @@ fn delegation_support_comparator_rejects_independent_native_source_aba() {
                 .unwrap(),
             );
             let fresh_principal = authenticated_principal(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                 &world,
                 &request,
             );
             let fresh = admitted_capability_operation(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                 &world,
                 &fresh_principal,
                 &request,
@@ -247,8 +247,8 @@ pub fn native_stamp_for_independent_grant(
         "unrelated-capability-0",
     );
     let kind = graph
-        .layout()
-        .entity_kind(CapabilityGrant::reference().name())
+        .layout_for_test()
+        .entity_kind_for_test(CapabilityGrant::reference().name())
         .unwrap();
     let predicate = RelationalAuthorizationPredicate::new(
         0,
@@ -260,8 +260,8 @@ pub fn native_stamp_for_independent_grant(
         .unwrap(),
     );
     graph
-        .integration_handle()
-        .with_runtime_mut(execution, |runtime| {
+        .integration_handle_for_test()
+        .with_runtime_mut_for_test(execution, |runtime| {
             let plan = RelationalAuthorizationObservationPlan::try_new(
                 snapshot,
                 grant,
@@ -292,12 +292,12 @@ let host_custody = phase.test_host_request_for_test();
 let borrowed_execution = host_custody.borrowed_request_for_test();
 let execution = &borrowed_execution;
 let principal = authenticated_principal(
-            &(host_custody.phase_for_application(&world.application)).test_host_request(),
+            &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
             &world,
             &request,
         );
         let admission = admitted_capability_operation(
-            &(host_custody.phase_for_application(&world.application)).test_host_request(),
+            &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
             &world,
             &principal,
             &request,
@@ -341,12 +341,12 @@ let principal = authenticated_principal(
             .expect("support is admitted before its retained expiry");
         world.authorization_time.hold(time(108));
         let principal = authenticated_principal(
-            &(host_custody.phase_for_application(&world.application)).test_host_request(),
+            &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
             &world,
             &request,
         );
         let fresh = admitted_capability_operation(
-            &(host_custody.phase_for_application(&world.application)).test_host_request(),
+            &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
             &world,
             &principal,
             &request,

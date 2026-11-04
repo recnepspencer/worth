@@ -86,3 +86,5 @@ impl WorthQueryPrimaryGraphProvider {
         self.inbound_terminal_index.destroy_derived();
     }
 }
+
+mod court_doors_for_test;

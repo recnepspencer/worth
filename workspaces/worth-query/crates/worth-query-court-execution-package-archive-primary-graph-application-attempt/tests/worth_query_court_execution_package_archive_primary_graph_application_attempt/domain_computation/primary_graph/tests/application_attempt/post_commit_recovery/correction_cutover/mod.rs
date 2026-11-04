@@ -14,7 +14,7 @@ fn pending_correction_cutover_never_looks_unseen_on_another_branch() {
     let _delivery = (*world
         .application
         .primary_provider_for_test())
-        .observe_application_commit_causality(selected.product());
+        .observe_application_commit_causality_for_test(selected.product());
     let request = live_scope();
     let sibling = world
         .application
@@ -86,7 +86,7 @@ fn pending_correction_cutover_never_looks_unseen_on_another_branch() {
     );
     let provider = &(*world.application.primary_provider_for_test());
     assert!(
-        matches!(provider.observe_correction_key(&sibling_observation, binding.key_identity()),
+        matches!(provider.observe_correction_key_for_test(&sibling_observation, binding.key_identity()),
         Observed::Pending(Some(recorded)) if recorded.key_identity() == binding.key_identity())
     );
     drop(held);
@@ -98,7 +98,7 @@ fn pending_correction_cutover_never_looks_unseen_on_another_branch() {
         });
         let observer = threads.spawn(|| {
             barrier.wait();
-            provider.observe_correction_key(&sibling_observation, binding.key_identity())
+            provider.observe_correction_key_for_test(&sibling_observation, binding.key_identity())
         });
         (resolver.join().unwrap(), observer.join().unwrap())
     });
@@ -119,14 +119,14 @@ fn pending_correction_cutover_never_looks_unseen_on_another_branch() {
     assert_eq!(receipt.emitted_effect_count(), 1);
     assert_eq!(
         provider
-            .committed_application_emissions(receipt.committed_product_publication())
+            .committed_application_emissions_for_test(receipt.committed_product_publication())
             .len(),
         1
     );
     let snapshots = || {
         let host = worth_query_testkit_execution_primary_graph_application_attempt::bridge_host_request::serial_request();
         let execution = worth_execution::ExecutionRequest::serial(&host);
-        provider.graph.with_runtime(&execution, |runtime| {
+        (*provider.graph_for_test()).with_runtime(&execution, |runtime| {
             runtime
                 .storage_access()
                 .storage_stats(&execution)

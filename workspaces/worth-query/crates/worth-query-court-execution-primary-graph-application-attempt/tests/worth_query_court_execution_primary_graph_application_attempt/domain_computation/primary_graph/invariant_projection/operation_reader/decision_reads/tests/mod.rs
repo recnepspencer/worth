@@ -53,7 +53,7 @@ fn observed_reads_seal_every_key() {
         ))
         .ok()
         .unwrap();
-    assert_eq!(keys.iter().cloned().collect::<Vec<_>>(), [adjacency(1)]);
+    assert_eq!(keys.iter_for_test().cloned().collect::<Vec<_>>(), [adjacency(1)]);
 }
 
 #[test]
@@ -98,15 +98,15 @@ fn shared_handler_and_computation_reads_keep_exact_keys_not_just_cardinality() {
         adjacency(3),
     ]);
     assert!(
-        actual.iter().eq(keys.iter()),
+        actual.iter().eq(keys.iter_for_test()),
         "shared key occurs once in order"
     );
     let mut wrong = actual.clone();
     wrong.remove(&adjacency(3));
     wrong.insert(adjacency(4));
-    assert_eq!(wrong.len(), keys.iter().count());
+    assert_eq!(wrong.len(), keys.iter_for_test().count());
     assert!(
-        !wrong.iter().eq(keys.iter()),
+        !wrong.iter().eq(keys.iter_for_test()),
         "same count cannot close another key set"
     );
 }

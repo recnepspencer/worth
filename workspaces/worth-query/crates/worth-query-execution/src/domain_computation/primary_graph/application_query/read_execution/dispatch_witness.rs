@@ -57,7 +57,7 @@ pub enum Interrupt {
             worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource,
     },
 }
-pub(in crate::domain_computation::primary_graph) struct WitnessScope(Option<Arc<DispatchWitness>>);
+pub struct WitnessScope(Option<Arc<DispatchWitness>>);
 impl Drop for WitnessScope {
     fn drop(&mut self) {
         ACTIVE.set(self.0.take());

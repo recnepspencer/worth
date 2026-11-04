@@ -283,3 +283,6 @@ impl<Schema, Operation, Input, Scope>
         self.core.original_correction_disclosure()
     }
 }
+
+#[path = "brand_phases_court_doors_for_test.rs"]
+mod court_doors_for_test;

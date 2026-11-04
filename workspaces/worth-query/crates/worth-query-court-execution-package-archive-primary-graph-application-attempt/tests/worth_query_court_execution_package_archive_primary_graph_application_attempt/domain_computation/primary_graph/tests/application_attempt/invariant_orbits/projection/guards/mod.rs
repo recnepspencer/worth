@@ -71,7 +71,7 @@ fn original_cancellation_cannot_be_swallowed_by_orbit_or_identity_inspection() {
         .with_host_advancement(|phase| {
             let host = phase.test_host_request_for_test();
             let execution = host
-                .execution_request_for(world.application.product_runtime())
+                .execution_request_for_for_test(world.application.product_runtime())
                 .unwrap();
             worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::program::authorize(
                 &world,

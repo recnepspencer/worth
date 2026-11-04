@@ -121,7 +121,7 @@ fn member_denials_remain_canonical_data_without_accounting_at_every_width() {
                 .map(|slots| {
                     let mut slots = slots.unwrap().into_slots_for_test();
                     assert_eq!(slots.len(), 1);
-                    slots.pop().unwrap().into_value::<(u64, bool)>()
+                    slots.pop().unwrap().into_value_for_test::<(u64, bool)>()
                 })
                 .collect();
             assert_eq!(
@@ -217,7 +217,7 @@ fn a_later_member_finishes_first_even_when_a_canonical_member_fails() {
                         .into_slots_for_test()
                         .pop()
                         .unwrap()
-                        .into_value::<(usize, bool)>()
+                        .into_value_for_test::<(usize, bool)>()
                 })
                 .collect();
             assert_eq!(

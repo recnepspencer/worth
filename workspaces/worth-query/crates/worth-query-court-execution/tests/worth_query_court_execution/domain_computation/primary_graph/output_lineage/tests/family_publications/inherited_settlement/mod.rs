@@ -30,10 +30,10 @@ fn actual_publication_generation_supersedes_inherited_settlement_generation() {
     assert!(!(*selected.ambiguous_publication_for_test()));
     assert_eq!((*selected.candidates_for_test()).len(), 1);
     assert_eq!(
-        (*selected.candidates_for_test())[0].correspondence.binding_type(),
+        (*(*selected.candidates_for_test())[0].correspondence_for_test()).binding_type(),
         Some(TypeId::of_for_test::<Preserve>())
     );
-    assert_eq!((*selected.candidates_for_test())[0].settlement_identity.address().1, 2);
+    assert_eq!((*(*selected.candidates_for_test())[0].settlement_identity_for_test()).address_for_test().1, 2);
 }
 
 #[test]
@@ -67,7 +67,7 @@ fn equal_publication_generation_is_ambiguous_despite_inherited_settlement() {
         assert!((*selected.candidates_for_test()).is_empty());
         (*court
             .lineage
-            .output_families_for_test())
+            .output_families_mut_for_test())
             .get_mut("family")
             .unwrap()
             .reverse();

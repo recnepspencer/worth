@@ -53,3 +53,24 @@ impl RetainedOutputCurrentnessRead {
         &mut self.facts
     }
 }
+
+impl WorthQueryApplicationOutputLineage {
+    #[doc(hidden)]
+    pub fn current_output_matches_receipt_for_test(
+        &self,
+        runtime_authority: u64,
+        schema: &ApplicationSchemaBindingIdentity,
+        observation: &worth_runtime_world::facade::ProductBranchObservation,
+        receipt: &WorthQueryApplicationCommitReceipt,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<bool, CompanionPreflightStop> {
+        Self::current_output_matches_receipt(
+            self,
+            runtime_authority,
+            schema,
+            observation,
+            receipt,
+            execution,
+        )
+    }
+}

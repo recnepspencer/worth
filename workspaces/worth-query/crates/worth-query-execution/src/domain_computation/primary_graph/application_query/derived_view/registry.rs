@@ -41,7 +41,7 @@ pub(in crate::domain_computation::primary_graph::application_query) trait Regist
     );
 }
 
-pub(in crate::domain_computation::primary_graph) struct PreparedManagedViewPublication {
+pub struct PreparedManagedViewPublication {
     views: Vec<(Arc<dyn RegisteredDerivedView>, Option<Box<dyn Any + Send>>)>,
 }
 
@@ -86,7 +86,7 @@ impl RegistryState {
 }
 
 #[derive(Default)]
-pub(in crate::domain_computation::primary_graph) struct ManagedDerivedViewRegistry {
+pub struct ManagedDerivedViewRegistry {
     state: Mutex<RegistryState>,
     native_runtime: Option<u64>,
     sources: super::super::managed_index::ManagedSourceInstallation,
@@ -238,3 +238,5 @@ impl Drop for ManagedDerivedViewRegistry {
         self.dispose();
     }
 }
+
+mod court_doors_for_test;

@@ -31,3 +31,10 @@ impl RecordedSettlementIdentity {
         Self::retain(source, coordinate, slot)
     }
 }
+
+impl RecordedSettlementIdentity {
+    #[doc(hidden)]
+    pub fn coordinate_for_test(&self) -> ProductCoordinate {
+        Self::coordinate(self)
+    }
+}

@@ -119,3 +119,105 @@ impl<Key, Item, Reduced> RetainedPartitions<Key, Item, Reduced> {
         &mut self.tree
     }
 }
+
+impl RetainedComputation {
+    #[doc(hidden)]
+    pub fn basis_for_test(&self) -> &RetainedBasis {
+        &self.basis
+    }
+}
+
+impl RetainedComputation {
+    #[doc(hidden)]
+    pub fn basis_mut_for_test(&mut self) -> &mut RetainedBasis {
+        &mut self.basis
+    }
+}
+
+impl RetainedComputation {
+    #[doc(hidden)]
+    pub fn typed_mut_for_test(&mut self) -> &mut Arc<dyn Any + Send + Sync> {
+        &mut self.typed
+    }
+}
+
+impl<Key, Item, Reduced> RetainedPartitions<Key, Item, Reduced> {
+    #[doc(hidden)]
+    pub fn native_run_for_test(&self) -> &worth_execution::ExecutionRetainedRun<Reduced> {
+        &self.native_run
+    }
+}
+
+impl<Key, Item, Reduced> RetainedPartitions<Key, Item, Reduced> {
+    #[doc(hidden)]
+    pub fn tree_for_test(
+        &self,
+    ) -> &NativeReductionTree<Reduced, fn(&Reduced, &Reduced) -> Reduced> {
+        &self.tree
+    }
+}
+
+impl<Key, Item, Reduced> RetainedPartitions<Key, Item, Reduced> {
+    #[doc(hidden)]
+    pub fn digests_into_for_test(self) -> ItemDigests {
+        self.digests
+    }
+}
+
+impl<Key, Item, Reduced> RetainedPartitions<Key, Item, Reduced> {
+    #[doc(hidden)]
+    pub fn item_keys_into_for_test(
+        self,
+    ) -> Arc<worth_execution::ExecutionOrderedMap<PartitionItemId, RetainedCall>> {
+        self.item_keys
+    }
+}
+
+impl<Key, Item, Reduced> RetainedPartitions<Key, Item, Reduced> {
+    #[doc(hidden)]
+    pub fn items_into_for_test(self) -> Items<Item> {
+        self.items
+    }
+}
+
+impl<Key, Item, Reduced> RetainedPartitions<Key, Item, Reduced> {
+    #[doc(hidden)]
+    pub fn routing_into_for_test(self) -> Arc<ComputationPartitionRouting> {
+        self.routing
+    }
+}
+
+impl<Key, Item, Reduced> RetainedPartitions<Key, Item, Reduced> {
+    #[doc(hidden)]
+    pub fn routing_mut_for_test(&mut self) -> &mut Arc<ComputationPartitionRouting> {
+        &mut self.routing
+    }
+}
+
+impl RetainedCall {
+    #[doc(hidden)]
+    pub fn charge_for_test(&self) -> &ComputationCallCharge {
+        &self.charge
+    }
+}
+
+impl RetainedCall {
+    #[doc(hidden)]
+    pub fn declared_units_for_test(&self) -> &Option<u64> {
+        &self.declared_units
+    }
+}
+
+impl<Key> RetainedPartition<Key> {
+    #[doc(hidden)]
+    pub fn key_for_test(&self) -> &Arc<Key> {
+        &self.key
+    }
+}
+
+impl<Key> RetainedPartition<Key> {
+    #[doc(hidden)]
+    pub fn gather_for_test(&self) -> &ComputationCallCharge {
+        &self.gather
+    }
+}

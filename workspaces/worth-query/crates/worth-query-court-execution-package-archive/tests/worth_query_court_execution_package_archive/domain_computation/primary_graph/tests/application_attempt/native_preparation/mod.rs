@@ -83,7 +83,7 @@ fn native_preparation_cancellation_leaves_head_and_key_available_for_fresh_retry
         (*world
             .application
             .primary_provider_for_test())
-            .published_application_commit_count(),
+            .published_application_commit_count_for_test(),
         0
     );
     let fresh = live_scope();
@@ -126,7 +126,7 @@ fn native_preparation_cancellation_leaves_head_and_key_available_for_fresh_retry
         (*world
             .application
             .primary_provider_for_test())
-            .published_application_commit_count(),
+            .published_application_commit_count_for_test(),
         1
     );
     let landed = world

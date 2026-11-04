@@ -26,7 +26,7 @@ fn newer_preserve_publication_supersedes_initial_even_without_initial_facts() {
             "the obsolete binding must not supply a retry packet"
         );
         assert!(Arc::ptr_eq(
-            &(*selected.candidates_for_test())[0].correspondence,
+            &(*(*selected.candidates_for_test())[0].correspondence_for_test()),
             &preserve
         ));
         assert!(!(*selected.ambiguous_publication_for_test()));
@@ -54,12 +54,12 @@ fn retirement_and_descriptive_heads_cannot_resurrect_the_initial_binding() {
         assert_eq!((*selected.candidates_for_test()).len(), usize::from(facts));
         if facts {
             assert_eq!(
-                (*selected.candidates_for_test())[0]
-                    .correspondence
-                    .active_entity_for_role("output"),
+                (*(*selected.candidates_for_test())[0]
+                    .correspondence_for_test())
+                    .active_entity_for_role_for_test("output"),
                 None
             );
-            assert_eq!((*selected.candidates_for_test())[0].settlement_identity.address().1, 3);
+            assert_eq!((*(*selected.candidates_for_test())[0].settlement_identity_for_test()).address_for_test().1, 3);
         }
     }
 }
@@ -83,7 +83,7 @@ fn distinct_partitions_entities_and_roles_remain_distinct_family_members() {
         if other_role {
             (*court
                 .lineage
-                .output_families_for_test())
+                .output_families_mut_for_test())
                 .get_mut("family")
                 .unwrap()
                 .push((TypeId::of_for_test::<OtherRole>(), "other".to_owned()));
@@ -135,7 +135,7 @@ fn equal_publication_positions_refuse_selection_in_both_binding_orders() {
         );
         (*court
             .lineage
-            .output_families_for_test())
+            .output_families_mut_for_test())
             .get_mut("family")
             .unwrap()
             .reverse();
@@ -155,7 +155,7 @@ fn selected_descendant_supersedes_ancestor_even_with_lower_generation() {
     let ancestor = court.coordinate;
     // Local index coordinates are descriptive; the real native branch identities
     // above supply the ancestry distinction without granting currentness.
-    (*court.lineage.origins_for_test()).insert(court.child, ancestor);
+    (*court.lineage.origins_mut_for_test()).insert(court.child, ancestor);
     court.coordinate = ProductCoordinate {
         occurrence: court.child,
         generation: 2,
@@ -170,9 +170,9 @@ fn selected_descendant_supersedes_ancestor_even_with_lower_generation() {
     let selected = court.resolve();
     assert_eq!((*selected.candidates_for_test()).len(), 1);
     assert_eq!(
-        (*selected.candidates_for_test())[0].settlement_identity.address().0,
+        (*(*selected.candidates_for_test())[0].settlement_identity_for_test()).address_for_test().0,
         court.child
     );
-    assert_eq!((*selected.candidates_for_test())[0].settlement_identity.address().1, 1);
+    assert_eq!((*(*selected.candidates_for_test())[0].settlement_identity_for_test()).address_for_test().1, 1);
     assert!(!(*selected.ambiguous_publication_for_test()));
 }

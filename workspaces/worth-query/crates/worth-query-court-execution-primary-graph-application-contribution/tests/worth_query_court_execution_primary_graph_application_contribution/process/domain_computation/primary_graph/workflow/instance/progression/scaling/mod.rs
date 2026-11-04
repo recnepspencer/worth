@@ -29,7 +29,7 @@ pub fn populated(count: u64) -> WorkflowInstanceProgress {
     for occurrence in 0..count {
         let node = entity(occurrence);
         (*progress
-            .retry_counts_for_test())
+            .retry_counts_mut_for_test())
             .insert((node, ApplicationWorkflowControlOutcome::Completed), 1);
         progress.retain_observation_for_test(WorkflowTransitionProgressObservation::new_for_test(
             WorkflowTransitionLocator::new_for_test(
@@ -50,7 +50,7 @@ pub fn populated(count: u64) -> WorkflowInstanceProgress {
 pub fn update_last(progress: &mut WorkflowInstanceProgress, count: u64) {
     let node = entity(count - 1);
     (*progress
-        .retry_counts_for_test())
+        .retry_counts_mut_for_test())
         .insert((node, ApplicationWorkflowControlOutcome::Completed), 2);
     progress.retain_observation_for_test(WorkflowTransitionProgressObservation::new_for_test(
         WorkflowTransitionLocator::new_for_test(
@@ -83,16 +83,16 @@ fn progress_snapshots_share_maps_and_preserve_isolated_values() {
             source
                 .latest_transition_for_test(entity(count - 1))
                 .unwrap()
-                .settlement()
-                .occurrence(),
+                .settlement_for_test()
+                .occurrence_for_test(),
             count - 1
         );
         assert_eq!(
             advanced
                 .latest_transition_for_test(entity(count - 1))
                 .unwrap()
-                .settlement()
-                .occurrence(),
+                .settlement_for_test()
+                .occurrence_for_test(),
             count
         );
         assert_ne!(source, advanced);

@@ -4,8 +4,19 @@ use super::*;
 impl WorthQueryExecutionRuntime {
     #[doc(hidden)]
     pub fn admit_direct_run_for_test(
-        &self, operation: &WorthQueryExecutionBoundOperationAuthority, resource_attempt: WorthQueryDirectExecutionResourceAttempt, bridge_basis: BridgeBoundExecutionBasis, relational_basis: WorthQueryManagedRelationalObservation) -> Result<WorthQueryAdmittedDirectRun, WorthQueryManagedRunAdmissionRejection> {
-        Self::admit_direct_run(self, operation, resource_attempt, bridge_basis, relational_basis)
+        &self,
+        operation: &WorthQueryExecutionBoundOperationAuthority,
+        resource_attempt: WorthQueryDirectExecutionResourceAttempt,
+        bridge_basis: BridgeBoundExecutionBasis,
+        relational_basis: WorthQueryManagedRelationalObservation,
+    ) -> Result<WorthQueryAdmittedDirectRun, WorthQueryManagedRunAdmissionRejection> {
+        Self::admit_direct_run(
+            self,
+            operation,
+            resource_attempt,
+            bridge_basis,
+            relational_basis,
+        )
     }
 }
 
@@ -13,5 +24,12 @@ impl WorthQueryManagedRunAdmissionRejection {
     #[doc(hidden)]
     pub fn denial_for_test(&self) -> &WorthQueryManagedRunDenial {
         Self::denial(self)
+    }
+}
+
+impl WorthQueryManagedRunAdmissionRejection {
+    #[doc(hidden)]
+    pub fn into_resource_attempt_for_test(self) -> WorthQueryDirectExecutionResourceAttempt {
+        Self::into_resource_attempt(self)
     }
 }

@@ -97,7 +97,7 @@ fn resource_selector_cannot_substitute_for_the_declared_elevation_identity() {
             world
                 .selected_product(&host_custody)
                 .admit_approved_elevation_access(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     &approved,
                     &principal,
                     &capability,
@@ -223,7 +223,7 @@ fn approver_drift_after_admission_is_stale_before_operation_authority() {
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request_for_test();
             world.application.authorize_capability_operation(
-                &host_custody.phase_for_application(&world.application),
+                &host_custody.phase_for_application_for_test(&world.application),
                 access,
                 &operation,
                 Default::default(),

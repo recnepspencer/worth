@@ -29,3 +29,38 @@ impl WorthQueryObservedSourceEpoch {
         Self::from_observation(query, parameters, root, selection, meaning)
     }
 }
+
+impl WorthQueryObservedSourceMeaningRegistryState {
+    #[doc(hidden)]
+    pub fn next_ordinal_for_test(&self) -> &u64 {
+        &self.next_ordinal
+    }
+}
+
+impl WorthQueryObservedSourceMeaning {
+    #[doc(hidden)]
+    pub fn checkpoint_identity_for_test(&self) -> WorthQueryCheckpointSourceIdentity {
+        Self::checkpoint_identity(self)
+    }
+}
+
+impl WorthQueryObservedSourceMeaning {
+    #[doc(hidden)]
+    pub fn identity_for_test(&self) -> &[u8; 32] {
+        Self::identity(self)
+    }
+}
+
+impl WorthQueryObservedSourceEpoch {
+    #[doc(hidden)]
+    pub fn observation_generation_for_test(&self) -> u64 {
+        Self::observation_generation(self)
+    }
+}
+
+impl WorthQueryObservedSourceMeaning {
+    #[doc(hidden)]
+    pub fn runtime_idempotency_identity_for_test(&self) -> WorthQueryRuntimeSourceIdentity {
+        Self::runtime_idempotency_identity(self)
+    }
+}

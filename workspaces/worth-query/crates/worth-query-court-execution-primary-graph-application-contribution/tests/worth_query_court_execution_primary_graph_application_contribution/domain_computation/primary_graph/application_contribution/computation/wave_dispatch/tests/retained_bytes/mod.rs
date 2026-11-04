@@ -16,5 +16,5 @@ fn heap_input_runs_without_a_payload_invoice() {
     let member = PreparedMember { requests };
     let (mut settled, _) = run(None, vec![member]);
     let mut slots = settled.pop().unwrap().unwrap().into_slots_for_test();
-    assert_eq!(slots.pop().unwrap().into_value::<usize>(), 14);
+    assert_eq!(slots.pop().unwrap().into_value_for_test::<usize>(), 14);
 }

@@ -24,7 +24,7 @@ pub fn court() -> Court {
     );
     let cell = (*court
         .lineage
-        .by_source_for_test())
+        .by_source_mut_for_test())
         .get_mut(&court.source)
         .unwrap()
         .get_mut(&(*court.coordinate.occurrence_for_test()))
@@ -32,12 +32,12 @@ pub fn court() -> Court {
         .get_mut(&9)
         .unwrap();
     let recorded = Arc::get_mut(&mut cell[0]).unwrap().get_mut().unwrap();
-    recorded.producing_implementation = Some(original_implementation());
-    recorded.native_prior_checkpoint = Some(NativePriorCheckpointLocator::Performed {
+    (*recorded.producing_implementation_mut_for_test()) = Some(original_implementation());
+    (*recorded.native_prior_checkpoint_mut_for_test()) = Some(NativePriorCheckpointLocator::Performed {
         producer: "fixture-producer".into(),
         source: [11; 32],
     });
-    recorded.correspondence = Arc::new(
+    (*recorded.correspondence_mut_for_test()) = Arc::new(
         WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles_for_test(
             TypeId::of_for_test::<Initial>(),
             TypeId::of_for_test::<()>(),
@@ -166,7 +166,7 @@ fn absent_or_rejected_accepted_rows_preserve_the_complete_native_locator() {
                 2 => (*candidate.idempotency_key_mut_for_test()) = [3; 32],
                 3 => (*candidate.source_mut_for_test()) = [12; 32],
                 4 => (*candidate.producer_mut_for_test()) = Arc::new("other-producer".to_owned()),
-                5 => Arc::make_mut(&mut (*candidate.roles_mut_for_test()))[1].entity = entity(4),
+                5 => (*Arc::make_mut(&mut (*candidate.roles_mut_for_test()))[1].entity_mut_for_test()) = entity(4),
                 6 => {
                     (*candidate.implementation_mut_for_test()) =
                         Implementation::from_checkpoint([0x33; 16], [0x22; 32]).unwrap()
@@ -226,18 +226,18 @@ fn required_native_locator_materializes_the_complete_identity() {
     let mut missing = crate::domain_computation::primary_graph::output_lineage::tests::family_publications::checkpoint_locator_copy::court();
     let cell = (*missing
         .lineage
-        .by_source_for_test())
+        .by_source_mut_for_test())
         .get_mut(&missing.source)
         .unwrap()
         .get_mut(&(*missing.coordinate.occurrence_for_test()))
         .unwrap()
         .get_mut(&9)
         .unwrap();
-    Arc::get_mut(&mut cell[0])
+    (*Arc::get_mut(&mut cell[0])
         .unwrap()
         .get_mut()
         .unwrap()
-        .producing_implementation = None;
+        .producing_implementation_mut_for_test()) = None;
     let priors = select(&missing);
     use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::family_selection::checkpoint_priors::denial::CheckpointPriorSelectionDenial;
     use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::family_selection::checkpoint_priors::denial::CheckpointPriorStructure;
@@ -258,7 +258,7 @@ fn missing_locator_still_checks_the_recorded_pair_before_retaining_accepted_data
             let expected = expected(&court);
             let cell = (*court
                 .lineage
-                .by_source_for_test())
+                .by_source_mut_for_test())
                 .get_mut(&court.source)
                 .unwrap()
                 .get_mut(&(*court.coordinate.occurrence_for_test()))
@@ -266,9 +266,9 @@ fn missing_locator_still_checks_the_recorded_pair_before_retaining_accepted_data
                 .get_mut(&9)
                 .unwrap();
             let recorded = Arc::get_mut(&mut cell[0]).unwrap().get_mut().unwrap();
-            recorded.native_prior_checkpoint = None;
+            (*recorded.native_prior_checkpoint_mut_for_test()) = None;
             if drift == 3 {
-                recorded.producing_implementation = None;
+                (*recorded.producing_implementation_mut_for_test()) = None;
             }
             let mut candidate = expected.clone();
             match drift {

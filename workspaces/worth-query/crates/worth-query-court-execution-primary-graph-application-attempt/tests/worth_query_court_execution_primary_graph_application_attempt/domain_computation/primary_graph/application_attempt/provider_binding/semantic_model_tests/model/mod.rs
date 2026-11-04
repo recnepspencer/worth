@@ -53,9 +53,9 @@ pub fn observe(prepared: WorthQueryPreparedApplicationProviderAttempt) -> Loweri
         emissions: emissions
             .iter()
             .map(|emission| EmissionObservation {
-                effect: emission.effect(),
+                effect: emission.effect_for_test(),
                 payload: emission
-                    .payload::<String>()
+                    .payload_for_test::<String>()
                     .expect("fixture emission has String payload")
                     .clone(),
             })
@@ -67,7 +67,7 @@ pub fn assert_created_partition(
     prepared: WorthQueryPreparedApplicationProviderAttempt,
     expected: PartitionId,
 ) {
-    for intent in &(*prepared.effects_for_test()).batch().intents {
+    for intent in &(*prepared.effects_for_test()).batch_for_test().intents {
         match intent {
             MutationIntent::Create(CreateIntent::Entity(spec)) => {
                 assert_eq!(spec.partition_id, expected);

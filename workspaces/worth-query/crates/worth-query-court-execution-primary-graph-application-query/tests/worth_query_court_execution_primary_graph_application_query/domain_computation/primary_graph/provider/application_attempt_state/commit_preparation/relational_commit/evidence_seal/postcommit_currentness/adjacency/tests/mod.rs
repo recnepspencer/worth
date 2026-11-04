@@ -15,11 +15,11 @@ fn pair_rebase_uses_native_revision_and_never_retains_partial_facts() {
 
     let world = installed_authorization_world(true);
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let relation_kind = graph
-        .layout
+    let relation_kind = (*(*graph
+        .layout_for_test())
         .relation(AccountOwner::reference().name())
         .unwrap()
-        .kind;
+        .kind_for_test());
     let selected = world
         .application
         .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
@@ -44,7 +44,7 @@ fn pair_rebase_uses_native_revision_and_never_retains_partial_facts() {
         to: principal.entity_id_for_test(),
         matching_relations: Vec::new(),
     };
-    world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request_for_test(); graph.integration_handle().with_runtime(request_execution, |runtime| {
+    world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request_for_test(); graph.integration_handle_for_test().with_runtime(request_execution, |runtime| {
             let snapshot = selected.application_basis_for_test().snapshot_handle();
 
             // A pair's native revision is one selected owner-index lookup.

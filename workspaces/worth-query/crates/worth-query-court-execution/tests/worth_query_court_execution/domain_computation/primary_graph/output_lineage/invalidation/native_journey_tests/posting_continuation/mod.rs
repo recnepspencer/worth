@@ -29,7 +29,7 @@ fn native_projection_continuation_keeps_exact_bindings_and_rejects_source_races(
         })
         .expect("the fixture read owns its installed host call");
     let (_, product, _) = selected.into_parts_for_test();
-    let observation = product.observation();
+    let observation = product.observation_for_test();
     let coordinate = ProductCoordinate {
         occurrence: observation.lifecycle_incarnation(),
         generation: observation.reference_generation().get(),
@@ -41,21 +41,21 @@ fn native_projection_continuation_keeps_exact_bindings_and_rejects_source_races(
         output_binding: OutputBindingIdentity::declared_for_test("StatusOutput"),
     };
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let handle = graph.integration_handle();
-    let owner = &handle.source_owner.invalidation_owner;
+    let handle = graph.integration_handle_for_test();
+    let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
     let status_ref = AccountStatus::reference();
     let status = graph
-        .layout()
-        .field_locator(status_ref.entity(), status_ref.aspect(), status_ref.field())
+        .layout_for_test()
+        .field_locator_for_test(status_ref.entity(), status_ref.aspect(), status_ref.field())
         .unwrap()
         .clone();
     let label_ref = AccountLabel::reference();
     let label = graph
-        .layout()
-        .field_locator(label_ref.entity(), label_ref.aspect(), label_ref.field())
+        .layout_for_test()
+        .field_locator_for_test(label_ref.entity(), label_ref.aspect(), label_ref.field())
         .unwrap()
         .clone();
-    handle.with_runtime_mut(request_execution, |runtime| {
+    handle.with_runtime_mut_for_test(request_execution, |runtime| {
         write_field(request_execution, runtime, entity, label, "prime")
     });
     let (before_handle, before, facts) = world
@@ -78,7 +78,7 @@ fn native_projection_continuation_keeps_exact_bindings_and_rejects_source_races(
 
     let first = RecordedSettlementIdentity::retain_for_test(&source, coordinate, 0);
     owner
-        .register_settlement(SettlementRegistration {
+        .register_settlement_for_test(SettlementRegistration {
             computation: Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::computation_changes::ComputationRegistration::retained_for_test()),
             work_membership: None,
             identity: first.clone(),
@@ -90,24 +90,24 @@ fn native_projection_continuation_keeps_exact_bindings_and_rejects_source_races(
             upstream: OrdSet::new(),
         })
         .unwrap();
-    let cell = owner.cell_for_read(&before).unwrap().unwrap();
+    let cell = owner.cell_for_read_for_test(&before).unwrap().unwrap();
     let historical = cell.read_image();
 
-    let original = historical.payload().current.settlements[&first]
-        .facts
+    let original = (*(*(*historical.payload().current_for_test()).settlements_for_test())[&first]
+        .facts_for_test())
         .clone();
-    let original_body = original.postconditions().clone();
-    let continuation = handle.with_runtime_mut(request_execution, |runtime| {
+    let original_body = original.postconditions_for_test().clone();
+    let continuation = handle.with_runtime_mut_for_test(request_execution, |runtime| {
         let changes = owner
-            .computation_changes(runtime, &before_handle, &first, &original)
+            .computation_changes_for_test(runtime, &before_handle, &first, &original)
             .unwrap()
             .unwrap()
-            .bind_original(original_body.clone());
+            .bind_original_for_test(original_body.clone());
         let control = StorageControl::new_for_test(request_execution.allocation_policy(), None);
         let carry = changes
-            .carry(
+            .carry_for_test(
                 &original_body,
-                original_body.len(),
+                original_body.len_for_test(),
                 &OrdSet::new(),
                 &before_handle,
                 control,
@@ -138,25 +138,25 @@ fn native_projection_continuation_keeps_exact_bindings_and_rejects_source_races(
             .prepare_branch_transaction(request_execution, transaction)
             .unwrap();
         assert!(carry
-            .matches_publication_source(runtime, &before_handle)
+            .matches_publication_source_for_test(runtime, &before_handle)
             .unwrap());
         let selection = candidate
             .with_prepared_descriptive_touches(|touches| {
-                carry.select(touches, original_body.len(), &[], control)
+                carry.select_for_test(touches, original_body.len_for_test(), &[], control)
             })
             .unwrap()
             .unwrap()
             .unwrap();
         assert!(
-            selection.ordinals.contains(&0),
+            (*selection.ordinals_for_test()).contains(&0),
             "the actual candidate selects the native field read"
         );
         drop(candidate);
         // This owner proof seals unchanged revisions at the same live image;
         // it does not claim a performed producer or original-read permission.
-        selection
-            .basis
-            .seal(original_body.clone(), before.clone(), control)
+        (*selection
+            .basis_for_test())
+            .seal_for_test(original_body.clone(), before.clone(), control)
             .unwrap()
     });
 
@@ -174,29 +174,29 @@ fn native_projection_continuation_keeps_exact_bindings_and_rejects_source_races(
     };
     // Exact completed-body correspondence, not data equality, permits sharing.
     owner
-        .register_settlement(registration(
+        .register_settlement_for_test(registration(
             second.clone(),
             facts.clone(),
             Some(continuation.clone()),
         ))
         .unwrap();
     let installed = cell.read_image();
-    let a = Arc::clone(&installed.payload().current.settlements[&first].posting_projection);
-    let b = Arc::clone(&installed.payload().current.settlements[&second].posting_projection);
+    let a = Arc::clone(&(*(*(*installed.payload().current_for_test()).settlements_for_test())[&first].posting_projection_for_test()));
+    let b = Arc::clone(&(*(*(*installed.payload().current_for_test()).settlements_for_test())[&second].posting_projection_for_test()));
     assert!(Arc::ptr_eq(&a, &b));
-    assert_eq!(installed.payload().current.posting_bindings.len(), 1);
+    assert_eq!((*(*installed.payload().current_for_test()).posting_bindings_for_test()).len(), 1);
     assert_eq!(
-        installed.payload().current.posting_bindings[&a.id]
-            .settlements()
+        (*(*(*installed.payload().current_for_test()).posting_bindings_for_test())[&(*a.id_for_test())]
+            .settlements_for_test()
             .unwrap()
-            .settlements
+            .settlements_for_test())
             .len(),
         2
     );
     let unrelated = Arc::from(facts.to_vec().into_boxed_slice());
     let third = RecordedSettlementIdentity::retain_for_test(&source, coordinate, 2);
     owner
-        .register_settlement(registration(
+        .register_settlement_for_test(registration(
             third.clone(),
             unrelated,
             Some(continuation.clone()),
@@ -205,47 +205,47 @@ fn native_projection_continuation_keeps_exact_bindings_and_rejects_source_races(
     let reconstructed = cell.read_image();
     assert!(
         !Arc::ptr_eq(
-            &reconstructed.payload().current.settlements[&third].posting_projection,
+            &(*(*(*reconstructed.payload().current_for_test()).settlements_for_test())[&third].posting_projection_for_test()),
             &a
         ),
         "equal unrelated backing reconstructs"
     );
-    let retired = owner.retire_settlements(std::slice::from_ref(&first));
+    let retired = owner.retire_settlements_for_test(std::slice::from_ref(&first));
     assert!(retired.contains(&first));
     let retired_image = cell.read_image();
-    assert!(!retired_image
+    assert!(!(*(*retired_image
         .payload()
-        .current
-        .settlements
+        .current_for_test())
+        .settlements_for_test())
         .contains_key(&first));
-    assert!(retired_image.payload().current.posting_bindings[&a.id]
-        .settlements()
+    assert!((*(*(*retired_image.payload().current_for_test()).posting_bindings_for_test())[&(*a.id_for_test())]
+        .settlements_for_test()
         .unwrap()
-        .settlements
+        .settlements_for_test())
         .contains(&second));
-    assert!(historical
+    assert!((*(*historical
         .payload()
-        .current
-        .settlements
+        .current_for_test())
+        .settlements_for_test())
         .contains_key(&first));
-    assert!(!historical
+    assert!(!(*(*historical
         .payload()
-        .current
-        .settlements
+        .current_for_test())
+        .settlements_for_test())
         .contains_key(&second));
     // A prepared current image may not overwrite a real intervening native edit.
     let fourth = RecordedSettlementIdentity::retain_for_test(&source, coordinate, 3);
     let prepared = owner
-        .prepare_settlement(registration(
+        .prepare_settlement_for_test(registration(
             fourth.clone(),
             facts.clone(),
             Some(continuation),
         ))
         .unwrap();
-    handle.with_runtime_mut(request_execution, |runtime| {
+    handle.with_runtime_mut_for_test(request_execution, |runtime| {
         write_field(request_execution, runtime, entity, status, "closed")
     });
-    assert!(prepared.install().is_err());
+    assert!(prepared.install_for_test().is_err());
     let (after_handle, after) = handle.with_runtime(request_execution, snapshot);
     assert!(matches!(
         currentness(owner, &after, &second),
@@ -263,7 +263,7 @@ fn native_projection_continuation_keeps_exact_bindings_and_rejects_source_races(
     drop(historical);
     drop(original);
 
-    handle.with_runtime_mut(request_execution, |runtime| {
+    handle.with_runtime_mut_for_test(request_execution, |runtime| {
         runtime
             .snapshots()
             .release_snapshot(&before_handle)

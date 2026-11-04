@@ -103,9 +103,9 @@ pub fn commit_response_lost(
     let committed_work = world
         .application
         .application_attempt_work_for_test()
-        .since(before_commit);
+        .since_for_test(before_commit);
     assert!(original.dispatch_outbox().is_some());
-    assert_eq!(committed_work.external_dispatch_admissions, 1);
+    assert_eq!((*committed_work.external_dispatch_admissions_for_test()), 1);
     assert_eq!(transport.0.load(Ordering::Acquire), 1);
     assert_eq!(
         original.terminal().kind(),
@@ -173,8 +173,8 @@ pub fn retry_without_managed_work(
     let retry_work = world
         .application
         .application_attempt_work_for_test()
-        .since(before_retry);
-    assert_eq!(retry_work.retained_resolutions, 1);
+        .since_for_test(before_retry);
+    assert_eq!((*retry_work.retained_resolutions_for_test()), 1);
     assert_no_managed_attempt_work(retry_work);
     assert_eq!(transport.0.load(Ordering::Acquire), 1);
     assert!(recovered.is_same_authoritative_commit(original));
@@ -339,23 +339,23 @@ pub fn assert_unseen_commit_uses_the_managed_path(world: &AuthorizationWorld) {
     let control = world
         .application
         .application_attempt_work_for_test()
-        .since(before_control);
+        .since_for_test(before_control);
     assert_eq!(
-        control.retained_resolutions, 3,
+        (*control.retained_resolutions_for_test()), 3,
         "an unseen commit checks idempotency before registration, after registration, and under commit authority"
     );
-    assert_eq!(control.managed_bridge_plans, 1);
-    assert_eq!(control.provider_session_readmissions, 1);
-    assert_eq!(control.provider_session_preparations, 1);
-    assert_eq!(control.attempt_registrations, 1);
-    assert_eq!(control.overlay_stagings, 1);
-    assert_eq!(control.invariant_state_loads, 1);
-    assert_eq!(control.invariant_executions, 1);
-    assert_eq!(control.staged_session_preparations, 1);
-    assert_eq!(control.prepared_commits, 1);
-    assert_eq!(control.attempt_aborts, 0);
-    assert_eq!(control.managed_cleanups, 1);
-    assert_eq!(control.external_dispatch_admissions, 0);
+    assert_eq!((*control.managed_bridge_plans_for_test()), 1);
+    assert_eq!((*control.provider_session_readmissions_for_test()), 1);
+    assert_eq!((*control.provider_session_preparations_for_test()), 1);
+    assert_eq!((*control.attempt_registrations_for_test()), 1);
+    assert_eq!((*control.overlay_stagings_for_test()), 1);
+    assert_eq!((*control.invariant_state_loads_for_test()), 1);
+    assert_eq!((*control.invariant_executions_for_test()), 1);
+    assert_eq!((*control.staged_session_preparations_for_test()), 1);
+    assert_eq!((*control.prepared_commits_for_test()), 1);
+    assert_eq!((*control.attempt_aborts_for_test()), 0);
+    assert_eq!((*control.managed_cleanups_for_test()), 1);
+    assert_eq!((*control.external_dispatch_admissions_for_test()), 0);
     assert_eq!(
         world.application.provider_session_resource_count_for_test(),
         0

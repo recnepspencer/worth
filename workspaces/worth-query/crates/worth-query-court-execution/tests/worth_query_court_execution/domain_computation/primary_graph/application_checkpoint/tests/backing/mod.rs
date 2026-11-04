@@ -80,13 +80,13 @@ pub fn assert_three_handoffs_share_backing(
     drop(checkpoint);
     let decoded = clones.map(|clone| clone.decode_for_test().expect("Query framing is admitted"));
     for handoff in &decoded {
-        assert_eq!(handoff.native.bytes(), native_bytes);
-        assert_eq!(handoff.native.bytes().as_ptr(), expected);
-        assert_eq!(handoff.native.captured_sections(), None);
-        assert_eq!(handoff.bootstrap_commit_id.0, bootstrap);
-        assert!(handoff.accepted_outputs.is_empty());
+        assert_eq!((*handoff.native_for_test()).bytes(), native_bytes);
+        assert_eq!((*handoff.native_for_test()).bytes().as_ptr(), expected);
+        assert_eq!((*handoff.native_for_test()).captured_sections(), None);
+        assert_eq!((*handoff.bootstrap_commit_id_for_test()).0, bootstrap);
+        assert!((*handoff.accepted_outputs_for_test()).is_empty());
     }
-    let native_clone = decoded[0].native.clone();
+    let native_clone = (*decoded[0].native_for_test()).clone();
     drop(decoded);
     assert_eq!(native_clone.bytes(), native_bytes);
     assert_eq!(native_clone.bytes().as_ptr(), expected);

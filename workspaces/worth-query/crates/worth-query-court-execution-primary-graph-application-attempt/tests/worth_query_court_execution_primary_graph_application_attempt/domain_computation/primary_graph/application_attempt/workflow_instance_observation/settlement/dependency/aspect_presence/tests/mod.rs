@@ -22,26 +22,26 @@ fn optional_aspect_initialization_reconstructed_presence_detects_present_empty()
     let request = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
     world.application.with_host_advancement(|phase| {
         let host = phase.test_host_request_for_test();
-        let execution = host.execution_request_for(world.application.product_runtime()).unwrap();
+        let execution = host.execution_request_for_for_test(world.application.product_runtime()).unwrap();
         let account = resolved_account(&host, &world, "unrelated", &request);
         let entity = account.entity_id_for_test();
         let kind = account.entity_kind_for_test();
         let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
         let field = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountAnnotation::reference();
-        let locator = graph.layout.field_locator(field.entity(), field.aspect(), field.field()).unwrap();
+        let locator = (*graph.layout_for_test()).field_locator_for_test(field.entity(), field.aspect(), field.field()).unwrap();
         let aspect = locator.aspect().aspect_key().clone();
-        let contract = graph.layout.aspect_contract(field.entity(), &aspect).unwrap();
+        let contract = (*graph.layout_for_test()).aspect_contract(field.entity(), &aspect).unwrap();
         let before = world.selected_product(&host);
-        let handle = graph.integration_handle();
+        let handle = graph.integration_handle_for_test();
         let present = handle.with_runtime(&execution, |runtime| observe_aspect_presence(
             runtime, &execution, before.application_basis_for_test().snapshot_handle(), entity, kind, &aspect).unwrap().unwrap());
         assert!(!present);
         let tag = if present { WorkflowEvidenceDependencyKind::AspectPresent } else { WorkflowEvidenceDependencyKind::AspectAbsent };
-        assert_eq!(tag.encode(), "aspect-absent");
+        assert_eq!(tag.encode_for_test(), "aspect-absent");
         let readonly = WorthQueryApplicationObservedFact::AbsentField {
             entity_id: entity, kind, locator: locator.clone(),
         };
-        let decoded_tag = WorkflowEvidenceDependencyKind::decode_for_test(tag.encode()).unwrap();
+        let decoded_tag = WorkflowEvidenceDependencyKind::decode_for_test(tag.encode_for_test()).unwrap();
         let reconstructed = decode(entity, Some(aspect.as_str().to_owned()),
             Some(u64::from(kind.as_u32())), matches!(decoded_tag, WorkflowEvidenceDependencyKind::AspectPresent)).unwrap();
         handle.with_runtime(&execution, |runtime| {

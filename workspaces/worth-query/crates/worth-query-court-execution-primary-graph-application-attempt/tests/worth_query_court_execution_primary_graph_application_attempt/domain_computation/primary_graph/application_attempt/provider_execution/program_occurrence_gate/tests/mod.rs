@@ -29,25 +29,25 @@ let borrowed_execution = host_custody.borrowed_request_for_test();
 let execution = &borrowed_execution;
 seed_program_activation(execution, &world, &rostered_program_revision());
 let principal = authenticated_principal(
-            &(host_custody.phase_for_application(&world.application)).test_host_request(),
+            &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
             &world,
             &request,
         );
         let account = resolved_account(
-            &(host_custody.phase_for_application(&world.application)).test_host_request(),
+            &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
             &world,
             "open",
             &request,
         );
         let predecessor = world
             .selected_product(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
             )
             .product()
             .selected_commit()
             .clone();
         let admission = admitted_operation(
-            &host_custody.phase_for_application(&world.application),
+            &host_custody.phase_for_application_for_test(&world.application),
             &world,
             &principal,
             &account,
@@ -56,7 +56,7 @@ let principal = authenticated_principal(
         let (_, projection, _) = world
             .invariant
             .project_admitted_operation(
-                &host_custody.phase_for_application(&world.application),
+                &host_custody.phase_for_application_for_test(&world.application),
                 &admission,
                 |reader, projected| {
                     reader
@@ -70,14 +70,14 @@ let principal = authenticated_principal(
         let program = world
             .application
             .begin_projected_application_read_attempt(
-                &host_custody.phase_for_application(&world.application),
+                &host_custody.phase_for_application_for_test(&world.application),
                 admission,
                 projection,
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )
             .unwrap()
             .complete_projected_dependencies(
-                &host_custody.phase_for_application(&world.application),
+                &host_custody.phase_for_application_for_test(&world.application),
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )
             .unwrap()
@@ -105,7 +105,7 @@ let principal = authenticated_principal(
         assert_eq!(
             world
                 .selected_product(
-                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                 )
                 .product()
                 .selected_commit(),

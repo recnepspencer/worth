@@ -98,10 +98,10 @@ pub fn check(case: usize) {
             let first = admit();
             let first_read = first
                 .graph_work
-                .prepare_query_read(
-                    first.basis.identity(),
+                .prepare_query_read_for_test(
+                    (*first.basis_for_test()).identity(),
                     &execution,
-                    first.basis.snapshot_handle(),
+                    (*first.basis_for_test()).snapshot_handle(),
                     |_| vec![],
                 )
                 .unwrap();
@@ -110,10 +110,10 @@ pub fn check(case: usize) {
             let same_root = admit();
             let reused = same_root
                 .graph_work
-                .prepare_query_read_from_pin(
-                    same_root.basis.identity(),
+                .prepare_query_read_from_pin_for_test(
+                    (*same_root.basis_for_test()).identity(),
                     &execution,
-                    same_root.basis.snapshot_handle(),
+                    (*same_root.basis_for_test()).snapshot_handle(),
                     &pin,
                     |_| panic!("equal-root rebind contacted the owner"),
                 )
@@ -122,13 +122,13 @@ pub fn check(case: usize) {
             drop(reused);
             if case == 0 {
                 assert_ne!(
-                    first.basis.identity().snapshot_id(),
-                    same_root.basis.identity().snapshot_id()
+                    (*first.basis_for_test()).identity().snapshot_id(),
+                    (*same_root.basis_for_test()).identity().snapshot_id()
                 );
-                let refusal = first.graph_work.prepare_query_read(
-                    first.basis.identity(),
+                let refusal = first.graph_work.prepare_query_read_for_test(
+                    (*first.basis_for_test()).identity(),
                     &execution,
-                    same_root.basis.snapshot_handle(),
+                    (*same_root.basis_for_test()).snapshot_handle(),
                     |_| vec![],
                 );
                 assert_eq!(
@@ -146,10 +146,10 @@ pub fn check(case: usize) {
                 );
                 cancellation.cancel();
                 let request = worth_execution::ExecutionRequest::serial(&serial);
-                let cause = match first.graph_work.prepare_query_read(
-                    first.basis.identity(),
+                let cause = match first.graph_work.prepare_query_read_for_test(
+                    (*first.basis_for_test()).identity(),
                     &request,
-                    first.basis.snapshot_handle(),
+                    (*first.basis_for_test()).snapshot_handle(),
                     |_| vec![],
                 ) {
                     Err(cause) => cause,
@@ -161,11 +161,11 @@ pub fn check(case: usize) {
                 );
                 return;
             }
-            let graph = &(*world.application.primary_provider_for_test()).graph;
+            let graph = &(*(*world.application.primary_provider_for_test()).graph_for_test());
             let label = AccountLabel::reference();
-            let locator = graph
-                .layout
-                .field_locator(label.entity(), label.aspect(), label.field())
+            let locator = (*graph
+                .layout_for_test())
+                .field_locator_for_test(label.entity(), label.aspect(), label.field())
                 .unwrap()
                 .clone();
             publish_relational_mutation(
@@ -195,26 +195,26 @@ pub fn check(case: usize) {
                 )
                 .unwrap();
             assert_ne!(
-                first.basis.identity().descriptor(),
-                later.basis.identity().descriptor()
+                (*first.basis_for_test()).identity().descriptor(),
+                (*later.basis_for_test()).identity().descriptor()
             );
             assert_ne!(
-                first.basis.snapshot_handle().version_id(),
-                later.basis.snapshot_handle().version_id()
+                (*first.basis_for_test()).snapshot_handle().version_id(),
+                (*later.basis_for_test()).snapshot_handle().version_id()
             );
             // Unit-owner substitutions isolate otherwise correlated guard inputs.
             // All reads, snapshots and bases here were genuinely issued by these sessions.
             if case == 2 {
                 std::sync::Arc::get_mut(&mut pin)
                     .unwrap()
-                    .replace_basis_for_test(later.basis.identity().clone());
+                    .replace_basis_for_test((*later.basis_for_test()).identity().clone());
             } else if case == 3 {
                 let fresh = later
                     .graph_work
-                    .prepare_query_read(
-                        later.basis.identity(),
+                    .prepare_query_read_for_test(
+                        (*later.basis_for_test()).identity(),
                         &execution,
-                        later.basis.snapshot_handle(),
+                        (*later.basis_for_test()).snapshot_handle(),
                         |_| vec![],
                     )
                     .unwrap();
@@ -222,15 +222,15 @@ pub fn check(case: usize) {
                 drop(fresh);
                 std::sync::Arc::get_mut(&mut pin)
                     .unwrap()
-                    .replace_basis_for_test(first.basis.identity().clone());
+                    .replace_basis_for_test((*first.basis_for_test()).identity().clone());
             }
             let visits = std::cell::Cell::new(0);
             let rebound = later
                 .graph_work
-                .prepare_query_read_from_pin(
-                    later.basis.identity(),
+                .prepare_query_read_from_pin_for_test(
+                    (*later.basis_for_test()).identity(),
                     &execution,
-                    later.basis.snapshot_handle(),
+                    (*later.basis_for_test()).snapshot_handle(),
                     &pin,
                     |_| {
                         visits.set(visits.get() + 1);
@@ -241,12 +241,12 @@ pub fn check(case: usize) {
             assert_eq!(visits.get(), 1);
             assert_eq!(
                 rebound.retained_pin().basis_for_test(),
-                later.basis.identity()
+                (*later.basis_for_test()).identity()
             );
             let (actual, _) = rebound
-                .execute(&execution, |native, _| native.snapshot().version_id())
+                .execute_for_test(&execution, |native, _| native.snapshot().version_id())
                 .unwrap();
-            assert_eq!(actual, later.basis.snapshot_handle().version_id());
+            assert_eq!(actual, (*later.basis_for_test()).snapshot_handle().version_id());
         })
         .unwrap();
 }

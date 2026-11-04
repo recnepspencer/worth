@@ -63,3 +63,21 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
         &mut self.product
     }
 }
+
+impl<Schema, Query, Parameters, QueryResult, Scope>
+    WorthQueryApplicationQueryContinuation<Schema, Query, Parameters, QueryResult, Scope>
+{
+    #[doc(hidden)]
+    pub fn product_into_for_test(self) -> crate::basis::WorthQueryProductObservationLease {
+        self.product
+    }
+}
+
+impl<Schema, Query, Parameters, QueryResult, Scope>
+    WorthQueryApplicationQueryContinuation<Schema, Query, Parameters, QueryResult, Scope>
+{
+    #[doc(hidden)]
+    pub fn provider_identity_mut_for_test(&mut self) -> &mut String {
+        &mut self.provider_identity
+    }
+}

@@ -82,10 +82,10 @@ fn recovery_capacity_denies_before_any_selected_product_head_moves() {
         .clone();
     let relational_branch = relational_head_before.branch_id().clone();
     let publication_cost_scope =
-        (*world
+        (*(*world
             .application
             .primary_provider_for_test())
-            .graph
+            .graph_for_test())
             .with_runtime(request_execution, |runtime| {
                 let identity = runtime
                     .branch_identity(&relational_branch)
@@ -98,17 +98,17 @@ fn recovery_capacity_denies_before_any_selected_product_head_moves() {
     let provider_publications_before = (*world
         .application
         .primary_provider_for_test())
-        .published_application_commit_count();
+        .published_application_commit_count_for_test();
 
     let root_slot = (*world
         .application
         .primary_provider_for_test())
-        .reserve_application_publication_recovery(root.product().observation_for_test(), None)
+        .reserve_application_publication_recovery_for_test(root.product().observation_for_test(), None)
         .expect("total minus one recovery slot remains admissible");
     let sibling_a_slot = (*world
         .application
         .primary_provider_for_test())
-        .reserve_application_publication_recovery(sibling_a.product().observation_for_test(), None)
+        .reserve_application_publication_recovery_for_test(sibling_a.product().observation_for_test(), None)
         .expect("the final installed recovery slot remains admissible");
     let denied_program = world
         .application
@@ -168,10 +168,10 @@ fn recovery_capacity_denies_before_any_selected_product_head_moves() {
         "recovery capacity must deny before the Relational head moves"
     );
     let publication_cost =
-        (*world
+        (*(*world
             .application
             .primary_provider_for_test())
-            .graph
+            .graph_for_test())
             .with_runtime(request_execution, |runtime| {
                 runtime
                     .observe_mvcc_counters(&publication_cost_scope)
@@ -186,7 +186,7 @@ fn recovery_capacity_denies_before_any_selected_product_head_moves() {
         (*world
             .application
             .primary_provider_for_test())
-            .published_application_commit_count(),
+            .published_application_commit_count_for_test(),
         provider_publications_before,
         "capacity denial must publish no application causality"
     );

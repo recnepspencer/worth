@@ -39,10 +39,10 @@ fn endpoint_reference_selects_only_matching_entity_applicability() {
 #[test]
 fn native_output_reference_selects_endpoint_while_ordinary_relations_do_not() {
     let world = installed_authorization_world(false);
-    let layout = &(*world.application.primary_provider_for_test()).graph.layout;
+    let layout = &(*(*(*world.application.primary_provider_for_test()).graph_for_test()).layout_for_test());
     let transition = CreatedEntityRef {
         partition_id: PartitionId(1),
-        kind_id: layout.workflow().transition.entity_kind,
+        kind_id: (*(*layout.workflow().transition_for_test()).entity_kind_for_test()),
         client_key: ClientKey::raw("settlement"),
     };
     let mut effects = vec![Effect::CreateEntity {
@@ -53,7 +53,7 @@ fn native_output_reference_selects_endpoint_while_ordinary_relations_do_not() {
     }];
     let target = EntityReference::Created(CreatedEntityRef {
         partition_id: transition.partition_id,
-        kind_id: layout.entity_kind("Account").unwrap(),
+        kind_id: layout.entity_kind_for_test("Account").unwrap(),
         client_key: ClientKey::raw("account"),
     });
     append_operation_outputs(
@@ -76,22 +76,22 @@ fn native_output_reference_selects_endpoint_while_ordinary_relations_do_not() {
     let Effect::CreateRelation { kind, .. } = effects.last_mut().unwrap() else {
         panic!()
     };
-    *kind = layout.relation("AccountOwner").unwrap().kind;
+    *kind = (*layout.relation("AccountOwner").unwrap().kind_for_test());
     assert!(referenced_entities(layout, &effects).unwrap().is_empty());
 }
 
 #[test]
 fn native_reference_without_matching_output_entry_is_refused() {
     let world = installed_authorization_world(false);
-    let layout = &(*world.application.primary_provider_for_test()).graph.layout;
+    let layout = &(*(*(*world.application.primary_provider_for_test()).graph_for_test()).layout_for_test());
     let entry = EntityReference::Created(CreatedEntityRef {
         partition_id: PartitionId(1),
-        kind_id: layout.workflow().operation_output.entity_kind,
+        kind_id: (*layout.workflow().operation_output.entity_kind_for_test()),
         client_key: ClientKey::raw("missing-entry"),
     });
     let effects = [Effect::CreateRelation {
         fields: Default::default(),
-        kind: layout.workflow().operation_output.target,
+        kind: (*layout.workflow().operation_output.target_for_test()),
         key: "native-target".into(),
         from: entry.clone(),
         to: entry,

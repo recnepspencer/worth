@@ -22,7 +22,7 @@ fn scheduling_progression_preserves_admission_stops_at_every_consult() {
         .unwrap();
     let source = observed_account_source(&world);
     let (_, route) = installation();
-    (*world.application.output_producer_routes_for_test()).insert(
+    (*world.application.output_producer_routes_mut_for_test()).insert(
         "scheduling-busy".to_owned(),
         worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::scheduling::WorthQueryInstalledOutputProducerRoute {
             scheduling: route,

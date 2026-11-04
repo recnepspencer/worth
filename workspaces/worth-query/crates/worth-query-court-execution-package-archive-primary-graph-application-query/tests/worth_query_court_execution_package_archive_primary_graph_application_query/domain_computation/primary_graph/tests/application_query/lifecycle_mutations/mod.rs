@@ -25,13 +25,13 @@ pub fn disable_mapping(
         .runtime_for_test())
         .primary_graph()
         .expect("test world publishes a primary graph");
-    let layout = graph
-        .layout
-        .principal_binding(world.binding.binding())
+    let layout = (*graph
+        .layout_for_test())
+        .principal_binding_for_test(world.binding.binding())
         .expect("test binding is installed")
         .clone();
     let fields = AspectFieldPatch::from(BTreeMap::from([(
-        layout.status_locator,
+        layout.status_locator_into_for_test(),
         WorthQueryPrincipalMappingStatusBinding::encode(
             &WorthQueryPrincipalMappingStatus::Disabled,
         )
@@ -60,15 +60,15 @@ pub fn revoke_account_ownership(
         .runtime_for_test())
         .primary_graph()
         .expect("test world publishes a primary graph");
-    let relation_kind = graph
-        .layout
+    let relation_kind = (*(*graph
+        .layout_for_test())
         .relation(AccountOwner::reference().name())
         .expect("account ownership is installed")
-        .kind;
+        .kind_for_test());
     let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
     let relation = graph
-        .integration_handle()
-        .with_runtime_mut(execution, |runtime| {
+        .integration_handle_for_test()
+        .with_runtime_mut_for_test(execution, |runtime| {
             let snapshot = selected.application_basis_for_test().snapshot_handle();
 
             runtime

@@ -27,8 +27,8 @@ fn a_demand_records_the_row_it_genuinely_verified() {
         .with_host_advancement(|phase| primed_output(&phase, &world))
         .expect("the fixture read owns its installed host call");
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let handle = graph.integration_handle();
-    let owner = &handle.source_owner.invalidation_owner;
+    let handle = graph.integration_handle_for_test();
+    let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
     let selected = world
         .application
         .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
@@ -46,7 +46,7 @@ fn a_demand_records_the_row_it_genuinely_verified() {
         };
 let recorded = || {
             matches!(
-                owner.currentness(&positioned, &identity),
+                owner.currentness_for_test(&positioned, &identity),
                 Ok(SourceSettlementCurrentness::Clean)
             )
         };
@@ -64,7 +64,7 @@ let recorded = || {
             assert!(!recorded(), "factless refusal cannot establish a verified row");
         }
         let label = AccountLabel::reference();
-        let locator = graph.layout().field_locator(label.entity(), label.aspect(), label.field()).unwrap().clone();
+        let locator = graph.layout_for_test().field_locator_for_test(label.entity(), label.aspect(), label.field()).unwrap().clone();
         let fact = field_fact(&host_custody.borrowed_request_for_test(), runtime, snapshot, entity, locator);
         (*read.facts_mut_for_test()) = RetainedSourceFacts::for_test_for_test(false, Arc::from([fact])).for_comparison();
         assert!(selected
@@ -85,8 +85,8 @@ fn a_verification_records_the_row_it_compared() {
         .with_host_advancement(|phase| primed_output(&phase, &world))
         .expect("the fixture read owns its installed host call");
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let handle = graph.integration_handle();
-    let owner = &handle.source_owner.invalidation_owner;
+    let handle = graph.integration_handle_for_test();
+    let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
     let selected = world
         .application
         .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
@@ -97,7 +97,7 @@ fn a_verification_records_the_row_it_compared() {
         let witness = account_witness(&host_custody.borrowed_request_for_test(), &world, runtime, snapshot, entity);
         let facts: Arc<[WorthQueryApplicationObservedFact]> = Arc::from([]);
         owner
-            .register_settlement(SettlementRegistration {
+            .register_settlement_for_test(SettlementRegistration {
                     computation: None,
                     work_membership: None,
                     identity: Arc::clone(&identity),
@@ -114,7 +114,7 @@ fn a_verification_records_the_row_it_compared() {
         };
 let recorded = || {
             matches!(
-                owner.currentness(&positioned, &identity),
+                owner.currentness_for_test(&positioned, &identity),
                 Ok(SourceSettlementCurrentness::Clean)
             )
         };
@@ -140,7 +140,7 @@ fn a_restored_output_registers_before_commit() {
         .with_host_advancement(|phase| primed_output(&phase, &world))
         .expect("the fixture read owns its installed host call");
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let handle = graph.integration_handle();
+    let handle = graph.integration_handle_for_test();
     let (head_handle, head) = handle.with_runtime(request_execution, snapshot);
     let restored = ConsumedOutputEvidence::retained_for_test(
         identity,
@@ -151,11 +151,11 @@ fn a_restored_output_registers_before_commit() {
     );
 
     assert_eq!(
-        restored.establish_restored_before_commit_for_test(request_execution, &handle.source_owner),
+        restored.establish_restored_before_commit_for_test(request_execution, &(*handle.source_owner_for_test())),
         Ok(())
     );
 
-    handle.with_runtime_mut(request_execution, |runtime| {
+    handle.with_runtime_mut_for_test(request_execution, |runtime| {
         runtime.snapshots().release_snapshot(&head_handle).unwrap();
     });
 }
@@ -169,7 +169,7 @@ pub fn account_witness(
     entity: EntityId,
 ) -> Arc<OnceLock<SealedNativeOutputWitness>> {
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let layout = graph.layout();
+    let layout = graph.layout_for_test();
     let truth = runtime.read_truth();
     let mut facts = vec![WorthQueryApplicationObservedFact::Entity {
         entity_id: entity,
@@ -178,7 +178,7 @@ pub fn account_witness(
             .unwrap()
             .unwrap(),
     }];
-    for aspect in layout.native_output_aspects("Account") {
+    for aspect in layout.native_output_aspects_for_test("Account") {
         facts.push(WorthQueryApplicationObservedFact::SourceAspectRevision {
             entity_id: entity,
             aspect: aspect.clone(),
@@ -227,8 +227,8 @@ pub fn primed_output(
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let label_ref = AccountLabel::reference();
     let label = graph
-        .layout()
-        .field_locator(label_ref.entity(), label_ref.aspect(), label_ref.field())
+        .layout_for_test()
+        .field_locator_for_test(label_ref.entity(), label_ref.aspect(), label_ref.field())
         .unwrap()
         .clone();
     publish_relational_mutation(
@@ -248,8 +248,8 @@ pub fn primed_output(
         .selected_product(&(phase_custody).test_host_request_for_test())
         .into_parts_for_test();
     let coordinate = ProductCoordinate {
-        occurrence: product.observation().lifecycle_incarnation(),
-        generation: product.observation().reference_generation().get(),
+        occurrence: product.observation_for_test().lifecycle_incarnation(),
+        generation: product.observation_for_test().reference_generation().get(),
     };
     let source = SemanticSource {
         runtime_authority: (*world.application.runtime_for_test()).authority_identity().as_u64(),

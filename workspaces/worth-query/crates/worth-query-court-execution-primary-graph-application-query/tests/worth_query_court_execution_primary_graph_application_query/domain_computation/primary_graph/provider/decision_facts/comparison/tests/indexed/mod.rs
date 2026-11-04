@@ -31,21 +31,21 @@ fn scoped_indexed_comparison_preserves_pinned_absence_limits_and_foreign_affinit
             let borrowed_execution = host_custody.borrowed_request_for_test();
             let execution = &borrowed_execution;
             let selected = world.selected_product(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
             );
             let snapshot = selected.application_basis_for_test().snapshot_handle();
             let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
             let field = AccountStatus::reference();
-            let layout = graph
-                .layout
-                .equality_field(field.entity(), field.aspect(), field.field())
+            let layout = (*graph
+                .layout_for_test())
+                .equality_field_for_test(field.entity(), field.aspect(), field.field())
                 .unwrap();
-            let index = layout.equality_index_id.unwrap();
-            let locator = layout.locator.clone();
-            let kind = layout.entity_kind;
+            let index = (*layout.equality_index_id_for_test()).unwrap();
+            let locator = (*layout.locator_for_test()).clone();
+            let kind = (*layout.entity_kind_for_test());
             let observe = |value: &str| {
                 graph
-                    .integration_handle()
+                    .integration_handle_for_test()
                     .with_runtime(&borrowed_execution, |runtime| {
                         observe_indexed_entity_selection(
                             runtime,
@@ -80,9 +80,9 @@ fn scoped_indexed_comparison_preserves_pinned_absence_limits_and_foreign_affinit
             let mut selectors = PreparedSelections::new_for_test();
             for fact in [&present, &missing, &unrelated] {
                 graph
-                    .integration_handle()
+                    .integration_handle_for_test()
                     .with_runtime(&borrowed_execution, |runtime| {
-                        assert!(fact.remains_equal_in(runtime, execution, snapshot).unwrap());
+                        assert!(fact.remains_equal_in_for_test(runtime, execution, snapshot).unwrap());
                         assert!(selectors
                             .remains_equal_for_test(execution, fact, runtime, snapshot, control)
                             .unwrap());
@@ -93,7 +93,7 @@ fn scoped_indexed_comparison_preserves_pinned_absence_limits_and_foreign_affinit
                 1,
                 "all distinct predicates share only the exact index admission"
             );
-            (*foreign.application.primary_provider_for_test()).graph.with_runtime(
+            (*(*foreign.application.primary_provider_for_test()).graph_for_test()).with_runtime(
                 &borrowed_execution,
                 |runtime| {
                     assert!(!selectors
@@ -116,19 +116,19 @@ fn scoped_indexed_comparison_preserves_pinned_absence_limits_and_foreign_affinit
             );
             // The old comparison remains pinned. A newly selected root sees the phantom.
             graph
-                .integration_handle()
+                .integration_handle_for_test()
                 .with_runtime(&borrowed_execution, |runtime| {
                     assert!(selectors
                         .remains_equal_for_test(execution, &present, runtime, snapshot, control)
                         .unwrap())
                 });
             let current = world.selected_product(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
             );
             let current_snapshot = current.application_basis_for_test().snapshot_handle();
             let mut current_selectors = PreparedSelections::new_for_test();
             graph
-                .integration_handle()
+                .integration_handle_for_test()
                 .with_runtime(&borrowed_execution, |runtime| {
                     assert!(!current_selectors
                         .remains_equal_for_test(execution, &present, runtime, current_snapshot, control)
@@ -195,10 +195,10 @@ fn prepared_indexed_comparison_keeps_a_native_cancellation() {
         let selected = world.selected_product(&phase.test_host_request_for_test());
         let snapshot = selected.application_basis_for_test().snapshot_handle();
         let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-        let field = graph.layout.equality_field("Account", "AccountPolicy", "AccountStatus").unwrap();
-        let (answer, seen) = graph.integration_handle().with_runtime(&execution, |runtime| {
+        let field = (*graph.layout_for_test()).equality_field_for_test("Account", "AccountPolicy", "AccountStatus").unwrap();
+        let (answer, seen) = graph.integration_handle_for_test().with_runtime(&execution, |runtime| {
             let fact = observe_indexed_entity_selection(runtime, &execution, snapshot,
-                field.equality_index_id.unwrap(), field.entity_kind, field.locator.clone(),
+                (*field.equality_index_id_for_test()).unwrap(), (*field.entity_kind_for_test()), (*field.locator_for_test()).clone(),
                 StringApplicationValueBinding::encode(&"open".to_owned()).unwrap(), 2).unwrap();
             let mut prepared = PreparedSelections::new_for_test();
             let control = StorageControl::new_for_test(ExecutionAllocationPolicy::SystemAllocation, None);

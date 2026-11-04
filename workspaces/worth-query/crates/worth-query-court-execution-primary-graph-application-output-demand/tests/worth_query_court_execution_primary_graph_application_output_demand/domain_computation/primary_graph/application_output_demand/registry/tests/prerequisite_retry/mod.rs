@@ -9,7 +9,7 @@ fn pending_required_prerequisite_preserves_its_retryable_operation() {
         generation: Mutex::new(0),
         changed: Condvar::new(),
     });
-    (*registry.state_for_test()).lock().unwrap().records.insert(
+    (*(*registry.state_for_test()).lock().unwrap().records_for_test()).insert_for_test(
         demand_key.clone(),
         DemandRecord {
             required_interests: 1,
@@ -31,7 +31,7 @@ fn pending_required_prerequisite_preserves_its_retryable_operation() {
         WorthQueryOutputDemandRecoveryPosture::Retryable
     );
     assert!(matches!(
-        (*registry.state_for_test()).lock().unwrap().records[&demand_key].state,
+        (*(*(*registry.state_for_test()).lock().unwrap().records_for_test())[&demand_key].state_for_test()),
         DemandState::Scheduled
     ));
 }
@@ -51,7 +51,7 @@ fn an_upstream_retired_after_the_execution_read_it_is_a_retryable_stale_claim() 
         generation: Mutex::new(0),
         changed: Condvar::new(),
     });
-    (*registry.state_for_test()).lock().unwrap().records.insert(
+    (*(*registry.state_for_test()).lock().unwrap().records_for_test()).insert_for_test(
         reader_key.clone(),
         DemandRecord {
             required_interests: 1,
@@ -78,7 +78,7 @@ fn an_upstream_retired_after_the_execution_read_it_is_a_retryable_stale_claim() 
         );
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let selected = graph
-        .integration_handle()
+        .integration_handle_for_test()
         .with_runtime(request_execution, |runtime| {
             let basis = runtime
                 .admit_branch_basis(&runtime.main_branch_identity())
@@ -91,7 +91,7 @@ fn an_upstream_retired_after_the_execution_read_it_is_a_retryable_stale_claim() 
         });
     let consumed = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::consumed_output::ConsumedOutputEvidence::retained_for_test(retired, Arc::from([]), Vec::new(), None, selected);
     let stop = context
-        .prepare_prerequisites(std::iter::once(&consumed), &source_owner)
+        .prepare_prerequisites_for_test(std::iter::once(&consumed), &source_owner)
         .err()
         .expect("a retired upstream cannot be claimed");
     assert_eq!(
@@ -99,7 +99,7 @@ fn an_upstream_retired_after_the_execution_read_it_is_a_retryable_stale_claim() 
         WorthQueryOutputDemandDenialKind::PublicationStale
     );
     assert!(
-        stop.clone().take_requested_output().is_none(),
+        stop.clone().take_requested_output_for_test().is_none(),
         "a retired exact settlement cannot authorize managed readiness recovery"
     );
     assert_eq!(

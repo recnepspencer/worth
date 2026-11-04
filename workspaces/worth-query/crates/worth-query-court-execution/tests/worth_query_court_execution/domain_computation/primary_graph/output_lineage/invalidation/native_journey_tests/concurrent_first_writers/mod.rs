@@ -100,15 +100,15 @@ fn two_first_candidates_cannot_orphan_the_performed_publications_cell() {
         })
         .expect("the fixture read owns its installed host call");
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let handle = graph.integration_handle();
-    let owner = Arc::clone(&handle.source_owner.invalidation_owner);
+    let handle = graph.integration_handle_for_test();
+    let owner = Arc::clone(&(*(*handle.source_owner_for_test()).invalidation_owner_for_test()));
     let reference = AccountStatus::reference();
     let status = graph
-        .layout()
-        .field_locator(reference.entity(), reference.aspect(), reference.field())
+        .layout_for_test()
+        .field_locator_for_test(reference.entity(), reference.aspect(), reference.field())
         .unwrap()
         .clone();
-    let result: Result<_, &'static str> = handle.with_runtime_mut(request_execution, |runtime| {
+    let result: Result<_, &'static str> = handle.with_runtime_mut_for_test(request_execution, |runtime| {
         // A real Native fork has no Query lookup cell before its first write.
         // No derived table, Native head or existing registration is erased.
         let branch = BranchId("concurrent-first-native-fork".to_owned());
@@ -118,7 +118,7 @@ fn two_first_candidates_cannot_orphan_the_performed_publications_cell() {
         runtime
             .fork_branch(request_execution, branch.clone(), source)
             .unwrap();
-        assert!(!owner.branches.lock().unwrap().cells.contains_key(&branch));
+        assert!(!(*(*owner.branches_for_test()).lock().unwrap().cells_for_test()).contains_key(&branch));
         let (first_ready, observe_first) = mpsc::channel();
         let (release_first, wait_release) = mpsc::channel();
         let (second_ready, observe_second) = mpsc::channel();
@@ -202,11 +202,11 @@ fn two_first_candidates_cannot_orphan_the_performed_publications_cell() {
             "a competitor with the old head cannot perform"
         );
         let branch = committed.snapshot.branch_id();
-        let cell = owner
-            .branches
+        let cell = (*(*owner
+            .branches_for_test())
             .lock()
             .unwrap()
-            .cells
+            .cells_for_test())
             .get(branch)
             .and_then(|slot| slot.admitted());
         let visible = cell.map(|cell| {

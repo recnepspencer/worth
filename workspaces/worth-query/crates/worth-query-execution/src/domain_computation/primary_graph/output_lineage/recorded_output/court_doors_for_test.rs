@@ -229,3 +229,68 @@ impl RecordedOutput {
         Self::verification_requirement(self)
     }
 }
+
+impl RecordedOutputMutable {
+    #[doc(hidden)]
+    pub fn computation_for_test(&self) -> &super::super::retained_computation::RecordedComputation {
+        &self.computation
+    }
+}
+
+impl RecordedOutputMutable {
+    #[doc(hidden)]
+    pub fn computation_mut_for_test(
+        &mut self,
+    ) -> &mut super::super::retained_computation::RecordedComputation {
+        &mut self.computation
+    }
+}
+
+impl RecordedOutput {
+    #[doc(hidden)]
+    pub fn correspondence_mut_for_test(
+        &mut self,
+    ) -> &mut Arc<WorthQueryApplicationOutputCorrespondence> {
+        &mut self.correspondence
+    }
+}
+
+impl RecordedOutput {
+    #[doc(hidden)]
+    pub fn producing_implementation_mut_for_test(
+        &mut self,
+    ) -> &mut Option<worth_relational::facade::mvcc::RequiredOutputProducingImplementation> {
+        &mut self.producing_implementation
+    }
+}
+
+impl RecordedOutput {
+    #[doc(hidden)]
+    pub fn settlement_identity_mut_for_test(&mut self) -> &mut Arc<RecordedSettlementIdentity> {
+        &mut self.settlement_identity
+    }
+}
+
+impl RecordedOutput {
+    #[doc(hidden)]
+    pub fn source_partition_identity_mut_for_test(&mut self) -> &mut Option<[u8; 32]> {
+        &mut self.source_partition_identity
+    }
+}
+
+impl RecordedOutputMutable {
+    #[doc(hidden)]
+    pub fn set_stable_fact_spans_for_test(
+        &mut self,
+        spans: super::super::input_cutoff::stable_publication::StableFactSpans,
+    ) {
+        Self::set_stable_fact_spans(self, spans)
+    }
+}
+
+impl RecordedOutput {
+    #[doc(hidden)]
+    pub fn mutable_mut_for_test(&mut self) -> &mut Mutex<RecordedOutputMutable> {
+        &mut self.mutable
+    }
+}

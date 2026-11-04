@@ -27,8 +27,8 @@ fn pinned_same_position_replacements_preserve_unchanged_history() {
         .expect("the fixture read owns its installed host call");
     let (_, product, _) = selected.into_parts_for_test();
     let coordinate = ProductCoordinate {
-        occurrence: product.observation().lifecycle_incarnation(),
-        generation: product.observation().reference_generation().get(),
+        occurrence: product.observation_for_test().lifecycle_incarnation(),
+        generation: product.observation_for_test().reference_generation().get(),
     };
     let source = SemanticSource {
         runtime_authority: (*world.application.runtime_for_test()).authority_identity().as_u64(),
@@ -37,18 +37,18 @@ fn pinned_same_position_replacements_preserve_unchanged_history() {
         output_binding: OutputBindingIdentity::declared_for_test("StatusOutput"),
     };
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let handle = graph.integration_handle();
-    let owner = &handle.source_owner.invalidation_owner;
+    let handle = graph.integration_handle_for_test();
+    let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
     let status_ref = AccountStatus::reference();
     let status = graph
-        .layout()
-        .field_locator(status_ref.entity(), status_ref.aspect(), status_ref.field())
+        .layout_for_test()
+        .field_locator_for_test(status_ref.entity(), status_ref.aspect(), status_ref.field())
         .unwrap()
         .clone();
     let label_ref = AccountLabel::reference();
     let label = graph
-        .layout()
-        .field_locator(label_ref.entity(), label_ref.aspect(), label_ref.field())
+        .layout_for_test()
+        .field_locator_for_test(label_ref.entity(), label_ref.aspect(), label_ref.field())
         .unwrap()
         .clone();
     world
@@ -56,7 +56,7 @@ fn pinned_same_position_replacements_preserve_unchanged_history() {
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request_for_test();
             let request_execution = &host_custody.borrowed_request_for_test();
-            handle.with_runtime_mut(request_execution, |runtime| {
+            handle.with_runtime_mut_for_test(request_execution, |runtime| {
                 for ordinal in 0..20 {
                     write_field(
                         request_execution,
@@ -67,16 +67,16 @@ fn pinned_same_position_replacements_preserve_unchanged_history() {
                     );
                 }
                 let (basis_handle, basis) = snapshot(runtime);
-                let cell = owner.cell_for_read(&basis).unwrap().unwrap();
+                let cell = owner.cell_for_read_for_test(&basis).unwrap().unwrap();
 
                 let original = cell.read_image();
-                assert!(!original.payload().past.is_empty());
+                assert!(!(*original.payload().past_for_test()).is_empty());
 
-                let historical_sources = original
+                let historical_sources = (*original
                     .payload()
-                    .past
+                    .past_for_test())
                     .iter()
-                    .map(|(position, row)| (*position, row.root_id, row.commit_id))
+                    .map(|(position, row)| (*position, (*row.root_id_for_test()), (*row.commit_id_for_test())))
                     .collect::<Vec<_>>();
 
                 let facts = Arc::from([field_fact(
@@ -107,11 +107,11 @@ fn pinned_same_position_replacements_preserve_unchanged_history() {
                     assert_eq!(image.position(), basis.position());
 
                     assert_eq!(
-                        image
+                        (*image
                             .payload()
-                            .past
+                            .past_for_test())
                             .iter()
-                            .map(|(position, row)| (*position, row.root_id, row.commit_id))
+                            .map(|(position, row)| (*position, (*row.root_id_for_test()), (*row.commit_id_for_test())))
                             .collect::<Vec<_>>(),
                         historical_sources
                     );
@@ -128,7 +128,7 @@ fn pinned_same_position_replacements_preserve_unchanged_history() {
                 let next = cell.read_image();
                 assert_ne!(next.position(), last.position());
 
-                assert_eq!(last.payload().past.len(), historical_sources.len());
+                assert_eq!((*last.payload().past_for_test()).len(), historical_sources.len());
                 for identity in identities {
                     assert!(
                         matches!(

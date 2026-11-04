@@ -60,3 +60,5 @@ impl<'serialization, 'admission, Schema, Operation, Input, Scope>
         Ok(transition(subject))
     }
 }
+
+mod court_doors_for_test;

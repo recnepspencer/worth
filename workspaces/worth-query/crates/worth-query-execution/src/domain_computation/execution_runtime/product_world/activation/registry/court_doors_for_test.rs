@@ -30,3 +30,10 @@ impl WorthQueryProductActivationRegistry {
         Self::reserve(self)
     }
 }
+
+impl WorthQueryProductActivationReservation<'_> {
+    #[doc(hidden)]
+    pub fn commit_for_test(self, branch: &ProductBranchObservation) {
+        Self::commit(self, branch)
+    }
+}

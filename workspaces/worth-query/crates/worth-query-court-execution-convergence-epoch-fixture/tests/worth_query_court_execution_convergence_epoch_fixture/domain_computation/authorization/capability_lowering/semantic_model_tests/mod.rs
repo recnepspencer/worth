@@ -22,7 +22,7 @@ fn full_compiler_preserves_every_named_composition_rule_and_path() {
     let plan = (*world
         .application
         .authorization_for_test())
-        .capability_plan(&capability)
+        .capability_plan_for_test(&capability)
         .expect("the compiler retained the typed capability plan");
 
     // Derived independently from the declaration semantics: one grant path,
@@ -39,15 +39,15 @@ fn full_compiler_preserves_every_named_composition_rule_and_path() {
     assert_eq!(plan.rules().len(), expected.len());
 
     let decision_indices = [
-        plan.decision_rules().grant,
-        plan.decision_rules().allow,
-        plan.decision_rules().deny.expect("deny rule"),
-        plan.decision_rules().conflict.expect("conflict rule"),
-        plan.decision_rules()
-            .separation_of_duty
+        (*plan.decision_rules().grant_for_test()),
+        (*plan.decision_rules().allow_for_test()),
+        (*plan.decision_rules().deny_for_test()).expect("deny rule"),
+        (*plan.decision_rules().conflict_for_test()).expect("conflict rule"),
+        (*plan.decision_rules()
+            .separation_of_duty_for_test())
             .expect("separation-of-duty rule"),
-        plan.decision_rules()
-            .distinct_actor
+        (*plan.decision_rules()
+            .distinct_actor_for_test())
             .expect("distinct-actor rule"),
     ];
     for ((name, effect, expected_index, expected_paths), actual_index) in
@@ -56,7 +56,7 @@ fn full_compiler_preserves_every_named_composition_rule_and_path() {
         assert_eq!(actual_index, *expected_index, "{name} index");
         let binding = &plan.rules()[actual_index];
         assert_eq!(binding.bridge().effect(), *effect, "{name} effect");
-        assert_eq!(binding.path_requirements(), expected_paths, "{name} paths");
+        assert_eq!(binding.path_requirements_for_test(), expected_paths, "{name} paths");
         let bridge_paths = binding
             .bridge()
             .requirements()
@@ -68,7 +68,7 @@ fn full_compiler_preserves_every_named_composition_rule_and_path() {
                     .map(|clause| {
                         plan.paths()
                             .iter()
-                            .position(|path| path.identity == *clause.identity())
+                            .position(|path| (*path.identity_for_test()) == *clause.identity())
                             .expect("Bridge clause names a compiled path")
                     })
                     .collect::<Vec<_>>()

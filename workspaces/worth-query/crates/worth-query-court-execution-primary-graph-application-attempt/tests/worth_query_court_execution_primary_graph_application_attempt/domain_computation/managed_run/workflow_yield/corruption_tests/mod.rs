@@ -24,7 +24,7 @@ fn workflow_checkpoint_failure_and_generation_disruption_become_cleanup_only_aut
             .inspection()
             .artifact_evidence()
             .production_generation();
-        let registry = (*yielded.artifacts_for_test()).registry();
+        let registry = (*yielded.artifacts_for_test()).registry_for_test();
         *registry_slot
             .lock()
             .expect("workflow rollback fixture registry slot must remain available") =
@@ -113,8 +113,8 @@ fn workflow_generation_mismatch_denies_before_fresh_authority_and_rolls_back_cle
             .production_generation();
         let pending = (*yielded
             .artifacts_for_test())
-            .registry()
-            .prepare_next_generation()
+            .registry_for_test()
+            .prepare_next_generation_for_test()
             .expect("test delta should place the registry in a pending generation");
         let denied = {
             let fixture_phase_result = {

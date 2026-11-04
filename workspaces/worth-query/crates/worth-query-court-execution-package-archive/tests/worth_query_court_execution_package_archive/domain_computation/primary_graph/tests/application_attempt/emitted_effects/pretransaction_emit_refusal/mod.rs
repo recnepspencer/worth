@@ -49,7 +49,7 @@ fn rejection_before_transaction_publishes_no_emit_causality() {
         (*world
             .application
             .primary_provider_for_test())
-            .published_application_commit_count(),
+            .published_application_commit_count_for_test(),
         0
     );
 }

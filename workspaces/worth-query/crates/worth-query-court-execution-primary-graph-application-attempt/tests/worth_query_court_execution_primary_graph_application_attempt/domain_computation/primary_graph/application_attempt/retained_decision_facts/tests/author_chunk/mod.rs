@@ -46,14 +46,14 @@ fn active_chunk_orders_full_keys_and_resolves_boundary_and_interior_duplicates()
     let canonical = store.finish_for_test(policy).unwrap();
     assert_eq!(canonical.len(), 9);
     for (record, limit) in canonical.iter().zip([0, 1, 2, 3, 5, 6, 7, 10, 12]) {
-        assert_eq!(record.key.locator(), b"same");
+        assert_eq!((*record.key_for_test()).locator_for_test(), b"same");
         assert_eq!(
-            record.key.predicate_material(),
+            (*record.key_for_test()).predicate_material(),
             Some((b"predicate".as_slice(), limit))
         );
-        assert_eq!(record.value.scalar, limit as u64);
+        assert_eq!((*record.value_for_test()).scalar, limit as u64);
         assert_eq!(
-            record.value.roles,
+            (*record.value_for_test()).roles,
             if [0, 5, 12].contains(&limit) { 3 } else { 1 }
         );
     }

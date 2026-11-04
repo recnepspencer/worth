@@ -24,3 +24,13 @@ impl<T, E> TreeAttempt<T, ReductionRunFailure<E>> {
         Self::native(outcome)
     }
 }
+
+impl<T, E> TreeAttempt<EditDisposition<T>, Denial<E>> {
+    #[doc(hidden)]
+    pub fn resolve_for_test(
+        self,
+        rebuild: impl FnOnce() -> TreeAttempt<T, Denial<E>>,
+    ) -> ReportedTree<T, E> {
+        Self::resolve(self, rebuild)
+    }
+}

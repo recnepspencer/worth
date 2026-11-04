@@ -3,7 +3,7 @@ use crate::domain_computation::primary_graph::application_query::projection::pro
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::projection::projected_tree::content_storage::ProjectionContentStorageFault as Fault;
 pub fn deep(key: &Arc<ApplicationQueryResultSlotKey>) -> WorthQueryApplicationProjectionNode {
     let mut root = shape(key);
-    (*root.relations_for_test())[0].rows[0] = shape(key);
+    (*(*root.relations_mut_for_test())[0].rows_mut_for_test())[0] = shape(key);
     root
 }
 pub fn compare(
@@ -25,38 +25,38 @@ fn descendant_provenance_and_empty_support_cannot_be_omitted() {
     assert_eq!(compare(deep(&key), deep(&key)), Ok(true));
     for axis in 0..17 {
         let mut hostile = deep(&key);
-        let child = &mut (*hostile.relations_mut_for_test())[0].rows[0];
+        let child = &mut (*(*hostile.relations_mut_for_test())[0].rows_mut_for_test())[0];
         match axis {
-            0 => child.fields[0].value = AspectValue::String("changed".into()),
-            1 => child.fields[0].slot_key = slot("deep"), // same text, foreign namespace
-            2 => child.fields[0].result_path = "elsewhere.name".into(),
-            3 => child.fields[0].slot_type = "other".into(),
-            4 => child.source_dependencies_complete = false,
-            5 => child.relations[0].slot_key = slot("deep"),
-            6 => child.relations[0].cardinality = ApplicationQueryCardinality::ExactlyOne,
+            0 => (*(*child.fields_for_test())[0].value_mut_for_test()) = AspectValue::String("changed".into()),
+            1 => (*(*child.fields_for_test())[0].slot_key_mut_for_test()) = slot("deep"), // same text, foreign namespace
+            2 => (*(*child.fields_for_test())[0].result_path_mut_for_test()) = "elsewhere.name".into(),
+            3 => (*(*child.fields_for_test())[0].slot_type_mut_for_test()) = "other".into(),
+            4 => (*child.source_dependencies_complete_mut_for_test()) = false,
+            5 => (*(*child.relations_mut_for_test())[0].slot_key_mut_for_test()) = slot("deep"),
+            6 => (*(*child.relations_mut_for_test())[0].cardinality_mut_for_test()) = ApplicationQueryCardinality::ExactlyOne,
             7 => {
-                child.relations[0].predicate_sources[0] = EntityId::new(PartitionId::main(), 10, 2)
+                (*(*child.relations_mut_for_test())[0].predicate_sources_mut_for_test())[0] = EntityId::new(PartitionId::main(), 10, 2)
             }
-            8 => child.relations[0].predicate_sources.reverse(),
-            9 => child.relations[0].rows.reverse(),
+            8 => (*(*child.relations_mut_for_test())[0].predicate_sources_mut_for_test()).reverse(),
+            9 => (*(*child.relations_mut_for_test())[0].rows_for_test()).reverse(),
             10 => {
-                child.relations[0].rows[0].incoming_relation =
+                (*(*(*child.relations_mut_for_test())[0].rows_for_test())[0].incoming_relation_mut_for_test()) =
                     Some(RelationId::new(PartitionId::main(), 20, 2))
             }
-            11 => child.relations[0].result_path = "root.other".into(),
-            12 => child.relations[0].slot_type = "other".into(),
-            13 => child.relations[0].rows.clear(),
-            14 => child.relations.clear(),
-            15 => child.entity_id = EntityId::new(PartitionId::main(), 7, 2),
-            16 => child.source_path = Some("other.ancestor".into()),
+            11 => (*(*child.relations_mut_for_test())[0].result_path_mut_for_test()) = "root.other".into(),
+            12 => (*(*child.relations_mut_for_test())[0].slot_type_mut_for_test()) = "other".into(),
+            13 => (*(*child.relations_mut_for_test())[0].rows_for_test()).clear(),
+            14 => (*child.relations_mut_for_test()).clear(),
+            15 => (*child.entity_id_mut_for_test()) = EntityId::new(PartitionId::main(), 7, 2),
+            16 => (*child.source_path_mut_for_test()) = Some("other.ancestor".into()),
             _ => unreachable!(),
         }
         assert_eq!(compare(deep(&key), hostile), Ok(false), "axis {axis}");
     }
     let mut empty = deep(&key);
-    (*empty.relations_for_test())[0].rows[0].relations[0].rows.clear();
+    (*(*(*(*empty.relations_mut_for_test())[0].rows_for_test())[0].relations_for_test())[0].rows_for_test()).clear();
     let mut same_empty = deep(&key);
-    (*same_empty.relations_for_test())[0].rows[0].relations[0].rows.clear();
+    (*(*(*(*same_empty.relations_mut_for_test())[0].rows_for_test())[0].relations_for_test())[0].rows_for_test()).clear();
     assert_eq!(compare(empty, same_empty), Ok(true));
 }
 #[test]
@@ -104,9 +104,9 @@ fn finite_stack_refuses_before_unfunded_or_undeclared_growth() {
         Err("original-work")
     );
     let mut deeper = deep(&key);
-    (*deeper.relations_for_test())[0].rows[0].relations[0].rows[0] = deep(&key);
+    (*(*(*(*deeper.relations_mut_for_test())[0].rows_for_test())[0].relations_for_test())[0].rows_mut_for_test())[0] = deep(&key);
     let mut same = deep(&key);
-    (*same.relations_for_test())[0].rows[0].relations[0].rows[0] = deep(&key);
+    (*(*(*(*same.relations_mut_for_test())[0].rows_for_test())[0].relations_for_test())[0].rows_mut_for_test())[0] = deep(&key);
     assert_eq!(
         tree(deeper).same_source_content(
             &tree(same),

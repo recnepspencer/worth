@@ -74,7 +74,7 @@ fn identical_provider_text_cannot_substitute_for_terminal_owner_binding() {
         assert!(
             !first
                 .terminal_binding_for_test()
-                .same_session(second.terminal_binding_for_test()),
+                .same_session_for_test(second.terminal_binding_for_test()),
             "equal provider-authored descriptions must not identify a terminal owner"
         );
     });

@@ -112,14 +112,14 @@ fn handler_predicate_rebases_and_its_codec_compares_against_the_reopened_world()
     let WorthQueryApplicationCommitOutcome::Committed(receipt) = outcome else {
         panic!("the indexed handler publishes through the production commit lane: {outcome:?}");
     };
-    let facts = (*world
+    let facts = (*(*world
         .application
         .primary_provider_for_test())
-        .graph
+        .graph_for_test())
         .output_lineage
         .lock()
         .unwrap()
-        .checkpoint_facts_for_receipt(&receipt)
+        .checkpoint_facts_for_receipt_for_test(&receipt)
         .map(|(facts, _)| facts)
         .unwrap();
     let subject = receipt
@@ -217,14 +217,14 @@ pub fn selection(
     let selected = application
         .select_product_branch_for_test(execution, application.product_runtime().default_branch_for_test())
         .unwrap();
-    (*application
+    (*(*application
         .primary_provider_for_test())
-        .graph
+        .graph_for_test())
         .with_runtime(execution, |runtime| {
             compare_retained_output_dependencies(
                 execution,
                 runtime,
-                selected.application_basis().snapshot_handle(),
+                selected.application_basis_for_test().snapshot_handle(),
                 true,
                 Some(facts),
             )
@@ -239,12 +239,12 @@ pub fn change_status(
     value: &str,
 ) {
     let field = AccountStatus::reference();
-    let locator = (*application
+    let locator = (*(*application
         .runtime_for_test())
         .primary_graph()
         .unwrap()
-        .layout
-        .field_locator(field.entity(), field.aspect(), field.field())
+        .layout_for_test())
+        .field_locator_for_test(field.entity(), field.aspect(), field.field())
         .unwrap()
         .clone();
     publish_relational_mutation_on_application(

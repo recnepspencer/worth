@@ -10,11 +10,11 @@ pub fn run(
     let cancel = seed & 1 == 0;
     {
         let mut state = (*world.registry.state_for_test()).lock().unwrap();
-        state
-            .records
+        (*(*state
+            .records_for_test())
             .get_mut(&world.keys[2])
             .unwrap()
-            .required_interests = 1;
+            .required_interests_mut_for_test()) = 1;
         (*world.owners[2].as_mut().unwrap().requires_output_mut_for_test()) = true;
     }
     worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::application_output_demand::registry::prerequisite_claims::custody_note_steps::unhold(

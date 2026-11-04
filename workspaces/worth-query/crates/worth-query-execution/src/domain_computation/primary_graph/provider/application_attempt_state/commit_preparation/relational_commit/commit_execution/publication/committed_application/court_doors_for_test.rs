@@ -7,3 +7,12 @@ impl WorthQueryPrimaryGraphCommittedApplication {
         Self::commit_reference(self)
     }
 }
+
+impl WorthQueryPrimaryGraphCommittedApplication {
+    #[doc(hidden)]
+    pub fn committed_product_publication_for_test(
+        &self,
+    ) -> &crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication {
+        Self::committed_product_publication(self)
+    }
+}

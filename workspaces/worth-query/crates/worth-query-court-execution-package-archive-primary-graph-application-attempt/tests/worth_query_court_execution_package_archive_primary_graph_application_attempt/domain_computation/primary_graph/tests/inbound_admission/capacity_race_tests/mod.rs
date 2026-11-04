@@ -57,7 +57,7 @@ fn callback_terminal_defers_outstanding_capacity_turnover_until_physical_attempt
                 world
                     .application
                     .observe_committed_dispatch_outbox(
-                        &host_custody.phase_for_application(&world.application),
+                        &host_custody.phase_for_application_for_test(&world.application),
                         &first,
                     )
                     .unwrap()
@@ -67,7 +67,7 @@ fn callback_terminal_defers_outstanding_capacity_turnover_until_physical_attempt
         let in_flight = (*world
             .application
             .primary_provider_for_test())
-            .begin_external_dispatch_in_flight(&owner)
+            .begin_external_dispatch_in_flight_for_test(&owner)
             .expect("exact original is committed")
             .expect("installed inbound effect reserves physical attempt");
 
@@ -85,7 +85,7 @@ fn callback_terminal_defers_outstanding_capacity_turnover_until_physical_attempt
         assert!((*world
             .application
             .primary_provider_for_test())
-            .lookup_completed_inbound(record.correlation())
+            .lookup_completed_inbound_for_test(record.correlation())
             .unwrap()
             .is_some());
         match world.attempt_dispatch_on(
@@ -152,7 +152,7 @@ fn callback_winning_during_physical_send_keeps_capacity_until_completed_custody_
             assert!((*world
                 .application
                 .primary_provider_for_test())
-                .lookup_completed_inbound(first_record.correlation())
+                .lookup_completed_inbound_for_test(first_record.correlation())
                 .unwrap()
                 .is_some());
             assert!(world
@@ -176,7 +176,7 @@ fn transport_and_authenticated_publications_share_one_installed_operation_limit(
                 world
                     .application
                     .observe_committed_dispatch_outbox(
-                        &host_custody.phase_for_application(&world.application),
+                        &host_custody.phase_for_application_for_test(&world.application),
                         &receipt,
                     )
                     .unwrap()

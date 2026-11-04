@@ -150,9 +150,9 @@ fn ten_thousand_partitions_gather_and_compute_only_the_one_whose_fact_moved() {
         .unwrap()
         .expect("a producer's run retains")
         .state_for_test());
-    let (key, entity_id) = state
-        .facts
-        .facts()
+    let (key, entity_id) = (*state
+        .facts_for_test())
+        .facts_for_test()
         .find_map(|(key, fact, _)| match fact {
             WorthQueryApplicationObservedFact::Field { entity_id, .. } => {
                 Some((key.clone(), *entity_id))
@@ -160,7 +160,7 @@ fn ten_thousand_partitions_gather_and_compute_only_the_one_whose_fact_moved() {
             _ => None,
         })
         .expect("slot 1 reads the status");
-    state.facts.replace_fact(
+    (*state.facts_for_test()).replace_fact_for_test(
         &key,
         WorthQueryApplicationObservedFact::SourceEntity { entity_id },
     );

@@ -24,7 +24,7 @@ pub fn nested(
     let dispatch = request
         .dispatch_for_test()
         .expect("a member dispatch has the parent's exact policy");
-    dispatch.map(
+    dispatch.map_for_test(
         units,
         &partitions(1),
         request.reserve(0).unwrap(),
@@ -57,13 +57,13 @@ fn wave_and_member_descendants_share_the_advancements_work_ceiling() {
         let outcome = root
             .run_advancement_for_test(None, None, |_| {
                 let wave = root.wave_for_test();
-                wave.request()
+                wave.request_for_test()
                     .execution_request()
                     .unwrap()
                     .in_scope(|lease| {
                         partitions(3).run::<(), (), _>(lease, |_, _| {
-                            let member = wave.member();
-                            match nested(member.request(), UNITS).unwrap() {
+                            let member = wave.member_for_test();
+                            match nested(member.request_for_test(), UNITS).unwrap() {
                                 MapOutcome::Complete { .. } => Ok(()),
                                 MapOutcome::Stopped {
                                     reason:
@@ -104,14 +104,14 @@ fn a_partition_drawn_from_the_root_is_refused_inside_a_wave_member() {
         let root = request();
         root.run_advancement_for_test(None, None, |_| {
             let wave = root.wave_for_test();
-            wave.request()
+            wave.request_for_test()
                 .execution_request()
                 .unwrap()
                 .in_scope(|lease| {
                     let result = partitions(1).run::<(), (), _>(lease, |_, _| {
-                        let member = wave.member();
+                        let member = wave.member_for_test();
                         assert!(matches!(
-                            nested(member.request(), 1),
+                            nested(member.request_for_test(), 1),
                             Ok(MapOutcome::Complete { .. })
                         ));
                         assert!(

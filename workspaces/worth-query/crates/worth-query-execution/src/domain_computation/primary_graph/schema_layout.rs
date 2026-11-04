@@ -31,7 +31,7 @@ pub(in crate::domain_computation::primary_graph) use member_domain::MemberDomain
 mod native_outputs;
 mod platform_entity_lowering;
 mod platform_identity_allocator;
-mod principal_binding;
+pub(crate) mod principal_binding;
 pub(crate) mod program_activation;
 mod projected_member_domain;
 mod provider_aftermath_causality;

@@ -61,3 +61,12 @@ where
         Self::project_operation_on_product(self, execution, product, projection, allocation_policy)
     }
 }
+
+impl<'reader, 'runtime, Schema, Operation>
+    WorthQueryApplicationOperationInvariantProjectionReader<'reader, 'runtime, Schema, Operation>
+{
+    #[doc(hidden)]
+    pub fn decision_facts_mut_for_test(&mut self) -> &mut &'reader mut DecisionReads {
+        &mut self.decision_facts
+    }
+}

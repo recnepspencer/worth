@@ -38,22 +38,22 @@ fn certified_alias_chain_discharge_is_exact_and_later_native_change_repends() {
         .expect("installed host call opens");
     let (_, product, _) = selected.into_parts_for_test();
     let coordinate = ProductCoordinate {
-        occurrence: product.observation().lifecycle_incarnation(),
-        generation: product.observation().reference_generation().get(),
+        occurrence: product.observation_for_test().lifecycle_incarnation(),
+        generation: product.observation_for_test().reference_generation().get(),
     };
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let handle = graph.integration_handle();
-    let owner = &handle.source_owner.invalidation_owner;
+    let handle = graph.integration_handle_for_test();
+    let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
     let status_ref = AccountStatus::reference();
     let label_ref = AccountLabel::reference();
     let status = graph
-        .layout()
-        .field_locator(status_ref.entity(), status_ref.aspect(), status_ref.field())
+        .layout_for_test()
+        .field_locator_for_test(status_ref.entity(), status_ref.aspect(), status_ref.field())
         .unwrap()
         .clone();
     let label = graph
-        .layout()
-        .field_locator(label_ref.entity(), label_ref.aspect(), label_ref.field())
+        .layout_for_test()
+        .field_locator_for_test(label_ref.entity(), label_ref.aspect(), label_ref.field())
         .unwrap()
         .clone();
     let source = |output_binding| {
@@ -84,7 +84,7 @@ fn certified_alias_chain_discharge_is_exact_and_later_native_change_repends() {
         0,
     );
 
-    handle.with_runtime_mut(request_execution, |runtime| {
+    handle.with_runtime_mut_for_test(request_execution, |runtime| {
         write_field(request_execution, runtime, entity, label.clone(), "prime");
         let (before_handle, before) = snapshot(runtime);
         let old_a_fact = field_fact(request_execution, runtime, &before_handle, entity, status.clone());
@@ -101,7 +101,7 @@ fn certified_alias_chain_discharge_is_exact_and_later_native_change_repends() {
         assert_pending(owner, &changed, &c, &other);
 
 
-        let historical_image = owner.cell_for_read(&changed).unwrap().unwrap().read_image();
+        let historical_image = owner.cell_for_read_for_test(&changed).unwrap().unwrap().read_image();
         register_alias(request_execution, owner, runtime, &changed_handle, &changed, entity, status.clone(), &a0, &a1);
         assert!(matches!(currentness(owner, &changed, &b), SourceSettlementCurrentness::Clean));
         assert_pending(owner, &changed, &c, &b);
@@ -175,22 +175,22 @@ fn unchanged_own_evidence_waits_for_a_pending_equal_successor() {
         .expect("installed host call opens");
     let (_, product, _) = selected.into_parts_for_test();
     let coordinate = ProductCoordinate {
-        occurrence: product.observation().lifecycle_incarnation(),
-        generation: product.observation().reference_generation().get(),
+        occurrence: product.observation_for_test().lifecycle_incarnation(),
+        generation: product.observation_for_test().reference_generation().get(),
     };
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let handle = graph.integration_handle();
-    let owner = &handle.source_owner.invalidation_owner;
+    let handle = graph.integration_handle_for_test();
+    let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
     let status_ref = AccountStatus::reference();
     let label_ref = AccountLabel::reference();
     let status = graph
-        .layout()
-        .field_locator(status_ref.entity(), status_ref.aspect(), status_ref.field())
+        .layout_for_test()
+        .field_locator_for_test(status_ref.entity(), status_ref.aspect(), status_ref.field())
         .unwrap()
         .clone();
     let label = graph
-        .layout()
-        .field_locator(label_ref.entity(), label_ref.aspect(), label_ref.field())
+        .layout_for_test()
+        .field_locator_for_test(label_ref.entity(), label_ref.aspect(), label_ref.field())
         .unwrap()
         .clone();
     let source = |output_binding| {
@@ -204,7 +204,7 @@ fn unchanged_own_evidence_waits_for_a_pending_equal_successor() {
     let a_source = source(OutputBindingIdentity::declared_for_test("StatusOutput"));
     let a0 = RecordedSettlementIdentity::retain_for_test(&a_source, coordinate, 0);
     let a1 = RecordedSettlementIdentity::retain_for_test(&a_source, coordinate, 1);
-    handle.with_runtime_mut(request_execution, |runtime| {
+    handle.with_runtime_mut_for_test(request_execution, |runtime| {
         let (before_handle, before) = snapshot(runtime);
         let unchanged_fact = field_fact(request_execution, runtime, &before_handle, entity, label);
         register(owner, Arc::clone(&a0), Arc::from([unchanged_fact.clone()]), &before, OrdSet::new());
@@ -214,7 +214,7 @@ fn unchanged_own_evidence_waits_for_a_pending_equal_successor() {
         // The successor's status changes; the predecessor's label never changes.
         write_field(request_execution, runtime, entity, status, "changed-output");
         let (later_handle, later) = snapshot(runtime);
-        assert!(matches!(owner.consumed_output_currentness(&later, &a0).unwrap(),
+        assert!(matches!(owner.consumed_output_currentness_for_test(&later, &a0).unwrap(),
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::derived::ConsumedOutputCurrentness::PendingEqualSuccessor));
         assert_eq!(ConsumedOutputEvidence::verify_candidate_with_admission_for_test(
 request_execution,            &a0,
@@ -264,7 +264,7 @@ pub fn register_alias(
         )
         .expect("the exact selected alias prepares");
 
-    let cleanup = match prepared.install() {
+    let cleanup = match prepared.install_for_test() {
         Ok(cleanup) => cleanup,
         Err(_) => panic!("the exact selected source image must install"),
     };

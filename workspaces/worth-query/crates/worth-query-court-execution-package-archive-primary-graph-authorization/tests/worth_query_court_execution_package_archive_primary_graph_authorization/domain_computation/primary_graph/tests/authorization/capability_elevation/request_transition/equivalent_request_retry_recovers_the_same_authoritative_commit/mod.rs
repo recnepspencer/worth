@@ -11,7 +11,7 @@ fn equivalent_request_retry_recovers_the_same_authoritative_commit() {
             .with_host_advancement(|phase| {
                 let host_custody = phase.test_host_request_for_test();
                 authenticated_principal(
-                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                     &world,
                     &request,
                 )
@@ -22,7 +22,7 @@ fn equivalent_request_retry_recovers_the_same_authoritative_commit() {
             .with_host_advancement(|phase| {
                 let host_custody = phase.test_host_request_for_test();
                 request_reads(
-                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                     &world,
                     &principal,
                     &request,
@@ -37,7 +37,7 @@ fn equivalent_request_retry_recovers_the_same_authoritative_commit() {
             .with_host_advancement(|phase| {
                 let host_custody = phase.test_host_request_for_test();
                 request_reads(
-                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                     &world,
                     &principal,
                     &request,

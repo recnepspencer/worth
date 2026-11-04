@@ -15,7 +15,7 @@ fn patch_read_failure_preserves_storage_cause_and_observed_committed_context() {
         worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(
             true,
         );
-    let graph = &(*world.application.primary_provider_for_test()).graph;
+    let graph = &(*(*world.application.primary_provider_for_test()).graph_for_test());
     let (commit, position) = graph.with_runtime(execution, |runtime| {
         (
             runtime
@@ -32,7 +32,7 @@ fn patch_read_failure_preserves_storage_cause_and_observed_committed_context() {
     let class = PatchStreamReadErrorClass::ReadRequest(
         RelationalExecutionDenialCause::StorageUnavailable(failure),
     );
-    let requested = graph.primary_index_ids.len();
+    let requested = (*graph.primary_index_ids_for_test()).len();
     let refusal = patch_read_denial(None, Some(&commit), requested, class);
     assert_eq!(
         refusal.kind(),

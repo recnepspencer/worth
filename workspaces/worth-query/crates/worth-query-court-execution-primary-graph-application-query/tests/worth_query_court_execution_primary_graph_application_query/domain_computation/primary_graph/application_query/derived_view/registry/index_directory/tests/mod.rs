@@ -90,7 +90,7 @@ fn registration_memory_refusal_preserves_old_pair_and_funded_retry_releases_back
     assert_eq!(directory.len_for_test(), 1);
     let (id, retained) = directory.get_for_test(&keys[0]).unwrap();
     assert_eq!(id, 1);
-    assert!(Arc::ptr_eq(&retained.state, &first));
+    assert!(Arc::ptr_eq(&(*retained.state_for_test()), &first));
     assert!(directory.get_for_test(&keys[1]).is_none());
     assert_eq!(memory.charged_memory_bytes(), before);
     assert_eq!(denied_memory.charged_memory_bytes(), 0);
@@ -103,7 +103,7 @@ fn registration_memory_refusal_preserves_old_pair_and_funded_retry_releases_back
     assert!(directory.get_for_test(&keys[0]).is_none());
     let (id, retained) = directory.get_for_test(&keys[1]).unwrap();
     assert_eq!(id, 2);
-    assert!(Arc::ptr_eq(&retained.state, &second));
+    assert!(Arc::ptr_eq(&(*retained.state_for_test()), &second));
     assert!(memory.charged_memory_bytes() > 0);
     directory.dispose_for_test();
     assert_eq!(cleanup.0.load(Ordering::SeqCst), 2);

@@ -17,11 +17,11 @@ fn stopped_head_is_released_by_every_finish_route() {
             let peer = admit(&registry, &row);
             publish(&registry, &owner, receipt.clone());
             assert_eq!(
-                (*registry
+                (*(*registry
                     .state_for_test())
                     .lock()
                     .unwrap()
-                    .records
+                    .records_for_test())
                     .publication_count_for_test(),
                 1
             );
@@ -32,7 +32,7 @@ fn stopped_head_is_released_by_every_finish_route() {
                 0 => {
                     let mut state = (*registry.state_for_test()).lock().unwrap();
                     let DemandState::Output(output) =
-                        &mut state.records.get_mut(&row).unwrap().state
+                        &mut (*(*state.records_mut_for_test()).get_mut(&row).unwrap().state_mut_for_test())
                     else {
                         panic!("published row")
                     };
@@ -51,16 +51,16 @@ fn stopped_head_is_released_by_every_finish_route() {
                     let (finish, claim, checkpoint) = registry
                         .prepare_selected_checkpoint_finish_for_test(&owner)
                         .unwrap()
-                        .claim()
+                        .claim_for_test()
                         .unwrap()
                         .unwrap();
-                    assert!(finish.finish(claim, checkpoint, Some(&stop)).is_ok());
+                    assert!(finish.finish_for_test(claim, checkpoint, Some(&stop)).is_ok());
                 }
                 _ => unreachable!(),
             }
             let state = (*registry.state_for_test()).lock().unwrap();
-            let count = state.records.publication_count_for_test();
-            let DemandState::Output(output) = &state.records[&row].state else {
+            let count = (*state.records_for_test()).publication_count_for_test();
+            let DemandState::Output(output) = &(*(*state.records_for_test())[&row].state_for_test()) else {
                 panic!("checkpoint retained")
             };
             assert!(matches!(

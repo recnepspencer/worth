@@ -158,11 +158,11 @@ fn discontinuity_selects_the_first_declared_family_member() {
                     .0,
             );
         }
-        let queue = (*registry
+        let queue = (*(*registry
             .state_for_test())
             .lock()
             .unwrap()
-            .required_work_queue
+            .required_work_queue_for_test())
             .clone()
             .unwrap();
         for _ in 0..2 {
@@ -172,7 +172,7 @@ fn discontinuity_selects_the_first_declared_family_member() {
             .state_for_test())
             .lock()
             .unwrap()
-            .fixture_page_required_discontinuity(
+            .fixture_page_required_discontinuity_for_test(
                 occurrence,
                 &worth_relational::facade::history::BranchId("main".to_owned()),
                 worth_relational::facade::history::CommitId(1),

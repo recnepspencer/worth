@@ -84,10 +84,10 @@ fn unrelated_adjacency_growth_preserves_prepared_decision_facts() {
         .admit_product_branch_for_test(world.application.product_runtime().default_branch_for_test())
         .unwrap();
     let commit_count = || {
-        (*world
+        (*(*world
             .application
             .primary_provider_for_test())
-            .graph
+            .graph_for_test())
             .with_runtime(request_execution, |runtime| {
                 runtime.history().immutable_commit_count()
             })

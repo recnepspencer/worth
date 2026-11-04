@@ -42,25 +42,25 @@ fn commit_authorization_rechecks_cancellation_when_governed() {
         })
         .expect("the fixture read owns its installed host call");
     let commit_authorization = admission
-        .take_authorization_dependencies_for_test((*world.application.authorization_for_test()).bridge())
+        .take_authorization_dependencies_for_test((*world.application.authorization_for_test()).bridge_for_test())
         .unwrap();
     let commit_lane = (*world
         .application
         .primary_provider_for_test())
-        .application_branch_commit_lane(
+        .application_branch_commit_lane_for_test(
             admission
                 .graph_work_for_test()
                 .mutation_product()
                 .unwrap()
-                .observation(),
+                .observation_for_test(),
         );
-    let coordination = commit_lane.enter();
+    let coordination = commit_lane.enter_for_test();
     let proof = world
         .application
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request_for_test();
             commit_authorization
-                .authorize_application_commit(
+                .authorize_application_commit_for_test(
                     &host_custody.borrowed_request_for_test(),
                     &world.application,
                     &admission,
@@ -74,7 +74,7 @@ fn commit_authorization_rechecks_cancellation_when_governed() {
 
     let governed_action_ran = Cell::new(false);
     assert!(proof
-        .govern((), |()| governed_action_ran.set(true))
+        .govern_for_test((), |()| governed_action_ran.set(true))
         .is_err());
     assert!(!governed_action_ran.get());
 }
@@ -115,25 +115,25 @@ fn commit_basis_cannot_be_paired_with_a_different_admitted_operation() {
         })
         .expect("the fixture read owns its installed host call");
     let source_authorization = source
-        .take_authorization_dependencies_for_test((*world.application.authorization_for_test()).bridge())
+        .take_authorization_dependencies_for_test((*world.application.authorization_for_test()).bridge_for_test())
         .unwrap();
     let commit_lane = (*world
         .application
         .primary_provider_for_test())
-        .application_branch_commit_lane(
+        .application_branch_commit_lane_for_test(
             target
                 .graph_work_for_test()
                 .mutation_product()
                 .unwrap()
-                .observation(),
+                .observation_for_test(),
         );
-    let coordination = commit_lane.enter();
+    let coordination = commit_lane.enter_for_test();
 
     let Err(denial) = world
         .application
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request_for_test();
-            source_authorization.authorize_application_commit(
+            source_authorization.authorize_application_commit_for_test(
                 &host_custody.borrowed_request_for_test(),
                 &world.application,
                 &target,
@@ -175,25 +175,25 @@ fn commit_basis_cannot_be_revalidated_by_a_foreign_runtime() {
         })
         .expect("the fixture read owns its installed host call");
     let commit_authorization = admission
-        .take_authorization_dependencies_for_test((*source_world.application.authorization_for_test()).bridge())
+        .take_authorization_dependencies_for_test((*source_world.application.authorization_for_test()).bridge_for_test())
         .unwrap();
     let commit_lane = (*source_world
         .application
         .primary_provider_for_test())
-        .application_branch_commit_lane(
+        .application_branch_commit_lane_for_test(
             admission
                 .graph_work_for_test()
                 .mutation_product()
                 .unwrap()
-                .observation(),
+                .observation_for_test(),
         );
-    let coordination = commit_lane.enter();
+    let coordination = commit_lane.enter_for_test();
 
     let Err(denial) = foreign_world
         .application
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request_for_test();
-            commit_authorization.authorize_application_commit(
+            commit_authorization.authorize_application_commit_for_test(
                 &host_custody.borrowed_request_for_test(),
                 &foreign_world.application,
                 &admission,

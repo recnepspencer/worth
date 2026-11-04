@@ -48,7 +48,7 @@ pub fn shape(slot: &Arc<ApplicationQueryResultSlotKey>) -> WorthQueryApplication
     let mut second = row();
     (*second.entity_id_mut_for_test()) = EntityId::new(PartitionId::main(), 11, 1);
     (*second.incoming_relation_mut_for_test()) = Some(RelationId::new(PartitionId::main(), 21, 1));
-    (*root.relations_for_test()).push(WorthQueryApplicationProjectedRelation {
+    (*root.relations_mut_for_test()).push(WorthQueryApplicationProjectedRelation {
         result_path: "root.children".into(),
         slot_type: "children".into(),
         slot_key: slot.clone(),
@@ -69,28 +69,28 @@ fn complete_raw_shape_compares_fields_relations_negative_support_order_and_depth
     for axis in 0..14 {
         let mut hostile = shape(&key);
         match axis {
-            0 => (*hostile.fields_for_test())[0].value = AspectValue::String("changed-secret".into()),
-            1 => (*hostile.fields_for_test())[0].slot_key = slot("other"),
-            2 => (*hostile.fields_for_test())[0].result_path = "root.other".into(),
-            3 => (*hostile.fields_for_test())[0].slot_type = "other".into(),
+            0 => (*(*hostile.fields_for_test())[0].value_mut_for_test()) = AspectValue::String("changed-secret".into()),
+            1 => (*(*hostile.fields_for_test())[0].slot_key_mut_for_test()) = slot("other"),
+            2 => (*(*hostile.fields_for_test())[0].result_path_mut_for_test()) = "root.other".into(),
+            3 => (*(*hostile.fields_for_test())[0].slot_type_mut_for_test()) = "other".into(),
             4 => (*hostile.fields_for_test()).clear(),
-            5 => (*hostile.relations_for_test())[0].slot_key = slot("other"),
-            6 => (*hostile.relations_for_test())[0].cardinality = ApplicationQueryCardinality::OptionalOne,
+            5 => (*(*hostile.relations_mut_for_test())[0].slot_key_mut_for_test()) = slot("other"),
+            6 => (*(*hostile.relations_mut_for_test())[0].cardinality_mut_for_test()) = ApplicationQueryCardinality::OptionalOne,
             7 => {
-                (*hostile.relations_for_test())[0].predicate_sources[0] =
+                (*(*hostile.relations_mut_for_test())[0].predicate_sources_mut_for_test())[0] =
                     EntityId::new(PartitionId::main(), 10, 2)
             }
-            8 => (*hostile.relations_for_test())[0].predicate_sources.reverse(),
-            9 => (*hostile.relations_for_test())[0].rows.reverse(),
+            8 => (*(*hostile.relations_mut_for_test())[0].predicate_sources_mut_for_test()).reverse(),
+            9 => (*(*hostile.relations_mut_for_test())[0].rows_for_test()).reverse(),
             10 => {
-                (*hostile.relations_for_test())[0].rows[0].incoming_relation =
+                (*(*(*hostile.relations_mut_for_test())[0].rows_for_test())[0].incoming_relation_mut_for_test()) =
                     Some(RelationId::new(PartitionId::main(), 20, 2))
             }
-            11 => (*hostile.relations_for_test())[0].result_path = "root.other".into(),
-            12 => (*hostile.relations_for_test())[0].slot_type = "other".into(),
+            11 => (*(*hostile.relations_mut_for_test())[0].result_path_mut_for_test()) = "root.other".into(),
+            12 => (*(*hostile.relations_mut_for_test())[0].slot_type_mut_for_test()) = "other".into(),
             13 => {
-                let relation = (*shape(&key).relations_for_test()).pop().unwrap();
-                (*hostile.relations_for_test())[0].rows[0].relations.push(relation);
+                let relation = (*shape(&key).relations_mut_for_test()).pop().unwrap();
+                (*(*(*hostile.relations_mut_for_test())[0].rows_for_test())[0].relations_for_test()).push(relation);
             }
             _ => unreachable!(),
         }
@@ -102,11 +102,11 @@ fn complete_raw_shape_compares_fields_relations_negative_support_order_and_depth
         );
     }
     let mut deeper = shape(&key);
-    let relation = (*shape(&key).relations_for_test()).pop().unwrap();
-    (*deeper.relations_for_test())[0].rows[0].relations.push(relation);
+    let relation = (*shape(&key).relations_mut_for_test()).pop().unwrap();
+    (*(*(*deeper.relations_mut_for_test())[0].rows_for_test())[0].relations_for_test()).push(relation);
     let mut same_deeper = shape(&key);
-    let relation = (*shape(&key).relations_for_test()).pop().unwrap();
-    (*same_deeper.relations_for_test())[0].rows[0].relations.push(relation);
+    let relation = (*shape(&key).relations_mut_for_test()).pop().unwrap();
+    (*(*(*same_deeper.relations_mut_for_test())[0].rows_for_test())[0].relations_for_test()).push(relation);
     assert!(!tree(deeper)
         .same_one_hop_content(&tree(same_deeper), &mut |_| Ok::<_, ()>(()))
         .unwrap());

@@ -61,8 +61,8 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         })
         .expect("the fixture read owns its installed host call");
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let layout = graph.layout();
-    let handle = graph.integration_handle();
+    let layout = graph.layout_for_test();
+    let handle = graph.integration_handle_for_test();
     let correspondence = WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles_for_test(
         TypeId::of_for_test::<()>(),
         TypeId::of_for_test::<()>(),
@@ -103,7 +103,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
     let status_ref = AccountStatus::reference();
     let label_ref = AccountLabel::reference();
     let planned_status = layout
-        .field_locator(status_ref.entity(), status_ref.aspect(), status_ref.field())
+        .field_locator_for_test(status_ref.entity(), status_ref.aspect(), status_ref.field())
         .unwrap();
     let status = AspectFieldLocator::new(
         LocatorAuthority::Authoritative,
@@ -111,10 +111,10 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         planned_status.field_path().clone(),
     );
     let label = layout
-        .field_locator(label_ref.entity(), label_ref.aspect(), label_ref.field())
+        .field_locator_for_test(label_ref.entity(), label_ref.aspect(), label_ref.field())
         .unwrap()
         .clone();
-    let changed_output_equal = world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request_for_test(); let request_execution = &host_custody.borrowed_request_for_test(); handle.with_runtime_mut(request_execution, |runtime| {
+    let changed_output_equal = world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request_for_test(); let request_execution = &host_custody.borrowed_request_for_test(); handle.with_runtime_mut_for_test(request_execution, |runtime| {
         let before = snapshot(runtime);
         let truth = runtime.read_truth();
         let mut facts = vec![Fact::Entity {
@@ -123,7 +123,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
                  .read_exact_snapshot_live_entity_kind(request_execution, &before, entity).unwrap()
                 .unwrap(),
         }];
-        for aspect in layout.native_output_aspects("Account") {
+        for aspect in layout.native_output_aspects_for_test("Account") {
             facts.push(Fact::SourceAspectRevision {
                 entity_id: entity,
                 aspect: aspect.clone(),
@@ -177,8 +177,8 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
                 &producer_facts,
             )
             .unwrap());
-        let index = layout.equality_field(status_ref.entity(), status_ref.aspect(), status_ref.field())
-            .unwrap().equality_index_id.unwrap();
+        let index = (*layout.equality_field_for_test(status_ref.entity(), status_ref.aspect(), status_ref.field())
+            .unwrap().equality_index_id_for_test()).unwrap();
         let indexed = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::indexed_entity_selection::observe_indexed_entity_selection(
             runtime,&host_custody.borrowed_request_for_test(),  &before, index,
             runtime.read_truth() .read_exact_snapshot_live_entity_kind(request_execution, &before, entity).unwrap().unwrap(),
@@ -279,7 +279,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
             .unwrap());
         assert!(
             producer_facts[0]
-                .source_currentness_in_for_test(runtime, &host_custody.borrowed_request_for_test(), &after).unwrap().unwrap().movement()
+                .source_currentness_in_for_test(runtime, &host_custody.borrowed_request_for_test(), &after).unwrap().unwrap().movement_for_test()
                 == Movement::Unmoved
         );
         assert!(!after_restore

@@ -40,3 +40,12 @@ impl SemanticSource {
         &self.schema
     }
 }
+
+impl SemanticSource {
+    #[doc(hidden)]
+    pub fn output_binding_mut_for_test(
+        &mut self,
+    ) -> &mut super::super::super::output_binding_identity::OutputBindingIdentity {
+        &mut self.output_binding
+    }
+}

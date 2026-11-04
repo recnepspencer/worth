@@ -79,16 +79,16 @@ fn a_committed_record_of_another_kind_denies_before_projection() {
     let world = installed_authorization_world(true);
     let provider = &(*world.application.primary_provider_for_test());
     let record = record();
-    let (binding, commit, runtime_id) = provider.graph.with_runtime_mut(execution, |runtime| {
+    let (binding, commit, runtime_id) = (*provider.graph_for_test()).with_runtime_mut_for_test(execution, |runtime| {
         let (outbox_intent, pending) = bind_dispatch_outbox_create_intent(
-            Some(provider.graph.layout.provider_dispatch_outbox()),
+            Some((*(*provider.graph_for_test()).layout_for_test()).provider_dispatch_outbox_for_test()),
             Some(&record),
             worth_relational::facade::identity::PartitionId::main(),
         )
         .unwrap();
         let idempotency = WorthQueryApplicationIdempotencyBinding::new_for_test([91; 32], [92; 32]);
         let idempotency_intent = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::idempotency::idempotency_create_intent(
-            provider.graph.layout.provider_idempotency(),
+            (*(*provider.graph_for_test()).layout_for_test()).provider_idempotency_for_test(),
             idempotency,
             WorthQueryApplicationCommitOutcomeIdentity::mint_for_test().unwrap(),
             0,
@@ -112,7 +112,7 @@ fn a_committed_record_of_another_kind_denies_before_projection() {
          worth_execution::ExecutionAllocationPolicy::SystemAllocation).expect("test staging stays within configured resource budgets");
         let committed = transaction.commit(execution, runtime).unwrap();
         let correct = WorthQueryCommittedDispatchOutboxBinding::fixture_from_commit_for_test(
-            provider.graph.layout.provider_dispatch_outbox(),
+            (*(*provider.graph_for_test()).layout_for_test()).provider_dispatch_outbox_for_test(),
             Some(pending.record_for_test()),
             &committed,
         )
@@ -136,7 +136,7 @@ fn a_committed_record_of_another_kind_denies_before_projection() {
     });
 
     assert_eq!(
-        provider.observe_expected(execution, &binding, &commit, runtime_id),
+        provider.observe_expected_for_test(execution, &binding, &commit, runtime_id),
         Err(Denial::WrongRecordKind)
     );
 }
@@ -149,9 +149,9 @@ fn a_deleted_record_is_non_visible_at_the_requested_commit_without_binding_fallb
     let world = installed_authorization_world(true);
     let provider = &(*world.application.primary_provider_for_test());
     let record = record();
-    let (binding, deletion_commit, runtime_id) = provider.graph.with_runtime_mut(execution, |runtime| {
+    let (binding, deletion_commit, runtime_id) = (*provider.graph_for_test()).with_runtime_mut_for_test(execution, |runtime| {
         let (intent, pending) = bind_dispatch_outbox_create_intent(
-            Some(provider.graph.layout.provider_dispatch_outbox()),
+            Some((*(*provider.graph_for_test()).layout_for_test()).provider_dispatch_outbox_for_test()),
             Some(&record),
             worth_relational::facade::identity::PartitionId::main(),
         )
@@ -170,7 +170,7 @@ fn a_deleted_record_is_non_visible_at_the_requested_commit_without_binding_fallb
         create.push_batch(WorkerIntentBatch::new("live-outbox-before-delete").push(intent), worth_execution::ExecutionAllocationPolicy::SystemAllocation).expect("test staging stays within configured resource budgets");
         let created = create.commit(execution, runtime).unwrap();
         let binding = WorthQueryCommittedDispatchOutboxBinding::fixture_from_commit_for_test(
-            provider.graph.layout.provider_dispatch_outbox(),
+            (*(*provider.graph_for_test()).layout_for_test()).provider_dispatch_outbox_for_test(),
             Some(pending.record_for_test()),
             &created,
         )
@@ -209,7 +209,7 @@ fn a_deleted_record_is_non_visible_at_the_requested_commit_without_binding_fallb
     });
 
     assert_eq!(
-        provider.observe_expected(execution, &binding, &deletion_commit, runtime_id),
+        provider.observe_expected_for_test(execution, &binding, &deletion_commit, runtime_id),
         Err(Denial::Missing)
     );
 }
@@ -227,9 +227,9 @@ pub fn committed_substituted_row(
     let world = installed_authorization_world(true);
     let provider = (*world.application.primary_provider_for_test()).clone();
     let record = record();
-    let layout = provider.graph.layout.provider_dispatch_outbox().clone();
+    let layout = (*(*provider.graph_for_test()).layout_for_test()).provider_dispatch_outbox_for_test().clone();
     let branch = primary_relational_branch_id();
-    let (binding, commit, runtime_id) = provider.graph.with_runtime_mut(request_execution, |runtime| {
+    let (binding, commit, runtime_id) = (*provider.graph_for_test()).with_runtime_mut_for_test(request_execution, |runtime| {
         let (intent, pending) =
             bind_dispatch_outbox_create_intent(
                 Some(&layout),

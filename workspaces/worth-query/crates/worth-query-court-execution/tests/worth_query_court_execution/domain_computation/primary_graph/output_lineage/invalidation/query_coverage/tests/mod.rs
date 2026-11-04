@@ -33,21 +33,21 @@ fn released_query_backing_preserves_historical_truth_and_marks_only_live_readers
                 .unwrap()
                 .entity_id_for_test();
             let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-            let handle = graph.integration_handle();
-            let owner = &handle.source_owner.invalidation_owner;
+            let handle = graph.integration_handle_for_test();
+            let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
             let label_ref = AccountLabel::reference();
             let label = graph
-                .layout()
-                .field_locator(label_ref.entity(), label_ref.aspect(), label_ref.field())
+                .layout_for_test()
+                .field_locator_for_test(label_ref.entity(), label_ref.aspect(), label_ref.field())
                 .unwrap()
                 .clone();
             let status_ref = AccountStatus::reference();
             let status = graph
-                .layout()
-                .field_locator(status_ref.entity(), status_ref.aspect(), status_ref.field())
+                .layout_for_test()
+                .field_locator_for_test(status_ref.entity(), status_ref.aspect(), status_ref.field())
                 .unwrap()
                 .clone();
-            handle.with_runtime_mut(&execution, |runtime| {
+            handle.with_runtime_mut_for_test(&execution, |runtime| {
                 write_field(&execution, runtime, entity, label.clone(), "prime");
                 let (basis_handle, basis) = snapshot(runtime);
                 let facts = [
@@ -56,7 +56,7 @@ fn released_query_backing_preserves_historical_truth_and_marks_only_live_readers
                 ];
                 let capture = |facts: &[_]| {
                     owner
-                        .retain_query_fact_coverage(
+                        .retain_query_fact_coverage_for_test(
                             basis.clone(),
                             facts,
                             execution.allocation_policy(),
@@ -67,29 +67,29 @@ fn released_query_backing_preserves_historical_truth_and_marks_only_live_readers
                 };
                 let abandoned = capture(&facts);
                 let live = capture(&facts[..1]);
-                let id = abandoned.slot.lock().unwrap().unwrap();
-                let live_id = live.slot.lock().unwrap().unwrap();
-                let projection = Arc::downgrade(&abandoned.projection);
+                let id = (*abandoned.slot_for_test()).lock().unwrap().unwrap();
+                let live_id = (*live.slot_for_test()).lock().unwrap().unwrap();
+                let projection = Arc::downgrade(&(*abandoned.projection_for_test()));
                 let key = FactPostingKey::FieldRevision {
                     entity,
                     aspect: label.aspect().aspect_key().clone(),
                     path: label.field_path().clone(),
                 };
-                let cell = owner.cell_for_read(&basis).unwrap().unwrap();
+                let cell = owner.cell_for_read_for_test(&basis).unwrap().unwrap();
                 let image = cell.read_image();
                 let historical = Arc::clone(image.payload());
-                let original_keys = (*query_binding(&historical.current, id)
+                let original_keys = (*query_binding(&(*historical.current_for_test()), id)
                     .projection_for_test())
-                    .keys()
+                    .keys_for_test()
                     .len();
                 assert_eq!(original_keys, 3);
                 drop(image);
                 drop(abandoned);
-                assert!(!cell
+                assert!(!(*(*cell
                     .read_image()
                     .payload()
-                    .current
-                    .posting_bindings
+                    .current_for_test())
+                    .posting_bindings_for_test())
                     .contains_key(&id));
                 assert!(
                     projection.upgrade().is_some(),
@@ -99,12 +99,12 @@ fn released_query_backing_preserves_historical_truth_and_marks_only_live_readers
                 // A historical state containing a dead native weak identity is the
                 // same input a failed/racing final release leaves. Exercise only
                 // the actual touched-bucket algorithm; never install it as authority.
-                let mut deferred = (*historical.current).clone();
+                let mut deferred = (*(*historical.current_for_test())).clone();
                 assert_eq!((*query_binding(&deferred, id).identity_for_test()).strong_count(), 0);
                 let mut counts = Default::default();
                 worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::query_coverage::marking::mark_query_reads(&mut deferred, &key, &mut counts).unwrap();
                 assert_eq!(
-                    (*query_binding(&deferred, id).projection_for_test()).keys().len(),
+                    (*query_binding(&deferred, id).projection_for_test()).keys_for_test().len(),
                     original_keys - 1
                 );
                 assert!((*query_binding(&deferred, live_id).dirty_for_test()).is_some());
@@ -119,32 +119,32 @@ fn released_query_backing_preserves_historical_truth_and_marks_only_live_readers
                 );
                 let keys: Vec<_> = (*query_binding(&deferred, id)
                     .projection_for_test())
-                    .keys()
+                    .keys_for_test()
                     .keys()
                     .cloned()
                     .collect();
                 for key in keys {
                     worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::query_coverage::marking::mark_query_reads(&mut deferred, &key, &mut counts).unwrap();
                 }
-                assert!(!deferred.posting_bindings.contains_key(&id));
-                assert!(deferred.postings.values().all(|ids| !ids.contains(&id)));
+                assert!(!(*deferred.posting_bindings_for_test()).contains_key(&id));
+                assert!((*deferred.postings_for_test()).values().all(|ids| !ids.contains(&id)));
                 drop(deferred);
 
                 // Ordinary native publication still marks the live original read.
                 write_field(&execution, runtime, entity, label, "changed");
                 let (after_handle, after) = snapshot(runtime);
-                assert!((*query_binding(&cell.read_image().payload().current, live_id)
+                assert!((*query_binding(&(*cell.read_image().payload().current_for_test()), live_id)
                     .dirty_for_test())
                     .is_some());
                 assert!(owner
-                    .query_facts_clean_at(&live, &after, execution.allocation_policy())
+                    .query_facts_clean_at_for_test(&live, &after, execution.allocation_policy())
                     .ok()
                     .flatten()
                     .is_none());
                 assert_eq!(
-                    (*query_binding(&historical.current, id)
+                    (*query_binding(&(*historical.current_for_test()), id)
                         .projection_for_test())
-                        .keys()
+                        .keys_for_test()
                         .len(),
                     original_keys
                 );

@@ -9,3 +9,15 @@ impl WorthQueryPrimaryGraphLayout {
         Self::equality_fields_mut(self)
     }
 }
+
+impl WorthQueryPrimaryGraphLayout {
+    #[doc(hidden)]
+    pub fn equality_field_for_test(
+        &self,
+        entity: &str,
+        aspect: &str,
+        field: &str,
+    ) -> Option<&WorthQueryPrimaryFieldLayout> {
+        Self::equality_field(self, entity, aspect, field)
+    }
+}

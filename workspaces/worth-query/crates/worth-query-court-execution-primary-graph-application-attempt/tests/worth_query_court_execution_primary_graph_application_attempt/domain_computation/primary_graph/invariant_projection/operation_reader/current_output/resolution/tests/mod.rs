@@ -37,12 +37,12 @@ fn postcommit_observation_cannot_certify_original_own_write_output() {
                     let principal = authenticated_principal(&host_custody, world, &request);
                     let account = resolved_account(&host_custody, world, "2", &request);
                     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-                    let handle = graph.integration_handle();
+                    let handle = graph.integration_handle_for_test();
                     handle
                         .output_lineage
                         .lock()
                         .unwrap()
-                        .install_output_families(std::collections::BTreeMap::from([(
+                        .install_output_families_for_test(std::collections::BTreeMap::from([(
                             "test.retained-account-capacity".to_owned().into(),
                             vec![(
                                 receipt.output_correspondence().binding_type().unwrap(),
@@ -56,11 +56,11 @@ fn postcommit_observation_cannot_certify_original_own_write_output() {
                         .unwrap();
                     let admitted = world
                         .selected_product(
-                            &(host_custody.phase_for_application(&world.application))
-                                .test_host_request(),
+                            &(host_custody.phase_for_application_for_test(&world.application))
+                                .test_host_request_for_test(),
                         )
                         .authorize_operation(
-                            &host_custody.phase_for_application(&world.application),
+                            &host_custody.phase_for_application_for_test(&world.application),
                             &principal,
                             &account,
                             &operation,
@@ -71,7 +71,7 @@ fn postcommit_observation_cannot_certify_original_own_write_output() {
                     let answer = world
                         .invariant
                         .project_admitted_operation(
-                            &host_custody.phase_for_application(&world.application),
+                            &host_custody.phase_for_application_for_test(&world.application),
                             &admitted,
                             |reader, root| {
                                 reader

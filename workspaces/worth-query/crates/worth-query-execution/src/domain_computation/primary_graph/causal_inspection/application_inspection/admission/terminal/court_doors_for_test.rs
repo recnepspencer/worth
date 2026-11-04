@@ -10,3 +10,14 @@ impl<'storage, Schema: ApplicationSchema, Scope> InspectionRead<'_, 'storage, Sc
         Self::terminal(self, execution)
     }
 }
+
+impl InspectionTerminal<'_> {
+    #[doc(hidden)]
+    pub fn complete_for_test(
+        self,
+        execution: &ExecutionRequest<'_, '_>,
+        release: WorthQueryApplicationBasisReleaseReceipt,
+    ) -> Result<CompletedInspection, InspectionAdmissionDenial> {
+        Self::complete(self, execution, release)
+    }
+}

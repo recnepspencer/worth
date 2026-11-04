@@ -16,8 +16,8 @@ pub fn compare(
         .unwrap_or_else(std::sync::PoisonError::into_inner);
     let mut differences = Vec::new();
     for (id, key) in world.keys.iter().enumerate() {
-        let physical = state.records.get(key);
-        let observation = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::claim_readthrough::visibility::observe_row(&state.records, key);
+        let physical = (*state.records_for_test()).get_for_test(key);
+        let observation = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::claim_readthrough::visibility::observe_row(&(*state.records_for_test()), key);
         let (awaited, required, held) =
             (observation.awaited, observation.required, observation.held);
         if (awaited, required, held)
@@ -38,16 +38,16 @@ pub fn compare(
             ));
         }
         if !world.model.rows.contains_key(&id)
-            && physical.is_some_and(|r| !r.closed_cleanup.queued() && !r.pending_cleanup_queued)
+            && physical.is_some_and(|r| !(*r.closed_cleanup_for_test()).queued_for_test() && !(*r.pending_cleanup_queued_for_test()))
         {
             differences.push(format!("removed row {id} unnoted"));
         }
         if quiescent {
             let actual = physical.map(|r| {
                 (
-                    r.interests,
-                    r.framework_required_count,
-                    r.prerequisites
+                    (*r.interests_for_test()),
+                    (*r.framework_required_count_for_test()),
+                    (*r.prerequisites_for_test())
                         .iter()
                         .map(|k| {
                             world
@@ -90,7 +90,7 @@ pub fn compare(
     for id in 0..2 {
         let actual = state.source_custody.get(&world.context.commit(id));
         let expected = world.model.custody.get(&id);
-        if expected.is_none() && actual.is_some_and(|c| !c.cleanup.queued) {
+        if expected.is_none() && actual.is_some_and(|c| !(*c.cleanup_for_test()).queued) {
             differences.push(format!("removed custody {id} unnoted"));
         }
         let visible = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::post_commit::custody_reader::visible(
@@ -101,7 +101,7 @@ pub fn compare(
             differences.push(format!("reader custody {id} presence differs"));
         }
         if let (Some(actual), Some(expected)) = (actual.filter(|_| visible), expected) {
-            let bound = actual.bound_sources.clone();
+            let bound = (*actual.bound_sources_for_test()).clone();
             let expected_bound = expected.bound.map(|generation| {
                 vec![worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::BoundOutputSource {
                     scope: world.context.scope,
@@ -110,15 +110,15 @@ pub fn compare(
                         .iter()
                         .find(|key| {
                             (*key.producer_for_test()) == "oracle-upstream"
-                                && (*key.source_for_test()).observation_generation() == generation
+                                && (*key.source_for_test()).observation_generation_for_test() == generation
                         })
                         .unwrap()
                         .source_for_test())
                         .clone(),
                 }]
             });
-            let denied = actual
-                .retired_sources
+            let denied = (*actual
+                .retired_sources_for_test())
                 .iter()
                 .map(|(source, cause)| (source.clone(), cause.kind()))
                 .collect::<Vec<_>>();
@@ -165,13 +165,13 @@ pub fn compare(
         let actual_members: Vec<_> = world
             .keys
             .iter()
-            .filter(|key| state.required_keys.contains(*key))
+            .filter(|key| (*state.required_keys_for_test()).contains(*key))
             .collect();
         if actual_members != expected_members {
             differences.push("final member set differs".into());
         }
     }
-    if quiescent && (state.closed_cleanup.len() != 0 || state.custody_cleanup.len != 0) {
+    if quiescent && ((*state.closed_cleanup_for_test()).len_for_test() != 0 || (*state.custody_cleanup_for_test()).len != 0) {
         differences.push("final note orders nonempty".into());
     }
     if !differences.is_empty() {
@@ -188,5 +188,5 @@ pub fn dangling(world: &World<'_>) -> Option<WorthQueryOutputDemandKey> {
         .state_for_test())
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
-    (!state.closed_cleanup.valid_order()).then(|| world.keys[2].clone())
+    (!(*state.closed_cleanup_for_test()).valid_order_for_test()).then(|| world.keys[2].clone())
 }

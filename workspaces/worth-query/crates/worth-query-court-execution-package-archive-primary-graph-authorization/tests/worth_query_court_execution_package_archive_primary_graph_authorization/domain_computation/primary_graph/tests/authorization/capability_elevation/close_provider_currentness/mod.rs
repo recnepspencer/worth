@@ -49,7 +49,7 @@ fn provider_time_rejects_stale_revoked_classification_then_commits_exact_expired
             let host_custody = phase.test_host_request_for_test();
             assert_eq!(
                 crate::domain_computation::primary_graph::tests::authorization::capability_elevation::terminal_state::elevation_status(
-                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                     &host_custody.borrowed_request_for_test(),
                     &world
                 ),
@@ -63,7 +63,7 @@ fn provider_time_rejects_stale_revoked_classification_then_commits_exact_expired
             let host_custody = phase.test_host_request_for_test();
             assert_eq!(
                 crate::domain_computation::primary_graph::tests::authorization::capability_elevation::terminal_state::review_status(
-                    &(host_custody).test_host_request(),
+                    &(host_custody).test_host_request_for_test(),
                     &host_custody.borrowed_request_for_test(),
                     &world
                 ),
@@ -80,7 +80,7 @@ fn provider_time_rejects_stale_revoked_classification_then_commits_exact_expired
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request_for_test();
             crate::domain_computation::primary_graph::tests::authorization::capability_elevation::terminal_lifecycle_support::materialize_close(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                 &world,
                 &request,
                 approved,
@@ -104,7 +104,7 @@ fn provider_time_rejects_stale_revoked_classification_then_commits_exact_expired
             let host_custody = phase.test_host_request_for_test();
             assert_eq!(
                 crate::domain_computation::primary_graph::tests::authorization::capability_elevation::terminal_state::elevation_status(
-                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                     &host_custody.borrowed_request_for_test(),
                     &world
                 ),

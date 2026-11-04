@@ -41,14 +41,14 @@ fn call_range_demand_and_consumption_match_independent_sequential_prefixes() {
                 let mut sequential = Budget::bounded_for_test(remaining);
                 let fits = calls[start..end].iter().all(|(_, (charge, _))| {
                     let cost = (*charge.accounting_for_test()).unwrap();
-                    sequential.carry_for_test(cost.demand, cost.consumed)
+                    sequential.carry_for_test((*cost.demand_for_test()), (*cost.consumed_for_test()))
                 });
                 let sum = summary(&tree, &(start..end)).unwrap();
                 let mut ranged = Budget::bounded_for_test(remaining);
                 assert_eq!(
                     ranged.carry_for_test(
-                        (*sum.accounting_for_test()).unwrap().demand,
-                        (*sum.accounting_for_test()).unwrap().consumed
+                        (*(*sum.accounting_for_test()).unwrap().demand_for_test()),
+                        (*(*sum.accounting_for_test()).unwrap().consumed_for_test())
                     ),
                     fits,
                     "{start}..{end}, remaining{remaining}"
@@ -78,8 +78,8 @@ fn call_range_refusal_descends_to_the_first_actual_unfitting_call() {
         let mut full = Budget::bounded_for_test(remaining);
         let stop = calls.iter().position(|(_, (charge, _))| {
             let charge = (*charge.accounting_for_test()).unwrap();
-            if full.can_afford_for_test(charge.demand) {
-                assert!(full.consume_for_test(charge.consumed));
+            if full.can_afford_for_test((*charge.demand_for_test())) {
+                assert!(full.consume_for_test((*charge.consumed_for_test())));
                 false
             } else {
                 true
@@ -94,14 +94,14 @@ fn call_range_refusal_descends_to_the_first_actual_unfitting_call() {
                 match entry {
                     CallVisit::Range(_, sum) => {
                         let cost = (*sum.accounting_for_test()).unwrap();
-                        Ok(ranged.carry_for_test(cost.demand, cost.consumed))
+                        Ok(ranged.carry_for_test((*cost.demand_for_test()), (*cost.consumed_for_test())))
                     }
                     CallVisit::Leaf(at, _, charge, _) => {
                         let charge = (*charge.accounting_for_test()).unwrap();
-                        if !ranged.can_afford_for_test(charge.demand) {
+                        if !ranged.can_afford_for_test((*charge.demand_for_test())) {
                             return Err(at);
                         }
-                        assert!(ranged.consume_for_test(charge.consumed));
+                        assert!(ranged.consume_for_test((*charge.consumed_for_test())));
                         Ok(true)
                     }
                 }

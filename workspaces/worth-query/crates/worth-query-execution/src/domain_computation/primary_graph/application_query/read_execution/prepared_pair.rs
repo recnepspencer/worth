@@ -239,3 +239,5 @@ const _: fn() = || {
     fn send<T: Send>() {}
     send::<PreparedPair<'static>>();
 };
+
+mod court_doors_for_test;

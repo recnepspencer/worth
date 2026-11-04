@@ -56,10 +56,10 @@ fn current_commit_basis_reclaims_an_abandoned_performed_observation() {
         .unwrap();
     let retained_receipt = receipt.clone();
     let registry = &(*world.application.output_demands_for_test());
-    let preparation = registry.begin_source_preparation(occurrence);
+    let preparation = registry.begin_source_preparation_for_test(occurrence);
     let kind = PreparedOutputRootKind::Required(TypeId::of_for_test::<()>());
     let commit = registry
-        .retain_performed_source(
+        .retain_performed_source_for_test(
             WorthQueryPerformedOutputDemandSource {
                 receipt,
                 change,
@@ -71,7 +71,7 @@ fn current_commit_basis_reclaims_an_abandoned_performed_observation() {
             None,
         )
         .unwrap();
-    registry.release_prepared_token(&commit);
+    registry.release_prepared_token_for_test(&commit);
     drop(preparation);
     let runtime = world.application.product_runtime();
     let retained = runtime.admit_product_occurrence_for_test(occurrence).unwrap();
@@ -86,13 +86,13 @@ fn current_commit_basis_reclaims_an_abandoned_performed_observation() {
         }
     }
     registry
-        .validate_recovery_root_kind(&retained_receipt, kind.clone())
+        .validate_recovery_root_kind_for_test(&retained_receipt, kind.clone())
         .unwrap();
     world.application.with_application_advancement(&request, |_phase| {
         let current = select_current_product(&world.application, &retained)
             .expect("current commit selection reclaims the abandoned observation");
         assert_eq!(current.selected_commit(), retained.selected_commit());
-        assert_eq!(registry.validate_recovery_root_kind(&retained_receipt, kind).unwrap_err().kind(),
+        assert_eq!(registry.validate_recovery_root_kind_for_test(&retained_receipt, kind).unwrap_err().kind(),
             worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable);
         assert!(matches!(runtime.admit_product_occurrence_for_test(occurrence),
             Err(worth_query_execution::facade::domain_computation::WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::ObservationCapacityExhausted))),

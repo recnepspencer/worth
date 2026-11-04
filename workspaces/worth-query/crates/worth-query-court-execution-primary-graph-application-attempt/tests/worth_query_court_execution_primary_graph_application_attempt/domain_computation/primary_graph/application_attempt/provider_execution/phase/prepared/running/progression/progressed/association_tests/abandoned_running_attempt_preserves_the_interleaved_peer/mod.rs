@@ -18,7 +18,7 @@ fn abandoned_running_attempt_preserves_the_interleaved_peer() {
                 .invariant
                 .active_snapshot_count_for_test(&active_phase.borrowed_request_for_test());
             let (victim, peer) = equivalent_programs(
-                &host_custody.phase_for_application(&world.application),
+                &host_custody.phase_for_application_for_test(&world.application),
                 &world,
                 "abandoned-victim",
             );

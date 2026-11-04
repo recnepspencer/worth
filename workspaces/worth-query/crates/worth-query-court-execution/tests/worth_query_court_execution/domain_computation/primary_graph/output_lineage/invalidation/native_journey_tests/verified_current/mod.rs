@@ -31,8 +31,8 @@ fn repeated_current_certification_preserves_image_and_retention_and_rejects_a_ra
         .expect("the fixture read owns its installed host call");
     let (_, product, _) = selected.into_parts_for_test();
     let coordinate = ProductCoordinate {
-        occurrence: product.observation().lifecycle_incarnation(),
-        generation: product.observation().reference_generation().get(),
+        occurrence: product.observation_for_test().lifecycle_incarnation(),
+        generation: product.observation_for_test().reference_generation().get(),
     };
     let source = SemanticSource {
         runtime_authority: (*world.application.runtime_for_test()).authority_identity().as_u64(),
@@ -43,18 +43,18 @@ fn repeated_current_certification_preserves_image_and_retention_and_rejects_a_ra
     let prior = RecordedSettlementIdentity::retain_for_test(&source, coordinate, 0);
     let current = RecordedSettlementIdentity::retain_for_test(&source, coordinate, 1);
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let handle = graph.integration_handle();
-    let owner = &handle.source_owner.invalidation_owner;
+    let handle = graph.integration_handle_for_test();
+    let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
     let status_ref = AccountStatus::reference();
     let status = graph
-        .layout()
-        .field_locator(status_ref.entity(), status_ref.aspect(), status_ref.field())
+        .layout_for_test()
+        .field_locator_for_test(status_ref.entity(), status_ref.aspect(), status_ref.field())
         .unwrap()
         .clone();
     let label_ref = AccountLabel::reference();
     let label = graph
-        .layout()
-        .field_locator(label_ref.entity(), label_ref.aspect(), label_ref.field())
+        .layout_for_test()
+        .field_locator_for_test(label_ref.entity(), label_ref.aspect(), label_ref.field())
         .unwrap()
         .clone();
 
@@ -63,7 +63,7 @@ fn repeated_current_certification_preserves_image_and_retention_and_rejects_a_ra
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request_for_test();
             let request_execution = &host_custody.borrowed_request_for_test();
-            handle.with_runtime_mut(request_execution, |runtime| {
+            handle.with_runtime_mut_for_test(request_execution, |runtime| {
                 write_field(request_execution, runtime, entity, label, "prime");
                 let (snapshot, basis) = snapshot(runtime);
                 let facts: Arc<[_]> = Arc::from([field_fact(
@@ -86,7 +86,7 @@ fn repeated_current_certification_preserves_image_and_retention_and_rejects_a_ra
                     &basis,
                 );
 let alias = owner
-            .prepare_current_stable_settlement(
+            .prepare_current_stable_settlement_for_test(
                 SettlementRegistration {
                     computation: None,
                     work_membership: None,
@@ -106,11 +106,11 @@ let alias = owner
 
                 drop(
                     alias
-                        .install()
+                        .install_for_test()
                         .unwrap_or_else(|_| panic!("selected alias installs")),
                 );
 let cell = owner
-            .cell_for_read(&basis)
+            .cell_for_read_for_test(&basis)
             .unwrap()
             .unwrap();
 
@@ -142,7 +142,7 @@ let cell = owner
                     for _ in 0..3 {
 
 let prepared = owner
-                    .prepare_verified_current(
+                    .prepare_verified_current_for_test(
                         runtime,
                         &snapshot,
                         &basis,
@@ -153,7 +153,7 @@ let prepared = owner
                     .expect("complete clean actor coverage certifies current");
 drop(
                             prepared
-                                .install()
+                                .install_for_test()
                                 .unwrap_or_else(|_| panic!("unchanged image certifies")),
                         );
                         let observed = cell.read_image();
@@ -170,7 +170,7 @@ drop(
 
 
 let stale = owner
-            .prepare_verified_current(
+            .prepare_verified_current_for_test(
                 runtime,
                 &snapshot,
                 &basis,
@@ -189,12 +189,12 @@ let other = RecordedSettlementIdentity::retain_for_test(&source, coordinate, 2);
                 );
                 let replacement = cell.read_image();
                 assert!(!Arc::ptr_eq(original.payload(), replacement.payload()));
-                let stopped = match stale.install() {
+                let stopped = match stale.install_for_test() {
                     Err(stopped) => stopped,
                     Ok(_) => panic!("an actor edit must reject the old image certificate"),
                 };
                 assert_eq!(
-                    stopped.reason(),
+                    stopped.reason_for_test(),
                     CompanionCellEditStop::TopologyGenerationChanged
                 );
                 drop(stopped);

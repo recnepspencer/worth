@@ -22,7 +22,7 @@ fn every_parent_currentness_drift_stales_retained_authority() {
             .with_host_advancement(|phase| {
                 let host_custody = phase.test_host_request_for_test();
                 authenticated_principal(
-                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                     &world,
                     &request,
                 )
@@ -33,7 +33,7 @@ fn every_parent_currentness_drift_stales_retained_authority() {
             .with_host_advancement(|phase| {
                 let host_custody = phase.test_host_request_for_test();
                 admitted_capability_access(
-                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                     &world,
                     &principal,
                     &request,
@@ -47,7 +47,7 @@ fn every_parent_currentness_drift_stales_retained_authority() {
             .with_host_advancement(|phase| {
                 let host_custody = phase.test_host_request_for_test();
                 apply_parent_drift(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     &host_custody.borrowed_request_for_test(),
                     &world,
                     drift,
@@ -66,7 +66,7 @@ fn every_parent_currentness_drift_stales_retained_authority() {
             .with_host_advancement(|phase| {
                 let host_custody = phase.test_host_request_for_test();
                 world.application.authorize_capability_operation(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     access,
                     &operation,
                     Default::default(),

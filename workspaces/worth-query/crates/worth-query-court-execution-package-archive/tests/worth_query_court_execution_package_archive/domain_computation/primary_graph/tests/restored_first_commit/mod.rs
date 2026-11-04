@@ -254,7 +254,7 @@ pub fn raw_commit(
 ) -> RelationalCommitReceipt {
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     graph
-        .integration_handle()
+        .integration_handle_for_test()
         .execute_mutation_with_index_refresh(execution, |runtime| {
             Ok::<_, &'static str>(commit_empty(execution, runtime, "main"))
         })
@@ -269,9 +269,9 @@ pub fn assert_every_installed_index_current(
     retired: Option<DerivedIndexId>,
 ) {
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let handle = graph.integration_handle();
+    let handle = graph.integration_handle_for_test();
     with_runtime(request_execution, world, |runtime| {
-        for index_id in handle.primary_index_ids.iter() {
+        for index_id in (*handle.primary_index_ids_for_test()).iter() {
             assert!(
                 runtime
                     .index_access()

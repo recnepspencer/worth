@@ -30,7 +30,7 @@ fn fresh_native_retirement_descriptions_do_not_issue_original_output_authority()
                 let resolve = |key: &str| {
                     selected
                         .resolve_entity(
-                            &host_custody.phase_for_application(&source.application),
+                            &host_custody.phase_for_application_for_test(&source.application),
                             AccountIdentity::reference(),
                             key.to_owned(),
                             &live_scope(),
@@ -72,7 +72,7 @@ fn fresh_native_retirement_descriptions_do_not_issue_original_output_authority()
                 source
                     .application
                     .capture_application_checkpoint(
-                        &host_custody.phase_for_application(&source.application),
+                        &host_custody.phase_for_application_for_test(&source.application),
                         CapturePolicy::SystemAllocation,
                     )
                     .unwrap()
@@ -87,7 +87,7 @@ fn fresh_native_retirement_descriptions_do_not_issue_original_output_authority()
         .expect("actual opaque native checkpoint freshly installs");
         fresh.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request_for_test(); let borrowed_execution = phase.borrowed_request_for_test(); let execution = &borrowed_execution;        let selected = fresh.selected_product(&host_custody);
         let graph = (*fresh.application.runtime_for_test()).primary_graph().unwrap();
-        let handle = graph.integration_handle();
+        let handle = graph.integration_handle_for_test();
         handle.with_runtime(&borrowed_execution, |runtime| {
         let snapshot = selected.application_basis_for_test().snapshot_handle();
         let read = runtime.read_truth();
@@ -104,7 +104,7 @@ fn fresh_native_retirement_descriptions_do_not_issue_original_output_authority()
             }];
             assert!(facts[0].remains_equal_in_for_test(runtime,execution,  snapshot).unwrap(), "both actual tombstones match native truth");
             let correspondence = correspondence(entity, execution);
-let candidate = SealedNativeOutputWitness::from_checkpoint_facts_for_test(&correspondence, graph.layout(), &facts).unwrap();
+let candidate = SealedNativeOutputWitness::from_checkpoint_facts_for_test(&correspondence, graph.layout_for_test(), &facts).unwrap();
 
 
 

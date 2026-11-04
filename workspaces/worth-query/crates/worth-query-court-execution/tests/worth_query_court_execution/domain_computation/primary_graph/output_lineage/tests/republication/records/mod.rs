@@ -76,7 +76,7 @@ pub fn assert_continues_the_performed_read(row: &RecordedOutput) {
         (*row.completed_handler_facts_for_test())
             .as_ref()
             .unwrap()
-            .handler_fact_count(),
+            .handler_fact_count_for_test(),
         1
     );
     let completed = (*row.completed_decision_reuse_for_test()).as_ref().unwrap();
@@ -93,7 +93,7 @@ pub fn continues_input(
     (*row.prepared_input_reuse_key_for_test())
         .as_ref()
         .unwrap()
-        .same_prepared_input_as(&input_key(selection, input), &mut |_| Ok(()))
+        .same_prepared_input_as_for_test(&input_key(selection, input), &mut |_| Ok(()))
         .unwrap()
 }
 

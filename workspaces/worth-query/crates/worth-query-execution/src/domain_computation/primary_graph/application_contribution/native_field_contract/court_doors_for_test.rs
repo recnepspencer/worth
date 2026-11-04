@@ -45,3 +45,10 @@ impl FieldExpectation {
         Self::seal::<S>(self, installed)
     }
 }
+
+impl NativeFieldContractDenial {
+    #[doc(hidden)]
+    pub fn detail_for_test(&self) -> &str {
+        Self::detail(self)
+    }
+}

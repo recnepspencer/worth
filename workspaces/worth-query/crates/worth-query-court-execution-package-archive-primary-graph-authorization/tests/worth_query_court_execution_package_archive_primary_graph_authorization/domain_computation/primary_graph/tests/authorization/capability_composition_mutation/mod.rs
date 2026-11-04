@@ -136,7 +136,7 @@ pub fn actor_and_account(
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap()
-        .entity_id();
+        .entity_id_for_test();
     (principal, account)
 }
 
@@ -160,7 +160,7 @@ pub fn actor(
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap()
-        .entity_id()
+        .entity_id_for_test()
 }
 
 pub fn resolve_action_record(
@@ -184,22 +184,22 @@ pub fn resolve_action_record(
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap()
-        .entity_id()
+        .entity_id_for_test()
 }
 
 pub fn relation_kind(
     world: &AuthorizationWorld,
     name: &str,
 ) -> worth_relational::facade::identity::KindId {
-    (*world
+    (*(*world
         .application
         .runtime_for_test())
         .primary_graph()
         .unwrap()
-        .layout()
+        .layout_for_test()
         .relation(name)
         .unwrap()
-        .kind
+        .kind_for_test())
 }
 
 pub fn current_relation(
@@ -213,8 +213,8 @@ pub fn current_relation(
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
     graph
-        .integration_handle()
-        .with_runtime_mut(execution, |runtime| {
+        .integration_handle_for_test()
+        .with_runtime_mut_for_test(execution, |runtime| {
             let snapshot = selected.application_basis_for_test().snapshot_handle();
 
             runtime

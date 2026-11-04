@@ -126,7 +126,7 @@ fn selection_denies_invalid_work_and_overflow_budgets_without_retaining_partial_
     assert!(
         !(*reads
             .facts_for_test())
-            .iter()
+            .iter_for_test()
             .any(|fact| matches!(fact, Fact::IndexedEntitySelection { .. })),
         "an overflowing prefix cannot become a complete source fact"
     );

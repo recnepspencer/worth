@@ -72,7 +72,7 @@ fn paired_prior_tracks_publication_not_old_binding_or_inherited_settlement() {
         &preserved
     ));
     let ancestor = court.coordinate;
-    (*court.lineage.origins_for_test()).insert(court.child, ancestor);
+    (*court.lineage.origins_mut_for_test()).insert(court.child, ancestor);
     court.coordinate = ProductCoordinate {
         occurrence: court.child,
         generation: 2,
@@ -93,7 +93,7 @@ fn paired_prior_tracks_publication_not_old_binding_or_inherited_settlement() {
         &(*resolve(&court).unwrap().correspondence_for_test()).unwrap(),
         &preserved
     ));
-    (*court.lineage.origins_for_test()).remove(&court.child);
+    (*court.lineage.origins_mut_for_test()).remove(&court.child);
     assert!(
         (*resolve(&court).unwrap().correspondence_for_test()).is_none(),
         "unselected ancestry is absent"
@@ -122,7 +122,7 @@ fn paired_prior_refuses_ambiguous_foreign_and_cancelled_selection() {
         assert!(matches!(resolve(&court), Err(Stop::SelectedSourceMismatch)));
         (*court
             .lineage
-            .output_families_for_test())
+            .output_families_mut_for_test())
             .get_mut("family")
             .unwrap()
             .reverse();

@@ -89,12 +89,12 @@ pub fn staged(
         .unwrap()
         .entity_id_for_test();
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let layout = graph.layout();
+    let layout = graph.layout_for_test();
     // Two World publications put the restoration two product generations
     // after the occurrence's first, so earlier records have an address.
     let label = AccountLabel::reference();
     let label = layout
-        .field_locator(label.entity(), label.aspect(), label.field())
+        .field_locator_for_test(label.entity(), label.aspect(), label.field())
         .unwrap();
     for value in ["performed", "suspended"] {
         publish_relational_mutation(&phase_custody.borrowed_request_for_test(),
@@ -115,10 +115,10 @@ pub fn staged(
         .product_runtime()
         .admit_product_branch_for_test(world.application.product_runtime().default_branch_for_test())
         .expect("the fixture's default product occurrence is live");
-    let observation = product.observation();
+    let observation = product.observation_for_test();
     assert!(observation.reference_generation().get() >= 2);
-    let handle = graph.integration_handle();
-    let owner = &handle.source_owner.invalidation_owner;
+    let handle = graph.integration_handle_for_test();
+    let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
     let correspondence = Arc::new(
         WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles_for_test(
 TypeId::of_for_test::<()>(),
@@ -135,7 +135,7 @@ std::iter::empty(),
 )
         .unwrap(),
     );
-    let (performed_witness, restored_witness, read_basis) = handle.with_runtime_mut(request_execution, |runtime| {
+    let (performed_witness, restored_witness, read_basis) = handle.with_runtime_mut_for_test(request_execution, |runtime| {
         let basis = runtime
             .admit_branch_basis(&runtime.main_branch_identity())
             .unwrap();
@@ -150,7 +150,7 @@ std::iter::empty(),
                  .read_exact_snapshot_live_entity_kind(request_execution, &snapshot, output).unwrap()
                 .unwrap(),
         }];
-        for aspect in layout.native_output_aspects("Account") {
+        for aspect in layout.native_output_aspects_for_test("Account") {
             native.push(Fact::SourceAspectRevision {
                 entity_id: output,
                 aspect: aspect.clone(),
@@ -212,7 +212,7 @@ impl Stage<'_> {
         let occurrence = self.observation.lifecycle_incarnation();
         let records = (*self
             .lineage
-            .by_source_for_test())
+            .by_source_mut_for_test())
             .entry(self.source.clone())
             .or_default()
             .entry(occurrence)
@@ -249,7 +249,7 @@ impl Stage<'_> {
         });
         assert!(cell.set(recorded).is_ok());
         records.push(Arc::clone(&cell));
-        (*self.lineage.partition_index_for_test()).insert(
+        (*self.lineage.partition_index_mut_for_test()).insert_for_test(
             self.source.clone(),
             occurrence,
             generation,
@@ -287,11 +287,11 @@ impl Stage<'_> {
             republished,
         );
         Some(record.map(|record| Continued {
-            identity: record.identity,
-            predecessor: record.predecessor,
-            facts: record.facts,
-            consumed_outputs: record.consumed_outputs,
-            witness: record.witness,
+            identity: (*record.identity_for_test()),
+            predecessor: (*record.predecessor_for_test()),
+            facts: (*record.facts_for_test()),
+            consumed_outputs: (*record.consumed_outputs_for_test()),
+            witness: record.witness_into_for_test(),
         }))
     }
 

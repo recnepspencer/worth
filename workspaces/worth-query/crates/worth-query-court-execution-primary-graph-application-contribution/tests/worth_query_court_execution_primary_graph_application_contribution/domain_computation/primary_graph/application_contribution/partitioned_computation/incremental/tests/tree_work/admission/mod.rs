@@ -70,7 +70,7 @@ fn native_request_exhaustion_refuses_before_map_or_after_the_last_kernel() {
             }
             Ok::<u64, MapKernelFailure<u32>>(*value)
         };
-        let outcome = dispatch.reduce_retained(
+        let outcome = dispatch.reduce_retained_for_test(
             Some(10_000),
             &map,
             (kernel, kernel),

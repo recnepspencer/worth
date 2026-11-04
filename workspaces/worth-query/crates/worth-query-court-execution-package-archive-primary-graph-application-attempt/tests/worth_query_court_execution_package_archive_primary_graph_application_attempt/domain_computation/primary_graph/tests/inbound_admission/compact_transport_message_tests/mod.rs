@@ -54,7 +54,7 @@ fn transport_winner_retains_compact_signed_meaning_until_cutoff() {
     let in_flight = (*world
         .application
         .primary_provider_for_test())
-        .begin_external_dispatch_in_flight(&owner)
+        .begin_external_dispatch_in_flight_for_test(&owner)
         .unwrap()
         .unwrap();
     let transport = CompletingTransport(AtomicUsize::new(0));

@@ -31,3 +31,10 @@ impl Succession {
         Self::predecessor_of(succession)
     }
 }
+
+impl DemandRecord {
+    #[doc(hidden)]
+    pub fn unpublished_new_key_for_test(&self) -> bool {
+        Self::unpublished_new_key(self)
+    }
+}

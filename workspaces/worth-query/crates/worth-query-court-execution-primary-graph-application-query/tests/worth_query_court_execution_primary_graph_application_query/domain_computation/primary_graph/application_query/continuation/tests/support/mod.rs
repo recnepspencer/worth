@@ -268,16 +268,16 @@ impl ContinuationTestContext {
             .runtime_for_test())
             .primary_graph()
             .expect("test world publishes a primary graph");
-        let layout = graph
-            .layout
-            .principal_binding(self.principal.binding())
+        let layout = (*graph
+            .layout_for_test())
+            .principal_binding_for_test(self.principal.binding())
             .expect("test principal binding is installed")
             .clone();
         mutate_field(
             execution,
             &self.world,
             self.principal.mapping_entity_id_for_test(),
-            layout.status_locator,
+            layout.status_locator_into_for_test(),
             WorthQueryPrincipalMappingStatusBinding::encode(
                 &WorthQueryPrincipalMappingStatus::Disabled,
             )
@@ -294,9 +294,9 @@ impl ContinuationTestContext {
             .primary_graph()
             .expect("test world publishes a primary graph");
         let field = AccountIdentity::reference();
-        let locator = graph
-            .layout
-            .field_locator(field.entity(), field.aspect(), field.field())
+        let locator = (*graph
+            .layout_for_test())
+            .field_locator_for_test(field.entity(), field.aspect(), field.field())
             .expect("account identity is installed")
             .clone();
         mutate_field(

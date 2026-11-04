@@ -24,7 +24,7 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
         .product_runtime()
         .admit_product_branch_for_test(world.application.product_runtime().default_branch_for_test())
         .expect("the fixture's default product occurrence is live");
-    let observation = product.observation();
+    let observation = product.observation_for_test();
     let runtime_authority = (*world.application.runtime_for_test()).authority_identity().as_u64();
     let schema = (*world.application.installed_schema_for_test()).binding_identity();
     let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(
@@ -116,8 +116,8 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
     })
     .unwrap();
 
-    assert!(Arc::ptr_eq(&selected_first.correspondence, &first));
-    assert!(Arc::ptr_eq(&selected_sibling.correspondence, &sibling));
+    assert!(Arc::ptr_eq(&(*selected_first.correspondence_for_test()), &first));
+    assert!(Arc::ptr_eq(&(*selected_sibling.correspondence_for_test()), &sibling));
     assert!(Arc::ptr_eq(&(*matching_sibling.correspondence_for_test()), &sibling));
     assert_eq!(history[&maximum_generation].len(), 2);
 
@@ -138,9 +138,9 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
     };
     let family = resolve().expect("binding, partition heads, and bounded publication selection");
 
-    assert_eq!(family.candidates.len(), 2);
-    assert!(Arc::ptr_eq(&family.candidates[0].correspondence, &first));
-    assert!(Arc::ptr_eq(&family.candidates[1].correspondence, &sibling));
+    assert_eq!((*family.candidates_for_test()).len(), 2);
+    assert!(Arc::ptr_eq(&(*(*family.candidates_for_test())[0].correspondence_for_test()), &first));
+    assert!(Arc::ptr_eq(&(*(*family.candidates_for_test())[1].correspondence_for_test()), &sibling));
 
     let current_checkpoint =
         worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryCheckpointSourceIdentity::new_for_test([0x31; 32]);
@@ -162,12 +162,12 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
         .unwrap();
     assert_eq!(candidates.len(), 1);
     assert_eq!(
-        candidates[0].source_identity,
+        (*candidates[0].source_identity_for_test()),
         Some(checkpoint_identity([0x31; 32]))
     );
     assert_eq!(
         lineage
-            .qualified_output_for_test::<RestoredOutputBinding>(
+            .qualified_output_for_test::<RestoredOutputBinding>(*(
                 runtime_authority,
                 &(*source.schema_for_test()),
                 scope,
@@ -177,7 +177,7 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
                 current_checkpoint,
             )
             .expect("the restored record matches its portable source identity")
-            .source_identity,
+            .source_identity_for_test()),
         checkpoint_identity([0x31; 32]),
     );
 }
@@ -193,7 +193,7 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
         .product_runtime()
         .admit_product_branch_for_test(world.application.product_runtime().default_branch_for_test())
         .expect("the fixture's default product occurrence is live");
-    let observation = product.observation();
+    let observation = product.observation_for_test();
     let runtime_authority = (*world.application.runtime_for_test()).authority_identity().as_u64();
     let schema = (*world.application.installed_schema_for_test()).binding_identity();
     let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(
@@ -380,7 +380,7 @@ fn family_inventory_visits_follow_declared_names() {
             let visits: Vec<_> = (*lineage
                 .output_families_for_test())
                 .keys()
-                .map(|family| family.as_str())
+                .map(|family| family.as_str_for_test())
                 .collect();
             assert_eq!(visits, ["alpha-family", "zulu-family"]);
         }

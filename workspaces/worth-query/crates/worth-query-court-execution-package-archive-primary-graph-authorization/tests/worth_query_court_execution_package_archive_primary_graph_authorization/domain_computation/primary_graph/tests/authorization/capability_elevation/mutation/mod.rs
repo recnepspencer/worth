@@ -52,8 +52,8 @@ pub fn set_status(
     let field = CapabilityElevationStatusField::reference();
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let locator = graph
-        .layout()
-        .field_locator(field.entity(), field.aspect(), field.field())
+        .layout_for_test()
+        .field_locator_for_test(field.entity(), field.aspect(), field.field())
         .unwrap()
         .clone();
     let fields = AspectFieldPatch::from(BTreeMap::from([(
@@ -65,7 +65,7 @@ pub fn set_status(
         world,
         WorkerIntentBatch::new("set-elevation-status").push(MutationIntent::Entity(
             EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
-                entity_id: elevation.entity_id(),
+                entity_id: elevation.entity_id_for_test(),
                 fields,
             }),
         )),
@@ -95,11 +95,11 @@ pub fn add_self_approver(
         )
         .unwrap();
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let relation_kind = graph
-        .layout()
+    let relation_kind = (*graph
+        .layout_for_test()
         .relation(CapabilityElevationApprover::reference().name())
         .unwrap()
-        .kind;
+        .kind_for_test());
     worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::product_publication::publish_relational_mutation(
         execution,
         world,
@@ -109,7 +109,7 @@ pub fn add_self_approver(
                 kind_id: relation_kind,
                 client_key: ClientKey::raw("elevation-self-approver"),
                 source: EntityReference::Existing(requester),
-                target: EntityReference::Existing(elevation.entity_id()),
+                target: EntityReference::Existing(elevation.entity_id_for_test()),
                 fields: AspectFieldPatch::default(),
             }),
         )),
@@ -154,17 +154,17 @@ pub fn replace_elevation_resource(
                 WorthQueryPrincipalResolutionMode::Ordinary,
             )
             .unwrap()
-            .entity_id()
+            .entity_id_for_test()
     });
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let relation_kind = graph
-        .layout()
+    let relation_kind = (*graph
+        .layout_for_test()
         .relation(CapabilityElevationResource::reference().name())
         .unwrap()
-        .kind;
-    let handle = graph.integration_handle();
+        .kind_for_test());
+    let handle = graph.integration_handle_for_test();
     let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
-    let relation = handle.with_runtime_mut(execution, |runtime| {
+    let relation = handle.with_runtime_mut_for_test(execution, |runtime| {
         let snapshot = selected.application_basis_for_test().snapshot_handle();
 
         runtime
@@ -172,7 +172,7 @@ pub fn replace_elevation_resource(
             .visible_relations_of_kind(execution, relation_kind, snapshot.version_id())
             .expect("fixture read request remains live")
             .into_iter()
-            .find(|record| record.source == elevation.entity_id())
+            .find(|record| record.source == elevation.entity_id_for_test())
             .expect("the elevation has one current direct resource")
             .relation_id
     });
@@ -187,7 +187,7 @@ pub fn replace_elevation_resource(
                 partition_id: PartitionId::main(),
                 kind_id: relation_kind,
                 client_key: ClientKey::raw("replacement-elevation-resource"),
-                source: EntityReference::Existing(elevation.entity_id()),
+                source: EntityReference::Existing(elevation.entity_id_for_test()),
                 target: EntityReference::Existing(account),
                 fields: AspectFieldPatch::default(),
             },
@@ -234,11 +234,11 @@ pub fn add_elevation_resource(
         )
         .unwrap();
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let relation_kind = graph
-        .layout()
+    let relation_kind = (*graph
+        .layout_for_test()
         .relation(CapabilityElevationResource::reference().name())
         .unwrap()
-        .kind;
+        .kind_for_test());
     worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::product_publication::publish_relational_mutation(
         execution,
         world,
@@ -247,8 +247,8 @@ pub fn add_elevation_resource(
                 partition_id: PartitionId::main(),
                 kind_id: relation_kind,
                 client_key: ClientKey::raw("additional-elevation-resource"),
-                source: EntityReference::Existing(elevation.entity_id()),
-                target: EntityReference::Existing(account.entity_id()),
+                source: EntityReference::Existing(elevation.entity_id_for_test()),
+                target: EntityReference::Existing(account.entity_id_for_test()),
                 fields: AspectFieldPatch::default(),
             }),
         )),

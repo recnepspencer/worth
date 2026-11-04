@@ -40,3 +40,21 @@ impl SourceCustody {
         Self::retire_superseded_roots(self, successors)
     }
 }
+
+impl WorthQueryOutputDemandRegistry {
+    #[doc(hidden)]
+    pub fn validate_recovery_root_kind_for_test(
+        &self,
+        receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+        kind: PreparedOutputRootKind,
+    ) -> Result<(), WorthQueryOutputDemandDenial> {
+        Self::validate_recovery_root_kind(self, receipt, kind)
+    }
+}
+
+impl SourcePreparationState {
+    #[doc(hidden)]
+    pub fn retired_for_test(&self) -> &bool {
+        &self.retired
+    }
+}

@@ -29,8 +29,8 @@ fn registry_eager_binding_reads_the_closed_claim_without_an_admission() {
     world.drop_owner(2);
     world.bind();
     let state = (*world.registry.state_for_test()).lock().unwrap();
-    let bound = state.source_custody[&context.commit(0)]
-        .bound_sources
+    let bound = (*state.source_custody[&context.commit(0)]
+        .bound_sources_for_test())
         .clone();
     assert_eq!(
         bound,
@@ -39,8 +39,8 @@ fn registry_eager_binding_reads_the_closed_claim_without_an_admission() {
             identity: (*world.keys[0].source_for_test()).clone(),
         }])
     );
-    assert!(state.source_custody[&context.commit(0)]
-        .retired_sources
+    assert!((*state.source_custody[&context.commit(0)]
+        .retired_sources_for_test())
         .is_empty());
 }
 
@@ -49,13 +49,13 @@ fn registry_eager_claimed_row_transition_itself_leaves_the_note() {
     let context = crate::domain_computation::primary_graph::application_output_demand::registry::tests::eager_debt::world::Context::new();
     let world = World::new(&context, 3);
     let mut state = (*world.registry.state_for_test()).lock().unwrap();
-    assert_eq!(state.records[&world.keys[0]].framework_required_count, 1);
-    state.records.get_mut(&world.keys[0]).unwrap().state =
+    assert_eq!((*(*state.records_for_test())[&world.keys[0]].framework_required_count_for_test()), 1);
+    (*(*state.records_for_test()).get_mut(&world.keys[0]).unwrap().state_mut_for_test()) =
         DemandState::Failed(WorthQueryOutputDemandDenial::new_for_test(
             WorthQueryOutputDemandDenialKind::Superseded,
             "transition",
         ));
-    assert!(state.records[&world.keys[0]].closed_cleanup.queued());
+    assert!((*(*state.records_for_test())[&world.keys[0]].closed_cleanup_for_test()).queued_for_test());
 }
 
 #[test]
@@ -73,12 +73,12 @@ fn registry_eager_owned_closed_note_does_not_name_a_reused_key() {
             )),
             0,
         );
-        state.records.insert(reused.clone(), old);
-        state.note_closed_row(&reused);
+        (*state.records_for_test()).insert_for_test(reused.clone(), old);
+        state.note_closed_row_for_test(&reused);
         let old = state.remove_record(&reused).unwrap();
         let mut new = record(occurrence(), DemandState::Admitted, 0);
         (*new.source_scope_mut_for_test()) = Some(context.scope);
-        state.records.insert(reused.clone(), new);
+        (*state.records_for_test()).insert_for_test(reused.clone(), new);
         old
     };
     let owner = registry
@@ -94,8 +94,8 @@ fn registry_eager_owned_closed_note_does_not_name_a_reused_key() {
         .unwrap();
     {
         let state = (*registry.state_for_test()).lock().unwrap();
-        assert_eq!(state.records[&reused].interests, 1);
-        assert_eq!(state.closed_cleanup.len(), 0);
+        assert_eq!((*(*state.records_for_test())[&reused].interests_for_test()), 1);
+        assert_eq!((*state.closed_cleanup_for_test()).len_for_test(), 0);
     }
     drop(old); // Even an original row kept outside the map cannot name its replacement.
     drop(owner);

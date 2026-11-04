@@ -27,7 +27,7 @@ fn a_canceled_prepared_publication_cannot_take_its_priors_custody() {
     };
     let mut sealed = sealed_run_for_lineage_test();
     (*sealed.cloned_from_mut_for_test()) = Some(Arc::clone(state));
-    captured.get().unwrap().mutable.lock().unwrap().computation = retained;
+    (*(*captured.get().unwrap().mutable_for_test()).lock().unwrap().computation_mut_for_test()) = retained;
     let coordinate = ProductCoordinate {
         occurrence,
         generation: generation + 1,
@@ -39,17 +39,17 @@ fn a_canceled_prepared_publication_cannot_take_its_priors_custody() {
     let identity = RecordedSettlementIdentity::retain_for_test(&source, coordinate, 0);
     let record_cell = Arc::new(OnceLock::new());
     (*lineage
-        .by_source_for_test())
+        .by_source_mut_for_test())
         .entry(source.clone())
         .or_default()
         .entry(occurrence)
         .or_default()
         .insert((*coordinate.generation_for_test()), vec![Arc::clone(&record_cell)]);
     let partition_cell = (*lineage
-        .partition_index_for_test())
-        .insert_vacancy(source.clone(), coordinate, None);
+        .partition_index_mut_for_test())
+        .insert_vacancy_for_test(source.clone(), coordinate, None);
 
-    let output_binding_type = lineage.binding_type_for_test(&source.output_binding);
+    let output_binding_type = lineage.binding_type_for_test(&(*source.output_binding_for_test()));
     let owner = Arc::new(Mutex::new(lineage));
     let mut prepared = PreparedOutputLineageSlot {
         owner: Arc::clone(&owner),
@@ -88,12 +88,12 @@ fn a_canceled_prepared_publication_cannot_take_its_priors_custody() {
     let mut lineage = owner.lock().unwrap();
 
     assert!(matches!(
-        captured.get().unwrap().mutable.lock().unwrap().computation,
+        (*(*captured.get().unwrap().mutable_for_test()).lock().unwrap().computation_for_test()),
         RecordedComputation::Retained(_)
     ));
-    (*lineage.cancelled_slots_for_test()).take();
+    (*lineage.cancelled_slots_mut_for_test()).take();
 
-    (*lineage.by_source_for_test()).clear();
+    (*lineage.by_source_mut_for_test()).clear();
     (*lineage.partition_index_mut_for_test()) = Default::default();
     drop(captured);
 }

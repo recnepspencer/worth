@@ -9,7 +9,7 @@ fn registry_drop_cascade_transfers_before_newest_owner_can_close() {
     let dependent = key("dependent", 1, 2);
     let ready = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::closed_retirement::ready();
     let mut state = (*registry.state_for_test()).lock().unwrap();
-    state.records.insert(
+    (*state.records_for_test()).insert_for_test(
         old.clone(),
         DemandRecord {
             framework_required_count: 1,
@@ -25,14 +25,14 @@ fn registry_drop_cascade_transfers_before_newest_owner_can_close() {
     );
     let next_row = record(occurrence(), worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::closed_retirement::ready(), 1);
     let next_wake = Arc::clone(&(*next_row.wake_for_test()));
-    state.records.insert(newest.clone(), next_row);
+    (*state.records_for_test()).insert_for_test(newest.clone(), next_row);
     let dependent_row = DemandRecord {
         prerequisites: vec![Arc::new(old.clone())],
         ..record(occurrence(), ready, 1)
     };
     let wake = Arc::clone(&(*dependent_row.wake_for_test()));
-    state.records.insert(dependent.clone(), dependent_row);
-    state.required_keys.insert(Arc::new(newest.clone()));
+    (*state.records_for_test()).insert_for_test(dependent.clone(), dependent_row);
+    (*state.required_keys_mut_for_test()).insert(Arc::new(newest.clone()));
     retain_owned_key(&mut state, &dependent);
     retain_owned_key(&mut state, &newest);
     drop(state);
@@ -42,18 +42,18 @@ fn registry_drop_cascade_transfers_before_newest_owner_can_close() {
     drop(next_owner);
     let state = (*registry.state_for_test()).lock().unwrap();
     assert!(
-        state.records.contains_key(&old),
+        (*state.records_for_test()).contains_key_for_test(&old),
         "Drop must leave the claim transfer unpaid"
     );
-    assert_eq!(state.records[&dependent].prerequisites[0].as_ref(), &old);
-    assert!(state.records[&dependent].closed_cleanup.queued());
+    assert_eq!((*(*state.records_for_test())[&dependent].prerequisites_for_test())[0].as_ref(), &old);
+    assert!((*(*state.records_for_test())[&dependent].closed_cleanup_for_test()).queued_for_test());
     drop(state);
     registry.drain_closed_cleanup_admitted().unwrap();
     let state = (*registry.state_for_test()).lock().unwrap();
-    assert!(!state.records.contains_key(&old));
-    assert_eq!(state.records[&newest].framework_required_count, 1);
-    assert!(state.required_keys.contains(&newest));
-    assert_eq!(state.records[&dependent].prerequisites[0].as_ref(), &newest);
+    assert!(!(*state.records_for_test()).contains_key_for_test(&old));
+    assert_eq!((*(*state.records_for_test())[&newest].framework_required_count_for_test()), 1);
+    assert!((*state.required_keys_for_test()).contains(&newest));
+    assert_eq!((*(*state.records_for_test())[&dependent].prerequisites_for_test())[0].as_ref(), &newest);
 }
 
 #[test]
@@ -64,8 +64,8 @@ fn registry_drop_cascade_names_its_released_row_bound() {
         let registry = WorthQueryOutputDemandRegistry::default();
         let mut state = (*registry.state_for_test()).lock().unwrap();
         worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::walk_bounds::add_live_custody(&mut state, &receipts, 3);
-        state.note_custody_changes(|_, entry| {
-            entry.token_count = 1;
+        state.note_custody_changes_for_test(|_, entry| {
+            (*entry.token_count_mut_for_test()) = 1;
             false
         });
         for slot in 1..=length {
@@ -79,21 +79,21 @@ fn registry_drop_cascade_names_its_released_row_bound() {
             );
             (*row.framework_required_count_mut_for_test()) = usize::from(slot != 1);
             if slot == 1 {
-                (*row.prerequisites_for_test())
+                (*row.prerequisites_mut_for_test())
                     .extend((2..=length).map(|upstream| Arc::new(key("chain", 1, upstream))));
             }
-            state.records.insert(key("chain", 1, slot), row);
+            (*state.records_for_test()).insert_for_test(key("chain", 1, slot), row);
         }
         let root = key("chain", 1, 1);
         retain_owned_key(&mut state, &root);
-        let wake = Arc::clone(&state.records[&root].wake);
+        let wake = Arc::clone(&(*(*state.records_for_test())[&root].wake_for_test()));
         drop(state);
         let before = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::record_map::occurrence_rows_visited();
         drop(interest(&registry, root, wake));
         contacts.push(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::record_map::occurrence_rows_visited() - before);
         registry.drain_closed_cleanup_admitted().unwrap();
         assert_eq!(
-            (*registry.state_for_test()).lock().unwrap().records.len(),
+            (*(*registry.state_for_test()).lock().unwrap().records_for_test()).len_for_test(),
             receipts.len() * 3
         );
     }
@@ -113,12 +113,12 @@ fn registry_drop_cascade_names_its_whole_map_claimant_bound() {
         let mut state = (*registry.state_for_test()).lock().unwrap();
         worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::walk_bounds::add_custody(&mut state, &receipts, 1);
         for slot in 0..neighbors {
-            state.records.insert(
+            (*state.records_for_test()).insert_for_test(
                 key("neighbor", 1, 20 + slot),
                 record(occurrence(), DemandState::Admitted, 1),
             );
         }
-        state.records.insert(
+        (*state.records_for_test()).insert_for_test(
             old.clone(),
             DemandRecord {
                 framework_required_count: 1,
@@ -132,17 +132,17 @@ fn registry_drop_cascade_names_its_whole_map_claimant_bound() {
                 )
             },
         );
-        state.records.insert(
+        (*state.records_for_test()).insert_for_test(
             newest.clone(),
             record(occurrence(), worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::closed_retirement::ready(), 1),
         );
-        state.required_keys.insert(Arc::new(newest));
+        (*state.required_keys_mut_for_test()).insert(Arc::new(newest));
         let row = DemandRecord {
             prerequisites: vec![Arc::new(old)],
             ..record(occurrence(), worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::closed_retirement::ready(), 1)
         };
         let wake = Arc::clone(&(*row.wake_for_test()));
-        state.records.insert(dependent.clone(), row);
+        (*state.records_for_test()).insert_for_test(dependent.clone(), row);
         retain_owned_key(&mut state, &dependent);
         drop(state);
         let whole = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::record_map::whole_rows().expect("bounded registry observation");

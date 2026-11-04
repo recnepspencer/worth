@@ -7,3 +7,17 @@ impl OriginalProjection {
         Self::allocation_bytes()
     }
 }
+
+impl OriginalProjection {
+    #[doc(hidden)]
+    pub fn _memory_for_test(&self) -> &Option<worth_execution::ExecutionMemoryReservation> {
+        &self._memory
+    }
+}
+
+impl OriginalProjection {
+    #[doc(hidden)]
+    pub fn rows_for_test(&self) -> &OwnedProjectionRows {
+        &self.rows
+    }
+}

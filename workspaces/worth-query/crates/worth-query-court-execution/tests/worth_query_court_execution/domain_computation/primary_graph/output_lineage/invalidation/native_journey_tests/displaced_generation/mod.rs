@@ -33,8 +33,8 @@ pub fn with_unmanaged_publications(
         })
         .expect("the principal fixture opens its host call");
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let handle = graph.integration_handle();
-    let owner = &handle.source_owner.invalidation_owner;
+    let handle = graph.integration_handle_for_test();
+    let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
     let partition = [7; 32];
     let publish = |status: &str, replacement: &str, key: u8| {
         let program = world
@@ -70,14 +70,14 @@ pub fn with_unmanaged_publications(
         )
     };
     let live_rows = |identities: &[&Identity]| {
-        handle.with_runtime_mut(request_execution, |runtime| {
+        handle.with_runtime_mut_for_test(request_execution, |runtime| {
             let (basis_handle, basis) = snapshot(runtime);
-            let cell = owner.cell_for_read(&basis).unwrap().unwrap();
+            let cell = owner.cell_for_read_for_test(&basis).unwrap().unwrap();
 
             let image = cell.read_image();
             let live = identities
                 .iter()
-                .map(|identity| image.payload().current.settlements.contains_key(*identity))
+                .map(|identity| (*(*image.payload().current_for_test()).settlements_for_test()).contains_key(*identity))
                 .collect::<Vec<_>>();
             runtime.snapshots().release_snapshot(&basis_handle).unwrap();
             live

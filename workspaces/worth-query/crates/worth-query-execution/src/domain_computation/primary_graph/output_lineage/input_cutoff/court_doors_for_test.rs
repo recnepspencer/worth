@@ -49,3 +49,10 @@ impl WorthQueryApplicationOutputLineage {
         )
     }
 }
+
+impl RetainedInputCutoffCandidate {
+    #[doc(hidden)]
+    pub fn settlement_identity_for_test(&self) -> &Arc<RecordedSettlementIdentity> {
+        Self::settlement_identity(self)
+    }
+}

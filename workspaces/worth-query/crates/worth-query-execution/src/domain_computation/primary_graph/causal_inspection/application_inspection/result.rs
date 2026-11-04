@@ -207,3 +207,5 @@ impl<'original> PreparedObservedInspection<'original> {
         }
     }
 }
+
+mod court_doors_for_test;

@@ -27,7 +27,7 @@ fn retained_output_liveness_door_preserves_stops_at_every_consult() {
                 .runtime_for_test())
                 .primary_graph()
                 .unwrap()
-                .integration_handle()
+                .integration_handle_for_test()
                 .with_runtime(&execution, |runtime| {
                     let view = runtime
                         .read_truth()

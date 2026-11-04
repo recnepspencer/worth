@@ -39,3 +39,54 @@ impl<'run> WorthQueryAdmittedProviderSession<'run> {
         )
     }
 }
+
+impl<'run> WorthQueryRegisteredProviderSession<'run> {
+    #[doc(hidden)]
+    pub fn registered_for_test(&self) -> &super::super::WorthQueryRegisteredProviderAttempt<'run> {
+        &self.registered
+    }
+}
+
+impl WorthQueryProviderSessionRegistrationFailure {
+    #[doc(hidden)]
+    pub fn into_completion_for_test(self) -> super::super::WorthQueryProviderProgressionCompletion {
+        Self::into_completion(self)
+    }
+}
+
+impl<'run> WorthQueryRegisteredProviderSession<'run> {
+    #[doc(hidden)]
+    pub fn progress_for_test<Schema, Operation, Input, Scope>(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        authority: &super::super::WorthQueryApplicationCommitProgressionAuthority<
+            '_,
+            '_,
+            Schema,
+            Operation,
+            Input,
+            Scope,
+        >,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+    ) -> super::super::WorthQueryProviderProgressionCompletion
+    where
+        Schema: worth_query_installation::facade::ApplicationSchema,
+        Input: Clone + Send + Sync + 'static,
+    {
+        Self::progress::<Schema, Operation, Input, Scope>(
+            self,
+            execution,
+            authority,
+            allocation_policy,
+        )
+    }
+}
+
+impl<'run> WorthQueryRegisteredProviderSession<'run> {
+    #[doc(hidden)]
+    pub fn registered_into_for_test(
+        self,
+    ) -> super::super::WorthQueryRegisteredProviderAttempt<'run> {
+        self.registered
+    }
+}

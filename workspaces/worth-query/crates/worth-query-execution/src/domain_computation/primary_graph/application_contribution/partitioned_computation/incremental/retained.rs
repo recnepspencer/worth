@@ -138,14 +138,14 @@ impl RetainedBasis {
     }
 
     /// This basis over another input value.
-    pub(super) fn with_input_digest_for_test(&self, input_digest: [u8; 32]) -> Self {
+    pub fn with_input_digest_for_test(&self, input_digest: [u8; 32]) -> Self {
         Self {
             input_digest,
             ..self.clone()
         }
     }
 
-    pub(super) fn with_value_bindings_for_test(
+    pub fn with_value_bindings_for_test(
         &self,
         value_bindings: worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
     ) -> Self {

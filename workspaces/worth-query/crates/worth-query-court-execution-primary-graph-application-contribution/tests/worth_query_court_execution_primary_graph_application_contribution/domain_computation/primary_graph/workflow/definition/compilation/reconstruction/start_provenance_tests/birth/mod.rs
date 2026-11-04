@@ -15,7 +15,7 @@ fn birth_subject_provenance_and_start_actor_remain_readable() {
     let payer = payer();
     let execution = ExecutionRequest::leased(&payer);
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let layout = graph.layout.workflow().clone();
+    let layout = (*graph.layout_for_test()).workflow().clone();
     let (_, product, _lease) = world
         .application
         .select_product_branch_for_test(
@@ -23,7 +23,7 @@ fn birth_subject_provenance_and_start_actor_remain_readable() {
             world.application.product_runtime().default_branch_for_test(),
         )
         .unwrap()
-        .into_parts();
+        .into_parts_for_test();
     let branch = product.product_branch();
     let actor = admitted_actor(&world);
     let compiled = crate::domain_computation::primary_graph::workflow::definition::compilation::reconstruction::start_provenance_tests::definition_fixture::publish_definition(
@@ -34,12 +34,12 @@ fn birth_subject_provenance_and_start_actor_remain_readable() {
         "birth-read",
         actor.entity_for_test().partition_id,
     );
-    let subject_kind = graph.layout.entity_kind(Account::IDENTIFIER).unwrap();
+    let subject_kind = (*graph.layout_for_test()).entity_kind_for_test(Account::IDENTIFIER).unwrap();
     let before = selected(&world, &execution);
     let inventories = graph
-        .integration_handle()
+        .integration_handle_for_test()
         .with_runtime(&execution, |runtime| {
-            [subject_kind, layout.instance.entity_kind].map(|kind| {
+            [subject_kind, (*(*layout.instance_for_test()).entity_kind_for_test())].map(|kind| {
                 runtime
                     .read_truth()
                     .visible_entities_of_kind(
@@ -59,7 +59,7 @@ fn birth_subject_provenance_and_start_actor_remain_readable() {
         client_key: ClientKey::raw("birth-subject"),
     };
     let value = graph
-        .integration_handle()
+        .integration_handle_for_test()
         .with_runtime(&execution, |runtime| {
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::instance::start_provenance::admit(&execution, runtime, &before.0, &revision).unwrap()
         });
@@ -94,7 +94,7 @@ fn birth_subject_provenance_and_start_actor_remain_readable() {
     let instance = only_new_entity(
         &world,
         &execution,
-        layout.instance.entity_kind,
+        (*(*layout.instance_for_test()).entity_kind_for_test()),
         &inventories[1],
     );
     let current = selected(&world, &execution);
@@ -110,7 +110,7 @@ fn birth_subject_provenance_and_start_actor_remain_readable() {
     )
     .unwrap();
     graph
-        .integration_handle()
+        .integration_handle_for_test()
         .with_runtime(&execution, |runtime| {
             let record = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow_instance_observation::governed_record::observe(
                 &execution,
@@ -156,15 +156,15 @@ fn birth_subject_provenance_and_start_actor_remain_readable() {
                 .is_err(),
                 "another real subject cannot substitute for the birth endpoint"
             );
-            let start = layout
-                .instance
-                .start_advancer
-                .observe(
+            let start = (*(*layout
+                .instance_for_test())
+                .start_advancer_for_test())
+                .observe_for_test(
                     runtime,
                     &execution,
                     current.1.snapshot_handle(),
                     instance,
-                    layout.instance.entity_kind,
+                    (*(*layout.instance_for_test()).entity_kind_for_test()),
                     &mut Vec::new(),
                 )
                 .unwrap();
@@ -177,13 +177,13 @@ fn birth_subject_provenance_and_start_actor_remain_readable() {
         &world,
         update(
             instance,
-            &layout.instance.subject_slot,
+            &(*(*layout.instance_for_test()).subject_slot_for_test()),
             AspectValue::UInt64(subject.local_slot_value()),
         ),
     );
     let corrupted = selected(&world, &execution);
     graph
-        .integration_handle()
+        .integration_handle_for_test()
         .with_runtime(&execution, |runtime| {
             assert!(
                 worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow_instance_observation::subject::observe_subject(

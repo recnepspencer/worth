@@ -57,7 +57,7 @@ fn real_sibling_denial_is_inspectable_releasable_and_leaves_no_recovery_orphan()
         .expect("the application facade must readmit the creation record without raw work access");
 
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let integration = graph.integration_handle();
+    let integration = graph.integration_handle_for_test();
     let active_transaction = integration.with_runtime(request_execution, |runtime| {
         let identity = runtime
             .branch_identity(&worth_relational::facade::history::BranchId(
@@ -138,7 +138,7 @@ fn cleanup_capacity_denial_precedes_world_retirement() {
     while let Ok(reservation) = (*world
         .application
         .product_runtime_for_test())
-        .reserve_owner_cleanup_for_creation()
+        .reserve_owner_cleanup_for_creation_for_test()
     {
         held.push(reservation);
     }
@@ -197,7 +197,7 @@ fn unwind_after_retirement_install_leaves_discoverable_cleanup() {
     (*world
         .application
         .product_runtime_for_test())
-        .replace_owner_cleanup_after_install_hook(Some(Box::new(|| {
+        .replace_owner_cleanup_after_install_hook_for_test(Some(Box::new(|| {
             panic!("injected unwind after retirement cleanup installation")
         })));
     let unwind = world
@@ -212,7 +212,7 @@ fn unwind_after_retirement_install_leaves_discoverable_cleanup() {
     (*world
         .application
         .product_runtime_for_test())
-        .replace_owner_cleanup_after_install_hook(None);
+        .replace_owner_cleanup_after_install_hook_for_test(None);
     world
         .application
         .with_host_advancement(|phase| {

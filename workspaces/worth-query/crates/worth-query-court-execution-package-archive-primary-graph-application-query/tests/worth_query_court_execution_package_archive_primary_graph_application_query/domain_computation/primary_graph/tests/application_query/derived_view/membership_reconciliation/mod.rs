@@ -15,7 +15,7 @@ fn certified_membership_changes_retain_clean_arcs_and_read_only_new_or_dirty_ent
         let request = live_scope();
             let external = world.authenticate("alice", Duration::from_secs(60), &request);
         let selected = world.selected_product(
-            &(host_custody.phase_for_application(&world.application)).test_host_request(),
+            &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
         );
         let membership_query = world
             .application
@@ -43,11 +43,11 @@ fn certified_membership_changes_retain_clean_arcs_and_read_only_new_or_dirty_ent
             .unwrap();
         let read_membership = || {
             let current = world.selected_product(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
             );
             let principal = current
                 .resolve_authenticated_principal(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     &world.binding,
                     &external,
                     &request,
@@ -56,7 +56,7 @@ fn certified_membership_changes_retain_clean_arcs_and_read_only_new_or_dirty_ent
                 .unwrap();
             let scope = current
                 .resolve_entity(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     AccountStatus::reference(),
                     "open".to_string(),
                     &request,
@@ -67,10 +67,10 @@ fn certified_membership_changes_retain_clean_arcs_and_read_only_new_or_dirty_ent
             world
                 .application
                 .execute_application_query_one_shot(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     current
                         .admit_application_query(
-                            &host_custody.phase_for_application(&world.application),
+                            &host_custody.phase_for_application_for_test(&world.application),
                             &membership_query,
                             &access,
                             ApplicationQueryParameterSet::new(),
@@ -82,11 +82,11 @@ fn certified_membership_changes_retain_clean_arcs_and_read_only_new_or_dirty_ent
         };
         let read_entry = |key: &str| {
             let current = world.selected_product(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
             );
             let principal = current
                 .resolve_authenticated_principal(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     &world.binding,
                     &external,
                     &request,
@@ -95,7 +95,7 @@ fn certified_membership_changes_retain_clean_arcs_and_read_only_new_or_dirty_ent
                 .unwrap();
             let scope = current
                 .resolve_entity(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     AccountStatus::reference(),
                     key.to_string(),
                     &request,
@@ -106,10 +106,10 @@ fn certified_membership_changes_retain_clean_arcs_and_read_only_new_or_dirty_ent
             world
                 .application
                 .execute_application_query_one_shot(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     current
                         .admit_application_query(
-                            &host_custody.phase_for_application(&world.application),
+                            &host_custody.phase_for_application_for_test(&world.application),
                             &entry_query,
                             &access,
                             ApplicationQueryParameterSet::new(),
@@ -127,7 +127,7 @@ fn certified_membership_changes_retain_clean_arcs_and_read_only_new_or_dirty_ent
         let membership = read_membership();
         let pair_principal = selected
             .resolve_authenticated_principal(
-                &host_custody.phase_for_application(&world.application),
+                &host_custody.phase_for_application_for_test(&world.application),
                 &world.binding,
                 &external,
                 &request,
@@ -136,7 +136,7 @@ fn certified_membership_changes_retain_clean_arcs_and_read_only_new_or_dirty_ent
             .unwrap();
         let pair_scope = selected
             .resolve_entity(
-                &host_custody.phase_for_application(&world.application),
+                &host_custody.phase_for_application_for_test(&world.application),
                 AccountStatus::reference(),
                 "open".to_string(),
                 &request,
@@ -158,7 +158,7 @@ fn certified_membership_changes_retain_clean_arcs_and_read_only_new_or_dirty_ent
                         .retain_selection_for_test(request_execution)
                         .unwrap()
                         .admit_application_query(
-                            &host_custody.phase_for_application(&world.application),
+                            &host_custody.phase_for_application_for_test(&world.application),
                             &entry_query,
                             &pair_access,
                             ApplicationQueryParameterSet::new(),
@@ -169,7 +169,7 @@ fn certified_membership_changes_retain_clean_arcs_and_read_only_new_or_dirty_ent
                         .retain_selection_for_test(request_execution)
                         .unwrap()
                         .admit_application_query(
-                            &host_custody.phase_for_application(&world.application),
+                            &host_custody.phase_for_application_for_test(&world.application),
                             &entry_query,
                             &pair_access,
                             ApplicationQueryParameterSet::new(),
@@ -195,7 +195,7 @@ fn certified_membership_changes_retain_clean_arcs_and_read_only_new_or_dirty_ent
         let (tag_locator, label_locator) = crate::domain_computation::primary_graph::tests::application_query::derived_view::membership_reconciliation::collection_locators::membership_and_label(&world);
         let change =
             |before: &WorthQueryProductBranchLease, locator: &AspectFieldLocator, value: &str| {
-                let prepared = graph.managed_derived_views().prepare_publication(
+                let prepared = graph.managed_derived_views_for_test().prepare_publication_for_test(
                     publication_basis(before),
                     &[ViewChange::Aspect(
                         key.root(),
@@ -218,7 +218,7 @@ fn certified_membership_changes_retain_clean_arcs_and_read_only_new_or_dirty_ent
                     )),
                 );
                 let after = world.selected_product(
-                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                 );
                 prepared.apply(after.product().selected_commit());
                 after

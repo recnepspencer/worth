@@ -53,7 +53,7 @@ fn creation_release_retains_live_recovery_and_defers_actual_owner_cleanup() {
         drop(second);
         drop(page);
         let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-        let integration = graph.integration_handle();
+        let integration = graph.integration_handle_for_test();
         let active = deferred.then(|| {
             integration.with_runtime(execution, |runtime| {
                 let identity = runtime

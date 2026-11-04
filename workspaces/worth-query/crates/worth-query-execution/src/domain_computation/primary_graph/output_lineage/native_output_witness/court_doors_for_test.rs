@@ -40,3 +40,45 @@ impl SealedNativeOutputWitness {
         Self::unchanged_in(self, runtime, selected, execution)
     }
 }
+
+impl SealedNativeOutputWitness {
+    #[doc(hidden)]
+    pub fn roles_for_test(&self) -> &Vec<RoleProbe> {
+        &self.roles
+    }
+}
+
+impl RoleProbe {
+    #[doc(hidden)]
+    pub fn kind_mut_for_test(&mut self) -> &mut KindId {
+        &mut self.kind
+    }
+}
+
+impl RoleProbe {
+    #[doc(hidden)]
+    pub fn posture_mut_for_test(&mut self) -> &mut WorthQueryApplicationOutputPosture {
+        &mut self.posture
+    }
+}
+
+impl PreparedNativeOutputFacts<'_> {
+    #[doc(hidden)]
+    pub fn append_into_for_test(self, facts: &mut Vec<Fact>) {
+        Self::append_into(self, facts)
+    }
+}
+
+impl PreparedNativeOutputFacts<'_> {
+    #[doc(hidden)]
+    pub fn count_for_test(&self) -> usize {
+        Self::count(self)
+    }
+}
+
+impl RoleProbe {
+    #[doc(hidden)]
+    pub fn retirement_for_test(&self) -> &Option<RetirementMetadata> {
+        &self.retirement
+    }
+}

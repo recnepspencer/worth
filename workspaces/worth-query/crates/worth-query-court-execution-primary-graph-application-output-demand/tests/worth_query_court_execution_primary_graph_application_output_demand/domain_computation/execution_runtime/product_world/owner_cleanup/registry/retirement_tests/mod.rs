@@ -82,10 +82,10 @@ pub fn with_cleanup(
     let mut runtime = (*world.application.product_runtime_for_test()).clone();
     // Isolate this protocol observer from the real provider's follower. The World
     // reference, Native/Signal components and deletion ports are the real owners.
-    runtime.owner_cleanup = WorthQueryProductBranchOwnerCleanupRegistry::new_for_test(None);
+    (*runtime.owner_cleanup_mut_for_test()) = WorthQueryProductBranchOwnerCleanupRegistry::new_for_test(None);
     let probe = Arc::new(Probe {
-        runtime: runtime
-            .source
+        runtime: (*runtime
+            .source_for_test())
             .authoritative_source_profile()
             .runtime_instance_id(),
         outer: Mutex::new(()),
@@ -93,15 +93,15 @@ pub fn with_cleanup(
         notifications: AtomicUsize::new(0),
     });
     let follower: Arc<dyn WorthQueryProductRetentionFollower> = probe.clone();
-    runtime
-        .owner_cleanup
+    (*runtime
+        .owner_cleanup_for_test())
         .follow_product_retention(Arc::downgrade(&follower));
     let pending = runtime
-        .begin_product_branch_close(branch, WorthQueryProductBranchCloseScope::Workspace)
+        .begin_product_branch_close_for_test(branch, WorthQueryProductBranchCloseScope::Workspace)
         .unwrap();
     let (_, cleanup) = pending.into_cleanup();
-    *probe.entry.lock().unwrap() = lock(&runtime.owner_cleanup.state)
-        .entries
+    *probe.entry.lock().unwrap() = (*lock(&(*(*runtime.owner_cleanup_for_test()).state_for_test()))
+        .entries_for_test())
         .values()
         .next()
         .cloned();
@@ -117,7 +117,7 @@ fn managed_source_retirement_partial_failure_notifies_only_beyond_outer_and_entr
         let token = cancel.clone();
         (*runtime
             .owner_cleanup_for_test())
-            .replace_after_component_progress_hook(Some(Box::new(move || token.cancel())));
+            .replace_after_component_progress_hook_for_test(Some(Box::new(move || token.cancel())));
         let hook = Hook((*runtime.owner_cleanup_for_test()).clone());
         let mut retirements = OwnerCleanupRetirements::default();
         let outer = probe.outer.lock().unwrap();
@@ -161,7 +161,7 @@ fn managed_source_retirement_completed_cleanup_survives_actual_final_poll_stop()
         let token = cancel.clone();
         (*runtime
             .owner_cleanup_for_test())
-            .replace_after_component_progress_hook(Some(Box::new(move || token.cancel())));
+            .replace_after_component_progress_hook_for_test(Some(Box::new(move || token.cancel())));
         let _hook = Hook((*runtime.owner_cleanup_for_test()).clone());
         let mut retirements = OwnerCleanupRetirements::default();
         let outer = probe.outer.lock().unwrap();

@@ -87,7 +87,7 @@ fn ordinary_operation_and_commit_paths_cannot_publish_approval_authority() {
             world
                 .application
                 .authorize_capability_operation(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     access,
                     &operation,
                     Default::default(),
@@ -108,7 +108,7 @@ fn ordinary_operation_and_commit_paths_cannot_publish_approval_authority() {
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request_for_test();
             approval_reads(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                 &world,
                 &request,
                 requested,

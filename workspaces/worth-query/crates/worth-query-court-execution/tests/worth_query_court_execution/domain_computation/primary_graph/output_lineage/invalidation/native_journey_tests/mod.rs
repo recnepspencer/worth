@@ -186,22 +186,22 @@ fn ordinary_native_writer_marks_only_matched_fields_and_actual_downstream_edges(
         .expect("the fixture read owns its installed host call");
     let (_, product, _) = selected.into_parts_for_test();
     let coordinate = ProductCoordinate {
-        occurrence: product.observation().lifecycle_incarnation(),
-        generation: product.observation().reference_generation().get(),
+        occurrence: product.observation_for_test().lifecycle_incarnation(),
+        generation: product.observation_for_test().reference_generation().get(),
     };
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let handle = graph.integration_handle();
-    let owner = &handle.source_owner.invalidation_owner;
+    let handle = graph.integration_handle_for_test();
+    let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
     let status_ref = AccountStatus::reference();
     let label_ref = AccountLabel::reference();
     let status = graph
-        .layout()
-        .field_locator(status_ref.entity(), status_ref.aspect(), status_ref.field())
+        .layout_for_test()
+        .field_locator_for_test(status_ref.entity(), status_ref.aspect(), status_ref.field())
         .unwrap()
         .clone();
     let label = graph
-        .layout()
-        .field_locator(label_ref.entity(), label_ref.aspect(), label_ref.field())
+        .layout_for_test()
+        .field_locator_for_test(label_ref.entity(), label_ref.aspect(), label_ref.field())
         .unwrap()
         .clone();
     let source = |output_binding| {
@@ -237,7 +237,7 @@ fn ordinary_native_writer_marks_only_matched_fields_and_actual_downstream_edges(
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request_for_test();
             let request_execution = &host_custody.borrowed_request_for_test();
-            handle.with_runtime_mut(request_execution, |runtime| {
+            handle.with_runtime_mut_for_test(request_execution, |runtime| {
                 // Ensure the real companion has a selected cell even if fixture
                 // installation happened before its subscription became active.
                 write_field(request_execution, runtime, entity, label.clone(), "prime");

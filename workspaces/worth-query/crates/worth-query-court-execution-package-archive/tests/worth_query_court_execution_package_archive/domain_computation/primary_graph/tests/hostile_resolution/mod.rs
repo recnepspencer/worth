@@ -203,13 +203,13 @@ pub fn change_principal_identity(
     identity: u64,
 ) {
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let layout = graph
-        .layout
-        .principal_binding(world.binding.binding())
+    let layout = (*graph
+        .layout_for_test())
+        .principal_binding_for_test(world.binding.binding())
         .unwrap()
         .clone();
     let fields = AspectFieldPatch::from(BTreeMap::from([(
-        layout.principal_identity_locator,
+        layout.principal_identity_locator_into_for_test(),
         U64ApplicationValueBinding::encode(&identity).unwrap(),
     )]));
     worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::product_publication::publish_relational_mutation_on_application(
@@ -230,13 +230,13 @@ pub fn disable_mapping(
     mapping_id: worth_relational::facade::identity::EntityId,
 ) {
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let layout = graph
-        .layout
-        .principal_binding(world.binding.binding())
+    let layout = (*graph
+        .layout_for_test())
+        .principal_binding_for_test(world.binding.binding())
         .unwrap()
         .clone();
     let fields = AspectFieldPatch::from(BTreeMap::from([(
-        layout.status_locator,
+        layout.status_locator_into_for_test(),
         WorthQueryPrincipalMappingStatusBinding::encode(
             &WorthQueryPrincipalMappingStatus::Disabled,
         )
@@ -260,9 +260,9 @@ pub fn append_duplicate_mapping(
     subject: &str,
 ) {
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let layout = graph
-        .layout
-        .principal_binding(world.binding.binding())
+    let layout = (*graph
+        .layout_for_test())
+        .principal_binding_for_test(world.binding.binding())
         .unwrap()
         .clone();
     {
@@ -271,22 +271,22 @@ pub fn append_duplicate_mapping(
         let mapping_key = ClientKey::raw("duplicate-mapping");
         let principal = CreatedEntityRef {
             partition_id,
-            kind_id: layout.principal_kind,
+            kind_id: (*layout.principal_kind_for_test()),
             client_key: principal_key.clone(),
         };
         let mapping = CreatedEntityRef {
             partition_id,
-            kind_id: layout.mapping_kind,
+            kind_id: (*layout.mapping_kind_for_test()),
             client_key: mapping_key.clone(),
         };
         let fields = AspectFieldPatch::from(BTreeMap::from([
             (
-                layout.identity_locator.clone(),
+                (*layout.identity_locator_for_test()).clone(),
                 WorthQueryExternalPrincipalIdentityBinding::encode(&external_identity(subject))
                     .unwrap(),
             ),
             (
-                layout.status_locator,
+                layout.status_locator_into_for_test(),
                 WorthQueryPrincipalMappingStatusBinding::encode(
                     &WorthQueryPrincipalMappingStatus::Enabled,
                 )
@@ -299,7 +299,7 @@ pub fn append_duplicate_mapping(
                 kind_id: principal.kind_id,
                 client_key: principal_key,
                 fields: AspectFieldPatch::from(BTreeMap::from([(
-                    layout.principal_identity_locator.clone(),
+                    (*layout.principal_identity_locator_for_test()).clone(),
                     U64ApplicationValueBinding::encode(&99_u64).unwrap(),
                 )])),
             })))
@@ -312,7 +312,7 @@ pub fn append_duplicate_mapping(
             .push(MutationIntent::Create(CreateIntent::Relation(
                 RelationSpec {
                     partition_id,
-                    kind_id: layout.relation_kind,
+                    kind_id: (*layout.relation_kind_for_test()),
                     client_key: ClientKey::raw("duplicate-target"),
                     source: EntityReference::Created(mapping),
                     target: EntityReference::Created(principal),

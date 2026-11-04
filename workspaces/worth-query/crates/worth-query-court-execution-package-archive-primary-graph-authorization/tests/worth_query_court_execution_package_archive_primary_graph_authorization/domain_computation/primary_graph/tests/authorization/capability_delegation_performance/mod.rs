@@ -125,7 +125,7 @@ pub fn admission_work(world: AuthorizationWorld) -> DelegationAdmissionWork {
             let custody = phase.test_host_request_for_test();
             let phase_custody = &custody;
             let principal =
-                authenticated_principal(&(phase_custody).test_host_request(), &world, &request);
+                authenticated_principal(&(phase_custody).test_host_request_for_test(), &world, &request);
             let access =
                 admitted_capability_access(phase_custody, &world, &principal, &request, 100)
                     .unwrap();

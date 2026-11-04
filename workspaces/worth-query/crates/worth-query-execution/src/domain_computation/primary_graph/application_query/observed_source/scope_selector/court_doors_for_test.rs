@@ -41,3 +41,10 @@ impl<Query> WorthQueryObservedSource<Query> {
         Self::original_projection(self)
     }
 }
+
+impl<Query> WorthQueryObservedSource<Query> {
+    #[doc(hidden)]
+    pub fn retained_scope_selector_for_test(&self) -> &WorthQueryObservedScopeSelector {
+        Self::retained_scope_selector(self)
+    }
+}

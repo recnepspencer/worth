@@ -13,13 +13,13 @@ fn producer_decision_field_uses_native_revision_after_value_aba() {
         .expect("the fixture read owns its installed host call");
     let field = WorthQueryApplicationObservedFact::Field {
         entity_id: entity,
-        kind: (*world
+        kind: (*(*world
             .application
             .runtime_for_test())
             .primary_graph()
             .unwrap()
-            .layout
-            .entity_kind(AccountIdentity::reference().entity())
+            .layout_for_test())
+            .entity_kind_for_test(AccountIdentity::reference().entity())
             .unwrap(),
         locator: planned(&locator),
         value: StringApplicationValueBinding::encode(&"reviewed".to_owned()).unwrap(),

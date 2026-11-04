@@ -88,9 +88,9 @@ fn absent_optional_source_stays_current_across_sibling_edit_but_not_presence_cha
 
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let label = AccountLabel::reference();
-    let label_locator = graph
-        .layout
-        .field_locator(label.entity(), label.aspect(), label.field())
+    let label_locator = (*graph
+        .layout_for_test())
+        .field_locator_for_test(label.entity(), label.aspect(), label.field())
         .unwrap()
         .clone();
     world
@@ -123,9 +123,9 @@ fn absent_optional_source_stays_current_across_sibling_edit_but_not_presence_cha
         .expect("the fixture read owns its installed host call");
 
     let note = AccountNote::reference();
-    let note_locator = graph
-        .layout
-        .field_locator(note.entity(), note.aspect(), note.field())
+    let note_locator = (*graph
+        .layout_for_test())
+        .field_locator_for_test(note.entity(), note.aspect(), note.field())
         .unwrap()
         .clone();
     world
@@ -176,9 +176,9 @@ fn present_optional_source_denies_equal_value_after_aba() {
     assert_eq!(before.note(), Some("reviewed"));
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let note = AccountNote::reference();
-    let locator = graph
-        .layout
-        .field_locator(note.entity(), note.aspect(), note.field())
+    let locator = (*graph
+        .layout_for_test())
+        .field_locator_for_test(note.entity(), note.aspect(), note.field())
         .unwrap()
         .clone();
     world
@@ -242,7 +242,7 @@ pub fn current(
     let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     graph
-        .integration_handle()
+        .integration_handle_for_test()
         .with_runtime(execution, |runtime| {
             fact.source_currentness_in_for_test(
                 runtime,
@@ -251,7 +251,7 @@ pub fn current(
             )
             .unwrap()
             .unwrap()
-            .movement()
+            .movement_for_test()
                 == Movement::Unmoved
         })
 }
@@ -385,14 +385,14 @@ pub fn execute_with_note_fact(
     let note = (*footprint
         .aspects_for_test())
         .iter()
-        .find(|observed| observed.field.as_str() == AccountNote::reference().field())
+        .find(|observed| (*observed.field_for_test()).as_str() == AccountNote::reference().field())
         .expect("the optional note is a tracked source field");
     let fact = WorthQueryApplicationObservedFact::SourceFieldRevision {
-        entity_id: note.entity,
+        entity_id: (*note.entity_for_test()),
         locator: AspectFieldLocator::new(
             LocatorAuthority::Authoritative,
-            note.aspect.clone(),
-            CanonicalFieldPath::single(note.field.clone()),
+            (*note.aspect_for_test()).clone(),
+            CanonicalFieldPath::single((*note.field_for_test()).clone()),
         ),
         native_revision: note.native_revision,
     };

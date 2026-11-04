@@ -15,7 +15,7 @@ fn frozen_deep_rows_keep_original_funding_through_take_retain_clear_and_last_dro
     let mut root = shape(&key);
     for _ in 1..depth {
         let mut parent = shape(&key);
-        (*parent.relations_for_test())[0].rows[0] = root;
+        (*(*parent.relations_mut_for_test())[0].rows_mut_for_test())[0] = root;
         root = parent;
     }
     let rows = vec![root];
@@ -38,9 +38,9 @@ fn frozen_deep_rows_keep_original_funding_through_take_retain_clear_and_last_dro
     assert_eq!(tree.additional_charged_bytes(), payload as u64);
     let mut taken = tree.take_for_test();
     tree.clear_for_test();
-    let original = taken.retain_projection(disclosure, None).unwrap();
+    let original = taken.retain_projection_for_test(disclosure, None).unwrap();
     let last_share = Arc::clone(&original);
-    taken.clear();
+    taken.clear_for_test();
     drop(original);
     assert!(memory.charged_memory_bytes() >= payload as u64);
     cancel.cancel();

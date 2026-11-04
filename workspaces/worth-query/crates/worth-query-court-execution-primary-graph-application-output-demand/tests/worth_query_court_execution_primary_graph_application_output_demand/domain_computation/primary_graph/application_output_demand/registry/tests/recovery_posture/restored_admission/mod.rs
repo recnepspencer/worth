@@ -11,7 +11,7 @@ fn repeated_restored_admission_joins_one_semantic_source_record() {
         .product_runtime()
         .admit_product_branch_for_test(world.application.product_runtime().default_branch_for_test())
         .expect("the fixture's default product occurrence is live");
-    let observation = product.observation().clone();
+    let observation = product.observation_for_test().clone();
     let occurrence = observation.lifecycle_incarnation();
     let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(
         root(1),
@@ -46,8 +46,8 @@ fn repeated_restored_admission_joins_one_semantic_source_record() {
 
     assert!(inserted);
     assert!(!reinserted);
-    assert_eq!(first.key, second.key);
-    assert_eq!((*registry.state_for_test()).lock().unwrap().records.len(), 1);
+    assert_eq!((*first.key_for_test()), (*second.key_for_test()));
+    assert_eq!((*(*registry.state_for_test()).lock().unwrap().records_for_test()).len_for_test(), 1);
     assert_eq!(registry.accepted_checkpoint_identities_for_test().len(), 1);
     assert!(
         registry.posts_settlement_for_test(&settlement).unwrap(),

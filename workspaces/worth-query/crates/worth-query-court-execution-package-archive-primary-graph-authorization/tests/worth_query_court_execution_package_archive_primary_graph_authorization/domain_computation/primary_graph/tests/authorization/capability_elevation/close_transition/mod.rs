@@ -85,7 +85,7 @@ fn approved_elevation_closes_to_a_linear_review_obligation_and_cuts_active_use()
             world
                 .application
                 .authorize_capability_operation(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     active,
                     &operation,
                     Default::default(),
@@ -180,7 +180,7 @@ fn close_command_cannot_select_a_different_elevation_subject() {
             world
                 .application
                 .authorize_elevation_close(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     approved,
                     access,
                     &operation,

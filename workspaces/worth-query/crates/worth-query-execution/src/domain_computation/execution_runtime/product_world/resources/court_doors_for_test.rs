@@ -21,3 +21,17 @@ impl WorthQueryProductWorldResources {
         Self::into_parts(self)
     }
 }
+
+impl WorthQueryProductExecution {
+    #[doc(hidden)]
+    pub fn authority_for_test(&self) -> &Option<Arc<ExecutionAuthority>> {
+        &self.authority
+    }
+}
+
+impl WorthQueryProductExecution {
+    #[doc(hidden)]
+    pub fn policy_for_test(&self) -> &ExecutionRequestPolicy {
+        &self.policy
+    }
+}

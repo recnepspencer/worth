@@ -93,7 +93,7 @@ fn mean_reported_update_nodes_obey_the_random_treap_depth_law() {
                 .accounted_metrics()
                 .expect("explicit accounted fixture");
             assert_eq!(
-                *(*next.outcome_for_test()).unwrap().result(),
+                *next.outcome_into_for_test().unwrap().result(),
                 u64::try_from(2 * n).unwrap()
             );
             total += metrics.recombined_nodes;

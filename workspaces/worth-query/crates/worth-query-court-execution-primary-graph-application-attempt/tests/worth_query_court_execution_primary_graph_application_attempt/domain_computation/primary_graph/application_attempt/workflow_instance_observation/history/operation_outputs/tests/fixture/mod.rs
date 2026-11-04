@@ -55,8 +55,8 @@ impl Context {
             })
             .unwrap();
         let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-        let layout = graph.layout.workflow().clone();
-        let account_kind = graph.layout.entity_kind("Account").unwrap();
+        let layout = (*graph.layout_for_test()).workflow().clone();
+        let account_kind = (*graph.layout_for_test()).entity_kind_for_test("Account").unwrap();
         let before = inventory(&world, &execution, account_kind);
         let batch = crate::domain_computation::primary_graph::application_attempt::workflow_instance_observation::history::operation_outputs::tests::fixture::publication::batch(&layout, source, actor, account_kind, retire_source, defect);
         publish_relational_mutation(&execution, &world, batch);
@@ -64,7 +64,7 @@ impl Context {
             .into_iter()
             .find(|id| !before.contains(id))
             .unwrap();
-        let transition = inventory(&world, &execution, layout.transition.entity_kind)
+        let transition = inventory(&world, &execution, (*(*layout.transition_for_test()).entity_kind_for_test()))
             .pop()
             .unwrap();
         Self {
@@ -123,16 +123,16 @@ impl Context {
                 self.world.application.product_runtime().default_branch_for_test(),
             )
             .unwrap()
-            .into_parts();
+            .into_parts_for_test();
         let graph = (*self.world.application.runtime_for_test()).primary_graph().unwrap();
         graph
-            .integration_handle()
+            .integration_handle_for_test()
             .with_runtime(&execution, |runtime| {
                 read(
                     &execution,
                     runtime,
                     lease.snapshot_handle(),
-                    graph.layout.workflow(),
+                    (*graph.layout_for_test()).workflow(),
                 )
             })
     }
@@ -150,13 +150,13 @@ pub fn inventory(
             world.application.product_runtime().default_branch_for_test(),
         )
         .unwrap()
-        .into_parts();
+        .into_parts_for_test();
     (*world
         .application
         .runtime_for_test())
         .primary_graph()
         .unwrap()
-        .integration_handle()
+        .integration_handle_for_test()
         .with_runtime(execution, |runtime| {
             runtime
                 .read_truth()

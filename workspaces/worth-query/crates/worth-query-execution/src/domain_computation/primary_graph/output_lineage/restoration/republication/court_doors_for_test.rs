@@ -69,3 +69,45 @@ impl WorthQueryApplicationOutputLineage {
         )
     }
 }
+
+impl RepublishedRecord {
+    #[doc(hidden)]
+    pub fn consumed_outputs_for_test(&self) -> &Arc<[ConsumedOutputEvidence]> {
+        &self.consumed_outputs
+    }
+}
+
+impl RepublishedRecord {
+    #[doc(hidden)]
+    pub fn facts_for_test(&self) -> &super::super::super::RetainedSourceFacts {
+        &self.facts
+    }
+}
+
+impl RepublishedRecord {
+    #[doc(hidden)]
+    pub fn identity_for_test(&self) -> &Arc<RecordedSettlementIdentity> {
+        &self.identity
+    }
+}
+
+impl RepublishedRecord {
+    #[doc(hidden)]
+    pub fn predecessor_for_test(&self) -> &Arc<RecordedSettlementIdentity> {
+        &self.predecessor
+    }
+}
+
+impl RepublishedRecord {
+    #[doc(hidden)]
+    pub fn witness_for_test(&self) -> &Arc<OnceLock<SealedNativeOutputWitness>> {
+        &self.witness
+    }
+}
+
+impl RepublishedRecord {
+    #[doc(hidden)]
+    pub fn witness_into_for_test(self) -> Arc<OnceLock<SealedNativeOutputWitness>> {
+        self.witness
+    }
+}

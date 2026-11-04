@@ -115,7 +115,7 @@ fn approver_conflict_drift_stales_admitted_elevation_authority() {
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request_for_test();
             world.application.authorize_capability_operation(
-                &host_custody.phase_for_application(&world.application),
+                &host_custody.phase_for_application_for_test(&world.application),
                 access,
                 &operation,
                 Default::default(),
@@ -171,11 +171,11 @@ pub fn add_approver_conflict(
         )
         .unwrap();
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let relation_kind = graph
-        .layout()
+    let relation_kind = (*graph
+        .layout_for_test()
         .relation(CapabilityConflictingBeneficiary::reference().name())
         .unwrap()
-        .kind;
+        .kind_for_test());
     worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::product_publication::publish_relational_mutation(
         execution,
         world,
@@ -184,8 +184,8 @@ pub fn add_approver_conflict(
                 partition_id: PartitionId::main(),
                 kind_id: relation_kind,
                 client_key: ClientKey::raw("elevation-approver-conflict-drift"),
-                source: EntityReference::Existing(approver.entity_id()),
-                target: EntityReference::Existing(account.entity_id()),
+                source: EntityReference::Existing(approver.entity_id_for_test()),
+                target: EntityReference::Existing(account.entity_id_for_test()),
                 fields: AspectFieldPatch::default(),
             }),
         )),

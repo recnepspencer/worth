@@ -302,7 +302,7 @@ fn owner_resolved_creation_projects_the_exact_typed_identity() {
 
     assert_eq!(
         committed
-            .outputs_of::<CreateOutputs>()
+            .outputs_of_for_test::<CreateOutputs>()
             .unwrap()
             .entity::<OnlyCreated>()
             .unwrap()
@@ -317,7 +317,7 @@ fn owner_resolved_creation_projects_the_exact_typed_identity() {
         Cardinality::ExactlyOne,
     );
     assert_eq!(
-        committed.bound_entity(&wrong_entity).err(),
+        committed.bound_entity_for_test(&wrong_entity).err(),
         Some(WorthQueryApplicationOutputProjectionDenial::EntityMismatch)
     );
 }

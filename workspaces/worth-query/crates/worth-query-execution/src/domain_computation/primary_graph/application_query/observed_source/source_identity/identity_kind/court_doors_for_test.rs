@@ -14,3 +14,10 @@ impl WorthQueryRuntimeSourceIdentity {
         Self::new(identity)
     }
 }
+
+impl WorthQueryCheckpointSourceIdentity {
+    #[doc(hidden)]
+    pub fn bytes_for_test(self) -> [u8; 32] {
+        Self::bytes(self)
+    }
+}

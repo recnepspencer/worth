@@ -196,3 +196,180 @@ impl WorkflowLayoutFields {
         &self.transition_node_relation
     }
 }
+
+impl WorkflowApprovalLayout {
+    #[doc(hidden)]
+    pub fn authorization_dependencies_for_test(&self) -> &AspectFieldLocator {
+        &self.authorization_dependencies
+    }
+}
+
+impl WorkflowApprovalLayout {
+    #[doc(hidden)]
+    pub fn authorization_lineage_for_test(&self) -> &AspectFieldLocator {
+        &self.authorization_lineage
+    }
+}
+
+impl WorkflowApprovalLayout {
+    #[doc(hidden)]
+    pub fn authorization_principal_for_test(&self) -> &AspectFieldLocator {
+        &self.authorization_principal
+    }
+}
+
+impl WorkflowApprovalLayout {
+    #[doc(hidden)]
+    pub fn authorization_request_for_test(&self) -> &AspectFieldLocator {
+        &self.authorization_request
+    }
+}
+
+impl WorkflowApprovalLayout {
+    #[doc(hidden)]
+    pub fn authorization_support_for_test(&self) -> &AspectFieldLocator {
+        &self.authorization_support
+    }
+}
+
+impl WorkflowDefinitionLayout {
+    #[doc(hidden)]
+    pub fn entity_kind_for_test(&self) -> &KindId {
+        &self.entity_kind
+    }
+}
+
+impl WorkflowInstanceLayout {
+    #[doc(hidden)]
+    pub fn entity_kind_for_test(&self) -> &KindId {
+        &self.entity_kind
+    }
+}
+
+impl WorkflowLineageLayout {
+    #[doc(hidden)]
+    pub fn entity_kind_for_test(&self) -> &KindId {
+        &self.entity_kind
+    }
+}
+
+impl WorkflowNodeLayout {
+    #[doc(hidden)]
+    pub fn entity_kind_for_test(&self) -> &KindId {
+        &self.entity_kind
+    }
+}
+
+impl WorkflowTransitionLayout {
+    #[doc(hidden)]
+    pub fn entity_kind_for_test(&self) -> &KindId {
+        &self.entity_kind
+    }
+}
+
+impl WorkflowTransitionLayout {
+    #[doc(hidden)]
+    pub fn identity_for_test(&self) -> &AspectFieldLocator {
+        &self.identity
+    }
+}
+
+impl WorkflowTransitionLayout {
+    #[doc(hidden)]
+    pub fn live_membership_generation_for_test(&self) -> &AspectFieldLocator {
+        &self.live_membership_generation
+    }
+}
+
+impl WorkflowTransitionLayout {
+    #[doc(hidden)]
+    pub fn live_membership_partition_for_test(&self) -> &AspectFieldLocator {
+        &self.live_membership_partition
+    }
+}
+
+impl WorkflowTransitionLayout {
+    #[doc(hidden)]
+    pub fn live_membership_slot_for_test(&self) -> &AspectFieldLocator {
+        &self.live_membership_slot
+    }
+}
+
+impl WorkflowTransitionLayout {
+    #[doc(hidden)]
+    pub fn occurrence_for_test(&self) -> &AspectFieldLocator {
+        &self.occurrence
+    }
+}
+
+impl WorkflowTransitionLayout {
+    #[doc(hidden)]
+    pub fn outcome_for_test(&self) -> &AspectFieldLocator {
+        &self.outcome
+    }
+}
+
+impl WorkflowTransitionLayout {
+    #[doc(hidden)]
+    pub fn output_count_for_test(&self) -> &AspectFieldLocator {
+        &self.output_count
+    }
+}
+
+impl WorkflowTransitionLayout {
+    #[doc(hidden)]
+    pub fn protocol_version_for_test(&self) -> &AspectFieldLocator {
+        &self.protocol_version
+    }
+}
+
+impl WorkflowEvidenceDependencyLayout {
+    #[doc(hidden)]
+    pub fn aspect_for_test(&self) -> &AspectFieldLocator {
+        &self.aspect
+    }
+}
+
+impl WorkflowEvidenceDependencyLayout {
+    #[doc(hidden)]
+    pub fn field_for_test(&self) -> &AspectFieldLocator {
+        &self.field
+    }
+}
+
+impl WorkflowTransitionLayout {
+    #[doc(hidden)]
+    pub fn identity_index_id_for_test(&self) -> &DerivedIndexId {
+        &self.identity_index_id
+    }
+}
+
+impl WorkflowInstanceLayout {
+    #[doc(hidden)]
+    pub fn program_revision_for_test(&self) -> &AspectFieldLocator {
+        &self.program_revision
+    }
+}
+
+impl WorkflowInstanceLayout {
+    #[doc(hidden)]
+    pub fn start_advancer_for_test(
+        &self,
+    ) -> &super::super::super::actor::record::WorkflowActorFields {
+        &self.start_advancer
+    }
+}
+
+impl WorkflowInstanceLayout {
+    #[doc(hidden)]
+    pub fn started_program_revision_for_test(&self) -> &AspectFieldLocator {
+        &self.started_program_revision
+    }
+}
+
+impl WorkflowInstanceLayout {
+    #[doc(hidden)]
+    pub fn subject_slot_for_test(&self) -> &AspectFieldLocator {
+        &self.subject_slot
+    }
+}

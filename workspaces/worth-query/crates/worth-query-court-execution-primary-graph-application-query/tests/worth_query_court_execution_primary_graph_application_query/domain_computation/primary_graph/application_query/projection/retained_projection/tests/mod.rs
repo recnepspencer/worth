@@ -50,9 +50,9 @@ fn original_projection_moves_disclosed_rows_and_shares_original_funding_until_fi
         let body = row.original_projection_for_test().unwrap();
         assert!(Arc::ptr_eq(body, set.original_projection_for_test().unwrap()));
         assert!(Arc::ptr_eq(body, row.clone().original_projection_for_test().unwrap()));
-        assert_eq!(body.rows.len(), 1);
-        assert_eq!(body.rows[0].entity_id(), (*row.model_root_for_test()));
-        assert_eq!(body.rows[0].field(label.slot_type()).unwrap().value(),
+        assert_eq!((*body.rows_for_test()).len(), 1);
+        assert_eq!((*body.rows_for_test())[0].entity_id(), (*row.model_root_for_test()));
+        assert_eq!((*body.rows_for_test())[0].field(label.slot_type()).unwrap().value(),
             &worth_foundational::facade::AspectValue::String("primary".into()));
         assert_eq!(body.disclosure.len(), query.read_graph().projections().len()
             + query.read_graph().relations().len());
@@ -63,11 +63,11 @@ fn original_projection_moves_disclosed_rows_and_shares_original_funding_until_fi
                 .chain(query.read_graph().relations().iter().map(|relation| relation.slot_key_identity()))
                 .any(|original| Arc::ptr_eq(slot, &original)));
         }
-        let body_quote = body.rows.iter().fold(
-            (body.rows.capacity() * std::mem::size_of::<worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::projection::projected_tree::WorthQueryApplicationProjectionNode>()) as u64,
+        let body_quote = (*body.rows_for_test()).iter().fold(
+            ((*body.rows_for_test()).capacity() * std::mem::size_of::<worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::projection::projected_tree::WorthQueryApplicationProjectionNode>()) as u64,
             |bytes, row| bytes + row.retained_bytes() as u64,
         ) + OriginalProjection::allocation_bytes_for_test();
-        assert_eq!(body._memory.as_ref().unwrap().bytes(), body_quote);
+        assert_eq!((*body._memory_for_test()).as_ref().unwrap().bytes(), body_quote);
         assert_eq!(body.disclosure.charged_payload_bytes(),
             Some((body.disclosure.len() * std::mem::size_of::<(
                 Arc<worth_query_declaration::facade::application_query::ApplicationQueryResultSlotKey>, bool)>()) as u64));
@@ -78,18 +78,18 @@ fn original_projection_moves_disclosed_rows_and_shares_original_funding_until_fi
         let sibling = observation.clone();
         drop(completed);
         drop(row);
-        set_label(&world, &phase, original.rows[0].entity_id(), label, "changed");
+        set_label(&world, &phase, (*original.rows_for_test())[0].entity_id(), label, "changed");
         let changed = read(&world, &phase, "open", true, true).unwrap();
         let changed_body = changed.result_set_observation().source().original_projection_for_test().unwrap();
-        assert_eq!(original.rows[0].field(label.slot_type()).unwrap().value(),
+        assert_eq!((*original.rows_for_test())[0].field(label.slot_type()).unwrap().value(),
             &worth_foundational::facade::AspectValue::String("primary".into()));
-        assert_eq!(changed_body.rows[0].field(label.slot_type()).unwrap().value(),
+        assert_eq!((*changed_body.rows_for_test())[0].field(label.slot_type()).unwrap().value(),
             &worth_foundational::facade::AspectValue::String("changed".into()));
-        set_label(&world, &phase, original.rows[0].entity_id(), label, "changed");
+        set_label(&world, &phase, (*original.rows_for_test())[0].entity_id(), label, "changed");
         let equal_rewrite = read(&world, &phase, "open", true, true).unwrap();
         let equal_body = equal_rewrite.result_set_observation().source().original_projection_for_test().unwrap();
-        assert_eq!(changed_body.rows[0].field(label.slot_type()).unwrap().value(),
-            equal_body.rows[0].field(label.slot_type()).unwrap().value(),
+        assert_eq!((*changed_body.rows_for_test())[0].field(label.slot_type()).unwrap().value(),
+            (*equal_body.rows_for_test())[0].field(label.slot_type()).unwrap().value(),
             "a genuine equal-value Native rewrite does not imply a changed cell");
         (observation, sibling, weak)
     }).unwrap();
@@ -128,13 +128,13 @@ fn original_projection_retains_bound_empty_results_but_refuses_unbound_capture()
                 .source()
                 .original_projection_for_test()
                 .unwrap();
-            assert!(body.rows.is_empty());
+            assert!((*body.rows_for_test()).is_empty());
             assert!(
                 !body.disclosure.is_empty(),
                 "zero rows still retain every declared decision"
             );
             assert_eq!(
-                body._memory.as_ref().unwrap().bytes(),
+                (*body._memory_for_test()).as_ref().unwrap().bytes(),
                 OriginalProjection::allocation_bytes_for_test()
             );
             let weak = Arc::downgrade(body);

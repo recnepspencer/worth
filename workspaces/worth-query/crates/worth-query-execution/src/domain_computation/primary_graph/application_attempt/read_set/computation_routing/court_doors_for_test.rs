@@ -43,3 +43,17 @@ impl ComputationFactReaders {
         Self::read_by(membership, item_keys, partitions)
     }
 }
+
+impl SealedComputationFact {
+    #[doc(hidden)]
+    pub fn ordinal_for_test(&self) -> &usize {
+        &self.ordinal
+    }
+}
+
+impl SealedComputationFact {
+    #[doc(hidden)]
+    pub fn readers_for_test(&self) -> &ComputationFactReaders {
+        &self.readers
+    }
+}

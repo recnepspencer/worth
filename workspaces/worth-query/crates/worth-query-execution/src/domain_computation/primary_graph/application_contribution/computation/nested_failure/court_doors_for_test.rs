@@ -7,3 +7,13 @@ impl<E> MemberComputeFailure<E> {
         Self::into_failure(self)
     }
 }
+
+impl<'context> NestedFailureTransport<'context> {
+    #[doc(hidden)]
+    pub fn call_for_test<T, E>(
+        &mut self,
+        run: impl FnOnce() -> Result<T, E>,
+    ) -> Result<T, MemberComputeFailure<E>> {
+        Self::call(self, run)
+    }
+}

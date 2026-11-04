@@ -36,3 +36,27 @@ impl PreparedComputationFacts {
         Self::bind_fixture(self, original)
     }
 }
+
+impl SealedComputationFacts {
+    #[doc(hidden)]
+    pub fn fact_for_test(
+        &self,
+        key: &WorthQueryApplicationFactKey,
+    ) -> Option<&WorthQueryApplicationObservedFact> {
+        Self::fact(self, key)
+    }
+}
+
+impl SealedComputationFacts {
+    #[doc(hidden)]
+    pub fn has_aggregate_for_test(&self) -> bool {
+        Self::has_aggregate(self)
+    }
+}
+
+impl SealedComputationFacts {
+    #[doc(hidden)]
+    pub fn has_structural_walk_for_test(&self) -> bool {
+        Self::has_structural_walk(self)
+    }
+}

@@ -85,7 +85,7 @@ fn a_queue_budget_refusal_returns_its_typed_end() {
     );
     let end = result.unwrap_or_else(|_| panic!("queue custody returns its budget end"));
     let mut finished = false;
-    let returned = end.finish(|| {
+    let returned = end.finish_for_test(|| {
         finished = true;
         WorthQueryOutputDemandAdvance::Pending
     });
@@ -123,7 +123,7 @@ fn a_caller_refusal_returns_its_stop_even_for_a_queue_origin_row() {
     );
     let mut finished = false;
     let result = result.map(|end| {
-        end.finish(|| {
+        end.finish_for_test(|| {
             finished = true;
             WorthQueryOutputDemandAdvance::Pending
         })

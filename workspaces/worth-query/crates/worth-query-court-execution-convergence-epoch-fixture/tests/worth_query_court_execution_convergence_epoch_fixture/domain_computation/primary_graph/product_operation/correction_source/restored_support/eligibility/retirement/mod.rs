@@ -32,7 +32,7 @@ fn paired_retirement_support_checks_original_and_target_exact_metadata() {
     world.application.with_host_advancement(|phase| {
         let execution = phase.borrowed_request_for_test();
         let host = phase.test_host_request_for_test();
-        let custody = host.phase_for_application(&world.application);
+        let custody = host.phase_for_application_for_test(&world.application);
         let before = world.selected_product(&host);
         let entity = before.resolve_entity(
             &custody, AccountIdentity::reference(), "account-2".into(), &live_scope(),
@@ -48,7 +48,7 @@ fn paired_retirement_support_checks_original_and_target_exact_metadata() {
         publish_relational_mutation(&execution, &world, delete(entity));
         let original = world.selected_product(&host);
         let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-        let fact = graph.integration_handle().with_runtime(&execution, |runtime| {
+        let fact = graph.integration_handle_for_test().with_runtime(&execution, |runtime| {
             let view = runtime.read_truth().project_snapshot(original.application_basis_for_test().snapshot_handle()).unwrap();
             let retired = view.read_entity_retirement(&execution, entity).unwrap().unwrap();
             assert_eq!(retired.entity_id(), entity);
@@ -62,7 +62,7 @@ fn paired_retirement_support_checks_original_and_target_exact_metadata() {
         // does not mutate this full-GEN retirement tuple.
         publish_relational_mutation(&execution, &world, delete(other));
         let target = world.selected_product(&host);
-        graph.integration_handle().with_runtime(&execution, |runtime| {
+        graph.integration_handle_for_test().with_runtime(&execution, |runtime| {
             let before_snapshot = before.application_basis_for_test().snapshot_handle();
             let original_snapshot = original.application_basis_for_test().snapshot_handle();
             let target_snapshot = target.application_basis_for_test().snapshot_handle();

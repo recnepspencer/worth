@@ -63,7 +63,7 @@ pub fn unrelated_restored_selection(population: u64) {
         .matching_source_partition_for_test(scope, partition(0))
         .collect::<Vec<_>>();
     assert_eq!(selected.len(), 1);
-    assert_eq!(selected[0].checkpoint.source_partition, partition(0));
+    assert_eq!((*selected[0].checkpoint.source_partition_for_test()), partition(0));
     assert!(recovered
         .matching_source_partition_for_test(scope, [0xff; 32])
         .next()

@@ -105,7 +105,7 @@ fn distinct_absent_predicates_survive_sealing_and_compare_only_their_own_matches
         .expect("the fixture read owns its installed host call");
     let predicates = (*reads
         .facts_for_test())
-        .iter()
+        .iter_for_test()
         .filter(|fact| matches!(fact, Fact::IndexedEntitySelection { .. }))
         .cloned()
         .collect::<Vec<_>>();
@@ -174,10 +174,10 @@ pub fn currentness(
     fact: &Fact,
 ) -> bool {
     let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
-    (*world
+    (*(*world
         .application
         .primary_provider_for_test())
-        .graph
+        .graph_for_test())
         .with_runtime(execution, |runtime| {
             let movement = fact
                 .source_currentness_in_for_test(
@@ -187,7 +187,7 @@ pub fn currentness(
                 )
                 .unwrap()
                 .unwrap();
-            movement.movement() == Movement::Unmoved
+            movement.movement_for_test() == Movement::Unmoved
         })
 }
 
@@ -217,13 +217,13 @@ pub fn set_unrelated_value(
         "unrelated",
         &live_scope(),
     );
-    let installed = (*world
+    let installed = (*(*world
         .application
         .runtime_for_test())
         .primary_graph()
         .unwrap()
-        .layout
-        .field_locator(field.0, field.1, field.2)
+        .layout_for_test())
+        .field_locator_for_test(field.0, field.1, field.2)
         .unwrap();
     let locator = worth_foundational::facade::AspectFieldLocator::new(
         worth_foundational::facade::LocatorAuthority::Authoritative,

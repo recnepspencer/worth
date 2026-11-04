@@ -36,16 +36,16 @@ fn distinct_family_types_cannot_share_one_declared_identity_at_installation() {
     (*second.supported_mut_for_test()) = (*first.supported_for_test()).clone();
     (*first.output_family_type_mut_for_test()) = TypeId::of_for_test::<FirstFamily>();
     (*second.output_family_type_mut_for_test()) = (*first.output_family_type_for_test());
-    (*catalog.producers_for_test()).insert("initial".into(), first);
-    (*catalog.producers_for_test()).insert("preserve".into(), second);
+    (*catalog.producers_mut_for_test()).insert("initial".into(), first);
+    (*catalog.producers_mut_for_test()).insert("preserve".into(), second);
     catalog
         .validate_for_test()
         .expect("one family may have two lifecycle bindings");
-    (*catalog
-        .producers_for_test())
+    (*(*catalog
+        .producers_mut_for_test())
         .get_mut("preserve")
         .unwrap()
-        .output_family_type = TypeId::of_for_test::<SecondFamily>();
+        .output_family_type_mut_for_test()) = TypeId::of_for_test::<SecondFamily>();
     let denied = catalog
         .validate_for_test()
         .expect_err("different types cannot declare the same family");
@@ -74,11 +74,11 @@ impl<const N: u8>
 #[test]
 fn output_family_meaning_cannot_change_with_source_binding() {
     let mut catalog = WorthQueryApplicationContractCatalog::<TestSchema>::default();
-    (*catalog.producers_for_test()).insert(
+    (*catalog.producers_mut_for_test()).insert(
         "initial".to_owned(),
         producer("initial", "create-source", &[INITIAL]),
     );
-    (*catalog.producers_for_test()).insert(
+    (*catalog.producers_mut_for_test()).insert(
         "preserve".to_owned(),
         producer("preserve", "edit-source", &[PRESERVE]),
     );
@@ -96,7 +96,7 @@ fn a_producer_role_naming_a_family_member_is_denied() {
     for output_role in ["created.primary", "created."] {
         let mut catalog = WorthQueryApplicationContractCatalog::<TestSchema>::default();
         (*catalog
-            .producers_for_test())
+            .producers_mut_for_test())
             .insert("initial".to_owned(), family_producer(output_role));
 
         let denial = catalog.validate_for_test().unwrap_err();
@@ -111,7 +111,7 @@ fn producer_output_role_must_be_bound_by_every_commit() {
     let mut binding = producer("initial", "create-source", &[INITIAL]);
     (*binding.output_role_descriptors_mut_for_test()) =
         vec![<OptionalOutput as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR];
-    (*catalog.producers_for_test()).insert("initial".to_owned(), binding);
+    (*catalog.producers_mut_for_test()).insert("initial".to_owned(), binding);
 
     let denial = catalog.validate_for_test().unwrap_err();
     assert_eq!(denial.kind(), DenialKind::ProducerBindingMeaningMismatch);
@@ -120,7 +120,7 @@ fn producer_output_role_must_be_bound_by_every_commit() {
 
 pub fn family_producer(output_role: &str) -> DeclaredProducerBinding {
     let mut binding = producer("initial", "create-source", &[INITIAL]);
-    (*binding.output_role_descriptors_for_test()).clear();
+    (*binding.output_role_descriptors_mut_for_test()).clear();
     (*binding.output_role_families_mut_for_test()) =
         vec![<Created as WorthQueryApplicationDeclaredOutputRoleFamily>::DESCRIPTOR];
     (*binding.output_role_mut_for_test()) = output_role.to_owned();

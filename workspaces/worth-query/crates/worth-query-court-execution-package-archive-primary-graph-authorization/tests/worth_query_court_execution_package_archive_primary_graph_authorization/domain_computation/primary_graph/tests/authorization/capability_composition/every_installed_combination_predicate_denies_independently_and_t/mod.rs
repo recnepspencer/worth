@@ -67,7 +67,7 @@ fn every_installed_combination_predicate_denies_independently_and_together() {
             .with_host_advancement(|phase| {
                 let host_custody = phase.test_host_request_for_test();
                 authenticated_principal(
-                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                     &world,
                     &request,
                 )
@@ -79,7 +79,7 @@ fn every_installed_combination_predicate_denies_independently_and_together() {
             .with_host_advancement(|phase| {
                 let host_custody = phase.test_host_request_for_test();
                 admit_composed_access(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     &world,
                     &principal,
                     &request,

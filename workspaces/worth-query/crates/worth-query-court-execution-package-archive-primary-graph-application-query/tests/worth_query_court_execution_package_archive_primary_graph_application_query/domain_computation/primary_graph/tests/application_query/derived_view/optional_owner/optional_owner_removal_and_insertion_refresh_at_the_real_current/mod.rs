@@ -13,11 +13,11 @@ fn optional_owner_removal_and_insertion_refresh_at_the_real_current_product() {
             let borrowed_execution = host_custody.borrowed_request_for_test();
             let request_execution = &borrowed_execution;
             let selected = world.selected_product(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
             );
             let principal = selected
                 .resolve_authenticated_principal(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     &world.binding,
                     &external,
                     &request,
@@ -26,7 +26,7 @@ fn optional_owner_removal_and_insertion_refresh_at_the_real_current_product() {
                 .unwrap();
             let scope = selected
                 .resolve_entity(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     AccountStatus::reference(),
                     "open".to_owned(),
                     &request,
@@ -59,12 +59,12 @@ fn optional_owner_removal_and_insertion_refresh_at_the_real_current_product() {
                 )
                 .unwrap();
             let membership = crate::domain_computation::primary_graph::tests::application_query::derived_view::optional_owner::membership::read(
-                &host_custody.phase_for_application(&world.application),
+                &host_custody.phase_for_application_for_test(&world.application),
                 &world,
             );
             let account = membership.rows()[0].members[0];
             let owner = read(
-                &host_custody.phase_for_application(&world.application),
+                &host_custody.phase_for_application_for_test(&world.application),
                 request_execution,
                 &world,
                 None,
@@ -91,7 +91,7 @@ fn optional_owner_removal_and_insertion_refresh_at_the_real_current_product() {
                             .retain_selection_for_test(request_execution)
                             .unwrap()
                             .admit_application_query(
-                                &host_custody.phase_for_application(&world.application),
+                                &host_custody.phase_for_application_for_test(&world.application),
                                 &query,
                                 &access,
                                 ApplicationQueryParameterSet::new(),
@@ -104,7 +104,7 @@ fn optional_owner_removal_and_insertion_refresh_at_the_real_current_product() {
                             .retain_selection_for_test(request_execution)
                             .unwrap()
                             .admit_application_query(
-                                &host_custody.phase_for_application(&world.application),
+                                &host_custody.phase_for_application_for_test(&world.application),
                                 &query,
                                 &access,
                                 ApplicationQueryParameterSet::new(),
@@ -133,14 +133,14 @@ fn optional_owner_removal_and_insertion_refresh_at_the_real_current_product() {
                 Some(owner)
             );
             let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-            let kind = graph
-                .layout
+            let kind = (*(*graph
+                .layout_for_test())
                 .relation(AccountOwner::reference().name())
                 .unwrap()
-                .kind;
+                .kind_for_test());
             let edge = graph
-                .integration_handle()
-                .with_runtime_mut(request_execution, |runtime| {
+                .integration_handle_for_test()
+                .with_runtime_mut_for_test(request_execution, |runtime| {
                     runtime
                         .read_truth()
                         .visible_relations_of_kind(
@@ -154,7 +154,7 @@ fn optional_owner_removal_and_insertion_refresh_at_the_real_current_product() {
                         .unwrap()
                         .relation_id
                 });
-            let removed = graph.managed_derived_views().prepare_publication(
+            let removed = graph.managed_derived_views_for_test().prepare_publication_for_test(
                 publication_basis(selected.product()),
                 &[ViewChange::Adjacency(account, kind, 1)],
                 100_000,
@@ -168,7 +168,7 @@ fn optional_owner_removal_and_insertion_refresh_at_the_real_current_product() {
                 )),
             );
             let absent = world.selected_product(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
             );
             removed.apply(absent.product().selected_commit());
             assert_eq!(
@@ -182,7 +182,7 @@ fn optional_owner_removal_and_insertion_refresh_at_the_real_current_product() {
             );
             assert_eq!(
                 refresh(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     request_execution,
                     &world,
                     &view,
@@ -191,7 +191,7 @@ fn optional_owner_removal_and_insertion_refresh_at_the_real_current_product() {
                 .0,
                 None
             );
-            let inserted = graph.managed_derived_views().prepare_publication(
+            let inserted = graph.managed_derived_views_for_test().prepare_publication_for_test(
                 publication_basis(absent.product()),
                 &[ViewChange::Adjacency(account, kind, 1)],
                 100_000,
@@ -212,7 +212,7 @@ fn optional_owner_removal_and_insertion_refresh_at_the_real_current_product() {
                 )),
             );
             let present = world.selected_product(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
             );
             inserted.apply(present.product().selected_commit());
             assert_eq!(
@@ -226,7 +226,7 @@ fn optional_owner_removal_and_insertion_refresh_at_the_real_current_product() {
             );
             assert_eq!(
                 refresh(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     request_execution,
                     &world,
                     &view,

@@ -38,7 +38,7 @@ fn registry_binding_reader_ignores_logically_absent_completed_custody() {
         .committed_product_publication()
         .composite_commit()
         .clone();
-    let occurrence = (*source.receipt_for_test()).product_branch().occurrence();
+    let occurrence = (*source.receipt_for_test()).product_branch().occurrence_for_test();
     let (scope, _) = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::source_custody::real_scope_and_occurrence();
     for seed in 0..16 {
         let selected = BoundOutputSource {
@@ -95,8 +95,8 @@ fn registry_binding_reader_ignores_logically_absent_completed_custody() {
             .unwrap();
         let deferred = make();
         assert!(
-            (*deferred.state_for_test()).lock().unwrap().source_custody[&completed_commit]
-                .source
+            (*(*deferred.state_for_test()).lock().unwrap().source_custody[&completed_commit]
+                .source_for_test())
                 .is_none()
         );
         assert_eq!(
@@ -104,18 +104,18 @@ fn registry_binding_reader_ignores_logically_absent_completed_custody() {
             1,
             "a completed cleanup note retains no performed source"
         );
-        assert!((*deferred.state_for_test()).lock().unwrap().pending_custody_prune());
+        assert!((*deferred.state_for_test()).lock().unwrap().pending_custody_prune_for_test());
         deferred
             .bind_prepared_output_source_for_test(&current_commit, selected.clone())
             .unwrap();
         let a = (*eager.state_for_test()).lock().unwrap();
         let mut b = (*deferred.state_for_test()).lock().unwrap();
         assert!(a.source_custody[&current_commit]
-            .source_denial(&(*selected.identity_for_test()))
+            .source_denial_for_test(&(*selected.identity_for_test()))
             .is_none());
         assert_eq!(
-            b.source_custody[&current_commit].retired_sources,
-            a.source_custody[&current_commit].retired_sources,
+            (*b.source_custody[&current_commit].retired_sources_for_test()),
+            (*a.source_custody[&current_commit].retired_sources_for_test()),
             "seed {seed}"
         );
         // The admission-free reader drains only its own named custody; the
@@ -130,15 +130,15 @@ fn registry_binding_reader_ignores_logically_absent_completed_custody() {
                 .collect::<Vec<_>>()
         };
         assert_eq!(visible(&b), visible(&a), "seed {seed}");
-        assert!(b.custody_prunable(&completed_commit));
-        assert!(b.pending_custody_prune());
+        assert!(b.custody_prunable_for_test(&completed_commit));
+        assert!(b.pending_custody_prune_for_test());
         // Its production owner, the foreign-cleanup drain admission runs,
         // then reclaims it without the binding's help.
-        b.drain_next_foreign_custody();
+        b.drain_next_foreign_custody_for_test();
         assert!(!b.source_custody.contains_key(&completed_commit));
-        assert!(!b.pending_custody_prune());
+        assert!(!b.pending_custody_prune_for_test());
         assert_eq!(b.source_custody.len(), a.source_custody.len());
 
-        assert!(b.records.is_empty());
+        assert!((*b.records_for_test()).is_empty_for_test());
     }
 }

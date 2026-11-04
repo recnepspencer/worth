@@ -228,7 +228,7 @@ fn foreign_continuation_basis_denies_without_registering_a_lease() {
         .application
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request_for_test();
-            (*continuation.product_mut_for_test()) = (*foreign.issue(&host_custody).product_for_test())
+            (*continuation.product_mut_for_test()) = foreign.issue(&host_custody).product_into_for_test()
         })
         .expect("the fixture read owns its installed host call");
     let acquisitions = context.basis_acquisitions();

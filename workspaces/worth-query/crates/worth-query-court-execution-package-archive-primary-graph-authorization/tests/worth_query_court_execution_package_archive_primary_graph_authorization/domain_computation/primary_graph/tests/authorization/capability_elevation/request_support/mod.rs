@@ -24,7 +24,7 @@ pub fn commit_request(
             let custody = phase.test_host_request_for_test();
             let phase_custody = &custody;
             let principal =
-                authenticated_principal(&(phase_custody).test_host_request(), world, request);
+                authenticated_principal(&(phase_custody).test_host_request_for_test(), world, request);
             crate::domain_computation::primary_graph::tests::authorization::capability_elevation::request_transition::request_reads(
                 phase_custody,
                 world,

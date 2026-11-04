@@ -100,3 +100,19 @@ impl WorthQueryPrimaryGraphLayout {
         Self::provider_idempotency(self)
     }
 }
+
+impl WorthQueryPrimaryGraphLayout {
+    #[doc(hidden)]
+    pub fn aspect_contracts_mut_for_test(
+        &mut self,
+    ) -> &mut BTreeMap<String, BTreeMap<AspectKey, DeclaredAspectContractBinding>> {
+        &mut self.aspect_contracts
+    }
+}
+
+impl WorthQueryPrimaryFieldLayout {
+    #[doc(hidden)]
+    pub fn equality_index_id_mut_for_test(&mut self) -> &mut Option<DerivedIndexId> {
+        &mut self.equality_index_id
+    }
+}

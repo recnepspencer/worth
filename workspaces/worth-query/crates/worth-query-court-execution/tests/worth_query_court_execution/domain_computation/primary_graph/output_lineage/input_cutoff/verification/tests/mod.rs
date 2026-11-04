@@ -33,8 +33,8 @@ fn a_marked_fact_is_reverified_at_the_real_native_snapshot() {
             let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
             let status_ref = AccountStatus::reference();
             let status = graph
-                .layout()
-                .field_locator(status_ref.entity(), status_ref.aspect(), status_ref.field())
+                .layout_for_test()
+                .field_locator_for_test(status_ref.entity(), status_ref.aspect(), status_ref.field())
                 .unwrap()
                 .clone();
             let locator = AspectFieldLocator::new(
@@ -43,10 +43,10 @@ fn a_marked_fact_is_reverified_at_the_real_native_snapshot() {
                 status.field_path().clone(),
             );
 
-            (*world
+            (*(*world
                 .application
                 .primary_provider_for_test())
-                .graph
+                .graph_for_test())
                 .with_runtime(&execution, |runtime| {
                     let basis = runtime
                         .admit_branch_basis(&runtime.main_branch_identity())
@@ -130,14 +130,14 @@ fn a_clean_settlement_reuses_without_fact_reverification() {
                 .unwrap()
                 .entity_id_for_test();
             let (_, product, _) = selected_product.into_parts_for_test();
-            let observation = product.observation();
+            let observation = product.observation_for_test();
             let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-            let handle = graph.integration_handle();
-            let owner = &handle.source_owner.invalidation_owner;
+            let handle = graph.integration_handle_for_test();
+            let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
             let status_ref = AccountStatus::reference();
             let status = graph
-                .layout()
-                .field_locator(status_ref.entity(), status_ref.aspect(), status_ref.field())
+                .layout_for_test()
+                .field_locator_for_test(status_ref.entity(), status_ref.aspect(), status_ref.field())
                 .unwrap();
             let locator = AspectFieldLocator::new(
                 LocatorAuthority::Authoritative,
@@ -219,7 +219,7 @@ fn a_clean_settlement_reuses_without_fact_reverification() {
 
                 let witness = PreparedNativeOutputWitness::prepare_republication_for_test(
                     &correspondence,
-                    graph.layout(),
+                    graph.layout_for_test(),
                 )
                 .unwrap()
                 .expect("the installed Account admits its native witness")
@@ -227,7 +227,7 @@ fn a_clean_settlement_reuses_without_fact_reverification() {
                 .unwrap();
                 let evidence = ComputationSourceEvidence::for_test(false);
                 owner
-                    .register_settlement(SettlementRegistration {
+                    .register_settlement_for_test(SettlementRegistration {
                         computation: None,
                         work_membership: None,
                         identity: Arc::clone(&identity),
@@ -241,7 +241,7 @@ fn a_clean_settlement_reuses_without_fact_reverification() {
                     .unwrap();
                 assert!(
                     matches!(
-                        owner.currentness(&selected, &identity),
+                        owner.currentness_for_test(&selected, &identity),
                         Ok(SourceSettlementCurrentness::Clean)
                     ),
                     "the native settlement must start Clean"

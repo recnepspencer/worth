@@ -23,18 +23,18 @@ fn cancelled_cleanup_preserves_the_interleaved_peer() {
                 cancellation.token(),
             );
             let principal = authenticated_principal(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                 &world,
                 &request,
             );
             let account = resolved_account(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                 &world,
                 "open",
                 &request,
             );
             let victim = retained_status_program(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                 &world,
                 &principal,
                 &account,
@@ -43,7 +43,7 @@ fn cancelled_cleanup_preserves_the_interleaved_peer() {
                 RetentionMutationBreadth::Narrow,
             );
             let peer = equivalent_programs(
-                &host_custody.phase_for_application(&world.application),
+                &host_custody.phase_for_application_for_test(&world.application),
                 &world,
                 "cancelled-victim",
             )

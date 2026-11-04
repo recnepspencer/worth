@@ -228,7 +228,7 @@ fn handler_contact_is_preserved_after_a_later_execution_denial() {
             .with_host_advancement(|phase| {
                 let host_custody = phase.test_host_request_for_test();
                 authenticated_principal(
-                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                     &world,
                     &request,
                 )
@@ -239,7 +239,7 @@ fn handler_contact_is_preserved_after_a_later_execution_denial() {
             .with_host_advancement(|phase| {
                 let host_custody = phase.test_host_request_for_test();
                 resolved_account(
-                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                     &world,
                     "open",
                     &request,
@@ -257,11 +257,11 @@ fn handler_contact_is_preserved_after_a_later_execution_denial() {
                 let host_custody = phase.test_host_request_for_test();
                 world
                     .selected_product(
-                        &(host_custody.phase_for_application(&world.application))
-                            .test_host_request(),
+                        &(host_custody.phase_for_application_for_test(&world.application))
+                            .test_host_request_for_test(),
                     )
                     .authorize_operation(
-                        &host_custody.phase_for_application(&world.application),
+                        &host_custody.phase_for_application_for_test(&world.application),
                         &principal,
                         &account,
                         &operation,

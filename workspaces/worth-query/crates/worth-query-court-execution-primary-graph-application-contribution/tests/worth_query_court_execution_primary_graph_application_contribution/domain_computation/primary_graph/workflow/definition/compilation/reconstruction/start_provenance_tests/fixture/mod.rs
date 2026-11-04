@@ -57,8 +57,8 @@ pub fn selected(
             world.application.product_runtime().default_branch_for_test(),
         )
         .unwrap()
-        .into_parts();
-    (product.relational_basis().clone(), lease)
+        .into_parts_for_test();
+    (product.relational_basis_for_test().clone(), lease)
 }
 
 pub fn native_snapshot(
@@ -185,7 +185,7 @@ pub fn only_new_entity(
         .runtime_for_test())
         .primary_graph()
         .unwrap()
-        .integration_handle();
+        .integration_handle_for_test();
     let added = handle.with_runtime(execution, |runtime| {
         runtime
             .read_truth()
@@ -246,13 +246,13 @@ pub fn publish_instance_value(
         .runtime_for_test())
         .primary_graph()
         .unwrap()
-        .integration_handle();
+        .integration_handle_for_test();
     let before = handle.with_runtime(execution, |runtime| {
         runtime
             .read_truth()
             .visible_entities_of_kind(
                 execution,
-                (*layout.instance_for_test()).entity_kind,
+                (*(*layout.instance_for_test()).entity_kind_for_test()),
                 basis.1.snapshot_handle().version_id(),
             )
             .unwrap()
@@ -288,5 +288,5 @@ pub fn publish_instance_value(
         compiled.definition_for_test().partition_id,
         effects,
     );
-    only_new_entity(world, execution, (*layout.instance_for_test()).entity_kind, &before)
+    only_new_entity(world, execution, (*(*layout.instance_for_test()).entity_kind_for_test()), &before)
 }

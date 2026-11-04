@@ -7,3 +7,24 @@ impl WorthQueryApplicationHistoricalRead {
         Self::at_application_commit(receipt)
     }
 }
+
+impl<Schema> WorthQueryApplicationHistoricalBasis<Schema> {
+    #[doc(hidden)]
+    pub fn release_for_test(self) -> WorthQueryApplicationHistoricalBasisReleaseReceipt {
+        Self::release(self)
+    }
+}
+
+impl<Schema> WorthQueryApplicationHistoricalBasis<Schema> {
+    #[doc(hidden)]
+    pub fn version_id_for_test(&self) -> worth_relational::facade::identity::VersionId {
+        Self::version_id(self)
+    }
+}
+
+impl WorthQueryApplicationHistoricalBasisReleaseReceipt {
+    #[doc(hidden)]
+    pub fn released_for_test(&self) -> bool {
+        Self::released(self)
+    }
+}

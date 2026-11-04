@@ -69,7 +69,7 @@ fn same_world_publications_retain_distinct_commit_and_attempt_occurrences() {
             let first_observed = world
                 .application
                 .observe_committed_dispatch_outbox(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     &first,
                 )
                 .unwrap()
@@ -77,7 +77,7 @@ fn same_world_publications_retain_distinct_commit_and_attempt_occurrences() {
             let second_observed = world
                 .application
                 .observe_committed_dispatch_outbox(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     &second,
                 )
                 .unwrap()

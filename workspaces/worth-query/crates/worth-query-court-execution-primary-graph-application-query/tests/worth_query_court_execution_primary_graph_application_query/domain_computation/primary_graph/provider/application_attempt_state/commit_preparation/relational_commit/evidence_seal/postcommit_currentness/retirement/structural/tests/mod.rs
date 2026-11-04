@@ -74,7 +74,7 @@ fn whole_structural_retirement_requires_complete_correspondence_and_keeps_extern
     missing.remove(
         retired
             .iter()
-            .find(|entity| **entity != observation.key_for_test().member())
+            .find(|entity| **entity != observation.key_for_test().member_for_test())
             .unwrap(),
     );
     let rebased = at_current(&world, &execution, |runtime, snapshot| {
@@ -111,7 +111,7 @@ fn whole_structural_retirement_requires_complete_correspondence_and_keeps_extern
                 new.source_currentness_in_for_test(runtime, &execution, snapshot)
                     .unwrap()
                     .unwrap()
-                    .movement(),
+                    .movement_for_test(),
                 Movement::Unmoved
             );
         }
@@ -123,7 +123,7 @@ fn whole_structural_retirement_requires_complete_correspondence_and_keeps_extern
                 fact.source_currentness_in_for_test(runtime, &execution, snapshot)
                     .unwrap()
                     .unwrap()
-                    .movement(),
+                    .movement_for_test(),
                 Movement::Unmoved
             );
         }
@@ -151,7 +151,7 @@ fn whole_structural_retirement_requires_complete_correspondence_and_keeps_extern
                 .source_currentness_in_for_test(runtime, &execution, snapshot)
                 .unwrap()
                 .unwrap()
-                .movement(),
+                .movement_for_test(),
             Movement::Moved
         );
         for fact in &rebased {
@@ -159,7 +159,7 @@ fn whole_structural_retirement_requires_complete_correspondence_and_keeps_extern
                 fact.source_currentness_in_for_test(runtime, &execution, snapshot)
                     .unwrap()
                     .unwrap()
-                    .movement(),
+                    .movement_for_test(),
                 Movement::Unmoved
             );
         }
@@ -180,7 +180,7 @@ fn retiring_the_selected_anchor_does_not_retire_the_surviving_group_read() {
     };
     let anchor = observation.native().anchor();
     let member = |facts: &[Fact]| match &facts[0] {
-        Fact::Aggregate { observation } => observation.key_for_test().member(),
+        Fact::Aggregate { observation } => observation.key_for_test().member_for_test(),
         _ => unreachable!(),
     };
     let facts = &candidates

@@ -95,3 +95,5 @@ fn installation_denial_observation_kind(
         _ => super::WorthQueryConditionalClockObservationFailureKind::RuntimeRejected,
     }
 }
+
+mod court_doors_for_test;

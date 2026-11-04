@@ -67,7 +67,7 @@ fn root_path_guard_reads_its_pinned_truth_version() {
             change_account_status(
                 &host_custody.borrowed_request_for_test(),
                 &world,
-                account.entity_id(),
+                account.entity_id_for_test(),
                 "closed",
             )
         })
@@ -128,7 +128,7 @@ fn root_path_guard_reads_its_pinned_truth_version() {
     assert!(current_result.rows().is_empty());
     let empty_selection = current_result.result_set_observation().selection_for_test();
     assert_eq!((*empty_selection.aspects_for_test()).len(), 1);
-    assert_eq!((*empty_selection.entities_for_test()), [account.entity_id()]);
+    assert_eq!((*empty_selection.entities_for_test()), [account.entity_id_for_test()]);
     let selection = pinned_result.observed_sources()[0]
         .footprint_for_test()
         .root_selection
@@ -137,14 +137,14 @@ fn root_path_guard_reads_its_pinned_truth_version() {
     let guard = (*selection
         .aspects_for_test())
         .iter()
-        .find(|aspect| aspect.entity == account.entity_id())
+        .find(|aspect| (*aspect.entity_for_test()) == account.entity_id_for_test())
         .unwrap();
     let fact = WorthQueryApplicationObservedFact::SourceFieldRevision {
-        entity_id: guard.entity,
+        entity_id: (*guard.entity_for_test()),
         locator: AspectFieldLocator::new(
             LocatorAuthority::Authoritative,
-            guard.aspect.clone(),
-            CanonicalFieldPath::single(guard.field.clone()),
+            (*guard.aspect_for_test()).clone(),
+            CanonicalFieldPath::single((*guard.field_for_test()).clone()),
         ),
         native_revision: guard.native_revision,
     };
@@ -154,11 +154,11 @@ fn root_path_guard_reads_its_pinned_truth_version() {
         .expect("the fixture read owns its installed host call");
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let unavailable = WorthQueryApplicationObservedFact::SourceFieldRevision {
-        entity_id: guard.entity,
+        entity_id: (*guard.entity_for_test()),
         locator: AspectFieldLocator::new(
             LocatorAuthority::Authoritative,
-            guard.aspect.clone(),
-            CanonicalFieldPath::single(guard.field.clone()),
+            (*guard.aspect_for_test()).clone(),
+            CanonicalFieldPath::single((*guard.field_for_test()).clone()),
         ),
         native_revision: None,
     };
@@ -167,7 +167,7 @@ fn root_path_guard_reads_its_pinned_truth_version() {
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request_for_test();
             graph
-                .integration_handle()
+                .integration_handle_for_test()
                 .with_runtime(request_execution, |runtime| {
                     unavailable.source_currentness_in_for_test(
                         runtime,
@@ -187,7 +187,7 @@ fn root_path_guard_reads_its_pinned_truth_version() {
             let host_custody = phase.test_host_request_for_test();
             assert!(
                 !graph
-                    .integration_handle()
+                    .integration_handle_for_test()
                     .with_runtime(request_execution, |runtime| {
                         fact.source_currentness_in_for_test(
                             runtime,
@@ -196,7 +196,7 @@ fn root_path_guard_reads_its_pinned_truth_version() {
                         )
                         .unwrap()
                         .unwrap()
-                        .movement()
+                        .movement_for_test()
                             == Movement::Unmoved
                     }),
                 "changed root-path guard must stale the selected source"
@@ -209,11 +209,11 @@ fn root_path_guard_reads_its_pinned_truth_version() {
     );
     let absent_guard = &(*empty_selection.aspects_for_test())[0];
     let absent_fact = WorthQueryApplicationObservedFact::SourceFieldRevision {
-        entity_id: absent_guard.entity,
+        entity_id: (*absent_guard.entity_for_test()),
         locator: AspectFieldLocator::new(
             LocatorAuthority::Authoritative,
-            absent_guard.aspect.clone(),
-            CanonicalFieldPath::single(absent_guard.field.clone()),
+            (*absent_guard.aspect_for_test()).clone(),
+            CanonicalFieldPath::single((*absent_guard.field_for_test()).clone()),
         ),
         native_revision: absent_guard.native_revision,
     };
@@ -224,7 +224,7 @@ fn root_path_guard_reads_its_pinned_truth_version() {
             change_account_status(
                 &host_custody.borrowed_request_for_test(),
                 &world,
-                account.entity_id(),
+                account.entity_id_for_test(),
                 "open",
             )
         })
@@ -239,7 +239,7 @@ fn root_path_guard_reads_its_pinned_truth_version() {
             let host_custody = phase.test_host_request_for_test();
             assert!(
                 !graph
-                    .integration_handle()
+                    .integration_handle_for_test()
                     .with_runtime(request_execution, |runtime| {
                         absent_fact
                             .source_currentness_in_for_test(
@@ -249,7 +249,7 @@ fn root_path_guard_reads_its_pinned_truth_version() {
                             )
                             .unwrap()
                             .unwrap()
-                            .movement()
+                            .movement_for_test()
                             == Movement::Unmoved
                     }),
                 "a matching guard edit must stale an empty result-set observation"

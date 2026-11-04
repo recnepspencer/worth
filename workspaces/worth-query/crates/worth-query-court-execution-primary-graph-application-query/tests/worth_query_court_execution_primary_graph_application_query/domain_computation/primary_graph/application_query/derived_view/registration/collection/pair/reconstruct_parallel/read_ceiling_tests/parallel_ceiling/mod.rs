@@ -139,7 +139,7 @@ let partitions = plans
                 let (outcome, _) = ExecutionWorkCeiling::new(Some(ceiling))
                     .run(&lease, || {
                         map.run_owned(Some(&lease), |pair, context| {
-                            pair.run(&host_custody.borrowed_request_for_test(), context)
+                            pair.run_for_test(&host_custody.borrowed_request_for_test(), context)
                         })
                     })
                     .unwrap();
@@ -166,7 +166,7 @@ let partitions = plans
                         assert_eq!(ceiling, u64::MAX);
                         assert_eq!(values.len(), roots.len());
                         for (value, root) in values.iter().zip(&roots) {
-                            assert_eq!(value.first.raw.raw.rows.raw_rows()[0].entity_id(), root.entity_id_for_test());
+                            assert_eq!((*(*(*value.first_for_test()).raw.raw_for_test()).rows_for_test()).raw_rows()[0].entity_id(), root.entity_id_for_test());
                         }
                         let (entries, completions) = witness.observations();
                         assert_eq!(entries.len(), 2);

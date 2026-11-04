@@ -75,3 +75,87 @@ impl WorthQueryApplicationProjectionNode {
         )
     }
 }
+
+impl WorthQueryApplicationProjectedRelation {
+    #[doc(hidden)]
+    pub fn predicate_sources_for_test(&self) -> &Vec<EntityId> {
+        &self.predicate_sources
+    }
+}
+
+impl WorthQueryApplicationProjectedRelation {
+    #[doc(hidden)]
+    pub fn rows_for_test(&self) -> &Vec<WorthQueryApplicationProjectionNode> {
+        &self.rows
+    }
+}
+
+impl WorthQueryApplicationProjectedRelation {
+    #[doc(hidden)]
+    pub fn cardinality_mut_for_test(&mut self) -> &mut ApplicationQueryCardinality {
+        &mut self.cardinality
+    }
+}
+
+impl WorthQueryApplicationProjectedRelation {
+    #[doc(hidden)]
+    pub fn predicate_sources_mut_for_test(&mut self) -> &mut Vec<EntityId> {
+        &mut self.predicate_sources
+    }
+}
+
+impl WorthQueryApplicationProjectedField {
+    #[doc(hidden)]
+    pub fn result_path_mut_for_test(&mut self) -> &mut Arc<str> {
+        &mut self.result_path
+    }
+}
+
+impl WorthQueryApplicationProjectedRelation {
+    #[doc(hidden)]
+    pub fn result_path_mut_for_test(&mut self) -> &mut Arc<str> {
+        &mut self.result_path
+    }
+}
+
+impl WorthQueryApplicationProjectedRelation {
+    #[doc(hidden)]
+    pub fn rows_mut_for_test(&mut self) -> &mut Vec<WorthQueryApplicationProjectionNode> {
+        &mut self.rows
+    }
+}
+
+impl WorthQueryApplicationProjectedField {
+    #[doc(hidden)]
+    pub fn slot_key_mut_for_test(&mut self) -> &mut Arc<ApplicationQueryResultSlotKey> {
+        &mut self.slot_key
+    }
+}
+
+impl WorthQueryApplicationProjectedRelation {
+    #[doc(hidden)]
+    pub fn slot_key_mut_for_test(&mut self) -> &mut Arc<ApplicationQueryResultSlotKey> {
+        &mut self.slot_key
+    }
+}
+
+impl WorthQueryApplicationProjectedField {
+    #[doc(hidden)]
+    pub fn slot_type_mut_for_test(&mut self) -> &mut Arc<str> {
+        &mut self.slot_type
+    }
+}
+
+impl WorthQueryApplicationProjectedRelation {
+    #[doc(hidden)]
+    pub fn slot_type_mut_for_test(&mut self) -> &mut Arc<str> {
+        &mut self.slot_type
+    }
+}
+
+impl WorthQueryApplicationProjectedField {
+    #[doc(hidden)]
+    pub fn value_mut_for_test(&mut self) -> &mut AspectValue {
+        &mut self.value
+    }
+}

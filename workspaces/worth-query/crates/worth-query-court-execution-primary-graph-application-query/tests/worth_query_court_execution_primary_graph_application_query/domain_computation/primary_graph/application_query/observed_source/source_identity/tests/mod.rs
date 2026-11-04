@@ -19,7 +19,7 @@ fn refused_comparison_preserves_ordinal_and_live_coordinate_for_retry() {
     let first = registry
         .intern_for_test(&[7; 32], &[8; 32], footprint(root, true), &selection)
         .unwrap();
-    let ordinal = (*registry.state_for_test()).lock().unwrap().next_ordinal;
+    let ordinal = (*(*registry.state_for_test()).lock().unwrap().next_ordinal_for_test());
     let refusal = worth_relational::facade::transactions::RelationalExecutionDenialCause::PolicyMemoryExhausted {
         requested: 97,
         admitted: 53,
@@ -35,7 +35,7 @@ fn refused_comparison_preserves_ordinal_and_live_coordinate_for_retry() {
     assert_eq!(denied.err(), Some(refusal));
     {
         let state = (*registry.state_for_test()).lock().unwrap();
-        assert_eq!(state.next_ordinal, ordinal);
+        assert_eq!((*state.next_ordinal_for_test()), ordinal);
         assert_eq!(state.meanings.len(), 1);
     }
     let retry = registry
@@ -66,13 +66,13 @@ fn exact_meaning_is_reused_but_a_changed_footprint_gets_a_new_identity() {
     let returned = registry
         .intern_for_test(&[7; 32], &[8; 32], footprint(root, true), &selection)
         .unwrap();
-    assert_eq!(first.identity(), equivalent.identity());
-    assert_ne!(first.identity(), changed.identity());
+    assert_eq!(first.identity_for_test(), equivalent.identity_for_test());
+    assert_ne!(first.identity_for_test(), changed.identity_for_test());
     assert_ne!(
-        first.runtime_idempotency_identity(),
-        changed.runtime_idempotency_identity()
+        first.runtime_idempotency_identity_for_test(),
+        changed.runtime_idempotency_identity_for_test()
     );
-    assert_eq!(first.identity(), returned.identity());
+    assert_eq!(first.identity_for_test(), returned.identity_for_test());
 }
 
 #[test]
@@ -88,8 +88,8 @@ fn result_set_membership_is_not_a_row_source_with_the_same_footprint() {
     let set = registry
         .intern_result_set_for_test(&[7; 32], &[8; 32], footprint(root, true), &selection)
         .unwrap();
-    assert_ne!(row.identity(), set.identity());
-    assert_ne!(row.checkpoint_identity(), set.checkpoint_identity());
+    assert_ne!(row.identity_for_test(), set.identity_for_test());
+    assert_ne!(row.checkpoint_identity_for_test(), set.checkpoint_identity_for_test());
 }
 
 #[test]
@@ -125,7 +125,7 @@ fn released_meaning_removes_only_its_fixed_coordinate() {
     assert_eq!((*registry.state_for_test()).lock().unwrap().meanings.len(), 2);
     drop(first);
     assert_eq!((*registry.state_for_test()).lock().unwrap().meanings.len(), 1);
-    assert_eq!(second.footprint().root, second_root);
+    assert_eq!((*second.footprint().root_for_test()), second_root);
 }
 
 #[test]
@@ -138,17 +138,17 @@ fn reinterned_source_retains_checkpoint_identity_without_reusing_runtime_idempot
     let first = registry
         .intern_for_test(&[7; 32], &[8; 32], footprint(root, true), &selection)
         .unwrap();
-    let first_runtime_identity = *first.identity();
-    let first_commitment = first.runtime_idempotency_identity();
-    let checkpoint_identity = first.checkpoint_identity();
+    let first_runtime_identity = *first.identity_for_test();
+    let first_commitment = first.runtime_idempotency_identity_for_test();
+    let checkpoint_identity = first.checkpoint_identity_for_test();
     drop(first);
 
     let reinterned = registry
         .intern_for_test(&[7; 32], &[8; 32], footprint(root, true), &selection)
         .unwrap();
-    assert_ne!(*reinterned.identity(), first_runtime_identity);
-    assert_eq!(reinterned.runtime_idempotency_identity(), first_commitment);
-    assert_eq!(reinterned.checkpoint_identity(), checkpoint_identity);
+    assert_ne!(*reinterned.identity_for_test(), first_runtime_identity);
+    assert_eq!(reinterned.runtime_idempotency_identity_for_test(), first_commitment);
+    assert_eq!(reinterned.checkpoint_identity_for_test(), checkpoint_identity);
 }
 
 #[test]
@@ -166,20 +166,20 @@ let first_branch = world
             .branches()
             .fork(source)
             .components(|components| components.fork_relational().reuse_exact_signal_basis())
-            .create(&host_custody.phase_for_application(&world.application))
+            .create(&host_custody.phase_for_application_for_test(&world.application))
             .expect("the first sibling product publishes");
         let second_branch = world
             .application
             .branches()
             .fork(source)
             .components(|components| components.fork_relational().reuse_exact_signal_basis())
-            .create(&host_custody.phase_for_application(&world.application))
+            .create(&host_custody.phase_for_application_for_test(&world.application))
             .expect("the second sibling product publishes");
         let selection = |branch| {
             let selected = world
                 .application
                 .on_branch(branch)
-                .select(&host_custody.phase_for_application(&world.application))
+                .select(&host_custody.phase_for_application_for_test(&world.application))
                 .expect("the sibling product remains selectable");
             WorthQueryApplicationBasisSelectionIdentity::Product(
                 worth_query_execution::facade::domain_computation::WorthQueryProductBranchReadIdentity::from_observation_for_test(
@@ -209,10 +209,10 @@ let first_branch = world
             .unwrap();
 
         assert_ne!(
-            first.runtime_idempotency_identity(),
-            second.runtime_idempotency_identity()
+            first.runtime_idempotency_identity_for_test(),
+            second.runtime_idempotency_identity_for_test()
         );
-        assert_eq!(first.checkpoint_identity(), second.checkpoint_identity());
+        assert_eq!(first.checkpoint_identity_for_test(), second.checkpoint_identity_for_test());
 
 }).expect("the fixture block owns its installed host call")
 }
@@ -271,7 +271,7 @@ pub fn product_selection() -> WorthQueryApplicationBasisSelectionIdentity {
         .admit_product_branch_for_test(world.application.product_runtime().default_branch_for_test())
         .expect("the fixture product occurrence is live");
     WorthQueryApplicationBasisSelectionIdentity::Product(
-        worth_query_execution::facade::domain_computation::WorthQueryProductBranchReadIdentity::from_observation_for_test(product.observation()),
+        worth_query_execution::facade::domain_computation::WorthQueryProductBranchReadIdentity::from_observation_for_test(product.observation_for_test()),
     )
 }
 

@@ -143,7 +143,7 @@ fn later_commit_recovery_selects_exact_evidence_and_rejects_foreign_reference_ax
             (*world
                 .application
                 .primary_provider_for_test())
-                .observe_completed_application(&foreign)
+                .observe_completed_application_for_test(&foreign)
                 .is_none(),
             "equal CommitId with any foreign RelationalCommitReceipt axis must not observe evidence"
         );

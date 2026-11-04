@@ -4,7 +4,7 @@ fn post_effect_rebase_door_preserves_stops_at_every_consult() {
     let world = installed_authorization_world(true);
     world.application.with_host_advancement(|phase| {
         let (entity, locator) = account_note(&phase, &world, "account-1");
-        let kind = (*world.application.runtime_for_test()).primary_graph().unwrap().layout.entity_kind(AccountIdentity::reference().entity()).unwrap();
+        let kind = (*(*world.application.runtime_for_test()).primary_graph().unwrap().layout_for_test()).entity_kind_for_test(AccountIdentity::reference().entity()).unwrap();
         let fact = WorthQueryApplicationObservedFact::AbsentField { entity_id: entity, kind, locator: planned(&locator) };
         worth_query_execution::test_read_stops::every_consult_under(&phase.borrowed_request_for_test(),|execution| match rebase_result_at_current(&phase, execution, &world, vec![fact.clone()]) {
             RebasedSourceFacts::Exact(_) => Ok(true),
@@ -24,7 +24,7 @@ fn selected_native_rebase_preserves_stops_at_every_consult() {
     let world = installed_authorization_world(true);
     world.application.with_host_advancement(|phase| {
         let (entity, locator) = account_note(&phase, &world, "account-1");
-        let kind = (*world.application.runtime_for_test()).primary_graph().unwrap().layout.entity_kind(AccountIdentity::reference().entity()).unwrap();
+        let kind = (*(*world.application.runtime_for_test()).primary_graph().unwrap().layout_for_test()).entity_kind_for_test(AccountIdentity::reference().entity()).unwrap();
         let control = StorageControl::new_for_test(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None);
         let mut facts = NativeFactPayloadBuilder::allocate(2, control).unwrap();
         facts.push(WorthQueryApplicationObservedFact::AbsentField { entity_id: entity, kind, locator: planned(&locator) }).unwrap();
@@ -52,7 +52,7 @@ fn selected_native_rebase_preserves_stops_at_every_consult() {
                 }
                 Err(cause) => panic!("unexpected preparation refusal: {cause:?}"),
             };
-let result = (*world.application.runtime_for_test()).primary_graph().unwrap().integration_handle().with_runtime(execution, |runtime| {
+let result = (*world.application.runtime_for_test()).primary_graph().unwrap().integration_handle_for_test().with_runtime(execution, |runtime| {
                 prepared.rebase_for_test(execution, runtime, snapshot, &BTreeSet::new(), true, StorageControl::new_for_test(execution.allocation_policy(), None))
             });
 

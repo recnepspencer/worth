@@ -39,7 +39,7 @@ fn selected_delivery_keeps_both_producer_and_applicability_identity() {
                 ));
                 let mut row = record(occurrence(), DemandState::Output(output), 1);
                 (*row.source_scope_mut_for_test()) = Some(scope);
-                state.records.insert(binding.clone(), row);
+                (*state.records_for_test()).insert_for_test(binding.clone(), row);
             }
         }
         let joined = registry
@@ -54,11 +54,11 @@ fn selected_delivery_keeps_both_producer_and_applicability_identity() {
             )
             .map(|(interest, _pause)| interest)
             .unwrap();
-        assert_eq!(joined.key, own, "other producer: {other_producer}");
+        assert_eq!((*joined.key_for_test()), own, "other producer: {other_producer}");
         let state = (*registry.state_for_test()).lock().unwrap();
-        assert_eq!(state.records[&own].interests, 2);
-        assert_eq!(state.records[&foreign].interests, 1);
-        assert_eq!(state.records.len(), 2);
+        assert_eq!((*(*state.records_for_test())[&own].interests_for_test()), 2);
+        assert_eq!((*(*state.records_for_test())[&foreign].interests_for_test()), 1);
+        assert_eq!((*state.records_for_test()).len_for_test(), 2);
         drop(state);
         drop(joined);
     }

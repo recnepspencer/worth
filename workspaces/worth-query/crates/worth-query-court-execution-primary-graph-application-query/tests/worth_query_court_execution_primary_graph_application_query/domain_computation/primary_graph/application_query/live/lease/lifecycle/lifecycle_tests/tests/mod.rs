@@ -170,11 +170,11 @@ impl LiveContext {
     }
 
     pub fn close_source(&self) {
-        (*self.world
+        (*(*self.world
             .application
             .primary_provider_for_test())
-            .live_delivery
-            .close();
+            .live_delivery_for_test())
+            .close_for_test();
     }
 
     pub fn overflow_source(&self) {
@@ -195,7 +195,7 @@ impl LiveContext {
             (*self.world
                 .application
                 .primary_provider_for_test())
-                .active_application_commit_causality_partitions(),
+                .active_application_commit_causality_partitions_for_test(),
             0
         );
     }

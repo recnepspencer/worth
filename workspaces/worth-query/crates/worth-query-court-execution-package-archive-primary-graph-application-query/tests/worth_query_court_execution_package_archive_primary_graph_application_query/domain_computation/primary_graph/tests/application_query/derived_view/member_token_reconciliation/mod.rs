@@ -16,7 +16,7 @@ fn changed_member_token_for_same_entity_refreshes_entry_and_duplicate_members_fa
             let borrowed_execution = host_custody.borrowed_request_for_test();
             let request_execution = &borrowed_execution;
             let selected = world.selected_product(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
             );
             let membership_query = world
                 .application
@@ -44,11 +44,11 @@ fn changed_member_token_for_same_entity_refreshes_entry_and_duplicate_members_fa
                 .unwrap();
             let read_membership = || {
                 let current = world.selected_product(
-                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                 );
                 let principal = current
                     .resolve_authenticated_principal(
-                        &host_custody.phase_for_application(&world.application),
+                        &host_custody.phase_for_application_for_test(&world.application),
                         &world.binding,
                         &external,
                         &request,
@@ -57,7 +57,7 @@ fn changed_member_token_for_same_entity_refreshes_entry_and_duplicate_members_fa
                     .unwrap();
                 let scope = current
                     .resolve_entity(
-                        &host_custody.phase_for_application(&world.application),
+                        &host_custody.phase_for_application_for_test(&world.application),
                         AccountStatus::reference(),
                         "open".to_string(),
                         &request,
@@ -68,10 +68,10 @@ fn changed_member_token_for_same_entity_refreshes_entry_and_duplicate_members_fa
                 world
                     .application
                     .execute_application_query_one_shot(
-                        &host_custody.phase_for_application(&world.application),
+                        &host_custody.phase_for_application_for_test(&world.application),
                         current
                             .admit_application_query(
-                                &host_custody.phase_for_application(&world.application),
+                                &host_custody.phase_for_application_for_test(&world.application),
                                 &membership_query,
                                 &access,
                                 ApplicationQueryParameterSet::new(),
@@ -83,11 +83,11 @@ fn changed_member_token_for_same_entity_refreshes_entry_and_duplicate_members_fa
             };
             let read_entry = |token: &str| {
                 let current = world.selected_product(
-                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                 );
                 let principal = current
                     .resolve_authenticated_principal(
-                        &host_custody.phase_for_application(&world.application),
+                        &host_custody.phase_for_application_for_test(&world.application),
                         &world.binding,
                         &external,
                         &request,
@@ -96,7 +96,7 @@ fn changed_member_token_for_same_entity_refreshes_entry_and_duplicate_members_fa
                     .unwrap();
                 let scope = current
                     .resolve_entity(
-                        &host_custody.phase_for_application(&world.application),
+                        &host_custody.phase_for_application_for_test(&world.application),
                         AccountStatus::reference(),
                         token.split('-').next().unwrap().to_string(),
                         &request,
@@ -107,10 +107,10 @@ fn changed_member_token_for_same_entity_refreshes_entry_and_duplicate_members_fa
                 world
                     .application
                     .execute_application_query_one_shot(
-                        &host_custody.phase_for_application(&world.application),
+                        &host_custody.phase_for_application_for_test(&world.application),
                         current
                             .admit_application_query(
-                                &host_custody.phase_for_application(&world.application),
+                                &host_custody.phase_for_application_for_test(&world.application),
                                 &entry_query,
                                 &access,
                                 ApplicationQueryParameterSet::new(),
@@ -129,7 +129,7 @@ fn changed_member_token_for_same_entity_refreshes_entry_and_duplicate_members_fa
             let membership = read_membership();
             let pair_principal = selected
                 .resolve_authenticated_principal(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     &world.binding,
                     &external,
                     &request,
@@ -138,7 +138,7 @@ fn changed_member_token_for_same_entity_refreshes_entry_and_duplicate_members_fa
                 .unwrap();
             let pair_scope = selected
                 .resolve_entity(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     AccountStatus::reference(),
                     "open".to_string(),
                     &request,
@@ -160,7 +160,7 @@ fn changed_member_token_for_same_entity_refreshes_entry_and_duplicate_members_fa
                             .retain_selection_for_test(request_execution)
                             .unwrap()
                             .admit_application_query(
-                                &host_custody.phase_for_application(&world.application),
+                                &host_custody.phase_for_application_for_test(&world.application),
                                 &entry_query,
                                 &pair_access,
                                 ApplicationQueryParameterSet::new(),
@@ -171,7 +171,7 @@ fn changed_member_token_for_same_entity_refreshes_entry_and_duplicate_members_fa
                             .retain_selection_for_test(request_execution)
                             .unwrap()
                             .admit_application_query(
-                                &host_custody.phase_for_application(&world.application),
+                                &host_custody.phase_for_application_for_test(&world.application),
                                 &entry_query,
                                 &pair_access,
                                 ApplicationQueryParameterSet::new(),
@@ -206,7 +206,7 @@ fn changed_member_token_for_same_entity_refreshes_entry_and_duplicate_members_fa
                             .retain_selection_for_test(request_execution)
                             .unwrap()
                             .admit_application_query(
-                                &host_custody.phase_for_application(&world.application),
+                                &host_custody.phase_for_application_for_test(&world.application),
                                 &entry_query,
                                 &pair_access,
                                 ApplicationQueryParameterSet::new(),
@@ -217,7 +217,7 @@ fn changed_member_token_for_same_entity_refreshes_entry_and_duplicate_members_fa
                             .retain_selection_for_test(request_execution)
                             .unwrap()
                             .admit_application_query(
-                                &host_custody.phase_for_application(&world.application),
+                                &host_custody.phase_for_application_for_test(&world.application),
                                 &entry_query,
                                 &pair_access,
                                 ApplicationQueryParameterSet::new(),
@@ -248,12 +248,12 @@ fn changed_member_token_for_same_entity_refreshes_entry_and_duplicate_members_fa
             ));
             let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
             let tag_field = AccountMembershipTag::reference();
-            let tag_locator = graph
-                .layout
-                .field_locator(tag_field.entity(), tag_field.aspect(), tag_field.field())
+            let tag_locator = (*graph
+                .layout_for_test())
+                .field_locator_for_test(tag_field.entity(), tag_field.aspect(), tag_field.field())
                 .unwrap()
                 .clone();
-            let prepared = graph.managed_derived_views().prepare_publication(
+            let prepared = graph.managed_derived_views_for_test().prepare_publication_for_test(
                 publication_basis(selected.product()),
                 &[ViewChange::Aspect(
                     key.root(),
@@ -276,7 +276,7 @@ fn changed_member_token_for_same_entity_refreshes_entry_and_duplicate_members_fa
                 )),
             );
             let after = world.selected_product(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
             );
             prepared.apply(after.product().selected_commit());
             let current = read_membership();

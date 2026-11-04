@@ -64,7 +64,7 @@ fn exact_support_revocation_after_materialization_denies_provider_commit() {
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request_for_test();
             assert_requested_without_approval(
-                &host_custody.phase_for_application(&world.application),
+                &host_custody.phase_for_application_for_test(&world.application),
                 &host_custody.borrowed_request_for_test(),
                 &world,
                 &requested,
@@ -124,7 +124,7 @@ fn unrelated_published_lifecycle_drift_stales_the_selected_product_mutation() {
             let host_custody = phase.test_host_request_for_test();
             assert_eq!(
                 crate::domain_computation::primary_graph::tests::authorization::capability_elevation::terminal_state::elevation_status(
-                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                     &host_custody.borrowed_request_for_test(),
                     &world
                 ),
@@ -181,7 +181,7 @@ fn request_expiry_after_approval_materialization_denies_provider_commit() {
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request_for_test();
             assert_requested_without_approval(
-                &host_custody.phase_for_application(&world.application),
+                &host_custody.phase_for_application_for_test(&world.application),
                 &host_custody.borrowed_request_for_test(),
                 &world,
                 &requested,
@@ -217,7 +217,7 @@ fn exact_approval_authorization_carries_three_graph_facts_and_derive_only_the_go
             world
                 .application
                 .authorize_elevation_approval(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     requested,
                     access,
                     &crate::domain_computation::primary_graph::tests::authorization::capability_elevation::approval_transition::approval_operation(&world),

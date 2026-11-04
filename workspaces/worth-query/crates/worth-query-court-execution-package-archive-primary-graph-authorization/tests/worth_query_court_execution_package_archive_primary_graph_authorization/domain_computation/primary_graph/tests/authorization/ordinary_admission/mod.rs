@@ -125,11 +125,11 @@ fn current_installed_membership_mints_exact_operation_admission() {
     );
     assert_eq!(
         admitted.graph_work_principal_entity_id(),
-        principal.principal_entity_id()
+        principal.principal_entity_id_for_test()
     );
     assert_eq!(
         admitted.graph_work_scope_entity_id_for_test(),
-        Some(account.entity_id())
+        Some(account.entity_id_for_test())
     );
     assert!(admitted.graph_work_capability_identity_for_test().is_none());
     assert!(admitted.graph_work_runtime_ordinal_for_test() > 0);

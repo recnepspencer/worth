@@ -27,10 +27,10 @@ pub fn fixture(
         .clone();
     let mut state = (*registry.state_for_test()).lock().unwrap();
     let mut next = record(receipt.product_branch().occurrence_for_test(), copy_ready(ready), 1);
-    (*next.source_commits_for_test()).push(commit.clone());
+    (*next.source_commits_mut_for_test()).push(commit.clone());
     let next_wake = Arc::clone(&(*next.wake_for_test()));
-    state.records.insert(newest.clone(), next);
-    state.records.insert(
+    (*state.records_for_test()).insert_for_test(newest.clone(), next);
+    (*state.records_for_test()).insert_for_test(
         old.clone(),
         DemandRecord {
             framework_required_count: 1,
@@ -52,9 +52,9 @@ pub fn fixture(
     (*row.required_interests_mut_for_test()) = 1;
 
     let wake = Arc::clone(&(*row.wake_for_test()));
-    state.records.insert(dependent.clone(), row);
-    let member = state.prepare_required_member(&newest).unwrap();
-    state.install_required_member(member);
+    (*state.records_for_test()).insert_for_test(dependent.clone(), row);
+    let member = state.prepare_required_member_for_test(&newest).unwrap();
+    state.install_required_member_for_test(member);
     state.source_custody.insert(
         commit,
         SourceCustody {
@@ -95,7 +95,7 @@ fn registry_custody_note_survives_a_held_drain_and_claim_transfer() {
     );
     let commit = receipt.committed_product_publication().composite_commit();
     drop(owner);
-    (*registry.state_for_test()).lock().unwrap().drain_next_foreign_custody();
+    (*registry.state_for_test()).lock().unwrap().drain_next_foreign_custody_for_test();
     {
         let state = (*registry.state_for_test()).lock().unwrap();
         assert!(
@@ -103,19 +103,19 @@ fn registry_custody_note_survives_a_held_drain_and_claim_transfer() {
             "stale claim still holds custody"
         );
         assert!(
-            state.source_custody[commit].cleanup.queued,
+            (*state.source_custody[commit].cleanup_for_test()).queued,
             "held debt stays noted"
         );
     }
     drop(dependent);
     registry.drain_closed_cleanup_admitted().unwrap();
     let mut state = (*registry.state_for_test()).lock().unwrap();
-    assert_eq!(state.records[&newest].framework_required_count, 1);
-    state.drain_next_foreign_custody();
+    assert_eq!((*(*state.records_for_test())[&newest].framework_required_count_for_test()), 1);
+    state.drain_next_foreign_custody_for_test();
     assert!(!state.source_custody.contains_key(commit));
     worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::post_commit::custody_reader::resolve_before_binding(&mut state, &receipt);
     assert!(
-        !state.pending_custody_prune(),
+        !state.pending_custody_prune_for_test(),
         "binding cannot see the pruned newer source"
     );
 }

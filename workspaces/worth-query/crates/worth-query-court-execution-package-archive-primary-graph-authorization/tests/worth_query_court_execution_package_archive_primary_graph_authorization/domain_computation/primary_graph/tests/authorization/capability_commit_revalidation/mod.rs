@@ -225,14 +225,14 @@ pub fn disable_mapping(
 ) {
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let layout = graph
-        .layout()
-        .principal_binding(world.binding.binding())
+        .layout_for_test()
+        .principal_binding_for_test(world.binding.binding())
         .unwrap();
     update_field(
         execution,
         world,
         mapping,
-        layout.status_locator.clone(),
+        (*layout.status_locator_for_test()).clone(),
         WorthQueryPrincipalMappingStatusBinding::encode(
             &WorthQueryPrincipalMappingStatus::Disabled,
         )
@@ -248,14 +248,14 @@ pub fn enable_mapping(
 ) {
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let layout = graph
-        .layout()
-        .principal_binding(world.binding.binding())
+        .layout_for_test()
+        .principal_binding_for_test(world.binding.binding())
         .unwrap();
     update_field(
         execution,
         world,
         mapping,
-        layout.status_locator.clone(),
+        (*layout.status_locator_for_test()).clone(),
         WorthQueryPrincipalMappingStatusBinding::encode(&WorthQueryPrincipalMappingStatus::Enabled)
             .unwrap(),
         "reenable-capability-principal",
@@ -337,8 +337,8 @@ pub fn installed_field(
         .runtime_for_test())
         .primary_graph()
         .unwrap()
-        .layout()
-        .field_locator(entity, aspect, field)
+        .layout_for_test()
+        .field_locator_for_test(entity, aspect, field)
         .unwrap()
         .clone()
 }

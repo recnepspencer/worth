@@ -15,7 +15,7 @@ fn governed_query_cannot_open_a_persistent_view_without_read_reauthorization() {
             let host_custody = phase.test_host_request_for_test();
 
             let selected = world.selected_product(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
             );
             let denial = world
                 .application
@@ -44,11 +44,11 @@ fn prepared_view_publication_preserves_unaffected_arc_and_colds_membership_chang
             let host_custody = phase.test_host_request_for_test();
 
             let selected = world.selected_product(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
             );
             let principal = selected
                 .resolve_authenticated_principal(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     &world.binding,
                     &external,
                     &request,
@@ -57,7 +57,7 @@ fn prepared_view_publication_preserves_unaffected_arc_and_colds_membership_chang
                 .unwrap();
             let open = selected
                 .resolve_entity(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     AccountStatus::reference(),
                     "open".to_string(),
                     &request,
@@ -66,7 +66,7 @@ fn prepared_view_publication_preserves_unaffected_arc_and_colds_membership_chang
                 .unwrap();
             let unrelated = selected
                 .resolve_entity(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     AccountStatus::reference(),
                     "unrelated".to_string(),
                     &request,
@@ -90,10 +90,10 @@ fn prepared_view_publication_preserves_unaffected_arc_and_colds_membership_chang
             let result = world
                 .application
                 .execute_application_query_one_shot(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     selected
                         .admit_application_query(
-                            &host_custody.phase_for_application(&world.application),
+                            &host_custody.phase_for_application_for_test(&world.application),
                             &query,
                             &access,
                             ApplicationQueryParameterSet::new()
@@ -106,7 +106,7 @@ fn prepared_view_publication_preserves_unaffected_arc_and_colds_membership_chang
                 .unwrap();
             let key = result.observed_sources()[0].managed_derived_view_key();
             let retained_product = world.selected_product(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
             );
             assert_eq!(open.entity_id_for_test(), key.root());
             world
@@ -127,9 +127,9 @@ fn prepared_view_publication_preserves_unaffected_arc_and_colds_membership_chang
                 .unwrap();
             let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
             let field = AccountLabel::reference();
-            let locator = graph
-                .layout
-                .field_locator(field.entity(), field.aspect(), field.field())
+            let locator = (*graph
+                .layout_for_test())
+                .field_locator_for_test(field.entity(), field.aspect(), field.field())
                 .unwrap()
                 .clone();
             let change_label = |entity_id, label: &str| {
@@ -148,7 +148,7 @@ fn prepared_view_publication_preserves_unaffected_arc_and_colds_membership_chang
                     )),
                 );
             };
-            let prepared = graph.managed_derived_views().prepare_publication(
+            let prepared = graph.managed_derived_views_for_test().prepare_publication_for_test(
                 publication_basis(retained_product.product()),
                 &[ViewChange::Aspect(
                     unrelated.entity_id_for_test(),
@@ -158,7 +158,7 @@ fn prepared_view_publication_preserves_unaffected_arc_and_colds_membership_chang
             );
             change_label(unrelated.entity_id_for_test(), "other-changed");
             let after = world.selected_product(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
             );
             prepared.apply(after.product().selected_commit());
             let retained = world
@@ -170,7 +170,7 @@ fn prepared_view_publication_preserves_unaffected_arc_and_colds_membership_chang
                 .unwrap();
             assert!(std::sync::Arc::ptr_eq(&original, &retained));
 
-            let prepared = graph.managed_derived_views().prepare_publication(
+            let prepared = graph.managed_derived_views_for_test().prepare_publication_for_test(
                 publication_basis(after.product()),
                 &[ViewChange::Aspect(
                     open.entity_id_for_test(),
@@ -180,7 +180,7 @@ fn prepared_view_publication_preserves_unaffected_arc_and_colds_membership_chang
             );
             change_label(open.entity_id_for_test(), "primary-changed");
             let after = world.selected_product(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
             );
             prepared.apply(after.product().selected_commit());
             assert_eq!(

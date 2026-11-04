@@ -20,9 +20,9 @@ fn checkpoint_capture_includes_only_idle_ready_outputs_in_canonical_order() {
     let occurrence = receipt.product_branch().occurrence_for_test();
     let registry = WorthQueryOutputDemandRegistry::default();
     let z_key = key("z-producer", 1, 1);
-    let z_source = (*z_key.source_for_test()).checkpoint_identity().bytes();
+    let z_source = (*z_key.source_for_test()).checkpoint_identity().bytes_for_test();
     let a_key = key("a-producer", 1, 2);
-    let a_source = (*a_key.source_for_test()).checkpoint_identity().bytes();
+    let a_source = (*a_key.source_for_test()).checkpoint_identity().bytes_for_test();
     let ready = |receipt| {
         DemandState::Output(WorthQueryOutputProgress::new_for_test(
             WorthQueryOutputCheckpoint::Ready(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::ready_backing::ReadyCompletion::for_test(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryCompletedOutputDemand {
@@ -32,7 +32,7 @@ fn checkpoint_capture_includes_only_idle_ready_outputs_in_canonical_order() {
             })),
         ))
     };
-    (*registry.state_for_test()).lock().unwrap().records.extend([
+    (*(*registry.state_for_test()).lock().unwrap().records_for_test()).extend_for_test([
         (z_key, record(occurrence, ready(receipt.clone()), 1)),
         (a_key, record(occurrence, ready(receipt.clone()), 1)),
         (
@@ -61,7 +61,7 @@ fn checkpoint_capture_includes_only_idle_ready_outputs_in_canonical_order() {
         WorthQueryOutputDemandDenialKind::Superseded,
         "stopped before capture",
     ));
-    (*registry.state_for_test()).lock().unwrap().records.insert(
+    (*(*registry.state_for_test()).lock().unwrap().records_for_test()).insert_for_test(
         stopped_key,
         record(occurrence, DemandState::Output(stopped), 1),
     );
@@ -69,13 +69,13 @@ fn checkpoint_capture_includes_only_idle_ready_outputs_in_canonical_order() {
     let accepted = registry.accepted_checkpoint_identities_for_test();
 
     assert_eq!(accepted.len(), 2);
-    assert_eq!(accepted[0].producer.as_str(), "a-producer");
-    assert_eq!(accepted[1].producer.as_str(), "z-producer");
-    assert_eq!(accepted[0].source, a_source);
-    assert_eq!(accepted[1].source, z_source);
+    assert_eq!((*accepted[0].producer_for_test()).as_str(), "a-producer");
+    assert_eq!((*accepted[1].producer_for_test()).as_str(), "z-producer");
+    assert_eq!((*accepted[0].source_for_test()), a_source);
+    assert_eq!((*accepted[1].source_for_test()), z_source);
     assert!(accepted
         .iter()
-        .all(|identity| identity.implementation == implementation));
+        .all(|identity| (*identity.implementation_for_test()) == implementation));
 }
 
 #[test]

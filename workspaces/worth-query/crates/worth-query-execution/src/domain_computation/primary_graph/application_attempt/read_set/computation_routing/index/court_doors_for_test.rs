@@ -10,3 +10,12 @@ impl ComputationFactIndex {
         Self::keys(self, read)
     }
 }
+
+impl ComputationFactIndex {
+    #[doc(hidden)]
+    pub fn calls_for_test(
+        &self,
+    ) -> &ExecutionOrderedMap<ComputationRead, Vec<WorthQueryApplicationFactKey>> {
+        &self.calls
+    }
+}

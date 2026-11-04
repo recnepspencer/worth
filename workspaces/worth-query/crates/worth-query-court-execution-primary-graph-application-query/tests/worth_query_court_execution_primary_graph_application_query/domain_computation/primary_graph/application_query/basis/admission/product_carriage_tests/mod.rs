@@ -16,17 +16,17 @@ fn primary_product_selection_composes_one_exact_application_snapshot() {
     let expected = lease.relational_basis_descriptor().clone();
     let selected = world.application.on_product_for_test(execution, lease).unwrap();
     assert_eq!(
-        selected.application_basis().identity().descriptor(),
+        selected.application_basis_for_test().identity().descriptor(),
         &expected
     );
     assert_eq!(observer.observe().acquisitions(), before.acquisitions() + 1);
-    assert!((*world
+    assert!((*(*world
         .application
         .primary_provider_for_test())
-        .graph
+        .graph_for_test())
         .with_runtime(execution, |runtime| runtime
             .read_truth()
-            .project_snapshot(selected.application_basis().snapshot_handle())
+            .project_snapshot(selected.application_basis_for_test().snapshot_handle())
             .is_some()));
     drop(selected);
     assert_eq!(observer.observe().active(), before.active());

@@ -50,7 +50,7 @@ fn retirement_releases_in_branch_then_incarnation_order() {
     let (zulu, zulu_report) = child("zulu");
     let (alpha_first, first_report) = child("alpha");
     let (alpha_second, second_report) = child("alpha");
-    assert_eq!(alpha_first.branch(), alpha_second.branch());
+    assert_eq!(alpha_first.branch_for_test(), alpha_second.branch_for_test());
     assert!(alpha_first.incarnation() < alpha_second.incarnation());
     let registry = WorthQueryProductBranchOwnerCleanupRegistry::new_for_test(Some(3));
     for (occurrence, report) in [
@@ -61,19 +61,19 @@ fn retirement_releases_in_branch_then_incarnation_order() {
         registry
             .reserve_for_test(CleanupScope::ApplicationRetirement(occurrence))
             .unwrap()
-            .install_retirement(report);
+            .install_retirement_for_test(report);
     }
     let actual = registry
         .pending_application_retired_product_occurrences_for_test()
         .into_iter()
-        .map(|occurrence| (occurrence.branch().clone(), occurrence.incarnation()))
+        .map(|occurrence| (occurrence.branch_for_test().clone(), occurrence.incarnation()))
         .collect::<Vec<_>>();
     assert_eq!(
         actual,
         [
-            (alpha_first.branch().clone(), alpha_first.incarnation()),
-            (alpha_second.branch().clone(), alpha_second.incarnation()),
-            (zulu.branch().clone(), zulu.incarnation()),
+            (alpha_first.branch_for_test().clone(), alpha_first.incarnation()),
+            (alpha_second.branch_for_test().clone(), alpha_second.incarnation()),
+            (zulu.branch_for_test().clone(), zulu.incarnation()),
         ]
     );
 }
@@ -84,8 +84,8 @@ fn absent_cleanup_policy_keeps_reservations_until_drop() {
     let held: Vec<_> = (0..600)
         .map(|_| registry.reserve_for_test(worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::owner_cleanup::registry::CleanupScope::Application).unwrap())
         .collect();
-    assert_eq!(worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::owner_cleanup::registry::lock(&(*registry.state_for_test())).reserved, held.len());
+    assert_eq!((*worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::owner_cleanup::registry::lock(&(*registry.state_for_test())).reserved_for_test()), held.len());
     drop(held);
-    assert_eq!(worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::owner_cleanup::registry::lock(&(*registry.state_for_test())).reserved, 0);
-    assert!(worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::owner_cleanup::registry::lock(&(*registry.state_for_test())).entries.is_empty());
+    assert_eq!((*worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::owner_cleanup::registry::lock(&(*registry.state_for_test())).reserved_for_test()), 0);
+    assert!((*worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::owner_cleanup::registry::lock(&(*registry.state_for_test())).entries_for_test()).is_empty());
 }

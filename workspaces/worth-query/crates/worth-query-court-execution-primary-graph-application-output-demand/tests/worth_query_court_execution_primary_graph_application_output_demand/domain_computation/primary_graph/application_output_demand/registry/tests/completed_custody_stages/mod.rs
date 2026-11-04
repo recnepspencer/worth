@@ -56,8 +56,8 @@ pub fn completed_stage(claimed_with_ready: bool) {
         ))
     };
     let mut row = record(occurrence(), DemandState::Output(output), 0);
-    (*row.source_commits_for_test()).push(commit.clone());
-    (*state.records_for_test()).insert(row_key.clone(), row);
+    (*row.source_commits_mut_for_test()).push(commit.clone());
+    (*state.records_for_test()).insert_for_test(row_key.clone(), row);
     state.note_custody_for_test(&commit);
     state.prune_completed_custody().unwrap();
     assert_eq!(
@@ -66,12 +66,12 @@ pub fn completed_stage(claimed_with_ready: bool) {
         "an active checkpoint owner retains custody; a finished unowned row does not"
     );
     assert_eq!(
-        (*state.records_for_test())[&row_key].source_commits.contains(&commit),
+        (*(*state.records_for_test())[&row_key].source_commits_for_test()).contains(&commit),
         claimed_with_ready
     );
     if claimed_with_ready {
         {
-            let DemandState::Output(output) = &mut (*state.records_mut_for_test()).get_mut(&row_key).unwrap().state
+            let DemandState::Output(output) = &mut (*(*state.records_mut_for_test()).get_mut(&row_key).unwrap().state_mut_for_test())
             else {
                 panic!("the actual checkpoint row is retained")
             };
@@ -87,7 +87,7 @@ pub fn completed_stage(claimed_with_ready: bool) {
             state.source_custody.is_empty(),
             "the completed claim releases its custody"
         );
-        assert!((*state.records_for_test())[&row_key].source_commits.is_empty());
+        assert!((*(*state.records_for_test())[&row_key].source_commits_for_test()).is_empty());
     }
 }
 #[test]

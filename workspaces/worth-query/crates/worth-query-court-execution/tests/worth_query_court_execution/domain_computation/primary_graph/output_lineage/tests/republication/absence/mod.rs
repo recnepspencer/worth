@@ -39,7 +39,7 @@ fn republication_keeps_a_performed_read_without_inventing_cutoff_proofs() {
         assert!((*row.completed_handler_facts_for_test()).is_some());
         assert!((*row.completed_decision_reuse_for_test()).is_none());
         assert!((*row.prepared_input_reuse_key_for_test()).is_none());
-        assert!(matches!((*row.mutable_for_test()).lock().unwrap().computation,
+        assert!(matches!((*(*row.mutable_for_test()).lock().unwrap().computation_for_test()),
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::retained_computation::RecordedComputation::Absent(
                 worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::PriorAbsence::Republished)));
     });
@@ -61,7 +61,7 @@ fn restoring_existing_unverified_facts_drops_state_as_restored() {
         let cell = stage.retain(
             generation,
             |mut row| {
-                (*row.mutable_for_test()).get_mut().unwrap().computation = computation;
+                (*(*row.mutable_mut_for_test()).get_mut().unwrap().computation_mut_for_test()) = computation;
                 row
             },
             &facts,
@@ -69,7 +69,7 @@ fn restoring_existing_unverified_facts_drops_state_as_restored() {
         let record = cell.get().unwrap();
         record.restore_for_test(Arc::clone(&facts).into(), None);
         assert!(matches!(
-            (*record.mutable_for_test()).lock().unwrap().computation,
+            (*(*record.mutable_for_test()).lock().unwrap().computation_for_test()),
             RecordedComputation::Absent(PriorAbsence::Restored)
         ));
     });
@@ -126,7 +126,7 @@ pub fn republish_untracked(
         assert!((*row.completed_decision_reuse_for_test()).is_none());
         assert!((*row.prepared_input_reuse_key_for_test()).is_none());
         assert!(matches!(
-            (*row.mutable_for_test()).lock().unwrap().computation,
+            (*(*row.mutable_for_test()).lock().unwrap().computation_for_test()),
             RecordedComputation::Absent(PriorAbsence::Republished)
         ));
     });

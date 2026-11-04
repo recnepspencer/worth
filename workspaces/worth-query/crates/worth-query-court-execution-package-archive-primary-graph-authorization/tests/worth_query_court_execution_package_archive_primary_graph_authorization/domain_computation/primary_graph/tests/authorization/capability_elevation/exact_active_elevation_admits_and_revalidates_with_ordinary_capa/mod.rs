@@ -14,7 +14,7 @@ fn exact_active_elevation_admits_and_revalidates_with_ordinary_capability_author
     let (_, _, request_role) = (*world
         .application
         .authorization_for_test())
-        .elevation_lifecycle_operation::<IdentityExecutionSchema, RequestCapabilityElevationOperation>(
+        .elevation_lifecycle_operation_for_test::<IdentityExecutionSchema, RequestCapabilityElevationOperation>(
             "RequestCapabilityElevationOperation",
             <RequestElevationInput as worth_query_declaration::facade::portable_identity::WorthQueryPortableType>::PORTABLE_TYPE_IDENTITY.as_str(),
         )
@@ -24,7 +24,7 @@ fn exact_active_elevation_admits_and_revalidates_with_ordinary_capability_author
     assert!((*world
         .application
         .authorization_for_test())
-        .elevation_lifecycle_operation::<
+        .elevation_lifecycle_operation_for_test::<
             IdentityExecutionSchema,
             AliasedRequestCapabilityElevationOperation,
         >(
@@ -38,7 +38,7 @@ fn exact_active_elevation_admits_and_revalidates_with_ordinary_capability_author
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request_for_test();
             authenticated_principal(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                 &world,
                 &request,
             )
@@ -49,7 +49,7 @@ fn exact_active_elevation_admits_and_revalidates_with_ordinary_capability_author
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request_for_test();
             admit(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                 &world,
                 &approved,
                 &principal,
@@ -73,7 +73,7 @@ fn exact_active_elevation_admits_and_revalidates_with_ordinary_capability_author
             world
                 .application
                 .authorize_capability_operation(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     access,
                     &operation,
                     Default::default(),

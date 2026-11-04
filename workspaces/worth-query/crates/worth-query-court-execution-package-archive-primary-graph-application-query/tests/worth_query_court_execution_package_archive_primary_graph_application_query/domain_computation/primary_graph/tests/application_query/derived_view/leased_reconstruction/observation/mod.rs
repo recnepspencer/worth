@@ -41,7 +41,7 @@ pub fn observe_case(
     }
     if count >= 2 {
         crate::domain_computation::primary_graph::tests::application_query::derived_view::reconstruction_population::add_primary_reads(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             execution,
             &world,
             count == 3,
@@ -67,7 +67,7 @@ pub fn observe_case(
     let external = world.authenticate("alice", Duration::from_secs(60), &scope);
     let principal = selected
         .resolve_authenticated_principal(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             &world.binding,
             &external,
             &scope,
@@ -80,7 +80,7 @@ pub fn observe_case(
         .map(|status| {
             selected
                 .resolve_entity(
-                    &phase_custody.phase_for_application(&world.application),
+                    &phase_custody.phase_for_application_for_test(&world.application),
                     AccountStatus::reference(),
                     status.to_owned(),
                     &scope,
@@ -125,12 +125,12 @@ pub fn observe_case(
     let membership = world
         .application
         .execute_application_query_one_shot(
-            &phase_custody.phase_for_application(&world.application),
+            &phase_custody.phase_for_application_for_test(&world.application),
             selected
                 .retain_selection_for_test(execution)
                 .unwrap()
                 .admit_application_query(
-                    &phase_custody.phase_for_application(&world.application),
+                    &phase_custody.phase_for_application_for_test(&world.application),
                     &membership_query,
                     &access[0],
                     ApplicationQueryParameterSet::new(),
@@ -249,7 +249,7 @@ pub fn observe_case(
                             .retain_selection_for_test(execution)
                             .unwrap()
                             .admit_application_query(
-                                &phase_custody.phase_for_application(&world.application),
+                                &phase_custody.phase_for_application_for_test(&world.application),
                                 &query,
                                 &access[index],
                                 ApplicationQueryParameterSet::new(),
@@ -265,7 +265,7 @@ pub fn observe_case(
                             .retain_selection_for_test(execution)
                             .unwrap()
                             .admit_application_query(
-                                &phase_custody.phase_for_application(&world.application),
+                                &phase_custody.phase_for_application_for_test(&world.application),
                                 &second_query,
                                 &access[index],
                                 ApplicationQueryParameterSet::new()

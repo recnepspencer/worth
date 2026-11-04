@@ -56,21 +56,21 @@ fn native_reverification_clears_only_the_verified_live_image() {
         .expect("the fixture read owns its installed host call");
     let (_, product, _) = selected.into_parts_for_test();
     let coordinate = ProductCoordinate {
-        occurrence: product.observation().lifecycle_incarnation(),
-        generation: product.observation().reference_generation().get(),
+        occurrence: product.observation_for_test().lifecycle_incarnation(),
+        generation: product.observation_for_test().reference_generation().get(),
     };
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let handle = graph.integration_handle();
-    let owner = &handle.source_owner.invalidation_owner;
-    let kind = graph
-        .layout()
+    let handle = graph.integration_handle_for_test();
+    let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
+    let kind = (*graph
+        .layout_for_test()
         .relation(AccountBlocked::reference().name())
         .unwrap()
-        .kind;
+        .kind_for_test());
     let label_ref = AccountLabel::reference();
     let label = graph
-        .layout()
-        .field_locator(label_ref.entity(), label_ref.aspect(), label_ref.field())
+        .layout_for_test()
+        .field_locator_for_test(label_ref.entity(), label_ref.aspect(), label_ref.field())
         .unwrap()
         .clone();
     let identity = RecordedSettlementIdentity::retain_for_test(&SemanticSource {
@@ -84,7 +84,7 @@ fn native_reverification_clears_only_the_verified_live_image() {
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request_for_test();
             let request_execution = &host_custody.borrowed_request_for_test();
-            handle.with_runtime_mut(request_execution, |runtime| {
+            handle.with_runtime_mut_for_test(request_execution, |runtime| {
                 write_field(request_execution, runtime, account, label.clone(), "prime");
                 let (basis_handle, basis) = snapshot(runtime);
                 assert!(runtime
@@ -100,7 +100,7 @@ fn native_reverification_clears_only_the_verified_live_image() {
                     Arc::from([WorthQueryApplicationObservedFact::Relation {
                         relation_kind: kind, from: principal, to: account, matching_relations: Vec::new(),
                     }]));
-                owner.register_settlement(SettlementRegistration {
+                owner.register_settlement_for_test(SettlementRegistration {
                     computation: Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::computation_changes::ComputationRegistration::retained_for_test()),
                     work_membership: None, identity: identity.clone(), facts: tracked_facts.clone(),
                     output_facts: None, read_basis: basis.clone(), stale_at_read_basis: OrdSet::new(),
@@ -132,7 +132,7 @@ fn native_reverification_clears_only_the_verified_live_image() {
                 let (changed_handle, changed) = snapshot(runtime);
                 assert!(matches!(
                     owner
-                        .reverify_dirty(
+                        .reverify_dirty_for_test(
                             &host_custody.borrowed_request_for_test(),
                             runtime,
                             &changed_handle,
@@ -161,7 +161,7 @@ fn native_reverification_clears_only_the_verified_live_image() {
                     SourceSettlementCurrentness::Dirty(_)
                 ));
                 let DirtyReverification::Verified(verified) = owner
-                    .reverify_dirty(&host_custody.borrowed_request_for_test(), runtime, &restored_handle, &restored, &identity)
+                    .reverify_dirty_for_test(&host_custody.borrowed_request_for_test(), runtime, &restored_handle, &restored, &identity)
                     .unwrap()
                 else {
                     panic!("the actual restored relation set verifies at the live root");
@@ -175,7 +175,7 @@ fn native_reverification_clears_only_the_verified_live_image() {
                 );
                 assert!(
                     matches!(
-                        owner.clear_verified_dirty(verified),
+                        owner.clear_verified_dirty_for_test(verified),
                         Err(SettlementVerificationStop::Edit(_))
                     ),
                     "a native head move must invalidate old clearing authority"
@@ -188,7 +188,7 @@ fn native_reverification_clears_only_the_verified_live_image() {
                 assert!(
                     matches!(
                         owner
-                            .reverify_dirty(
+                            .reverify_dirty_for_test(
                                 &host_custody.borrowed_request_for_test(),
                                 runtime,
                                 &restored_handle,
@@ -202,17 +202,17 @@ fn native_reverification_clears_only_the_verified_live_image() {
                 );
 
                 let DirtyReverification::Verified(verified) = owner
-                    .reverify_dirty(&host_custody.borrowed_request_for_test(), runtime, &latest_handle, &latest, &identity)
+                    .reverify_dirty_for_test(&host_custody.borrowed_request_for_test(), runtime, &latest_handle, &latest, &identity)
                     .unwrap()
                 else {
                     panic!("fresh exact native comparison grants live clearing");
                 };
 
-                let diagnostic_image = owner.capture_full_verification(runtime, &latest_handle, &latest).unwrap();
-                owner.clear_verified_dirty(verified).unwrap();
+                let diagnostic_image = owner.capture_full_verification_for_test(runtime, &latest_handle, &latest).unwrap();
+                owner.clear_verified_dirty_for_test(verified).unwrap();
                 {
                     diagnostic_image
-                        .fence_semantic_image(&OrdSet::unit(identity.clone()))
+                        .fence_semantic_image_for_test(&OrdSet::unit(identity.clone()))
                         .unwrap();
                     drop(diagnostic_image);
                 }
@@ -228,39 +228,39 @@ fn native_reverification_clears_only_the_verified_live_image() {
                     "live clearing cannot rewrite a retained dirty image"
                 );
 
-                let changes = owner.computation_changes(runtime, &latest_handle, &identity, &tracked_facts).unwrap().expect("ordinary clear preserves original computation frontier");
-                assert_eq!(changes.at_snapshot(runtime, &latest_handle).unwrap().iter().copied().collect::<Vec<_>>(), [0]);
-                assert!(changes.at_snapshot(runtime, &basis_handle).is_none(), "later evidence cannot bless an earlier source snapshot");
+                let changes = owner.computation_changes_for_test(runtime, &latest_handle, &identity, &tracked_facts).unwrap().expect("ordinary clear preserves original computation frontier");
+                assert_eq!(changes.at_snapshot_for_test(runtime, &latest_handle).unwrap().iter().copied().collect::<Vec<_>>(), [0]);
+                assert!(changes.at_snapshot_for_test(runtime, &basis_handle).is_none(), "later evidence cannot bless an earlier source snapshot");
                 let original = tracked_facts.for_comparison().unwrap().facts_for_test().clone();
-                let changes = changes.bind_original(original.clone());
+                let changes = changes.bind_original_for_test(original.clone());
                 let control = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new_for_test(request_execution.allocation_policy(), None);
-                let carry = changes.carry(&original, 1, &OrdSet::new(), &latest_handle, control).unwrap().unwrap();
+                let carry = changes.carry_for_test(&original, 1, &OrdSet::new(), &latest_handle, control).unwrap().unwrap();
                 let empty = worth_relational::facade::history::RelationalDescriptiveTouchGraph::Exact(Vec::new());
-                let selected = carry.select(&empty, 1, &[], control).unwrap().unwrap().ordinals;
+                let selected = (*carry.select_for_test(&empty, 1, &[], control).unwrap().unwrap().ordinals_for_test());
                 assert_eq!(selected.iter().copied().collect::<Vec<_>>(), [0], "ABA frontier survives zero fresh calls and exact-empty candidate touches");
-                assert!(carry.select(&worth_relational::facade::history::RelationalDescriptiveTouchGraph::Unavailable, 1, &[], control).unwrap().is_none(), "unavailable is never exact empty");
-                let foreign = Arc::<[WorthQueryApplicationObservedFact]>::from(original.iter().cloned().collect::<Vec<_>>()).into();
-                assert!(changes.carry(&foreign, 1, &OrdSet::new(), &latest_handle, control).unwrap().is_none(), "equal data cannot substitute original backing");
-                assert!(changes.carry(&original, 1, &OrdSet::new(), &basis_handle, control).unwrap().is_none(), "original body does not substitute the selected native pin");
+                assert!(carry.select_for_test(&worth_relational::facade::history::RelationalDescriptiveTouchGraph::Unavailable, 1, &[], control).unwrap().is_none(), "unavailable is never exact empty");
+                let foreign = Arc::<[WorthQueryApplicationObservedFact]>::from(original.iter_for_test().cloned().collect::<Vec<_>>()).into();
+                assert!(changes.carry_for_test(&foreign, 1, &OrdSet::new(), &latest_handle, control).unwrap().is_none(), "equal data cannot substitute original backing");
+                assert!(changes.carry_for_test(&original, 1, &OrdSet::new(), &basis_handle, control).unwrap().is_none(), "original body does not substitute the selected native pin");
 
                 let (reader_handle, reader_position) = snapshot(runtime);
                 assert_ne!(reader_handle, latest_handle, "a new reader owns a new native pin");
                 assert_eq!(reader_position, latest);
-                assert!(changes.carry(&original, 1, &OrdSet::new(), &reader_handle, control).unwrap().is_none(), "raw cutoff custody cannot substitute the reader pin");
-                let reader_changes = changes.for_snapshot(runtime, &reader_handle).unwrap();
-                assert_eq!(reader_changes.ordinals(), changes.ordinals());
-                assert!(reader_changes.matches_publication_source(runtime, &reader_handle).unwrap());
-                assert!(!reader_changes.matches_publication_source(runtime, &basis_handle).unwrap(), "provider readmission cannot carry revisions across a different native position");
+                assert!(changes.carry_for_test(&original, 1, &OrdSet::new(), &reader_handle, control).unwrap().is_none(), "raw cutoff custody cannot substitute the reader pin");
+                let reader_changes = changes.for_snapshot_for_test(runtime, &reader_handle).unwrap();
+                assert_eq!(reader_changes.ordinals_for_test(), changes.ordinals_for_test());
+                assert!(reader_changes.matches_publication_source_for_test(runtime, &reader_handle).unwrap());
+                assert!(!reader_changes.matches_publication_source_for_test(runtime, &basis_handle).unwrap(), "provider readmission cannot carry revisions across a different native position");
 
-                assert!(reader_changes.carry(&original, 1, &OrdSet::new(), &reader_handle, control).unwrap().is_some(), "the marking owner's actual position validation carries exact reader custody");
-                assert!(changes.for_snapshot(runtime, &basis_handle).is_none());
+                assert!(reader_changes.carry_for_test(&original, 1, &OrdSet::new(), &reader_handle, control).unwrap().is_some(), "the marking owner's actual position validation carries exact reader custody");
+                assert!(changes.for_snapshot_for_test(runtime, &basis_handle).is_none());
                 runtime.snapshots().release_snapshot(&reader_handle).unwrap();
-let old = owner.computation_changes(runtime, &basis_handle, &identity, &tracked_facts).unwrap().unwrap();
+let old = owner.computation_changes_for_test(runtime, &basis_handle, &identity, &tracked_facts).unwrap().unwrap();
 
 
-                assert!(old.at_snapshot(runtime, &basis_handle).unwrap().is_empty(), "historical native frontier stays immutable");
+                assert!(old.at_snapshot_for_test(runtime, &basis_handle).unwrap().is_empty(), "historical native frontier stays immutable");
                 let different_backing = RetainedSourceFacts::for_test_for_test(false, Arc::from([]));
-                assert!(owner.computation_changes(runtime, &latest_handle, &identity,
+                assert!(owner.computation_changes_for_test(runtime, &latest_handle, &identity,
                     &different_backing).unwrap().is_none(),
                     "a source-current row cannot lend its frontier to foreign fact backing");
                 for snapshot in [basis_handle, changed_handle, restored_handle, latest_handle] {

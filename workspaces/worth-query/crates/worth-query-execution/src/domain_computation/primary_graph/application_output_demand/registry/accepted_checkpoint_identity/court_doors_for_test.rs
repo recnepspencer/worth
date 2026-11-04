@@ -95,3 +95,33 @@ impl WorthQueryAcceptedOutputCheckpointIdentity {
         &mut self.source
     }
 }
+
+impl WorthQueryAcceptedOutputCheckpointIdentity {
+    #[doc(hidden)]
+    pub fn implementation_for_test(
+        &self,
+    ) -> &worth_relational::facade::mvcc::RequiredOutputProducingImplementation {
+        &self.implementation
+    }
+}
+
+impl WorthQueryAcceptedOutputCheckpointIdentity {
+    #[doc(hidden)]
+    pub fn source_for_test(&self) -> &[u8; 32] {
+        &self.source
+    }
+}
+
+impl WorthQueryAcceptedOutputCheckpointIdentity {
+    #[doc(hidden)]
+    pub fn posture_for_test(&self) -> &WorthQueryAcceptedOutputCheckpointPosture {
+        &self.posture
+    }
+}
+
+impl WorthQueryAcceptedOutputCheckpointIdentity {
+    #[doc(hidden)]
+    pub fn producer_fact_wire_version_for_test(&self) -> &u16 {
+        &self.producer_fact_wire_version
+    }
+}

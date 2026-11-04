@@ -104,7 +104,7 @@ fn commit_failures_leave_recovery_required_and_drop_aborts_once() {
                     let prepared = staged_session(execution, running, graph)
                         .prepare_for_commit_for_test()
                         .expect("staged preparation should succeed");
-                    let outcome = prepared.commit(
+                    let outcome = prepared.commit_for_test(
                         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                     );
                     assert_failure(

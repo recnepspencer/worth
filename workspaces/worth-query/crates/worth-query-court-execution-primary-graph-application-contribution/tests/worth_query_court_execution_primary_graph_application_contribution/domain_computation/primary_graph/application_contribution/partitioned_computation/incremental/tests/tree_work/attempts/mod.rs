@@ -42,7 +42,7 @@ fn successful_edits_failed_attempt_and_rebuild_are_all_reported() {
             .recombined_nodes,
         u128::from(first_depth + 32)
     );
-    assert_eq!(*(*next.outcome_for_test()).unwrap().result(), 35);
+    assert_eq!(*next.outcome_into_for_test().unwrap().result(), 35);
 }
 
 #[test]

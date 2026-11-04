@@ -13,24 +13,24 @@ fn a_failed_rebase_carries_out_what_its_effect_did_to_its_source_reads() {
             let host_custody = phase.test_host_request_for_test();
 
             let (entity, locator) = account_note(
-                &host_custody.phase_for_application(&world.application),
+                &host_custody.phase_for_application_for_test(&world.application),
                 &world,
                 "account-1",
             );
             let absent = |locator| WorthQueryApplicationObservedFact::AbsentField {
                 entity_id: entity,
-                kind: (*world
+                kind: (*(*world
                     .application
                     .runtime_for_test())
                     .primary_graph()
                     .unwrap()
-                    .layout
-                    .entity_kind(AccountIdentity::reference().entity())
+                    .layout_for_test())
+                    .entity_kind_for_test(AccountIdentity::reference().entity())
                     .unwrap(),
                 locator,
             };
             let source_read = rebase_at_current(
-                &host_custody.phase_for_application(&world.application),
+                &host_custody.phase_for_application_for_test(&world.application),
                 &host_custody.borrowed_request_for_test(),
                 &world,
                 vec![absent(planned(&locator))],
@@ -42,7 +42,7 @@ fn a_failed_rebase_carries_out_what_its_effect_did_to_its_source_reads() {
                 CanonicalFieldPath::single(FieldKey::new("undeclared").unwrap()),
             ));
             let own_effect = |facts| match rebase_result_at_current(
-                &host_custody.phase_for_application(&world.application),
+                &host_custody.phase_for_application_for_test(&world.application),
                 execution,
                 &world,
                 facts,

@@ -13,10 +13,10 @@ pub use worth_query_declaration::facade::authentication::WorthQueryPrincipalMapp
 pub fn index_currency_stop(cancelled: bool) {
     let world = installed_world(&[("currency-stop", WorthQueryPrincipalMappingStatus::Enabled)]);
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let handle = graph.integration_handle();
+    let handle = graph.integration_handle_for_test();
     let setup_host = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();
     let setup = ExecutionRequest::serial(&setup_host);
-    handle.source_owner.with_runtime_mut(&setup, |runtime| {
+    (*handle.source_owner_for_test()).with_runtime_mut(&setup, |runtime| {
         commit_empty(&setup, runtime, "main");
         let (_, basis) = runtime
             .observe_branch(&runtime.main_branch_identity())
@@ -27,14 +27,14 @@ pub fn index_currency_stop(cancelled: bool) {
         if cancelled {
             source.cancel();
             let denied = handle
-                .ensure_primary_indexes_for_basis(&execution, runtime, &basis)
+                .ensure_primary_indexes_for_basis_for_test(&execution, runtime, &basis)
                 .unwrap_err();
             assert_eq!(currency_stop(denied), Some(Err(Control::Cancelled)));
             return;
         }
         // Both twins reconstruct the same cold inventory. The installed
         // world may already carry generations before this first measurement.
-        for index in handle.primary_index_ids.iter() {
+        for index in (*handle.primary_index_ids_for_test()).iter() {
             runtime
                 .index_authority()
                 .discard_generations(
@@ -46,11 +46,11 @@ pub fn index_currency_stop(cancelled: bool) {
         }
         let (enough, report) = setup
             .run(ExecutionWorkCeiling::new(Some(100_000)), |_| {
-                handle.ensure_primary_indexes_for_basis(&setup, runtime, &basis)
+                handle.ensure_primary_indexes_for_basis_for_test(&setup, runtime, &basis)
             })
             .unwrap();
         enough.unwrap();
-        for index in handle.primary_index_ids.iter() {
+        for index in (*handle.primary_index_ids_for_test()).iter() {
             runtime
                 .index_authority()
                 .discard_generations(
@@ -64,7 +64,7 @@ pub fn index_currency_stop(cancelled: bool) {
         let (short, _) = setup
             .run(
                 ExecutionWorkCeiling::new(Some(report.charged_work() - 1)),
-                |_| handle.ensure_primary_indexes_for_basis(&setup, runtime, &basis),
+                |_| handle.ensure_primary_indexes_for_basis_for_test(&setup, runtime, &basis),
             )
             .unwrap();
         assert_eq!(
@@ -81,7 +81,7 @@ pub fn index_currency_stop(cancelled: bool) {
 pub fn mutation_index_refresh_stop(cancelled: bool) {
     let world = installed_world(&[("refresh-stop", WorthQueryPrincipalMappingStatus::Enabled)]);
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let handle = graph.integration_handle();
+    let handle = graph.integration_handle_for_test();
     let source = CancellationSource::new();
     let host = SerialRequest::from_memory(SerialMemoryBudget::new(None), source.token(), None);
     let execution = ExecutionRequest::serial(&host);

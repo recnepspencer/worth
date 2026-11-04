@@ -97,14 +97,14 @@ pub fn committed_indexed_facts(
     else {
         panic!("the installed indexed decision must commit");
     };
-    let facts = (*world
+    let facts = (*(*world
         .application
         .primary_provider_for_test())
-        .graph
+        .graph_for_test())
         .output_lineage
         .lock()
         .unwrap()
-        .checkpoint_facts_for_receipt(&receipt)
+        .checkpoint_facts_for_receipt_for_test(&receipt)
         .unwrap()
         .0;
     facts.iter().cloned().collect()
@@ -145,7 +145,7 @@ fn indexed_postcommit_rebase_preserves_the_native_denial_and_fact_ordinal() {
                 let host_custody = phase.test_host_request_for_test();
 
                 rebase_result_at_current(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     &host_custody.borrowed_request_for_test(),
                     &world,
                     facts,
@@ -201,12 +201,12 @@ fn sparse_indexed_rebase_keeps_complete_dependencies_without_work_estimates() {
                 let host_custody = phase.test_host_request_for_test();
 
                 world.selected_product(
-                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                 )
             })
             .expect("the fixture read owns its installed host call");
         let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-        let observed = world.application.with_host_advancement(|phase| {   let borrowed_execution = phase.execution_request_for_for_test(&(*world.application.product_runtime_for_test())).expect("fixture borrows its runtime request"); let execution = &borrowed_execution; graph.integration_handle().with_runtime(&phase.borrowed_request_for_test(), |runtime| {
+        let observed = world.application.with_host_advancement(|phase| {   let borrowed_execution = phase.execution_request_for_for_test(&(*world.application.product_runtime_for_test())).expect("fixture borrows its runtime request"); let execution = &borrowed_execution; graph.integration_handle_for_test().with_runtime(&phase.borrowed_request_for_test(), |runtime| {
         let snapshot = selected.application_basis_for_test().snapshot_handle();
         let observed = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::indexed_entity_selection::observe_indexed_entity_selection(
             runtime,execution,  snapshot, *index_id, *entity_kind, locator.clone(), value.clone(), 100_001,
@@ -236,7 +236,7 @@ fn sparse_indexed_rebase_keeps_complete_dependencies_without_work_estimates() {
         assert_eq!(facts.iter().cloned().collect::<Vec<_>>(), original.as_slice(), "retain the original limits and dependencies");
         for fact in facts.iter() {
             let movement = fact.source_currentness_in_for_test(runtime,execution,  snapshot).unwrap().unwrap();
-            assert_eq!(movement.movement(), Movement::Unmoved);
+            assert_eq!(movement.movement_for_test(), Movement::Unmoved);
         }
         observed
     }) }).expect("the fixture read owns its installed host call");
@@ -246,7 +246,7 @@ fn sparse_indexed_rebase_keeps_complete_dependencies_without_work_estimates() {
                 let host_custody = phase.test_host_request_for_test();
 
                 account_note(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     &world,
                     "account-2",
                 )
@@ -272,7 +272,7 @@ fn sparse_indexed_rebase_keeps_complete_dependencies_without_work_estimates() {
                 let host_custody = phase.test_host_request_for_test();
 
                 world.selected_product(
-                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                 )
             })
             .expect("the fixture read owns its installed host call");
@@ -284,14 +284,14 @@ fn sparse_indexed_rebase_keeps_complete_dependencies_without_work_estimates() {
                     .expect("fixture borrows its runtime request");
                 let execution = &borrowed_execution;
                 graph
-                    .integration_handle()
+                    .integration_handle_for_test()
                     .with_runtime(execution, |runtime| {
                         let snapshot = selected.application_basis_for_test().snapshot_handle();
 
-                        let current = observed.source_currentness_in(runtime, execution, snapshot)
+                        let current = observed.source_currentness_in_for_test(runtime, execution, snapshot)
                             .expect("the real lookup remains available")
                             .expect("the installed source is comparable");
-                        assert_eq!(current.movement(), Movement::Moved,
+                        assert_eq!(current.movement_for_test(), Movement::Moved,
                             "the independently authored second matching account changes membership");
                         let normalized = rebase(execution, runtime, snapshot,
                             PreparedSourceFactRebase::admit_for_test(vec![observed.clone()], [].into(),

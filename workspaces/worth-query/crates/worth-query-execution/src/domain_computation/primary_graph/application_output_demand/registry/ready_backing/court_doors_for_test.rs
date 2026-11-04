@@ -28,3 +28,10 @@ impl PreparedReadyBacking {
         Self::generation(self)
     }
 }
+
+impl OutputCheckpointGeneration {
+    #[doc(hidden)]
+    pub fn same_for_test(&self, other: &Self) -> bool {
+        Self::same(self, other)
+    }
+}

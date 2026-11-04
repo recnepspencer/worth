@@ -12,20 +12,20 @@ fn shared_original_facts_survive_restored_prerequisite_custody() {
     world.application.with_host_advancement(|phase| {
         let custody = phase.test_host_request_for_test();
         let execution = custody.borrowed_request_for_test();
-        let entity = resolved_account(&custody.test_host_request(), &world, "open", &live_scope())
+        let entity = resolved_account(&custody.test_host_request_for_test(), &world, "open", &live_scope())
             .entity_id_for_test();
-        let (_, product, _) = world.selected_product(&custody.test_host_request()).into_parts_for_test();
+        let (_, product, _) = world.selected_product(&custody.test_host_request_for_test()).into_parts_for_test();
         let coordinate = ProductCoordinate {
-            occurrence: product.observation().lifecycle_incarnation(),
-            generation: product.observation().reference_generation().get(),
+            occurrence: product.observation_for_test().lifecycle_incarnation(),
+            generation: product.observation_for_test().reference_generation().get(),
         };
         let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-        let handle = graph.integration_handle();
-        let owner = &handle.source_owner.invalidation_owner;
+        let handle = graph.integration_handle_for_test();
+        let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
         let status = AccountStatus::reference();
-        let status = graph.layout().field_locator(status.entity(), status.aspect(), status.field())
+        let status = graph.layout_for_test().field_locator_for_test(status.entity(), status.aspect(), status.field())
             .unwrap().clone();
-        let (snapshot_handle, basis, identity, _facts, first, second) = handle.with_runtime_mut(&execution, |runtime| {
+        let (snapshot_handle, basis, identity, _facts, first, second) = handle.with_runtime_mut_for_test(&execution, |runtime| {
             let (snapshot_handle, basis) = snapshot(runtime);
             let basis = Arc::new(basis);
             let identity = RecordedSettlementIdentity::retain_for_test(&SemanticSource {
@@ -54,12 +54,12 @@ fn shared_original_facts_survive_restored_prerequisite_custody() {
 
             (snapshot_handle, basis, identity, facts, first, second)
         });
-        first.establish_restored_before_commit(&execution, &handle.source_owner).unwrap();
-            assert!(matches!(owner.currentness(&basis, &identity).unwrap(),
+        first.establish_restored_before_commit_for_test(&execution, &(*handle.source_owner_for_test())).unwrap();
+            assert!(matches!(owner.currentness_for_test(&basis, &identity).unwrap(),
                 SourceSettlementCurrentness::Clean));
-            assert!(first.claim_verified_checkpoint_root(owner).unwrap(),
+            assert!(first.claim_verified_checkpoint_root_for_test(owner).unwrap(),
                 "actual restored prerequisite custody must be established, not bypassed");
-        handle.with_runtime_mut(&execution, |runtime| {
+        handle.with_runtime_mut_for_test(&execution, |runtime| {
             assert_eq!(ConsumedOutputEvidence::verify_many_with_admission_for_test(
                 &execution, &[first.clone(), second.clone()], owner, runtime, &snapshot_handle,
                 &basis,
@@ -72,12 +72,12 @@ fn shared_original_facts_survive_restored_prerequisite_custody() {
             drop(first);
             drop(second);
 
-            assert!(matches!(owner.currentness(&basis, &identity).unwrap(),
+            assert!(matches!(owner.currentness_for_test(&basis, &identity).unwrap(),
                 SourceSettlementCurrentness::Clean));
-            assert_eq!(owner.retire_settlements(std::slice::from_ref(&identity)),
+            assert_eq!(owner.retire_settlements_for_test(std::slice::from_ref(&identity)),
                 vec![identity]);
 
-        handle.with_runtime_mut(&execution, |runtime| {
+        handle.with_runtime_mut_for_test(&execution, |runtime| {
             runtime.snapshots().release_snapshot(&snapshot_handle).unwrap();
         });
     }).expect("the native custody journey owns its installed host call");

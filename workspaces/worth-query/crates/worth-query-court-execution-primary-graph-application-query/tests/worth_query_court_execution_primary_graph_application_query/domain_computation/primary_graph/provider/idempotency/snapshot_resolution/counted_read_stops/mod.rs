@@ -16,7 +16,7 @@ fn durable_idempotency_door_preserves_stops_at_every_consult() {
         .with_host_advancement(|phase| {
             let execution = phase.borrowed_request_for_test();
             let provider = &(*world.application.primary_provider_for_test());
-            let layout = provider.graph.layout.provider_idempotency().clone();
+            let layout = (*(*provider.graph_for_test()).layout_for_test()).provider_idempotency_for_test().clone();
             let binding = WorthQueryApplicationIdempotencyBinding::new_for_test([9; 32], [7; 32]);
             publish_relational_mutation(
                 &execution,
@@ -37,7 +37,7 @@ fn durable_idempotency_door_preserves_stops_at_every_consult() {
             let affinity = WorthQueryProductIdempotencyAffinity::from_observation(
                 selected.product().observation_for_test(),
             );
-            provider.graph.with_runtime(&execution, |runtime| {
+            (*provider.graph_for_test()).with_runtime(&execution, |runtime| {
                 worth_query_execution::test_read_stops::every_consult_under(
                     &execution,
                     |request| {

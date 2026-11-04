@@ -35,11 +35,11 @@ fn program_activation_changed_after_preparation_cannot_readmit_the_old_program()
     (*world.application.program_support_mut_for_test()) = Some(installed_program_support(
         &(*world.application.installed_schema_for_test()),
     ));
-    let layout = (*world
+    let layout = (*(*(*world
         .application
         .primary_provider_for_test())
-        .graph
-        .layout
+        .graph_for_test())
+        .layout_for_test())
         .program_activation()
         .clone();
     world
@@ -55,7 +55,7 @@ fn program_activation_changed_after_preparation_cannot_readmit_the_old_program()
         .expect("the fixture read owns its installed host call");
     let request = live_scope();
     let support = (*world.application.program_support_for_test()).as_ref().unwrap();
-    let activation = support.activation().published().unwrap();
+    let activation = support.activation().published_for_test().unwrap();
     let principal = world
         .application
         .with_host_advancement(|phase| {
@@ -81,7 +81,7 @@ fn program_activation_changed_after_preparation_cannot_readmit_the_old_program()
             )
         })
         .expect("the fixture read owns its installed host call");
-    let presented = support.present(&rostered_program_revision()).unwrap();
+    let presented = support.present_for_test(&rostered_program_revision()).unwrap();
     world
         .application
         .with_host_advancement(|phase| {
@@ -93,7 +93,7 @@ fn program_activation_changed_after_preparation_cannot_readmit_the_old_program()
                     EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
                         entity_id: activation,
                         fields: AspectFieldPatch::from(BTreeMap::from([(
-                            layout.program_revision_locator,
+                            layout.program_revision_locator_into_for_test(),
                             program_revision_rendering(&unadmitted_program_revision()),
                         )])),
                     }),
@@ -192,7 +192,7 @@ fn a_program_action_on_an_unseeded_occurrence_names_the_unresolved_activation() 
         .as_ref()
         .expect("the fixture host retains its admitted program support");
     let presented = support
-        .present(&rostered_program_revision())
+        .present_for_test(&rostered_program_revision())
         .expect("the fixture roster admits its own program revision");
 
     let outcome = world
@@ -274,7 +274,7 @@ fn a_required_output_source_on_an_unseeded_occurrence_is_gated_like_its_siblings
         .as_ref()
         .expect("the fixture host retains its admitted program support");
     let presented = support
-        .present(&rostered_program_revision())
+        .present_for_test(&rostered_program_revision())
         .expect("the fixture roster admits its own program revision");
 
     let outcome = world

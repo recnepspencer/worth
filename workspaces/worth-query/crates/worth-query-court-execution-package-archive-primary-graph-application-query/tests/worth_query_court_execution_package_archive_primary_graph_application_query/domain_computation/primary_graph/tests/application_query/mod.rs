@@ -103,9 +103,9 @@ fn execution_runtime_mints_plan_from_exact_mapped_principal_and_typed_scope() {
     assert_eq!(plan.graph_work_branch(), plan.basis_identity().branch_id());
     assert_eq!(
         plan.graph_work_principal_entity_id(),
-        principal.principal_entity_id()
+        principal.principal_entity_id_for_test()
     );
-    assert_eq!(plan.graph_work_scope_entity_id(), Some(account.entity_id()));
+    assert_eq!(plan.graph_work_scope_entity_id(), Some(account.entity_id_for_test()));
     assert!(plan.graph_work_runtime_ordinal() > 0);
     assert!(plan.graph_work_managed_run_identity().as_u64() > 0);
     assert!(plan.graph_work_decision_fact_count() > 0);

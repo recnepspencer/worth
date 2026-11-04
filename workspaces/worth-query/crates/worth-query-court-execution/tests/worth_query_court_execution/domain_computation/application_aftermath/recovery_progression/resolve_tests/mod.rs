@@ -40,7 +40,7 @@ fn foreign_admitted_idempotency_read_denies_distinctly() {
         denied.kind(),
         WorthQueryRecoveryHandleDenialKind::ForeignIdempotencyRead
     );
-    registry.assert_no_live_handles();
+    registry.assert_no_live_handles_for_test();
 }
 
 #[test]
@@ -63,5 +63,5 @@ fn matching_admitted_idempotency_read_resolves() {
         resolution,
         WorthQueryApplicationIdempotencyResolution::Unseen
     );
-    registry.assert_no_live_handles();
+    registry.assert_no_live_handles_for_test();
 }

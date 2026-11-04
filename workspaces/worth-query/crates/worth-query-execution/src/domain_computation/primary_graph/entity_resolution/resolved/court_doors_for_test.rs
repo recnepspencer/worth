@@ -21,3 +21,19 @@ impl<Schema, Entity> WorthQueryApplicationEntityIdentity<Schema, Entity> {
         Self::identity_value(self)
     }
 }
+
+impl WorthQueryResolvedEntity {
+    #[doc(hidden)]
+    pub fn into_application_identity_for_test<Schema, Entity>(
+        self,
+    ) -> WorthQueryApplicationEntityIdentity<Schema, Entity> {
+        Self::into_application_identity::<Schema, Entity>(self)
+    }
+}
+
+impl<Schema, Entity> WorthQueryApplicationEntityIdentity<Schema, Entity> {
+    #[doc(hidden)]
+    pub fn identity_index_id_for_test(&self) -> DerivedIndexId {
+        Self::identity_index_id(self)
+    }
+}

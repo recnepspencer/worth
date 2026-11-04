@@ -7,3 +7,10 @@ impl DemandRecord {
         Self::terminal(self)
     }
 }
+
+impl DemandRecord {
+    #[doc(hidden)]
+    pub fn idle_disposition_for_test(&self, awaited_by_stale_owner: bool) -> IdleRowDisposition {
+        Self::idle_disposition(self, awaited_by_stale_owner)
+    }
+}

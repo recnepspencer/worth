@@ -50,3 +50,27 @@ impl WorthQueryProductBranchOwnerCleanupRegistry {
         Self::reserve(self, scope)
     }
 }
+
+impl CleanupRegistryState {
+    #[doc(hidden)]
+    pub fn entries_for_test(&self) -> &BTreeMap<u64, Arc<CleanupEntry>> {
+        &self.entries
+    }
+}
+
+impl CleanupRegistryState {
+    #[doc(hidden)]
+    pub fn reserved_for_test(&self) -> &usize {
+        &self.reserved
+    }
+}
+
+impl WorthQueryProductBranchOwnerCleanupReservation {
+    #[doc(hidden)]
+    pub fn install_retirement_for_test(
+        self,
+        report: worth_runtime_world::facade::ProductBranchRetirementReport,
+    ) -> u64 {
+        Self::install_retirement(self, report)
+    }
+}

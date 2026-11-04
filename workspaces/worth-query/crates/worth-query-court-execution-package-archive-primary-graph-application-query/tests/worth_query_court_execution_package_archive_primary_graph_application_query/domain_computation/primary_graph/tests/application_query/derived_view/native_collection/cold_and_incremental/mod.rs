@@ -12,11 +12,11 @@ fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entr
             let borrowed_execution = host_custody.borrowed_request_for_test();
             let request_execution = &borrowed_execution;
             let selected = world.selected_product(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
             );
             let principal = selected
                 .resolve_authenticated_principal(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     &world.binding,
                     &external,
                     &request,
@@ -25,7 +25,7 @@ fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entr
                 .unwrap();
             let open = selected
                 .resolve_entity(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     AccountStatus::reference(),
                     "open".to_string(),
                     &request,
@@ -34,7 +34,7 @@ fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entr
                 .unwrap();
             let unrelated = selected
                 .resolve_entity(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     AccountStatus::reference(),
                     "unrelated".to_string(),
                     &request,
@@ -70,14 +70,14 @@ fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entr
             let membership = world
                 .application
                 .execute_application_query_one_shot(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     world
                         .selected_product(
-                            &(host_custody.phase_for_application(&world.application))
-                                .test_host_request(),
+                            &(host_custody.phase_for_application_for_test(&world.application))
+                                .test_host_request_for_test(),
                         )
                         .admit_application_query(
-                            &host_custody.phase_for_application(&world.application),
+                            &host_custody.phase_for_application_for_test(&world.application),
                             &membership_query,
                             &access,
                             ApplicationQueryParameterSet::new(),
@@ -107,7 +107,7 @@ fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entr
                             .retain_selection_for_test(request_execution)
                             .unwrap()
                             .admit_application_query(
-                                &host_custody.phase_for_application(&world.application),
+                                &host_custody.phase_for_application_for_test(&world.application),
                                 &entry_query,
                                 &pair_access,
                                 ApplicationQueryParameterSet::new(),
@@ -118,7 +118,7 @@ fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entr
                             .retain_selection_for_test(request_execution)
                             .unwrap()
                             .admit_application_query(
-                                &host_custody.phase_for_application(&world.application),
+                                &host_custody.phase_for_application_for_test(&world.application),
                                 &entry_query,
                                 &pair_access,
                                 ApplicationQueryParameterSet::new(),
@@ -162,7 +162,7 @@ fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entr
                             .retain_selection_for_test(request_execution)
                             .unwrap()
                             .admit_application_query(
-                                &host_custody.phase_for_application(&world.application),
+                                &host_custody.phase_for_application_for_test(&world.application),
                                 &entry_query,
                                 &pair_access,
                                 ApplicationQueryParameterSet::new(),
@@ -173,7 +173,7 @@ fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entr
                             .retain_selection_for_test(request_execution)
                             .unwrap()
                             .admit_application_query(
-                                &host_custody.phase_for_application(&world.application),
+                                &host_custody.phase_for_application_for_test(&world.application),
                                 &entry_query,
                                 &pair_access,
                                 ApplicationQueryParameterSet::new(),
@@ -205,9 +205,9 @@ fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entr
 
             let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
             let field = AccountLabel::reference();
-            let locator = graph
-                .layout
-                .field_locator(field.entity(), field.aspect(), field.field())
+            let locator = (*graph
+                .layout_for_test())
+                .field_locator_for_test(field.entity(), field.aspect(), field.field())
                 .unwrap()
                 .clone();
             let change_label = |entity_id, label: &str| {
@@ -226,7 +226,7 @@ fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entr
                     )),
                 );
             };
-            let prepared = graph.managed_derived_views().prepare_publication(
+            let prepared = graph.managed_derived_views_for_test().prepare_publication_for_test(
                 publication_basis(selected.product()),
                 &[ViewChange::Aspect(
                     unrelated.entity_id_for_test(),
@@ -237,7 +237,7 @@ fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entr
             drop(selected);
             change_label(unrelated.entity_id_for_test(), "other-changed");
             let after = world.selected_product(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
             );
             prepared.apply(after.product().selected_commit());
             assert_ne!(
@@ -257,7 +257,7 @@ fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entr
                 .unwrap();
             assert!(std::sync::Arc::ptr_eq(&original, &retained));
 
-            let prepared = graph.managed_derived_views().prepare_publication(
+            let prepared = graph.managed_derived_views_for_test().prepare_publication_for_test(
                 publication_basis(after.product()),
                 &[ViewChange::Aspect(
                     open.entity_id_for_test(),
@@ -268,7 +268,7 @@ fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entr
             drop(after);
             change_label(open.entity_id_for_test(), "primary-changed");
             let fresh = world.selected_product(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
             );
             prepared.apply(fresh.product().selected_commit());
             assert_eq!(
@@ -282,7 +282,7 @@ fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entr
             );
             let principal = fresh
                 .resolve_authenticated_principal(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     &world.binding,
                     &external,
                     &request,
@@ -291,7 +291,7 @@ fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entr
                 .unwrap();
             let open = fresh
                 .resolve_entity(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     AccountStatus::reference(),
                     "open".to_string(),
                     &request,
@@ -302,11 +302,11 @@ fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entr
             let admit_entry = || {
                 world
                     .selected_product(
-                        &(host_custody.phase_for_application(&world.application))
-                            .test_host_request(),
+                        &(host_custody.phase_for_application_for_test(&world.application))
+                            .test_host_request_for_test(),
                     )
                     .admit_application_query(
-                        &host_custody.phase_for_application(&world.application),
+                        &host_custody.phase_for_application_for_test(&world.application),
                         &entry_query,
                         &access,
                         ApplicationQueryParameterSet::new(),
@@ -317,7 +317,7 @@ fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entr
             let read_second = |row: &AccountSummaryResult| {
                 let body_scope = fresh
                     .resolve_entity(
-                        &host_custody.phase_for_application(&world.application),
+                        &host_custody.phase_for_application_for_test(&world.application),
                         AccountStatus::reference(),
                         row.status().to_string(),
                         &request,
@@ -329,14 +329,14 @@ fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entr
                 world
                     .application
                     .execute_application_query_one_shot(
-                        &host_custody.phase_for_application(&world.application),
+                        &host_custody.phase_for_application_for_test(&world.application),
                         world
                             .selected_product(
-                                &(host_custody.phase_for_application(&world.application))
-                                    .test_host_request(),
+                                &(host_custody.phase_for_application_for_test(&world.application))
+                                    .test_host_request_for_test(),
                             )
                             .admit_application_query(
-                                &host_custody.phase_for_application(&world.application),
+                                &host_custody.phase_for_application_for_test(&world.application),
                                 &entry_query,
                                 &body_access,
                                 ApplicationQueryParameterSet::new(),

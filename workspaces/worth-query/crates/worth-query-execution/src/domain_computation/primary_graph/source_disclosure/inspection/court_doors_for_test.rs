@@ -7,3 +7,17 @@ impl OriginalSourceInspectionDisclosure {
         Self::scope(self)
     }
 }
+
+impl OriginalSourceInspectionDisclosure {
+    #[doc(hidden)]
+    pub fn association_for_test(&self) -> &InstalledSourceDisclosureBinding {
+        Self::association(self)
+    }
+}
+
+impl OriginalSourceInspectionDisclosure {
+    #[doc(hidden)]
+    pub fn disclosure_for_test(&self) -> &OriginalSourceDisclosure {
+        Self::disclosure(self)
+    }
+}

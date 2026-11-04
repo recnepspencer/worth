@@ -52,7 +52,7 @@ fn elevation_status_drift_after_admission_is_stale_at_operation_progression() {
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request_for_test();
             world.application.authorize_capability_operation(
-                &host_custody.phase_for_application(&world.application),
+                &host_custody.phase_for_application_for_test(&world.application),
                 access,
                 &operation,
                 Default::default(),

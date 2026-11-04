@@ -88,14 +88,14 @@ pub fn check(case: Case) {
                     use worth_query_execution::court_doors_for_test::domain_computation::provider_session::graph_obligation::owner_execution::pin_panic::PanicDuringPinGuardForTest;
                     let _panic = PanicDuringPinGuardForTest::install_on_this_thread_for_test();
                     let panic = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                        let _ = plan.graph_work.prepare_query_read(
-                            plan.basis.identity(), &request, plan.basis.snapshot_handle(), |_| vec![],
+                        let _ = plan.graph_work.prepare_query_read_for_test(
+                            (*plan.basis_for_test()).identity(), &request, (*plan.basis_for_test()).snapshot_handle(), |_| vec![],
                         );
                     }));
                     assert!(panic.is_err());
                     // A second real pin takes the same owner mutex after the unwind.
-                    assert!(plan.graph_work.prepare_query_read(
-                        plan.basis.identity(), &request, plan.basis.snapshot_handle(), |_| vec![],
+                    assert!(plan.graph_work.prepare_query_read_for_test(
+                        (*plan.basis_for_test()).identity(), &request, (*plan.basis_for_test()).snapshot_handle(), |_| vec![],
                     ).is_ok());
                 }
                 Case::Snapshot | Case::Predicate => {
@@ -114,15 +114,15 @@ pub fn check(case: Case) {
                     let snapshot = if matches!(case, Case::Snapshot) {
                         &foreign
                     } else {
-                        plan.basis.snapshot_handle()
+                        (*plan.basis_for_test()).snapshot_handle()
                     };
                     let ids = if matches!(case, Case::Predicate) {
                         vec![missing]
                     } else {
                         vec![]
                     };
-                    let cause = match plan.graph_work.prepare_query_read(
-                        plan.basis.identity(),
+                    let cause = match plan.graph_work.prepare_query_read_for_test(
+                        (*plan.basis_for_test()).identity(),
                         &request,
                         snapshot,
                         |_| ids,
@@ -202,19 +202,19 @@ pub fn missing_door_index(live: bool, predicate_missing: bool) {
                     current_controls(&scope),
                 )
                 .unwrap();
-            let graph = &(*world.application.primary_provider_for_test()).graph;
+            let graph = &(*(*world.application.primary_provider_for_test()).graph_for_test());
             // Keep all installed bindings except the precise missing index.
             let mut layout = installed_layout();
             for (key, field) in layout.equality_fields_mut_for_test() {
-                field.equality_index_id = graph
-                    .layout
-                    .equality_field(&key.0, &key.1, &key.2)
+                (*field.equality_index_id_mut_for_test()) = (*(*graph
+                    .layout_for_test())
+                    .equality_field_for_test(&key.0, &key.1, &key.2)
                     .unwrap()
-                    .equality_index_id;
+                    .equality_index_id_for_test());
                 if (live && key.0 == "Activity" && key.2 == "ActivityIdentity")
                     || (predicate_missing && key.0 == "Account" && key.2 == "AccountIdentity")
                 {
-                    field.equality_index_id = Some(DerivedIndexId(u64::MAX));
+                    (*field.equality_index_id_mut_for_test()) = Some(DerivedIndexId(u64::MAX));
                 }
             }
             if !live && !predicate_missing {
@@ -222,7 +222,7 @@ pub fn missing_door_index(live: bool, predicate_missing: bool) {
                 (*plan.continuation_index_id_mut_for_test()) = Some(DerivedIndexId(u64::MAX));
             }
 
-            let actual = graph.source_owner.with_runtime(&request, |runtime| {
+            let actual = (*graph.source_owner_for_test()).with_runtime(&request, |runtime| {
                 let outcome = if live {
                     read_live_target(
                         runtime,

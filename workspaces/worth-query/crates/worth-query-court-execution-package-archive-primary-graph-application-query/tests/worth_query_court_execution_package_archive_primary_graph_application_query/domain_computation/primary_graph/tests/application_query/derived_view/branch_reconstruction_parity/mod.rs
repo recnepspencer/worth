@@ -102,7 +102,7 @@ fn members_admitted_on_another_branch_are_foreign_after_the_reads() {
                 .unwrap();
             let sibling = world
                 .application
-                .select_product_branch_for_test(&execution, fork_product.observation().branch_identity())
+                .select_product_branch_for_test(&execution, fork_product.observation_for_test().branch_identity())
                 .unwrap();
             let sibling_principal = sibling
                 .resolve_authenticated_principal(
@@ -122,9 +122,9 @@ fn members_admitted_on_another_branch_are_foreign_after_the_reads() {
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .unwrap();
-            assert_eq!(sibling_root.entity_id(), roots[1].entity_id_for_test());
+            assert_eq!(sibling_root.entity_id_for_test(), roots[1].entity_id_for_test());
             assert_ne!(
-                sibling.product().relational_basis().identity().branch_id(),
+                sibling.product().relational_basis_for_test().identity().branch_id(),
                 old.product().relational_basis_for_test().identity().branch_id()
             );
             let second_access =
@@ -154,7 +154,7 @@ fn members_admitted_on_another_branch_are_foreign_after_the_reads() {
                                 let current = &sibling;
                                 let admit = || {
                                     current
-                                        .retain_selection(&execution)
+                                        .retain_selection_for_test(&execution)
                                         .unwrap()
                                         .admit_application_query(
                                             &phase,

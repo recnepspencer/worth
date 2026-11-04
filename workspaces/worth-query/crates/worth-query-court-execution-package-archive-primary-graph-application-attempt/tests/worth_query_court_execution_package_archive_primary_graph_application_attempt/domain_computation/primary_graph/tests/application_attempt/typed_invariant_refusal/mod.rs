@@ -75,10 +75,10 @@ pub fn checkpoint(
         .application
         .with_host_advancement(|phase| {
             let execution = phase.borrowed_request_for_test();
-            (*world
+            (*(*world
                 .application
                 .primary_provider_for_test())
-                .graph
+                .graph_for_test())
                 .with_runtime(&execution, |runtime| {
                     runtime
                         .durability_authority()

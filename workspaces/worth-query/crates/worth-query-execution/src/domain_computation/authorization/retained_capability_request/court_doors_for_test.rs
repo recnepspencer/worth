@@ -32,3 +32,26 @@ impl WorthQueryRetainedCapabilityRequest {
         Self::matches_use(self, candidate)
     }
 }
+
+impl RetainedCapabilityRequestData {
+    #[doc(hidden)]
+    pub fn action_mut_for_test(&mut self) -> &mut AspectValue {
+        &mut self.action
+    }
+}
+
+impl RetainedCapabilityRequestData {
+    #[doc(hidden)]
+    pub fn context_mut_for_test(&mut self) -> &mut RetainedContext {
+        &mut self.context
+    }
+}
+
+impl RetainedCapabilityRequestData {
+    #[doc(hidden)]
+    pub fn related_mut_for_test(
+        &mut self,
+    ) -> &mut Option<worth_relational::facade::identity::EntityId> {
+        &mut self.related
+    }
+}

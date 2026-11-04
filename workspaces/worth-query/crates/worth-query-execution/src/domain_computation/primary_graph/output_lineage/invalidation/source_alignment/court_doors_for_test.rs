@@ -20,3 +20,31 @@ impl<'selected> SnapshotAlignedMarkState<'selected> {
         Self::observe_image(image, selected)
     }
 }
+
+impl BranchMarkRoot {
+    #[doc(hidden)]
+    pub fn current_for_test(&self) -> &Arc<MarkState> {
+        &self.current
+    }
+}
+
+impl BranchMarkRoot {
+    #[doc(hidden)]
+    pub fn past_for_test(&self) -> &OrdMap<Option<PatchStreamPosition>, HistoricalMarkState> {
+        &self.past
+    }
+}
+
+impl HistoricalMarkState {
+    #[doc(hidden)]
+    pub fn commit_id_for_test(&self) -> &Option<CommitId> {
+        &self.commit_id
+    }
+}
+
+impl HistoricalMarkState {
+    #[doc(hidden)]
+    pub fn root_id_for_test(&self) -> &u64 {
+        &self.root_id
+    }
+}

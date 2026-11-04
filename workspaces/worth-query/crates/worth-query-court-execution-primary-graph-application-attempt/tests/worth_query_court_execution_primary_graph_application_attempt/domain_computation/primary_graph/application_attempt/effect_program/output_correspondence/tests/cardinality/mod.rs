@@ -38,7 +38,7 @@ fn an_unbound_at_most_one_role_reads_as_none_and_a_bound_one_as_some() {
         )
         .unwrap();
     let absent = absent.seal_with_for_test(|_| None);
-    let absent = absent.outputs_of::<OptionalOutputs>().unwrap();
+    let absent = absent.outputs_of_for_test::<OptionalOutputs>().unwrap();
     assert!(absent.entity::<Companion>().unwrap().is_none());
     assert_eq!(absent.entity::<Subject>().unwrap().entity_id(), subject);
 
@@ -58,7 +58,7 @@ fn an_unbound_at_most_one_role_reads_as_none_and_a_bound_one_as_some() {
         )
         .unwrap();
     let present = present.seal_with_for_test(|_| None);
-    let present = present.outputs_of::<OptionalOutputs>().unwrap();
+    let present = present.outputs_of_for_test::<OptionalOutputs>().unwrap();
     assert_eq!(
         present
             .entity::<Companion>()
@@ -90,7 +90,7 @@ fn a_read_whose_cardinality_differs_from_the_declaration_is_refused() {
 
     for role in [companion_as_required(), subject_as_optional()] {
         assert_eq!(
-            committed.bound_entity(&role).err(),
+            committed.bound_entity_for_test(&role).err(),
             Some(WorthQueryApplicationOutputProjectionDenial::CardinalityMismatch)
         );
     }

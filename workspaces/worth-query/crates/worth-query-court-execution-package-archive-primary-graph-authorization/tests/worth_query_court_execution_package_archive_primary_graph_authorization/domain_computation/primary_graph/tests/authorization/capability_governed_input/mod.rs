@@ -198,7 +198,7 @@ pub fn capability_world() -> (World, Principal) {
             let custody = phase.test_host_request_for_test();
             let phase_custody = &custody;
 
-            authenticated_principal(&(phase_custody).test_host_request(), &world, &live_scope())
+            authenticated_principal(&(phase_custody).test_host_request_for_test(), &world, &live_scope())
         })
         .expect("the fixture authentication owns its host call");
     (world, principal)
@@ -223,7 +223,7 @@ pub fn execute_touch_handler(
                 .installed_operation(CapabilityTouchOperation::reference())
                 .unwrap();
             let access = admitted_capability_access(
-                &(phase_custody.phase_for_application(&world.application)).test_host_request(),
+                &(phase_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                 world,
                 principal,
                 &request,
@@ -233,7 +233,7 @@ pub fn execute_touch_handler(
             let admission = world
                 .application
                 .authorize_capability_operation(
-                    &phase_custody.phase_for_application(&world.application),
+                    &phase_custody.phase_for_application_for_test(&world.application),
                     access,
                     &operation,
                     Default::default(),

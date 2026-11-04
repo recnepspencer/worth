@@ -24,22 +24,22 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
         })
         .expect("initial source selection borrows its installed phase");
     let coordinate = ProductCoordinate {
-        occurrence: product.observation().lifecycle_incarnation(),
-        generation: product.observation().reference_generation().get(),
+        occurrence: product.observation_for_test().lifecycle_incarnation(),
+        generation: product.observation_for_test().reference_generation().get(),
     };
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let handle = graph.integration_handle();
-    let owner = &handle.source_owner.invalidation_owner;
+    let handle = graph.integration_handle_for_test();
+    let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
     let status_ref = AccountStatus::reference();
     let label_ref = AccountLabel::reference();
     let status = graph
-        .layout()
-        .field_locator(status_ref.entity(), status_ref.aspect(), status_ref.field())
+        .layout_for_test()
+        .field_locator_for_test(status_ref.entity(), status_ref.aspect(), status_ref.field())
         .unwrap()
         .clone();
     let label = graph
-        .layout()
-        .field_locator(label_ref.entity(), label_ref.aspect(), label_ref.field())
+        .layout_for_test()
+        .field_locator_for_test(label_ref.entity(), label_ref.aspect(), label_ref.field())
         .unwrap()
         .clone();
     let source = |output_binding| {
@@ -141,7 +141,7 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
     // A discontinuous B row has no direct facts. Its shared A evidence must
     // still catch the changed source fact after full verification is required.
     owner
-        .register_settlement(SettlementRegistration {
+        .register_settlement_for_test(SettlementRegistration {
             computation: None,
             work_membership: None,
             identity: Arc::clone(&b),
@@ -154,7 +154,7 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
         })
         .expect("discontinuous B row is retained at the selected source");
     assert!(matches!(
-        owner.currentness(&after, &b),
+        owner.currentness_for_test(&after, &b),
         Ok(SourceSettlementCurrentness::FullVerificationRequired(
             FullVerificationReason::DeclaredChangeUnavailable
         ))
@@ -173,7 +173,7 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
         }),
         Ok(ConsumedOutputVerification::ChangedUpstream),
     );
-    handle.with_runtime_mut(request_execution, |runtime| {
+    handle.with_runtime_mut_for_test(request_execution, |runtime| {
         for selected in [before_handle, unrelated_handle, after_handle] {
             runtime.snapshots().release_snapshot(&selected).unwrap();
         }
@@ -299,7 +299,7 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
         &product_before,
         "the denied C commit cannot move Product truth"
     );
-    handle.with_runtime_mut(request_execution, |runtime| {
+    handle.with_runtime_mut_for_test(request_execution, |runtime| {
         runtime
             .snapshots()
             .release_snapshot(&head_before_handle)

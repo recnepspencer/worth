@@ -56,7 +56,7 @@ fn authenticated_bootstrap_registers_the_exact_installed_native_contract() {
         let bootstrap = authority.prepare_primary_graph(&phase.bootstrap_for_test(), &runtime, &schema, worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources()).unwrap();
         let registered = (*bootstrap
             .graph_for_test())
-            .registered_entity_aspect(
+            .registered_entity_aspect_for_test(
                 &active_phase.borrowed_request_for_test(),
                 "Principal",
                 "PrincipalIdentity",
@@ -68,7 +68,7 @@ fn authenticated_bootstrap_registers_the_exact_installed_native_contract() {
         assert_eq!(
             (*bootstrap
                 .graph_for_test())
-                .registered_provider_aspect_identities(&active_phase.borrowed_request_for_test()),
+                .registered_provider_aspect_identities_for_test(&active_phase.borrowed_request_for_test()),
             [
                 AspectIdentity(maximum_application_identity + 1),
                 AspectIdentity(maximum_application_identity + 2),
@@ -186,7 +186,7 @@ fn invalidation_keeps_no_window_so_a_finite_world_history_installs() {
         );
         let invalidation = WorthQueryInvalidationResources::new();
         let resources =
-            WorthQueryProductWorldResources::new(budgets, clock, invalidation, execution.policy);
+            WorthQueryProductWorldResources::new(budgets, clock, invalidation, (*execution.policy_for_test()));
         if let Err(denial) = authority.prepare_primary_graph(
             &phase.bootstrap_for_test(),
             &runtime,

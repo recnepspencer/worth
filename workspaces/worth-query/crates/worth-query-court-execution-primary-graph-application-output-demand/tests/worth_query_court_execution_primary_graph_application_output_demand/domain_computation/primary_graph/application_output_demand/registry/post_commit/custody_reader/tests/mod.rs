@@ -10,15 +10,15 @@ fn binding_reader_drains_only_its_named_queued_custody() {
     let receipts = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::walk_bounds::receipt_batch();
     let mut state = DemandRegistryState::default();
     worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::walk_bounds::add_custody(&mut state, &receipts[..4], 1);
-    for mut row in (*state.records_for_test()).values_mut() {
-        row.interests = 0;
-        row.state = DemandState::Failed(WorthQueryOutputDemandDenial::new_for_test(
+    for mut row in (*state.records_for_test()).values_mut_for_test() {
+        (*row.interests_mut_for_test()) = 0;
+        (*row.state_mut_for_test()) = DemandState::Failed(WorthQueryOutputDemandDenial::new_for_test(
             WorthQueryOutputDemandDenialKind::NoEffect,
             "completed reader row",
         ));
     }
     for generation in 1..=64 {
-        (*state.records_for_test()).insert(
+        (*state.records_for_test()).insert_for_test(
                 worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::support::key("unrelated", generation, 2),
                 worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::support::record(
                     receipts[0].product_branch().occurrence_for_test(),
@@ -53,8 +53,8 @@ fn binding_reader_drains_only_its_named_queued_custody() {
     assert_eq!(
         (*state
             .records_for_test())
-            .values()
-            .filter(|row| row.interests == 1)
+            .values_for_test()
+            .filter(|row| (*row.interests_for_test()) == 1)
             .count(),
         64,
         "binding cleanup preserves unrelated live rows"

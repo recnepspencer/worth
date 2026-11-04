@@ -50,11 +50,11 @@ pub fn assert_live_reservation_denial(
     let _live = (*world
         .application
         .primary_provider_for_test())
-        .observe_application_commit_causality(selected.product());
+        .observe_application_commit_causality_for_test(selected.product());
     (*world
         .application
         .primary_provider_for_test())
-        .set_application_commit_causality_limits(batch_capacity);
+        .set_application_commit_causality_limits_for_test(batch_capacity);
     let program = world
         .application
         .with_application_advancement(&request, |phase| {
@@ -100,7 +100,7 @@ pub fn assert_live_reservation_denial(
         (*world
             .application
             .primary_provider_for_test())
-            .published_application_commit_count(),
+            .published_application_commit_count_for_test(),
         0
     );
     world
@@ -115,10 +115,10 @@ pub fn bridge_head_commit(
     world: &worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::authorization_world_installation::AuthorizationWorld,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> worth_runtime_bridge::facade::TruthCommitIdentity {
-    (*world
+    (*(*world
         .application
         .primary_provider_for_test())
-        .graph
+        .graph_for_test())
         .relational_bridge_source()
         .load_branch_head_patch(
             &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_branch::primary_truth_branch_identity(),

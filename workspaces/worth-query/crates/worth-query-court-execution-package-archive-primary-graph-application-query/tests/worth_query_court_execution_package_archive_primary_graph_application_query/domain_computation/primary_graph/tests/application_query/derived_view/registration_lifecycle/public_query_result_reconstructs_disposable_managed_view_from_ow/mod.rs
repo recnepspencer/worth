@@ -148,9 +148,9 @@ fn public_query_result_reconstructs_disposable_managed_view_from_owner_observati
     drop(retained_product);
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let field = AccountLabel::reference();
-    let locator = graph
-        .layout
-        .field_locator(field.entity(), field.aspect(), field.field())
+    let locator = (*graph
+        .layout_for_test())
+        .field_locator_for_test(field.entity(), field.aspect(), field.field())
         .unwrap()
         .clone();
     let fields = AspectFieldPatch::from(BTreeMap::from([(

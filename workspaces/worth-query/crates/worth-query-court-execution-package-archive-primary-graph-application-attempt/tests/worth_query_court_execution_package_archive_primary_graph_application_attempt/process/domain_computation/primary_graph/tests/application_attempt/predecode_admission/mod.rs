@@ -27,7 +27,7 @@ pub fn ordinary_field_allocation(
             let principal = authenticated_principal(phase_custody, world, &request);
             let account = resolved_account(phase_custody, world, "open", &request);
             let admission = admitted_operation(
-                &phase_custody.phase_for_application(&world.application),
+                &phase_custody.phase_for_application_for_test(&world.application),
                 world,
                 &principal,
                 &account,
@@ -37,7 +37,7 @@ pub fn ordinary_field_allocation(
             let completed = world
                 .invariant
                 .project_admitted_operation(
-                    &phase_custody.phase_for_application(&world.application),
+                    &phase_custody.phase_for_application_for_test(&world.application),
                     &admission,
                     |reader, scope| {
                         // Measure only this ordinary field call, not installation, authorization,
@@ -58,14 +58,14 @@ pub fn ordinary_field_allocation(
             let _reads = world
                 .application
                 .begin_projected_application_read_attempt(
-                    &phase_custody.phase_for_application(&world.application),
+                    &phase_custody.phase_for_application_for_test(&world.application),
                     admission,
                     projection,
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )
                 .unwrap()
                 .complete_projected_dependencies(
-                    &phase_custody.phase_for_application(&world.application),
+                    &phase_custody.phase_for_application_for_test(&world.application),
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )
                 .unwrap();

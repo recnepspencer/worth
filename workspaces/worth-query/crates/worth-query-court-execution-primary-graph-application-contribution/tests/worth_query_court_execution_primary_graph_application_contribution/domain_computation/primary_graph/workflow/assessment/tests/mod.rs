@@ -66,7 +66,7 @@ fn evidence_and_each_dependency_charge_their_field_widths_and_nothing_else_does(
         charge(created((*layout.evidence_dependency.entity_kind_for_test()), dependency)),
         6 + 9 + 2
     );
-    assert_eq!(charge(created((*layout.transition_for_test()).entity_kind, evidence)), 0);
+    assert_eq!(charge(created((*(*layout.transition_for_test()).entity_kind_for_test()), evidence)), 0);
     assert_eq!(
         charge(WorthQueryApplicationRealizedEffect::CreateRelation {
             fields: Default::default(),

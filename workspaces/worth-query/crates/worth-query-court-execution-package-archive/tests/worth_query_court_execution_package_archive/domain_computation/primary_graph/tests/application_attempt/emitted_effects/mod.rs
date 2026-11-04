@@ -19,7 +19,7 @@ fn typed_emission_is_published_with_the_exact_provider_commit() {
     let _live = (*world
         .application
         .primary_provider_for_test())
-        .observe_application_commit_causality(selected.product());
+        .observe_application_commit_causality_for_test(selected.product());
     let request = live_scope();
     let principal = world
         .application
@@ -61,11 +61,11 @@ fn typed_emission_is_published_with_the_exact_provider_commit() {
     let emissions = (*world
         .application
         .primary_provider_for_test())
-        .committed_application_emissions(receipt.committed_product_publication());
+        .committed_application_emissions_for_test(receipt.committed_product_publication());
     assert_eq!(emissions.len(), 1);
-    assert_eq!(emissions[0].effect(), "AccountActivityEffect");
+    assert_eq!(emissions[0].effect_for_test(), "AccountActivityEffect");
     assert_eq!(
-        emissions[0].payload::<String>().map(String::as_str),
+        emissions[0].payload_for_test::<String>().map(String::as_str),
         Some("account-activity")
     );
 }
@@ -148,7 +148,7 @@ fn response_loss_recovers_emit_receipt_without_duplicate_publication() {
         (*world
             .application
             .primary_provider_for_test())
-            .published_application_commit_count(),
+            .published_application_commit_count_for_test(),
         1
     );
 }
@@ -244,8 +244,8 @@ fn in_window_receipt_admits_its_exact_historical_basis() {
                 .expect("the bounded owner must retain an in-window receipt basis")
         })
         .expect("the fixture read owns its installed host call");
-    assert_eq!(basis.version_id(), exact_version);
-    assert!(basis.release().released());
+    assert_eq!(basis.version_id_for_test(), exact_version);
+    assert!(basis.release_for_test().released_for_test());
 }
 
 #[path = "external_receipt_clones_do_not_pin_an_evicted_historical_basis/mod.rs"]

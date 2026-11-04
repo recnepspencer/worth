@@ -47,7 +47,7 @@ pub fn selected(
         )
         .unwrap()
         .product()
-        .retained_clone()
+        .retained_clone_for_test()
 }
 
 pub fn name(

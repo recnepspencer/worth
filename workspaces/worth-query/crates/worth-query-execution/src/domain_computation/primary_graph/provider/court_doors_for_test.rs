@@ -10,14 +10,53 @@ impl WorthQueryPrimaryGraphProvider {
 
 impl WorthQueryPrimaryGraphProvider {
     #[doc(hidden)]
-    pub fn receipt_basis_retention_for_test(&self) -> &Arc<Mutex<session_commit::WorthQueryReceiptBasisRetentionStore>> {
+    pub fn receipt_basis_retention_for_test(
+        &self,
+    ) -> &Arc<Mutex<session_commit::WorthQueryReceiptBasisRetentionStore>> {
         &self.receipt_basis_retention
     }
 }
 
 impl WorthQueryPrimaryGraphProvider {
     #[doc(hidden)]
-    pub fn attempts_for_test(&self) -> &Arc<Mutex<application_attempt_state::WorthQueryPrimaryGraphApplicationAttemptStore>> {
+    pub fn attempts_for_test(
+        &self,
+    ) -> &Arc<Mutex<application_attempt_state::WorthQueryPrimaryGraphApplicationAttemptStore>> {
         &self.attempts
+    }
+}
+
+impl WorthQueryPrimaryGraphProvider {
+    #[doc(hidden)]
+    pub fn application_attempt_operation_control_for_test(
+        &self,
+    ) -> &super::super::application_runtime::WorthQueryApplicationAttemptOperationControl {
+        &self.application_attempt_operation_control
+    }
+}
+
+impl WorthQueryPrimaryGraphProvider {
+    #[doc(hidden)]
+    pub fn live_delivery_for_test(
+        &self,
+    ) -> &super::super::live_delivery::WorthQueryLiveDeliverySource {
+        &self.live_delivery
+    }
+}
+
+impl WorthQueryPrimaryGraphProvider {
+    #[doc(hidden)]
+    pub fn application_attempt_resource_count_for_test(&self) -> usize {
+        Self::application_attempt_resource_count(self)
+    }
+}
+
+impl WorthQueryPrimaryGraphProvider {
+    #[doc(hidden)]
+    pub fn application_branch_commit_lane_for_test(
+        &self,
+        observation: &worth_runtime_world::facade::ProductBranchObservation,
+    ) -> Arc<WorthQueryApplicationBranchCommitLane> {
+        Self::application_branch_commit_lane(self, observation)
     }
 }

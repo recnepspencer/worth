@@ -44,3 +44,26 @@ impl MarkState {
         Self::initial()
     }
 }
+
+impl MarkState {
+    #[doc(hidden)]
+    pub fn settlements_for_test(
+        &self,
+    ) -> &OrdMap<Arc<RecordedSettlementIdentity>, Arc<SettlementMarks>> {
+        &self.settlements
+    }
+}
+
+impl SettlementMarks {
+    #[doc(hidden)]
+    pub fn facts_for_test(&self) -> &super::super::super::RetainedSourceFacts {
+        &self.facts
+    }
+}
+
+impl SettlementMarks {
+    #[doc(hidden)]
+    pub fn posting_projection_for_test(&self) -> &Arc<super::super::settlement::PostingProjection> {
+        &self.posting_projection
+    }
+}

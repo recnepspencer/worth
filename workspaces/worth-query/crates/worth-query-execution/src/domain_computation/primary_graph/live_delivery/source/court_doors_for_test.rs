@@ -27,3 +27,40 @@ impl WorthQueryLiveDeliverySource {
         Self::reserve(self, execution, observation)
     }
 }
+
+impl WorthQueryLiveDeliverySourceState {
+    #[doc(hidden)]
+    pub fn partitions_for_test(
+        &self,
+    ) -> &BTreeMap<WorthQueryLiveProductKey, WorthQueryLiveProductPartition> {
+        &self.partitions
+    }
+}
+
+impl WorthQueryLiveDeliverySourceState {
+    #[doc(hidden)]
+    pub fn subscriber_count_for_test(&self) -> &usize {
+        &self.subscriber_count
+    }
+}
+
+impl WorthQueryLiveDeliverySourceState {
+    #[doc(hidden)]
+    pub fn subscriber_count_mut_for_test(&mut self) -> &mut usize {
+        &mut self.subscriber_count
+    }
+}
+
+impl WorthQueryLiveProductPartition {
+    #[doc(hidden)]
+    pub fn subscriber_count_mut_for_test(&mut self) -> &mut usize {
+        &mut self.subscriber_count
+    }
+}
+
+impl WorthQueryLiveDeliverySource {
+    #[doc(hidden)]
+    pub fn close_for_test(&self) -> usize {
+        Self::close(self)
+    }
+}

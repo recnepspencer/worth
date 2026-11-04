@@ -32,7 +32,7 @@ pub fn dependency(
         graph_adapter_identity: Arc::from("association-only-adapter"),
         source_record_identity: record,
         observation_record_identity: record,
-        contract: (*field.field_for_test()).aspect.clone(),
+        contract: (*(*field.field_for_test()).aspect_for_test()).clone(),
         projection_mask: AspectMask::<ProjectionMask>::whole_aspect(),
         binding,
         locality: if record.is_some() {
@@ -47,11 +47,11 @@ pub fn dependency(
 #[test]
 fn readiness_dependency_requires_actual_output_generation_and_physical_binding() {
     let declaration = declaration::<Struct>();
-    let field = (*declaration.installed_output_equivalence_for_test()).unwrap();
+    let field = declaration.installed_output_equivalence_into_for_test().unwrap();
     let output = Record::entity(0, 7, 3);
     for record in [None, Some(output)] {
         assert!(dependency_matches_output(
-            &dependency(&field, record, field.field.native_binding.clone()),
+            &dependency(&field, record, (*(*field.field_for_test()).native_binding_for_test()).clone()),
             &field,
             output
         ));
@@ -63,7 +63,7 @@ fn readiness_dependency_requires_actual_output_generation_and_physical_binding()
     ] {
         assert!(
             !dependency_matches_output(
-                &dependency(&field, Some(wrong), field.field.native_binding.clone()),
+                &dependency(&field, Some(wrong), (*(*field.field_for_test()).native_binding_for_test()).clone()),
                 &field,
                 output
             ),

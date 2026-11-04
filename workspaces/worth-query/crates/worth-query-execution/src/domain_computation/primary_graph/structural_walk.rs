@@ -9,7 +9,7 @@ mod currentness;
 pub(crate) mod dependencies;
 pub(in crate::domain_computation::primary_graph) use dependencies::StructuralWalkDependencies;
 mod commitment;
-mod key;
+pub(crate) mod key;
 pub(in crate::domain_computation::primary_graph) mod memory;
 pub(crate) mod read;
 pub(in crate::domain_computation::primary_graph) use key::StructuralWalkKey;

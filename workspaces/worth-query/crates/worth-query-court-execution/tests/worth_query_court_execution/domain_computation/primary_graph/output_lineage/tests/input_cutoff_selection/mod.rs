@@ -30,7 +30,7 @@ fn cutoff_candidate_pins_the_selected_ancestor_partition() {
         .product_runtime()
         .admit_product_branch_for_test(world.application.product_runtime().default_branch_for_test())
         .expect("a real product occurrence is live");
-    let parent = product.observation();
+    let parent = product.observation_for_test();
     let intent = ProductBranchCreationIntent::from_source(
         "cutoff-ancestor",
         ProductBranchCreationPlans::new(
@@ -119,8 +119,8 @@ fn cutoff_candidate_pins_the_selected_ancestor_partition() {
     lineage.register_fork_for_test(parent, &child);
     let selected_cell = &(*lineage.by_source_for_test())[&source][&parent.lifecycle_incarnation()]
         [&parent.reference_generation().get()][0];
-    let selected_identity = &selected_cell.get().unwrap().settlement_identity;
-    assert!(matches!(&selected_cell.get().unwrap().mutable.lock().unwrap().computation,
+    let selected_identity = &(*selected_cell.get().unwrap().settlement_identity_for_test());
+    assert!(matches!(&(*(*selected_cell.get().unwrap().mutable_for_test()).lock().unwrap().computation_for_test()),
         worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::retained_computation::RecordedComputation::Absent(
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::PriorAbsence::Restored)));
 
@@ -134,16 +134,16 @@ fn cutoff_candidate_pins_the_selected_ancestor_partition() {
         .expect("the selected ancestor lookup selects exact custody")
         .expect("the matching parent partition is retained");
     assert!(Arc::ptr_eq(
-        selected.settlement_identity(),
+        selected.settlement_identity_for_test(),
         selected_identity
     ));
     assert!(
-        selected.prepared_input_key().is_none(),
+        selected.prepared_input_key_for_test().is_none(),
         "restored rows cannot cut off"
     );
 
     let next_generation = parent.reference_generation().get() + 1;
-    let _unpublished = (*lineage.partition_index_for_test()).insert_vacancy(
+    let _unpublished = (*lineage.partition_index_mut_for_test()).insert_vacancy_for_test(
         source.clone(),
         ProductCoordinate {
             occurrence: parent.lifecycle_incarnation(),
@@ -153,7 +153,7 @@ fn cutoff_candidate_pins_the_selected_ancestor_partition() {
     );
     let prior = (*lineage
         .partition_index_for_test())
-        .latest_admitted(
+        .latest_admitted_for_test(
             execution,
             &source,
             ProductCoordinate {

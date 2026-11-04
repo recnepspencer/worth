@@ -32,7 +32,7 @@ fn current_source_registration_rejects_native_movement_while_ordinary_replay_rem
         })
         .expect("the fixture read owns its installed host call");
     let (_, product, _) = selected.into_parts_for_test();
-    let observation = product.observation();
+    let observation = product.observation_for_test();
     let coordinate = ProductCoordinate {
         occurrence: observation.lifecycle_incarnation(),
         generation: observation.reference_generation().get(),
@@ -44,21 +44,21 @@ fn current_source_registration_rejects_native_movement_while_ordinary_replay_rem
         output_binding: OutputBindingIdentity::declared_for_test("StatusOutput"),
     };
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let handle = graph.integration_handle();
-    let owner = &handle.source_owner.invalidation_owner;
+    let handle = graph.integration_handle_for_test();
+    let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
     let status_ref = AccountStatus::reference();
     let status = graph
-        .layout()
-        .field_locator(status_ref.entity(), status_ref.aspect(), status_ref.field())
+        .layout_for_test()
+        .field_locator_for_test(status_ref.entity(), status_ref.aspect(), status_ref.field())
         .unwrap()
         .clone();
     let label_ref = AccountLabel::reference();
     let label = graph
-        .layout()
-        .field_locator(label_ref.entity(), label_ref.aspect(), label_ref.field())
+        .layout_for_test()
+        .field_locator_for_test(label_ref.entity(), label_ref.aspect(), label_ref.field())
         .unwrap()
         .clone();
-    handle.with_runtime_mut(request_execution, |runtime| {
+    handle.with_runtime_mut_for_test(request_execution, |runtime| {
         write_field(request_execution, runtime, entity, label, "prime")
     });
     let (before_handle, before, facts) = world
@@ -91,12 +91,12 @@ fn current_source_registration_rejects_native_movement_while_ordinary_replay_rem
         upstream: OrdSet::new(),
     };
     let prepared = owner
-        .prepare_current_settlement(registration(Arc::clone(&identity)), &before)
+        .prepare_current_settlement_for_test(registration(Arc::clone(&identity)), &before)
         .expect("the exact current native source can prepare");
-    assert!(Arc::ptr_eq(prepared.identity(), &identity));
-    assert!(std::ptr::eq(prepared.selected_source(), &before));
+    assert!(Arc::ptr_eq(prepared.identity_for_test(), &identity));
+    assert!(std::ptr::eq(prepared.selected_source_for_test(), &before));
     let cleanup = prepared
-        .install()
+        .install_for_test()
         .unwrap_or_else(|_| panic!("an unchanged source image installs its prepared registration"));
     drop(cleanup);
     assert!(matches!(
@@ -104,12 +104,12 @@ fn current_source_registration_rejects_native_movement_while_ordinary_replay_rem
         SourceSettlementCurrentness::Clean
     ));
 
-    handle.with_runtime_mut(request_execution, |runtime| {
+    handle.with_runtime_mut_for_test(request_execution, |runtime| {
         write_field(request_execution, runtime, entity, status, "closed")
     });
     let (after_handle, after) = handle.with_runtime(request_execution, snapshot);
     let next = RecordedSettlementIdentity::retain_for_test(&source, coordinate, 1);
-    let stopped = owner.prepare_current_settlement(registration(Arc::clone(&next)), &before);
+    let stopped = owner.prepare_current_settlement_for_test(registration(Arc::clone(&next)), &before);
     assert!(matches!(
         stopped,
         Err(SettlementRegistrationStop::Edit(
@@ -125,7 +125,7 @@ fn current_source_registration_rejects_native_movement_while_ordinary_replay_rem
     // An ordinary post-effect registration must still replay deliveries from
     // its retained basis rather than pretending its old fact is current.
     owner
-        .register_settlement(registration(Arc::clone(&next)))
+        .register_settlement_for_test(registration(Arc::clone(&next)))
         .unwrap();
     match currentness(owner, &after, &next) {
         SourceSettlementCurrentness::Dirty(ordinals) => assert!(ordinals.contains(&0)),
@@ -135,7 +135,7 @@ fn current_source_registration_rejects_native_movement_while_ordinary_replay_rem
     // is not clean at the post-effect basis: no later delivery marks it.
     let born_stale = RecordedSettlementIdentity::retain_for_test(&source, coordinate, 2);
     owner
-        .register_settlement(SettlementRegistration {
+        .register_settlement_for_test(SettlementRegistration {
             computation: None,
             read_basis: after.clone(),
             stale_at_read_basis: OrdSet::unit(0),
@@ -146,7 +146,7 @@ fn current_source_registration_rejects_native_movement_while_ordinary_replay_rem
         SourceSettlementCurrentness::Dirty(ordinals) => assert_eq!(ordinals, OrdSet::unit(0)),
         _ => panic!("a registration stale at its own read basis starts dirty"),
     }
-    handle.with_runtime_mut(request_execution, |runtime| {
+    handle.with_runtime_mut_for_test(request_execution, |runtime| {
         runtime
             .snapshots()
             .release_snapshot(&before_handle)

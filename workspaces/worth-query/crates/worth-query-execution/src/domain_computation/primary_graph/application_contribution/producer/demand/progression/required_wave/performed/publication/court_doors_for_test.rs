@@ -12,3 +12,10 @@ impl PerformedMembers {
         Self::publication(self, readiness, receipt, mark)
     }
 }
+
+impl PublishedMember<'_> {
+    #[doc(hidden)]
+    pub fn performed_for_test(self) {
+        Self::performed(self)
+    }
+}

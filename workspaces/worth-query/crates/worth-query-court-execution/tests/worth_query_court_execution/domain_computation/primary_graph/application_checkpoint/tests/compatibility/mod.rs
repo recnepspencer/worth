@@ -12,7 +12,7 @@ pub fn refusal(body: Vec<u8>, expected: Kind) {
         .decode_for_test()
         .err()
         .expect("unsupported header refuses");
-    assert_eq!(denial.into_installation_denial().kind(), expected);
+    assert_eq!(denial.into_installation_denial_for_test().kind(), expected);
     assert_eq!(retained.bytes(), original);
     assert_eq!(retained.bytes().as_ptr(), backing);
 }
@@ -65,7 +65,7 @@ fn malformed_current_header_remains_corruption_not_unsupported() {
         .err()
         .expect("checksum must refuse");
     assert_eq!(
-        denial.into_installation_denial().kind(),
+        denial.into_installation_denial_for_test().kind(),
         Kind::CheckpointRecoveryRejected
     );
 }

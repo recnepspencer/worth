@@ -31,7 +31,7 @@ pub fn suspend_restore_and_read() {
         let application = &world.application;
         let request = live_scope();
         let graph = (*application.runtime_for_test()).primary_graph().unwrap();
-        let handle = graph.integration_handle();
+        let handle = graph.integration_handle_for_test();
         let selected = world
             .application
             .with_host_advancement(|phase| {
@@ -41,8 +41,8 @@ pub fn suspend_restore_and_read() {
             })
             .expect("the fixture read owns its installed host call");
         let (_, product, basis) = selected.into_parts_for_test();
-        let observation = product.observation();
-        let exact = handle.output_lineage.lock().unwrap().qualified_output::<OwnWriteOutputs>(
+        let observation = product.observation_for_test();
+        let exact = handle.output_lineage.lock().unwrap().qualified_output_for_test::<OwnWriteOutputs>(
             (*application.runtime_for_test()).authority_identity().as_u64(),
             &(*application.installed_schema_for_test()).binding_identity(), receipt.principal_scope().scope(),
             observation.lifecycle_incarnation(), observation.reference_generation().get(),
@@ -58,15 +58,15 @@ pub fn suspend_restore_and_read() {
             binding_identity: "test-own-write", provider_identity: "test-own-write",
             runtime_source_identity: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryRuntimeSourceIdentity::new_for_test([11;32]),
             checkpoint_source_identity: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryCheckpointSourceIdentity::new_for_test([11;32]),
-            recorded_source_identity: exact.source_identity,
-            source_partition_identity: exact.source_partition_identity,
-            producer_dependency_identity: exact.producer_dependency_identity,
-            producing_implementation: exact.producing_implementation,
-            idempotency_key_identity: exact.idempotency_key_identity,
-            runtime_authority: exact.runtime_authority, schema: exact.schema, scope: exact.scope,
+            recorded_source_identity: (*exact.source_identity_for_test()),
+            source_partition_identity: (*exact.source_partition_identity_for_test()),
+            producer_dependency_identity: (*exact.producer_dependency_identity_for_test()),
+            producing_implementation: (*exact.producing_implementation_for_test()),
+            idempotency_key_identity: (*exact.idempotency_key_identity_for_test()),
+            runtime_authority: (*exact.runtime_authority_for_test()), schema: (*exact.schema_for_test()), scope: exact.scope,
             output_occurrence: observation.lifecycle_incarnation(),
             output_generation: observation.reference_generation().get(),
-            observed_source_facts: exact.observed_source_facts,
+            observed_source_facts: (*exact.observed_source_facts_for_test()),
         };
         let generated = receipt
             .output_correspondence()
@@ -95,7 +95,7 @@ pub fn suspend_restore_and_read() {
                 })
             })
             .expect("the fixture read owns its installed host call");
-        let layout = graph.layout();
+        let layout = graph.layout_for_test();
         let label = AccountLabel::reference();
         let status = AccountStatus::reference();
         let identity = AccountIdentity::reference();
@@ -103,28 +103,28 @@ pub fn suspend_restore_and_read() {
         let fields = [
             (
                 layout
-                    .field_locator(label.entity(), label.aspect(), label.field())
+                    .field_locator_for_test(label.entity(), label.aspect(), label.field())
                     .unwrap()
                     .clone(),
                 "computed-from-1",
             ),
             (
                 layout
-                    .field_locator(status.entity(), status.aspect(), status.field())
+                    .field_locator_for_test(status.entity(), status.aspect(), status.field())
                     .unwrap()
                     .clone(),
                 "generated",
             ),
             (
                 layout
-                    .field_locator(identity.entity(), identity.aspect(), identity.field())
+                    .field_locator_for_test(identity.entity(), identity.aspect(), identity.field())
                     .unwrap()
                     .clone(),
                 "computed-own-write",
             ),
             (
                 layout
-                    .field_locator(tag.entity(), tag.aspect(), tag.field())
+                    .field_locator_for_test(tag.entity(), tag.aspect(), tag.field())
                     .unwrap()
                     .clone(),
                 "open",
@@ -152,7 +152,7 @@ pub fn suspend_restore_and_read() {
                         .materialization_port()
                         .prepare_generated_materialization_suspension(
                             &borrowed_execution,
-                            product.relational_basis(),
+                            product.relational_basis_for_test(),
                             &[generated],
                         )
                         .unwrap()
@@ -165,10 +165,10 @@ pub fn suspend_restore_and_read() {
         let published = application
             .with_application_advancement(&request, |phase| {
                 product
-                    .publication_binding()
-                    .prepare_relational_candidate(candidate, &request, true)
+                    .publication_binding_for_test()
+                    .prepare_relational_candidate_for_test(candidate, &request, true)
                     .unwrap()
-                    .execute(
+                    .execute_for_test(
                         phase
                             .execution_request_for_for_test(&(*application.product_runtime_for_test()))
                             .expect("publication uses its runtime phase"),
@@ -209,7 +209,7 @@ pub fn suspend_restore_and_read() {
                         .materialization_port()
                         .prepare_generated_rematerialization(
                             &borrowed_execution,
-                            product.relational_basis(),
+                            product.relational_basis_for_test(),
                             suspended.custody,
                             vec![RelationalEntityMaterialization {
                                 entity_id: generated,
@@ -228,10 +228,10 @@ pub fn suspend_restore_and_read() {
         let published = application
             .with_application_advancement(&request, |phase| {
                 product
-                    .publication_binding()
-                    .prepare_relational_candidate(candidate, &request, true)
+                    .publication_binding_for_test()
+                    .prepare_relational_candidate_for_test(candidate, &request, true)
                     .unwrap()
-                    .execute(
+                    .execute_for_test(
                         phase
                             .execution_request_for_for_test(&(*application.product_runtime_for_test()))
                             .expect("publication uses its runtime phase"),
@@ -259,7 +259,7 @@ pub fn suspend_restore_and_read() {
                 application.record_restored_generated_output_for_test(
                     execution,
                     &observation,
-                    exact.correspondence,
+                    (*exact.correspondence_for_test()),
                     producer,
                 )
             })
@@ -270,7 +270,7 @@ pub fn suspend_restore_and_read() {
             .output_lineage
             .lock()
             .unwrap()
-            .install_output_families(BTreeMap::from([(
+            .install_output_families_for_test(BTreeMap::from([(
                 "test.retained-account-capacity".to_owned().into(),
                 vec![(
                     TypeId::of_for_test::<OwnWriteOutputs>(),
@@ -283,7 +283,7 @@ pub fn suspend_restore_and_read() {
                 let (_, product, _) = world
                     .selected_product(&phase.test_host_request_for_test())
                     .into_parts_for_test();
-                let observation = product.observation();
+                let observation = product.observation_for_test();
                 let execution = phase
                     .execution_request_for_for_test(&(*application.product_runtime_for_test()))
                     .unwrap();
@@ -291,7 +291,7 @@ pub fn suspend_restore_and_read() {
                     .output_lineage
                     .lock()
                     .unwrap()
-                    .resolve_current_family(
+                    .resolve_current_family_for_test(
                         &execution,
                         (*application.runtime_for_test()).authority_identity().as_u64(),
                         &(*application.installed_schema_for_test()).binding_identity(),
@@ -304,10 +304,10 @@ pub fn suspend_restore_and_read() {
                 (family, product)
             })
             .expect("the installed host owns the selection's fresh request");
-        assert_eq!(family.candidates.len(), 1);
-        let candidate = &family.candidates[0];
+        assert_eq!((*family.candidates_for_test()).len(), 1);
+        let candidate = &(*family.candidates_for_test())[0];
         assert_eq!(
-            candidate.verification_requirement, None,
+            (*candidate.verification_requirement_for_test()), None,
             "the actual performed republication registered at its selected native image"
         );
         drop(restored_product);
@@ -316,7 +316,7 @@ pub fn suspend_restore_and_read() {
             .with_host_advancement(|phase| {
                 let phase_custody = &phase.test_host_request_for_test();
 
-                authenticated_principal(&(phase_custody).test_host_request(), world, &request)
+                authenticated_principal(&(phase_custody).test_host_request_for_test(), world, &request)
             })
             .expect("the fixture read owns its installed host call");
         let account = world
@@ -324,7 +324,7 @@ pub fn suspend_restore_and_read() {
             .with_host_advancement(|phase| {
                 let phase_custody = &phase.test_host_request_for_test();
 
-                resolved_account(&(phase_custody).test_host_request(), world, "2", &request)
+                resolved_account(&(phase_custody).test_host_request_for_test(), world, "2", &request)
             })
             .expect("the fixture read owns its installed host call");
         let operation = application
@@ -339,7 +339,7 @@ pub fn suspend_restore_and_read() {
                 world
                     .selected_product(phase_custody)
                     .authorize_operation(
-                        &phase_custody.phase_for_application(&world.application),
+                        &phase_custody.phase_for_application_for_test(&world.application),
                         &principal,
                         &account,
                         &operation,
@@ -357,7 +357,7 @@ pub fn suspend_restore_and_read() {
                 world
                     .invariant
                     .project_admitted_operation(
-                        &phase_custody.phase_for_application(&world.application),
+                        &phase_custody.phase_for_application_for_test(&world.application),
                         &admitted,
                         |reader, root| {
                             reader
@@ -378,7 +378,7 @@ pub fn suspend_restore_and_read() {
             "restored output still contains the computation from x=1, while x=2"
         );
         assert!(
-            candidate.observed_source_facts.for_comparison().is_none(),
+            (*candidate.observed_source_facts_for_test()).for_comparison().is_none(),
             "deriving a restored record must retain the actual own-write evidence"
         );
     });

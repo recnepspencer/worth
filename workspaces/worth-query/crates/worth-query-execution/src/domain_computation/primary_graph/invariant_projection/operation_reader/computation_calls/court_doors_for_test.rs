@@ -14,3 +14,17 @@ impl ComputationCallCharge {
         &mut self.reached
     }
 }
+
+impl ComputationCallAccounting {
+    #[doc(hidden)]
+    pub fn consumed_for_test(&self) -> &usize {
+        &self.consumed
+    }
+}
+
+impl ComputationCallAccounting {
+    #[doc(hidden)]
+    pub fn demand_for_test(&self) -> &usize {
+        &self.demand
+    }
+}

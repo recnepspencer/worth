@@ -21,3 +21,10 @@ impl RetirementMetadata {
         &self.kind
     }
 }
+
+impl RetirementMetadata {
+    #[doc(hidden)]
+    pub fn created_at_mut_for_test(&mut self) -> &mut VersionId {
+        &mut self.created_at
+    }
+}

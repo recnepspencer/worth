@@ -49,12 +49,12 @@ pub fn publish_definition(
         .runtime_for_test())
         .primary_graph()
         .unwrap()
-        .integration_handle();
+        .integration_handle_for_test();
     let inventories = handle.with_runtime(execution, |runtime| {
         [
-            (*layout.lineage_for_test()).entity_kind,
-            (*layout.definition_for_test()).entity_kind,
-            (*layout.node_for_test()).entity_kind,
+            (*(*layout.lineage_for_test()).entity_kind_for_test()),
+            (*(*layout.definition_for_test()).entity_kind_for_test()),
+            (*(*layout.node_for_test()).entity_kind_for_test()),
         ]
         .map(|kind| {
             runtime
@@ -88,16 +88,16 @@ pub fn publish_definition(
     let lineage = only_new_entity(
         world,
         execution,
-        (*layout.lineage_for_test()).entity_kind,
+        (*(*layout.lineage_for_test()).entity_kind_for_test()),
         &inventories[0],
     );
     let entity = only_new_entity(
         world,
         execution,
-        (*layout.definition_for_test()).entity_kind,
+        (*(*layout.definition_for_test()).entity_kind_for_test()),
         &inventories[1],
     );
-    let node = only_new_entity(world, execution, (*layout.node_for_test()).entity_kind, &inventories[2]);
+    let node = only_new_entity(world, execution, (*(*layout.node_for_test()).entity_kind_for_test()), &inventories[2]);
     let retained = selected(world, execution);
     let compiled_node = handle.with_runtime(execution, |runtime| {
         let mut observed = Vec::new();

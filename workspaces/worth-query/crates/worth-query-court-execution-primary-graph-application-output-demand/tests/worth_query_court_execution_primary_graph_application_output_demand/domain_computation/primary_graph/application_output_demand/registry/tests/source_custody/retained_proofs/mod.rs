@@ -39,18 +39,18 @@ fn completed_multi_root_custody_waits_for_token_and_active_record() {
     (*state.source_custody.get_mut(&commit).unwrap().token_count_mut_for_test()) = 0;
     let demand_key = key("producer", 5, 1);
     let mut active = record(occurrence, DemandState::Admitted, 1);
-    (*active.source_commits_for_test()).push(commit.clone());
-    (*state.records_for_test()).insert(demand_key.clone(), active);
+    (*active.source_commits_mut_for_test()).push(commit.clone());
+    (*state.records_for_test()).insert_for_test(demand_key.clone(), active);
     state.note_custody_for_test(&commit);
     state.prune_completed_custody().unwrap();
     assert_eq!(state.source_custody.len(), 1);
     let mut record = (*state.records_for_test()).get_mut(&demand_key).unwrap();
-    record.interests = 0;
-    record.state = DemandState::Failed(WorthQueryOutputDemandDenial::new_for_test(
+    (*record.interests_mut_for_test()) = 0;
+    (*record.state_mut_for_test()) = DemandState::Failed(WorthQueryOutputDemandDenial::new_for_test(
         WorthQueryOutputDemandDenialKind::NoEffect,
         "terminal source",
     ));
-    record.finish();
+    record.finish_for_test();
     state.note_custody_for_test(&commit);
     state.prune_completed_custody().unwrap();
     assert!(state.source_custody.is_empty());

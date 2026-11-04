@@ -24,3 +24,10 @@ impl StoreDenial {
         Self::into_attempt_denial(self, subject)
     }
 }
+
+impl<T> RetainedFact<T> {
+    #[doc(hidden)]
+    pub fn key_for_test(&self) -> &AdmittedFactKey {
+        &self.key
+    }
+}

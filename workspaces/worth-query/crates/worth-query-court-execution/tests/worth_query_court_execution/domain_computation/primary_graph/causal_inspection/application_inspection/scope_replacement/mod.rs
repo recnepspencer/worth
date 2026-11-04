@@ -30,10 +30,10 @@ use worth_relational::facade::transactions::RelationSpec;
 use worth_relational::facade::transactions::WorkerIntentBatch;
 
 pub fn account_fields(world: &AuthorizationWorld) -> AspectFieldPatch {
-    let layout = (*world.application.runtime_for_test()).primary_graph().unwrap().layout();
+    let layout = (*world.application.runtime_for_test()).primary_graph().unwrap().layout_for_test();
     let locator = |field: (&str, &str, &str)| {
         layout
-            .field_locator(field.0, field.1, field.2)
+            .field_locator_for_test(field.0, field.1, field.2)
             .unwrap()
             .clone()
     };
@@ -78,7 +78,7 @@ fn same_scope_reused_slot_cannot_inherit_original_observation_generation() {
         .execute()
         .unwrap()
         .close();
-    let old = (*original.source_for_test()).retained_scope_selector().subject();
+    let old = (*original.source_for_test()).retained_scope_selector_for_test().subject_for_test();
     let readers = world.application.application_query_basis_observer();
     let baseline = readers.observe().active();
     let publish = |batch| {
@@ -107,7 +107,7 @@ fn same_scope_reused_slot_cannot_inherit_original_observation_generation() {
                 .runtime_for_test())
                 .primary_graph()
                 .unwrap()
-                .integration_handle()
+                .integration_handle_for_test()
                 .with_runtime(&execution, |native| {
                     native.retention().try_run_pass(&execution)
                 })
@@ -119,12 +119,12 @@ fn same_scope_reused_slot_cannot_inherit_original_observation_generation() {
         reclaimed.outcome().entity_reclaimed > 0,
         "an actual reclaim must precede any reuse claim"
     );
-    let layout = (*world.application.runtime_for_test()).primary_graph().unwrap().layout();
+    let layout = (*world.application.runtime_for_test()).primary_graph().unwrap().layout_for_test();
     publish(
         WorkerIntentBatch::new("inspection-generation-create").push(MutationIntent::Create(
             CreateIntent::Entity(EntitySpec {
                 partition_id: old.partition_id,
-                kind_id: layout.entity_kind(Account::reference().name()).unwrap(),
+                kind_id: layout.entity_kind_for_test(Account::reference().name()).unwrap(),
                 client_key: ClientKey::raw("inspection-generation-recreated"),
                 fields: account_fields(&world),
             }),
@@ -171,10 +171,10 @@ fn same_scope_reused_slot_cannot_inherit_original_observation_generation() {
         WorkerIntentBatch::new("inspection-generation-owner").push(MutationIntent::Create(
             CreateIntent::Relation(RelationSpec {
                 partition_id: fresh.partition_id,
-                kind_id: layout
+                kind_id: (*layout
                     .relation(AccountOwner::reference().name())
                     .unwrap()
-                    .kind,
+                    .kind_for_test()),
                 client_key: ClientKey::raw("inspection-generation-current-owner"),
                 source: EntityReference::Existing(owner),
                 target: EntityReference::Existing(fresh),
@@ -184,7 +184,7 @@ fn same_scope_reused_slot_cannot_inherit_original_observation_generation() {
     );
     let current_original = observe(&world, &external, &request, false);
     assert_eq!(
-        (*current_original.source_for_test()).retained_scope_selector().subject(),
+        (*current_original.source_for_test()).retained_scope_selector_for_test().subject_for_test(),
         fresh
     );
     world

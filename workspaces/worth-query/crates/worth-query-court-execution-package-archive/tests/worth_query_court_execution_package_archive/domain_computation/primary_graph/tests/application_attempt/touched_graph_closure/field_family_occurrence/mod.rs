@@ -11,12 +11,12 @@ fn one_field_family_instance_cannot_satisfy_two_planned_entity_dependencies() {
             let borrowed_execution = host_custody.borrowed_request_for_test();
             let execution = &borrowed_execution;
             let principal = authenticated_principal(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                 &world,
                 &request,
             );
             let account = resolved_account(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                 &world,
                 "open",
                 &request,
@@ -28,10 +28,10 @@ fn one_field_family_instance_cannot_satisfy_two_planned_entity_dependencies() {
                 .unwrap();
             let admission = world
                 .selected_product(
-                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                 )
                 .authorize_operation(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     &principal,
                     &account,
                     &operation,
@@ -42,7 +42,7 @@ fn one_field_family_instance_cannot_satisfy_two_planned_entity_dependencies() {
             let (_, projection, _) = world
                 .invariant
                 .project_admitted_operation(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     &admission,
                     |reader, _| {
                         let open = reader
@@ -65,7 +65,7 @@ fn one_field_family_instance_cannot_satisfy_two_planned_entity_dependencies() {
             let mut reads = world
                 .application
                 .begin_projected_application_read_attempt(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     admission,
                     projection,
                     AllocationPolicy::SystemAllocation,

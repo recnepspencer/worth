@@ -5,20 +5,20 @@ pub(in crate::domain_computation) struct ReadLockProbeForTest {
     owner: WorthQueryRelationalSourceOwner,
 }
 impl WorthQueryRelationalSourceOwner {
-    pub(in crate::domain_computation) fn read_lock_probe_for_test(&self) -> ReadLockProbeForTest {
+    pub fn read_lock_probe_for_test(&self) -> ReadLockProbeForTest {
         ReadLockProbeForTest {
             owner: self.clone(),
         }
     }
 }
 impl ReadLockProbeForTest {
-    pub(in crate::domain_computation) fn is_locked_for_test(&self) -> bool {
+    pub fn is_locked_for_test(&self) -> bool {
         self.owner.lock_is_held_for_test()
     }
-    pub(in crate::domain_computation) fn acquisitions_for_test(&self) -> u64 {
+    pub fn acquisitions_for_test(&self) -> u64 {
         self.owner.lock_acquisitions_for_test()
     }
-    pub(in crate::domain_computation) fn with_owner_lock_for_test<T>(
+    pub fn with_owner_lock_for_test<T>(
         &self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
         read: impl FnOnce() -> T,

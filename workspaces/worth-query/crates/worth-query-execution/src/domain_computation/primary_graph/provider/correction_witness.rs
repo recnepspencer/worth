@@ -54,3 +54,5 @@ pub(super) fn admit(
         context.poll().map_err(CorrectionWitnessDenial::Interrupted)
     }
 }
+
+mod court_doors_for_test;

@@ -76,9 +76,9 @@ pub fn leased_checkpoint_retains_one_frame_charge_through_native_handoff_and_reo
     assert_eq!(clone.charged_payload_bytes(), Some(charge));
     let decoded = clone.decode_for_test().unwrap();
     let (system, system_sections) = worth_query_execution::facade::application_installation::WorthQueryApplicationCheckpoint::encode_for_test(
-        decoded.native.clone(),
+        (*decoded.native_for_test()).clone(),
         world.application.publication(),
-        &decoded.accepted_outputs,
+        &(*decoded.accepted_outputs_for_test()),
         Policy::SystemAllocation,
     )
     .unwrap();
@@ -88,7 +88,7 @@ pub fn leased_checkpoint_retains_one_frame_charge_through_native_handoff_and_reo
     assert_eq!(system.charged_payload_bytes(), None);
     assert_eq!(system_sections.total_bytes(), sections.total_bytes());
     drop(system);
-    let native = decoded.native;
+    let native = (*decoded.native_for_test());
     // Independent current wire layout: magic, checksum, Query/facts/instances
     // versions (u16 each), bootstrap commit, native length and accepted count.
     const NATIVE_OFFSET: usize =

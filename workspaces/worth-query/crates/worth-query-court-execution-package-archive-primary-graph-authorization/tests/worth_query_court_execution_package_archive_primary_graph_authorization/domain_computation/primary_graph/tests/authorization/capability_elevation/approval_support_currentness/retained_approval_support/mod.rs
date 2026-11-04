@@ -40,7 +40,7 @@ fn replacement_policy_path_for_the_same_grant_cuts_off_approved_use() {
             world
                 .selected_product(&host_custody)
                 .admit_approved_elevation_access(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     &approved,
                     &requester,
                     &capability,

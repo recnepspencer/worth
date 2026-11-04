@@ -172,3 +172,13 @@ impl DeclaredProducerBinding {
         &mut self.supported
     }
 }
+
+impl DeclaredProducerBinding {
+    #[doc(hidden)]
+    pub fn installed_output_equivalence_into_for_test(
+        self,
+    ) -> Option<Arc<super::super::output_equivalence_contract::InstalledProducerOutputEquivalence>>
+    {
+        self.installed_output_equivalence
+    }
+}

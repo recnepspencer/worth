@@ -103,8 +103,8 @@ pub fn journey(case: Case) {
                 .components(|components| components.fork_relational().reuse_exact_signal_basis())
                 .create(&phase).unwrap();
             let product = world.application.product_runtime().admit_product_occurrence_for_test(fork.occurrence_for_test()).unwrap();
-            let sibling = world.application.select_product_branch_for_test(&issued, product.observation().branch_identity()).unwrap();
-            assert_ne!(sibling.product().relational_basis().descriptor(), selected.product().relational_basis_for_test().descriptor());
+            let sibling = world.application.select_product_branch_for_test(&issued, product.observation_for_test().branch_identity()).unwrap();
+            assert_ne!(sibling.product().relational_basis_for_test().descriptor(), selected.product().relational_basis_for_test().descriptor());
             sibling
         });
         let sibling_principal = sibling.as_ref().map(|sibling| sibling.resolve_authenticated_principal(
@@ -177,10 +177,10 @@ pub fn journey(case: Case) {
                     let selector = if failure && case == Case::WrongScope { "open" } else { first.label() };
                     let local = selected.resolve_entity(&phase, AccountStatus::reference(), selector.to_owned(),
                         local_scope, WorthQueryPrincipalResolutionMode::Ordinary).unwrap();
-                    assert!(failure && case == Case::WrongScope || local.entity_id() != root.entity_id_for_test());
+                    assert!(failure && case == Case::WrongScope || local.entity_id_for_test() != root.entity_id_for_test());
                     let access = WorthQueryApplicationQueryAccessContext::new(principal, &local);
                     let plan = if failure && case == Case::ForeignBatch {
-                        let mut retained = selected.retain_selection(&issued).unwrap();
+                        let mut retained = selected.retain_selection_for_test(&issued).unwrap();
                         selected.admit_retained_application_query_from_selection(
                             &phase, &mut retained, &entry_query, &access,
                             ApplicationQueryParameterSet::new(),
@@ -190,7 +190,7 @@ pub fn journey(case: Case) {
                         ).unwrap()
                     } else {
 
-                        selected.retain_selection(&issued).unwrap().admit_application_query(
+                        selected.retain_selection_for_test(&issued).unwrap().admit_application_query(
                         &phase, &entry_query, &access, ApplicationQueryParameterSet::new(), worth_query_execution::facade::domain_computation::WorthQueryProductQueryControls::new(std::num::NonZeroUsize::new(entry_query.read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract"), local_scope),
                     ).unwrap()
                     };
@@ -207,8 +207,8 @@ pub fn journey(case: Case) {
                     if failure && case == Case::StaleProduct {
                         let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
                         let field = AccountLabel::reference();
-                        let locator = graph.layout.field_locator(field.entity(), field.aspect(), field.field()).unwrap().clone();
-                        let prepared = graph.managed_derived_views().prepare_publication(
+                        let locator = (*graph.layout_for_test()).field_locator_for_test(field.entity(), field.aspect(), field.field()).unwrap().clone();
+                        let prepared = graph.managed_derived_views_for_test().prepare_publication_for_test(
                             publication_basis(selected.product()),
                             &[ViewChange::Aspect(root.entity_id_for_test(), locator.aspect().aspect_key().clone())], 100_000,
                         );

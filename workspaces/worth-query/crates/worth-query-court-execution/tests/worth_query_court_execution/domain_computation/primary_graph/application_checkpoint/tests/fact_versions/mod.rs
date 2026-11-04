@@ -74,17 +74,17 @@ fn current_facts_roundtrip_and_hostile_lengths_fail_before_allocation() {
     let body = body_with_facts(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::FORMAT_VERSION, WIRE_VERSION, &bytes);
     let decoded = checkpoint_from_body(body.clone()).decode_for_test().unwrap();
     assert_eq!(
-        decoded.accepted_outputs[0]
-            .producer_facts
+        (*(*decoded.accepted_outputs_for_test())[0]
+            .producer_facts_for_test())
             .as_ref()
             .map(|bytes| bytes.as_slice()),
         Some(bytes.as_slice())
     );
     assert_eq!(
-        decoded.accepted_outputs[0].producer_fact_wire_version,
+        (*(*decoded.accepted_outputs_for_test())[0].producer_fact_wire_version_for_test()),
         WIRE_VERSION
     );
-    assert_eq!(decoded.accepted_outputs[0].posture, Posture::Performed);
+    assert_eq!((*(*decoded.accepted_outputs_for_test())[0].posture_for_test()), Posture::Performed);
     assert_eq!(
         worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::decode(
             &bytes,
@@ -116,10 +116,10 @@ fn current_stable_posture_roundtrips_and_unknown_posture_is_rejected() {
         .decode_for_test()
         .expect("current stable posture is descriptive and readable");
     assert_eq!(
-        decoded.accepted_outputs[0].posture,
+        (*(*decoded.accepted_outputs_for_test())[0].posture_for_test()),
         WorthQueryAcceptedOutputCheckpointPosture::StableReused,
     );
-    assert!(decoded.accepted_outputs[0].producer_facts.is_none());
+    assert!((*(*decoded.accepted_outputs_for_test())[0].producer_facts_for_test()).is_none());
 
     stable[posture_at] = 2;
     assert_denied(
@@ -146,7 +146,7 @@ fn unsupported_fact_wire_refuses_before_interpreting_its_payload() {
         let original = checkpoint.bytes().to_vec();
         let denial = checkpoint.decode_for_test().err().expect("unsupported inner wire");
         assert_eq!(
-            denial.into_installation_denial().kind(),
+            denial.into_installation_denial_for_test().kind(),
             Kind::UnsupportedCheckpointProducerFactVersion {
                 observed,
                 supported: WIRE_VERSION

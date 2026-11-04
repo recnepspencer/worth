@@ -317,3 +317,5 @@ fn relink(
         .insert(Arc::clone(identity), Arc::new(link));
     Ok(())
 }
+
+mod court_doors_for_test;

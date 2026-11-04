@@ -49,15 +49,15 @@ pub fn complete_review_out_of_band(
     let field = CapabilityReviewStatusField::reference();
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
     let locator = graph
-        .layout()
-        .field_locator(field.entity(), field.aspect(), field.field())
+        .layout_for_test()
+        .field_locator_for_test(field.entity(), field.aspect(), field.field())
         .unwrap()
         .clone();
-    let relation_kind = graph
-        .layout()
+    let relation_kind = (*graph
+        .layout_for_test()
         .relation(CapabilityReviewer::reference().name())
         .unwrap()
-        .kind;
+        .kind_for_test());
     let fields = AspectFieldPatch::from(BTreeMap::from([(
         locator,
         worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::CapabilityReviewStatusBinding::encode(
@@ -71,7 +71,7 @@ pub fn complete_review_out_of_band(
         WorkerIntentBatch::new("complete-review-out-of-band")
             .push(MutationIntent::Entity(EntityMutationIntent::UpdateFields(
                 UpdateEntityFieldsIntent {
-                    entity_id: review.entity_id(),
+                    entity_id: review.entity_id_for_test(),
                     fields,
                 },
             )))
@@ -81,7 +81,7 @@ pub fn complete_review_out_of_band(
                     kind_id: relation_kind,
                     client_key: ClientKey::raw("out-of-band-reviewer"),
                     source: EntityReference::Existing(reviewer),
-                    target: EntityReference::Existing(review.entity_id()),
+                    target: EntityReference::Existing(review.entity_id_for_test()),
                     fields: AspectFieldPatch::default(),
                 },
             ))),
@@ -110,19 +110,19 @@ pub fn replace_support_grantor_with_custodian(
         )
         .unwrap();
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let grantor_kind = graph
-        .layout()
+    let grantor_kind = (*graph
+        .layout_for_test()
         .relation(CapabilityGrantor::reference().name())
         .unwrap()
-        .kind;
-    let custodian_kind = graph
-        .layout()
+        .kind_for_test());
+    let custodian_kind = (*graph
+        .layout_for_test()
         .relation(CapabilityCustodian::reference().name())
         .unwrap()
-        .kind;
-    let handle = graph.integration_handle();
+        .kind_for_test());
+    let handle = graph.integration_handle_for_test();
     let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
-    let grantor = handle.with_runtime_mut(execution, |runtime| {
+    let grantor = handle.with_runtime_mut_for_test(execution, |runtime| {
         let snapshot = selected.application_basis_for_test().snapshot_handle();
 
         runtime
@@ -130,7 +130,7 @@ pub fn replace_support_grantor_with_custodian(
             .visible_relations_of_kind(execution, grantor_kind, snapshot.version_id())
             .expect("fixture read request remains live")
             .into_iter()
-            .find(|record| record.source == principal && record.target == grant.entity_id())
+            .find(|record| record.source == principal && record.target == grant.entity_id_for_test())
             .expect("the request support has one current grantor path")
             .relation_id
     });
@@ -149,7 +149,7 @@ pub fn replace_support_grantor_with_custodian(
                     kind_id: custodian_kind,
                     client_key: ClientKey::raw("capability-1-custodian"),
                     source: EntityReference::Existing(principal),
-                    target: EntityReference::Existing(grant.entity_id()),
+                    target: EntityReference::Existing(grant.entity_id_for_test()),
                     fields: AspectFieldPatch::default(),
                 },
             ))),

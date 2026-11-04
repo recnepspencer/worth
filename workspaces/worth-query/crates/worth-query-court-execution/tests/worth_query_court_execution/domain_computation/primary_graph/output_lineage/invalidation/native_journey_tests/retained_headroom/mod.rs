@@ -13,8 +13,8 @@ fn unrelated_publications_keep_shared_upstream_and_consumer_without_hypothetical
             .unwrap().entity_id_for_test();
         let (_, product, _) = selected.into_parts_for_test();
         let coordinate = ProductCoordinate {
-            occurrence: product.observation().lifecycle_incarnation(),
-            generation: product.observation().reference_generation().get(),
+            occurrence: product.observation_for_test().lifecycle_incarnation(),
+            generation: product.observation_for_test().reference_generation().get(),
         };
         let source = |binding| SemanticSource {
             runtime_authority: (*world.application.runtime_for_test()).authority_identity().as_u64(),
@@ -26,23 +26,23 @@ fn unrelated_publications_keep_shared_upstream_and_consumer_without_hypothetical
         let consumer = RecordedSettlementIdentity::retain_for_test(&source("DownstreamOutput"), coordinate, 0);
         let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
         let status_ref = AccountStatus::reference();
-        let status = graph.layout().field_locator(status_ref.entity(), status_ref.aspect(), status_ref.field())
+        let status = graph.layout_for_test().field_locator_for_test(status_ref.entity(), status_ref.aspect(), status_ref.field())
             .unwrap().clone();
         let label_ref = AccountLabel::reference();
-        let label = graph.layout().field_locator(label_ref.entity(), label_ref.aspect(), label_ref.field())
+        let label = graph.layout_for_test().field_locator_for_test(label_ref.entity(), label_ref.aspect(), label_ref.field())
             .unwrap().clone();
-        let handle = graph.integration_handle();
-        let owner = &handle.source_owner.invalidation_owner;
-        handle.with_runtime_mut(execution, |runtime| {
+        let handle = graph.integration_handle_for_test();
+        let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
+        handle.with_runtime_mut_for_test(execution, |runtime| {
             let (before_handle, before) = snapshot(runtime);
             let original = field_fact(&custody.borrowed_request_for_test(), runtime,
                 &before_handle, entity, status.clone());
             register(owner, upstream.clone(), Arc::from([original.clone()]), &before, OrdSet::new());
             register(owner, consumer.clone(), Arc::from([]), &before, OrdSet::unit(upstream.clone()));
 
-            let cell = owner.cell_for_read(&before).unwrap().unwrap();
+            let cell = owner.cell_for_read_for_test(&before).unwrap().unwrap();
             let historical = cell.read_image();
-            assert_eq!(historical.payload().current.settlements.len(), 2);
+            assert_eq!((*(*historical.payload().current_for_test()).settlements_for_test()).len(), 2);
             for value in ["unrelated-a", "unrelated-b"] {
                 write_field(execution, runtime, entity, label.clone(), value);
                 let (after_handle, after) = snapshot(runtime);
@@ -57,7 +57,7 @@ fn unrelated_publications_keep_shared_upstream_and_consumer_without_hypothetical
                     "unrelated publication lost the genuine upstream registration");
                 assert!(matches!(consumer_currentness, SourceSettlementCurrentness::Clean),
                     "unrelated publication lost the genuine consumer registration");
-                assert_eq!(historical.payload().current.settlements.len(), 2);
+                assert_eq!((*(*historical.payload().current_for_test()).settlements_for_test()).len(), 2);
                 assert_eq!(field_fact(&custody.borrowed_request_for_test(), runtime,
                     &before_handle, entity, status.clone()), original);
                 runtime.snapshots().release_snapshot(&after_handle).unwrap();

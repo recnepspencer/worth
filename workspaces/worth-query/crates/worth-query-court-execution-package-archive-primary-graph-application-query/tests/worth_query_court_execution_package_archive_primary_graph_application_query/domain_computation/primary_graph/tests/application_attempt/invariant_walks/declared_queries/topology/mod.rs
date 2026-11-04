@@ -74,12 +74,12 @@ fn complete_declared_paths_preserve_cycles_reverse_and_actual_origins() {
             )
         })
         .collect();
-    let body = &selections[0].1.walks.as_ref().unwrap().values()[0];
-    assert_eq!(body.key().roots().len(), 2);
+    let body = &(*selections[0].1.walks_for_test()).as_ref().unwrap().values()[0];
+    assert_eq!(body.key_for_test().roots_for_test().len(), 2);
     for (root, selection) in selections {
         assert!(Arc::ptr_eq(
             body,
-            &selection.walks.as_ref().unwrap().values()[0]
+            &(*selection.walks_for_test()).as_ref().unwrap().values()[0]
         ));
         assert_eq!(
             selection.adjacencies.len(),
@@ -87,17 +87,17 @@ fn complete_declared_paths_preserve_cycles_reverse_and_actual_origins() {
             "only the real one-hop predecessor adjacency is retained"
         );
         let visit = body
-            .native()
+            .native_for_test()
             .visits()
             .iter()
             .find(|visit| visit.entity.entity_id == root)
             .unwrap();
         let expected = std::collections::BTreeSet::from([visit.root, root]);
         assert_eq!(
-            selection
-                .aspects
+            (*selection
+                .aspects_for_test())
                 .iter()
-                .map(|aspect| aspect.entity)
+                .map(|aspect| (*aspect.entity_for_test()))
                 .collect::<std::collections::BTreeSet<_>>(),
             expected,
             "exactly the actual predecessor guard and this terminal guard are retained"
@@ -110,15 +110,15 @@ fn complete_declared_paths_preserve_cycles_reverse_and_actual_origins() {
         let selection = source.footprint_for_test().root_selection.as_ref().unwrap();
         let body = &(*selection.walks_for_test()).as_ref().unwrap().values()[0];
         assert_eq!(
-            body.key().roots().len(),
+            body.key_for_test().roots_for_test().len(),
             1,
             "the prefix guard actually removes a Native root"
         );
         assert!(body
-            .native()
+            .native_for_test()
             .visits()
             .iter()
-            .all(|visit| visit.root == body.key().roots()[0]));
+            .all(|visit| visit.root == body.key_for_test().roots_for_test()[0]));
     }
 }
 #[test]

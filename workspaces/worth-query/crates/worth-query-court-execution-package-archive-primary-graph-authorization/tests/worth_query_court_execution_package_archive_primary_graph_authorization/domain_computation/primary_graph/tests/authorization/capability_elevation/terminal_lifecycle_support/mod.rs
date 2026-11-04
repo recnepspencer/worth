@@ -212,7 +212,7 @@ pub fn close_exact(
         .with_application_advancement(request, |phase| {
             let phase_custody = phase.test_host_request_for_test();
             materialize_close(
-                &(phase_custody).test_host_request(),
+                &(phase_custody).test_host_request_for_test(),
                 world,
                 request,
                 approved,

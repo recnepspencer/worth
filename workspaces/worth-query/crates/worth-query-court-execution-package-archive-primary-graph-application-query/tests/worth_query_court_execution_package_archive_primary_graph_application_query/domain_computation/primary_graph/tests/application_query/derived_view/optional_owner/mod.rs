@@ -118,11 +118,11 @@ pub fn read(
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &scope);
     let (application, product, basis) = selected.into_parts_for_test();
     let plan = application
-        .admit_application_query(execution,
+        .admit_application_query_for_test(execution,
             &query,
             &access,
             ApplicationQueryParameterSet::new(),
-            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::controls::WorthQueryApplicationQueryControls::product_one_shot_for_test(product.retained_clone(), basis, NonZeroUsize::new(query.read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract"), &request),
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::controls::WorthQueryApplicationQueryControls::product_one_shot_for_test(product.retained_clone_for_test(), basis, NonZeroUsize::new(query.read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract"), &request),
         )
         .unwrap();
     match batch {
@@ -177,11 +177,11 @@ pub fn refresh(
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &scope);
     let (application, product, basis) = selected.into_parts_for_test();
     let plan = application
-        .admit_application_query(execution,
+        .admit_application_query_for_test(execution,
             &query,
             &access,
             ApplicationQueryParameterSet::new(),
-            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::controls::WorthQueryApplicationQueryControls::product_one_shot_for_test(product.retained_clone(), basis, NonZeroUsize::new(query.read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract"), &request),
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::controls::WorthQueryApplicationQueryControls::product_one_shot_for_test(product.retained_clone_for_test(), basis, NonZeroUsize::new(query.read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract"), &request),
         )
         .unwrap();
     world

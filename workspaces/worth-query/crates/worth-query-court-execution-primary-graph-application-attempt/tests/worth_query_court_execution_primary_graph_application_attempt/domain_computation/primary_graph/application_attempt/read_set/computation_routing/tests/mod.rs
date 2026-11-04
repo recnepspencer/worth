@@ -291,26 +291,26 @@ fn completion_metadata_retains_the_exact_original_pre_effect_payload() {
     let sealed = metadata.bind_fixture_for_test(body.clone());
     assert!(std::ptr::eq(
         body.get(1).unwrap(),
-        sealed.fact(&key(2)).unwrap()
+        sealed.fact_for_test(&key(2)).unwrap()
     ));
     assert!(std::ptr::eq(
         body.get(3).unwrap(),
-        sealed.at_ordinal(3).unwrap().1
+        sealed.at_ordinal_for_test(3).unwrap().1
     ));
-    assert!(sealed.at_ordinal(0).is_none(), "handler gap remains exact");
+    assert!(sealed.at_ordinal_for_test(0).is_none(), "handler gap remains exact");
     let cloned = sealed.clone();
-    assert!(std::sync::Arc::ptr_eq(&sealed.index, &cloned.index));
-    assert!(std::sync::Arc::ptr_eq(&sealed.metadata, &cloned.metadata));
-    assert!(sealed.original.same_backing(&cloned.original));
+    assert!(std::sync::Arc::ptr_eq(&(*sealed.index_for_test()), &(*cloned.index_for_test())));
+    assert!(std::sync::Arc::ptr_eq(&(*sealed.metadata_for_test()), &(*cloned.metadata_for_test())));
+    assert!(sealed.original.same_backing_for_test(&cloned.original));
     let replacement = WorthQueryApplicationObservedFact::Entity {
         entity_id: entity(2),
         kind: KindId::new(99),
     };
     let mut adversarial = cloned;
-    adversarial.replace_fact(&key(2), replacement.clone());
-    assert_eq!(adversarial.fact(&key(2)), Some(&replacement));
+    adversarial.replace_fact_for_test(&key(2), replacement.clone());
+    assert_eq!(adversarial.fact_for_test(&key(2)), Some(&replacement));
     assert_eq!(
-        sealed.fact(&key(2)),
+        sealed.fact_for_test(&key(2)),
         body.get(1),
         "another observer cannot alter original comparator facts"
     );

@@ -7,3 +7,10 @@ impl<'a> ValueDecodeSession<'a> {
         Self::denial(self)
     }
 }
+
+impl<'a> ValueDecodeSession<'a> {
+    #[doc(hidden)]
+    pub fn checkpoint_for_test(&self) -> &Option<&'a dyn Fn(u64) -> Result<(), MapKernelStop>> {
+        &self.checkpoint
+    }
+}

@@ -30,22 +30,22 @@ pub fn capture(world: &World, key: u64, execution: &ExecutionRequest<'_, '_>) ->
         )
         .unwrap();
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let kind = graph
-        .layout
-        .entity_kind(NodeKey::reference::<OrbitSchema<true>>().entity())
+    let kind = (*graph
+        .layout_for_test())
+        .entity_kind_for_test(NodeKey::reference::<OrbitSchema<true>>().entity())
         .unwrap();
-    let relation = graph
-        .layout
+    let relation = (*(*graph
+        .layout_for_test())
         .relation(Next::reference::<OrbitSchema<true>>().name())
         .unwrap()
-        .kind;
+        .kind_for_test());
     graph
-        .integration_handle()
+        .integration_handle_for_test()
         .with_runtime(execution, |runtime| {
             let pin = runtime
                 .read_truth()
                 .pin_read_capability(
-                    selected.application_basis().snapshot_handle(),
+                    selected.application_basis_for_test().snapshot_handle(),
                     &[],
                     execution,
                 )
@@ -109,9 +109,9 @@ pub fn at_current<R>(
         .runtime_for_test())
         .primary_graph()
         .unwrap()
-        .integration_handle()
+        .integration_handle_for_test()
         .with_runtime(execution, |runtime| {
-            read(runtime, selected.application_basis().snapshot_handle())
+            read(runtime, selected.application_basis_for_test().snapshot_handle())
         })
 }
 

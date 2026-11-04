@@ -76,14 +76,14 @@ pub fn read_partial_adjacency(
             world.application.product_runtime().default_branch_for_test(),
         )
         .unwrap();
-    let product = selected.product().publication_binding();
+    let product = selected.product().publication_binding_for_test();
     let stopped = Cell::new(None);
     let denial = world
         .invariant
         .project_with_work_limit_for_test(
             &execution,
             Some(5),
-            product.observation().basis().relational_basis().clone(),
+            product.observation_for_test().basis().relational_basis().clone(),
             |reader| {
                 let principal = reader
                     .resolve_entity(PrincipalIdentityField::reference(), 1_u64)
@@ -117,11 +117,11 @@ fn acquired_endpoint_metadata_counts_even_when_its_kind_is_rejected() {
                             .unwrap();
                         let principal_kind = (*reader
                             .layout_for_test())
-                            .entity_kind(Principal::reference().name())
+                            .entity_kind_for_test(Principal::reference().name())
                             .unwrap();
                         let account_kind = (*reader
                             .layout_for_test())
-                            .entity_kind(Account::reference().name())
+                            .entity_kind_for_test(Account::reference().name())
                             .unwrap();
                         let before = (*reader.work_for_test()).endpoint_records_read();
                         reader
@@ -175,28 +175,28 @@ fn cancellation_before_endpoint_acquisition_records_no_endpoint_read() {
             world.application.product_runtime().default_branch_for_test(),
         )
         .unwrap();
-    let product = selected.product().publication_binding();
+    let product = selected.product().publication_binding_for_test();
     let observed = Cell::new(None);
     let denied = world.invariant.project_with_work_limit_for_test(
         &execution,
         None,
-        product.observation().basis().relational_basis().clone(),
+        product.observation_for_test().basis().relational_basis().clone(),
         |reader| {
             let principal = reader
                 .resolve_entity(PrincipalIdentityField::reference(), 1_u64)
                 .unwrap();
-            let kind = reader
-                .layout
-                .entity_kind(Principal::reference().name())
+            let kind = (*reader
+                .layout_for_test())
+                .entity_kind_for_test(Principal::reference().name())
                 .unwrap();
-            let before = reader.work.endpoint_records_read();
+            let before = (*reader.work_for_test()).endpoint_records_read();
             cancellation.cancel();
             let error = reader
-                .endpoint::<Principal>(reader.execution, principal.entity_id(), kind, "Principal")
+                .endpoint_for_test::<Principal>((*reader.execution_for_test()), principal.entity_id(), kind, "Principal")
                 .unwrap_err();
             observed.set(Some((
                 before,
-                reader.work.endpoint_records_read(),
+                (*reader.work_for_test()).endpoint_records_read(),
                 error.kind(),
             )));
         },

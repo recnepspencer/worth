@@ -15,3 +15,5 @@ impl OutputPartitionIndex {
             .find_map(|(generation, slot)| slot.get().map(|slot| (*generation, *slot)))
     }
 }
+
+mod court_doors_for_test;

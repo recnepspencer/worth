@@ -53,7 +53,7 @@ fn performed_correction_capture_preserves_original_payer_and_preclone_refusal() 
             let captured = (*world
                 .application
                 .primary_provider_for_test())
-                .capture_correction_witness(execution, receipt);
+                .capture_correction_witness_for_test(execution, receipt);
             if saturate {
                 match captured {
                     Err(CorrectionWitnessDenial::CopyAdmission(WorkCeilingDenial::Admission(
@@ -81,7 +81,7 @@ fn performed_correction_capture_preserves_original_payer_and_preclone_refusal() 
             let witness = retained.unwrap();
             let sealed = witness.aftermath.as_ref().unwrap();
             assert_eq!(Some(sealed), reversed.aftermath_causality());
-            let copied_backing = sealed.owned_receipt_backing_bytes().unwrap();
+            let copied_backing = sealed.owned_receipt_backing_bytes_for_test().unwrap();
             assert!(
                 copied_backing > 0,
                 "this is a real performed reversal, with copied receipts/root"
@@ -91,7 +91,7 @@ fn performed_correction_capture_preserves_original_payer_and_preclone_refusal() 
                 held > copied_backing,
                 "the same original payer also retains the witness Arc"
             );
-            assert_eq!(held, witness._memory.as_ref().unwrap().bytes());
+            assert_eq!(held, (*witness._memory_for_test()).as_ref().unwrap().bytes());
             let sibling = Arc::clone(&witness);
             drop(witness);
             assert_eq!(budget.charged_memory_bytes(), held);
@@ -107,7 +107,7 @@ fn performed_correction_capture_preserves_original_payer_and_preclone_refusal() 
     let witness = (*world
         .application
         .primary_provider_for_test())
-        .capture_correction_witness(ExecutionRequest::serial(&retry), receipt)
+        .capture_correction_witness_for_test(ExecutionRequest::serial(&retry), receipt)
         .unwrap()
         .unwrap();
     assert_eq!(witness.aftermath.as_ref(), reversed.aftermath_causality());

@@ -26,9 +26,9 @@ fn dependent_second_scope_reconstructs_atomically_with_original_read_results() {
                 .unwrap();
             let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
             let field = AccountLabel::reference();
-            let locator = graph
-                .layout
-                .field_locator(field.entity(), field.aspect(), field.field())
+            let locator = (*graph
+                .layout_for_test())
+                .field_locator_for_test(field.entity(), field.aspect(), field.field())
                 .unwrap()
                 .clone();
             drop(selected);

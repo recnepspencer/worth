@@ -50,7 +50,7 @@ impl Court {
             .product_runtime()
             .admit_product_branch_for_test(world.application.product_runtime().default_branch_for_test())
             .unwrap();
-        let observation = product.observation();
+        let observation = product.observation_for_test();
         use worth_runtime_world::facade::*;
         let intent = ProductBranchCreationIntent::from_source(
             "family-head-child",
@@ -144,7 +144,7 @@ impl Court {
         };
         let records = (*self
             .lineage
-            .by_source_for_test())
+            .by_source_mut_for_test())
             .entry(source.clone())
             .or_default()
             .entry((*coordinate.occurrence_for_test()))
@@ -181,7 +181,7 @@ impl Court {
         let cell = Arc::new(OnceLock::new());
         assert!(cell.set(recorded).is_ok());
         records.push(cell);
-        (*self.lineage.partition_index_for_test()).insert(
+        (*self.lineage.partition_index_mut_for_test()).insert_for_test(
             source,
             (*coordinate.occurrence_for_test()),
             generation,
@@ -213,14 +213,14 @@ impl Court {
         let base_source = self.source.clone();
         let bindings = &(*self.lineage.binding_identities_for_test());
         let source = |binding| SemanticSource {
-            output_binding: bindings.identity(binding).unwrap(),
+            output_binding: bindings.identity_for_test(binding).unwrap(),
             ..base_source.clone()
         };
-        let origin = (*self.lineage.by_source_for_test())[&source(TypeId::of_for_test::<Origin>())]
+        let origin = (*(*self.lineage.by_source_for_test())[&source(TypeId::of_for_test::<Origin>())]
             [&(*self.coordinate.occurrence_for_test())][&origin_generation][0]
             .get()
             .unwrap()
-            .settlement_identity
+            .settlement_identity_for_test())
             .clone();
         let cell = &mut (*self
             .lineage
@@ -231,11 +231,11 @@ impl Court {
             .unwrap()
             .get_mut(&generation)
             .unwrap()[0];
-        Arc::get_mut(cell)
+        (*Arc::get_mut(cell)
             .unwrap()
             .get_mut()
             .unwrap()
-            .settlement_identity = origin;
+            .settlement_identity_mut_for_test()) = origin;
     }
 }
 

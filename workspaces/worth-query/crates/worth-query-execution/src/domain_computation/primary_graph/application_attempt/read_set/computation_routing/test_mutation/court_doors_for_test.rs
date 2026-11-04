@@ -21,3 +21,25 @@ impl SealedComputationFacts {
         Self::at_seal(attribution, observed)
     }
 }
+
+impl SealedComputationFacts {
+    #[doc(hidden)]
+    pub fn copy_keys_for_test(
+        &mut self,
+        key: &WorthQueryApplicationFactKey,
+        destinations: impl IntoIterator<Item = WorthQueryApplicationFactKey>,
+    ) {
+        Self::copy_keys(self, key, destinations)
+    }
+}
+
+impl SealedComputationFacts {
+    #[doc(hidden)]
+    pub fn rename_key_for_test(
+        &mut self,
+        key: &WorthQueryApplicationFactKey,
+        to: WorthQueryApplicationFactKey,
+    ) {
+        Self::rename_key(self, key, to)
+    }
+}

@@ -31,3 +31,10 @@ impl WorthQueryApplicationBranchCommitCoordinator {
         Self::retire(self, occurrence)
     }
 }
+
+impl WorthQueryApplicationBranchCommitLane {
+    #[doc(hidden)]
+    pub fn enter_for_test(&self) -> WorthQueryApplicationBranchCommitCoordination<'_> {
+        Self::enter(self)
+    }
+}

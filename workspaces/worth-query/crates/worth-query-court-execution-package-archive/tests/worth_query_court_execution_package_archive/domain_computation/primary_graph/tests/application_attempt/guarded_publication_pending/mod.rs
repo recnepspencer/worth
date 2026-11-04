@@ -62,7 +62,7 @@ fn reserved_slot_naming_the_exact_binding_is_publication_pending() {
             (*world
                 .application
                 .primary_provider_for_test())
-                .reserve_application_publication_recovery(
+                .reserve_application_publication_recovery_for_test(
                     world
                         .selected_product(&(phase).test_host_request_for_test())
                         .product()

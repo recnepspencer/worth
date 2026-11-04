@@ -27,18 +27,18 @@ fn second_real_overlay_is_rejected_without_orphaning_the_first_overlay() {
 
             let request = live_scope();
             let principal = authenticated_principal(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                 &world,
                 &request,
             );
             let account = resolved_account(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                 &world,
                 "open",
                 &request,
             );
             let program = retained_status_program(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
                 &world,
                 &principal,
                 &account,
@@ -100,7 +100,7 @@ fn second_real_overlay_is_rejected_without_orphaning_the_first_overlay() {
                 .unwrap_or_else(|_| panic!("overlay fixture must register"));
             worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::registered::overlay_conflict_tests::assert_second_real_overlay_is_rejected(
                 &phase.borrowed_request_for_test(),
-                registered_session.registered,
+                registered_session.registered_into_for_test(),
                 &world,
             );
         })

@@ -53,13 +53,13 @@ fn a_source_revision_the_effect_moved_is_kept_and_reported_superseded() {
                 &world,
                 vec![WorthQueryApplicationObservedFact::AbsentField {
                     entity_id: entity,
-                    kind: (*world
+                    kind: (*(*world
                         .application
                         .runtime_for_test())
                         .primary_graph()
                         .unwrap()
-                        .layout
-                        .entity_kind(AccountIdentity::reference().entity())
+                        .layout_for_test())
+                        .entity_kind_for_test(AccountIdentity::reference().entity())
                         .unwrap(),
                     locator: planned(&locator),
                 }],
@@ -139,13 +139,13 @@ fn unavailable_native_revision_never_authorizes_output_reuse() {
                 &world,
                 vec![WorthQueryApplicationObservedFact::AbsentField {
                     entity_id: entity,
-                    kind: (*world
+                    kind: (*(*world
                         .application
                         .runtime_for_test())
                         .primary_graph()
                         .unwrap()
-                        .layout
-                        .entity_kind(AccountIdentity::reference().entity())
+                        .layout_for_test())
+                        .entity_kind_for_test(AccountIdentity::reference().entity())
                         .unwrap(),
                     locator: undeclared,
                 }],
@@ -183,13 +183,13 @@ pub fn account_note(
         .unwrap()
         .entity_id_for_test();
     let note = AccountNote::reference();
-    let locator = (*world
+    let locator = (*(*world
         .application
         .runtime_for_test())
         .primary_graph()
         .unwrap()
-        .layout
-        .field_locator(note.entity(), note.aspect(), note.field())
+        .layout_for_test())
+        .field_locator_for_test(note.entity(), note.aspect(), note.field())
         .unwrap()
         .clone();
     (entity, locator)
@@ -239,7 +239,7 @@ pub fn output_selection(
         .runtime_for_test())
         .primary_graph()
         .unwrap()
-        .integration_handle()
+        .integration_handle_for_test()
         .with_runtime(execution, |runtime| {
             compare_retained_output_dependencies(
                 execution,
@@ -264,7 +264,7 @@ pub fn currentness(
         .runtime_for_test())
         .primary_graph()
         .unwrap()
-        .integration_handle()
+        .integration_handle_for_test()
         .with_runtime(execution, |runtime| {
             fact.source_currentness_in_for_test(
                 runtime,
@@ -311,7 +311,7 @@ pub fn rebase_result_at_current(
         .runtime_for_test())
         .primary_graph()
         .unwrap()
-        .integration_handle()
+        .integration_handle_for_test()
         .with_runtime(execution, |runtime| {
             rebase(execution, runtime, selected.application_basis_for_test().snapshot_handle(), PreparedSourceFactRebase::admit_for_test(facts, [].into(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new_for_test(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(), &BTreeSet::new(), true)
         })

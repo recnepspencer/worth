@@ -27,7 +27,7 @@ fn a_take_checks_the_live_stage_under_its_own_lock() {
             ));
             let restore = if stopped {
                 let mut state = (*registry.state_for_test()).lock().unwrap();
-                let DemandState::Output(output) = &mut state.records.get_mut(&row).unwrap().state
+                let DemandState::Output(output) = &mut (*(*state.records_mut_for_test()).get_mut(&row).unwrap().state_mut_for_test())
                 else {
                     panic!("published output")
                 };
@@ -43,11 +43,11 @@ fn a_take_checks_the_live_stage_under_its_own_lock() {
                 };
                 Some((claim, checkpoint))
             };
-            let count = (*registry
+            let count = (*(*registry
                 .state_for_test())
                 .lock()
                 .unwrap()
-                .records
+                .records_for_test())
                 .publication_count_for_test();
             assert!(
                 registry
@@ -61,9 +61,9 @@ fn a_take_checks_the_live_stage_under_its_own_lock() {
                 .unwrap()
                 .is_none());
             let state = (*registry.state_for_test()).lock().unwrap();
-            assert_eq!(state.records.publication_count_for_test(), count);
+            assert_eq!((*state.records_for_test()).publication_count_for_test(), count);
             assert!(
-                state.records[&row].held_successor.is_some(),
+                (*(*state.records_for_test())[&row].held_successor_for_test()).is_some(),
                 "a refused take preserves custody"
             );
             drop(state);
@@ -80,11 +80,11 @@ fn a_take_checks_the_live_stage_under_its_own_lock() {
                     .unwrap()
                     .is_none());
                 assert_eq!(
-                    (*registry
+                    (*(*registry
                         .state_for_test())
                         .lock()
                         .unwrap()
-                        .records
+                        .records_for_test())
                         .publication_count_for_test(),
                     count
                 );
@@ -103,11 +103,11 @@ fn an_erased_successor_without_a_row_key_is_returned_without_effects() {
         .expect("an invalid successor is returned to its owner");
     assert_eq!(*held.downcast::<u32>().unwrap(), 7);
     assert_eq!(
-        (*registry
+        (*(*registry
             .state_for_test())
             .lock()
             .unwrap()
-            .records
+            .records_for_test())
             .publication_count_for_test(),
         0
     );

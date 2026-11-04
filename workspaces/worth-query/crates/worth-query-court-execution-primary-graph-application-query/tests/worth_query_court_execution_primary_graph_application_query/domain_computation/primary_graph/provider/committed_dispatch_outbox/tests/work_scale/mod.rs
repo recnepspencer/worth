@@ -14,7 +14,7 @@ fn exact_outbox_owner_read_work_stays_local_across_unrelated_dispatch_history() 
         }
         let (binding, commit, runtime_id) = last.expect("positive population");
         let observed = provider
-            .observe_expected(execution, &binding, &commit, runtime_id)
+            .observe_expected_for_test(execution, &binding, &commit, runtime_id)
             .expect("latest exact committed outbox remains owner-readable");
         assert_eq!(observed.work().exact_commit_snapshots(), 1);
         assert_eq!(observed.work().canonical_version_probes(), 1);

@@ -25,34 +25,34 @@ fn shared_bindings_detach_exactly_and_historical_storage_lives_until_final_drop(
     worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::settlement::posting_bindings::bind(&mut state, &projection, &second).unwrap();
     assert_eq!((*state.postings_for_test()), physical);
     assert_eq!(
-        (*state.posting_bindings_for_test())[&0]
-            .settlements()
+        (*(*state.posting_bindings_for_test())[&0]
+            .settlements_for_test()
             .unwrap()
-            .settlements
+            .settlements_for_test())
             .len(),
         2
     );
     worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::settlement::posting_removal::remove(&mut state, &first, &projection).unwrap();
     assert_eq!((*state.postings_for_test()), physical);
     assert_eq!(
-        (*state.posting_bindings_for_test())[&0]
-            .settlements()
+        (*(*state.posting_bindings_for_test())[&0]
+            .settlements_for_test()
             .unwrap()
-            .settlements
+            .settlements_for_test())
             .iter()
             .cloned()
             .collect::<Vec<_>>(),
         vec![second.clone()]
     );
-    assert!((*historical.posting_bindings_for_test())[&0]
-        .settlements()
+    assert!((*(*historical.posting_bindings_for_test())[&0]
+        .settlements_for_test()
         .unwrap()
-        .settlements
+        .settlements_for_test())
         .contains(&first));
-    assert!(!(*historical.posting_bindings_for_test())[&0]
-        .settlements()
+    assert!(!(*(*historical.posting_bindings_for_test())[&0]
+        .settlements_for_test()
         .unwrap()
-        .settlements
+        .settlements_for_test())
         .contains(&second));
     worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::settlement::posting_removal::remove(&mut state, &second, &projection).unwrap();
     assert!((*state.postings_for_test()).is_empty());

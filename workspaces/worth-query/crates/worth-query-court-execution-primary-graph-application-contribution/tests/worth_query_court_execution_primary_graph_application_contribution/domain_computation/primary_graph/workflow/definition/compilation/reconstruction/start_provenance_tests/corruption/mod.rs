@@ -19,12 +19,12 @@ fn started_revision_reader_refuses_unmanaged_and_unrostered_current_truth() {
             installed_provenance_support(world.application.installed_schema());
         let lease = payer();
         let execution = ExecutionRequest::leased(&lease);
-        let layout = (*world
+        let layout = (*(*world
             .application
             .runtime_for_test())
             .primary_graph()
             .unwrap()
-            .layout
+            .layout_for_test())
             .workflow()
             .clone();
         let instance = publish_instance_value(
@@ -54,7 +54,7 @@ fn started_revision_reader_refuses_unmanaged_and_unrostered_current_truth() {
             .runtime_for_test())
             .primary_graph()
             .unwrap()
-            .integration_handle();
+            .integration_handle_for_test();
         handle.with_runtime(&execution, |runtime| {
             assert!(
                 matches!(
@@ -104,12 +104,12 @@ fn started_revision_missing_current_field_is_rejected_by_native_restore_before_p
     let (support, original, _) = installed_provenance_support(world.application.installed_schema());
     let lease = payer();
     let execution = ExecutionRequest::leased(&lease);
-    let layout = (*world
+    let layout = (*(*world
         .application
         .runtime_for_test())
         .primary_graph()
         .unwrap()
-        .layout
+        .layout_for_test())
         .workflow()
         .clone();
     let instance = publish_instance(
@@ -125,7 +125,7 @@ fn started_revision_missing_current_field_is_rejected_by_native_restore_before_p
         .runtime_for_test())
         .primary_graph()
         .unwrap()
-        .integration_handle();
+        .integration_handle_for_test();
     let (config, native, plan) = handle.with_runtime(&execution, |runtime| {
         runtime
             .durability_authority()
@@ -163,7 +163,7 @@ fn started_revision_missing_current_field_is_rejected_by_native_restore_before_p
         .iter()
         .position(|slot| *slot == instance.local_slot_value())
         .unwrap();
-    assert_eq!(arena.kind_ids[slot], Some(layout.instance.entity_kind));
+    assert_eq!(arena.kind_ids[slot], Some((*(*layout.instance_for_test()).entity_kind_for_test())));
     // Only the mirror is changed. Untouched root digests remain valid; native
     // readmission must validate this divergent mirror before installing it.
     let mut removed = 0;

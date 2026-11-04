@@ -42,8 +42,8 @@ fn retained_source_must_include_every_registered_upstream_edge() {
         .entity_id_for_test();
     let (_, product, _) = selected.into_parts_for_test();
     let coordinate = ProductCoordinate {
-        occurrence: product.observation().lifecycle_incarnation(),
-        generation: product.observation().reference_generation().get(),
+        occurrence: product.observation_for_test().lifecycle_incarnation(),
+        generation: product.observation_for_test().reference_generation().get(),
     };
     let source = |output_binding| {
         SemanticSource {
@@ -64,9 +64,9 @@ fn retained_source_must_include_every_registered_upstream_edge() {
         0,
     );
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let handle = graph.integration_handle();
-    let owner = &handle.source_owner.invalidation_owner;
-    handle.with_runtime_mut(request_execution, |runtime| {
+    let handle = graph.integration_handle_for_test();
+    let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
+    handle.with_runtime_mut_for_test(request_execution, |runtime| {
         let basis = runtime
             .admit_branch_basis(&runtime.main_branch_identity())
             .unwrap();
@@ -80,7 +80,7 @@ fn retained_source_must_include_every_registered_upstream_edge() {
             (Arc::clone(&consumer), OrdSet::unit(Arc::clone(&upstream))),
         ] {
             owner
-                .register_settlement(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::settlement::SettlementRegistration {
+                .register_settlement_for_test(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::settlement::SettlementRegistration {
                         computation: None,
                         work_membership: None,
                         identity,
@@ -99,16 +99,16 @@ fn retained_source_must_include_every_registered_upstream_edge() {
         let omitted = retained(Arc::clone(&consumer), Vec::new());
         let complete = retained(Arc::clone(&consumer), vec![retained(upstream, Vec::new())]);
 
-        let captured = owner.capture_full_verification(runtime, &snapshot, &selected).unwrap();
+        let captured = owner.capture_full_verification_for_test(runtime, &snapshot, &selected).unwrap();
         assert_eq!(
-            captured.require_complete_root_upstream(
+            captured.require_complete_root_upstream_for_test(
                 EvidenceView::from(&omitted),
                 &consumer,
             ),
             Err(FullVerificationStop::OutputEvidenceUnavailable),
         );
         assert_eq!(
-            captured.require_complete_root_upstream(
+            captured.require_complete_root_upstream_for_test(
                 EvidenceView::from(&complete),
                 &consumer,
             ),

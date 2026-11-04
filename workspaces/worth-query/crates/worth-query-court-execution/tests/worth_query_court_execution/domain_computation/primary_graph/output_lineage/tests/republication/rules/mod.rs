@@ -63,7 +63,7 @@ fn a_republication_continues_the_suspended_performed_record() {
             .for_comparison()
             .unwrap()
             .facts_for_test()
-            .same_backing(&Arc::clone(&facts).into()));
+            .same_backing_for_test(&Arc::clone(&facts).into()));
         assert!(Arc::ptr_eq(&continued.consumed_outputs, &consumed));
         assert!(Arc::ptr_eq(&continued.witness, &restored_witness));
 
@@ -78,8 +78,8 @@ fn a_republication_continues_the_suspended_performed_record() {
             .unwrap()
             .for_comparison()
             .unwrap()
-            .facts()
-            .same_backing(&Arc::clone(&facts).into()));
+            .facts_for_test()
+            .same_backing_for_test(&Arc::clone(&facts).into()));
         // The row is an origin of its own over the re-created entities.
         assert!(Arc::ptr_eq(
             restored.native_output_witness_cell_for_test().unwrap(),
@@ -178,9 +178,9 @@ fn a_republished_stable_alias_holds_the_performed_sequence() {
             .prepare_fact_projection_for_test()
             .unwrap()
             .unwrap();
-        let mut combined = Vec::with_capacity(projection.count() + 2);
+        let mut combined = Vec::with_capacity(projection.count_for_test() + 2);
         combined.push(source_entity(1));
-        projection.append_into(&mut combined);
+        projection.append_into_for_test(&mut combined);
         combined.push(source_entity(3));
         assert!(combined.len() > 2, "the installed output projects facts");
         let alias_facts: Arc<[Fact]> = Arc::from(combined);
@@ -199,10 +199,10 @@ fn a_republished_stable_alias_holds_the_performed_sequence() {
                 };
                 let spans = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::input_cutoff::stable_publication::fact_spans::StableFactSpans::new_for_test(
                     alias_facts.clone().into(), 1, alias_facts.len() - 2).unwrap();
-                let mutable = (*row.mutable_for_test()).get_mut().unwrap();
+                let mutable = (*row.mutable_mut_for_test()).get_mut().unwrap();
                 // Local representation proof: real witness projection above,
                 // no source/currentness authority is manufactured by spans.
-                mutable.set_stable_fact_spans(spans);
+                mutable.set_stable_fact_spans_for_test(spans);
                 row
             },
             &alias_facts,
@@ -223,8 +223,8 @@ fn a_republished_stable_alias_holds_the_performed_sequence() {
             .unwrap()
             .for_comparison()
             .unwrap()
-            .facts()
-            .same_backing(continued.facts.for_comparison().unwrap().facts_for_test()));
+            .facts_for_test()
+            .same_backing_for_test(continued.facts.for_comparison().unwrap().facts_for_test()));
         assert!(Arc::ptr_eq(
             restored.native_output_witness_cell_for_test().unwrap(),
             &restored_witness
@@ -286,16 +286,16 @@ fn a_stable_alias_is_compared_by_the_witness_of_its_origin() {
         let [candidate] = candidates.as_slice() else {
             panic!("the partition retains one latest output");
         };
-        assert!(candidate
-            .observed_source_facts
+        assert!((*candidate
+            .observed_source_facts_for_test())
             .as_ref()
             .unwrap()
-            .facts()
-            .same_backing(&Arc::clone(&alias_facts).into()));
+            .facts_for_test()
+            .same_backing_for_test(&Arc::clone(&alias_facts).into()));
         // Selection compares the output half of the alias's fact set, so a
         // moved output ends its exact reuse as it ends its origin's.
-        assert!(candidate
-            .native_output_witness
+        assert!((*candidate
+            .native_output_witness_for_test())
             .as_ref()
             .is_some_and(|witness| Arc::ptr_eq(witness, &performed_witness)));
     });

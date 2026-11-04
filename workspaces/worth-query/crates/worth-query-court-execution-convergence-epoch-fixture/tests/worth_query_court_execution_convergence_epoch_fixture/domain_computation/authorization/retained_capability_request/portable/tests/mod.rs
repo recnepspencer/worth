@@ -80,7 +80,7 @@ fn approval_request_round_trip_preserves_every_authorization_axis() {
         )
         .unwrap();
     let worth_query_execution::court_doors_for_test::domain_computation::authorization::retained_capability_request::context::RetainedContext::Native(context) =
-        &mut Arc::get_mut(&mut (*request.data_mut_for_test())).unwrap().context
+        &mut (*Arc::get_mut(&mut (*request.data_mut_for_test())).unwrap().context_mut_for_test())
     else {
         panic!("fixture has native context")
     };
@@ -221,7 +221,7 @@ fn approval_request_round_trip_preserves_every_authorization_axis() {
     let mut inconsistent =
         WorthQueryRetainedCapabilityRequest::decode_workflow_approval_request_for_test(&execution, &encoded)
             .unwrap();
-    Arc::get_mut(&mut (*inconsistent.data_mut_for_test())).unwrap().related = None;
+    (*Arc::get_mut(&mut (*inconsistent.data_mut_for_test())).unwrap().related_mut_for_test()) = None;
     assert!(matches!(
         inconsistent.encode_workflow_approval_request_for_test(&execution),
         Err(WorkflowApprovalRequestEncodingDenial::InvalidRequest)
@@ -238,7 +238,7 @@ fn approval_request_round_trip_preserves_every_authorization_axis() {
         .is_err()
     );
     let mut nonportable = request;
-    Arc::get_mut(&mut (*nonportable.data_mut_for_test())).unwrap().action = AspectValue::String(
+    (*Arc::get_mut(&mut (*nonportable.data_mut_for_test())).unwrap().action_mut_for_test()) = AspectValue::String(
         InternedString::Symbol(worth_foundational::facade::Symbol(1)),
     );
     assert!(nonportable

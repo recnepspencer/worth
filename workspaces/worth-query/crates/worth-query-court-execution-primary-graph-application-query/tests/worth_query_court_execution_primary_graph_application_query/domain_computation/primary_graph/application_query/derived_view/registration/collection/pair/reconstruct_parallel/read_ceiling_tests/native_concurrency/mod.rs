@@ -54,11 +54,11 @@ fn two_distinct_roots_hold_the_whole_native_read_without_the_owner_lock() {
         .installed_schema()
         .certification_query(PublicScopedAccountSummaryQuery::reference())
         .unwrap();
-    let owner_probe = (*world
+    let owner_probe = (*(*(*world
         .application
         .primary_provider_for_test())
-        .graph
-        .source_owner
+        .graph_for_test())
+        .source_owner_for_test())
         .read_lock_probe_for_test();
     assert!(!owner_probe.is_locked_for_test());
     world.application.with_host_advancement(|phase| {
@@ -111,14 +111,14 @@ let partitions = plans.iter_mut().zip(&roots).enumerate().map(|(index, (pair, ro
         assert_eq!(worth_query_execution::facade::domain_computation::installed_source_reads_on_this_thread_for_test() - reads_before, 2, "one owner pin per query side, shared across both roots");
         let map = ExecutionMap::<_, ()>::from_keyless_values(partitions).unwrap();
         let (outcome, _) = ExecutionWorkCeiling::new(lease.policy().work_ceiling()).run(&lease, || {
-            map.run_owned(Some(&lease), |pair, context| pair.run(&host_custody.borrowed_request_for_test(), context))
+            map.run_owned(Some(&lease), |pair, context| pair.run_for_test(&host_custody.borrowed_request_for_test(), context))
         }).unwrap();
         match outcome {
             MapOutcome::Complete { values: results, .. } => {
                 assert_eq!(results.len(), 2);
                 for (result, root) in results.iter().zip(&roots) {
-                    assert_eq!(result.first.raw.raw.rows.raw_rows()[0].entity_id(), root.entity_id_for_test());
-                    assert_eq!(result.second.raw.raw.rows.raw_rows()[0].entity_id(), root.entity_id_for_test());
+                    assert_eq!((*(*(*result.first_for_test()).raw.raw_for_test()).rows_for_test()).raw_rows()[0].entity_id(), root.entity_id_for_test());
+                    assert_eq!((*(*(*result.second_for_test()).raw.raw_for_test()).rows_for_test()).raw_rows()[0].entity_id(), root.entity_id_for_test());
                 }
             }
             MapOutcome::Stopped { reason, .. } => panic!("the declared complete read was stopped: {reason:?}"),

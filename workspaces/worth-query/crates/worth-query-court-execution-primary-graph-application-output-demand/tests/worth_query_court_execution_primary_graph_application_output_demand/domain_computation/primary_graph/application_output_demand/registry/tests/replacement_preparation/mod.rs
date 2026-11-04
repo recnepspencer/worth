@@ -32,14 +32,14 @@ pub fn fixture_with_commit(
     let mut old_record = record(occurrence(), DemandState::Admitted, 1);
     for _ in 0..2 {
         (*old_record
-            .performed_obligations_for_test())
+            .performed_obligations_mut_for_test())
             .push(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::PerformedOutputObligation {
                 source_commit: commit.clone(),
                 source: (*old.source_for_test()).clone(),
             });
     }
     (*old_record
-        .performed_obligations_for_test())
+        .performed_obligations_mut_for_test())
         .push(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::PerformedOutputObligation {
             source_commit: commit.clone(),
             source: (*key("unmatched", 1, 2).source_for_test()),
@@ -49,8 +49,8 @@ pub fn fixture_with_commit(
     let next_interest = interest(&registry, next.clone(), Arc::clone(&(*next_record.wake_for_test())));
     {
         let mut state = (*registry.state_for_test()).lock().unwrap();
-        state.records.insert(old, old_record);
-        state.records.insert(next, next_record);
+        (*state.records_for_test()).insert_for_test(old, old_record);
+        (*state.records_for_test()).insert_for_test(next, next_record);
     }
     (registry, old_interest, next_interest, commit)
 }
@@ -62,10 +62,10 @@ fn replacement_prepares_exact_commit_growth_and_transfers_matching_obligations()
         .finish_replaced_interest_for_test(&old, &next, "replacement")
         .unwrap();
     let state = (*registry.state_for_test()).lock().unwrap();
-    let successor = &state.records[&(*next.key_for_test())];
-    assert_eq!(successor.performed_obligations.len(), 2);
-    assert_eq!(successor.source_commits, [commit]);
+    let successor = &(*state.records_for_test())[&(*next.key_for_test())];
+    assert_eq!((*successor.performed_obligations_for_test()).len(), 2);
+    assert_eq!((*successor.source_commits_for_test()), [commit]);
 
-    assert!(state.required_keys.contains(&(*next.key_for_test())));
-    assert_eq!(state.records[&(*old.key_for_test())].performed_obligations.len(), 0);
+    assert!((*state.required_keys_for_test()).contains(&(*next.key_for_test())));
+    assert_eq!((*(*state.records_for_test())[&(*old.key_for_test())].performed_obligations_for_test()).len(), 0);
 }

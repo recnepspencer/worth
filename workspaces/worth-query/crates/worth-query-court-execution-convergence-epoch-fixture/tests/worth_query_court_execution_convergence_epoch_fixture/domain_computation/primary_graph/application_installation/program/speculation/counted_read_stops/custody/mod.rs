@@ -51,11 +51,11 @@ fn preview_readmission_retains_original_source_and_runtime_until_promotion() {
         .unwrap();
     assert!(observer.admit_active_session().is_some());
     assert!(std::sync::Arc::ptr_eq(
-        &(*preview.session_for_test())._source,
+        &(*(*preview.session_for_test())._source_for_test()),
         &original_source
     ));
     assert_eq!(
-        (*preview.session_for_test()).handle.execution_record().digest(),
+        (*(*preview.session_for_test()).handle_for_test()).execution_record().digest(),
         original_execution
     );
     let outcome = preview.promote().unwrap();
@@ -98,7 +98,7 @@ fn readmitted_preview_discard_refusal_retains_source_and_liveness_until_real_clo
         .unwrap();
     let (preview, denial) = preview.discard().unwrap_err();
     assert_eq!(denial.kind(), worth_runtime_bridge::facade::BridgeSpeculationErrorKind::PreviewResidueClassificationMismatch);
-    assert!(std::sync::Arc::ptr_eq(&(*preview.session_for_test())._source, &source));
+    assert!(std::sync::Arc::ptr_eq(&(*(*preview.session_for_test())._source_for_test()), &source));
     assert!(observer.admit_active_session().is_some());
     assert!(diagnostics.preview_discard_records().is_empty());
     drop(fault);

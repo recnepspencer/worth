@@ -48,7 +48,7 @@ fn shared_basis_keeps_one_exact_native_owner_until_last_explicit_release() {
     world
         .application
         .with_host_advancement(|_phase| {
-            assert!((*world.application.primary_provider_for_test()).graph.with_runtime(
+            assert!((*(*world.application.primary_provider_for_test()).graph_for_test()).with_runtime(
                 request_execution,
                 |runtime| runtime.read_truth().project_snapshot(&snapshot).is_some()
             ))
@@ -62,7 +62,7 @@ fn shared_basis_keeps_one_exact_native_owner_until_last_explicit_release() {
     world
         .application
         .with_host_advancement(|_phase| {
-            assert!((*world.application.primary_provider_for_test()).graph.with_runtime(
+            assert!((*(*world.application.primary_provider_for_test()).graph_for_test()).with_runtime(
                 request_execution,
                 |runtime| runtime.read_truth().project_snapshot(&snapshot).is_none()
             ))
@@ -191,7 +191,7 @@ fn shared_basis_drop_releases_the_final_native_owner() {
     world
         .application
         .with_host_advancement(|_phase| {
-            assert!((*world.application.primary_provider_for_test()).graph.with_runtime(
+            assert!((*(*world.application.primary_provider_for_test()).graph_for_test()).with_runtime(
                 request_execution,
                 |runtime| runtime.read_truth().project_snapshot(&snapshot).is_none()
             ))
@@ -310,7 +310,7 @@ fn shared_basis_real_query_completes_without_claiming_physical_release() {
             let host_custody = phase.test_host_request_for_test();
             assert!(shared
                 .selected()
-                .application_basis()
+                .application_basis_for_test()
                 .is_live(&host_custody.borrowed_request_for_test(),))
         })
         .expect("the fixture read owns its installed host call");

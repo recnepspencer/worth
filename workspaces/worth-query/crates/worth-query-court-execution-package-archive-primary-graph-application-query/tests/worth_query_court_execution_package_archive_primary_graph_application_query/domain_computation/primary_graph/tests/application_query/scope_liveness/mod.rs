@@ -64,7 +64,7 @@ fn changed_identity_field_makes_resolved_scope_stale_before_admission() {
             change_account_status(
                 &host_custody.borrowed_request_for_test(),
                 &world,
-                account.entity_id(),
+                account.entity_id_for_test(),
                 "closed",
             )
         })
@@ -109,9 +109,9 @@ pub fn change_account_status(
         .primary_graph()
         .expect("test world publishes a primary graph");
     let status_field = AccountStatus::reference();
-    let locator = graph
-        .layout
-        .field_locator(
+    let locator = (*graph
+        .layout_for_test())
+        .field_locator_for_test(
             status_field.entity(),
             status_field.aspect(),
             status_field.field(),

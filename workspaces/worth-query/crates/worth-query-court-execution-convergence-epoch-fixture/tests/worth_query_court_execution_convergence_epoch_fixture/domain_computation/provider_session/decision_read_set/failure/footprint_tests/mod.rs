@@ -30,5 +30,5 @@ fn decision_failure_retains_its_original_detail_and_native_cause_allocations() {
             + std::mem::size_of_val(native.as_ref()) as u64
             + native.additional_charged_bytes(),
     );
-    assert!(Arc::ptr_eq(&failure.detail, &detail));
+    assert!(Arc::ptr_eq(&(*failure.detail_for_test()), &detail));
 }

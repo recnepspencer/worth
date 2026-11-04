@@ -49,3 +49,44 @@ impl WorthQueryApplicationOutputCorrespondence {
         Self::workflow_content_identity(self)
     }
 }
+
+impl WorthQueryCheckpointOutputRole {
+    #[doc(hidden)]
+    pub fn entity_mut_for_test(&mut self) -> &mut EntityId {
+        &mut self.entity
+    }
+}
+
+impl WorthQueryCheckpointOutputRole {
+    #[doc(hidden)]
+    pub fn entity_name_mut_for_test(&mut self) -> &mut String {
+        &mut self.entity_name
+    }
+}
+
+impl WorthQueryApplicationOutputCorrespondence {
+    #[doc(hidden)]
+    pub fn family_members_for_test<Family>(
+        &self,
+    ) -> Result<
+        impl Iterator<
+            Item = Result<
+                (&str, WorthQueryApplicationOutputPosture, EntityId),
+                WorthQueryApplicationOutputProjectionDenial,
+            >,
+        > + '_,
+        WorthQueryApplicationOutputProjectionDenial,
+    >
+    where
+        Family: WorthQueryApplicationOutputRoleFamily,
+    {
+        Self::family_members::<Family>(self)
+    }
+}
+
+impl WorthQueryApplicationOutputCorrespondence {
+    #[doc(hidden)]
+    pub fn active_entity_for_role_for_test(&self, role: &str) -> Option<EntityId> {
+        Self::active_entity_for_role(self, role)
+    }
+}

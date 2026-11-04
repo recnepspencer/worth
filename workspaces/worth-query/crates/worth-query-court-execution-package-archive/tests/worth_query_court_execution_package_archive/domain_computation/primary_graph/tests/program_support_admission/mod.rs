@@ -113,7 +113,7 @@ fn a_completed_retirement_leaves_the_revision_permanently_retired() {
         .lifecycle()
         .begin_retirement_for_test(&revision)
         .unwrap()
-        .finish(0, 0)
+        .finish_for_test(0, 0)
         .expect("an unused revision retires");
     assert!(receipt.inventory().can_retire());
 

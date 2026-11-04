@@ -29,7 +29,7 @@ fn equal_contract_on_another_operation_cannot_claim_the_original_dispatch() {
     assert!((*world
         .application
         .primary_provider_for_test())
-        .lookup_completed_inbound(outbox.correlation())
+        .lookup_completed_inbound_for_test(outbox.correlation())
         .unwrap()
         .is_none());
 
@@ -81,10 +81,10 @@ fn workflow_settlement_joins_the_original_committed_operation_to_world_terminal(
     let terminal = (*world
         .application
         .primary_provider_for_test())
-        .lookup_completed_inbound(record.correlation())
+        .lookup_completed_inbound_for_test(record.correlation())
         .expect("canonical terminal index remains available")
         .expect("World performed a terminal completion");
-    assert!(terminal.matches_original_dispatch(
+    assert!(terminal.matches_original_dispatch_for_test(
         record,
         original.commit_reference(),
         original.committed_product_publication().composite_commit(),
@@ -92,7 +92,7 @@ fn workflow_settlement_joins_the_original_committed_operation_to_world_terminal(
             .committed_product_publication()
             .product_incarnation(),
     ));
-    assert!(!terminal.matches_original_dispatch(
+    assert!(!terminal.matches_original_dispatch_for_test(
         other.dispatch_outbox().unwrap(),
         other.commit_reference(),
         other.committed_product_publication().composite_commit(),
@@ -169,10 +169,10 @@ fn duplicate_callback_keeps_the_original_terminal_out_of_a_sibling_fork() {
     let terminal = (*world
         .application
         .primary_provider_for_test())
-        .lookup_completed_inbound(original_record.correlation())
+        .lookup_completed_inbound_for_test(original_record.correlation())
         .unwrap()
         .unwrap();
-    assert!(!terminal.matches_original_dispatch(
+    assert!(!terminal.matches_original_dispatch_for_test(
         sibling_record,
         sibling.commit_reference(),
         sibling.committed_product_publication().composite_commit(),

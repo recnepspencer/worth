@@ -36,7 +36,7 @@ fn support_expiry_denies_approval_while_the_request_lifecycle_is_current() {
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request_for_test();
             world.application.authorize_elevation_approval(
-                &host_custody.phase_for_application(&world.application),
+                &host_custody.phase_for_application_for_test(&world.application),
                 requested,
                 access,
                 &crate::domain_computation::primary_graph::tests::authorization::capability_elevation::approval_transition::approval_operation(&world),
@@ -71,7 +71,7 @@ fn support_expiry_denies_approval_while_the_request_lifecycle_is_current() {
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request_for_test();
             assert_requested_without_approval(
-                &host_custody.phase_for_application(&world.application),
+                &host_custody.phase_for_application_for_test(&world.application),
                 &host_custody.borrowed_request_for_test(),
                 &world,
                 &requested,

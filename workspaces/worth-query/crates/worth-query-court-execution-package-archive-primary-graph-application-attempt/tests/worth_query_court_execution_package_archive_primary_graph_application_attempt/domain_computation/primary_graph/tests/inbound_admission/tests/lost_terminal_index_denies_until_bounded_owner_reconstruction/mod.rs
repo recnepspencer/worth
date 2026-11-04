@@ -19,16 +19,16 @@ fn lost_terminal_index_denies_until_bounded_owner_reconstruction() {
     );
     let provider = &(*world.application.primary_provider_for_test());
     let sealed = provider
-        .lookup_completed_inbound(&correlation)
+        .lookup_completed_inbound_for_test(&correlation)
         .unwrap()
         .expect("World Performed must seal canonical terminal history");
     assert_ne!(
-        sealed.original_world_commit(),
-        sealed.completion_world_commit()
+        sealed.original_world_commit_for_test(),
+        sealed.completion_world_commit_for_test()
     );
     provider.destroy_completed_inbound_index_for_test();
     assert!(matches!(
-        provider.lookup_completed_inbound(&correlation),
+        provider.lookup_completed_inbound_for_test(&correlation),
         Err(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::inbound_terminal_index::WorthQueryInboundTerminalIndexDenial::IndexUnavailable)
     ));
     let one = std::num::NonZeroUsize::new(1).unwrap();
@@ -40,7 +40,7 @@ fn lost_terminal_index_denies_until_bounded_owner_reconstruction() {
         )).expect("installed host call opens"),
         Err(worth_query_execution::facade::domain_computation::WorthQueryInboundIndexRepairDenial::ReconstructionWorkExhausted)
     ));
-    assert!(provider.lookup_completed_inbound(&correlation).is_err());
+    assert!(provider.lookup_completed_inbound_for_test(&correlation).is_err());
     let mut pages = 0;
     loop {
         pages += 1;
@@ -60,7 +60,7 @@ fn lost_terminal_index_denies_until_bounded_owner_reconstruction() {
         if complete {
             break;
         }
-        assert!(provider.lookup_completed_inbound(&correlation).is_err());
+        assert!(provider.lookup_completed_inbound_for_test(&correlation).is_err());
         assert!(
             pages < 32,
             "small fixture must complete within finite page budget"
@@ -71,7 +71,7 @@ fn lost_terminal_index_denies_until_bounded_owner_reconstruction() {
         "one slot cannot silently scan the whole World history"
     );
     assert_eq!(
-        provider.lookup_completed_inbound(&correlation).unwrap(),
+        provider.lookup_completed_inbound_for_test(&correlation).unwrap(),
         Some(sealed)
     );
 }

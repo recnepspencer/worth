@@ -18,12 +18,12 @@ pub fn run(
             ));
             // A caught dangling-note panic poisoned the mutex. Do not let teardown
             // counterfeit another failure by panicking inside an owner's Drop.
-            (*world
+            (*(*world
                 .registry
                 .state_for_test())
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .closed_cleanup = Default::default();
+                .closed_cleanup_mut_for_test()) = Default::default();
         }
         if let Some(failure) = world.failure.take() {
             divergences.push(format!("seed {seed}, step {step}, {label}: {failure}"));
@@ -33,12 +33,12 @@ pub fn run(
                 "seed {seed}, step {step}, {label}: dangling note {}",
                 (*key.producer_for_test())
             ));
-            (*world
+            (*(*world
                 .registry
                 .state_for_test())
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .closed_cleanup = Default::default();
+                .closed_cleanup_mut_for_test()) = Default::default();
             return true;
         }
         crate::domain_computation::primary_graph::application_output_demand::registry::tests::eager_debt::observe::compare(world, seed, step, label, divergences, false);
@@ -110,7 +110,7 @@ pub fn run(
                 panic!("Ready")
             };
             let mut state = (*w.registry.state_for_test()).lock().unwrap();
-            state.records.get_mut(&w.keys[1]).unwrap().state =
+            (*(*state.records_for_test()).get_mut(&w.keys[1]).unwrap().state_mut_for_test()) =
                 DemandState::Output(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputProgress::new_for_test(
                     worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint::Ready(ready.clone()),
                 ));

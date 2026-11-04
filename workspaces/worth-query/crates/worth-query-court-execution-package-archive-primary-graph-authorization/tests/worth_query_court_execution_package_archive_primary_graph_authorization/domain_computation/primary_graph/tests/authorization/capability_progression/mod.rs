@@ -112,7 +112,7 @@ fn admitted_access_is_runtime_affine_at_operation_progression() {
                 .unwrap();
 
             let Err(denial) = target.application.authorize_capability_operation(
-                &host_custody.phase_for_application(&target.application),
+                &host_custody.phase_for_application_for_test(&target.application),
                 access,
                 &target_operation,
                 Default::default(),

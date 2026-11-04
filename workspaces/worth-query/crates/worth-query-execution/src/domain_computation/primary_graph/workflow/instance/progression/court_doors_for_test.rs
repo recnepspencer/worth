@@ -94,3 +94,19 @@ impl WorkflowInstanceProgress {
         Self::retained_charge_bytes(self)
     }
 }
+
+impl WorkflowInstanceProgress {
+    #[doc(hidden)]
+    pub fn retry_counts_mut_for_test(
+        &mut self,
+    ) -> &mut OrdMap<(EntityId, ApplicationWorkflowControlOutcome), usize> {
+        &mut self.retry_counts
+    }
+}
+
+impl SettledWorkflowTransition {
+    #[doc(hidden)]
+    pub fn occurrence_for_test(self) -> u64 {
+        Self::occurrence(self)
+    }
+}

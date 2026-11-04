@@ -20,9 +20,9 @@ fn optional_aspect_initialization_presence_follows_exact_installed_write_members
         AccountNote::reference().field(),
         AccountScore::reference().field(),
     ] {
-        let locator = graph
-            .layout
-            .field_locator("Account", "AccountPolicy", field)
+        let locator = (*graph
+            .layout_for_test())
+            .field_locator_for_test("Account", "AccountPolicy", field)
             .unwrap();
         assert!(may_write(writer.contracts().touches(), "Account", locator));
         assert!(!may_write(

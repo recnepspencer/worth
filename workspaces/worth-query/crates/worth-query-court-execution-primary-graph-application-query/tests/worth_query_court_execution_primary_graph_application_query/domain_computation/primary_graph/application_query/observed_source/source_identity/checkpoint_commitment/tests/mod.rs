@@ -72,7 +72,7 @@ pub fn product_selection() -> WorthQueryApplicationBasisSelectionIdentity {
         .expect("the fixture product occurrence is live");
     WorthQueryApplicationBasisSelectionIdentity::Product(
             worth_query_execution::facade::domain_computation::WorthQueryProductBranchReadIdentity::from_observation_for_test(
-                product.observation(),
+                product.observation_for_test(),
             ),
         )
 }

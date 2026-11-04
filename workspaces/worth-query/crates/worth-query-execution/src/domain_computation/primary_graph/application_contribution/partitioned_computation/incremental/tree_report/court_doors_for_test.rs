@@ -16,3 +16,12 @@ impl<Tree, Stopped> ReportedTree<Tree, Stopped> {
         &self.report
     }
 }
+
+impl<Tree, Stopped> ReportedTree<Tree, Stopped> {
+    #[doc(hidden)]
+    pub fn outcome_into_for_test(
+        self,
+    ) -> Result<Tree, WorthQueryPartitionedComputationDenial<Stopped>> {
+        self.outcome
+    }
+}

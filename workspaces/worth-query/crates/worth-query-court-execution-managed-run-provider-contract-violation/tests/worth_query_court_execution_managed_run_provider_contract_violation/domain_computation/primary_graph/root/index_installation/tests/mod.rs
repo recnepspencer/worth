@@ -15,7 +15,7 @@ fn recovered_index_binding_stays_exact_as_unrelated_definition_inventory_grows()
             .build()
             .expect("valid native runtime configuration");
         let mut source_layout = installed_layout();
-        let unrelated_locator = source_layout.provider_idempotency_for_test().key_locator.clone();
+        let unrelated_locator = (*source_layout.provider_idempotency_for_test().key_locator_for_test()).clone();
         for ordinal in 0..unrelated {
             runtime
                 .index_authority()
@@ -37,7 +37,7 @@ fn recovered_index_binding_stays_exact_as_unrelated_definition_inventory_grows()
         .unwrap();
         let (binding, installed) = source_layout.principal_bindings_for_test().next().unwrap();
         let name = format!("application-principal.{binding}");
-        let recovered_id = installed.index_id;
+        let recovered_id = (*installed.index_id_for_test());
         assert!(recovered_id.0 > unrelated as u64);
         let snapshot_started = Instant::now();
         let lookup = runtime.index_access().definition_lookup_snapshot();
@@ -63,12 +63,12 @@ fn recovered_index_binding_stays_exact_as_unrelated_definition_inventory_grows()
             "Query recovered index binding: unrelated={unrelated} query_definitions={local_query_definitions} snapshot={snapshot_elapsed:?} binding={binding_elapsed:?}"
         );
         assert_eq!(
-            recovered_layout
+            (*recovered_layout
                 .principal_bindings_for_test()
                 .next()
                 .unwrap()
                 .1
-                .index_id,
+                .index_id_for_test()),
             recovered_id,
             "recovery retains the owner-issued numeric identity at every inventory size"
         );
@@ -84,8 +84,8 @@ fn recovered_index_name_without_matching_kind_cannot_bind() {
     let (binding, principal) = expected.principal_bindings_for_test().next().unwrap();
     let name = format!("application-principal.{binding}");
     assert_ne!(
-        principal.identity_locator,
-        expected.provider_idempotency_for_test().key_locator
+        (*principal.identity_locator_for_test()),
+        (*expected.provider_idempotency_for_test().key_locator_for_test())
     );
     runtime
         .index_authority()
@@ -93,7 +93,7 @@ fn recovered_index_name_without_matching_kind_cannot_bind() {
             index_id: DerivedIndexId(0),
             name: name.clone(),
             kind: DerivedIndexKind::EntityField {
-                field_locator: expected.provider_idempotency_for_test().key_locator.clone(),
+                field_locator: (*expected.provider_idempotency_for_test().key_locator_for_test()).clone(),
             },
             branch_scoped: false,
         })

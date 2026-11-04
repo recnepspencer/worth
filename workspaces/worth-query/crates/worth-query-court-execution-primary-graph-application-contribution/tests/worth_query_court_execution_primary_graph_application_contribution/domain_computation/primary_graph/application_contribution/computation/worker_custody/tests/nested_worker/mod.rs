@@ -53,10 +53,10 @@ fn nested_partition_workers_keep_the_member_reentry_refusal() {
                         .collect(),
                 )
                 .unwrap();
-                let held = managed.request.reserve(0).unwrap();
-                let dispatch = managed.request.dispatch().unwrap();
+                let held = (*managed.request_for_test()).reserve(0).unwrap();
+                let dispatch = (*managed.request_for_test()).dispatch_for_test().unwrap();
                 let result = dispatch
-                    .map(
+                    .map_for_test(
                         32,
                         &map,
                         held,

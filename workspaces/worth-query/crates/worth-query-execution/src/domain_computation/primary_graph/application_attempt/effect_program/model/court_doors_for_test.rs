@@ -12,3 +12,12 @@ impl<Schema, Operation, Input, Scope>
         Self::with_producer_required_invariants(self, requirements)
     }
 }
+
+impl<Schema, Operation, Input, Scope>
+    WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>
+{
+    #[doc(hidden)]
+    pub fn effects_for_test(&self) -> &Vec<WorthQueryApplicationRealizedEffect> {
+        &self.effects
+    }
+}

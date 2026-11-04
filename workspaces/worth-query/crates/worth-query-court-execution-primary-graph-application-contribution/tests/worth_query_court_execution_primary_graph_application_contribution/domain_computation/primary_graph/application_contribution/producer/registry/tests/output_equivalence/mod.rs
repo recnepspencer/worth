@@ -113,7 +113,7 @@ fn installed_output_equivalence_binds_field_shape_revision_role_and_opt_in() {
     let field = (*structure.output_equivalence_for_test()).as_ref().unwrap();
     let different_role = seal("producer", "another-role", field, &installed::<Struct>()).unwrap();
     assert_ne!(
-        (*structure.installed_output_equivalence_for_test()).unwrap().meaning,
+        (*structure.installed_output_equivalence_into_for_test().unwrap().meaning_for_test()),
         (*different_role.meaning_for_test())
     );
 }

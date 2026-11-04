@@ -24,12 +24,12 @@ fn equal_version_snapshot_from_another_relational_runtime_is_rejected() {
             let host_custody = phase.test_host_request_for_test();
             let borrowed_execution = host_custody.borrowed_request_for_test();
             let first_product = first.selected_product(
-                &(host_custody.phase_for_application(&first.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&first.application)).test_host_request_for_test(),
             );
 
             first_graph
-                .integration_handle()
-                .with_runtime_mut(&borrowed_execution, |_| {
+                .integration_handle_for_test()
+                .with_runtime_mut_for_test(&borrowed_execution, |_| {
                     first_product
                         .application_basis_for_test()
                         .snapshot_handle()
@@ -44,14 +44,14 @@ fn equal_version_snapshot_from_another_relational_runtime_is_rejected() {
             let borrowed_execution = host_custody.borrowed_request_for_test();
             let _execution = &borrowed_execution;
             let second_product = second.selected_product(
-                &(host_custody.phase_for_application(&second.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&second.application)).test_host_request_for_test(),
             );
             second_graph
-                .integration_handle()
-                .with_runtime_mut(&borrowed_execution, |runtime| {
+                .integration_handle_for_test()
+                .with_runtime_mut_for_test(&borrowed_execution, |runtime| {
                     let snapshot = second_product.application_basis_for_test().snapshot_handle();
                     assert_eq!(snapshot.version_id(), first_version);
-                    let denial = match installed.at_snapshot(
+                    let denial = match installed.at_snapshot_for_test(
                         runtime,
                         snapshot,
                         WorthQueryPrincipalResolutionMode::Ordinary,
@@ -88,7 +88,7 @@ fn rebuilt_index_generation_preserves_stable_entity_meaning() {
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     AccountStatus::reference(),
                     "open".to_owned(),
                     &request,
@@ -98,17 +98,17 @@ fn rebuilt_index_generation_preserves_stable_entity_meaning() {
             let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
             let installed = graph.retain_entity_resolution_context();
             let selected = world.selected_product(
-                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
             );
             let index_id = graph
-                .layout()
-                .equality_field("Account", "AccountPolicy", "AccountStatus")
-                .and_then(|field| field.equality_index_id)
+                .layout_for_test()
+                .equality_field_for_test("Account", "AccountPolicy", "AccountStatus")
+                .and_then(|field| (*field.equality_index_id_for_test()))
                 .unwrap();
 
             graph
-                .integration_handle()
-                .with_runtime_mut(&borrowed_execution, |runtime| {
+                .integration_handle_for_test()
+                .with_runtime_mut_for_test(&borrowed_execution, |runtime| {
                     let head = runtime
                         .history()
                         .historical_latest_commit()
@@ -129,14 +129,14 @@ fn rebuilt_index_generation_preserves_stable_entity_meaning() {
                     );
                     let snapshot = selected.application_basis_for_test().snapshot_handle();
                     let truth = installed
-                        .at_snapshot(
+                        .at_snapshot_for_test(
                             runtime,
                             snapshot,
                             WorthQueryPrincipalResolutionMode::Ordinary,
                         )
                         .unwrap();
                     truth
-                        .validate_entity_freshness(execution, &identity)
+                        .validate_entity_freshness_for_test(execution, &identity)
                         .unwrap();
                 });
         })
@@ -153,24 +153,24 @@ let host_custody = phase.test_host_request_for_test();
 let borrowed_execution = host_custody.borrowed_request_for_test();
 let execution = &borrowed_execution;
 let selected = world.selected_product(
-            &(host_custody.phase_for_application(&world.application)).test_host_request(),
+            &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
         );
-        graph.integration_handle().with_runtime_mut(&borrowed_execution, |runtime| {
+        graph.integration_handle_for_test().with_runtime_mut_for_test(&borrowed_execution, |runtime| {
         let snapshot = selected.application_basis_for_test().snapshot_handle();
         let truth = installed
-            .at_snapshot( runtime, snapshot, WorthQueryPrincipalResolutionMode::Ordinary)
+            .at_snapshot_for_test( runtime, snapshot, WorthQueryPrincipalResolutionMode::Ordinary)
             .unwrap();
         let resolved = truth
-            .resolve(execution,
+            .resolve_for_test(execution,
                 "Account",
                 "AccountPolicy",
                 "AccountStatus",
                 StringApplicationValueBinding::encode(&"open".to_owned()).unwrap(),
             )
             .unwrap();
-        let typed = resolved.into_application_identity::<IdentityExecutionSchema, worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::Account>();
+        let typed = resolved.into_application_identity_for_test::<IdentityExecutionSchema, worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::Account>();
         assert_eq!(typed.binding_identity(), graph.binding_identity());
-        assert_eq!(typed.identity_index_id(), graph.layout().equality_field("Account", "AccountPolicy", "AccountStatus").unwrap().equality_index_id.unwrap());
+        assert_eq!(typed.identity_index_id_for_test(), (*graph.layout_for_test().equality_field_for_test("Account", "AccountPolicy", "AccountStatus").unwrap().equality_index_id_for_test()).unwrap());
     });
 
 }).expect("the fixture block owns its installed host call")

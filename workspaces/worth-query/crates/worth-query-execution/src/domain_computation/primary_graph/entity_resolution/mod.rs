@@ -280,3 +280,5 @@ fn entity_denial(
 ) -> WorthQueryEntityResolutionDenial {
     WorthQueryEntityResolutionDenial::new(kind, subject)
 }
+
+mod court_doors_for_test;

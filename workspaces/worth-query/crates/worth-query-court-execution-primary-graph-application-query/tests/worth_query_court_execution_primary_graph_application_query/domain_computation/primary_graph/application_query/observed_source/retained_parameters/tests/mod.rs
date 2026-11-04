@@ -65,7 +65,7 @@ fn completed_query_roster_keeps_original_funding_until_final_observation_close()
                 .unwrap();
             assert_eq!(result.rows().len(), 1);
             let row = &result.observed_sources()[0];
-            let roster = &(*row.parameters_for_test()).rows;
+            let roster = &(*(*row.parameters_for_test()).rows_for_test());
             let quote = std::alloc::Layout::array::<Arc<WorthQueryObservedSourceMeaning>>(1)
                 .unwrap()
                 .size() as u64;

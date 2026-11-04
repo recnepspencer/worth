@@ -107,18 +107,18 @@ pub fn run_locality(count: usize) -> LocalityRun {
             let custody = phase.test_host_request_for_test();
             let phase_custody = &custody;
             let principal =
-                authenticated_principal(&(phase_custody).test_host_request(), &world, &request);
+                authenticated_principal(&(phase_custody).test_host_request_for_test(), &world, &request);
 
             let source_query_before =
                 source_query_work(phase_custody, &world, &principal, &request);
             let unrelated = resolved_account(
-                &(phase_custody).test_host_request(),
+                &(phase_custody).test_host_request_for_test(),
                 &world,
                 "unrelated",
                 &request,
             );
             let program = admitted_program(
-                &phase_custody.phase_for_application(&world.application),
+                &phase_custody.phase_for_application_for_test(&world.application),
                 &world,
                 &principal,
                 &unrelated,

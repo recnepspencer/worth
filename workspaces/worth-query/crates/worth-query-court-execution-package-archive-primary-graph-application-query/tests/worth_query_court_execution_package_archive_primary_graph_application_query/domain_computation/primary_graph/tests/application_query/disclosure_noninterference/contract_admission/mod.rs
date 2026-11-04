@@ -61,7 +61,7 @@ fn contract_incompatible_projection_mask_denies_before_result_construction() {
         .runtime_for_test())
         .primary_graph()
         .unwrap()
-        .layout();
+        .layout_for_test();
 
     assert!(
         admit_field_mask_categories(
@@ -90,8 +90,8 @@ fn incomplete_result_contract_denies_before_result_construction() {
             let host_custody = phase.test_host_request_for_test();
 
             let capability = admit_touch_account_capability(
-                &(host_custody.phase_for_application(&context.world.application))
-                    .test_host_request(),
+                &(host_custody.phase_for_application_for_test(&context.world.application))
+                    .test_host_request_for_test(),
                 &context.world,
                 &context.principal,
                 &context.request,
@@ -102,11 +102,11 @@ fn incomplete_result_contract_denies_before_result_construction() {
             let denial = context
                 .world
                 .selected_product(
-                    &(host_custody.phase_for_application(&context.world.application))
-                        .test_host_request(),
+                    &(host_custody.phase_for_application_for_test(&context.world.application))
+                        .test_host_request_for_test(),
                 )
                 .admit_governed_application_query(
-                    &host_custody.phase_for_application(&context.world.application),
+                    &host_custody.phase_for_application_for_test(&context.world.application),
                     &query,
                     &access,
                     capability,
@@ -139,8 +139,8 @@ fn forbidden_predicate_influence_denies_before_result_construction() {
             let host_custody = phase.test_host_request_for_test();
 
             let capability = admit_touch_account_capability(
-                &(host_custody.phase_for_application(&context.world.application))
-                    .test_host_request(),
+                &(host_custody.phase_for_application_for_test(&context.world.application))
+                    .test_host_request_for_test(),
                 &context.world,
                 &context.principal,
                 &context.request,
@@ -151,11 +151,11 @@ fn forbidden_predicate_influence_denies_before_result_construction() {
             let denial = context
                 .world
                 .selected_product(
-                    &(host_custody.phase_for_application(&context.world.application))
-                        .test_host_request(),
+                    &(host_custody.phase_for_application_for_test(&context.world.application))
+                        .test_host_request_for_test(),
                 )
                 .admit_governed_application_query(
-                    &host_custody.phase_for_application(&context.world.application),
+                    &host_custody.phase_for_application_for_test(&context.world.application),
                     &query,
                     &access,
                     capability,
@@ -190,8 +190,8 @@ fn forbidden_ordering_influence_denies_before_result_construction() {
             let host_custody = phase.test_host_request_for_test();
 
             let capability = admit_touch_account_capability(
-                &(host_custody.phase_for_application(&context.world.application))
-                    .test_host_request(),
+                &(host_custody.phase_for_application_for_test(&context.world.application))
+                    .test_host_request_for_test(),
                 &context.world,
                 &context.principal,
                 &context.request,
@@ -202,11 +202,11 @@ fn forbidden_ordering_influence_denies_before_result_construction() {
             let denial = context
                 .world
                 .selected_product(
-                    &(host_custody.phase_for_application(&context.world.application))
-                        .test_host_request(),
+                    &(host_custody.phase_for_application_for_test(&context.world.application))
+                        .test_host_request_for_test(),
                 )
                 .admit_governed_application_query(
-                    &host_custody.phase_for_application(&context.world.application),
+                    &host_custody.phase_for_application_for_test(&context.world.application),
                     &query,
                     &access,
                     capability,
@@ -239,8 +239,8 @@ fn forbidden_live_scope_influence_denies_before_result_construction() {
             let host_custody = phase.test_host_request_for_test();
 
             let capability = admit_touch_account_capability(
-                &(host_custody.phase_for_application(&context.world.application))
-                    .test_host_request(),
+                &(host_custody.phase_for_application_for_test(&context.world.application))
+                    .test_host_request_for_test(),
                 &context.world,
                 &context.principal,
                 &context.request,
@@ -251,11 +251,11 @@ fn forbidden_live_scope_influence_denies_before_result_construction() {
             let denial = context
                 .world
                 .selected_product(
-                    &(host_custody.phase_for_application(&context.world.application))
-                        .test_host_request(),
+                    &(host_custody.phase_for_application_for_test(&context.world.application))
+                        .test_host_request_for_test(),
                 )
                 .admit_governed_application_query(
-                    &host_custody.phase_for_application(&context.world.application),
+                    &host_custody.phase_for_application_for_test(&context.world.application),
                     &query,
                     &access,
                     capability,
@@ -288,8 +288,8 @@ fn forbidden_live_target_influence_denies_before_result_construction() {
             let host_custody = phase.test_host_request_for_test();
 
             let capability = admit_touch_account_capability(
-                &(host_custody.phase_for_application(&context.world.application))
-                    .test_host_request(),
+                &(host_custody.phase_for_application_for_test(&context.world.application))
+                    .test_host_request_for_test(),
                 &context.world,
                 &context.principal,
                 &context.request,
@@ -300,11 +300,11 @@ fn forbidden_live_target_influence_denies_before_result_construction() {
             let denial = context
                 .world
                 .selected_product(
-                    &(host_custody.phase_for_application(&context.world.application))
-                        .test_host_request(),
+                    &(host_custody.phase_for_application_for_test(&context.world.application))
+                        .test_host_request_for_test(),
                 )
                 .admit_governed_application_query(
-                    &host_custody.phase_for_application(&context.world.application),
+                    &host_custody.phase_for_application_for_test(&context.world.application),
                     &query,
                     &access,
                     capability,
@@ -347,7 +347,7 @@ pub fn admission_context() -> AdmissionContext {
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_authenticated_principal(
-                    &phase_custody.phase_for_application(&world.application),
+                    &phase_custody.phase_for_application_for_test(&world.application),
                     &world.binding,
                     &external,
                     &request,
@@ -362,7 +362,7 @@ pub fn admission_context() -> AdmissionContext {
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
-                    &phase_custody.phase_for_application(&world.application),
+                    &phase_custody.phase_for_application_for_test(&world.application),
                     AccountIdentity::reference(),
                     "account-1".to_owned(),
                     &request,

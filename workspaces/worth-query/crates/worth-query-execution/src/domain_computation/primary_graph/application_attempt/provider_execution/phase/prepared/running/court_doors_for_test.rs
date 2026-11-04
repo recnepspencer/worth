@@ -40,3 +40,24 @@ impl<Schema, Operation, Input, Scope>
         &mut self.running
     }
 }
+
+impl<Schema, Operation, Input, Scope>
+    WorthQueryRunningApplicationCommit<Schema, Operation, Input, Scope>
+{
+    #[doc(hidden)]
+    pub fn mutation_run_into_for_test(
+        self,
+    ) -> crate::domain_computation::provider_session::WorthQueryMutationRunBinding {
+        self.mutation_run
+    }
+}
+
+impl<Schema, Operation, Input, Scope>
+    WorthQueryRunningApplicationCommit<Schema, Operation, Input, Scope>
+{
+    #[doc(hidden)]
+    pub fn running_into_for_test(self) -> crate::domain_computation::WorthQueryRunningDirectRun {
+        self.running
+    }
+}
+

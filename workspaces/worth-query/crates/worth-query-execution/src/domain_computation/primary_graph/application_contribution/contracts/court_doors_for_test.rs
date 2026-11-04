@@ -37,3 +37,19 @@ where
         Self::validate(self)
     }
 }
+
+impl<Schema> WorthQueryApplicationContractCatalog<Schema> {
+    #[doc(hidden)]
+    pub fn conditionals_mut_for_test(
+        &mut self,
+    ) -> &mut BTreeMap<String, DeclaredConditionalBinding> {
+        &mut self.conditionals
+    }
+}
+
+impl<Schema> WorthQueryApplicationContractCatalog<Schema> {
+    #[doc(hidden)]
+    pub fn producers_mut_for_test(&mut self) -> &mut BTreeMap<String, DeclaredProducerBinding> {
+        &mut self.producers
+    }
+}

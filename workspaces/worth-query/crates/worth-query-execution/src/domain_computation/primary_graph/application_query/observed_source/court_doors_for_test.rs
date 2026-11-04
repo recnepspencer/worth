@@ -124,3 +124,10 @@ impl<Query> WorthQueryObservedSource<Query> {
         Self::validate_completeness(self, subject)
     }
 }
+
+impl WorthQueryObservedSourceFootprint {
+    #[doc(hidden)]
+    pub fn complete_for_test(&self) -> &bool {
+        &self.complete
+    }
+}

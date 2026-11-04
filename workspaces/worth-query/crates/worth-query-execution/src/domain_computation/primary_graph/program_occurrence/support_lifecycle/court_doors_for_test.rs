@@ -11,3 +11,15 @@ impl WorthQueryProgramSupportLifecycle {
         Self::begin_retirement(self, revision)
     }
 }
+
+impl WorthQueryProgramSupportRetirementAttempt {
+    #[doc(hidden)]
+    pub fn finish_for_test(
+        self,
+        current_branches: usize,
+        retained_program_bytes: usize,
+    ) -> Result<WorthQueryProgramSupportRetirementReceipt, WorthQueryProgramSupportRetirementDenial>
+    {
+        Self::finish(self, current_branches, retained_program_bytes)
+    }
+}

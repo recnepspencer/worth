@@ -67,8 +67,8 @@ fn separately_admitted_rich_body_cannot_replace_scope_or_requested_families() {
                                 prepare_funded_pending_disclosure(
                                     &world.application,
                                     installed.query().binding_identity(),
-                                    principal.principal().principal_entity_id(),
-                                    scope.scope().entity_id(),
+                                    principal.principal_for_test().principal_entity_id_for_test(),
+                                    scope.scope_for_test().entity_id_for_test(),
                                     capability,
                                     || require_request(&execution, &request),
                                     || InspectionAdmissionDenial::ForeignIssuedAccess,
@@ -135,32 +135,32 @@ fn separately_admitted_rich_body_cannot_replace_scope_or_requested_families() {
                     },
                 )
                 .unwrap_or_else(|_| panic!("real identity continuation succeeds"));
-            assert!(report_a.body.matches(&report_a.reference));
-            assert!(report_b.body.matches(&report_b.reference));
+            assert!((*report_a.body_for_test()).matches_for_test(&(*report_a.reference_for_test())));
+            assert!((*report_b.body_for_test()).matches_for_test(&(*report_b.reference_for_test())));
             assert!(
-                !report_a.body.matches(&report_b.reference),
+                !(*report_a.body_for_test()).matches_for_test(&(*report_b.reference_for_test())),
                 "same original and mask do not grant another session membership"
             );
-            let saved = report_b.body.artifact.request;
-            report_b.body.artifact.request = saved.with_family(Family::BridgeRoute);
+            let saved = (*(*(*report_b.body_for_test()).artifact_for_test()).request_for_test());
+            (*(*(*report_b.body_mut_for_test()).artifact_mut_for_test()).request_mut_for_test()) = saved.with_family(Family::BridgeRoute);
             assert!(
-                !report_b.body.matches(&report_b.reference),
+                !(*report_b.body_for_test()).matches_for_test(&(*report_b.reference_for_test())),
                 "same session cannot publish another requested family selection"
             );
-            report_b.body.artifact.request = saved;
-            let (_, product, basis) = selected.into_parts();
+            (*(*(*report_b.body_mut_for_test()).artifact_mut_for_test()).request_mut_for_test()) = saved;
+            let (_, product, basis) = selected.into_parts_for_test();
             drop(product);
             let release = basis.release();
             let completed_a = terminal_a
-                .complete(&execution, release.clone())
+                .complete_for_test(&execution, release.clone())
                 .unwrap_or_else(|_| panic!("first actual terminal completes"));
             let completed = terminal_b
-                .complete(&execution, release)
+                .complete_for_test(&execution, release)
                 .unwrap_or_else(|_| panic!("second actual terminal completes"));
             // Keep B's authentic base report and completed terminal, substitute only A's body.
-            report_b.body = report_a.body;
+            (*report_b.body_mut_for_test()) = report_a.body_into_for_test();
             let denial = completed
-                .publish_rich(&execution, &original, report_b, &mut memory_b)
+                .publish_rich_for_test(&execution, &original, report_b, &mut memory_b)
                 .err()
                 .expect("the real publication owner must reject a separately admitted body");
             assert!(matches!(

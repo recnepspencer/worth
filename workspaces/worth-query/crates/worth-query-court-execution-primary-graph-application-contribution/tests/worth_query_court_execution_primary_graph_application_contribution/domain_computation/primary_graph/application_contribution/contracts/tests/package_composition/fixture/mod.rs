@@ -129,7 +129,7 @@ pub fn catalog(contracts: Vec<Contract>) -> Catalog {
         // These are owner-private declaration inputs, not executable producer
         // grants or installed receipts. The package validator is the oracle;
         // runtime installation is covered separately by the existing owner11.
-        (*catalog.conditionals_for_test()).insert(
+        (*catalog.conditionals_mut_for_test()).insert(
             format!("conditional-{ordinal}"),
             DeclaredConditionalBinding {
                 owner: Schema::OWNER.to_owned(),
@@ -161,11 +161,11 @@ pub fn snapshot(catalog: &Catalog) -> Vec<(String, String, Contract, Vec<String>
         .map(|(identity, declaration)| {
             (
                 identity.clone(),
-                declaration.owner.clone(),
-                declaration.contract.clone(),
-                declaration.required_producers.clone(),
-                declaration.binding_type,
-                declaration.installed_type,
+                (*declaration.owner_for_test()).clone(),
+                (*declaration.contract_for_test()).clone(),
+                (*declaration.required_producers_for_test()).clone(),
+                (*declaration.binding_type_for_test()),
+                (*declaration.installed_type_for_test()),
             )
         })
         .collect()

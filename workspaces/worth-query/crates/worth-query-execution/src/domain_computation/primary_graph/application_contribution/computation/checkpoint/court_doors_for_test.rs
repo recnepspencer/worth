@@ -9,3 +9,10 @@ impl<'request> WorthQueryManagedComputationCheckpoint<'request> {
         &self.charge
     }
 }
+
+impl<'request> WorthQueryManagedComputationExecution<'request> {
+    #[doc(hidden)]
+    pub fn request_for_test(&self) -> &&'request QueryRequestExecution<'request> {
+        &self.request
+    }
+}

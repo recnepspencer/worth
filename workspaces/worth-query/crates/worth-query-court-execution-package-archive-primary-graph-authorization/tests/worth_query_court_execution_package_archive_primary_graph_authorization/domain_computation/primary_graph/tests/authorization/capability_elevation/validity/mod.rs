@@ -171,7 +171,7 @@ fn expiry_between_access_and_operation_denies_fresh_progression() {
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request_for_test();
             world.application.authorize_capability_operation(
-                &host_custody.phase_for_application(&world.application),
+                &host_custody.phase_for_application_for_test(&world.application),
                 access,
                 &operation,
                 Default::default(),

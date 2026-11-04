@@ -10,10 +10,10 @@ fn receipt_lineage_preserves_original_cancellation_and_deadline() {
             world.selected_product(&phase.test_host_request_for_test())
         }).unwrap();
         let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-        let handle = graph.integration_handle();
+        let handle = graph.integration_handle_for_test();
         let lineage = handle.output_lineage.lock().unwrap();
 
-        let check = |execution: &ExecutionRequest<'_, '_>| lineage.current_output_matches_receipt(
+        let check = |execution: &ExecutionRequest<'_, '_>| lineage.current_output_matches_receipt_for_test(
             (*world.application.runtime_for_test()).authority_identity().as_u64(),
             &(*world.application.installed_schema_for_test()).binding_identity(),
             selected.product().observation_for_test(), &receipt, execution);

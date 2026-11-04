@@ -16,19 +16,19 @@ fn source_retirement_closes_all_producers_and_preserves_custody() {
             (*row.source_scope_mut_for_test()) = Some(scope);
             (*state
                 .records_for_test())
-                .insert(key(&format!("source-owner-{producer}"), 1, 1), row);
+                .insert_for_test(key(&format!("source-owner-{producer}"), 1, 1), row);
         }
         worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::walk_bounds::add_custody(&mut state, &receipts, 3);
         retire_stale_records(&mut state, occurrence, scope, &(*key("unused", 2, 1).source_for_test()));
         let selected = key("unused", 2, 1);
         let selected_rows = (*state
             .records_for_test())
-            .source_occurrence_rows(&(*selected.source_for_test()))
+            .source_occurrence_rows_for_test(&(*selected.source_for_test()))
             .collect::<Vec<_>>();
         assert_eq!(selected_rows.len(), producers);
-        assert!(selected_rows.iter().all(|(_, row)| row.terminal()));
+        assert!(selected_rows.iter().all(|(_, row)| row.terminal_for_test()));
         assert_eq!(
-            (*state.records_for_test()).values().filter(|row| !row.terminal()).count(),
+            (*state.records_for_test()).values_for_test().filter(|row| !row.terminal_for_test()).count(),
             receipts.len() * 3
         );
         assert_eq!(state.source_custody.len(), receipts.len());

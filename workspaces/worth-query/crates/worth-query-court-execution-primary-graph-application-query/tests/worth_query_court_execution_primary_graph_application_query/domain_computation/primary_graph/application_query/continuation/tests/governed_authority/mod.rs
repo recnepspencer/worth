@@ -55,7 +55,7 @@ fn governed_cursor_alone_cannot_resume_disclosure() {
             let denial = world
                 .application
                 .readmit_application_query_continuation(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     &query,
                     &access,
                     governed_live_account_parameters("account-1"),
@@ -98,7 +98,7 @@ fn governed_continuation_consumes_fresh_capability_evidence() {
             let plan = world
                 .application
                 .readmit_governed_application_query_continuation(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     &query,
                     &access,
                     fresh,
@@ -111,7 +111,7 @@ fn governed_continuation_consumes_fresh_capability_evidence() {
             let page = world
                 .application
                 .execute_application_query_continuation_page(
-                    &host_custody.phase_for_application(&world.application),
+                    &host_custody.phase_for_application_for_test(&world.application),
                     plan,
                 )
                 .unwrap();
@@ -153,7 +153,7 @@ pub fn context() -> (
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_authenticated_principal(
-                    &phase_custody.phase_for_application(&world.application),
+                    &phase_custody.phase_for_application_for_test(&world.application),
                     &world.binding,
                     &external,
                     &request,
@@ -168,7 +168,7 @@ pub fn context() -> (
                 )
                 .expect("the selected product branch remains admitted")
                 .resolve_entity(
-                    &phase_custody.phase_for_application(&world.application),
+                    &phase_custody.phase_for_application_for_test(&world.application),
                     AccountIdentity::reference(),
                     "account-1".to_owned(),
                     &request,

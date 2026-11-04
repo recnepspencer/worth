@@ -25,9 +25,9 @@ pub fn add_third_root(
         ($marker:ty, $value:expr) => {{
             let field = <$marker>::reference();
             (
-                graph
-                    .layout
-                    .field_locator(field.entity(), field.aspect(), field.field())
+                (*graph
+                    .layout_for_test())
+                    .field_locator_for_test(field.entity(), field.aspect(), field.field())
                     .unwrap()
                     .clone(),
                 StringApplicationValueBinding::encode(&$value.to_owned()).unwrap(),
@@ -46,9 +46,9 @@ pub fn add_third_root(
         WorkerIntentBatch::new("third-reconstruction-root").push(MutationIntent::Create(
             CreateIntent::Entity(EntitySpec {
                 partition_id: PartitionId::main(),
-                kind_id: graph
-                    .layout
-                    .entity_kind(Account::reference().name())
+                kind_id: (*graph
+                    .layout_for_test())
+                    .entity_kind_for_test(Account::reference().name())
                     .unwrap(),
                 client_key: ClientKey::raw("account-3"),
                 fields,
@@ -82,13 +82,13 @@ pub fn add_primary_reads(
         )
         .unwrap();
     let graph = (*world.application.runtime_for_test()).primary_graph().unwrap();
-    let kind = graph
-        .layout
+    let kind = (*(*graph
+        .layout_for_test())
         .relation(AccountPrimaryActivity::reference().name())
         .unwrap()
-        .kind;
+        .kind_for_test());
     let target = graph
-        .integration_handle()
+        .integration_handle_for_test()
         .with_runtime(execution, |runtime| {
             runtime
                 .read_truth()

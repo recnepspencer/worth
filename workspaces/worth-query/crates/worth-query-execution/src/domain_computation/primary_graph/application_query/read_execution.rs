@@ -206,3 +206,5 @@ pub(crate) mod continuation_page;
 pub(super) use continuation_page::read_continuation_page;
 
 pub(in crate::domain_computation::primary_graph::application_query) use tree_materialization::validate_relation_cardinality;
+
+mod court_doors_for_test;
