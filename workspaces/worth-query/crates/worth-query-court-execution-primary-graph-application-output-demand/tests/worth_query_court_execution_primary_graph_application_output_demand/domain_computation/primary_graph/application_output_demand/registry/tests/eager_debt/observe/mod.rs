@@ -103,9 +103,7 @@ pub fn compare(
         if let (Some(actual), Some(expected)) = (actual.filter(|_| visible), expected) {
             let bound = (*actual.bound_sources_for_test()).clone();
             let expected_bound = expected.bound.map(|generation| {
-                vec![worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::BoundOutputSource {
-                    scope: world.context.scope,
-                    identity: (*world
+                vec![worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::BoundOutputSource::new_for_test(world.context.scope, (*world
                         .keys
                         .iter()
                         .find(|key| {
@@ -114,8 +112,7 @@ pub fn compare(
                         })
                         .unwrap()
                         .source_for_test())
-                        .clone(),
-                }]
+                        .clone())]
             });
             let denied = (*actual
                 .retired_sources_for_test())

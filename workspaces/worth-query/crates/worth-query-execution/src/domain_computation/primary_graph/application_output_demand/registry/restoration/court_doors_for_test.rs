@@ -50,3 +50,30 @@ impl WorthQueryRestoredAcceptedOutput {
         &mut self.checkpoint
     }
 }
+
+impl WorthQueryRestoredAcceptedOutput {
+    #[doc(hidden)]
+    pub fn new_for_test(
+        checkpoint: super::super::WorthQueryAcceptedOutputCheckpointIdentity,
+        correspondence: std::sync::Arc<
+            crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
+        >,
+        observation: worth_runtime_world::facade::ProductBranchObservation,
+        source_scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        source_identity: crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity,
+        observed_source_facts: crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
+        native_output_witness: Option<
+        std::sync::Arc<std::sync::OnceLock<crate::domain_computation::primary_graph::output_lineage::SealedNativeOutputWitness>>,
+    >,
+    ) -> Self {
+        Self {
+            checkpoint,
+            correspondence,
+            observation,
+            source_scope,
+            source_identity,
+            observed_source_facts,
+            native_output_witness,
+        }
+    }
+}

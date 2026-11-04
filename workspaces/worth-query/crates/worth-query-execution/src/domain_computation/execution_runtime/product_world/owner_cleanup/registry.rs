@@ -23,7 +23,7 @@ pub enum CleanupScope {
     ApplicationRetirement(WorthQueryRetiredProductOccurrence),
 }
 
-struct CleanupRegistryState {
+pub struct CleanupRegistryState {
     maximum: Option<usize>,
     next_identity: u64,
     reserved: usize,

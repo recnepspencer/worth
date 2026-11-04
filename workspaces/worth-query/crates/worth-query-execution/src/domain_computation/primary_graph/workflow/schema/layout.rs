@@ -133,7 +133,7 @@ pub struct WorkflowEvidenceDependencyLayout {
 }
 
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation::primary_graph) struct WorkflowApprovalLayout {
+pub struct WorkflowApprovalLayout {
     pub(in crate::domain_computation::primary_graph) entity_kind: KindId,
     pub(in crate::domain_computation::primary_graph) identity: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) protocol_version: AspectFieldLocator,

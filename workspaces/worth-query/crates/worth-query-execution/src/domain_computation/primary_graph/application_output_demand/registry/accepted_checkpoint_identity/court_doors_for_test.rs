@@ -159,3 +159,10 @@ impl WorthQueryAcceptedOutputCheckpointIdentity {
         }
     }
 }
+
+impl WorthQueryAcceptedOutputCheckpointIdentity {
+    #[doc(hidden)]
+    pub fn source_partition_mut_for_test(&mut self) -> &mut [u8; 32] {
+        &mut self.source_partition
+    }
+}

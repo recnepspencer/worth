@@ -21,7 +21,7 @@ pub(super) use elevation::{
     WorthQueryCapabilityElevationBindings, WorthQueryCapabilityElevationLifecycleBindings,
     WorthQueryCapabilityElevationTemporalBindings, WorthQueryCapabilityUpperBoundBindings,
 };
-mod elevation_lifecycle;
+pub(crate) mod elevation_lifecycle;
 pub(super) use elevation_lifecycle::WorthQueryElevationLifecycleOperationRole;
 use elevation_lifecycle::WorthQueryInstalledElevationLifecycleRegistry;
 pub(crate) mod bindings;

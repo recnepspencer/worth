@@ -30,7 +30,7 @@ pub struct CurrentSettlementRegistrationCleanup {
     _identity: Arc<RecordedSettlementIdentity>,
 }
 
-pub(in crate::domain_computation::primary_graph) struct StoppedCurrentSettlementRegistration<
+pub struct StoppedCurrentSettlementRegistration<
     'selected,
 > {
     stopped: StoppedSettlementRegistration,

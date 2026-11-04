@@ -86,7 +86,7 @@ pub(in super::super) struct ClosedNoteLinks {
 }
 /// The fixed actor order owns admitted growing nodes; rows retain only a handle.
 #[derive(Default, Clone)]
-pub(in super::super) struct ClosedCleanupQueue(Arc<Mutex<ClosedOrder>>);
+pub struct ClosedCleanupQueue(Arc<Mutex<ClosedOrder>>);
 #[derive(Default)]
 struct ClosedOrder {
     first: Option<Arc<ClosedNoteBacking>>,

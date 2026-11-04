@@ -5,7 +5,7 @@ use crate::domain_computation::primary_graph::application_attempt::retained_deci
 use crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload;
 
 #[derive(Debug)]
-pub(in crate::domain_computation::primary_graph) struct PostingRebaseBasis {
+pub struct PostingRebaseBasis {
     prior: Arc<RecordedSettlementIdentity>,
     baseline: FactPayload,
     storage: PostingComputationStorage,

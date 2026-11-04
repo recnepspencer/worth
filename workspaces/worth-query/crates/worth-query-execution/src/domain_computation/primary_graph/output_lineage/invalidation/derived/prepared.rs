@@ -39,7 +39,7 @@ pub struct SettlementRegistrationCleanup {
     _prior_work_hint: Option<crate::domain_computation::primary_graph::application_output_demand::ReplacedRequiredWorkHint>,
 }
 
-pub(in crate::domain_computation::primary_graph) struct StoppedSettlementRegistration {
+pub struct StoppedSettlementRegistration {
     native: CompanionDerivedRootStopped<BranchMarkRoot>,
     work_cue: Option<PreparedRegistrationWorkCue>,
     completion_cues: Option<super::completion_cues::PreparedCompletionCues>,

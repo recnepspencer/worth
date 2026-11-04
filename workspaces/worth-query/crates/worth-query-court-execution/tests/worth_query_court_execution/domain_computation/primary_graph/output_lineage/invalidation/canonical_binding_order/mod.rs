@@ -35,10 +35,7 @@ fn postings_and_prior_output_visits_follow_declared_binding_order() {
             (*lineage.by_source_mut_for_test()).insert(source.clone(), BTreeMap::new());
             postings.insert(FactPosting::new_for_test(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::settlement_identity::RecordedSettlementIdentity::retain_for_test(
                     &source,
-                    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::ProductCoordinate {
-                        occurrence: seed.address_for_test().0,
-                        generation: 1,
-                    },
+                    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::ProductCoordinate::new_for_test(seed.address_for_test().0, 1),
                     0,
                 ), 0));
         }

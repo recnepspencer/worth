@@ -26,7 +26,7 @@ mod admitted_operation_core;
 use admitted_operation_core::WorthQueryAdmittedOperation;
 
 #[path = "operation_admission/access.rs"]
-mod access;
+pub(crate) mod access;
 #[path = "operation_admission/authorization_basis.rs"]
 mod authorization_basis;
 #[path = "operation_admission/brand_access.rs"]

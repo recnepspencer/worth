@@ -10,7 +10,7 @@ mod checkpoint_commitment;
 mod epoch_construction;
 pub(crate) mod identity_kind;
 mod interning;
-mod material_storage;
+pub(crate) mod material_storage;
 pub(in crate::domain_computation::primary_graph::application_query) use material_storage::admit_footprint_comparison;
 pub(crate) mod membership;
 mod ordering;

@@ -114,12 +114,7 @@ fn performed_source_obligation_survives_handle_close_until_occurrence_retirement
     let preparation = registry.begin_source_preparation_for_test(occurrence);
     registry
         .retain_performed_source_for_test(
-            WorthQueryPerformedOutputDemandSource {
-                receipt,
-                change: Arc::new(change),
-                observation,
-                output_source_identity: None,
-            },
+            WorthQueryPerformedOutputDemandSource::new_for_test(receipt, Arc::new(change), observation, None),
             &preparation,
             PreparedOutputRootKind::Required(TypeId::of_for_test::<()>()),
             None,
@@ -129,10 +124,7 @@ fn performed_source_obligation_survives_handle_close_until_occurrence_retirement
     registry
         .ensure_prepared_output_source_bound_for_test(
             &commit,
-            BoundOutputSource {
-                scope,
-                identity: (*output.source_for_test()).clone(),
-            },
+            BoundOutputSource::new_for_test(scope, (*output.source_for_test()).clone()),
         )
         .expect("the exact output source is bound");
     let interest = registry
@@ -172,10 +164,7 @@ fn settlement_releases_only_the_ready_authority_it_accepted() {
     let output = key("ready-replaced", 1, 1);
     let expected = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryAcceptedOutputAuthority::Committed(receipt);
     let actual = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryAcceptedOutputAuthority::Committed(replacement.clone());
-    let completion = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryCompletedOutputDemand {
-        authority: actual.clone(),
-        readiness: worth_query_execution::facade::domain_computation::WorthQueryOutputReadinessDeliveryEvidence::for_test_for_test(),
-    };
+    let completion = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryCompletedOutputDemand::new_for_test(actual.clone(), worth_query_execution::facade::domain_computation::WorthQueryOutputReadinessDeliveryEvidence::for_test_for_test());
     let mut retained = record(
         occurrence(),
         DemandState::Output(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputProgress::new_for_test(
@@ -183,13 +172,10 @@ fn settlement_releases_only_the_ready_authority_it_accepted() {
         )),
         1,
     );
-    (*retained.performed_obligations_mut_for_test()) = vec![worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::PerformedOutputObligation {
-        source_commit: replacement
+    (*retained.performed_obligations_mut_for_test()) = vec![worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::PerformedOutputObligation::new_for_test(replacement
             .committed_product_publication()
             .composite_commit()
-            .clone(),
-        source: (*output.source_for_test()).clone(),
-    }];
+            .clone(), (*output.source_for_test()).clone())];
 
     let wake = Arc::clone(&(*retained.wake_for_test()));
     let registry = WorthQueryOutputDemandRegistry::default();

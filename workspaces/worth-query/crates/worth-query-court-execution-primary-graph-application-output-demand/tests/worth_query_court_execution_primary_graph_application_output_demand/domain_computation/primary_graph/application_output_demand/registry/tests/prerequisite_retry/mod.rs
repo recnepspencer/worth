@@ -5,17 +5,10 @@ use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandRec
 fn pending_required_prerequisite_preserves_its_retryable_operation() {
     let registry = WorthQueryOutputDemandRegistry::default();
     let demand_key = key("dependent", 70, 1);
-    let wake = Arc::new(DemandWake {
-        generation: Mutex::new(0),
-        changed: Condvar::new(),
-    });
+    let wake = Arc::new(DemandWake::new_for_test(Mutex::new(0), Condvar::new()));
     (*(*registry.state_for_test()).lock().unwrap().records_mut_for_test()).insert_for_test(
         demand_key.clone(),
-        DemandRecord {
-            required_interests: 1,
-            wake: Arc::clone(&wake),
-            ..record(occurrence(), DemandState::Running, 1)
-        },
+        { let __required_interests = 1; let __wake = Arc::clone(&wake); let mut __base = record(occurrence(), DemandState::Running, 1); *__base.required_interests_mut_for_test() = __required_interests; *__base.wake_mut_for_test() = __wake; __base },
     );
     let demand_interest = required_interest(&registry, demand_key.clone(), wake);
     let mut denial = WorthQueryOutputDemandDenial::new_for_test(
@@ -47,17 +40,10 @@ fn an_upstream_retired_after_the_execution_read_it_is_a_retryable_stale_claim() 
     use worth_query_execution::facade::domain_computation::WorthQueryInvalidationResources;
     let registry = WorthQueryOutputDemandRegistry::default();
     let reader_key = key("reader", 71, 1);
-    let wake = Arc::new(DemandWake {
-        generation: Mutex::new(0),
-        changed: Condvar::new(),
-    });
+    let wake = Arc::new(DemandWake::new_for_test(Mutex::new(0), Condvar::new()));
     (*(*registry.state_for_test()).lock().unwrap().records_mut_for_test()).insert_for_test(
         reader_key.clone(),
-        DemandRecord {
-            required_interests: 1,
-            wake: Arc::clone(&wake),
-            ..record(occurrence(), DemandState::Running, 1)
-        },
+        { let __required_interests = 1; let __wake = Arc::clone(&wake); let mut __base = record(occurrence(), DemandState::Running, 1); *__base.required_interests_mut_for_test() = __required_interests; *__base.wake_mut_for_test() = __wake; __base },
     );
     let reader = required_interest(&registry, reader_key, wake);
     let resources = WorthQueryInvalidationResources::new();

@@ -34,10 +34,7 @@ fn registry_eager_binding_reads_the_closed_claim_without_an_admission() {
         .clone();
     assert_eq!(
         bound,
-        Some(vec![worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::BoundOutputSource {
-            scope: context.scope,
-            identity: (*world.keys[0].source_for_test()).clone(),
-        }])
+        Some(vec![worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::BoundOutputSource::new_for_test(context.scope, (*world.keys[0].source_for_test()).clone())])
     );
     assert!((*state.source_custody[&context.commit(0)]
         .retired_sources_for_test())

@@ -16,7 +16,7 @@ pub struct SourceInvalidationOwner {
     pub(super) branches: Mutex<BranchCells>,
     pub(super) released: Mutex<Vec<Arc<super::super::RecordedSettlementIdentity>>>,
 }
-pub(super) struct BranchCells {
+pub struct BranchCells {
     pub(super) cells: OrdMap<BranchId, CompanionBranchCellSlot<BranchMarkRoot>>,
     pub(super) vacant: Option<Arc<BranchMarkRoot>>,
 }

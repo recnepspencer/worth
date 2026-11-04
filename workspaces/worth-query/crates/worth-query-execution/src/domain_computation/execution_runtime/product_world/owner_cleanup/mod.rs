@@ -178,7 +178,7 @@ impl WorthQueryProductBranchOwnerCleanupFailure {
     }
 }
 
-pub(super) struct WorthQueryProductBranchOwnerCleanupRecord {
+pub struct WorthQueryProductBranchOwnerCleanupRecord {
     history: Option<WorthQueryProductBranchHistoryCleanup>,
     pending: Vec<OwnerRetirementWork>,
     retired_component_count: usize,

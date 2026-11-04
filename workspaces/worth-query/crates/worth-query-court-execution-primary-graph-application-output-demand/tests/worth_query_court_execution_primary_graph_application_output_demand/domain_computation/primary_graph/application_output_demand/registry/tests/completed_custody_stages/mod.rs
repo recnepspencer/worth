@@ -20,32 +20,14 @@ pub fn completed_stage(claimed_with_ready: bool) {
         .clone();
     let (scope, _) = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::source_custody::real_scope_and_occurrence();
     let row_key = key("completed-stage", 5, 1);
-    let bound = BoundOutputSource {
-        scope,
-        identity: (*row_key.source_for_test()).clone(),
-    };
+    let bound = BoundOutputSource::new_for_test(scope, (*row_key.source_for_test()).clone());
     let mut state = DemandRegistryState::default();
     state.source_custody.insert(
         commit.clone(),
-        SourceCustody {
-            cleanup: Default::default(),
-            occurrence: receipt.product_branch().occurrence_for_test(),
-            root_kind: PreparedOutputRootKind::Discovered(TypeId::of_for_test::<()>()),
-            source: None,
-            discovery: None,
-            bound_sources: Some(vec![bound.clone()]),
-            consumed_sources: vec![bound.identity_into_for_test()],
-            retired_sources: Vec::new(),
-            retired: None,
-            token_count: 0,
-            completed: true,
-        },
+        SourceCustody::new_for_test(Default::default(), receipt.product_branch().occurrence_for_test(), PreparedOutputRootKind::Discovered(TypeId::of_for_test::<()>()), None, None, Some(vec![bound.clone()]), vec![bound.identity_into_for_test()], Vec::new(), None, 0, true),
     );
     let output = if claimed_with_ready {
-        let completion = ReadyCompletion::for_test(WorthQueryCompletedOutputDemand {
-            authority: WorthQueryAcceptedOutputAuthority::Committed(receipt),
-            readiness: worth_query_execution::facade::domain_computation::WorthQueryOutputReadinessDeliveryEvidence::without_execution_for_test(),
-        });
+        let completion = ReadyCompletion::for_test(WorthQueryCompletedOutputDemand::new_for_test(WorthQueryAcceptedOutputAuthority::Committed(receipt), worth_query_execution::facade::domain_computation::WorthQueryOutputReadinessDeliveryEvidence::without_execution_for_test()));
         let mut progress = WorthQueryOutputProgress::restored_for_test(completion);
         progress.claim_for_test(WorthQueryOutputClaimIdentity(1));
         progress

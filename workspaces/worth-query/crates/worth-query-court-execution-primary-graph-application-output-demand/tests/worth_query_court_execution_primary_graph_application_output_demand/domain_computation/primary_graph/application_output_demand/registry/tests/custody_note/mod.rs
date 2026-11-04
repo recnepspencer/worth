@@ -32,22 +32,16 @@ pub fn fixture(
     (*state.records_mut_for_test()).insert_for_test(newest.clone(), next);
     (*state.records_mut_for_test()).insert_for_test(
         old.clone(),
-        DemandRecord {
-            framework_required_count: 1,
-            ..record(
+        { let __framework_required_count = 1; let mut __base = record(
                 occurrence(),
                 DemandState::Failed(WorthQueryOutputDemandDenial::new_for_test(
                     WorthQueryOutputDemandDenialKind::Superseded,
                     "newer row",
                 )),
                 0,
-            )
-        },
+            ); *__base.framework_required_count_mut_for_test() = __framework_required_count; __base },
     );
-    let row = DemandRecord {
-        prerequisites: vec![Arc::new(old)],
-        ..record(occurrence(), copy_ready(ready), 1)
-    };
+    let row = { let __prerequisites = vec![Arc::new(old)]; let mut __base = record(occurrence(), copy_ready(ready), 1); *__base.prerequisites_mut_for_test() = __prerequisites; __base };
     let mut row = row;
     (*row.required_interests_mut_for_test()) = 1;
 
@@ -57,22 +51,10 @@ pub fn fixture(
     state.install_required_member_for_test(member);
     state.source_custody.insert(
         commit,
-        SourceCustody {
-            occurrence: receipt.product_branch().occurrence_for_test(),
-            root_kind: PreparedOutputRootKind::Discovered(EqualityTypeId::of_for_test::<()>()),
-            source: None,
-            discovery: None,
-            bound_sources: Some(vec![BoundOutputSource {
+        SourceCustody::new_for_test(receipt.product_branch().occurrence_for_test(), PreparedOutputRootKind::Discovered(EqualityTypeId::of_for_test::<()>()), None, None, Some(vec![BoundOutputSource {
                 scope,
                 identity: (*newest.source_for_test()).clone(),
-            }]),
-            consumed_sources: vec![(*newest.source_for_test()).clone()],
-            retired_sources: Vec::new(),
-            retired: None,
-            token_count: 0,
-            cleanup: Default::default(),
-            completed: true,
-        },
+            }]), vec![(*newest.source_for_test()).clone()], Vec::new(), None, 0, Default::default(), true),
     );
     retain_owned_key(&mut state, &dependent);
     retain_owned_key(&mut state, &newest);

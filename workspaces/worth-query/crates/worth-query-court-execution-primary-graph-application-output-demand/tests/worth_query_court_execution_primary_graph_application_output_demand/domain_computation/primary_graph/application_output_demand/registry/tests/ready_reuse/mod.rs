@@ -37,26 +37,11 @@ fn ready_output_reopens_and_only_its_exact_restored_predecessor_refreshes_it() {
         )),
     )
     .expect("empty restored correspondence is valid for a registry lifetime test");
-    let checkpoint = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointIdentity {
-        implementation:
-            worth_relational::facade::mvcc::RequiredOutputProducingImplementation::from_checkpoint(
+    let checkpoint = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointIdentity::new_for_test(worth_relational::facade::mvcc::RequiredOutputProducingImplementation::from_checkpoint(
                 [0x11; 16], [0x22; 32],
             )
-            .unwrap(),
-        producer: ("producer".to_owned()).into(),
-        posture: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture::Performed,
-        source: [1; 32],
-        scope,
-        source_partition: [2; 32],
-        producer_dependency: None,
-        idempotency_key: [3; 32],
-        roles: (Vec::new()).into(),
-        producer_facts: None,
-        producer_fact_wire_version: 0,
-        metadata: None,
-    };
-    let completion = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryCompletedOutputDemand {
-        authority: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryAcceptedOutputAuthority::Restored(
+            .unwrap(), ("producer".to_owned()).into(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture::Performed, [1; 32], scope, [2; 32], None, [3; 32], (Vec::new()).into(), None, 0, None);
+    let completion = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryCompletedOutputDemand::new_for_test(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryAcceptedOutputAuthority::Restored(
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::restoration::WorthQueryRestoredAcceptedOutput {
                 checkpoint,
                 correspondence: Arc::new(correspondence),
@@ -66,26 +51,17 @@ fn ready_output_reopens_and_only_its_exact_restored_predecessor_refreshes_it() {
                 observed_source_facts: Arc::<[_]>::from([]).into(),
                 native_output_witness: None,
             },
-        ),
-        readiness: WorthQueryOutputReadinessDeliveryEvidence::without_execution_for_test(),
-    };
-    let wake = Arc::new(DemandWake {
-        generation: Mutex::new(0),
-        changed: Condvar::new(),
-    });
+        ), WorthQueryOutputReadinessDeliveryEvidence::without_execution_for_test());
+    let wake = Arc::new(DemandWake::new_for_test(Mutex::new(0), Condvar::new()));
     (*(*registry.state_for_test()).lock().unwrap().records_mut_for_test()).insert_for_test(
         output_key.clone(),
-        DemandRecord {
-            source_scope: Some(scope),
-            wake: Arc::clone(&wake),
-            ..record(
+        { let __source_scope = Some(scope); let __wake = Arc::clone(&wake); let mut __base = record(
                 product_occurrence,
                 DemandState::Output(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputProgress::restored_for_test(
                     worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::ready_backing::ReadyCompletion::for_test(completion),
                 )),
                 1,
-            )
-        },
+            ); *__base.source_scope_mut_for_test() = __source_scope; *__base.wake_mut_for_test() = __wake; __base },
     );
     drop(interest(&registry, output_key.clone(), wake));
     assert!((*(*registry.state_for_test()).lock().unwrap().records_for_test())[&output_key].has_cached_ready_for_test());

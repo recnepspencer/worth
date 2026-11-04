@@ -16,7 +16,7 @@ use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIden
 use crate::domain_computation::primary_graph::WorthQueryApplicationSnapshotLease;
 
 mod inspection_preparation;
-mod inspection_read;
+pub(crate) mod inspection_read;
 mod managed_index_read;
 mod mutation;
 mod mutation_readmission;

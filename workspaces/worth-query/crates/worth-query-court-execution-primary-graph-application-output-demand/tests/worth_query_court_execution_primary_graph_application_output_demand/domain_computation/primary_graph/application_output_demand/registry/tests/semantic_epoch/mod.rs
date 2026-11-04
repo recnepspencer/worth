@@ -9,10 +9,7 @@ fn unchanged_source_after_unrelated_world_work_joins_the_active_demand() {
     let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(root(1));
     (*(*registry.state_for_test()).lock().unwrap().records_mut_for_test()).insert_for_test(
         older.clone(),
-        DemandRecord {
-            source_scope: Some(scope),
-            ..record(occurrence(), DemandState::Scheduled, 1)
-        },
+        { let __source_scope = Some(scope); let mut __base = record(occurrence(), DemandState::Scheduled, 1); *__base.source_scope_mut_for_test() = __source_scope; __base },
     );
 
     let joined = registry
@@ -45,10 +42,7 @@ fn semantic_join_deterministically_selects_the_latest_active_generation() {
     for key in [&oldest, &latest] {
         (*state.records_mut_for_test()).insert_for_test(
             key.clone(),
-            DemandRecord {
-                source_scope: Some(scope),
-                ..record(occurrence(), DemandState::Scheduled, 1)
-            },
+            { let __source_scope = Some(scope); let mut __base = record(occurrence(), DemandState::Scheduled, 1); *__base.source_scope_mut_for_test() = __source_scope; __base },
         );
     }
     drop(state);
@@ -79,10 +73,7 @@ fn changed_source_can_return_after_its_prior_cycle_was_superseded() {
     let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(root(1));
     (*(*registry.state_for_test()).lock().unwrap().records_mut_for_test()).insert_for_test(
         source_a.clone(),
-        DemandRecord {
-            source_scope: Some(scope),
-            ..record(occurrence(), DemandState::Scheduled, 1)
-        },
+        { let __source_scope = Some(scope); let mut __base = record(occurrence(), DemandState::Scheduled, 1); *__base.source_scope_mut_for_test() = __source_scope; __base },
     );
 
     let _source_b_interest = registry
@@ -128,14 +119,8 @@ fn changed_source_can_return_after_its_prior_cycle_was_superseded() {
 #[test]
 fn unrelated_world_generation_does_not_order_equal_custody_sources() {
     let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(root(1));
-    let older = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::BoundOutputSource {
-        scope,
-        identity: key_with_identity("producer", 5, 1, 90).source_into_for_test(),
-    };
-    let later_same_source = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::BoundOutputSource {
-        scope,
-        identity: key_with_identity("producer", 6, 1, 90).source_into_for_test(),
-    };
+    let older = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::BoundOutputSource::new_for_test(scope, key_with_identity("producer", 5, 1, 90).source_into_for_test());
+    let later_same_source = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::BoundOutputSource::new_for_test(scope, key_with_identity("producer", 6, 1, 90).source_into_for_test());
 
     assert_eq!(
         worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::source_custody::root_revision_order(&older, &later_same_source),
@@ -148,14 +133,8 @@ fn distinct_source_queries_are_not_ordered_or_semantically_joined() {
     let first = key_with_query_identity("producer", 5, 1, 90, 1);
     let second = key_with_query_identity("producer", 6, 1, 90, 2);
     let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(root(1));
-    let first_root = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::BoundOutputSource {
-        scope,
-        identity: (*first.source_for_test()).clone(),
-    };
-    let second_root = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::BoundOutputSource {
-        scope,
-        identity: (*second.source_for_test()).clone(),
-    };
+    let first_root = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::BoundOutputSource::new_for_test(scope, (*first.source_for_test()).clone());
+    let second_root = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::BoundOutputSource::new_for_test(scope, (*second.source_for_test()).clone());
 
     assert!(!first.same_occurrence_for_test(&second));
     assert!(!first.same_semantic_source_for_test(&second));
@@ -187,32 +166,14 @@ fn recovery_rejoins_the_older_key_that_retains_newer_semantic_custody() {
     (*state.records_mut_for_test()).insert_for_test(older.clone(), retained_record);
     (*state.records_mut_for_test()).insert_for_test(
         newer_non_owner.clone(),
-        DemandRecord {
-            required_interests: 1,
-            source_scope: Some(scope),
-            ..record(occurrence, DemandState::Scheduled, 1)
-        },
+        { let __required_interests = 1; let __source_scope = Some(scope); let mut __base = record(occurrence, DemandState::Scheduled, 1); *__base.required_interests_mut_for_test() = __required_interests; *__base.source_scope_mut_for_test() = __source_scope; __base },
     );
     state.source_custody.insert(
         commit.clone(),
-        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::SourceCustody {
-            occurrence,
-            root_kind: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::source_custody::PreparedOutputRootKind::Discovered(TypeId::of_for_test::<()>()),
-            // Recovery consults retained ownership and consumed identities; a
-            // performed source payload is deliberately unnecessary here.
-            source: None,
-            discovery: None,
-            bound_sources: Some(vec![worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::BoundOutputSource {
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::SourceCustody::new_for_test(occurrence, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::source_custody::PreparedOutputRootKind::Discovered(TypeId::of_for_test::<()>()), None, None, Some(vec![worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::BoundOutputSource {
                 scope,
                 identity: (*retained.source_for_test()).clone(),
-            }]),
-            consumed_sources: vec![(*retained.source_for_test()).clone()],
-            retired_sources: Vec::new(),
-            retired: None,
-            token_count: 1,
-            cleanup: Default::default(),
-            completed: false,
-        },
+            }]), vec![(*retained.source_for_test()).clone()], Vec::new(), None, 1, Default::default(), false),
     );
     drop(state);
 

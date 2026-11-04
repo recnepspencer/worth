@@ -22,42 +22,13 @@ pub fn retained_source(
         .committed_product_publication()
         .take_output_demand_observation_for_test()
         .unwrap();
-    let source = WorthQueryPerformedOutputDemandSource {
-        receipt,
-        change,
-        observation,
-        output_source_identity: None,
-    };
+    let source = WorthQueryPerformedOutputDemandSource::new_for_test(receipt, change, observation, None);
     let scope = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::source_custody::real_scope_and_occurrence().0;
-    SourceCustody {
-        occurrence: (*source.receipt_for_test()).product_branch().occurrence_for_test(),
-        root_kind: PreparedOutputRootKind::Discovered(EqualityTypeId::of_for_test::<()>()),
-        source: Some(source),
-        discovery: None,
-        bound_sources: Some(vec![BoundOutputSource { scope, identity }]),
-        consumed_sources: Vec::new(),
-        retired_sources: Vec::new(),
-        retired: None,
-        token_count: 1,
-        cleanup: Default::default(),
-        completed: false,
-    }
+    SourceCustody::new_for_test((*source.receipt_for_test()).product_branch().occurrence_for_test(), PreparedOutputRootKind::Discovered(EqualityTypeId::of_for_test::<()>()), Some(source), None, Some(vec![BoundOutputSource { scope, identity }]), Vec::new(), Vec::new(), None, 1, Default::default(), false)
 }
 
 pub fn repeat_source(initial: &SourceCustody) -> SourceCustody {
-    SourceCustody {
-        occurrence: (*initial.occurrence_for_test()),
-        root_kind: (*initial.root_kind_for_test()).clone(),
-        source: (*initial.source_for_test()).clone(),
-        discovery: None,
-        bound_sources: (*initial.bound_sources_for_test()).clone(),
-        consumed_sources: Vec::new(),
-        retired_sources: Vec::new(),
-        retired: None,
-        token_count: 1,
-        cleanup: Default::default(),
-        completed: false,
-    }
+    SourceCustody::new_for_test((*initial.occurrence_for_test()), (*initial.root_kind_for_test()).clone(), (*initial.source_for_test()).clone(), None, (*initial.bound_sources_for_test()).clone(), Vec::new(), Vec::new(), None, 1, Default::default(), false)
 }
 
 #[test]

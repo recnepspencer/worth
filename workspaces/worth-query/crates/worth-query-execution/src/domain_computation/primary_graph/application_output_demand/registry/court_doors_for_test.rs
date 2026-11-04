@@ -739,3 +739,10 @@ impl DemandRecord {
         &mut self.settlements
     }
 }
+
+impl DemandRecord {
+    #[doc(hidden)]
+    pub fn wake_mut_for_test(&mut self) -> &mut Arc<DemandWake> {
+        &mut self.wake
+    }
+}

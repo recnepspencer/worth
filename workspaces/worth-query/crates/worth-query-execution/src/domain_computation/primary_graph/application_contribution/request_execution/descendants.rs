@@ -4,7 +4,7 @@ use super::{Form, QueryRequestExecution};
 pub struct WaveRequestExecution<'authority> {
     execution: QueryRequestExecution<'authority>,
 }
-pub(in crate::domain_computation::primary_graph) struct MemberRequestExecution<'authority> {
+pub struct MemberRequestExecution<'authority> {
     execution: QueryRequestExecution<'authority>,
 }
 impl<'authority> QueryRequestExecution<'authority> {

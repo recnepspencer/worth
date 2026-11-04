@@ -48,11 +48,7 @@ fn a_canceled_prepared_publication_cannot_take_its_priors_custody() {
 
     let output_binding_type = lineage.binding_type_for_test(&(*source.output_binding_for_test()));
     let owner = Arc::new(Mutex::new(lineage));
-    let mut prepared = PreparedOutputLineageSlot::new_for_test(Arc::clone(&owner), output_binding_type, source, coordinate, None, Arc::clone(&identity), record_cell, partition_cell, Some(Box::new(CancelledLineageSlot {
-            identity,
-            partition: None,
-            next: None,
-        })), None, None, None, None, None, None, None, false, PreparedComputationCustody::Unassigned);
+    let mut prepared = PreparedOutputLineageSlot::new_for_test(Arc::clone(&owner), output_binding_type, source, coordinate, None, Arc::clone(&identity), record_cell, partition_cell, Some(Box::new(CancelledLineageSlot::new_for_test(identity, None, None))), None, None, None, None, None, None, None, false, PreparedComputationCustody::Unassigned);
     prepared.retain_computation_for_test(
         SealedComputationRetention::Produced(sealed),
         Some(PriorComputationRecord::from_recorded_cell_for_test(

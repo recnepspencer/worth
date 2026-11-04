@@ -33,7 +33,7 @@ pub(super) use comparison::{
 };
 
 type ResourceStop = MapKernelFailure<RetainedStorageDenial>;
-pub(super) enum InspectionReportDenial {
+pub enum InspectionReportDenial {
     Identity(InspectionIdentityStop<ResourceStop>),
     Input(BridgeQueryObservationReportingInputDenial),
     Bridge(BridgeQueryObservationReportingStop<ResourceStop>),
@@ -48,7 +48,7 @@ pub(super) struct InspectionReportPayload {
     availability: Option<super::availability::WorthQueryInspectionEvidenceAvailability>,
 }
 
-pub(super) struct FundedInspectionReport {
+pub struct FundedInspectionReport {
     payload: InspectionReportPayload,
     session: WorthQueryGraphWorkSessionIdentity,
     managed_run: WorthQueryGraphWorkManagedRunIdentity,

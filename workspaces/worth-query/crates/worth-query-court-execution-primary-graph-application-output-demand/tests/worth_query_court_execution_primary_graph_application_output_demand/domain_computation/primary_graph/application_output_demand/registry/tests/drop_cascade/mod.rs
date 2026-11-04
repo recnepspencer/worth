@@ -11,25 +11,19 @@ fn registry_drop_cascade_transfers_before_newest_owner_can_close() {
     let mut state = (*registry.state_for_test()).lock().unwrap();
     (*state.records_mut_for_test()).insert_for_test(
         old.clone(),
-        DemandRecord {
-            framework_required_count: 1,
-            ..record(
+        { let __framework_required_count = 1; let mut __base = record(
                 occurrence(),
                 DemandState::Failed(WorthQueryOutputDemandDenial::new_for_test(
                     WorthQueryOutputDemandDenialKind::Superseded,
                     "newer row",
                 )),
                 0,
-            )
-        },
+            ); *__base.framework_required_count_mut_for_test() = __framework_required_count; __base },
     );
     let next_row = record(occurrence(), worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::closed_retirement::ready(), 1);
     let next_wake = Arc::clone(&(*next_row.wake_for_test()));
     (*state.records_mut_for_test()).insert_for_test(newest.clone(), next_row);
-    let dependent_row = DemandRecord {
-        prerequisites: vec![Arc::new(old.clone())],
-        ..record(occurrence(), ready, 1)
-    };
+    let dependent_row = { let __prerequisites = vec![Arc::new(old.clone())]; let mut __base = record(occurrence(), ready, 1); *__base.prerequisites_mut_for_test() = __prerequisites; __base };
     let wake = Arc::clone(&(*dependent_row.wake_for_test()));
     (*state.records_mut_for_test()).insert_for_test(dependent.clone(), dependent_row);
     (*state.required_keys_mut_for_test()).insert(Arc::new(newest.clone()));
@@ -120,27 +114,21 @@ fn registry_drop_cascade_names_its_whole_map_claimant_bound() {
         }
         (*state.records_mut_for_test()).insert_for_test(
             old.clone(),
-            DemandRecord {
-                framework_required_count: 1,
-                ..record(
+            { let __framework_required_count = 1; let mut __base = record(
                     occurrence(),
                     DemandState::Failed(WorthQueryOutputDemandDenial::new_for_test(
                         WorthQueryOutputDemandDenialKind::Superseded,
                         "newer",
                     )),
                     0,
-                )
-            },
+                ); *__base.framework_required_count_mut_for_test() = __framework_required_count; __base },
         );
         (*state.records_mut_for_test()).insert_for_test(
             newest.clone(),
             record(occurrence(), worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::closed_retirement::ready(), 1),
         );
         (*state.required_keys_mut_for_test()).insert(Arc::new(newest));
-        let row = DemandRecord {
-            prerequisites: vec![Arc::new(old)],
-            ..record(occurrence(), worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::closed_retirement::ready(), 1)
-        };
+        let row = { let __prerequisites = vec![Arc::new(old)]; let mut __base = record(occurrence(), worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::closed_retirement::ready(), 1); *__base.prerequisites_mut_for_test() = __prerequisites; __base };
         let wake = Arc::clone(&(*row.wake_for_test()));
         (*state.records_mut_for_test()).insert_for_test(dependent.clone(), row);
         retain_owned_key(&mut state, &dependent);

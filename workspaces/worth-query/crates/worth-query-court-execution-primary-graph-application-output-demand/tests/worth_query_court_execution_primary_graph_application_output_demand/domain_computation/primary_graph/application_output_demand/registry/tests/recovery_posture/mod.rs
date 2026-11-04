@@ -27,17 +27,10 @@ fn retryable_publication_stale_does_not_keep_a_closed_required_interest() {
     let registry = WorthQueryOutputDemandRegistry::default();
     let occurrence = occurrence();
     let demand_key = key("required", 6, 1);
-    let wake = Arc::new(DemandWake {
-        generation: Mutex::new(0),
-        changed: Condvar::new(),
-    });
+    let wake = Arc::new(DemandWake::new_for_test(Mutex::new(0), Condvar::new()));
     (*(*registry.state_for_test()).lock().unwrap().records_mut_for_test()).insert_for_test(
         demand_key.clone(),
-        DemandRecord {
-            required_interests: 1,
-            wake: Arc::clone(&wake),
-            ..record(occurrence, DemandState::Running, 1)
-        },
+        { let __required_interests = 1; let __wake = Arc::clone(&wake); let mut __base = record(occurrence, DemandState::Running, 1); *__base.required_interests_mut_for_test() = __required_interests; *__base.wake_mut_for_test() = __wake; __base },
     );
     let demand_interest = required_interest(&registry, demand_key.clone(), wake);
     let mut denial = WorthQueryOutputDemandDenial::new_for_test(
@@ -67,17 +60,10 @@ fn retryable_publication_stale_does_not_keep_a_closed_required_interest() {
 fn running_budget_failure_stays_with_its_request_and_leaves_the_row_claimable() {
     let registry = WorthQueryOutputDemandRegistry::default();
     let demand_key = key("required", 7, 1);
-    let wake = Arc::new(DemandWake {
-        generation: Mutex::new(0),
-        changed: Condvar::new(),
-    });
+    let wake = Arc::new(DemandWake::new_for_test(Mutex::new(0), Condvar::new()));
     (*(*registry.state_for_test()).lock().unwrap().records_mut_for_test()).insert_for_test(
         demand_key.clone(),
-        DemandRecord {
-            required_interests: 1,
-            wake: Arc::clone(&wake),
-            ..record(occurrence(), DemandState::Running, 1)
-        },
+        { let __required_interests = 1; let __wake = Arc::clone(&wake); let mut __base = record(occurrence(), DemandState::Running, 1); *__base.required_interests_mut_for_test() = __required_interests; *__base.wake_mut_for_test() = __wake; __base },
     );
     let demand_interest = required_interest(&registry, demand_key.clone(), wake);
     let mut denial = WorthQueryOutputDemandDenial::new_for_test(
@@ -106,16 +92,10 @@ fn no_change_checkpoint_keeps_its_real_receipt_across_claims() {
     let original_occurrence = receipt.product_branch().occurrence_for_test();
     let registry = WorthQueryOutputDemandRegistry::default();
     let demand_key = key("no-change", 8, 1);
-    let wake = Arc::new(DemandWake {
-        generation: Mutex::new(0),
-        changed: Condvar::new(),
-    });
+    let wake = Arc::new(DemandWake::new_for_test(Mutex::new(0), Condvar::new()));
     (*(*registry.state_for_test()).lock().unwrap().records_mut_for_test()).insert_for_test(
         demand_key.clone(),
-        DemandRecord {
-            required_interests: 1,
-            wake: Arc::clone(&wake),
-            ..record(
+        { let __required_interests = 1; let __wake = Arc::clone(&wake); let mut __base = record(
                 original_occurrence,
                 DemandState::Output(WorthQueryOutputProgress::new_for_test(
                     WorthQueryOutputCheckpoint::Published {
@@ -125,8 +105,7 @@ fn no_change_checkpoint_keeps_its_real_receipt_across_claims() {
                     },
                 )),
                 1,
-            )
-        },
+            ); *__base.required_interests_mut_for_test() = __required_interests; *__base.wake_mut_for_test() = __wake; __base },
     );
     let demand_interest = required_interest(&registry, demand_key.clone(), wake);
     let WorthQueryOutputDemandAdvanceAdmission::AdvanceCheckpoint { claim, checkpoint } =
@@ -178,16 +157,10 @@ fn closed_occurrence_stops_a_claim_without_losing_published_identity() {
     let occurrence = receipt.product_branch().occurrence_for_test();
     let registry = WorthQueryOutputDemandRegistry::default();
     let demand_key = key("required", 9, 1);
-    let wake = Arc::new(DemandWake {
-        generation: Mutex::new(0),
-        changed: Condvar::new(),
-    });
+    let wake = Arc::new(DemandWake::new_for_test(Mutex::new(0), Condvar::new()));
     (*(*registry.state_for_test()).lock().unwrap().records_mut_for_test()).insert_for_test(
         demand_key.clone(),
-        DemandRecord {
-            required_interests: 1,
-            wake: Arc::clone(&wake),
-            ..record(
+        { let __required_interests = 1; let __wake = Arc::clone(&wake); let mut __base = record(
                 occurrence,
                 DemandState::Output(WorthQueryOutputProgress::new_for_test(
                     WorthQueryOutputCheckpoint::Published {
@@ -197,8 +170,7 @@ fn closed_occurrence_stops_a_claim_without_losing_published_identity() {
                     },
                 )),
                 1,
-            )
-        },
+            ); *__base.required_interests_mut_for_test() = __required_interests; *__base.wake_mut_for_test() = __wake; __base },
     );
     let demand_interest = required_interest(&registry, demand_key.clone(), wake);
     let WorthQueryOutputDemandAdvanceAdmission::AdvanceCheckpoint { claim, checkpoint } =

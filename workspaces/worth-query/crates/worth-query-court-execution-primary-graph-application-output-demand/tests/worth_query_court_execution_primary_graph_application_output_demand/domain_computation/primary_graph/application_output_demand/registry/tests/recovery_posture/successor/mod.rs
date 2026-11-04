@@ -13,18 +13,10 @@ fn stale_ready_successor_admission_forces_a_new_execution_cycle() {
     let registry = WorthQueryOutputDemandRegistry::default();
     let demand_key = key("preserve", 8, 1);
     let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(root(1));
-    let wake = Arc::new(DemandWake {
-        generation: Mutex::new(0),
-        changed: Condvar::new(),
-    });
+    let wake = Arc::new(DemandWake::new_for_test(Mutex::new(0), Condvar::new()));
     (*(*registry.state_for_test()).lock().unwrap().records_mut_for_test()).insert_for_test(
         demand_key.clone(),
-        DemandRecord {
-
-
-            source_scope: Some(scope),
-            wake: Arc::clone(&wake),
-            ..record(
+        { let __source_scope = Some(scope); let __wake = Arc::clone(&wake); let mut __base = record(
                 occurrence,
                 DemandState::Output(WorthQueryOutputProgress::new_for_test(
                     WorthQueryOutputCheckpoint::Ready(ReadyCompletion::for_test(WorthQueryCompletedOutputDemand {
@@ -33,8 +25,7 @@ fn stale_ready_successor_admission_forces_a_new_execution_cycle() {
                     })),
                 )),
                 1,
-            )
-        },
+            ); *__base.source_scope_mut_for_test() = __source_scope; *__base.wake_mut_for_test() = __wake; __base },
     );
 
     let replacement = registry
@@ -105,10 +96,7 @@ fn stopped_ready_record_rejects_successor_without_reviving_custody() {
     let demand_key = key("preserve", 8, 1);
     let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(root(1));
     let mut output = WorthQueryOutputProgress::new_for_test(WorthQueryOutputCheckpoint::Ready(
-        ReadyCompletion::for_test(WorthQueryCompletedOutputDemand {
-            authority: WorthQueryAcceptedOutputAuthority::Committed(receipt.clone()),
-            readiness: worth_query_execution::facade::domain_computation::WorthQueryOutputReadinessDeliveryEvidence::for_test_for_test(),
-        }),
+        ReadyCompletion::for_test(WorthQueryCompletedOutputDemand::new_for_test(WorthQueryAcceptedOutputAuthority::Committed(receipt.clone()), worth_query_execution::facade::domain_computation::WorthQueryOutputReadinessDeliveryEvidence::for_test_for_test())),
     ));
     output.stop_for_test(WorthQueryOutputDemandDenial::new_for_test(
         WorthQueryOutputDemandDenialKind::Superseded,
@@ -116,10 +104,7 @@ fn stopped_ready_record_rejects_successor_without_reviving_custody() {
     ));
     (*(*registry.state_for_test()).lock().unwrap().records_mut_for_test()).insert_for_test(
         demand_key.clone(),
-        DemandRecord {
-            source_scope: Some(scope),
-            ..record(occurrence, DemandState::Output(output), 1)
-        },
+        { let __source_scope = Some(scope); let mut __base = record(occurrence, DemandState::Output(output), 1); *__base.source_scope_mut_for_test() = __source_scope; __base },
     );
 
     let denial = match registry.admit_for_test(
@@ -156,11 +141,7 @@ fn failed_successor_admission_preserves_ready_custody() {
     let scope = worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(root(1));
     (*(*registry.state_for_test()).lock().unwrap().records_mut_for_test()).insert_for_test(
         ready_key.clone(),
-        DemandRecord {
-
-
-            source_scope: Some(scope),
-            ..record(
+        { let __source_scope = Some(scope); let mut __base = record(
                 occurrence,
                 DemandState::Output(WorthQueryOutputProgress::new_for_test(
                     WorthQueryOutputCheckpoint::Ready(ReadyCompletion::for_test(WorthQueryCompletedOutputDemand {
@@ -169,8 +150,7 @@ fn failed_successor_admission_preserves_ready_custody() {
                     })),
                 )),
                 1,
-            )
-        },
+            ); *__base.source_scope_mut_for_test() = __source_scope; __base },
     );
 
     let denial = match registry.admit_for_test(

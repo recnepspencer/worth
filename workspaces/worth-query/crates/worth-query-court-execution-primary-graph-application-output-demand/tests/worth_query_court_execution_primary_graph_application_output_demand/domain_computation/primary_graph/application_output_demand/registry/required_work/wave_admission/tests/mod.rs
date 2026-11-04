@@ -79,11 +79,7 @@ fn wave_admission_requires_the_same_owner_and_native_basis() {
             false,
         ),
     ] {
-        let inputs = PreparedRequiredInputs {
-            runtime: basis.runtime_instance_id(),
-            root,
-            owner,
-        };
+        let inputs = PreparedRequiredInputs::new_for_test(basis.runtime_instance_id(), root, owner);
         let outcome = registry.admit_prepared_wave(
             &basis,
             worth_proof::CanonicalUniqueVec::try_from_sorted_unique(vec![0]).unwrap(),

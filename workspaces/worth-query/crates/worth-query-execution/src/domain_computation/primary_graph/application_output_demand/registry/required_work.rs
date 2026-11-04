@@ -13,7 +13,7 @@ pub(crate) mod native_hints;
 mod pending_readmission;
 pub(crate) mod queue;
 pub(crate) mod refresh_claim;
-mod requested_claim;
+pub(crate) mod requested_claim;
 pub(crate) mod selection;
 mod subsumed;
 mod successor_join;

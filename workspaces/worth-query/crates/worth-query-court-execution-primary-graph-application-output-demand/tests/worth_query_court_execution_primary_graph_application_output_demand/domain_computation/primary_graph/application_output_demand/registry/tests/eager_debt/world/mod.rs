@@ -29,12 +29,7 @@ impl Context {
             .committed_product_publication()
             .take_output_demand_observation_for_test()
             .unwrap();
-        let source = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryPerformedOutputDemandSource {
-            receipt,
-            change,
-            observation,
-            output_source_identity: None,
-        };
+        let source = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryPerformedOutputDemandSource::new_for_test(receipt, change, observation, None);
         Self {
             source,
             completed: worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support::commit_on_world_with_output_demand_observation(
@@ -251,28 +246,16 @@ impl<'a> World<'a> {
             let identity = (*keys[1].source_for_test()).clone();
             state.source_custody.insert(
                 context.commit(id),
-                SourceCustody {
-                    occurrence: context.completed.product_branch().occurrence_for_test(),
-                    root_kind: PreparedOutputRootKind::Discovered(EqualityTypeId::of_for_test::<()>()),
-                    source: (id == 0).then(|| context.source.clone()),
-                    discovery: None,
-                    bound_sources: entry.bound.map(|_| {
+                SourceCustody::new_for_test(context.completed.product_branch().occurrence_for_test(), PreparedOutputRootKind::Discovered(EqualityTypeId::of_for_test::<()>()), (id == 0).then(|| context.source.clone()), None, entry.bound.map(|_| {
                         vec![BoundOutputSource {
                             scope: context.scope,
                             identity: identity.clone(),
                         }]
-                    }),
-                    consumed_sources: if entry.consumed {
+                    }), if entry.consumed {
                         vec![identity]
                     } else {
                         vec![]
-                    },
-                    retired_sources: vec![],
-                    retired: None,
-                    token_count: entry.tokens,
-                    cleanup: Default::default(),
-                    completed: entry.completed,
-                },
+                    }, vec![], None, entry.tokens, Default::default(), entry.completed),
             );
         }
         if !late {
@@ -331,10 +314,7 @@ impl<'a> World<'a> {
         self.registry
             .ensure_discovered_sources_bound_for_test(
                 &self.context.commit(0),
-                &[BoundOutputSource {
-                    scope: self.context.scope,
-                    identity: (*self.keys[0].source_for_test()).clone(),
-                }],
+                &[BoundOutputSource::new_for_test(self.context.scope, (*self.keys[0].source_for_test()).clone())],
             )
             .unwrap();
         self.model.bind(0, self.generation);

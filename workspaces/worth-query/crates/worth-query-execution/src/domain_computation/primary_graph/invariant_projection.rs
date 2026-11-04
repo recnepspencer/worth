@@ -15,7 +15,7 @@ mod entity_resident;
 #[path = "invariant_projection/field_projection.rs"]
 mod field_projection;
 mod identity_encoding;
-mod pending_output_read;
+pub(crate) mod pending_output_read;
 pub(in crate::domain_computation::primary_graph) use pending_output_read::RequestedOutputRead;
 mod inventory;
 mod lineage;

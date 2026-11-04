@@ -51,12 +51,7 @@ fn registry_product_retirement_prunes_rows_and_their_notes_together() {
         assert_eq!((*state.closed_cleanup_for_test()).len_for_test(), 3);
         assert!((*state.closed_cleanup_for_test()).valid_order_for_test());
     }
-    drop(WorthQueryOutputDemandInterest {
-        key: held,
-        requires_output: false,
-        notifications: WorthQueryOutputDemandNotifications { wake },
-        owner: registry.clone(),
-    });
+    drop(WorthQueryOutputDemandInterest::new_for_test(held, false, WorthQueryOutputDemandNotifications { wake }, registry.clone()));
     registry.drain_closed_cleanup_admitted().unwrap();
     let state = (*registry.state_for_test()).lock().unwrap();
     assert!((*state.records_for_test()).is_empty_for_test());
@@ -89,21 +84,9 @@ fn registry_product_retirement_sweep_names_its_registry_bound() {
                     .committed_product_publication()
                     .composite_commit()
                     .clone(),
-                SourceCustody {
-                    occurrence: receipt.product_branch().occurrence_for_test(),
-                    root_kind: PreparedOutputRootKind::Discovered(
+                SourceCustody::new_for_test(receipt.product_branch().occurrence_for_test(), PreparedOutputRootKind::Discovered(
                         worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId::of_for_test::<()>(),
-                    ),
-                    source: None,
-                    discovery: None,
-                    bound_sources: None,
-                    consumed_sources: Vec::new(),
-                    retired_sources: Vec::new(),
-                    retired: None,
-                    token_count: 1,
-                    cleanup: Default::default(),
-                    completed: false,
-                },
+                    ), None, None, None, Vec::new(), Vec::new(), None, 1, Default::default(), false),
             );
         }
         drop(state);

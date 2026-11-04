@@ -17,11 +17,7 @@ pub fn scenario(rejoin: bool, late_hold: bool) {
         let refreshing = admit(&registry, &newest_key);
         // The registry transports this opaque installed readmission payload.
         // Native Query certification is outside this row-lifetime proof.
-        let source = Arc::new(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::source_readmission::RequiredOutputReadmission {
-            source: Arc::new(()), producer: std::sync::OnceLock::new(),
-            limits: worth_query_execution::facade::domain_computation::WorthQueryOutputDemandResourceProfile::standard().limits(),
-            retained_program_basis: None,
-        });
+        let source = Arc::new(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::source_readmission::RequiredOutputReadmission::new_for_test(Arc::new(()), std::sync::OnceLock::new(), worth_query_execution::facade::domain_computation::WorthQueryOutputDemandResourceProfile::standard().limits(), None));
         (*(*(*registry
             .state_for_test())
             .lock()
@@ -103,10 +99,7 @@ pub fn scenario(rejoin: bool, late_hold: bool) {
             else {
                 panic!("the answer was delivered exactly once");
             };
-            let ready = ready_backing.complete(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryCompletedOutputDemand {
-                authority: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryAcceptedOutputAuthority::Committed(receipt),
-                readiness: worth_query_execution::facade::domain_computation::WorthQueryOutputReadinessDeliveryEvidence::without_execution_for_test(),
-            });
+            let ready = ready_backing.complete(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryCompletedOutputDemand::new_for_test(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryAcceptedOutputAuthority::Committed(receipt), worth_query_execution::facade::domain_computation::WorthQueryOutputReadinessDeliveryEvidence::without_execution_for_test()));
             registry
                 .finish_checkpoint_for_test(
                     &owner,

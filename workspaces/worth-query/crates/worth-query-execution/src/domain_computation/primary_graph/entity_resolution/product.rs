@@ -19,7 +19,7 @@ use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation
 use worth_query_installation::facade::DeclaredApplicationFieldValue;
 
 mod admitted_mutation;
-mod issued_scope;
+pub(crate) mod issued_scope;
 pub(in crate::domain_computation) use issued_scope::WorthQueryIssuedSelectedScope;
 
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {

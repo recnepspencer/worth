@@ -59,8 +59,7 @@ pub fn restored_output(
     observation: worth_runtime_world::facade::ProductBranchObservation,
     scope: worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding,
 ) -> worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::restoration::WorthQueryRestoredAcceptedOutput{
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::restoration::WorthQueryRestoredAcceptedOutput {
-        checkpoint: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointIdentity {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::restoration::WorthQueryRestoredAcceptedOutput::new_for_test(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointIdentity {
             implementation: worth_relational::facade::mvcc::RequiredOutputProducingImplementation::from_checkpoint([0x11; 16], [0x22; 32]).unwrap(),
             producer: ("restored".to_owned()).into(),
             posture: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture::Performed,
@@ -73,14 +72,7 @@ pub fn restored_output(
             producer_facts: None,
             producer_fact_wire_version: 0,
  metadata: None,
-},
-        correspondence: Arc::new(
+}, Arc::new(
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence::default(),
-        ),
-        observation,
-        source_scope: scope,
-        source_identity: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryCheckpointSourceIdentity::new_for_test([0x55; 32]),
-        observed_source_facts: Arc::<[_]>::from([]).into(),
-        native_output_witness: None,
-    }
+        ), observation, scope, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryCheckpointSourceIdentity::new_for_test([0x55; 32]), Arc::<[_]>::from([]).into(), None)
 }

@@ -10,7 +10,7 @@ use crate::domain_computation::primary_graph::{
 use std::sync::Arc;
 use worth_query_admission::facade::graph_obligation::WorthQueryGraphWorkPlanIdentity;
 
-pub(in crate::domain_computation) struct WorthQuerySessionInspectionReadProof {
+pub struct WorthQuerySessionInspectionReadProof {
     session: WorthQueryGraphWorkSessionIdentity,
     plan: WorthQueryGraphWorkPlanIdentity,
     basis: WorthQueryApplicationBasisIdentity,

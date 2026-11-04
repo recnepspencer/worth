@@ -31,7 +31,7 @@ type SourcePostings = BTreeMap<Address, Posting>;
 
 /// Prepared before the product effect. Cancellation only links this node;
 /// ordered-index removal runs at the next admitted registry entry.
-pub(super) struct PendingVacancyCleanup {
+pub struct PendingVacancyCleanup {
     identity: Arc<RecordedSettlementIdentity>,
     next: Option<Box<Self>>,
 }

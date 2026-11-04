@@ -186,7 +186,7 @@ pub(in crate::domain_computation::primary_graph) use required_work::SelectedRequ
 pub(in crate::domain_computation::primary_graph) use required_work::SelectedRequiredWorkKind;
 pub(crate) mod restoration;
 pub(in crate::domain_computation::primary_graph) use restoration::WorthQueryRestoredAcceptedOutput;
-mod consumer_custody;
+pub(crate) mod consumer_custody;
 pub(crate) mod settlement_index;
 mod settlement_progression;
 pub(in crate::domain_computation::primary_graph) use consumer_custody::ConsumerCustody;

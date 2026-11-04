@@ -25,11 +25,7 @@ fn checkpoint_capture_includes_only_idle_ready_outputs_in_canonical_order() {
     let a_source = (*a_key.source_for_test()).checkpoint_identity().bytes_for_test();
     let ready = |receipt| {
         DemandState::Output(WorthQueryOutputProgress::new_for_test(
-            WorthQueryOutputCheckpoint::Ready(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::ready_backing::ReadyCompletion::for_test(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryCompletedOutputDemand {
-                authority: WorthQueryAcceptedOutputAuthority::Committed(receipt),
-                readiness: worth_query_execution::facade::domain_computation::WorthQueryOutputReadinessDeliveryEvidence::for_test_for_test(),
-
-            })),
+            WorthQueryOutputCheckpoint::Ready(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::ready_backing::ReadyCompletion::for_test(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryCompletedOutputDemand::new_for_test(WorthQueryAcceptedOutputAuthority::Committed(receipt), worth_query_execution::facade::domain_computation::WorthQueryOutputReadinessDeliveryEvidence::for_test_for_test()))),
         ))
     };
     (*(*registry.state_for_test()).lock().unwrap().records_mut_for_test()).extend_for_test([
@@ -52,10 +48,7 @@ fn checkpoint_capture_includes_only_idle_ready_outputs_in_canonical_order() {
     ]);
     let stopped_key = key("stopped", 1, 4);
     let mut stopped = WorthQueryOutputProgress::new_for_test(WorthQueryOutputCheckpoint::Ready(
-        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::ready_backing::ReadyCompletion::for_test(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryCompletedOutputDemand {
-            authority: WorthQueryAcceptedOutputAuthority::Committed(receipt),
-            readiness: worth_query_execution::facade::domain_computation::WorthQueryOutputReadinessDeliveryEvidence::for_test_for_test(),
-        }),
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::ready_backing::ReadyCompletion::for_test(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryCompletedOutputDemand::new_for_test(WorthQueryAcceptedOutputAuthority::Committed(receipt), worth_query_execution::facade::domain_computation::WorthQueryOutputReadinessDeliveryEvidence::for_test_for_test())),
     ));
     stopped.stop_for_test(WorthQueryOutputDemandDenial::new_for_test(
         WorthQueryOutputDemandDenialKind::Superseded,
@@ -84,31 +77,14 @@ fn checkpoint_output_slots_ignore_superseded_source_generations() {
         .principal_scope()
         .scope();
     let checkpoint = |source| {
-        WorthQueryAcceptedOutputCheckpointIdentity {
-        implementation:
-            worth_relational::facade::mvcc::RequiredOutputProducingImplementation::from_checkpoint(
+        WorthQueryAcceptedOutputCheckpointIdentity::new_for_test(worth_relational::facade::mvcc::RequiredOutputProducingImplementation::from_checkpoint(
                 [0x11; 16], [0x22; 32],
             )
-            .unwrap(),
-        producer: ("producer".to_owned()).into(),
-        posture: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture::Performed,
-        source,
-        scope,
-        source_partition: [7; 32],
-        producer_dependency: None,
-        idempotency_key: source,
-        roles: (Vec::new()).into(),
-        producer_facts: None,
-        producer_fact_wire_version: 0,
-        metadata: None,
-    }
+            .unwrap(), ("producer".to_owned()).into(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture::Performed, source, scope, [7; 32], None, source, (Vec::new()).into(), None, 0, None)
     };
 
     assert!(checkpoint([1; 32]).same_output_slot(&checkpoint([2; 32])));
     assert!(
-        !checkpoint([1; 32]).same_output_slot(&WorthQueryAcceptedOutputCheckpointIdentity {
-            source_partition: [8; 32],
-            ..checkpoint([2; 32])
-        })
+        !checkpoint([1; 32]).same_output_slot(&{ let __source_partition = [8; 32]; let mut __base = checkpoint([2; 32]); *__base.source_partition_mut_for_test() = __source_partition; __base })
     );
 }

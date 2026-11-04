@@ -111,11 +111,7 @@ pub fn publish_definition(
         )
         .unwrap()
     });
-    let (semantic, binding) = separate_compiled_definition(ColdCompiledWorkflowDefinition::new_for_test(lineage, entity, node, vec![compiled_node].into_boxed_slice(), Box::new([]), Box::new([]), WorkflowDefinitionPublicationRevisions {
-            start: None,
-            nodes: None,
-            connections: None,
-        }))
+    let (semantic, binding) = separate_compiled_definition(ColdCompiledWorkflowDefinition::new_for_test(lineage, entity, node, vec![compiled_node].into_boxed_slice(), Box::new([]), Box::new([]), WorkflowDefinitionPublicationRevisions::new_for_test(None, None, None)))
     .unwrap();
     binding
         .bind_for_test(semantic, definition.content_identity().clone(), revision)

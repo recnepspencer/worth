@@ -49,11 +49,7 @@ fn world_recovery_metadata_carries_the_original_computation_and_absence() {
             (*lineage
                 .partition_index_mut_for_test())
                 .insert_vacancy_for_test(source.clone(), coordinate, None);
-        PreparedOutputLineageSlot::new_for_test(Arc::clone(&owner), TypeId::of_for_test::<()>(), source.clone(), coordinate, None, Arc::clone(&identity), record_cell, partition_cell, Some(Box::new(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::prepared_slot::CancelledLineageSlot {
-                    identity,
-                    partition: None,
-                    next: None,
-                })), None, None, None, None, None, None, None, false, PreparedComputationCustody::Unassigned)
+        PreparedOutputLineageSlot::new_for_test(Arc::clone(&owner), TypeId::of_for_test::<()>(), source.clone(), coordinate, None, Arc::clone(&identity), record_cell, partition_cell, Some(Box::new(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::prepared_slot::CancelledLineageSlot::new_for_test(identity, None, None))), None, None, None, None, None, None, None, false, PreparedComputationCustody::Unassigned)
     };
     for computation in [
         SealedComputationRetention::Produced(sealed_run_for_lineage_test()),

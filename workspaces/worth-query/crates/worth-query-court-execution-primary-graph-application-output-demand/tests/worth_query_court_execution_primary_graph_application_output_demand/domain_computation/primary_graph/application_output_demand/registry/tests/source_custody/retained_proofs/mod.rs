@@ -8,30 +8,12 @@ fn completed_multi_root_custody_waits_for_token_and_active_record() {
         .clone();
     let occurrence = receipt.product_branch().occurrence_for_test();
     let (scope, _) = real_scope_and_occurrence();
-    let first = BoundOutputSource {
-        scope,
-        identity: key("producer", 5, 1).source_into_for_test(),
-    };
-    let second = BoundOutputSource {
-        scope,
-        identity: key("producer", 5, 2).source_into_for_test(),
-    };
+    let first = BoundOutputSource::new_for_test(scope, key("producer", 5, 1).source_into_for_test());
+    let second = BoundOutputSource::new_for_test(scope, key("producer", 5, 2).source_into_for_test());
     let mut state = DemandRegistryState::default();
     state.source_custody.insert(
         commit.clone(),
-        SourceCustody {
-            cleanup: Default::default(),
-            occurrence,
-            root_kind: PreparedOutputRootKind::Discovered(TypeId::of_for_test::<()>()),
-            source: None,
-            discovery: None,
-            bound_sources: Some(vec![first.clone(), second.clone()]),
-            consumed_sources: vec![(*first.identity_for_test()).clone(), (*second.identity_for_test()).clone()],
-            retired_sources: Vec::new(),
-            retired: None,
-            token_count: 1,
-            completed: true,
-        },
+        SourceCustody::new_for_test(Default::default(), occurrence, PreparedOutputRootKind::Discovered(TypeId::of_for_test::<()>()), None, None, Some(vec![first.clone(), second.clone()]), vec![(*first.identity_for_test()).clone(), (*second.identity_for_test()).clone()], Vec::new(), None, 1, true),
     );
     state.note_custody_for_test(&commit);
     state.prune_completed_custody().unwrap();
@@ -64,14 +46,8 @@ fn fully_superseded_multi_root_custody_prunes_after_its_last_token() {
         .composite_commit()
         .clone();
     let (scope, _) = real_scope_and_occurrence();
-    let first = BoundOutputSource {
-        scope,
-        identity: key("producer", 5, 1).source_into_for_test(),
-    };
-    let second = BoundOutputSource {
-        scope,
-        identity: key("producer", 5, 2).source_into_for_test(),
-    };
+    let first = BoundOutputSource::new_for_test(scope, key("producer", 5, 1).source_into_for_test());
+    let second = BoundOutputSource::new_for_test(scope, key("producer", 5, 2).source_into_for_test());
     let superseded = WorthQueryOutputDemandDenial::new_for_test(
         WorthQueryOutputDemandDenialKind::Superseded,
         "newer source owns this root",
@@ -79,22 +55,10 @@ fn fully_superseded_multi_root_custody_prunes_after_its_last_token() {
     let mut state = DemandRegistryState::default();
     state.source_custody.insert(
         commit.clone(),
-        SourceCustody {
-            cleanup: Default::default(),
-            occurrence: receipt.product_branch().occurrence_for_test(),
-            root_kind: PreparedOutputRootKind::Discovered(TypeId::of_for_test::<()>()),
-            source: None,
-            discovery: None,
-            bound_sources: Some(vec![first.clone(), second.clone()]),
-            consumed_sources: Vec::new(),
-            retired_sources: vec![
+        SourceCustody::new_for_test(Default::default(), receipt.product_branch().occurrence_for_test(), PreparedOutputRootKind::Discovered(TypeId::of_for_test::<()>()), None, None, Some(vec![first.clone(), second.clone()]), Vec::new(), vec![
                 ((*first.identity_for_test()).clone(), superseded.clone()),
                 ((*second.identity_for_test()).clone(), superseded),
-            ],
-            retired: None,
-            token_count: 1,
-            completed: false,
-        },
+            ], None, 1, false),
     );
     state.note_custody_for_test(&commit);
     state.prune_completed_custody().unwrap();

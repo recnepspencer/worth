@@ -33,17 +33,11 @@ pub fn fixture_with_commit(
     for _ in 0..2 {
         (*old_record
             .performed_obligations_mut_for_test())
-            .push(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::PerformedOutputObligation {
-                source_commit: commit.clone(),
-                source: (*old.source_for_test()).clone(),
-            });
+            .push(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::PerformedOutputObligation::new_for_test(commit.clone(), (*old.source_for_test()).clone()));
     }
     (*old_record
         .performed_obligations_mut_for_test())
-        .push(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::PerformedOutputObligation {
-            source_commit: commit.clone(),
-            source: key("unmatched", 1, 2).source_into_for_test(),
-        });
+        .push(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::PerformedOutputObligation::new_for_test(commit.clone(), key("unmatched", 1, 2).source_into_for_test()));
     let next_record = record(occurrence(), DemandState::Admitted, 1);
     let old_interest = interest(&registry, old.clone(), Arc::clone(&(*old_record.wake_for_test())));
     let next_interest = interest(&registry, next.clone(), Arc::clone(&(*next_record.wake_for_test())));

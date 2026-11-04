@@ -21,12 +21,7 @@ fn registry_binding_reader_ignores_logically_absent_completed_custody() {
         .committed_product_publication()
         .take_output_demand_observation_for_test()
         .unwrap();
-    let source = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryPerformedOutputDemandSource {
-        receipt: active,
-        change,
-        observation,
-        output_source_identity: None,
-    };
+    let source = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryPerformedOutputDemandSource::new_for_test(active, change, observation, None);
     let completed = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support::commit_on_world_with_output_demand_observation(
         &world,
         202,
@@ -41,48 +36,18 @@ fn registry_binding_reader_ignores_logically_absent_completed_custody() {
     let occurrence = (*source.receipt_for_test()).product_branch().occurrence_for_test();
     let (scope, _) = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::source_custody::real_scope_and_occurrence();
     for seed in 0..16 {
-        let selected = BoundOutputSource {
-            scope,
-            identity: key("binding", seed + 1, 3).source_into_for_test(),
-        };
-        let newer = BoundOutputSource {
-            scope,
-            identity: key("binding", seed + 2, 3).source_into_for_test(),
-        };
+        let selected = BoundOutputSource::new_for_test(scope, key("binding", seed + 1, 3).source_into_for_test());
+        let newer = BoundOutputSource::new_for_test(scope, key("binding", seed + 2, 3).source_into_for_test());
         let make = || {
             let registry = WorthQueryOutputDemandRegistry::default();
             let mut state = (*registry.state_for_test()).lock().unwrap();
             state.source_custody.insert(
                 current_commit.clone(),
-                SourceCustody {
-                    occurrence,
-                    root_kind: PreparedOutputRootKind::Discovered(EqualityTypeId::of_for_test::<()>()),
-                    source: Some(source.clone()),
-                    discovery: None,
-                    bound_sources: None,
-                    consumed_sources: Vec::new(),
-                    retired_sources: Vec::new(),
-                    retired: None,
-                    token_count: 1,
-                    cleanup: Default::default(),
-                    completed: false,
-                },
+                SourceCustody::new_for_test(occurrence, PreparedOutputRootKind::Discovered(EqualityTypeId::of_for_test::<()>()), Some(source.clone()), None, None, Vec::new(), Vec::new(), None, 1, Default::default(), false),
             );
             state.source_custody.insert(
                 completed_commit.clone(),
-                SourceCustody {
-                    occurrence,
-                    root_kind: PreparedOutputRootKind::Discovered(EqualityTypeId::of_for_test::<()>()),
-                    source: None,
-                    discovery: None,
-                    bound_sources: Some(vec![newer.clone()]),
-                    consumed_sources: vec![(*newer.identity_for_test()).clone()],
-                    retired_sources: Vec::new(),
-                    retired: None,
-                    token_count: 0,
-                    cleanup: Default::default(),
-                    completed: true,
-                },
+                SourceCustody::new_for_test(occurrence, PreparedOutputRootKind::Discovered(EqualityTypeId::of_for_test::<()>()), None, None, Some(vec![newer.clone()]), vec![(*newer.identity_for_test()).clone()], Vec::new(), None, 0, Default::default(), true),
             );
             drop(state);
             registry.complete_prepared_source_for_test(&completed);

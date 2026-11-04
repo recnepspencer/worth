@@ -27,12 +27,7 @@ fn unheld_performed_sources_release_the_oldest_in_commit_order() {
             .committed_product_publication()
             .take_output_demand_observation_for_test()
             .unwrap();
-        sources.push(WorthQueryPerformedOutputDemandSource {
-            receipt,
-            change,
-            observation,
-            output_source_identity: None,
-        });
+        sources.push(WorthQueryPerformedOutputDemandSource::new_for_test(receipt, change, observation, None));
         current = replacement;
     }
     let oldest = (*sources[0].change_for_test()).product_commit().clone();
@@ -45,19 +40,7 @@ fn unheld_performed_sources_release_the_oldest_in_commit_order() {
         let source = sources[index].clone();
         state.source_custody.insert(
             (*source.change_for_test()).product_commit().clone(),
-            SourceCustody {
-                occurrence,
-                root_kind: PreparedOutputRootKind::Required(TypeId::of_for_test::<()>()),
-                source: Some(source),
-                discovery: None,
-                bound_sources: None,
-                consumed_sources: Vec::new(),
-                retired_sources: Vec::new(),
-                retired: None,
-                token_count: 0,
-                cleanup: Default::default(),
-                completed: false,
-            },
+            SourceCustody::new_for_test(occurrence, PreparedOutputRootKind::Required(TypeId::of_for_test::<()>()), Some(source), None, None, Vec::new(), Vec::new(), None, 0, Default::default(), false),
         );
     }
     for slot in 1..=3 {

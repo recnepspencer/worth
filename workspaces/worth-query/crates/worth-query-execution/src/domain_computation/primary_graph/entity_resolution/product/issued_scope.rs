@@ -2,7 +2,7 @@ use super::*;
 
 /// An installed scope resolved on the selected Product's exact native root.
 /// The selected operation is borrowed until the scoped Query read completes.
-pub(in crate::domain_computation) struct WorthQueryIssuedSelectedScope<
+pub struct WorthQueryIssuedSelectedScope<
     'selected,
     'runtime,
     Schema,

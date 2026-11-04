@@ -128,23 +128,14 @@ pub fn definition(definition_slot: u64) -> CompiledWorkflowDefinition {
             kind: Arc::clone(&(*semantic.kind_for_test())),
         })
         .collect::<Vec<_>>();
-    CompiledWorkflowDefinition::new_for_test(Arc::new(CompiledWorkflowPublicationPlan {
-            lineage: entity(1),
-            definition: entity(definition_slot),
-            start: 0,
-            node_ordinals: Arc::from(
+    CompiledWorkflowDefinition::new_for_test(Arc::new(CompiledWorkflowPublicationPlan::new_for_test(entity(1), entity(definition_slot), 0, Arc::from(
                 nodes
                     .iter()
                     .enumerate()
                     .map(|(ordinal, node)| (node.entity_for_test(), ordinal))
                     .collect::<Vec<_>>()
                     .into_boxed_slice(),
-            ),
-            nodes: nodes.into_boxed_slice(),
-            connections: connections.into_boxed_slice(),
-            global_actions: Arc::from([]),
-            dispatch: Arc::new(CompiledWorkflowDispatch::build_for_test(3, &semantic_connections)),
-        }), ApplicationWorkflowDefinitionContentIdentity::from_recorded(
+            ), nodes.into_boxed_slice(), connections.into_boxed_slice(), Arc::from([]), Arc::new(CompiledWorkflowDispatch::build_for_test(3, &semantic_connections)))), ApplicationWorkflowDefinitionContentIdentity::from_recorded(
             &"00".repeat(32),
         )
         .unwrap(), rostered_program_revision(), None)

@@ -16,7 +16,7 @@ pub(crate) mod read_plan;
 use pinning::pin_runtime_read;
 mod root_selection;
 pub(crate) mod tree_materialization;
-mod work_observation;
+pub(crate) mod work_observation;
 pub(in crate::domain_computation::primary_graph) use entry_observation::component_native_acquisitions_on_this_thread_for_test;
 pub use entry_observation::{
     query_read_kernel_entries_by_root_on_this_thread_for_test,
@@ -44,7 +44,7 @@ use tree_materialization::materialize_result_tree;
 use tree_materialization::{OrderedCollectionWindow, ResultTreeCollectionSelection};
 use worth_relational::facade::indexes::{DerivedIndexGenerationId, RelatedEntityOrderingBoundary};
 
-pub(super) struct RawOneShotRows {
+pub struct RawOneShotRows {
     pub(super) material_source: Option<
         std::sync::Arc<
             crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation,
@@ -71,11 +71,11 @@ pub(super) struct RawOneShotRows {
     pub(super) actual_work: usize,
 }
 
-pub(super) struct RawNonLiveKernelOutcome {
+pub struct RawNonLiveKernelOutcome {
     pub(super) raw: RawOneShotRows,
 }
 
-pub(super) struct RawLiveKernelOutcome {
+pub struct RawLiveKernelOutcome {
     pub(super) raw: RawOneShotRows,
 }
 

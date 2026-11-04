@@ -23,7 +23,7 @@ use plan_admission::admit_request;
 use plan_admission::validate_authentication_lifetime;
 use plan_admission::validate_basis_lifetime;
 use plan_admission::validate_one_shot_plan;
-pub(super) mod pair_plans;
+pub(crate) mod pair_plans;
 mod result;
 pub use pair_plans::WorthQueryDerivedPairReadPlans;
 

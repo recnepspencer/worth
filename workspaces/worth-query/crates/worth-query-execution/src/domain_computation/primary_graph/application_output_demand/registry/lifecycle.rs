@@ -4,7 +4,7 @@ mod cached_reclaim;
 pub(crate) mod closed_retirement;
 pub(crate) mod completed_custody;
 
-mod performed_release;
+pub(crate) mod performed_release;
 pub(super) mod release;
 pub(crate) mod selected_execution_finish;
 

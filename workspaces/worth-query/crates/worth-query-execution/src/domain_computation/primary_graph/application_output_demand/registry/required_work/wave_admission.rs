@@ -117,7 +117,7 @@ fn requested_read_denial(
 
 /// The sole required-wave dispatch input. Its selected basis stays borrowed
 /// until every compute and owner completion has finished or been discarded.
-pub(in crate::domain_computation::primary_graph) struct AdmittedRequiredWave<'basis, Key, Payload> {
+pub struct AdmittedRequiredWave<'basis, Key, Payload> {
     basis: &'basis PositionedRelationalSnapshot,
     keys: worth_proof::CanonicalUniqueVec<Key>,
     payloads: Vec<Payload>,
@@ -188,3 +188,5 @@ fn require_committed(
         "prepared member awaits its committed upstream delivery",
     ))
 }
+
+mod court_doors_for_test;

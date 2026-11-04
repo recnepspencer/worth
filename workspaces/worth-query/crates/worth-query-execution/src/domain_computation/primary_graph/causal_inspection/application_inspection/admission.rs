@@ -16,7 +16,7 @@ mod governance_binding;
 mod materialization;
 
 pub(crate) mod rich;
-mod terminal;
+pub(crate) mod terminal;
 use super::target::InspectionTargetDenial;
 use super::WorthQueryApplicationInspectionTarget;
 use crate::domain_computation::{

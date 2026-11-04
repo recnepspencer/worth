@@ -1,7 +1,7 @@
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 mod admission;
 pub(in crate::domain_computation) mod admitted_request;
-mod application_commit_authorization;
+pub(crate) mod application_commit_authorization;
 pub(crate) mod application_disclosure;
 mod authorization_revalidation;
 mod bridge_binding;

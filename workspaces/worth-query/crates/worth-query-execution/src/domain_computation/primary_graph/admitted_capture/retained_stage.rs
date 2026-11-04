@@ -1,7 +1,7 @@
 //! Advance original capture work while retaining the same physical reservation.
 use super::*;
 
-pub(in crate::domain_computation) enum RetainedStorageDenial {
+pub enum RetainedStorageDenial {
     Overflow,
     Memory(worth_execution::MemoryLimitDenial),
 }

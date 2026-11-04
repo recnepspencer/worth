@@ -66,10 +66,7 @@ fn an_unpublished_refresh_its_last_owner_lets_go_gives_the_occurrence_back() {
     let registry = WorthQueryOutputDemandRegistry::default();
     let replaced = key_with_identity("upstream", 5, 1, 90);
     let refresh = key_with_identity("upstream", 6, 1, 91);
-    let mut replaced_record = DemandRecord {
-        framework_required_count: 1,
-        ..record(occurrence(), ready(), 0)
-    };
+    let mut replaced_record = { let __framework_required_count = 1; let mut __base = record(occurrence(), ready(), 0); *__base.framework_required_count_mut_for_test() = __framework_required_count; __base };
     let DemandState::Output(output) = &mut (*replaced_record.state_mut_for_test()) else {
         unreachable!("the replaced row holds a Ready");
     };
@@ -77,10 +74,7 @@ fn an_unpublished_refresh_its_last_owner_lets_go_gives_the_occurrence_back() {
         WorthQueryOutputDemandDenialKind::Superseded,
         "",
     ));
-    let refresh_record = DemandRecord {
-        successor_of: Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::succession::Succession::new_for_test([0; 32])),
-        ..record(occurrence(), DemandState::Scheduled, 1)
-    };
+    let refresh_record = { let __successor_of = Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::succession::Succession::new_for_test([0; 32])); let mut __base = record(occurrence(), DemandState::Scheduled, 1); *__base.successor_of_mut_for_test() = __successor_of; __base };
     let wake = Arc::clone(&(*refresh_record.wake_for_test()));
     {
         let mut state = (*registry.state_for_test()).lock().unwrap();

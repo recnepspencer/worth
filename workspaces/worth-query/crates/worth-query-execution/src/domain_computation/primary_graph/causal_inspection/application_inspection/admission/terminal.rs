@@ -8,7 +8,7 @@ use crate::domain_computation::primary_graph::{
 use worth_execution::MapKernelFailure;
 use worth_query_installation::facade::ApplicationSchema;
 
-pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) struct InspectionTerminal<
+pub struct InspectionTerminal<
     'storage,
 > {
     session: WorthQueryManagedGraphWorkSession,
