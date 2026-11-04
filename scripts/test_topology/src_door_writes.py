@@ -128,6 +128,18 @@ _DEFINITIONS = {}
 DEFINES = re.compile(r'\b(?:struct|enum|union|type)\s+([A-Z]\w*)')
 
 
+def aliased(door_path, name):
+    """The type `name` stands for in the module a door file extends: a `use ... Real as name`
+    there names Real, so two modules that alias different types alike stay apart."""
+    directory = Path(door_path).parent
+    for module in (directory.with_suffix('.rs'), directory / 'mod.rs'):
+        if module.exists():
+            found = re.search(rf'\b(\w+)\s+as\s+{name}\b', module.read_text(encoding='utf-8'))
+            if found:
+                return found.group(1)
+    return name
+
+
 def type_owner(library, header, door_path):
     """The file defining the impl's self type, so two types spelled alike stay apart. A name
     defined more than once resolves to the definition nearest the door file (longest shared
@@ -144,7 +156,7 @@ def type_owner(library, header, door_path):
     self_type = re.match(r'\s*&?\s*((?:[\w]+::)*)(\w+)', rest)
     if self_type is None:
         return str(Path(door_path).parent)
-    candidates = _DEFINITIONS[library].get(self_type.group(2), [])
+    candidates = _DEFINITIONS[library].get(aliased(door_path, self_type.group(2)), [])
     if not candidates:
         return str(Path(door_path).parent)
     door = Path(door_path).parts
