@@ -19,7 +19,7 @@ fn incremental_comparison_keeps_the_retained_fact_read_stop() {
         source.token(),
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
-    let policy = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy(
+    let policy = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::test_placement::test_policy(
         std::num::NonZeroUsize::MIN,
         None,
     );

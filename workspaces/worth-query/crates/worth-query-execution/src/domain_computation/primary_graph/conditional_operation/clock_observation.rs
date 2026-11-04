@@ -57,7 +57,7 @@ pub enum WorthQueryConditionalClockObservationFailureKind {
     /// Delivery retained the original Bridge or Signal cause.
     AuthoritativeDelivery(super::WorthQueryConditionalAuthoritativeDeliveryFailure),
     /// The host's request could not enter this wake advancement.
-    ExecutionRequest(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
+    ExecutionRequest(crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial),
     /// The clock source was unavailable.
     SourceUnavailable,
     /// The clock source failed to produce a reading.

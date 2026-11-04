@@ -2,7 +2,7 @@
 use super::*;
 use worth_proof::CanonicalUniqueVec;
 
-use crate::domain_computation::primary_graph::application_contribution::QueryRequestExecution;
+use crate::domain_computation::primary_graph::request_execution::QueryRequestExecution;
 
 pub struct CanonicalApplyCursor<
     'owner,
@@ -16,7 +16,7 @@ pub struct CanonicalApplyCursor<
         OwnerPlan<'owner, Value, Stop>,
         Result<
             crate::domain_computation::primary_graph::application_contribution::computation::wave_dispatch::ComputedMember,
-            crate::domain_computation::primary_graph::WorthQueryAdvancementDenial,
+            crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
         >,
     )>,
 }
@@ -68,7 +68,7 @@ impl<'owner, Key, Value, Stop> CanonicalApplyCursor<'owner, Key, Value, Stop> {
         mut published: impl FnMut(Key, Result<Value, Stop>) -> Result<(), Stop>,
         refused: impl FnOnce(
             Key,
-            crate::domain_computation::primary_graph::WorthQueryAdvancementDenial,
+            crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
         ) -> Stop,
     ) -> Result<(), Stop> {
         let Self {

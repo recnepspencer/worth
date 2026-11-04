@@ -178,7 +178,7 @@ impl WorthQueryGraphParticipationProvider<ManagedGraph> for MultipleAdmissionPro
 
 #[test]
 fn admission_from_a_prior_start_cannot_enter_a_fresh_provider_start() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -231,7 +231,7 @@ fn admission_from_a_prior_start_cannot_enter_a_fresh_provider_start() {
 
 #[test]
 fn ignored_second_execution_admission_denies_the_provider_start() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -269,7 +269,7 @@ fn ignored_second_execution_admission_denies_the_provider_start() {
 
 #[test]
 fn rejection_after_admission_releases_the_runtime_owned_execution_explicitly() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -313,7 +313,7 @@ fn rejection_after_admission_releases_the_runtime_owned_execution_explicitly() {
 
 #[test]
 fn panic_after_admission_contains_an_independent_destructor_panic() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 

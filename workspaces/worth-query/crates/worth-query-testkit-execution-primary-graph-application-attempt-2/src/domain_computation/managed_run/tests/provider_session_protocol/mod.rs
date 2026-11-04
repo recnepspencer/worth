@@ -199,7 +199,7 @@ impl WorthQueryProviderSessionLifecycle for SessionProtocolProvider {
     }
 }
 pub fn closed_session_affinity(
-    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorthQueryProviderSessionAffinityIdentity {
     let (mut running, graph) = session_run(
@@ -260,7 +260,7 @@ pub fn session_run(
     )
 }
 pub fn staged_session<'run>(
-    execution: &'run worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &'run worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     running: &'run mut WorthQueryRunningDirectRun,
     graph: &WorthQueryInstalledGraphParticipationAuthority,

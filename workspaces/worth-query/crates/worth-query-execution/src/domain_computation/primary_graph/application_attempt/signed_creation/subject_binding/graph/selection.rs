@@ -68,7 +68,7 @@ pub(super) fn capture<Schema: ApplicationSchema, Binding: ApplicationMutationBin
         let next = selected.ok_or(Denial::CandidateMismatch)?;
         let preserves = crate::domain_computation::primary_graph::application_attempt::signed_selection::preserves_endpoint(
             observed.ok_or(Denial::CandidateMismatch)?, &candidate.effects, current, relation.kind, hop.direction(), next, context,
-        ).map_err(|cause| Denial::Execution(crate::domain_computation::primary_graph::application_contribution::advancement_denial(worth_execution::WorkCeilingDenial::Stopped(cause))))?;
+        ).map_err(|cause| Denial::Execution(crate::domain_computation::primary_graph::request_execution::advancement_denial(worth_execution::WorkCeilingDenial::Stopped(cause))))?;
         if !preserves {
             return Err(Denial::CandidateMismatch);
         }

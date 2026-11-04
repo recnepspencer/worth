@@ -83,7 +83,7 @@ pub struct StepCostEvidence {
 }
 
 pub fn execute_target(
-    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     unrelated_width: usize,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> StepCostEvidence {
@@ -91,7 +91,7 @@ pub fn execute_target(
 }
 
 pub fn execute_target_with_chunks(
-    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     unrelated_width: usize,
     admitted_chunk_count: usize,
@@ -126,7 +126,7 @@ pub fn execute_target_with_chunks(
 }
 
 pub fn measured_target(unrelated_width: usize) -> stats_alloc::Stats {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|execution| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|execution| {
         let bootstrap = execution.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
         let execution = &execution;
@@ -147,7 +147,7 @@ pub fn measured_target(unrelated_width: usize) -> stats_alloc::Stats {
 }
 
 pub fn prepared_target(
-    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     unrelated_width: usize,
     admitted_chunk_count: usize,
@@ -195,7 +195,7 @@ pub fn prepared_target(
 }
 
 pub fn complete_target(
-    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     active: worth_query_execution::facade::domain_computation::WorthQueryActiveDirectGraphExecution,
 ) -> worth_query_execution::facade::domain_computation::WorthQueryCompletedDirectGraphExecution {

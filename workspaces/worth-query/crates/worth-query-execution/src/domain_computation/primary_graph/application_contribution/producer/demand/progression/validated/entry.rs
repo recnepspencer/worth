@@ -1,7 +1,7 @@
 //! Typed entry points into the shared validated progression owner.
 
 use super::*;
-use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where

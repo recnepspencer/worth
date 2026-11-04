@@ -4,7 +4,7 @@ pub(in crate::domain_computation::primary_graph) struct MemberComputeCustody {
     _context: worth_execution::ExecutionOwnerContext,
 }
 impl MemberComputeCustody {
-    pub(super) fn enter() -> Self {
+    pub(in crate::domain_computation::primary_graph) fn enter() -> Self {
         Self {
             _context: worth_execution::ExecutionOwnerContext::enter(),
         }

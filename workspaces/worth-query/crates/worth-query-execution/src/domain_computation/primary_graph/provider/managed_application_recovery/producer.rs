@@ -9,7 +9,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         Scope,
     >(
         &self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         recovery: &WorthQueryProductUnpublishedRecovery,
         admission: &WorthQueryAdmittedApplicationOperation<S, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,

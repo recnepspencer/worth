@@ -1,5 +1,5 @@
 use super::*;
-use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase;
 
 impl<Schema, Program, Operation> WorthQueryAdmittedProgramOperation<'_, Schema, Program, Operation>
 where
@@ -77,7 +77,7 @@ where
         {
             Ok(execution) => execution,
             Err(cause) => {
-                return crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(
+                return crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::from(
                     cause,
                 )
                 .into_commit_outcome()
@@ -130,7 +130,7 @@ where
         {
             Ok(execution) => execution,
             Err(cause) => {
-                return crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(
+                return crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::from(
                     cause,
                 )
                 .into_commit_outcome()

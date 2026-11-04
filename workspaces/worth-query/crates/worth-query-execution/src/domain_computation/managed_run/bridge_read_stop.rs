@@ -1,7 +1,5 @@
 //! Bridge snapshot read stops translated once at managed admission.
-use crate::domain_computation::primary_graph::{
-    WorthQueryManagedComputationResourceDenial as Resource, WorthQueryMemoryLimitLevel as Level,
-};
+use {crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryMemoryLimitLevel as Level};
 use crate::domain_computation::{
     WorthQueryProviderSessionControlStopKind as Control,
     WorthQueryProviderSessionDenialKind as Kind,

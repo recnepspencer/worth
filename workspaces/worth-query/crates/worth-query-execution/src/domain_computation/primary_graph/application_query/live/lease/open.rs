@@ -68,7 +68,7 @@ where
         Binding,
     >(
         self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         query: WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
         principal: &'principal WorthQueryAuthenticatedPrincipal<
             Schema,
@@ -137,7 +137,7 @@ where
         Input,
     >(
         self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         query: WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
         principal: &'principal WorthQueryAuthenticatedPrincipal<
             Schema,
@@ -248,7 +248,7 @@ where
         Binding,
     >(
         &'runtime self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         request: WorthQueryApplicationLiveOpenRequest<
             'principal,
             Schema,

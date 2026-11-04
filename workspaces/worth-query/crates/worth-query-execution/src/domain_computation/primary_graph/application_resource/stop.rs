@@ -34,7 +34,7 @@ pub(super) enum ResourceCause {
     Unavailable,
     Request(WorkCeilingDenial),
     Control(worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption),
-    Advancement(crate::domain_computation::primary_graph::application_contribution::WorthQueryAdvancementDenial),
+    Advancement(crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial),
     Selection(crate::basis::WorthQueryProductBranchAdmissionDenial),
     Principal(crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenial),
     Scope(crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenial),
@@ -167,7 +167,7 @@ impl WorthQueryResourceActionDenial {
         }
     }
 
-    pub fn advancement_denial(&self) -> Option<&crate::domain_computation::primary_graph::application_contribution::WorthQueryAdvancementDenial>{
+    pub fn advancement_denial(&self) -> Option<&crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial>{
         match &self.cause {
             ResourceCause::Advancement(cause) => Some(cause),
             _ => None,

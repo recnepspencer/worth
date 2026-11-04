@@ -6,11 +6,7 @@ use super::{cancellation, history, overlap, WorthQueryCorrectionRestoredSupportD
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact as Fact;
 use crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload;
 use crate::domain_computation::primary_graph::fact_verification_observation::correction_rejection;
-use crate::domain_computation::primary_graph::{
-    exact_basis_access::open_exact_basis_snapshot,
-    output_reuse::{first_moved_fact, retained_fact_denial},
-    WorthQueryAdvancementPhase,
-};
+use {crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot, crate::domain_computation::primary_graph::output_reuse::first_moved_fact, crate::domain_computation::primary_graph::output_reuse::retained_fact_denial, crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase};
 use worth_execution::ExecutionRequest;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::runtime::RelationalRuntime;

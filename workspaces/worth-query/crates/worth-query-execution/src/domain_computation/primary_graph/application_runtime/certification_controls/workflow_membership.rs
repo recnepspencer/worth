@@ -9,11 +9,11 @@ where
     #[doc(hidden)]
     pub fn attempt_workflow_definition_membership_cycle_for_test(
         &self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         definition: &crate::domain_computation::primary_graph::PublishedWorkflowDefinitionRef,
     ) -> Result<
         Result<(), worth_relational::facade::transactions::TransactionCommitError>,
-        crate::domain_computation::primary_graph::WorthQueryForeignAdvancementPhase,
+        crate::domain_computation::primary_graph::request_execution::WorthQueryForeignAdvancementPhase,
     > {
         let execution = phase.execution_request_for(&self.runtime.product_runtime)?;
         let selected = self

@@ -4,7 +4,7 @@ use crate::domain_computation::execution_runtime::product_world::publication_den
     WorthQueryProductPublicationDenial as PublicationDenial,
     WorthQueryProductPublicationOutcome as PublicationOutcome,
 };
-use crate::domain_computation::primary_graph::application_contribution::advancement_denial;
+use crate::domain_computation::primary_graph::request_execution::advancement_denial;
 use std::sync::Arc;
 
 use worth_query_installation::facade::ApplicationSchema;
@@ -25,7 +25,7 @@ use crate::domain_computation::WorthQueryProductUnpublishedRecovery;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryGeneratedOutputRestorationRecoveryStage {
     /// The request stopped while continuing retained recovery.
-    ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
+    ExecutionDenied(crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial),
     /// The unpublished product state could not be inspected.
     Inspection,
     /// Owner settlement of the unpublished effects did not finish.
@@ -190,7 +190,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             Err(PublicationDenial::ClockMismatch) => {
                 return Err(failure(
                     WorthQueryGeneratedOutputRestorationRecoveryStage::ExecutionDenied(
-                        crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock),
+                        crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock),
                     ),
                     RecoveryState::World { recovery, retry },
                 ))
@@ -236,7 +236,7 @@ Err(PublicationDenial::Stopped(stop)) => {
             }
             Err(PublicationDenial::ClockMismatch) => Err(failure(
                 WorthQueryGeneratedOutputRestorationRecoveryStage::ExecutionDenied(
-                    crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock),
+                    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock),
                 ),
                 RecoveryState::World { recovery, retry },
             )),

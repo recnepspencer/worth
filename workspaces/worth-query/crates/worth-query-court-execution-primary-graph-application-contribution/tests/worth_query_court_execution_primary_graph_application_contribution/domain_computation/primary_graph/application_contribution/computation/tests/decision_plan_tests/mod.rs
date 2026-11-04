@@ -86,7 +86,7 @@ pub fn run(
         );
     let execution = QueryRequestExecution::open_for_test(
         worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(
-            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy(
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::test_placement::test_policy(
                 std::num::NonZeroUsize::MIN, None)), &scope);
     let result = installed
         .decision_plan(&input, HandlerResult::Completed)

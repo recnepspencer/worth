@@ -231,7 +231,7 @@ where
 
     pub(crate) fn publish(
         self,
-        phase: &super::WorthQueryBootstrapAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
         runtime: &mut WorthQueryExecutionRuntime,
         authority: &WorthQueryExecutionInstallationAuthority,
     ) -> Result<WorthQueryPrimaryGraphPublication, WorthQueryPrimaryGraphInstallationDenial> {
@@ -248,7 +248,7 @@ fn primary_graph_denial(
 }
 
 pub(super) fn request_denial(
-    cause: super::WorthQueryAdvancementDenial,
+    cause: crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
 ) -> WorthQueryPrimaryGraphInstallationDenial {
     let kind = match cause.provider_denial_cause() {
         Ok(kind) => WorthQueryPrimaryGraphInstallationDenialKind::ExecutionDenied { kind },

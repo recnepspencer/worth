@@ -1,5 +1,5 @@
 use super::*;
-use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase;
 
 impl WorthQueryWorkflowAdvanceAdapter {
     pub fn compare_and_commit_assessment<Schema, Operation, Input, Scope, Query>(
@@ -24,7 +24,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
             match phase.execution_request_for(&runtime.runtime.product_runtime) {
                 Ok(request) => request,
                 Err(cause) => return Ok(WorkflowProgressOutcome::Application(
-                    crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(
+                    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::from(
                         cause,
                     )
                     .into_commit_outcome()
@@ -36,7 +36,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
 
         if let Err(cause) = phase.execution_request_for(&runtime.runtime.product_runtime) {
             let uncommitted =
-                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(cause)
+                crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::from(cause)
                     .into_commit_outcome()
                     .landed()
                     .expect_err("a foreign phase cannot commit");
@@ -68,7 +68,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
             match phase.execution_request_for(&runtime.runtime.product_runtime) {
                 Ok(request) => request,
                 Err(cause) => return Ok(WorkflowProgressOutcome::Application(
-                    crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(
+                    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::from(
                         cause,
                     )
                     .into_commit_outcome()
@@ -80,7 +80,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
 
         if let Err(cause) = phase.execution_request_for(&runtime.runtime.product_runtime) {
             let uncommitted =
-                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(cause)
+                crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::from(cause)
                     .into_commit_outcome()
                     .landed()
                     .expect_err("a foreign phase cannot commit");
@@ -129,7 +129,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
             match phase.execution_request_for(&runtime.runtime.product_runtime) {
                 Ok(request) => request,
                 Err(cause) => return Ok(WorkflowProgressOutcome::Application(
-                    crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(
+                    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::from(
                         cause,
                     )
                     .into_commit_outcome()
@@ -141,7 +141,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
 
         if let Err(cause) = phase.execution_request_for(&runtime.runtime.product_runtime) {
             let uncommitted =
-                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(cause)
+                crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::from(cause)
                     .into_commit_outcome()
                     .landed()
                     .expect_err("a foreign phase cannot commit");
@@ -189,7 +189,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
             match phase.execution_request_for(&runtime.runtime.product_runtime) {
                 Ok(request) => request,
                 Err(cause) => return WorkflowProgressOutcome::Application(
-                    crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(
+                    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::from(
                         cause,
                     )
                     .into_commit_outcome()

@@ -21,7 +21,7 @@ impl<Query> WorthQueryPendingSourceExpectation<Query> {
     pub fn consume_into<Schema, Operation, Input, Scope>(
         self,
         runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         admission: &mut WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     ) -> Result<(), WorthQuerySourceExpectationDenial>
     where

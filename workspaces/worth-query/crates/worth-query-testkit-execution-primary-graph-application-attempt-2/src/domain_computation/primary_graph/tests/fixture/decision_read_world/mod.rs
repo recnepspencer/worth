@@ -10,7 +10,7 @@ pub use worth_query_testkit_execution_primary_graph_application_attempt::domain_
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::authentication::authenticate_external;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::external_identity;
 use worth_query_execution::facade::domain_computation::WorthQueryExecutionRuntimeInstaller;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest;
 use worth_query_execution::facade::domain_computation::WorthQueryAdmittedApplicationOperation;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationEntityIdentity;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationPrincipalKey;
@@ -54,7 +54,7 @@ pub struct DecisionReadWorld {
 }
 
 pub fn installed_decision_read_world() -> DecisionReadWorld {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|phase| {
         let declaration = DecisionReadSchema::declaration().unwrap();
         let package = WorthQueryPortableDomainPackage::new(WorthQueryPortableDomainIdentity::new(
             <DecisionReadSchema as ApplicationSchema>::OWNER,

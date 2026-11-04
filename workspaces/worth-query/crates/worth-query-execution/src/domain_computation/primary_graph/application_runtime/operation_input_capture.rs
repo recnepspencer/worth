@@ -1,9 +1,6 @@
 //! Initiating capture owns one admitted typed payload through its LAST shared input owner.
 use super::WorthQueryPrimaryGraphApplicationRuntime;
-use crate::domain_computation::primary_graph::{
-    request_allocation_control::RequestAllocationControl, WorthQueryAdvancementDenial,
-    WorthQueryAdvancementPhase,
-};
+use {crate::domain_computation::primary_graph::request_allocation_control::RequestAllocationControl, crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial, crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase};
 use crate::publication_boundary::WorthQueryProgramPublicationAccess;
 use worth_execution::{ExecutionAllocationDenial, ExecutionArray, ExecutionArrayBuilder};
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;

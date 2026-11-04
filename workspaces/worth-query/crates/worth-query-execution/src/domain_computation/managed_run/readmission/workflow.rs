@@ -60,7 +60,7 @@ struct WorthQueryWorkflowBridgeReadmissionPending {
 }
 
 pub(in crate::domain_computation::managed_run) fn readmit_workflow(
-    active_request: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    active_request: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
 
     yielded: WorthQueryYieldedWorkflowRun,
     query_runtime: &WorthQueryExecutionRuntime,

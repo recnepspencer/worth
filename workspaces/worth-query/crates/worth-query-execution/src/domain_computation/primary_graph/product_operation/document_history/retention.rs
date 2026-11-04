@@ -1,9 +1,6 @@
 //! Admission changes availability; maintenance discharges actual original owners.
 use super::*;
-use crate::domain_computation::primary_graph::{
-    application_query::CompletedMetadataRead, WorthQueryAdmittedApplicationOperation,
-    WorthQueryAdvancementPhase,
-};
+use {crate::domain_computation::primary_graph::application_query::CompletedMetadataRead, crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation, crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase};
 use worth_query_declaration::facade::application_history::{
     ApplicationHistoryModel, ApplicationHistoryRecentSteps, ApplicationHistoryRetentionBinding,
 };

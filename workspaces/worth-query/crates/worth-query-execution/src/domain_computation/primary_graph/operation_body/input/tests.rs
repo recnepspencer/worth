@@ -1,5 +1,5 @@
-use super::{validate_admitted, QueryRequestExecution, WorthQueryAdvancementDenial};
-use crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial;
+use {super::validate_admitted, crate::domain_computation::primary_graph::request_execution::QueryRequestExecution, crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial};
+use crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial;
 use std::{cell::Cell, num::NonZeroUsize};
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,

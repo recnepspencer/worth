@@ -1,6 +1,6 @@
 //! Exercise the production overlay, including new temporary and surviving heaps.
 use super::*;
-use crate::domain_computation::primary_graph::application_contribution::with_bootstrap_advancement;
+use crate::domain_computation::primary_graph::request_execution::with_bootstrap_advancement;
 use worth_foundational::facade::{AspectKey, FieldKey};
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,

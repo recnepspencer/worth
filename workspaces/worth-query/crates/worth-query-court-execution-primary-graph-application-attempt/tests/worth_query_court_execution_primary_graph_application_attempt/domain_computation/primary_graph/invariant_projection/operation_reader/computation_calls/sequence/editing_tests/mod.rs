@@ -4,11 +4,11 @@ use std::collections::BTreeSet;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::operation_reader::computation_calls::sequence::CallVisit;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::operation_reader::computation_calls::sequence::ComputationCallSequence;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::computation_routing::ComputationRead;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::QueryRequestExecution;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::QueryRequestExecution;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::operation_reader::computation_calls::sequence::tree::summary;
 use crate::domain_computation::primary_graph::invariant_projection::operation_reader::computation_calls::sequence::tests;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::operation_reader::computation_calls::sequence::tree::visit;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::test_placement::test_policy;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope;
 pub fn read(id: u64) -> ComputationRead {
     ComputationRead::ItemKey(worth_execution::PartitionItemId(id))

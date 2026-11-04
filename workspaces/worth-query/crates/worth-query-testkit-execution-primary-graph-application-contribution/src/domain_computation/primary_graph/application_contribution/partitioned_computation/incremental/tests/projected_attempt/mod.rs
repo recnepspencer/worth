@@ -159,7 +159,7 @@ where
 {
     let retained_prior = prior.as_ref().is_some_and(|prior| prior.retained.is_ok());
     let _placement =
-        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::FixturePlacement::enter(placement);
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::test_placement::FixturePlacement::enter(placement);
     let mut observed = None;
     let finished = world
         .application

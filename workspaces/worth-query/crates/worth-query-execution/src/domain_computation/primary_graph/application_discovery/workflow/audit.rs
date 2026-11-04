@@ -28,7 +28,7 @@ use super::admission::admit;
 use super::admission::WorthQueryWorkflowReadDenial as WorkflowReadAdmissionDenial;
 use crate::domain_computation::authorization::WorthQueryAdmittedApplicationCapabilityAccess;
 
-use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase;
 use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
 use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;

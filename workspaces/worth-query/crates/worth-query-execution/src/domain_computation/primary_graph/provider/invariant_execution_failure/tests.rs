@@ -43,7 +43,7 @@ fn custom_semantic_violation_preserves_owner_identity() {
 
 #[test]
 fn custom_operational_failure_preserves_identity_phase_and_kind() {
-    crate::domain_computation::primary_graph::with_test_advancement(|_active_phase| {
+    crate::domain_computation::primary_graph::request_execution::with_test_advancement(|_active_phase| {
         let identity = CustomInvariantFailureIdentity::new(semantic_identity());
         let failure = map_custom_invariant_failure(
             InvariantViolationFields::CustomInvariantFailure {

@@ -29,7 +29,7 @@ impl<Schema, Operation, Input, Scope>
     /// cannot add, remove, or replace a dependency key.
     pub fn complete_projected_dependencies(
         self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         WorthQueryCompleteApplicationReadSet<

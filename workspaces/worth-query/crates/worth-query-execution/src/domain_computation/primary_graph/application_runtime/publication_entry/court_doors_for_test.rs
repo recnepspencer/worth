@@ -8,7 +8,7 @@ where
     #[doc(hidden)]
     pub fn publish_application_runtime_with_ports_for_test(
         self,
-        phase: &super::super::super::WorthQueryBootstrapAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
         runtime: WorthQueryExecutionRuntime,
         authority: WorthQueryExecutionInstallationAuthority,
         installed_schema: WorthQueryInstalledApplicationSchema<Schema>,

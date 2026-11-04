@@ -55,7 +55,7 @@ where
     {
         let _execution = self.execution().execution_request().map_err(|cause| {
             HandlerExecutionDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(
+                crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(
                     cause,
                 ),
             )
@@ -82,7 +82,7 @@ where
     {
         let _execution = self.execution().execution_request().map_err(|cause| {
             HandlerExecutionDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(
+                crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(
                     cause,
                 ),
             )
@@ -106,7 +106,7 @@ where
     {
         let _execution = self.execution().execution_request().map_err(|cause| {
             HandlerExecutionDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(
+                crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(
                     cause,
                 ),
             )
@@ -142,7 +142,7 @@ where
     {
         let _execution = self.execution().execution_request().map_err(|cause| {
             HandlerExecutionDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(
+                crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(
                     cause,
                 ),
             )
@@ -167,7 +167,7 @@ where
     {
         let _execution = self.execution().execution_request().map_err(|cause| {
             HandlerExecutionDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(
+                crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(
                     cause,
                 ),
             )
@@ -193,7 +193,7 @@ where
     {
         let _execution = self.execution().execution_request().map_err(|cause| {
             HandlerExecutionDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(
+                crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(
                     cause,
                 ),
             )
@@ -217,7 +217,7 @@ where
     {
         let _execution = self.execution().execution_request().map_err(|cause| {
             HandlerExecutionDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(
+                crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(
                     cause,
                 ),
             )
@@ -243,7 +243,7 @@ where
         let _execution = self.execution().execution_request().map_err(|cause| {
             WorthQueryInvariantProjectionTraversalDenial::new(
                 crate::domain_computation::primary_graph::WorthQueryInvariantProjectionTraversalDenialKind::ExecutionRequest(
-                    crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(cause)),
+                    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(cause)),
                 relation.name())
         })?;
         self.reader.decision_relations_from(relation, source)
@@ -265,7 +265,7 @@ where
         let _execution = self.execution().execution_request().map_err(|cause| {
             WorthQueryInvariantProjectionTraversalDenial::new(
                 crate::domain_computation::primary_graph::WorthQueryInvariantProjectionTraversalDenialKind::ExecutionRequest(
-                    crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(cause)),
+                    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(cause)),
                 relation.name())
         })?;
         self.reader.decision_relations_to(relation, target)
@@ -351,7 +351,7 @@ where
     {
         let _execution = self.execution().execution_request().map_err(|cause| {
             HandlerExecutionDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(
+                crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(
                     cause,
                 ),
             )

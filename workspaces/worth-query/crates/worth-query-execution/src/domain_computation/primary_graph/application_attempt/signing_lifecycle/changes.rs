@@ -1,8 +1,5 @@
 //! Intersect final candidate writes with native preimages using Relational's canonical value equivalence.
-use super::{
-    attempt, capacity, resource, unavailable, Effect, EntityId, Fact, Lease, Locus, Outcome,
-    QueryRequestExecution, Rule,
-};
+use {super::attempt, super::capacity, super::resource, super::unavailable, super::Effect, super::EntityId, super::Fact, super::Lease, super::Locus, super::Outcome, crate::domain_computation::primary_graph::request_execution::QueryRequestExecution, super::Rule};
 use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
 use crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout as Layout;
 use std::collections::BTreeMap;

@@ -9,7 +9,7 @@ use crate::domain_computation::primary_graph::application_output_demand::registr
 fn a_released_claim_walks_each_released_key_once() {
     let receipt = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
     let occurrence = occurrence();
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|_| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|_| {
         let mut state = DemandRegistryState::default();
         let stale = key("released-occurrence", 1, 1);
         let newest = key("released-occurrence", 2, 1);

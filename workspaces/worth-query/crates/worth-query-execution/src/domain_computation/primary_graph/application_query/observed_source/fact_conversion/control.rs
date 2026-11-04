@@ -1,9 +1,6 @@
 //! Attempt-local request borrowing, never retained in a pending expectation.
 use super::*;
-use crate::domain_computation::primary_graph::{
-    application_attempt::retained_decision_facts::{StorageControl, StoreDenial},
-    WorthQueryAdvancementPhase, WorthQueryPrimaryGraphApplicationRuntime,
-};
+use {crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl, crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial, crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime};
 use worth_execution::{ExecutionRequest, WorkCeilingDenial};
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 

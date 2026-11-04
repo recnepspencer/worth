@@ -1,9 +1,7 @@
 //! Measured reader calls in canonical order, with checked range charges.
 use super::*;
-use crate::domain_computation::primary_graph::application_contribution::WorthQueryManagedComputationResourceDenial as Resource;
-use crate::domain_computation::primary_graph::application_contribution::{
-    QueryMemoryReservation, QueryRequestExecution,
-};
+use crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource;
+use {crate::domain_computation::primary_graph::request_execution::QueryMemoryReservation, crate::domain_computation::primary_graph::request_execution::QueryRequestExecution};
 use std::{collections::BTreeSet, ops::Range};
 
 mod funding;

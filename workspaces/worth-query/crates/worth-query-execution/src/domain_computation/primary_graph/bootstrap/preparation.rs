@@ -3,7 +3,7 @@ use super::*;
 impl WorthQueryExecutionInstallationAuthority {
     pub fn prepare_primary_graph<Schema>(
         &self,
-        phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
         runtime: &WorthQueryExecutionRuntime,
         installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
         product_world_resources: crate::domain_computation::execution_runtime::product_world::WorthQueryProductWorldResources,
@@ -26,7 +26,7 @@ impl WorthQueryExecutionInstallationAuthority {
 
     pub(crate) fn prepare_primary_graph_with_relational_runtime<Schema>(
         &self,
-        phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
         runtime: &WorthQueryExecutionRuntime,
         installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
         relational_runtime: RelationalRuntime,
@@ -49,7 +49,7 @@ impl WorthQueryExecutionInstallationAuthority {
 
     pub(crate) fn prepare_primary_graph_with_relational_runtime_and_invariants<Schema>(
         &self,
-        phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
         runtime: &WorthQueryExecutionRuntime,
         installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
         relational_runtime: RelationalRuntime,
@@ -74,7 +74,7 @@ impl WorthQueryExecutionInstallationAuthority {
     /// The phase witnesses admission before inline Relational schema and recovery reads.
     pub(super) fn prepare_primary_graph_with_optional_checkpoint<Schema>(
         &self,
-        phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
         runtime: &WorthQueryExecutionRuntime,
         installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
         mut relational_runtime: RelationalRuntime,
@@ -276,10 +276,7 @@ mod tests {
     use super::*;
     #[test]
     fn checkpoint_recovery_request_arm_keeps_control_and_memory_by_value() {
-        use crate::domain_computation::primary_graph::application_contribution::{
-            WorthQueryManagedComputationResourceDenial as Resource,
-            WorthQueryMemoryLimitLevel as Level,
-        };
+        use {crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryMemoryLimitLevel as Level};
         use crate::domain_computation::{
             WorthQueryProviderSessionControlStopKind as Control,
             WorthQueryProviderSessionDenialKind as Denial,

@@ -126,7 +126,7 @@ impl ContinuationTestContext {
 
     pub fn issue(
         &self,
-        phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+        phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     ) -> TestContinuation {
         let request = worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope::new(Some(self.principal.clock().now() + Duration::from_secs(60)), worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource::new().token(), self.principal.clock().clone());
         let access = WorthQueryApplicationQueryAccessContext::new(&self.principal, &self.account);
@@ -167,7 +167,7 @@ impl ContinuationTestContext {
 
     pub fn readmit_denial(
         &self,
-        phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+        phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
         continuation: TestContinuation,
         parameter: &str,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
@@ -195,7 +195,7 @@ impl ContinuationTestContext {
     /// Resumes and executes one page; returns its row count and basis release.
     pub fn readmit_page(
         &self,
-        phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+        phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
         continuation: TestContinuation,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
         page_width: usize,

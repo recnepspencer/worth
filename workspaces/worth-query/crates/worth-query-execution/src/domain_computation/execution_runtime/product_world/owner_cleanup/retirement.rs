@@ -4,10 +4,7 @@ use super::{
     follower::WorthQueryProductRetentionFollower,
     registry::WorthQueryProductBranchOwnerCleanupRegistry,
 };
-use crate::domain_computation::primary_graph::{
-    application_contribution::execution_denial, WorthQueryAdvancementDenial as Advancement,
-    WorthQueryManagedComputationResourceDenial as Resource,
-};
+use {crate::domain_computation::primary_graph::application_contribution::execution_denial, crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial as Advancement, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource};
 use std::sync::{Arc, Weak};
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 use worth_relational::facade::branch::{DeletedRelationalBranch, RelationalBranchIdentity};

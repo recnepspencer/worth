@@ -11,8 +11,8 @@ use worth_query_declaration::facade::application_program::{
 };
 use worth_query_installation::facade::ApplicationSchema;
 
-use super::super::request_execution::QueryRequestExecution;
-use super::super::WorthQueryManagedComputationResourceDenial;
+use crate::domain_computation::primary_graph::request_execution::QueryRequestExecution;
+use crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial;
 use super::compute::{Denial, PreparedRun, WorthQueryPreparedPartitionedComputation};
 use super::incremental::{
     self, Begun, ComputationInstallation, FullRecording, Suppression,

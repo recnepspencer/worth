@@ -12,7 +12,7 @@ use worth_query_declaration::facade::application_program::{
 };
 use worth_query_installation::facade::ApplicationSchema;
 
-use super::super::super::request_execution::QueryRequestExecution;
+use crate::domain_computation::primary_graph::request_execution::QueryRequestExecution;
 use super::super::compute::Denial;
 use super::super::items::{item_digests, planned_items, route_item};
 use super::super::plan::PlanShape;

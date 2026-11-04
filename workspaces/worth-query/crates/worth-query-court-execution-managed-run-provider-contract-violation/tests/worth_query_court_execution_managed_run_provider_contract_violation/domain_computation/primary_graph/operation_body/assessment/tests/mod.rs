@@ -2,7 +2,7 @@
 use worth_query_execution::facade::domain_computation::WorthQueryCurrentBodyRequirementAssessment;
 use worth_query_execution::facade::domain_computation::WorthQueryOperationBodyRequirementFinding;
 use crate::domain_computation::primary_graph::operation_body::assessment::tests;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::QueryRequestExecution;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::QueryRequestExecution;
 use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationResourceDenial as Resource;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
 use worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus;

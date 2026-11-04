@@ -136,14 +136,14 @@ where
 
     pub(crate) fn fixture_phase<'scope>(
         &self,
-        host: &crate::domain_computation::primary_graph::TestHostRequest<'scope>,
-    ) -> crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'scope> {
+        host: &crate::domain_computation::primary_graph::request_execution::TestHostRequest<'scope>,
+    ) -> crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'scope> {
         host.phase_for_application(self.runtime)
     }
 
     pub fn next(
         &mut self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
         request: &WorthQueryRequestScope,
     ) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {

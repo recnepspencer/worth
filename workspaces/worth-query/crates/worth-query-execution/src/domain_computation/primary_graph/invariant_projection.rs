@@ -199,7 +199,7 @@ where
 
     pub fn snapshot(
         &self,
-        phase: &super::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
     ) -> Result<
         WorthQueryApplicationInvariantProjectionSnapshot<Schema>,
         WorthQueryInvariantProjectionDenial,

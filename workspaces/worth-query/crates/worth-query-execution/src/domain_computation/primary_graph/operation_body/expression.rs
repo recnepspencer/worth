@@ -1,11 +1,5 @@
 //! One native driver for admitted Boolean requirements and typed body values.
-use crate::domain_computation::primary_graph::{
-    application_contribution::{advancement_denial, QueryRequestExecution},
-    operation_body::PreparedRequirementOperand,
-    HandlerExecutionDenial, WorthQueryAdvancementDenial,
-    WorthQueryApplicationOperationInvariantProjectionReader, WorthQueryInvariantEntityIdentity,
-    WorthQueryManagedComputationResourceDenial,
-};
+use {crate::domain_computation::primary_graph::request_execution::advancement_denial, crate::domain_computation::primary_graph::request_execution::QueryRequestExecution, crate::domain_computation::primary_graph::operation_body::PreparedRequirementOperand, crate::domain_computation::primary_graph::HandlerExecutionDenial, crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial, crate::domain_computation::primary_graph::WorthQueryApplicationOperationInvariantProjectionReader, crate::domain_computation::primary_graph::WorthQueryInvariantEntityIdentity, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial};
 use worth_foundational::expression_api::{
     ExpressionDenialDetail, ExpressionInputs, ExpressionResource, ExpressionStep, MAX_SLICE_QUANTUM,
 };

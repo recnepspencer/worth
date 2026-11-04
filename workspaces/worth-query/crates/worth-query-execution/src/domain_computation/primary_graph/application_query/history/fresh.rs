@@ -111,7 +111,7 @@ where
 
 fn request_for<'scope, Schema: ApplicationSchema>(
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'scope>,
+    phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'scope>,
 ) -> Result<worth_execution::ExecutionRequest<'scope, 'scope>, Denial> {
     phase.execution_request_for(&application.runtime.product_runtime).map_err(|_| {
         Denial::Authorization(crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial::new(

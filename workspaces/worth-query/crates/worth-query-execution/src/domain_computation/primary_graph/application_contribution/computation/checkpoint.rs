@@ -1,10 +1,8 @@
 //! Where a managed computation's checkpoints charge, and what they observe.
 
-use super::super::execution_denial::checkpoint_denial;
-use super::super::request_execution::QueryRequestExecution;
-use super::{
-    WorthQueryManagedComputationCheckpointDenial, WorthQueryManagedComputationInterruption,
-};
+use crate::domain_computation::primary_graph::request_execution::execution_stop::checkpoint_denial;
+use crate::domain_computation::primary_graph::request_execution::QueryRequestExecution;
+use {crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationCheckpointDenial, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationInterruption};
 
 /// The request a managed computation runs for: its cancellation, its
 /// deadline and how its patterns are placed.
@@ -87,7 +85,7 @@ impl<'request> WorthQueryManagedComputationCheckpoint<'request> {
                 charge(u64::try_from(work).unwrap_or(u64::MAX)).map_err(checkpoint_denial)
             }
             None => Err(WorthQueryManagedComputationCheckpointDenial::Resource(
-                super::WorthQueryManagedComputationResourceDenial::AccountingUnavailable,
+                crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::AccountingUnavailable,
             )),
         };
         self.refused = result.err();

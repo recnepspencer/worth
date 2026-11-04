@@ -271,7 +271,7 @@ impl<'run> WorthQueryAdmittedProviderExecutionPlan<'run> {
 
     pub fn readmit(
         mut self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'run>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'run>,
     ) -> Result<WorthQueryProviderPlanReadmission<'run>, WorthQueryProviderSessionFailure> {
         let (source_instance, owner_identity) = match &self.run {
             WorthQueryProviderRunBorrow::Direct(run) => (
@@ -294,7 +294,7 @@ impl<'run> WorthQueryAdmittedProviderExecutionPlan<'run> {
         }
         .map_err(|cause| {
             failure(
-                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(cause)
+                crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::from(cause)
                     .provider_denial_cause()
                     .expect("foreign custody is a resource refusal"),
                 "provider plan belongs to another advancement runtime",

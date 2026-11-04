@@ -15,7 +15,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
     /// No old operation authority is restored or made executable again.
     #[allow(clippy::too_many_arguments)]
     pub fn complete_local_operation<S, Spec, B>(
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         selected: &WorthQuerySelectedProductOperation<'_, S>,
         workflow: WorthQueryWorkflowVocabulary<'_, S, Spec>,
         required: &RequiredWorkflowOperation,

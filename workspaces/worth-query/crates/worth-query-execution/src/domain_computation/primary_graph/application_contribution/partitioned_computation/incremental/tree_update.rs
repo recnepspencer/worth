@@ -1,5 +1,5 @@
 //! The next canonical tree, funded by its actual native node owner.
-use super::super::super::request_execution::QueryRequestExecution;
+use crate::domain_computation::primary_graph::request_execution::QueryRequestExecution;
 use super::super::{
     WorthQueryDeterministicReducer, WorthQueryPartitionedComputationDenial as Denial,
 };
@@ -83,7 +83,7 @@ where
     let mut leaves = Vec::new();
     if leaves.try_reserve_exact(plan.identities().len()).is_err() {
         return TreeAttempt::unstarted(TreeBeginning(execution.has_accounting()),Err(Denial::Resource(
-            super::super::super::WorthQueryManagedComputationResourceDenial::NativeAllocationRefused {
+            crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::NativeAllocationRefused {
                 kind:worth_execution::ExecutionPhysicalAllocationDenialKind::Allocator,
                 requested_payload_bytes:None,
             })));

@@ -7,7 +7,7 @@ use worth_query_execution::facade::domain_computation::WorthQueryOperationAuthor
 fn selected_execution_failure_fails_the_row_only_for_an_intrinsic_stop() {
     let demand_key = key("selected-execution-failure", 1, 1);
     let product_occurrence = occurrence();
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|_active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|_active_phase| {
         use worth_query_execution::facade::domain_computation::WorthQueryApplicationOneShotDenialKind as Read;
         use WorthQueryOutputDemandDenialKind as Kind;
         for (kind, peer_executes) in [

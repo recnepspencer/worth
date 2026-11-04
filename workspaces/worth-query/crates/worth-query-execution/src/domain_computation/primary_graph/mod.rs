@@ -209,13 +209,13 @@ pub(in crate::domain_computation) use application_contribution::SealedComputatio
 
 pub(in crate::domain_computation) use application_contribution::observe_discarded;
 
-pub(crate) use application_contribution::TestHostRequest;
-pub(crate) use application_contribution::{with_test_advancement, with_test_bootstrap_advancement};
+pub(crate) use crate::domain_computation::primary_graph::request_execution::TestHostRequest;
+pub(crate) use {crate::domain_computation::primary_graph::request_execution::with_test_advancement, crate::domain_computation::primary_graph::request_execution::with_test_bootstrap_advancement};
 
-pub use application_contribution::with_bootstrap_advancement;
-pub use application_contribution::with_bootstrap_advancement_from_request;
+pub use crate::domain_computation::primary_graph::request_execution::with_bootstrap_advancement;
+pub use crate::domain_computation::primary_graph::request_execution::with_bootstrap_advancement_from_request;
 
-pub use application_contribution::WorthQueryBootstrapAdvancementPhase;
+pub use crate::domain_computation::primary_graph::request_execution::WorthQueryBootstrapAdvancementPhase;
 
 pub use crate::domain_computation::execution_runtime::product_world::installed_source_reads_on_this_thread_for_test;
 
@@ -229,3 +229,4 @@ pub(crate) mod causal_inspection;
 mod record_reservations;
 
 pub(crate) mod source_disclosure;
+pub(crate) mod request_execution;

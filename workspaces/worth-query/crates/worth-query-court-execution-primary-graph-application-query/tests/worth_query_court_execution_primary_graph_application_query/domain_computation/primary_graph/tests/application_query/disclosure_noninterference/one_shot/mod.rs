@@ -162,7 +162,7 @@ pub fn observe(label: &str) -> ConsumerObservation {
 }
 
 pub fn execute(
-    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     world: &AuthorizationWorld,
 ) -> ConsumerObservation {
     capture_observation(&execute_result(
@@ -173,7 +173,7 @@ pub fn execute(
 }
 
 pub fn execute_result(
-    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &AuthorizationWorld,
 ) -> GovernedResult {

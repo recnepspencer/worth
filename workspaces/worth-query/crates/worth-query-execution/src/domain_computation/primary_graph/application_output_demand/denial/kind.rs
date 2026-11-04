@@ -23,7 +23,7 @@ pub enum WorthQueryOutputDemandDenialKind {
     /// The exact Bridge conditional refusal, retained before recovery grouping.
     BridgeConditional(Box<worth_runtime_bridge::facade::BridgeConditionalDenialKind>),
     /// The advancement could not enter its host-owned execution request.
-    ExecutionRequest(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
+    ExecutionRequest(crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial),
     /// The original source query binding is no longer installed as admitted.
     SourceQueryInstallation(
         worth_query_installation::facade::WorthQueryApplicationQueryInstallationDenialKind,

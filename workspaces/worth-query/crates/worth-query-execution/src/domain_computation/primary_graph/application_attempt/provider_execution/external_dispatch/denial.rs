@@ -54,7 +54,7 @@ pub enum WorthQueryExternalDispatchAttemptDenial {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryExternalDispatchPreparationDenial {
     CompletionExecutionRequest(
-        crate::domain_computation::primary_graph::WorthQueryAdvancementDenial,
+        crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
     ),
     OwnerReadDenied(WorthQueryCommittedDispatchOutboxReadDenial),
     AttemptAdmissionDenied(WorthQueryExternalDispatchAttemptDenial),
@@ -88,7 +88,7 @@ pub enum WorthQueryExternalDispatchPreparationDenial {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryExternalRedispatchDenial {
     CompletionExecutionRequest(
-        crate::domain_computation::primary_graph::WorthQueryAdvancementDenial,
+        crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
     ),
     /// Fresh effect authority for the handle failed before transport: the
     /// handle already ended, it expired, or the authority is not its own.
@@ -340,13 +340,10 @@ impl WorthQueryExternalDispatchPreparationDenial {
 
 impl WorthQueryExternalRedispatchDenial {
     pub(super) fn advancement(
-        cause: crate::domain_computation::primary_graph::WorthQueryAdvancementDenial,
+        cause: crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
     ) -> Self {
         let stage = Stage::ResourceAdmission;
-        use crate::domain_computation::primary_graph::{
-            WorthQueryAdvancementDenial as Advancement,
-            WorthQueryManagedComputationInterruption as Interruption,
-        };
+        use {crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial as Advancement, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationInterruption as Interruption};
         match cause {
             Advancement::Interrupted(Interruption::Cancelled) => return Self::AdmissionCancelled,
             Advancement::Interrupted(Interruption::DeadlineExceeded) => {

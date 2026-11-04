@@ -1,11 +1,7 @@
 use super::super::{
     WorthQueryTemporalReentryOutcome as Outcome, WorthQueryTemporalTerminalFailure as Terminal,
 };
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationCommitDenial as Denial, WorthQueryApplicationCommitDenialKind as Kind,
-    WorthQueryApplicationCommitDenialStage as Stage,
-    WorthQueryManagedComputationResourceDenial as Resource, WorthQueryMemoryLimitLevel as Level,
-};
+use {crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial as Denial, crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind as Kind, crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage as Stage, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryMemoryLimitLevel as Level};
 use crate::domain_computation::{
     WorthQueryProviderSessionControlStopKind as Control,
     WorthQueryProviderSessionDenialKind as Session,

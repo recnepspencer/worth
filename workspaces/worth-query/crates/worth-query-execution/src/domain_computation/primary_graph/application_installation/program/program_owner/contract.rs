@@ -1,5 +1,5 @@
 use super::*;
-use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase;
 
 /// One owner of a rostered program on one published host.
 pub trait WorthQueryProgramOwner<Schema>: sealed::WorthQueryProgramOwnership {

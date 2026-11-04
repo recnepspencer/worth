@@ -1,4 +1,4 @@
-use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase;
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationIdentities, ApplicationMutationScopeBinding,
 };
@@ -30,7 +30,7 @@ use crate::domain_computation::primary_graph::{
 pub enum MutationHandlerExecutionDenial {
     /// Another installed runtime lent the phase; no handler or read ran.
     ForeignAdvancementPhase(
-        crate::domain_computation::primary_graph::WorthQueryForeignAdvancementPhase,
+        crate::domain_computation::primary_graph::request_execution::WorthQueryForeignAdvancementPhase,
     ),
     /// The projection that feeds the handler's decision could not be read.
     Projection(WorthQueryOperationProjectionDenial),

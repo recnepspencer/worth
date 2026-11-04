@@ -6,9 +6,7 @@ use worth_execution::PartitionItemId;
 use worth_foundational::facade::PartitionIdentity;
 use worth_query_declaration::facade::application_schema::ApplicationValueEncodeDenial;
 
-use super::super::{
-    WorthQueryManagedComputationInterruption, WorthQueryManagedComputationResourceDenial,
-};
+use {crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationInterruption, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial};
 use super::reader::{WorthQueryComputationInputDenial, WorthQueryComputationReadDenial};
 use super::routing::ComputationPartitionRoutingDenial;
 

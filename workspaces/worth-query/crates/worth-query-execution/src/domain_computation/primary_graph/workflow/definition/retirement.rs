@@ -1,6 +1,6 @@
 //! Definition retirement preparation for one selected branch occurrence.
 
-use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase;
 use worth_query_declaration::facade::{
     application_capability::ApplicationCapabilityMarkerIdentity,
     application_program::ApplicationWorkflowSpec,
@@ -109,7 +109,7 @@ pub struct WorthQueryWorkflowDefinitionRetirementAdapter;
 impl WorthQueryWorkflowDefinitionRetirementAdapter {
     #[doc(hidden)]
     pub fn prepare<Schema, Capability, Operation, Input, Scope, Spec>(
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         selected: &WorthQuerySelectedProductOperation<'_, Schema>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         definition: PublishedWorkflowDefinitionRef,
@@ -153,7 +153,7 @@ impl WorthQueryWorkflowDefinitionRetirementAdapter {
             match phase.execution_request_for(&runtime.runtime.product_runtime) {
                 Ok(request) => request,
                 Err(cause) => return WorkflowDefinitionRetirementOutcome::Application(
-                    crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(
+                    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::from(
                         cause,
                     )
                     .into_commit_outcome()

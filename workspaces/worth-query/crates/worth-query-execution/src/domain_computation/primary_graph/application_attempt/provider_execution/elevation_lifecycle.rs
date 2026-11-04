@@ -1,5 +1,5 @@
 mod installed_readmission;
-use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::super::{

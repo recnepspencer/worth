@@ -165,7 +165,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
     /// remains unavailable. Reconstruction is separate from ordinary discovery.
     pub fn repair_completed_inbound_index(
         &self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         handle: &WorthQueryInboundVerifierHandle,
         maximum_world_slots: NonZeroUsize,
         maximum_changed_records_per_commit: NonZeroUsize,

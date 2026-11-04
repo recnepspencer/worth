@@ -1,6 +1,6 @@
 //! Business evidence and the real failed cleanup owner travel together.
 use super::WorthQueryApplicationUncommitted;
-use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase;
 use crate::domain_computation::{
     execution_runtime::product_world::WorthQueryProductRuntime, WorthQueryMutationCleanupFailure,
 };
@@ -81,7 +81,7 @@ pub struct WorthQueryApplicationManagedCleanup {
     failure: WorthQueryMutationCleanupFailure,
     runtime: WorthQueryProductRuntime,
     bridge: std::sync::Arc<std::sync::RwLock<worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly>>,
-    last_denial: Option<crate::domain_computation::primary_graph::application_contribution::WorthQueryAdvancementDenial>,
+    last_denial: Option<crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial>,
 }
 impl WorthQueryApplicationManagedCleanup {
     /// Borrows the exact failed managed-run owner.
@@ -89,7 +89,7 @@ impl WorthQueryApplicationManagedCleanup {
         &self.failure
     }
     /// The most recent fresh issuer or execution refusal, if retry stopped before native cleanup.
-    pub fn last_retry_denial(&self) -> Option<&crate::domain_computation::primary_graph::application_contribution::WorthQueryAdvancementDenial>{
+    pub fn last_retry_denial(&self) -> Option<&crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial>{
         self.last_denial.as_ref()
     }
     /// Retries native cleanup under this exact runtime's fresh bounded issuer; refusal returns this owner.

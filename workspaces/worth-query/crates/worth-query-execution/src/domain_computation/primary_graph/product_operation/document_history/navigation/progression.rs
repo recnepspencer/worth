@@ -1,8 +1,6 @@
 //! Candidate work runs under its attempt owner, outside the document selection cell.
 use super::*;
-use crate::domain_computation::primary_graph::{
-    WorthQueryAdvancementPhase, WorthQueryExpectedProductBranch,
-};
+use {crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryExpectedProductBranch};
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::mvcc::{

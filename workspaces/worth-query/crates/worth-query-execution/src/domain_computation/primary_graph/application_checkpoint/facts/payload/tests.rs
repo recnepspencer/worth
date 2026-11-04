@@ -1,6 +1,6 @@
 //! Native storage, exact backing and wire/funding boundaries of the carrier.
 use super::*;
-use crate::domain_computation::primary_graph::application_contribution::with_bootstrap_advancement;
+use crate::domain_computation::primary_graph::request_execution::with_bootstrap_advancement;
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
 };

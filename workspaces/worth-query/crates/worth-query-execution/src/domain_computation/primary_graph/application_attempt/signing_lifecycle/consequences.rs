@@ -25,7 +25,7 @@ pub(super) fn collect(
     operation: &str,
     logical_request: [u8; 32],
     lease: &Lease,
-    execution: &super::QueryRequestExecution<'_>,
+    execution: &crate::domain_computation::primary_graph::request_execution::QueryRequestExecution<'_>,
     request: &worth_execution::ExecutionRequest<'_, '_>,
     context: &mut worth_execution::MapKernelContext<'_, '_>,
     batch: &mut Batch,

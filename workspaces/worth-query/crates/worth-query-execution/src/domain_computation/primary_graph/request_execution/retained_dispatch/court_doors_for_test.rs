@@ -20,7 +20,7 @@ impl QueryDispatch<'_> {
         _arg3: (Kernel, Diagnostic),
         identity: R,
         combine: Combine,
-        cause: super::super::super::partitioned_computation::WorthQueryPartitionedComputationFullCause,
+        cause: crate::domain_computation::primary_graph::application_contribution::partitioned_computation::WorthQueryPartitionedComputationFullCause,
     ) -> Result<NativeRetainedReduction<R, Combine>, RetainedReduceDenial<E>>
     where
         T: Sync,

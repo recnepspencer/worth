@@ -5,10 +5,7 @@ use super::super::{
     WorthQueryApplicationHistoryPageLimits as Limits,
 };
 use super::*;
-use crate::domain_computation::{
-    authorization::WorthQueryAdmittedApplicationCapabilityAccess as CapabilityAccess,
-    primary_graph::WorthQueryAdvancementPhase,
-};
+use {crate::domain_computation::authorization::WorthQueryAdmittedApplicationCapabilityAccess as CapabilityAccess, crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase};
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest;
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {

@@ -294,7 +294,7 @@ impl WorkflowOperationAuthority {
     #[doc(hidden)]
     pub fn validate_before_handler<Schema>(
         &self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial>

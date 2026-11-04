@@ -1,8 +1,5 @@
 //! Follow only declared source paths affected by this candidate, with one deduplicated root bound.
-use super::{
-    add_subject, attempt, inverse_prefix, stopped, unavailable, BTreeMap, BTreeSet, Batch, Effect,
-    EntityId, KindId, Lease, Locus, Outcome, PathDirection, QueryRequestExecution, Rule,
-};
+use {super::add_subject, super::attempt, super::inverse_prefix, super::stopped, super::unavailable, super::BTreeMap, super::BTreeSet, super::Batch, super::Effect, super::EntityId, super::KindId, super::Lease, super::Locus, super::Outcome, super::PathDirection, crate::domain_computation::primary_graph::request_execution::QueryRequestExecution, super::Rule};
 use worth_relational::facade::transactions::EntityReference;
 
 pub(in crate::domain_computation::primary_graph::application_attempt::signing_lifecycle) fn affected_subjects(

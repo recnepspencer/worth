@@ -3,10 +3,7 @@ use super::{
     WorthQueryDocumentHistoryClosing,
 };
 use crate::basis::WorthQueryProductBranch;
-use crate::domain_computation::primary_graph::{
-    WorthQueryAdvancementPhase, WorthQueryApplicationProductBranchCleanupFailure,
-    WorthQueryApplicationProductBranchCloseDenial,
-};
+use {crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryApplicationProductBranchCleanupFailure, crate::domain_computation::primary_graph::WorthQueryApplicationProductBranchCloseDenial};
 use worth_query_declaration::facade::application_history::ApplicationHistoryBinding;
 use worth_query_installation::facade::ApplicationSchema;
 

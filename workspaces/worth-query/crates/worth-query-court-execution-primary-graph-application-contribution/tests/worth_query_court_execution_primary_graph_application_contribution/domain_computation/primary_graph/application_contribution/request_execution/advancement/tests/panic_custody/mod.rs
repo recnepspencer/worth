@@ -106,7 +106,7 @@ fn accounted_completion_keeps_its_value_when_the_body_cancels_the_request() {
     let cancellation = worth_execution::CancellationSource::new();
     let root = QueryRequestExecution::open_control_for_test(
         worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(
-            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy(NonZeroUsize::MIN, None),
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::test_placement::test_policy(NonZeroUsize::MIN, None),
         ),
         cancellation.token(),
         None,
@@ -149,7 +149,7 @@ fn body_panic_leaves_the_slot_empty_and_resumes_the_identical_payload() {
         *slot.borrow_mut() = None;
     };
     let caught = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::runner::run_advancement(&root, None, None, &mut write, &mut discard)
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::runner::run_advancement(&root, None, None, &mut write, &mut discard)
     }))
     .expect_err("the original body panic resumes rather than becoming a slot failure");
     assert!(slot.borrow().is_none());

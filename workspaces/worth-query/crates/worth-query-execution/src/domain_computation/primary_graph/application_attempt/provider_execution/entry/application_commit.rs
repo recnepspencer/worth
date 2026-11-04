@@ -21,7 +21,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     #[doc(hidden)]
     pub fn compare_and_commit_application_in_advancement<Operation, Input, Scope>(
         &self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
@@ -43,7 +43,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Scope,
     >(
         &self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
         history: Option<HistoryProducerInvocation<'_>>,

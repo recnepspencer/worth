@@ -154,7 +154,7 @@ fn replacing_a_sole_member_key_with_a_prefix_collision_matches_a_fresh_run() {
     let request = live_scope();
     let execution = QueryRequestExecution::open_for_test(
         RuntimeWorldExecutionPlacement::Serial(
-            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy(
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::test_placement::test_policy(
                 std::num::NonZeroUsize::MIN, None,
             ),
         ),

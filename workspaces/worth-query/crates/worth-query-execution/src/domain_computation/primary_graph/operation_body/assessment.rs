@@ -1,10 +1,6 @@
 //! Read-only assessment borrows resources from the exact native runtime phase.
 use super::WorthQueryOperationBodyRequirementFinding;
-use crate::domain_computation::primary_graph::{
-    HandlerExecutionDenial, WorthQueryAdmittedApplicationOperation, WorthQueryAdvancementPhase,
-    WorthQueryApplicationInvariantProjectionAuthority, WorthQueryForeignAdvancementPhase,
-    WorthQueryOperationProjectionDenial, WorthQueryPrimaryGraphApplicationRuntime,
-};
+use {crate::domain_computation::primary_graph::HandlerExecutionDenial, crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation, crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryApplicationInvariantProjectionAuthority, crate::domain_computation::primary_graph::request_execution::WorthQueryForeignAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryOperationProjectionDenial, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime};
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationScopeBinding,
 };
@@ -17,7 +13,7 @@ use worth_query_installation::facade::{
 pub struct WorthQueryCurrentBodyRequirementAssessment {
     findings: Vec<WorthQueryOperationBodyRequirementFinding>,
     _memory: Option<
-        crate::domain_computation::primary_graph::application_contribution::QueryMemoryReservation,
+        crate::domain_computation::primary_graph::request_execution::QueryMemoryReservation,
     >,
 }
 
@@ -27,7 +23,7 @@ impl WorthQueryCurrentBodyRequirementAssessment {
     }
     pub(in crate::domain_computation::primary_graph::operation_body) fn new(
         findings: Vec<WorthQueryOperationBodyRequirementFinding>,
-        memory: crate::domain_computation::primary_graph::application_contribution::QueryMemoryReservation,
+        memory: crate::domain_computation::primary_graph::request_execution::QueryMemoryReservation,
     ) -> Self {
         Self {
             findings,

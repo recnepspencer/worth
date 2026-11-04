@@ -1,6 +1,6 @@
 //! Actual measured call custody funds each persistent view and exact reach index.
 use crate::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::*;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::test_placement::test_policy;
 #[test]
 fn measured_call_shape_view_keeps_its_own_grant_after_the_sequence_drops() {
     let _observation = QueryObservation::install_on_this_thread();

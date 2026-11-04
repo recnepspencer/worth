@@ -6,9 +6,7 @@ use crate::domain_computation::primary_graph::application_attempt::{
     provider_compare_denial::provider_compare_denied,
     WorthQueryApplicationCommitDenialKind as Kind, WorthQueryProviderProgressionOutcome as Outcome,
 };
-use crate::domain_computation::primary_graph::{
-    WorthQueryManagedComputationResourceDenial as Resource, WorthQueryMemoryLimitLevel as Level,
-};
+use {crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryMemoryLimitLevel as Level};
 use crate::domain_computation::{
     WorthQueryProviderCompareAndCommitDenial as Compare,
     WorthQueryProviderSessionCommitStop as Stop,

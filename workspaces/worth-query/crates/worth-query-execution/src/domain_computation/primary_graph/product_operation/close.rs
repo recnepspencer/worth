@@ -32,7 +32,7 @@ pub enum WorthQueryApplicationProductBranchCloseDenial {
 impl<Schema: ApplicationSchema> WorthQueryProductEntry<'_, Schema> {
     pub fn close(
         self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
     ) -> Result<WorthQueryProductBranchCloseReceipt, WorthQueryApplicationProductBranchCloseDenial>
     {
         let mut retirements = OwnerCleanupRetirements::default();

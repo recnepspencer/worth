@@ -2,7 +2,7 @@ use crate::domain_computation::execution_runtime::product_world::publication_den
     WorthQueryProductPublicationDenial as PublicationDenial,
     WorthQueryProductPublicationOutcome as PublicationOutcome,
 };
-use crate::domain_computation::primary_graph::application_contribution::advancement_denial;
+use crate::domain_computation::primary_graph::request_execution::advancement_denial;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_world::facade::{
     RuntimeWorldRecoveryDenial, RuntimeWorldSettledRelationalAdoptionDenial,
@@ -50,7 +50,7 @@ pub enum WorthQueryManagedApplicationRecoveryOutcome {
 /// recovery remains retained by its provider entry for a later admitted try.
 #[derive(Debug)]
 pub enum WorthQueryManagedApplicationRecoveryDenial {
-    ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
+    ExecutionDenied(crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial),
     Authorization(WorthQueryOperationAuthorizationDenial),
     ForeignAdmission,
     BindingMismatch,
@@ -117,7 +117,7 @@ where
     /// Continues recovery inside the Publication call that already admitted its readers.
     pub fn recover_admitted_unpublished_application_in_advancement<Operation, Input, Scope>(
         &self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         recovery: &WorthQueryProductUnpublishedRecovery,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
@@ -142,7 +142,7 @@ where
     /// projection. Only the program-source owner uses this handoff.
     pub fn recover_admitted_unpublished_program_source<Operation, Input, Scope>(
         &self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         recovery: &WorthQueryProductUnpublishedRecovery,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
@@ -162,7 +162,7 @@ where
     /// Owning no-output recovery retains cleanup without constructing an output carrier.
     pub fn recover_admitted_unpublished_source_operation<Operation, Input, Scope>(
         &self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         recovery: &WorthQueryProductUnpublishedRecovery,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
@@ -186,7 +186,7 @@ where
 
     fn recover_admitted_unpublished_application_delivery<Operation, Input, Scope>(
         &self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         recovery: &WorthQueryProductUnpublishedRecovery,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
@@ -284,7 +284,7 @@ where
             drop(lease);
             match outcome {
                 Err(PublicationDenial::ClockMismatch) => {
-                    Err(Denial::ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)))
+                    Err(Denial::ExecutionDenied(crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)))
                 },
 Err(PublicationDenial::Stopped(stop)) => {
                     Err(Denial::ExecutionDenied(advancement_denial(stop)))

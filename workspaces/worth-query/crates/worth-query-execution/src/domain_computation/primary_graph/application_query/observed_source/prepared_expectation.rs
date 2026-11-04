@@ -190,7 +190,7 @@ where
 {
     pub fn bind_application_source_expectation<Binding, Scope>(
         &self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         admission: &mut WorthQueryAdmittedApplicationOperation<
             Schema,
             Binding::Operation,
@@ -220,7 +220,7 @@ where
 
     pub fn bind_application_result_set_expectation<Binding, Scope>(
         &self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         admission: &mut WorthQueryAdmittedApplicationOperation<
             Schema,
             Binding::Operation,
@@ -255,7 +255,7 @@ where
         Scope,
     >(
         &self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         admission: &WorthQueryAdmittedApplicationOperation<
             Schema,
             Binding::Operation,
@@ -278,7 +278,7 @@ where
 
     fn bind_checked_source_expectation<Binding, Scope>(
         &self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         admission: &mut WorthQueryAdmittedApplicationOperation<Schema, Binding::Operation, Binding::Input, Scope>,
         source: WorthQueryObservedSource<<Binding::SourceExpectation as worth_query_declaration::facade::application_operation::ApplicationMutationSourceExpectation<Schema>>::Query>,
         identity: [u8; 32],

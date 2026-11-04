@@ -12,7 +12,7 @@ fn retention_identity_exhaustion_survives_idempotency_snapshot_mapping() {
 
 #[test]
 fn mapping_contract_pending_execution_retains_kind_and_ancestry() {
-    use crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial as Resource;
+    use crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource;
     use crate::domain_computation::{
         WorthQueryProviderSessionDenialKind as Kind, WorthQueryProviderSessionFailure,
     };

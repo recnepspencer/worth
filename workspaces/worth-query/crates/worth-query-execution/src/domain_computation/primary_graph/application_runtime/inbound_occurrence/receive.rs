@@ -33,7 +33,7 @@ pub enum WorthQueryInboundAdmission {
 /// Why an authenticated completion could not enter or finish owner custody.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryInboundAdmissionDenial {
-    ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
+    ExecutionDenied(crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial),
     ForeignVerifier,
     Oversized,
     Verification(WorthQueryInboundVerificationDenial),
@@ -125,7 +125,7 @@ where
     fn execute_inbound_admission(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         admitted: WorthQueryInboundAdmission,
         envelope: &[u8],
         request: &WorthQueryRequestScope,
@@ -265,7 +265,7 @@ where
 
 impl WorthQueryInboundAdmissionDenial {
     pub(in crate::domain_computation::primary_graph) fn advancement(
-        cause: crate::domain_computation::primary_graph::WorthQueryAdvancementDenial,
+        cause: crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
     ) -> Self {
         let stage = crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage::ResourceAdmission;
         match cause.provider_denial_cause() {

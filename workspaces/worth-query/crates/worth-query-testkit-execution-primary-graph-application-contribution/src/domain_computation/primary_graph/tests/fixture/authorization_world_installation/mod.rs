@@ -60,7 +60,7 @@ impl AuthorizationWorld {
 
     pub fn selected_product(
         &self,
-        phase: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+        phase: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     ) -> worth_query_execution::facade::domain_computation::WorthQuerySelectedProductOperation<
         '_,
         IdentityExecutionSchema,
@@ -97,7 +97,7 @@ pub fn install_authorization_world_with_product_resources(
     spec: AuthorizationWorldSpec<'_>,
     product_resources: worth_query_execution::facade::integration::WorthQueryProductWorldResources,
 ) -> AuthorizationWorld {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_bootstrap_advancement(
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_bootstrap_advancement(
         128_000_000,
         |phase| install_authorization_world_in_advancement(&phase, spec, product_resources),
     )
@@ -105,7 +105,7 @@ pub fn install_authorization_world_with_product_resources(
 
 /// Fixture installation borrows the test's active request when setup is a phase.
 pub fn install_authorization_world_in_advancement(
-    phase: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    phase: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     spec: AuthorizationWorldSpec<'_>,
     product_resources: worth_query_execution::facade::integration::WorthQueryProductWorldResources,
 ) -> AuthorizationWorld {

@@ -241,12 +241,7 @@ pub fn every_advancement_consult_with_door<T: Eq + Debug, E: Eq + Debug>(
     cancelled: E,
     exhausted: E,
 ) -> u64 {
-    use crate::facade::primary_graph::{
-        advancement_requests_on_this_thread_for_test,
-        bound_advancement_requests_on_this_thread_for_test,
-        place_managed_computations_on_this_thread_for_test, WorthQueryExecutionObservation,
-        WorthQueryExecutionPlacementForTest,
-    };
+    use {crate::domain_computation::primary_graph::request_execution::advancement_requests_on_this_thread_for_test, crate::domain_computation::primary_graph::request_execution::bound_advancement_requests_on_this_thread_for_test, crate::domain_computation::primary_graph::request_execution::place_managed_computations_on_this_thread_for_test, crate::facade::primary_graph::WorthQueryExecutionObservation, crate::domain_computation::primary_graph::request_execution::WorthQueryExecutionPlacementForTest};
     use worth_query_admission::facade::authenticated_principal::{
         WorthQueryCancellationSource, WorthQueryRequestScope,
     };

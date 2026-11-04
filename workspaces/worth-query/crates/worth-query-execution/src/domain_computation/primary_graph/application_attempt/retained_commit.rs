@@ -29,7 +29,7 @@ where
     pub fn compare_and_commit_application_retained_in_advancement<Operation, Input, Scope>(
         &self,
 
-        phase: &super::super::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,

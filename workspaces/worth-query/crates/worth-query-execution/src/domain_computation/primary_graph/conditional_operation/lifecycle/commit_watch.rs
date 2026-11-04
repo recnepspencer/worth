@@ -136,16 +136,13 @@ fn capacity() -> Denial {
 }
 
 fn check_request(execution: &worth_execution::ExecutionRequest<'_, '_>) -> Result<(), Denial> {
-    use crate::domain_computation::primary_graph::{
-        WorthQueryManagedComputationCheckpointDenial as Stop,
-        WorthQueryManagedComputationInterruption as Interrupted,
-    };
+    use {crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationCheckpointDenial as Stop, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationInterruption as Interrupted};
     use crate::domain_computation::{
         WorthQueryProviderSessionControlStopKind as Control,
         WorthQueryProviderSessionDenialKind as Refusal,
     };
     execution.check_live().map_err(|stop| {
-        let cause = match crate::domain_computation::primary_graph::application_contribution::execution_denial::checkpoint_denial(stop) {
+        let cause = match crate::domain_computation::primary_graph::request_execution::execution_stop::checkpoint_denial(stop) {
             Stop::Interrupted(Interrupted::Cancelled) => Err(Control::Cancelled),
             Stop::Interrupted(Interrupted::DeadlineExceeded) => Err(Control::TimedOut),
             Stop::Resource(denial) => Ok(Refusal::ExecutionResource { denial, partition_identity: None, policy_ancestor: None }),

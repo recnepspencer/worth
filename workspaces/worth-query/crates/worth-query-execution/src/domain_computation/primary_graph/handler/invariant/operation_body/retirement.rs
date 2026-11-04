@@ -2,14 +2,7 @@
 use super::{
     ApplicationMutationBinding, ApplicationSchema, DecisionReader, HandlerExecutionDenial,
 };
-use crate::domain_computation::primary_graph::{
-    operation_body::{
-        BodyFieldExpectation, PreparedBodyInputs, PreparedBodyRetirements, PreparedRetirementBatch,
-    },
-    HandlerResult, WorthQueryAdvancementDenial, WorthQueryApplicationAttemptDenial,
-    WorthQueryApplicationAttemptDenialKind, WorthQueryManagedComputationResourceDenial,
-    WorthQueryOperationBodyDenial,
-};
+use {crate::domain_computation::primary_graph::operation_body::BodyFieldExpectation, crate::domain_computation::primary_graph::operation_body::PreparedBodyInputs, crate::domain_computation::primary_graph::operation_body::PreparedBodyRetirements, crate::domain_computation::primary_graph::operation_body::PreparedRetirementBatch, crate::domain_computation::primary_graph::HandlerResult, crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial, crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial, crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial, crate::domain_computation::primary_graph::WorthQueryOperationBodyDenial};
 use worth_query_declaration::facade::application_schema::ApplicationOperationBodyProgram;
 impl<S: ApplicationSchema, B: ApplicationMutationBinding<S>> DecisionReader<'_, '_, '_, S, B> {
     pub(in crate::domain_computation::primary_graph) fn body_retirements(
@@ -69,7 +62,7 @@ impl<S: ApplicationSchema, B: ApplicationMutationBinding<S>> DecisionReader<'_, 
     }
 }
 fn reject_overlap<S>(
-    execution:&crate::domain_computation::primary_graph::application_contribution::QueryRequestExecution<'_>,
+    execution:&crate::domain_computation::primary_graph::request_execution::QueryRequestExecution<'_>,
     batches: &[PreparedRetirementBatch<S>],
 ) -> Result<(), HandlerExecutionDenial> {
     let count = batches
@@ -83,7 +76,7 @@ fn reject_overlap<S>(
     let _memory = execution.reserve(bytes).map_err(resource)?;
     execution.decision_stage(|context|{
         let work=u64::try_from(count).ok().and_then(|n|n.checked_mul(u64::from(usize::BITS-count.leading_zeros())+1)).ok_or_else(overflow)?;
-        context.checkpoint(work).map_err(|cause|HandlerExecutionDenial::new(crate::domain_computation::primary_graph::application_contribution::advancement_denial(worth_execution::WorkCeilingDenial::Stopped(cause))))?;
+        context.checkpoint(work).map_err(|cause|HandlerExecutionDenial::new(crate::domain_computation::primary_graph::request_execution::advancement_denial(worth_execution::WorkCeilingDenial::Stopped(cause))))?;
         let mut selected=Vec::with_capacity(count);
         selected.extend(batches.iter().flat_map(|batch|batch.targets.iter().map(|(_,target)|target.entity_id)));
         selected.sort_unstable();

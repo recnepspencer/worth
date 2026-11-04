@@ -170,7 +170,7 @@ impl AggregateWorld {
 
     pub fn fixture_phase<'scope>(
         &self,
-        host: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'scope>,
+        host: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'scope>,
     ) -> worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'scope>
     {
         host.phase_for_application_for_test(&self._runtime)
@@ -190,7 +190,7 @@ impl AggregateWorld {
 
     pub fn observe(
         &self,
-        phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+        phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     ) -> AggregateObservation {
         let completed = self
             .authority
@@ -323,7 +323,7 @@ impl AggregateWorld {
         values: Vec<Option<i64>>,
         ambiguous: bool,
     ) -> Self {
-        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
             let phase = &active_phase;
 
             let installed = runtime

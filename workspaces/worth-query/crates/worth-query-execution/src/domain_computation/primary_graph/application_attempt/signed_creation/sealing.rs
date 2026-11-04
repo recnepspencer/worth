@@ -4,9 +4,7 @@ use super::super::{
     WorthQueryApplicationEffectProgram,
 };
 use super::{identity, SealedSigningContext};
-use crate::domain_computation::primary_graph::{
-    WorthQueryAdvancementPhase, WorthQueryPrimaryGraphApplicationRuntime,
-};
+use {crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime};
 use std::sync::Arc;
 use worth_foundational::facade::CanonicalDigestId;
 use worth_query_admission::facade::authentication_event::{
@@ -24,7 +22,7 @@ pub type BodyCandidate<Schema, Binding> = WorthQueryApplicationEffectProgram<Sch
 #[derive(Debug)]
 /// Why the native owner could not seal a signed creation at its retained occurrence.
 pub enum WorthQuerySignedCreationPreparationDenial {
-    Execution(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
+    Execution(crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial),
     Commit(WorthQueryApplicationCommitDenial),
     LifecycleObservation(Box<super::super::WorthQueryApplicationCommitOutcome>),
     Attempt(WorthQueryApplicationAttemptDenial),
@@ -265,7 +263,7 @@ pub(in crate::domain_computation::primary_graph) fn seal<
 
 fn stopped(cause: worth_execution::MapKernelStop) -> Denial {
     Denial::Execution(
-        crate::domain_computation::primary_graph::application_contribution::advancement_denial(
+        crate::domain_computation::primary_graph::request_execution::advancement_denial(
             worth_execution::WorkCeilingDenial::Stopped(cause),
         ),
     )

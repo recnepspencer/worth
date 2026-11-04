@@ -6,9 +6,7 @@ pub use crate::domain_computation::primary_graph::{
 };
 pub use worth_foundational::facade::ProducerPublicationOwnership;
 
-pub use crate::domain_computation::primary_graph::{
-    WorthQueryAdvancementDenial, WorthQueryAdvancementPhase, WorthQueryForeignAdvancementPhase,
-};
+pub use {crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial, crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::request_execution::WorthQueryForeignAdvancementPhase};
 
 /// How a partitioned computation's run ran, for the test observer only.
 pub use crate::domain_computation::primary_graph::{
@@ -19,45 +17,14 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryPartitionedTreeRebuildCause, WorthQueryPartitionedTreeRun,
     WorthQueryPublishedComputationStateForTest,
 };
-pub use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationConditionalBinding, WorthQueryApplicationConditionalPackageContract,
-    WorthQueryApplicationConditionalProducerAccess, WorthQueryApplicationContractCatalog,
-    WorthQueryApplicationContribution, WorthQueryApplicationContributionContracts,
-    WorthQueryApplicationContributionSetup, WorthQueryApplicationContributionTuple,
-    WorthQueryApplicationOutputDemand, WorthQueryApplicationProducerBinding,
-    WorthQueryApplicationProducerProvider, WorthQueryCompletedManagedComputation,
-    WorthQueryCompletedPartitionedComputation, WorthQueryComputationInputDenial,
-    WorthQueryComputationPartitionMembers, WorthQueryComputationPartitionPlan,
-    WorthQueryComputationPartitionStop, WorthQueryComputationPartitionView,
-    WorthQueryComputationReadDenial, WorthQueryComputationReader,
-    WorthQueryConfiguredApplicationContributions, WorthQueryDecisionContextDependencies,
-    WorthQueryDeterministicReducer, WorthQueryInstalledApplicationConditionalRegistry,
-    WorthQueryInstalledApplicationProducerRegistry, WorthQueryInstalledManagedComputation,
-    WorthQueryInstalledPartitionedComputation, WorthQueryManagedComputationCheckpoint,
-    WorthQueryManagedComputationCheckpointDenial, WorthQueryManagedComputationDenial,
-    WorthQueryManagedComputationExecution, WorthQueryManagedComputationInterruption,
-    WorthQueryManagedComputationOwner, WorthQueryManagedComputationResourceDenial,
-    WorthQueryManagedIndexProviderRegistration, WorthQueryMemoryLimitLevel,
-    WorthQueryOutputReadinessContract, WorthQueryOutputReadinessContractBuilder,
-    WorthQueryOutputReadinessContractDenial, WorthQueryPartitionedComputationDenial,
-    WorthQueryPartitionedComputationOwner, WorthQueryPreparedManagedComputation,
-    WorthQueryPreparedPartitionedComputation, WorthQueryProducerApplicability,
-    WorthQueryProducerDenialDeclaration, WorthQueryProducerDenialProjection,
-    WorthQueryProducerInputReuseContract, WorthQueryProducerInvariantRequirement,
-    WorthQueryProducerLifecyclePosture, WorthQueryProducerOutputEquivalence,
-    WorthQueryProducerOutputFamily, WorthQueryProjectedProducerDenial, WorthQueryReadinessFieldUse,
-    WorthQueryReductionInputDenial, WorthQueryUndeclaredProducerDenial,
-    WorthQueryWorkflowAssessmentOutputFamily, WorthQueryWorkflowAssessmentPosture,
-};
+pub use {crate::domain_computation::primary_graph::WorthQueryApplicationConditionalBinding, crate::domain_computation::primary_graph::WorthQueryApplicationConditionalPackageContract, crate::domain_computation::primary_graph::WorthQueryApplicationConditionalProducerAccess, crate::domain_computation::primary_graph::WorthQueryApplicationContractCatalog, crate::domain_computation::primary_graph::WorthQueryApplicationContribution, crate::domain_computation::primary_graph::WorthQueryApplicationContributionContracts, crate::domain_computation::primary_graph::WorthQueryApplicationContributionSetup, crate::domain_computation::primary_graph::WorthQueryApplicationContributionTuple, crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemand, crate::domain_computation::primary_graph::WorthQueryApplicationProducerBinding, crate::domain_computation::primary_graph::WorthQueryApplicationProducerProvider, crate::domain_computation::primary_graph::WorthQueryCompletedManagedComputation, crate::domain_computation::primary_graph::WorthQueryCompletedPartitionedComputation, crate::domain_computation::primary_graph::WorthQueryComputationInputDenial, crate::domain_computation::primary_graph::WorthQueryComputationPartitionMembers, crate::domain_computation::primary_graph::WorthQueryComputationPartitionPlan, crate::domain_computation::primary_graph::WorthQueryComputationPartitionStop, crate::domain_computation::primary_graph::WorthQueryComputationPartitionView, crate::domain_computation::primary_graph::WorthQueryComputationReadDenial, crate::domain_computation::primary_graph::WorthQueryComputationReader, crate::domain_computation::primary_graph::WorthQueryConfiguredApplicationContributions, crate::domain_computation::primary_graph::WorthQueryDecisionContextDependencies, crate::domain_computation::primary_graph::WorthQueryDeterministicReducer, crate::domain_computation::primary_graph::WorthQueryInstalledApplicationConditionalRegistry, crate::domain_computation::primary_graph::WorthQueryInstalledApplicationProducerRegistry, crate::domain_computation::primary_graph::WorthQueryInstalledManagedComputation, crate::domain_computation::primary_graph::WorthQueryInstalledPartitionedComputation, crate::domain_computation::primary_graph::WorthQueryManagedComputationCheckpoint, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationCheckpointDenial, crate::domain_computation::primary_graph::WorthQueryManagedComputationDenial, crate::domain_computation::primary_graph::WorthQueryManagedComputationExecution, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationInterruption, crate::domain_computation::primary_graph::WorthQueryManagedComputationOwner, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial, crate::domain_computation::primary_graph::WorthQueryManagedIndexProviderRegistration, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryMemoryLimitLevel, crate::domain_computation::primary_graph::WorthQueryOutputReadinessContract, crate::domain_computation::primary_graph::WorthQueryOutputReadinessContractBuilder, crate::domain_computation::primary_graph::WorthQueryOutputReadinessContractDenial, crate::domain_computation::primary_graph::WorthQueryPartitionedComputationDenial, crate::domain_computation::primary_graph::WorthQueryPartitionedComputationOwner, crate::domain_computation::primary_graph::WorthQueryPreparedManagedComputation, crate::domain_computation::primary_graph::WorthQueryPreparedPartitionedComputation, crate::domain_computation::primary_graph::WorthQueryProducerApplicability, crate::domain_computation::primary_graph::WorthQueryProducerDenialDeclaration, crate::domain_computation::primary_graph::WorthQueryProducerDenialProjection, crate::domain_computation::primary_graph::WorthQueryProducerInputReuseContract, crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement, crate::domain_computation::primary_graph::WorthQueryProducerLifecyclePosture, crate::domain_computation::primary_graph::WorthQueryProducerOutputEquivalence, crate::domain_computation::primary_graph::WorthQueryProducerOutputFamily, crate::domain_computation::primary_graph::WorthQueryProjectedProducerDenial, crate::domain_computation::primary_graph::WorthQueryReadinessFieldUse, crate::domain_computation::primary_graph::WorthQueryReductionInputDenial, crate::domain_computation::primary_graph::WorthQueryUndeclaredProducerDenial, crate::domain_computation::primary_graph::WorthQueryWorkflowAssessmentOutputFamily, crate::domain_computation::primary_graph::WorthQueryWorkflowAssessmentPosture};
 /// What a partitioned owner's results and denials declare to execution, the
 /// identity of a planned item, and execution's refusal before dispatch.
 pub use worth_execution::{CanonicalBits, ChargedBytes, PartitionItemId};
 pub use worth_query_declaration::facade::application_schema::ApplicationSchemaComposition;
 
-pub use crate::domain_computation::primary_graph::{
-    with_bootstrap_advancement, with_bootstrap_advancement_from_request,
-};
+pub use {crate::domain_computation::primary_graph::request_execution::with_bootstrap_advancement, crate::domain_computation::primary_graph::request_execution::with_bootstrap_advancement_from_request};
 
-pub use crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase;
+pub use crate::domain_computation::primary_graph::request_execution::WorthQueryBootstrapAdvancementPhase;
 
 pub use crate::domain_computation::primary_graph::WorthQueryMemberExecution;

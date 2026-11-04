@@ -1,9 +1,5 @@
 //! Related-subject selection shares the ordinary adjacency seal and attestation evaluator.
-use super::{
-    invalid, ApplicationSchema, Direction, HandlerExecutionDenial, Operand,
-    PreparedRequirementOperand, QueryRequestExecution,
-    WorthQueryApplicationOperationInvariantProjectionReader, WorthQueryInvariantEntityIdentity,
-};
+use {super::invalid, super::ApplicationSchema, super::Direction, super::HandlerExecutionDenial, super::Operand, super::PreparedRequirementOperand, crate::domain_computation::primary_graph::request_execution::QueryRequestExecution, super::WorthQueryApplicationOperationInvariantProjectionReader, super::WorthQueryInvariantEntityIdentity};
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationAttemptDenial as AttemptDenial,
     WorthQueryApplicationAttemptDenialKind as Kind,

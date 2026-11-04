@@ -6,7 +6,7 @@ use worth_relational::facade::runtime::RelationalRuntimeApi;
 pub fn install_reclaiming_authorization_world(
     spec: AuthorizationWorldSpec<'_>,
 ) -> AuthorizationWorld {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|phase| {
         let native = RelationalRuntimeApi::builder()
             .profile(RelationalRuntimeProfile::AiWorkflow)
             .build()

@@ -1,7 +1,7 @@
 use crate::domain_computation::primary_graph::tests::fixture::authorization_world_installation::*;
 
 pub fn prepare_authorization_world(
-    phase: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    phase: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     resources: WorthQueryApplicationQueryResourceProfile,
     relational: Option<worth_relational::facade::runtime::RelationalRuntime>,
     product_resources: worth_query_execution::facade::integration::WorthQueryProductWorldResources,

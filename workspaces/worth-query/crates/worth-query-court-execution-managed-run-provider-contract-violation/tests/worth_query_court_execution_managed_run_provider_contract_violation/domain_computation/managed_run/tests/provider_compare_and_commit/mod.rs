@@ -18,7 +18,7 @@ use worth_query_execution::facade::domain_computation::WorthQueryProvisionalEffe
 
 #[test]
 fn exact_invariant_progression_is_consumed_by_provider_commit() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -60,7 +60,7 @@ fn exact_invariant_progression_is_consumed_by_provider_commit() {
 
 #[test]
 fn identical_provider_text_cannot_substitute_for_terminal_owner_binding() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -82,7 +82,7 @@ fn identical_provider_text_cannot_substitute_for_terminal_owner_binding() {
 
 #[test]
 fn relevant_drift_stales_before_provider_commit() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -122,7 +122,7 @@ fn relevant_drift_stales_before_provider_commit() {
 
 #[test]
 fn equivalent_proposal_from_another_session_rejects_foreign_progression() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -162,7 +162,7 @@ fn equivalent_proposal_from_another_session_rejects_foreign_progression() {
 }
 
 pub fn proposed_inspection<'run>(
-    execution: &'run worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &'run worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     running: &'run mut worth_query_execution::facade::domain_computation::WorthQueryRunningDirectRun,
     graph: &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
@@ -209,7 +209,7 @@ pub fn provider_state() -> Arc<Mutex<ProvisionalProviderState>> {
 }
 
 pub fn committed_provider_session(
-    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> worth_query_execution::facade::domain_computation::WorthQueryCommittedProviderSession {
     let state = provider_state();

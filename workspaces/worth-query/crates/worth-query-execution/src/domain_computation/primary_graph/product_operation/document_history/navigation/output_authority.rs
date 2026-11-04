@@ -5,11 +5,7 @@ use crate::basis::{WorthQueryProductBranchReadIdentity, WorthQueryProductObserva
 use crate::domain_computation::authorization::{
     admitted_request::AdmittedRequestCurrentness, WorthQueryOperationAuthorizationDenial,
 };
-use crate::domain_computation::primary_graph::{
-    application_query::CompletedMetadataRead, WorthQueryAdmittedApplicationOperation,
-    WorthQueryAdvancementPhase, WorthQueryApplicationReadObservation,
-    WorthQueryPrimaryGraphApplicationRuntime,
-};
+use {crate::domain_computation::primary_graph::application_query::CompletedMetadataRead, crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation, crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime};
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::application_history::{
     ApplicationHistoryBinding, ApplicationHistoryModel, ApplicationHistoryNavigationBinding,

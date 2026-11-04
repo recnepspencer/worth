@@ -1,11 +1,8 @@
 //! Request custody exists only while the runtime executes one advancement.
 
-use super::super::execution_denial;
+use crate::domain_computation::primary_graph::application_contribution::execution_denial;
 use super::{Form, QueryRequestExecution, Resource};
-use crate::domain_computation::primary_graph::{
-    WorthQueryManagedComputationCheckpointDenial, WorthQueryManagedComputationInterruption,
-    WorthQueryPrimaryGraphApplicationRuntime,
-};
+use {crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationCheckpointDenial, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationInterruption, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime};
 use worth_execution::{ExecutionRequest, ExecutionWorkCeiling, WorkCeilingDenial};
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_installation::facade::ApplicationSchema;
@@ -38,11 +35,11 @@ impl WorthQueryAdvancementDenial {
                 worth_execution::ExecutionPhysicalAllocationDenialKind::Allocator
             ),
             Self::Resource(Resource::MemoryLimit { level, .. }) => match level {
-                crate::domain_computation::primary_graph::WorthQueryMemoryLimitLevel::Process => {
+                crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryMemoryLimitLevel::Process => {
                     true
                 }
-                crate::domain_computation::primary_graph::WorthQueryMemoryLimitLevel::Policy
-                | crate::domain_computation::primary_graph::WorthQueryMemoryLimitLevel::Declared => {
+                crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryMemoryLimitLevel::Policy
+                | crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryMemoryLimitLevel::Declared => {
                     false
                 }
             },
@@ -92,7 +89,7 @@ impl QueryRequestExecution<'_> {
             Form::Leased { lease, .. } | Form::Serial { lease, .. } => lease
                 .as_ref()
                 .map(ExecutionRequest::leased)
-                .map_err(|denial| execution_denial::lease_denial(*denial)),
+                .map_err(|denial| crate::domain_computation::primary_graph::request_execution::execution_stop::lease_denial(*denial)),
         }
     }
 
@@ -136,9 +133,9 @@ pub(in crate::domain_computation::primary_graph) fn advancement_denial(
     use WorthQueryAdvancementDenial as Denial;
     match denial {
         WorkCeilingDenial::Admission(cause) => {
-            Denial::Resource(execution_denial::lease_denial(cause))
+            Denial::Resource(crate::domain_computation::primary_graph::request_execution::execution_stop::lease_denial(cause))
         }
-        WorkCeilingDenial::Stopped(stop) => match execution_denial::checkpoint_denial(stop) {
+        WorkCeilingDenial::Stopped(stop) => match crate::domain_computation::primary_graph::request_execution::execution_stop::checkpoint_denial(stop) {
             WorthQueryManagedComputationCheckpointDenial::Resource(cause) => {
                 Denial::Resource(cause)
             }
@@ -268,3 +265,4 @@ pub(crate) mod test_host_policy;
 pub(crate) use test_host_policy::TestHostRequest;
 
 mod court_doors_for_test;
+pub(crate) mod worker_custody;

@@ -18,7 +18,7 @@ fn cancelled_invariant_request_stops_before_provider_state_load() {
         source.token(),
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
-    let passed = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|phase| {
+    let passed = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|phase| {
         let bootstrap = phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -43,7 +43,7 @@ fn cancelled_invariant_request_stops_before_provider_state_load() {
     source.cancel();
     // A second host call: the cancelled request opens its own advancement.
     let stopped = state();
-    let refusal = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|phase| {
+    let refusal = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|phase| {
         let bootstrap = phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 

@@ -1,7 +1,7 @@
 //! The one operation closing a read's native cleanup needs from the runtime that owns the
 //! product publication recovery, so the refusal owner never names the application runtime.
 use crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanupReceipt;
-use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase;
 use crate::domain_computation::{
     WorthQueryProductUnpublishedRecovery, WorthQueryProductUnpublishedRecoveryReleaseFailure,
 };

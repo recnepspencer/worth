@@ -150,7 +150,7 @@ fn cold_content_matches_native_edits_independently_of_storage_and_history() {
 
 #[test]
 fn native_content_refusal_preserves_prior_and_funding_survives_clones() {
-    use crate::domain_computation::primary_graph::application_contribution::with_bootstrap_advancement;
+    use crate::domain_computation::primary_graph::request_execution::with_bootstrap_advancement;
     use worth_foundational::{
         DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
     };

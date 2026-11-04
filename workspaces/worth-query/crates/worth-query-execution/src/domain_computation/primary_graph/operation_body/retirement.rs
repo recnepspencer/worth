@@ -1,5 +1,5 @@
 //! Prepared retirement custody contains actual native targets, never row IDs as authority.
-use super::super::application_contribution::QueryMemoryReservation;
+use crate::domain_computation::primary_graph::request_execution::QueryMemoryReservation;
 use super::super::{CandidateWriter, HandlerResult, WorthQueryInvariantMutationTarget};
 use super::WorthQueryOperationBodyDenial;
 use worth_query_declaration::facade::{

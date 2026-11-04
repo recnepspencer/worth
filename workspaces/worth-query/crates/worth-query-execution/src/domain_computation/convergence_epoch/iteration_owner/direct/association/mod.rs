@@ -156,7 +156,7 @@ impl DirectAssociatedStartRejection {
 
 impl DirectIterationAssociation<WorthQueryActiveDirectGraphExecution> {
     pub(super) fn begin(
-        execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        execution: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         epoch: DirectIteratingEpochAssociation,
         request: WorthQueryManagedGraphCallRequest,
     ) -> Result<Self, DirectAssociatedStartRejection> {

@@ -48,7 +48,7 @@ pub fn publish(
 fn last_published_interest_releases_its_own_prerequisite_claims() {
     let receipt = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
     let _occurrence = occurrence();
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|_| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|_| {
         let registry = WorthQueryOutputDemandRegistry::default();
         let upstream_key = key("held-upstream", 1, 1);
         let upstream = admit(&registry, &upstream_key);
@@ -82,7 +82,7 @@ fn last_published_interest_releases_its_own_prerequisite_claims() {
 fn one_remaining_interest_keeps_the_undelivered_publication() {
     let receipt = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
     let _occurrence = occurrence();
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|_| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|_| {
         let registry = WorthQueryOutputDemandRegistry::default();
         let upstream_key = key("remaining-interest-upstream", 1, 1);
         let upstream = admit(&registry, &upstream_key);
@@ -137,7 +137,7 @@ fn one_remaining_interest_keeps_the_undelivered_publication() {
 fn a_registry_successor_is_moved_to_exactly_one_taker() {
     let receipt = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
     let _occurrence = occurrence();
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|_| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|_| {
         let registry = WorthQueryOutputDemandRegistry::default();
         let row_key = key("single-successor", 1, 2);
         let first = admit(&registry, &row_key);

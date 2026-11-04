@@ -14,7 +14,7 @@ impl WorthQueryExecutionInstallationAuthority {
     /// Prepares the application's in-memory graph with its exact invariant factories.
     pub fn prepare_primary_graph_with_invariants<Schema: ApplicationSchema>(
         &self,
-        phase: &super::WorthQueryBootstrapAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
         runtime: &WorthQueryExecutionRuntime,
         installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
         product_world_resources: WorthQueryProductWorldResources,

@@ -1,6 +1,6 @@
 //! Bounded runtime custody for actual completed installed transport attempts.
 
-use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase;
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
@@ -29,7 +29,7 @@ pub enum InstalledTransportCustodyDenial {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum InstalledTransportPendingReason {
-    ExecutionRequest(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
+    ExecutionRequest(crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial),
     UnknownCompletion,
     ConcurrentContinuation,
     PublicationRetryRequired,

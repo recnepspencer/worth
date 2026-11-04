@@ -6,10 +6,7 @@ use super::{
     WorkflowSuccessionAuthoritySlot, WorthQueryApplicationOutputRole,
     WorthQueryWorkflowSuccessionAdapter,
 };
-use crate::domain_computation::primary_graph::{
-    WorthQueryAdmittedApplicationOperation, WorthQueryAdvancementPhase,
-    WorthQuerySelectedProductOperation,
-};
+use {crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation, crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation};
 use std::sync::{Arc, Mutex};
 use worth_query_declaration::facade::{
     application_operation::{

@@ -42,7 +42,7 @@ where
     /// demand settles on the output current there, or stops `Superseded`.
     pub fn admit_output_demand_at<Family>(
         &self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         source_result: WorthQueryApplicationOutputDemandSource<
             FamilySourceQuery<Schema, Family>,
             FamilySourceValue<Schema, Family>,

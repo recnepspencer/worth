@@ -1,8 +1,5 @@
 //! Retained target authority crosses decision/candidate without a second lookup.
-use super::super::{
-    application_contribution::QueryMemoryReservation, CandidateWriter, HandlerExecutionDenial,
-    WorthQueryInvariantMutationTarget,
-};
+use {crate::domain_computation::primary_graph::request_execution::QueryMemoryReservation, super::super::CandidateWriter, super::super::HandlerExecutionDenial, super::super::WorthQueryInvariantMutationTarget};
 use worth_query_declaration::facade::{
     application_operation::ApplicationMutationBinding,
     application_schema::{ApplicationOperationBodyProgram, ApplicationSchema},

@@ -15,14 +15,14 @@ where
     #[doc(hidden)]
     pub fn workflow_definition_revisions_for_test(
         &self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         definition: &crate::domain_computation::primary_graph::PublishedWorkflowDefinitionRef,
     ) -> Result<
         Result<
             (Option<AspectValue>, Option<AspectValue>),
             worth_relational::facade::transactions::RelationalExecutionDenialCause,
         >,
-        crate::domain_computation::primary_graph::WorthQueryAdvancementDenial,
+        crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
     > {
         let execution = phase.execution_request_for(&self.runtime.product_runtime)?;
         let selected = self

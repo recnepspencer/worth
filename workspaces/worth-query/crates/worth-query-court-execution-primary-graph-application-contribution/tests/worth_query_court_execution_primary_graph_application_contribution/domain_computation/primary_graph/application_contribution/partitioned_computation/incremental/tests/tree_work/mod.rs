@@ -82,7 +82,7 @@ pub fn retained(source: &SealedComputationRun, keys: &[Id]) -> Retained {
         .values_for_test()
         .next()
         .unwrap();
-    let policy = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy(std::num::NonZeroUsize::MIN, Some(1 << 36));
+    let policy = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::test_placement::test_policy(std::num::NonZeroUsize::MIN, Some(1 << 36));
     let native = worth_execution::SerialRequest::from_policy(
         &policy,
         worth_execution::CancellationToken::new(),
@@ -133,7 +133,7 @@ pub fn plan(keys: &[Id]) -> ReductionPlan {
 
 // Use the execution test lane's serial policy without a payload forecast.
 pub fn serial_placement() -> RuntimeWorldExecutionPlacement<'static> {
-    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy;
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::test_placement::test_policy;
     RuntimeWorldExecutionPlacement::Serial(test_policy(std::num::NonZeroUsize::MIN, None))
 }
 

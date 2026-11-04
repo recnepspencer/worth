@@ -84,7 +84,7 @@ where
 {
     pub fn authorize_capability_revocation<Capability, Operation, Input>(
         &self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         access: WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
         capability: &WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,
         operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,

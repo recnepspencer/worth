@@ -5,7 +5,7 @@ use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_co
 use crate::process::domain_computation::managed_run::tests::*;
 
 pub fn shared_yielded_workflow_peers(
-    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     worth_query_execution::facade::domain_computation::WorthQueryYieldedWorkflowRun,
@@ -21,7 +21,7 @@ pub fn shared_yielded_workflow_peers(
 }
 
 pub fn shared_yielded_workflow_peers_with_provider(
-    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     provider: YieldProvider,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
@@ -69,7 +69,7 @@ pub fn shared_yielded_workflow_peers_with_provider(
 }
 
 pub fn yield_peer(
-    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     runtime: &WorthQueryExecutionRuntime,
     graph: &WorthQueryInstalledGraphParticipationAuthority,
@@ -134,7 +134,7 @@ pub fn yield_peer(
 
 #[test]
 fn interleaved_workflow_peers_keep_session_ledger_artifact_and_lower_bases_associated() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -214,7 +214,7 @@ fn interleaved_workflow_peers_keep_session_ledger_artifact_and_lower_bases_assoc
 
 #[test]
 fn foreign_bridge_denial_preserves_both_workflow_peers_without_fresh_query_work() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -287,7 +287,7 @@ fn foreign_bridge_denial_preserves_both_workflow_peers_without_fresh_query_work(
 }
 
 pub fn readmit(
-    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     yielded: worth_query_execution::facade::domain_computation::WorthQueryYieldedWorkflowRun,
     runtime: &WorthQueryExecutionRuntime,
@@ -317,7 +317,7 @@ pub fn readmit(
 }
 
 pub fn complete(
-    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     active: worth_query_execution::facade::domain_computation::WorthQueryActiveWorkflowGraphExecution,
 ) -> worth_query_execution::facade::domain_computation::WorthQueryWorkflowRunTerminal {

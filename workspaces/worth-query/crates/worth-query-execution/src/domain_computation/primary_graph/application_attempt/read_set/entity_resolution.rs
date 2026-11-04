@@ -6,7 +6,7 @@ impl<Schema, Operation, Input, Scope, Phase>
 {
     pub fn resolve_entity<Aspect, Entity, Field, Value, Write, Unit>(
         &self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         field: ApplicationFieldRef<
             Schema,
             Entity,

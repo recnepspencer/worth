@@ -18,7 +18,7 @@ pub(in crate::domain_computation::primary_graph) struct NativeCallCarriage {
         Arc<crate::domain_computation::primary_graph::invariant_projection::CallShapeTransition>,
     >,
     _memory: Option<
-        crate::domain_computation::primary_graph::application_contribution::QueryMemoryReservation,
+        crate::domain_computation::primary_graph::request_execution::QueryMemoryReservation,
     >,
 }
 impl CallRangeProgress {
@@ -188,7 +188,7 @@ impl ComputationFactAttribution {
     }
     pub(in crate::domain_computation::primary_graph) fn close_ranges(
         &mut self,
-        memory: Option<crate::domain_computation::primary_graph::application_contribution::QueryMemoryReservation>,
+        memory: Option<crate::domain_computation::primary_graph::request_execution::QueryMemoryReservation>,
     ) -> Arc<NativeCallCarriage> {
         let progress = self
             .range_progress

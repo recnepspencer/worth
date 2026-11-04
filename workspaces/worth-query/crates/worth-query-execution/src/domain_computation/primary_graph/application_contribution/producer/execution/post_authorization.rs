@@ -2,7 +2,7 @@
 
 mod preparation;
 use super::*;
-use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase;
 pub(super) use preparation::prepare_authorized;
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
 use worth_query_declaration::facade::application_operation::ApplicationMutationScopeBinding;

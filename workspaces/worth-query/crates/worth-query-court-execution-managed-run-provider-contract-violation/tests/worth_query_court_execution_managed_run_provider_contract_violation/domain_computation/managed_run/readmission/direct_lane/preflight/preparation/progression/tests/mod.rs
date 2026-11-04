@@ -10,7 +10,7 @@ use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_co
 
 #[test]
 fn bridge_cleanup_failure_returns_exact_owner_retry_authority() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -29,7 +29,7 @@ fn bridge_cleanup_failure_returns_exact_owner_retry_authority() {
             Err(_) => panic!("owner-thread Query phases must reach provider restore"),
         };
         let recovery = std::thread::spawn(move || {
-            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|phase| {
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|phase| {
                 match restore_direct(
                     phase.borrowed_request_for_test(),
                     pending,

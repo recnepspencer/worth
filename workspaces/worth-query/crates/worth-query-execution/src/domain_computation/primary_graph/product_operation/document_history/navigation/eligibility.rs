@@ -4,9 +4,7 @@ use super::{
     WorthQueryHistoryNavigationDenial as Denial,
     WorthQueryHistoryNavigationEligibilityDenial as Eligibility,
 };
-use crate::domain_computation::primary_graph::{
-    WorthQueryAdvancementPhase, WorthQuerySelectedProductOperation,
-};
+use {crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation};
 use worth_query_declaration::facade::{
     application_history::{
         ApplicationHistoryAccessBinding, ApplicationHistoryBinding, ApplicationHistoryModelDomain,

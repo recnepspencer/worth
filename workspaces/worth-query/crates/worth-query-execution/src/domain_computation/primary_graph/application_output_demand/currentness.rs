@@ -23,7 +23,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     /// The phase witnesses request custody; lower Relational accounting follows in part two.
     pub fn require_current_output_settlements<'settlement>(
         &self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         settlements: impl IntoIterator<Item = &'settlement WorthQueryOutputDemandSettlement>,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         let runtime = self.application();
@@ -49,7 +49,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     /// The phase witnesses request custody; lower Relational accounting follows in part two.
     pub fn require_current_output_receipts<'receipt>(
         &self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         receipts: impl IntoIterator<Item = &'receipt WorthQueryApplicationCommitReceipt>,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         let runtime = self.application();

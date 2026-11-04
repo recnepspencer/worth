@@ -113,7 +113,7 @@ impl WorthQueryGraphParticipationProvider<ManagedGraph> for EscapingStartProvide
 
 #[test]
 fn multiple_provider_calls_retain_every_live_arena_until_cleanup() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -179,7 +179,7 @@ fn multiple_provider_calls_retain_every_live_arena_until_cleanup() {
 
 #[test]
 fn provider_start_failure_preserves_escaped_arena_recovery() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -243,7 +243,7 @@ fn provider_start_failure_preserves_escaped_arena_recovery() {
 
 #[test]
 fn workflow_cleanup_retries_each_live_provider_arena_before_completion() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 

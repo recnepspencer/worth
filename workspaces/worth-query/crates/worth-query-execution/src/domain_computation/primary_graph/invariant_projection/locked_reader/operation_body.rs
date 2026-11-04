@@ -5,10 +5,7 @@ use super::{
 };
 use crate::domain_computation::primary_graph::operation_body::BodyFieldExpectation;
 use crate::domain_computation::primary_graph::operation_body::PreparedBodySource;
-use crate::domain_computation::primary_graph::{
-    HandlerExecutionDenial, WorthQueryAdvancementDenial, WorthQueryApplicationAttemptDenial,
-    WorthQueryApplicationAttemptDenialKind, WorthQueryManagedComputationResourceDenial,
-};
+use {crate::domain_computation::primary_graph::HandlerExecutionDenial, crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial, crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial, crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial};
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 
 impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'_, Schema> {
@@ -22,7 +19,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
         locator: &AspectFieldLocator,
         expected: Option<&AspectValue>,
         required: bool,
-        execution: &crate::domain_computation::primary_graph::application_contribution::QueryRequestExecution<'_>,
+        execution: &crate::domain_computation::primary_graph::request_execution::QueryRequestExecution<'_>,
     ) -> Result<bool, HandlerExecutionDenial> {
         use worth_relational::facade::storage::AuthoritativeFieldComparisonKey as Comparison;
         let resource =
@@ -44,7 +41,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
                         .ok_or_else(|| resource(WorthQueryManagedComputationResourceDenial::CapacityOverflow))?;
                     let _memory = execution.reserve(bytes).map_err(resource)?;
                     context.checkpoint(bytes).map_err(|cause| {
-                        use crate::domain_computation::primary_graph::application_contribution::advancement_denial;
+                        use crate::domain_computation::primary_graph::request_execution::advancement_denial;
                         HandlerExecutionDenial::new(advancement_denial(worth_execution::WorkCeilingDenial::Stopped(cause)))
                     })?;
                     Ok(Comparison::from_aspect_value(observed) == Comparison::from_aspect_value(expected))

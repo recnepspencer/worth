@@ -1,7 +1,7 @@
 use crate::domain_computation::managed_run::tests::readmission_workflow::*;
 
 pub fn yielded_workflow_fixture(
-    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     provider: YieldProvider,
     stage_identity: &str,

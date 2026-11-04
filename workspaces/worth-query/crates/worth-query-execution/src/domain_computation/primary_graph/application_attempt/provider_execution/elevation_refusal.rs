@@ -1,8 +1,6 @@
 //! Admission refusals recover lifecycle facts from unconsumed candidates.
 use super::super::*;
-use crate::domain_computation::primary_graph::{
-    WorthQueryAdvancementDenial, WorthQueryPrimaryGraphApplicationRuntime,
-};
+use {crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime};
 use worth_query_installation::facade::ApplicationSchema;
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {

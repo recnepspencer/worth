@@ -43,7 +43,7 @@ where
     #[doc(hidden)]
     pub fn publish_for_test(
         self,
-        phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
         runtime: &mut WorthQueryExecutionRuntime,
         authority: &WorthQueryExecutionInstallationAuthority,
     ) -> Result<WorthQueryPrimaryGraphPublication, WorthQueryPrimaryGraphInstallationDenial> {

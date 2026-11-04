@@ -13,7 +13,7 @@ use worth_relational::facade::transactions::RelationalExecutionDenialCause as Ca
 
 #[test]
 fn retention_refusals_keep_exact_cause_and_pre_effect_posture() {
-    use crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial as Resource;
+    use crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource;
     for (denial, expected) in [
         (
             Retention::Content(Content::Execution(Cause::WorkExhausted)),

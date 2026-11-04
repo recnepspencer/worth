@@ -3,9 +3,9 @@ use crate::domain_computation::execution_runtime::product_world::publication_den
     WorthQueryProductPublicationDenial as PublicationDenial,
     WorthQueryProductPublicationOutcome as PublicationOutcome,
 };
-use crate::domain_computation::primary_graph::application_contribution::advancement_denial;
+use crate::domain_computation::primary_graph::request_execution::advancement_denial;
 use crate::domain_computation::primary_graph::provider::WorthQueryInboundCompletionPreparationDenial as Preparation;
-use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase;
 use worth_relational::facade::mvcc::PreparedRelationalCommitCandidate;
 
 use std::sync::Arc;
@@ -115,7 +115,7 @@ where
         let prepared = match publication.prepare_relational_candidate(candidate, request, false) {
             Ok(prepared) => prepared,
             Err(PublicationDenial::ClockMismatch) => {
-                return Outcome::Denied(evidence, Denial::ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)))
+                return Outcome::Denied(evidence, Denial::ExecutionDenied(crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)))
             },
 Err(PublicationDenial::Stopped(stop)) => {
                 return Outcome::Denied(evidence, Denial::ExecutionDenied(advancement_denial(stop)))
@@ -146,7 +146,7 @@ Err(PublicationDenial::Stopped(stop)) => {
                 self.runtime
                     .primary_provider
                     .clear_inbound_completion_publication_pending(&correlation);
-                Outcome::Denied(evidence, Denial::ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)))
+                Outcome::Denied(evidence, Denial::ExecutionDenied(crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)))
             }
             Err(PublicationDenial::Stopped(stop)) => {
                 self.runtime

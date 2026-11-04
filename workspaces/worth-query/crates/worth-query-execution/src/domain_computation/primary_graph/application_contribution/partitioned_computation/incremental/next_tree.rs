@@ -23,7 +23,7 @@ use super::super::super::computation::nested_failure::{
     MemberComputeFailure, NestedFailureTransport,
 };
 use super::super::super::execution_denial::PartitionRefusal;
-use super::super::super::request_execution::QueryRequestExecution;
+use crate::domain_computation::primary_graph::request_execution::QueryRequestExecution;
 use super::super::items::{ItemDigests, Items};
 use super::super::plan::GatheredComputationPartition;
 use super::super::preparation_work::PreparationWork;
@@ -36,7 +36,7 @@ use super::retained::{
 };
 use super::tree_update::{next_tree, same_bits};
 use super::{CompletedComputationRetention, PriorAbsence};
-use crate::domain_computation::primary_graph::application_contribution::WorthQueryManagedComputationResourceDenial;
+use crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial;
 use crate::domain_computation::primary_graph::invariant_projection::ComputationCallCharge;
 
 /// An incremental run after `prepare`: every partition carried or gathered

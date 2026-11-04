@@ -116,7 +116,7 @@ where
         }
         let execution = match phase.execution_request_for(application.product_runtime()) {
             Ok(execution) => execution,
-            Err(cause) => return Ok(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(cause).into_commit_outcome()),
+            Err(cause) => return Ok(crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::from(cause).into_commit_outcome()),
         };
         if !std::ptr::eq(application, admitted.runtime.runtime())
             || !self.change.program.belongs_to_application(

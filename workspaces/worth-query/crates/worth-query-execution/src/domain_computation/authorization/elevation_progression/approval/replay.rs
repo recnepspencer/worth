@@ -12,7 +12,7 @@ where
     /// this path as an admitted operation when its original support is stale.
     pub fn replay_elevation_approval_after_fresh_denial<Capability, Operation, Input>(
         &self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         requested: WorthQueryRequestedElevation,
         access: WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
         operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,

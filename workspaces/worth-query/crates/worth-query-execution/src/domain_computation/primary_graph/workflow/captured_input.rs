@@ -9,12 +9,7 @@ use worth_query_declaration::facade::{
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::identity::EntityId;
 
-use crate::domain_computation::primary_graph::{
-    application_attempt::precondition_binding::bind_mutation_preconditions,
-    WorthQueryAdvancementPhase, WorthQueryApplicationEntityIdentity,
-    WorthQueryApplicationObservedFact, WorthQueryObservedResultSet, WorthQueryObservedSource,
-    WorthQuerySelectedProductOperation, WorthQuerySourceExpectationDenial,
-};
+use {crate::domain_computation::primary_graph::application_attempt::precondition_binding::bind_mutation_preconditions, crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity, crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact, crate::domain_computation::primary_graph::WorthQueryObservedResultSet, crate::domain_computation::primary_graph::WorthQueryObservedSource, crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation, crate::domain_computation::primary_graph::WorthQuerySourceExpectationDenial};
 use crate::publication_boundary::WorthQueryProgramPublicationAccess;
 mod inventory;
 mod support;

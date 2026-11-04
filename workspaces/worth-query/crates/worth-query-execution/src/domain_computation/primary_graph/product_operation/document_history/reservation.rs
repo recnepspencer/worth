@@ -4,13 +4,7 @@ use super::{
     WorthQueryDocumentHistory, WorthQueryDocumentHistoryDenial as Denial,
     WorthQueryDocumentHistoryOperation, WorthQueryHistoryStep,
 };
-use crate::{
-    basis::WorthQueryProductBranchReadIdentity,
-    domain_computation::primary_graph::{
-        WorthQueryAdvancementPhase, WorthQueryApplicationIdempotencyBinding,
-    },
-    publication_boundary::WorthQueryProgramPublicationAccess,
-};
+use {crate::basis::WorthQueryProductBranchReadIdentity, crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding, crate::publication_boundary::WorthQueryProgramPublicationAccess};
 use worth_query_declaration::facade::{
     application_history::{
         ApplicationHistoryAccessBinding, ApplicationHistoryBinding, ApplicationHistoryModel,

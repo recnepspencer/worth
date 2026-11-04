@@ -43,7 +43,7 @@ pub struct WorkflowPendingRecovery {
 
 #[test]
 fn direct_readmission_cleanup_pending_retry_preserves_the_exact_epoch() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -59,7 +59,7 @@ fn direct_readmission_cleanup_pending_retry_preserves_the_exact_epoch() {
 
 #[test]
 fn workflow_readmission_cleanup_pending_retry_preserves_the_exact_epoch() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -75,7 +75,7 @@ fn workflow_readmission_cleanup_pending_retry_preserves_the_exact_epoch() {
 
 #[test]
 fn same_scope_and_stage_terminal_recovery_peers_keep_their_cleanup_owners() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -97,7 +97,7 @@ fn same_scope_and_stage_terminal_recovery_peers_keep_their_cleanup_owners() {
 }
 
 pub fn direct_cleanup_required(
-    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> RecoveryCleanup<WorthQueryDirectConvergenceReadmissionCleanupRequired> {
     let active_request = execution;
@@ -154,7 +154,7 @@ pub fn direct_cleanup_required(
 }
 
 pub fn workflow_cleanup_required(
-    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> RecoveryCleanup<WorthQueryWorkflowConvergenceReadmissionCleanupRequired> {
     let active_request = execution;

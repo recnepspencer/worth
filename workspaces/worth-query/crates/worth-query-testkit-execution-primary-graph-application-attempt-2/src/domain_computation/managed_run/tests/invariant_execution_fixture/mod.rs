@@ -131,7 +131,7 @@ pub struct InvariantExecutionObservation {
 }
 
 pub fn execute_invariant(
-    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     state: Arc<Mutex<ProvisionalProviderState>>,
     requirements: Vec<WorthQueryInstalledInvariantExecutionRequirement>,
@@ -151,7 +151,7 @@ pub fn execute_invariant(
 }
 
 pub fn execute_invariant_with_request(
-    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     state: Arc<Mutex<ProvisionalProviderState>>,
     requirements: Vec<WorthQueryInstalledInvariantExecutionRequirement>,
     slot: &str,
@@ -194,7 +194,7 @@ pub fn execute_invariant_with_request(
 }
 
 pub fn admit_progression(
-    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     state: Arc<Mutex<ProvisionalProviderState>>,
     requirements: Vec<WorthQueryInstalledInvariantExecutionRequirement>,

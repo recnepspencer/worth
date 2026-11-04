@@ -85,7 +85,7 @@ pub fn unrelated_artifact_run_in_runtime(
     (running, handle)
 }
 pub fn direct_readmission_work(
-    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     unrelated_width: usize,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorthQueryReadmissionEvidence {
@@ -120,7 +120,7 @@ pub fn direct_readmission_work(
     evidence
 }
 pub fn workflow_readmission_work(
-    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     unrelated_width: usize,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorthQueryReadmissionEvidence {
@@ -160,7 +160,7 @@ pub fn workflow_readmission_work(
     evidence
 }
 pub fn denied_readmission_work(
-    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     unrelated_width: usize,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorthQueryReadmissionEvidence {

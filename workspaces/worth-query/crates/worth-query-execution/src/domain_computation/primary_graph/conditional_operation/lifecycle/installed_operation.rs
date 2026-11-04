@@ -1,4 +1,4 @@
-use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase;
 use std::{collections::BTreeMap, sync::Arc};
 
 use worth_runtime_bridge::facade::{

@@ -6,7 +6,7 @@ use crate::process::domain_computation::managed_run::tests::*;
 
 #[test]
 fn bridge_terminalization_failure_preserves_the_paused_run_for_retry_or_cleanup() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -68,7 +68,7 @@ fn bridge_terminalization_failure_preserves_the_paused_run_for_retry_or_cleanup(
 
 #[test]
 fn workflow_bridge_failure_aborts_artifact_freeze_and_restores_production() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 

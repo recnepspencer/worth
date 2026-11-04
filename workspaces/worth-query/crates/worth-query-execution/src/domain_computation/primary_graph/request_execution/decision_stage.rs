@@ -1,5 +1,5 @@
 //! Native decision work borrows the existing request lease, never a new request.
-use super::super::execution_denial::lease_denial;
+use crate::domain_computation::primary_graph::request_execution::execution_stop::lease_denial;
 use super::advancement::{advancement_denial, WorthQueryAdvancementDenial};
 use super::{ExecutionWorkCeiling, Form, MapKernelContext, QueryRequestExecution};
 

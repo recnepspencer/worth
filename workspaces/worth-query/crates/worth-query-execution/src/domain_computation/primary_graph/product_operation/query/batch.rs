@@ -28,7 +28,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         Scope,
     >(
         &'read self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         retained: &mut WorthQuerySelectedProductOperation<'runtime, Schema>,
         query: &'read WorthQueryInstalledApplicationQuery<
             Schema,

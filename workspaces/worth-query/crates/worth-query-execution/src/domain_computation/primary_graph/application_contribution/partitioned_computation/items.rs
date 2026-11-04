@@ -16,7 +16,7 @@ use worth_query_declaration::facade::application_program::{
     ApplicationComputationInput, ApplicationComputationPartition,
 };
 
-use super::super::request_execution::QueryRequestExecution;
+use crate::domain_computation::primary_graph::request_execution::QueryRequestExecution;
 use super::preparation_work::{charge_preparation, encode_identity, PreparationWork};
 use super::routing::ComputationPartitionRouting;
 use super::WorthQueryPartitionedComputationDenial;

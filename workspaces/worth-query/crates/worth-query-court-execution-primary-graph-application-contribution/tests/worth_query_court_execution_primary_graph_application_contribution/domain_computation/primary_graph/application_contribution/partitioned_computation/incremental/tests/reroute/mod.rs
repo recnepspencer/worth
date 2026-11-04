@@ -328,7 +328,7 @@ fn a_missing_call_measurement_is_recorded_as_unmeasured_at_the_discard() {
     let request = live_scope();
     let execution = QueryRequestExecution::open_for_test(
         RuntimeWorldExecutionPlacement::Serial(
-            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy(
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::test_placement::test_policy(
                 std::num::NonZeroUsize::MIN,
                 None,
             ),

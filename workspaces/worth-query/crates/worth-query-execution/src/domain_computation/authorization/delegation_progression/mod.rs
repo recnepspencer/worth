@@ -41,7 +41,7 @@ where
         Input,
     >(
         &self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         access: WorthQueryAdmittedApplicationCapabilityAccess<
             Schema,
             CommandCapability,

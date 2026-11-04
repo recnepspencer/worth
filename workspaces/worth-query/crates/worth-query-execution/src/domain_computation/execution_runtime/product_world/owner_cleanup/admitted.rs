@@ -1,7 +1,7 @@
 //! Cleanup borrows the original request's bounded native checkpoint before effects.
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::execution_denial;
-use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase;
 use worth_execution::ExecutionWorkCeiling;
 
 impl WorthQueryProductBranchOwnerCleanup {
@@ -29,7 +29,7 @@ impl WorthQueryProductBranchOwnerCleanup {
         phase: &WorthQueryAdvancementPhase<'scope>,
     ) -> Result<
         worth_execution::ExecutionRequest<'scope, 'scope>,
-        crate::domain_computation::primary_graph::WorthQueryAdvancementDenial,
+        crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
     > {
         let execution = phase.checked_execution_request_for(&self.runtime)?;
         execution

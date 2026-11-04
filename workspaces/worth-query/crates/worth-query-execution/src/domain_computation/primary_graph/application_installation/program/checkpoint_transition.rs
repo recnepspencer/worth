@@ -55,7 +55,7 @@ where
 {
     let world_policy = limits.world.execution_policy();
     let transition =
-        |phase: crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase<
+        |phase: crate::domain_computation::primary_graph::request_execution::WorthQueryBootstrapAdvancementPhase<
             '_,
         >| {
             transition_in_advancement(
@@ -77,13 +77,13 @@ where
     // runs on that lease, so capture charges inside its own worker lineage.
     match capture_policy {
         WorthQueryCheckpointCapturePolicy::SystemAllocation => {
-            crate::domain_computation::primary_graph::with_bootstrap_advancement(
+            crate::domain_computation::primary_graph::request_execution::with_bootstrap_advancement(
                 world_policy,
                 transition,
             )
         }
         WorthQueryCheckpointCapturePolicy::Execution(lease) => {
-            crate::domain_computation::primary_graph::with_bootstrap_advancement_from_request(
+            crate::domain_computation::primary_graph::request_execution::with_bootstrap_advancement_from_request(
                 worth_execution::ExecutionRequest::leased(lease),
                 transition,
             )
@@ -101,7 +101,7 @@ where
 /// name the request's funding lease or a lease descending from it. Serial
 /// backing, or any other capture policy, refuses before work or effects.
 pub fn in_memory_rostered_program_from_checkpoint_with_transition_in_advancement<Schema, Program>(
-    phase: &crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase<'_>,
+    phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
     program: ValidatedApplicationProgram<Schema, Program>,
     roster: WorthQueryApplicationProgramRoster<'_, Schema>,
     declaration: ApplicationSchemaDeclaration<Schema>,
@@ -144,7 +144,7 @@ where
 }
 
 fn transition_in_advancement<Schema, Program>(
-    phase: &crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase<'_>,
+    phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
     program: ValidatedApplicationProgram<Schema, Program>,
     roster: WorthQueryApplicationProgramRoster<'_, Schema>,
     declaration: ApplicationSchemaDeclaration<Schema>,
@@ -169,7 +169,7 @@ where
 {
     phase.execution_request().consult().map_err(|stop| {
         WorthQueryInMemoryApplicationDenial::Graph(super::super::super::bootstrap::request_denial(
-            super::super::super::application_contribution::advancement_denial(stop),
+            crate::domain_computation::primary_graph::request_execution::advancement_denial(stop),
         ))
     })?;
     capture_policy.check_live().map_err(|error| {
@@ -185,7 +185,7 @@ where
         .map_err(|cause| {
             WorthQueryInMemoryApplicationDenial::Graph(
                 super::super::super::bootstrap::request_denial(
-                    super::super::super::application_contribution::advancement_denial(cause),
+                    crate::domain_computation::primary_graph::request_execution::advancement_denial(cause),
                 ),
             )
         })?;
@@ -230,7 +230,7 @@ where
             Ok(()) => ordinary,
             Err(stop) => Err(WorthQueryInMemoryApplicationDenial::Graph(
                 super::super::super::bootstrap::request_denial(
-                    super::super::super::application_contribution::advancement_denial(stop),
+                    crate::domain_computation::primary_graph::request_execution::advancement_denial(stop),
                 ),
             )),
         },

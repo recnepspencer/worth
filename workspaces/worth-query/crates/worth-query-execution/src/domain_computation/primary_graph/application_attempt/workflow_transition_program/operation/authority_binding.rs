@@ -24,7 +24,7 @@ impl<Schema, Operation, Input, Scope>
     #[doc(hidden)]
     pub fn bind_workflow_operation_authority(
         mut self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         authority: &WorkflowOperationAuthority,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<Self, WorthQueryApplicationAttemptDenial> {

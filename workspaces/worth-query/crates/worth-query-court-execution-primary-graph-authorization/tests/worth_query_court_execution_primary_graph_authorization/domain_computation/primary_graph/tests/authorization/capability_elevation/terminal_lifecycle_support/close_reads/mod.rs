@@ -2,7 +2,7 @@
 use crate::domain_computation::primary_graph::tests::authorization::capability_elevation::terminal_lifecycle_support::*;
 
 pub fn close_reads(
-    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     world: &World,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     approved: WorthQueryApprovedElevation,

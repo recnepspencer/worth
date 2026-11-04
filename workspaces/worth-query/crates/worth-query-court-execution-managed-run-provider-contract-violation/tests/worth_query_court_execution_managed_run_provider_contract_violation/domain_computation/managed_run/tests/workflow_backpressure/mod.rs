@@ -73,7 +73,7 @@ impl WorthQueryGraphParticipationProvider<ManagedGraph> for StageQueueContractPr
 
 #[test]
 fn stage_contract_wider_than_the_signal_queue_denies_before_provider_construction() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 

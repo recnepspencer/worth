@@ -1,11 +1,6 @@
 //! Checked reader charge and exact realized-scope carriage of native ranges.
 use super::*;
-use crate::domain_computation::primary_graph::{
-    application_attempt::{CheckedCallShape, NativeCallCarriage},
-    application_contribution::{
-        QueryRequestExecution, WorthQueryManagedComputationResourceDenial as Resource,
-    },
-};
+use {crate::domain_computation::primary_graph::application_attempt::CheckedCallShape, crate::domain_computation::primary_graph::application_attempt::NativeCallCarriage, crate::domain_computation::primary_graph::request_execution::QueryRequestExecution, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource};
 use std::ops::Range;
 impl<Schema, Operation>
     WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>

@@ -109,7 +109,7 @@ pub fn in_memory<Schema>(
     build_identity: worth_foundational::facade::ApplicationBuildIdentity,
     limits: WorthQueryInMemoryApplicationLimits,
     initial_state: impl FnOnce(
-        &super::WorthQueryBootstrapAdvancementPhase<'_>,
+        &crate::domain_computation::primary_graph::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
         &mut WorthQueryPrimaryGraphBootstrap<Schema>,
         &WorthQueryInstalledApplicationSchema<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
@@ -137,7 +137,7 @@ pub(super) fn in_memory_with_contributions<Schema, Contributions>(
     build_identity: worth_foundational::facade::ApplicationBuildIdentity,
     limits: WorthQueryInMemoryApplicationLimits,
     initial_state: impl FnOnce(
-        &super::WorthQueryBootstrapAdvancementPhase<'_>,
+        &crate::domain_computation::primary_graph::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
         &mut WorthQueryPrimaryGraphBootstrap<Schema>,
         &WorthQueryInstalledApplicationSchema<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
@@ -155,7 +155,7 @@ where
     Contributions: WorthQueryApplicationContributionTuple<Schema>,
 {
     let policy = limits.world.execution_policy();
-    super::application_contribution::with_bootstrap_advancement(policy, |phase| {
+    crate::domain_computation::primary_graph::request_execution::with_bootstrap_advancement(policy, |phase| {
         in_memory_with_contributions_in_advancement::<Schema, Contributions>(
             &phase,
             declaration,

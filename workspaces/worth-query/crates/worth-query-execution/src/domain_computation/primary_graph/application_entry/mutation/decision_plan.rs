@@ -1,9 +1,6 @@
 //! The owner holds completion while sealed requests carry only prepared compute.
 use super::HandlerResult;
-use crate::domain_computation::primary_graph::application_contribution::{
-    computation::prepared_request::{ComputedSlot, PreparedCompute},
-    QueryRequestExecution,
-};
+use {crate::domain_computation::primary_graph::application_contribution::computation::prepared_request::ComputedSlot, crate::domain_computation::primary_graph::application_contribution::computation::prepared_request::PreparedCompute, crate::domain_computation::primary_graph::request_execution::QueryRequestExecution};
 use std::any::Any;
 
 /// One handler's prepared computation requests and owner-only completion.
@@ -216,11 +213,9 @@ impl<Value, Denial> DecisionCompletion<Value, Denial> {
 }
 
 fn execution_failure<Value, Denial>(
-    cause: crate::domain_computation::primary_graph::WorthQueryAdvancementDenial,
+    cause: crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
 ) -> HandlerResult<Value, Denial> {
-    use crate::domain_computation::primary_graph::{
-        WorthQueryAdvancementDenial as Failure, WorthQueryManagedComputationInterruption as Stop,
-    };
+    use {crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial as Failure, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationInterruption as Stop};
     match cause {
         Failure::Interrupted(Stop::Cancelled) => HandlerResult::Cancelled,
         Failure::Interrupted(Stop::DeadlineExceeded) => HandlerResult::DeadlineExceeded,

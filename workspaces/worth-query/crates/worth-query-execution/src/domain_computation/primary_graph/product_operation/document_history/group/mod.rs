@@ -1,13 +1,6 @@
 //! Ordered group correspondence owns one reserved edge, never an SDK operation.
 use super::*;
-use crate::{
-    basis::WorthQueryProductBranchReadIdentity,
-    domain_computation::primary_graph::{
-        WorthQueryAdvancementPhase, WorthQueryApplicationIdempotencyBinding,
-        WorthQueryApplicationReadObservation, WorthQueryExpectedProductBranch,
-    },
-    publication_boundary::WorthQueryProgramPublicationAccess,
-};
+use {crate::basis::WorthQueryProductBranchReadIdentity, crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding, crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation, crate::domain_computation::primary_graph::WorthQueryExpectedProductBranch, crate::publication_boundary::WorthQueryProgramPublicationAccess};
 use std::sync::Arc;
 use worth_query_declaration::facade::{
     application_history::{ApplicationHistoryBinding, ApplicationHistoryModel},

@@ -1,9 +1,5 @@
 //! The Query projection of Bridge's existing request execution carrier.
-use crate::domain_computation::primary_graph::application_contribution::{
-    WorthQueryAdvancementDenial as Denial,
-    WorthQueryManagedComputationInterruption as Interruption,
-    WorthQueryManagedComputationResourceDenial as Resource,
-};
+use {crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial as Denial, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationInterruption as Interruption, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource};
 use worth_runtime_bridge::facade::BridgeExecutionDenial as Bridge;
 
 /// A carried Bridge denial is in flight; interruptions belong to the demand,
@@ -14,7 +10,7 @@ pub(super) fn query_cause(cause: Bridge) -> Result<Denial, Interruption> {
         Bridge::MemoryLimitExceedsParent => Denial::Resource(Resource::PolicyMemoryLimit),
         Bridge::WorkLimitExceedsParent => Denial::Resource(Resource::WorkLimit),
         Bridge::MemoryExhausted(cause) => Denial::Resource(
-            crate::domain_computation::primary_graph::application_contribution::execution_denial::memory_denial(cause),
+            crate::domain_computation::primary_graph::request_execution::execution_stop::memory_denial(cause),
         ),
         Bridge::ChargedBytesOverflow => Denial::Resource(Resource::ChargedBytesOverflow),
         Bridge::UnrelatedNestedLease => Denial::Resource(Resource::NestedLeaseMisuse),

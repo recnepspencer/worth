@@ -77,10 +77,10 @@ impl WorthQueryRunningDirectRun {
     /// This view carries custody into the host executor; it starts no work itself.
     pub fn request_in_advancement<'a>(
         &self,
-        phase: &'a crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &'a crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
     ) -> Result<
         worth_execution::ExecutionRequest<'a, 'a>,
-        crate::domain_computation::primary_graph::WorthQueryForeignAdvancementPhase,
+        crate::domain_computation::primary_graph::request_execution::WorthQueryForeignAdvancementPhase,
     > {
         phase.request_for_managed(&self.relational_basis)
     }
@@ -164,7 +164,7 @@ impl WorthQueryRunningDirectRun {
 
     pub fn begin_graph_execution(
         self,
-        execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        execution: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
 
         graph_authority: &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
         request: WorthQueryManagedGraphCallRequest,

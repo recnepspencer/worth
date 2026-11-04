@@ -69,8 +69,8 @@ impl WorthQueryRetainedQueryDependencies {
         assert!(
             matches!(refused, WorthQueryRequiredSetCurrentnessDenial::Output(ref cause)
             if cause.kind() == WorthQueryOutputDemandDenialKind::ExecutionRequest(
-                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Interrupted(
-                    crate::domain_computation::primary_graph::WorthQueryManagedComputationInterruption::Cancelled)))
+                crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Interrupted(
+                    crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationInterruption::Cancelled)))
         );
         assert_eq!(self.sources.len(), count);
         let fresh_serial = worth_execution::SerialRequest::from_memory(

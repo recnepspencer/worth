@@ -1,12 +1,12 @@
 //! A read request's transferred native cleanup custody and why it can remain undisposed.
 use super::recovery_release::WorthQueryProductRecoveryClose;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
-use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase;
 
 /// Why a read request's native cleanup or recovery custody remains undisposed.
 #[derive(Debug)]
 pub enum WorthQueryOutputReadCloseDenial {
-    Execution(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
+    Execution(crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial),
     ForeignDemand,
     NativePublicationRetained,
     ProducerRecoveryRetained,

@@ -1,5 +1,6 @@
 //! Native result custody preserves the original owner refusal.
 use super::*;
+use crate::domain_computation::primary_graph::request_execution::execution_stop::lease_denial;
 use worth_execution::{ExecutionAllocationDenialClass, RetainedMapDenial, RetainedReduceDenial};
 
 impl<Stopped> WorthQueryPartitionedComputationDenial<Stopped> {

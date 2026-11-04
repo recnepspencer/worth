@@ -1,4 +1,4 @@
-use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase;
 use worth_foundational::facade::{AspectValue, InternedString};
 #[path = "commit/transition_lookup.rs"]
 mod transition_lookup;
@@ -29,7 +29,7 @@ where
     {
         if let Err(cause) = phase.execution_request_for(&self.runtime.product_runtime) {
             return WorkflowProgressOutcome::Application(
-                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(cause)
+                crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::from(cause)
                     .into_commit_outcome()
                     .landed()
                     .expect_err("a foreign phase cannot commit"),

@@ -1,8 +1,5 @@
 //! Native bounded inverse traversal retains the exact preimage used to route a source edit.
-use super::{
-    attempt, capacity, stopped, unavailable, Batch, EntityId, Fact, KindId, Lease, Outcome,
-    PathDirection, QueryRequestExecution,
-};
+use {super::attempt, super::capacity, super::stopped, super::unavailable, super::Batch, super::EntityId, super::Fact, super::KindId, super::Lease, super::Outcome, super::PathDirection, crate::domain_computation::primary_graph::request_execution::QueryRequestExecution};
 use crate::domain_computation::primary_graph::application_attempt::{
     fact::WorthQueryApplicationObservedRelation as Edge,
     fact::{observe_adjacency_with_work, AdjacencyObservationDenial},

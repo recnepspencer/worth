@@ -5,7 +5,7 @@ use crate::domain_computation::execution_runtime::product_world::publication_den
     WorthQueryProductPublicationDenial as PublicationDenial,
     WorthQueryProductPublicationOutcome as PublicationOutcome,
 };
-use crate::domain_computation::primary_graph::application_contribution::advancement_denial;
+use crate::domain_computation::primary_graph::request_execution::advancement_denial;
 use std::sync::Arc;
 
 use worth_query_installation::facade::ApplicationSchema;
@@ -219,7 +219,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             Err(PublicationDenial::ClockMismatch) => {
                 return Err(failure(
                     WorthQueryGeneratedOutputSuspensionRecoveryStage::ExecutionDenied(
-                        crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock),
+                        crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock),
                     ),
                     RecoveryState::World { recovery, retry },
                 ))
@@ -264,7 +264,7 @@ Err(PublicationDenial::Stopped(stop)) => {
             }
             Err(PublicationDenial::ClockMismatch) => Err(failure(
                 WorthQueryGeneratedOutputSuspensionRecoveryStage::ExecutionDenied(
-                    crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock),
+                    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock),
                 ),
                 RecoveryState::World { recovery, retry },
             )),

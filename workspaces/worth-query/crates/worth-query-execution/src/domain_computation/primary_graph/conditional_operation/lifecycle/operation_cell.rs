@@ -1,4 +1,4 @@
-use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase;
 use std::sync::{Arc, Mutex, MutexGuard};
 
 use worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly;

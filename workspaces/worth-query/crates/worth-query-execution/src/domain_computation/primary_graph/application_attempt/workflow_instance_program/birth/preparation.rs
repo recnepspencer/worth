@@ -4,10 +4,7 @@ use super::{
     RequiredWorkflowBirth, TypeId, WorkflowBirthAuthority, WorkflowBirthAuthoritySlot,
     WorthQueryApplicationOutputRole, WorthQueryWorkflowBirthAdapter,
 };
-use crate::domain_computation::primary_graph::{
-    WorthQueryAdmittedApplicationOperation, WorthQueryAdvancementPhase,
-    WorthQuerySelectedProductOperation,
-};
+use {crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation, crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation};
 use worth_query_declaration::facade::{
     application_operation::{
         ApplicationMutationIdentities, ApplicationMutationScopeBinding, WorthQueryCreateOutput,

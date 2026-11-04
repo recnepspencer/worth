@@ -20,7 +20,7 @@ impl WorthQueryPausedWorkflowGraphExecution {
 
     pub fn advance(
         self,
-        execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        execution: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
     ) -> WorthQueryWorkflowGraphStepOutcome {
         self.active.advance(execution)
     }

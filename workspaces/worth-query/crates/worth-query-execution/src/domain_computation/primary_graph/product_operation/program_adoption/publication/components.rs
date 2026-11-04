@@ -2,7 +2,7 @@ use crate::domain_computation::execution_runtime::product_world::publication_den
     WorthQueryProductPublicationDenial as PublicationDenial,
     WorthQueryProductPublicationOutcome as PublicationOutcome,
 };
-use crate::domain_computation::primary_graph::application_contribution::advancement_denial;
+use crate::domain_computation::primary_graph::request_execution::advancement_denial;
 use worth_runtime_world::facade::NoEffectCompositePublication;
 
 use super::{WorthQueryPerformedBranchAdoption, WorthQueryUnpublishedBranchAdoption};
@@ -17,11 +17,11 @@ pub enum WorthQueryBranchAdoptionPublicationOutcome {
     },
     /// Fresh execution admission refused; the reservation remains owned.
     AdmissionDenied {
-        cause: crate::domain_computation::primary_graph::WorthQueryAdvancementDenial,
+        cause: crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
         prepared: WorthQueryPreparedBranchAdoption,
     },
     /// Native execution stopped after publication was attempted.
-    ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
+    ExecutionDenied(crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial),
     /// The adoption is published and the product head moved.
     Performed(WorthQueryPerformedBranchAdoption),
     /// The publication had no effect: no owner and no product reference moved.
@@ -71,7 +71,7 @@ impl WorthQueryPreparedBranchAdoption {
         Scope,
     >(
         self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         admission: crate::domain_computation::authorization::WorthQueryAdmittedApplicationOperation<
             Schema,
             Operation,
@@ -111,7 +111,7 @@ impl WorthQueryPreparedBranchAdoption {
                 )
             }
             Err(PublicationDenial::ClockMismatch) => {
-                WorthQueryBranchAdoptionPublicationOutcome::ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock))
+                WorthQueryBranchAdoptionPublicationOutcome::ExecutionDenied(crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock))
             },
 Err(PublicationDenial::Stopped(stop)) => {
                 WorthQueryBranchAdoptionPublicationOutcome::ExecutionDenied(advancement_denial(

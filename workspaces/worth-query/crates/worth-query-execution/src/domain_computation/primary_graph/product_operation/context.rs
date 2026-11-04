@@ -217,7 +217,7 @@ where
 
     pub fn select(
         self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
     ) -> Result<
         WorthQuerySelectedProductOperation<'runtime, Schema>,
         WorthQueryProductBranchAdmissionDenial,

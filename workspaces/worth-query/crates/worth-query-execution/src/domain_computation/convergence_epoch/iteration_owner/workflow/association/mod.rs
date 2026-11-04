@@ -190,7 +190,7 @@ impl WorkflowAssociatedIterationStartRejection {
 
 impl WorkflowIterationAssociation<WorthQueryActiveWorkflowGraphExecution> {
     pub(super) fn begin(
-        execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        execution: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         epoch: WorkflowIteratingEpochAssociation,
         stage_identity: &str,
         request: WorthQueryManagedGraphCallRequest,

@@ -70,7 +70,7 @@ fn managed_run_work_is_invariant_to_unrelated_live_authority_width() {
 }
 #[test]
 fn readmission_work_is_invariant_to_same_runtime_unrelated_authority_width() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 

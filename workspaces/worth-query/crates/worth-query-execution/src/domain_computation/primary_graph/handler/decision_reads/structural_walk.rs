@@ -17,7 +17,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
     > {
         let _execution = self.execution().execution_request().map_err(|cause|WorthQueryInvariantProjectionTraversalDenial::new(
             crate::domain_computation::primary_graph::WorthQueryInvariantProjectionTraversalDenialKind::ExecutionRequest(
-            crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(cause)),relation.name()))?;
+            crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(cause)),relation.name()))?;
         self.reader.decision_walk(relation, direction, root)
     }
     /// Read one complete multi-root structural dependency.
@@ -32,7 +32,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
     > {
         let _execution = self.execution().execution_request().map_err(|cause|WorthQueryInvariantProjectionTraversalDenial::new(
             crate::domain_computation::primary_graph::WorthQueryInvariantProjectionTraversalDenialKind::ExecutionRequest(
-            crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(cause)),relation.name()))?;
+            crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(cause)),relation.name()))?;
         self.reader.decision_closure(relation, direction, roots)
     }
     /// Read forward reachability, retaining the complete walk that answers it.
@@ -44,7 +44,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
     ) -> Result<bool, WorthQueryInvariantProjectionTraversalDenial> {
         let _execution = self.execution().execution_request().map_err(|cause|WorthQueryInvariantProjectionTraversalDenial::new(
             crate::domain_computation::primary_graph::WorthQueryInvariantProjectionTraversalDenialKind::ExecutionRequest(
-            crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(cause)),relation.name()))?;
+            crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(cause)),relation.name()))?;
         self.reader.decision_reaches(relation, from, to)
     }
 }

@@ -7,7 +7,7 @@ pub use worth_query_execution::facade::domain_computation::WorthQueryApplication
 pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationRelationSeed;
 pub use worth_query_execution::facade::domain_computation::WorthQueryPrimaryGraphApplicationRuntime;
 pub use worth_query_execution::facade::domain_computation::WorthQueryPrimaryGraphBootstrap;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement;
 pub use worth_query_declaration::facade::application_schema::*;
 pub use worth_query_declaration::*;
 pub use worth_query_installation::facade::*;

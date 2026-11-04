@@ -44,7 +44,7 @@ pub enum WorthQueryProviderSessionDenialKind {
     /// An execution refusal retains Query's shared resource vocabulary.
     ExecutionResource {
         denial:
-            crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial,
+            crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial,
         partition_identity: Option<u64>,
         /// The refusing ancestor, only for a policy memory reservation.
         policy_ancestor: Option<u32>,

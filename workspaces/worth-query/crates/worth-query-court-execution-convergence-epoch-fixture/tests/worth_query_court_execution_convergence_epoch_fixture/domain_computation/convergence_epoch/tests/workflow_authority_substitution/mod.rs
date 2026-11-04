@@ -15,7 +15,7 @@ use worth_query_installation::facade::WorthQueryInstalledGraphParticipationAutho
 
 #[test]
 fn foreign_workflow_run_is_denied_and_each_rightful_world_still_completes() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -86,7 +86,7 @@ fn foreign_workflow_run_is_denied_and_each_rightful_world_still_completes() {
 }
 
 pub fn admit_and_complete(
-    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     runtime: WorthQueryExecutionRuntime,
     operation: WorthQueryExecutionBoundOperationAuthority,

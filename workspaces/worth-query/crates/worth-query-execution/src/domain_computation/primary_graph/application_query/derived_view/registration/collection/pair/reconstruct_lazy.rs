@@ -7,12 +7,7 @@ use super::{
     WorthQueryPrimaryGraphApplicationRuntime,
 };
 use crate::basis::WorthQueryProductBranchLease;
-use crate::domain_computation::primary_graph::{
-    application_query::derived_view::retention::{
-        RetainedMemberToken, WorthQueryManagedDerivedMemberToken,
-    },
-    WorthQueryAdvancementPhase,
-};
+use {crate::domain_computation::primary_graph::application_query::derived_view::retention::RetainedMemberToken, crate::domain_computation::primary_graph::application_query::derived_view::retention::WorthQueryManagedDerivedMemberToken, crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase};
 use std::collections::BTreeMap;
 use worth_execution::{ExecutionMemoryReservation, ExecutionWorkCeiling};
 use worth_query_declaration::facade::application_schema::ApplicationSchema;

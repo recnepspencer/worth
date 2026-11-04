@@ -111,7 +111,7 @@ impl<Key: Send + Sync + 'static, Item> FullRecording<Key, Item> {
         self,
         results: Option<worth_execution::ExecutionRetainedRun<Reduced>>,
         tree: NativeReductionTree<Reduced, fn(&Reduced, &Reduced) -> Reduced>,
-        execution: &super::super::super::request_execution::QueryRequestExecution<'_>,
+        execution: &crate::domain_computation::primary_graph::request_execution::QueryRequestExecution<'_>,
         cause: WorthQueryPartitionedComputationFullCause,
         report: ExecutionReport,
     ) -> Result<

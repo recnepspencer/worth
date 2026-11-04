@@ -42,7 +42,7 @@ impl PreparedCompute {
         self,
         member: WorthQueryMemberExecution<'_>,
     ) -> ComputedSlot {
-        let _custody = super::worker_custody::MemberComputeCustody::enter();
+        let _custody = crate::domain_computation::primary_graph::request_execution::advancement::worker_custody::MemberComputeCustody::enter();
         (self.run)(member)
     }
 }

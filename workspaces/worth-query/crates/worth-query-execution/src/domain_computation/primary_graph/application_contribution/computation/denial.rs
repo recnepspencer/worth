@@ -1,9 +1,6 @@
 //! Why a managed computation refused to go on: its owner stopped it, or its execution refused.
 
-use super::execution_refusal::{
-    WorthQueryManagedComputationCheckpointDenial, WorthQueryManagedComputationInterruption,
-    WorthQueryManagedComputationResourceDenial,
-};
+use {crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationCheckpointDenial, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationInterruption, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial};
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum WorthQueryManagedComputationDenial<Stopped> {

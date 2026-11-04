@@ -2,7 +2,7 @@
 use super::*;
 
 impl QueryDispatch<'_> {
-    pub(in super::super) fn tree_stage<R>(
+    pub(in crate::domain_computation::primary_graph) fn tree_stage<R>(
         &self,
         ceiling: Option<u64>,
         stage: impl FnOnce(&mut MapKernelContext<'_, '_>) -> R,

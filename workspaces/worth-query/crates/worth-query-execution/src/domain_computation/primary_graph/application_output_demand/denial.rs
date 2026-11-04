@@ -90,7 +90,7 @@ impl WorthQueryOutputDemandDenial {
     }
     pub(in crate::domain_computation::primary_graph) fn release_managed_cleanup(
         &mut self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
     ) -> Result<Option<crate::domain_computation::WorthQueryDirectRunCleanupReceipt>, Self> {
         match self.cleanup.as_mut().map(|custody| custody.release(phase)) {
             Some(Err(denial)) => Err(denial),
@@ -101,7 +101,7 @@ impl WorthQueryOutputDemandDenial {
 
     pub(in crate::domain_computation::primary_graph) fn close_read_cleanup<R: recovery_release::WorthQueryProductRecoveryClose + ?Sized>(
         &mut self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         runtime: &R,
     ) -> Result<(), crate::domain_computation::primary_graph::application_output_demand::denial::read_cleanup::WorthQueryOutputReadCloseDenial>{
         if let Some(cleanup) = self.cleanup.as_mut() {
@@ -361,7 +361,7 @@ impl WorthQueryOutputDemandDenial {
 impl WorthQueryOutputDemandDenial {
     /// A typed refusal before the caller pass enters its request.
     pub fn request_admission(
-        cause: crate::domain_computation::primary_graph::WorthQueryAdvancementDenial,
+        cause: crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
     ) -> Self {
         Self::new(
             WorthQueryOutputDemandDenialKind::ExecutionRequest(cause),

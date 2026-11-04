@@ -38,7 +38,7 @@ impl<S> HistoryJournal<'_, S> {
         execution: &ExecutionRequest<'_, '_>,
         units: u64,
     ) -> Result<(), Denial> {
-        use crate::domain_computation::primary_graph::application_contribution::advancement_denial;
+        use crate::domain_computation::primary_graph::request_execution::advancement_denial;
         let outcome = execution
             .run_native_with_checkpoint(|context| {
                 if context.has_accounting() {

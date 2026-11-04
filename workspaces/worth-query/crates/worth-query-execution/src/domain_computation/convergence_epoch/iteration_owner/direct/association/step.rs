@@ -17,7 +17,7 @@ pub(in super::super) enum DirectAssociatedStepOutcome {
 impl DirectIterationAssociation<WorthQueryActiveDirectGraphExecution> {
     pub(in super::super) fn advance(
         self,
-        execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        execution: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
     ) -> DirectAssociatedStepOutcome {
         let Self {
             core,
@@ -44,7 +44,7 @@ impl DirectIterationAssociation<WorthQueryActiveDirectGraphExecution> {
 impl DirectIterationAssociation<WorthQueryPausedDirectGraphExecution> {
     pub(in super::super) fn advance(
         self,
-        execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        execution: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
     ) -> DirectAssociatedStepOutcome {
         let Self {
             core,

@@ -1,0 +1,24 @@
+{
+ "move": "domain_computation::primary_graph::application_contribution::execution_denial::execution_stop -> domain_computation::primary_graph::request_execution::execution_stop",
+ "files": 1,
+ "edited_files": 14,
+ "widenings": [
+  {
+   "item": "domain_computation::primary_graph::application_contribution::execution_denial::execution_stop @1864",
+   "from": "pub(in crate::domain_computation::primary_graph::application_contribution)",
+   "to": "pub(in crate::domain_computation::primary_graph)"
+  },
+  {
+   "item": "domain_computation::primary_graph::application_contribution::execution_denial::execution_stop @3938",
+   "from": "pub(in crate::domain_computation::primary_graph::application_contribution)",
+   "to": "pub(in crate::domain_computation::primary_graph)"
+  }
+ ],
+ "removed_reexports": [
+  "domain_computation::primary_graph::application_contribution::execution_denial::checkpoint_denial",
+  "domain_computation::primary_graph::application_contribution::execution_denial::lease_denial",
+  "domain_computation::primary_graph::application_contribution::execution_denial::interruption_stop",
+  "domain_computation::primary_graph::application_contribution::execution_denial::memory_denial"
+ ],
+ "problems": []
+}

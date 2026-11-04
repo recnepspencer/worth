@@ -1,10 +1,6 @@
 //! Original owner causes and their backing survive the complete fresh request.
 use super::{admission::InspectionAdmissionDenial, request::binding::InspectionBindingDenial};
-use crate::domain_computation::primary_graph::{
-    admitted_capture::CaptureStop, application_contribution::WorthQueryAdvancementDenial,
-    WorthQueryApplicationQueryAdmissionDenial, WorthQueryEntityResolutionDenial,
-    WorthQueryPrincipalResolutionDenial,
-};
+use {crate::domain_computation::primary_graph::admitted_capture::CaptureStop, crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial, crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenial, crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenial, crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenial};
 use worth_execution::{ExecutionMemoryReservation, WorkCeilingDenial};
 mod captured_domain;
 mod kind;

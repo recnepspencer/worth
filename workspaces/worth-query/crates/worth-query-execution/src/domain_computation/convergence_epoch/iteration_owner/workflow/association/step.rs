@@ -17,7 +17,7 @@ pub(in super::super) enum WorkflowAssociatedStepOutcome {
 impl WorkflowIterationAssociation<WorthQueryActiveWorkflowGraphExecution> {
     pub(in super::super) fn advance(
         self,
-        execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        execution: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
     ) -> WorkflowAssociatedStepOutcome {
         let Self {
             core,
@@ -52,7 +52,7 @@ impl WorkflowIterationAssociation<WorthQueryActiveWorkflowGraphExecution> {
 impl WorkflowIterationAssociation<WorthQueryPausedWorkflowGraphExecution> {
     pub(in super::super) fn advance(
         self,
-        execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        execution: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
     ) -> WorkflowAssociatedStepOutcome {
         let Self {
             core,

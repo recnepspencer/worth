@@ -1,0 +1,65 @@
+{
+ "move": "domain_computation::primary_graph::application_contribution::request_execution -> domain_computation::primary_graph::request_execution",
+ "files": 30,
+ "edited_files": 675,
+ "widenings": [
+  {
+   "item": "domain_computation::primary_graph::application_contribution::request_execution @5413",
+   "from": "pub(super)",
+   "to": "pub(in crate::domain_computation::primary_graph)"
+  },
+  {
+   "item": "domain_computation::primary_graph::application_contribution::request_execution @6259",
+   "from": "pub(super)",
+   "to": "pub(in crate::domain_computation::primary_graph)"
+  },
+  {
+   "item": "domain_computation::primary_graph::application_contribution::request_execution @8705",
+   "from": "pub(super)",
+   "to": "pub(in crate::domain_computation::primary_graph)"
+  },
+  {
+   "item": "domain_computation::primary_graph::application_contribution::request_execution::retained_dispatch @971",
+   "from": "pub(in super::super)",
+   "to": "pub(in crate::domain_computation::primary_graph)"
+  },
+  {
+   "item": "domain_computation::primary_graph::application_contribution::request_execution::retained_dispatch @1859",
+   "from": "pub(in super::super)",
+   "to": "pub(in crate::domain_computation::primary_graph)"
+  },
+  {
+   "item": "domain_computation::primary_graph::application_contribution::request_execution::tree_charge @119",
+   "from": "pub(in super::super)",
+   "to": "pub(in crate::domain_computation::primary_graph)"
+  }
+ ],
+ "removed_reexports": [
+  "domain_computation::primary_graph::application_contribution::QueryMemoryReservation",
+  "domain_computation::primary_graph::application_contribution::QueryRequestExecution",
+  "domain_computation::primary_graph::application_contribution::query_test_execution_authority_for_test",
+  "domain_computation::primary_graph::application_contribution::bound_advancement_requests_on_this_thread_for_test",
+  "domain_computation::primary_graph::application_contribution::place_managed_computations_on_this_thread_for_test",
+  "domain_computation::primary_graph::application_contribution::test_execution_workers_for_test",
+  "domain_computation::primary_graph::application_contribution::WorthQueryExecutionPlacementForTest",
+  "domain_computation::primary_graph::application_contribution::WorthQueryAdvancementDenial",
+  "domain_computation::primary_graph::application_contribution::WorthQueryAdvancementPhase",
+  "domain_computation::primary_graph::application_contribution::WorthQueryForeignAdvancementPhase",
+  "domain_computation::primary_graph::application_contribution::advancement_denial",
+  "domain_computation::primary_graph::application_contribution::advancement_observations_on_this_thread_for_test",
+  "domain_computation::primary_graph::application_contribution::advancement_requests_on_this_thread_for_test",
+  "domain_computation::primary_graph::application_contribution::WorthQueryAdvancementEventForTest",
+  "domain_computation::primary_graph::application_contribution::WorthQueryAdvancementEventKindForTest",
+  "domain_computation::primary_graph::application_contribution::WorthQueryAdvancementIdentityForTest",
+  "domain_computation::primary_graph::application_contribution::WorthQueryAdvancementObservationForTest",
+  "domain_computation::primary_graph::application_contribution::with_test_advancement",
+  "domain_computation::primary_graph::application_contribution::with_test_bootstrap_advancement",
+  "domain_computation::primary_graph::application_contribution::TestHostRequest",
+  "domain_computation::primary_graph::application_contribution::with_bootstrap_advancement",
+  "domain_computation::primary_graph::application_contribution::with_bootstrap_advancement_from_request",
+  "domain_computation::primary_graph::application_contribution::WorthQueryBootstrapAdvancementPhase",
+  "domain_computation::primary_graph::application_contribution::record_advancement_commit",
+  "domain_computation::primary_graph::application_contribution::test_policy"
+ ],
+ "problems": []
+}

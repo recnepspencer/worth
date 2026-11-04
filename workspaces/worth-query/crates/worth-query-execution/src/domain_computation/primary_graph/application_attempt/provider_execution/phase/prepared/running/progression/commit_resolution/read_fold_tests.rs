@@ -19,7 +19,7 @@ fn read_fold_indeterminate_idempotency_stop_replaces_the_prior_failure() {
             &prior,
         )
     };
-    for stop in [Err(Control::Cancelled), Err(Control::TimedOut), Ok(Kind::ExecutionResource { denial: crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::WorkExhausted, partition_identity: None, policy_ancestor: None })] {
+    for stop in [Err(Control::Cancelled), Err(Control::TimedOut), Ok(Kind::ExecutionResource { denial: crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::WorkExhausted, partition_identity: None, policy_ancestor: None })] {
         let WorthQueryProviderProgressionOutcome::Indeterminate(actual) = indeterminate_read_denied(evidence(), Denial::ExecutionDenied(stop)) else { panic!("the original commit still needs recovery") };
         assert_eq!(actual.denial_kind(), stop);
         assert_eq!(actual.recovery(), WorthQueryApplicationCommitRecoveryKind::CommitRecoveryRequired);

@@ -87,7 +87,7 @@ where
     /// binds before it selects. Whatever later selects rechecks the revision.
     pub fn workflow_spec_on(
         &self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         branch: crate::basis::WorthQueryProductBranch,
     ) -> Result<
         &'vocabulary WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,

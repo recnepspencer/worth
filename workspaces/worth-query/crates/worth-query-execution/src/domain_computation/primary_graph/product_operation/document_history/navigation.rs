@@ -48,9 +48,7 @@ pub use selection::{WorthQueryHistoryNavigationCompletion, WorthQueryHistorySele
 pub use target::WorthQueryHistoryNavigationIntent;
 
 use super::{selection::HistorySelectionCell, WorthQueryDocumentHistoryDenial};
-use crate::domain_computation::primary_graph::{
-    WorthQueryAdvancementDenial, WorthQueryExpectedProductBranchAdoptionDenial,
-};
+use {crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial, crate::domain_computation::primary_graph::WorthQueryExpectedProductBranchAdoptionDenial};
 use std::sync::{Arc, Weak};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

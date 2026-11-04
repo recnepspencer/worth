@@ -105,7 +105,7 @@ pub(super) fn restoration_failure(
 
 impl WorthQueryGeneratedOutputRestorationFailureCause {
     pub(super) fn advancement(
-        cause: crate::domain_computation::primary_graph::WorthQueryAdvancementDenial,
+        cause: crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
     ) -> Self {
         match cause.provider_denial_cause() {
             Ok(kind) => Self::ExecutionDenied(kind),

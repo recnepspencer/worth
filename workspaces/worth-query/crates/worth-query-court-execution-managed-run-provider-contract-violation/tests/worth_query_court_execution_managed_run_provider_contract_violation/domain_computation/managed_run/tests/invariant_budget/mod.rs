@@ -10,7 +10,7 @@ use worth_query_installation::facade::WorthQueryInvariantEnforcement;
 
 #[test]
 fn state_load_and_validator_share_one_installed_work_budget() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 

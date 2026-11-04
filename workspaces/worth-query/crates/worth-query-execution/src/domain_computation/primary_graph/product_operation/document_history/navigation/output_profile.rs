@@ -1,11 +1,7 @@
 //! Installed rebuild correspondence; an index addresses immutable owner metadata.
 use super::super::{HistoryModelIdentity, WorthQueryDocumentHistory};
 use super::*;
-use crate::domain_computation::primary_graph::{
-    application_installation::{WorthQueryProgramApplicationRuntime, WorthQueryProgramOwner},
-    WorthQueryAdvancementPhase, WorthQueryApplicationOutputDemand,
-    WorthQueryApplicationRequiredOutputConnection, WorthQueryProducerOutputFamily,
-};
+use {crate::domain_computation::primary_graph::application_installation::WorthQueryProgramApplicationRuntime, crate::domain_computation::primary_graph::application_installation::WorthQueryProgramOwner, crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemand, crate::domain_computation::primary_graph::WorthQueryApplicationRequiredOutputConnection, crate::domain_computation::primary_graph::WorthQueryProducerOutputFamily};
 use worth_query_declaration::facade::{
     application_history::{
         ApplicationHistoryAccessBinding, ApplicationHistoryBinding, ApplicationHistoryModel,

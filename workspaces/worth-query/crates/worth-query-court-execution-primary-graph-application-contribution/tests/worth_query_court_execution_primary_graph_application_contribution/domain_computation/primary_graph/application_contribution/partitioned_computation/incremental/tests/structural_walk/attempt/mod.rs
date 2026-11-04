@@ -1,6 +1,6 @@
 //! Run under the supplied actual root request, then seal its retained computation.
 use crate::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::structural_walk::*;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::QueryRequestExecution;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::QueryRequestExecution;
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_walks::program::authorization::authorize;
 use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::tests::application_attempt::invariant_walks::schema::*;
 use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationExecution;

@@ -23,12 +23,12 @@ where
     #[doc(hidden)]
     pub fn attempt_workflow_approval_field_update_for_test(
         &self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         instance: &crate::domain_computation::primary_graph::PublishedWorkflowInstanceRef,
         approval: EntityId,
     ) -> Result<
         Result<(), TransactionCommitError>,
-        crate::domain_computation::primary_graph::WorthQueryForeignAdvancementPhase,
+        crate::domain_computation::primary_graph::request_execution::WorthQueryForeignAdvancementPhase,
     > {
         let execution = phase.execution_request_for(&self.runtime.product_runtime)?;
         let selected = self
@@ -78,12 +78,12 @@ where
     #[doc(hidden)]
     pub fn attempt_workflow_approval_evidence_delete_for_test(
         &self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         instance: &crate::domain_computation::primary_graph::PublishedWorkflowInstanceRef,
         approval: EntityId,
     ) -> Result<
         Result<(), TransactionCommitError>,
-        crate::domain_computation::primary_graph::WorthQueryForeignAdvancementPhase,
+        crate::domain_computation::primary_graph::request_execution::WorthQueryForeignAdvancementPhase,
     > {
         let execution = phase.execution_request_for(&self.runtime.product_runtime)?;
         let selected = self

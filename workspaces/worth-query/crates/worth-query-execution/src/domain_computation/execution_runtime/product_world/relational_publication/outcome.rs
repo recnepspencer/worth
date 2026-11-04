@@ -57,7 +57,7 @@ impl WorthQueryPerformedRelationalProductChangeDeliveryOutcome {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum WorthQueryPerformedRelationalProductChangeDeliveryDenialKind {
     /// The receiving runtime refused the advancement's custody.
-    ExecutionRequest(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
+    ExecutionRequest(crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial),
     ForeignProductRoot,
     ForeignProductOccurrence,
     ForeignConditionalOperation,

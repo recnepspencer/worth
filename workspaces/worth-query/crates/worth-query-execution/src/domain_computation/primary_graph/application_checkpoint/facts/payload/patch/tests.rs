@@ -1,9 +1,6 @@
 //! Storage proof only: these ordinals never establish graph/read currentness.
 use super::*;
-use crate::domain_computation::primary_graph::{
-    application_checkpoint::facts::NativeFactPayloadBuilder,
-    application_contribution::with_bootstrap_advancement,
-};
+use {crate::domain_computation::primary_graph::application_checkpoint::facts::NativeFactPayloadBuilder, crate::domain_computation::primary_graph::request_execution::with_bootstrap_advancement};
 use crate::facade::primary_graph::WorthQueryExecutionObservation;
 use std::sync::{Arc, Weak};
 use worth_execution::ExecutionAllocationPolicy;

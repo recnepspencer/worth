@@ -1,11 +1,6 @@
 //! Literal receiving vocabulary is independent of the conversion under test.
 use super::*;
-use crate::domain_computation::{
-    primary_graph::{
-        WorthQueryManagedComputationResourceDenial as Resource, WorthQueryMemoryLimitLevel as Level,
-    },
-    WorthQueryProviderSessionDenialKind as Session,
-};
+use {crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryMemoryLimitLevel as Level, crate::domain_computation::WorthQueryProviderSessionDenialKind as Session};
 use worth_relational::facade::{
     content::RelationalContentDenial as Content,
     transactions::RelationalExecutionDenialCause as Native,

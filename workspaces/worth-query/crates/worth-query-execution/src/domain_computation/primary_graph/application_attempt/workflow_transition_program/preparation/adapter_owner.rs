@@ -6,7 +6,7 @@ use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRe
 impl WorthQueryWorkflowAdvanceAdapter {
     #[doc(hidden)]
     pub fn resolve_guarded_operation_custody<Schema, Operation, Input, Scope>(
-phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,

@@ -16,8 +16,8 @@ use worth_foundational::{ExecutionReport, ExecutionRequestPolicy};
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_runtime_world::facade::RuntimeWorldExecutionPlacement;
 
-use super::execution_denial::{interruption_stop, lease_denial, memory_denial};
-use super::{WorthQueryManagedComputationInterruption, WorthQueryManagedComputationResourceDenial};
+use {crate::domain_computation::primary_graph::request_execution::execution_stop::interruption_stop, crate::domain_computation::primary_graph::request_execution::execution_stop::lease_denial, crate::domain_computation::primary_graph::request_execution::execution_stop::memory_denial};
+use {crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationInterruption, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial};
 
 pub(crate) mod test_placement;
 pub(in crate::domain_computation::primary_graph) use test_placement::test_policy;
@@ -128,7 +128,7 @@ impl<'a> QueryRequestExecution<'a> {
     }
 
     /// A safe point outside any pattern: the stop a kernel would make here.
-    pub(super) fn checkpoint(&self) -> Result<(), MapKernelStop> {
+    pub(in crate::domain_computation::primary_graph) fn checkpoint(&self) -> Result<(), MapKernelStop> {
         self.interruption()
             .map_or(Ok(()), |interruption| Err(interruption_stop(interruption)))
     }
@@ -150,7 +150,7 @@ impl<'a> QueryRequestExecution<'a> {
     }
 
     /// Every run, including serial placement, descends from the request's lease.
-    pub(super) fn dispatch(&self) -> Result<QueryDispatch<'_>, Resource> {
+    pub(in crate::domain_computation::primary_graph) fn dispatch(&self) -> Result<QueryDispatch<'_>, Resource> {
         let form = match &self.form {
             Form::Leased { lease, policy } | Form::Serial { lease, policy } => {
                 let lease = lease.as_ref().map_err(|denial| lease_denial(*denial))?;
@@ -226,7 +226,7 @@ impl QueryDispatch<'_> {
     /// Maps every partition of `map` inside `ceiling`. The map's admission
     /// takes over `inputs`, the request memory held for its partitions, in
     /// one ledger step: no byte of them is unreserved between the two holds.
-    pub(super) fn map<T, K, R, E, Kernel>(
+    pub(in crate::domain_computation::primary_graph) fn map<T, K, R, E, Kernel>(
         &self,
         ceiling: u64,
         map: &ExecutionMap<T, K>,
@@ -274,3 +274,5 @@ pub(in crate::domain_computation::primary_graph) fn certified_wave_seed_for_test
 }
 
 mod court_doors_for_test;
+pub(crate) mod execution_refusal;
+pub(crate) mod execution_stop;

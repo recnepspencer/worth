@@ -6,7 +6,7 @@ use crate::basis::WorthQueryProductBranchAdmissionDenial as Admission;
 pub enum WorthQueryGeneratedOutputSuspensionRecoveryStage {
     SourceSelection(Admission),
     /// The request stopped while continuing retained recovery.
-    ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
+    ExecutionDenied(crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial),
     /// The unpublished product state could not be inspected.
     Inspection,
     /// Owner settlement of the unpublished effects did not finish.

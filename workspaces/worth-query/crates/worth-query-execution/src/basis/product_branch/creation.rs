@@ -95,7 +95,7 @@ impl<'runtime> WorthQueryProductBranchFork<'runtime> {
 
     pub fn create(
         self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
     ) -> Result<WorthQueryProductBranch, WorthQueryProductBranchCreateError> {
         self.create_retaining_source(phase)
             .map(|(branch, _)| branch)
@@ -103,7 +103,7 @@ impl<'runtime> WorthQueryProductBranchFork<'runtime> {
 
     pub(crate) fn create_retaining_source(
         self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
     ) -> Result<
         (WorthQueryProductBranch, super::WorthQueryProductBranchLease),
         WorthQueryProductBranchCreateError,

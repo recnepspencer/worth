@@ -4,12 +4,7 @@ use super::{
     journal::{HistoryJournal, PastHead},
     WorthQueryOwnedProductHead,
 };
-use crate::domain_computation::primary_graph::{
-    WorthQueryAdvancementDenial, WorthQueryAdvancementPhase,
-    WorthQueryApplicationProductBranchCleanupDenial,
-    WorthQueryApplicationProductBranchCleanupFailure,
-    WorthQueryApplicationProductBranchCloseDenial, WorthQueryPrimaryGraphApplicationRuntime,
-};
+use {crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial, crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryApplicationProductBranchCleanupDenial, crate::domain_computation::primary_graph::WorthQueryApplicationProductBranchCleanupFailure, crate::domain_computation::primary_graph::WorthQueryApplicationProductBranchCloseDenial, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime};
 use std::collections::btree_map::IntoValues;
 use worth_query_installation::facade::ApplicationSchema;
 

@@ -1,9 +1,6 @@
 //! Disclose one original subject under the target's current query authority.
 use super::{WorthQuerySelectedCorrectionSource, WorthQuerySelectedProductOperation};
-use crate::domain_computation::primary_graph::{
-    WorthQueryAdvancementPhase, WorthQueryApplicationQueryAccessContext,
-    WorthQueryApplicationQueryControls, WorthQueryPrincipalResolutionMode,
-};
+use {crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryApplicationQueryAccessContext, crate::domain_computation::primary_graph::WorthQueryApplicationQueryControls, crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode};
 use std::{any::TypeId, num::NonZeroUsize};
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,

@@ -135,7 +135,7 @@ fn inspection_preserves_unavailable_owner_stage() {
 }
 #[test]
 fn inspection_preserves_original_advancement_owner() {
-    use crate::domain_computation::primary_graph::WorthQueryAdvancementDenial as Advancement;
+    use crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial as Advancement;
     for cause in [
         Advancement::NestedOpening,
         Advancement::NestedStopped,

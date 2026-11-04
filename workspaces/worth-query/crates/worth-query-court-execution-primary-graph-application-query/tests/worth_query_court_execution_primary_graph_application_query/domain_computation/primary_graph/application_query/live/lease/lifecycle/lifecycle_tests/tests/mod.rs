@@ -94,7 +94,7 @@ impl LiveContext {
 
     pub fn principal(
         &self,
-        phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+        phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
         identity: &str,
     ) -> WorthQueryAuthenticatedPrincipal<IdentityExecutionSchema, Principal, u64> {
         let borrowed_execution = phase_custody.borrowed_request_for_test();
@@ -125,7 +125,7 @@ impl LiveContext {
 
     pub fn open(
         &self,
-        phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+        phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     ) -> TestLiveLease<'_> {
         let borrowed_execution = phase_custody.borrowed_request_for_test();
         let execution = &borrowed_execution;

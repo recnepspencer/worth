@@ -1,9 +1,6 @@
 //! A borrowed new Fact never imports somebody else's heap admission.
 use super::*;
-use crate::domain_computation::primary_graph::{
-    application_checkpoint::facts::payload::FactStorage,
-    application_contribution::with_bootstrap_advancement,
-};
+use {crate::domain_computation::primary_graph::application_checkpoint::facts::payload::FactStorage, crate::domain_computation::primary_graph::request_execution::with_bootstrap_advancement};
 use worth_execution::ExecutionAllocationPolicy;
 use worth_foundational::{
     facade::{AspectKey, AspectValue, FieldKey, InternedString},

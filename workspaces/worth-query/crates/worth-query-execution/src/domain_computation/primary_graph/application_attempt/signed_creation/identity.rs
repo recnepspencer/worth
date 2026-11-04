@@ -290,7 +290,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn check_i
 ) -> Result<(), Denial> {
     context.checkpoint(0).map_err(|cause| {
         Denial::Execution(
-            crate::domain_computation::primary_graph::application_contribution::advancement_denial(
+            crate::domain_computation::primary_graph::request_execution::advancement_denial(
                 worth_execution::WorkCeilingDenial::Stopped(cause),
             ),
         )

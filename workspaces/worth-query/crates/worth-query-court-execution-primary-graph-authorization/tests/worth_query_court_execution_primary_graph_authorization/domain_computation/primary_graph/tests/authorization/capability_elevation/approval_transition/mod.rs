@@ -103,7 +103,7 @@ pub fn requested_world_with_input(
 }
 
 pub fn authenticated(
-    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     world: &World,
     subject: &str,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
@@ -133,7 +133,7 @@ pub fn authenticated(
 }
 
 pub fn approval_access(
-    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     world: &World,
     principal: &Authenticated,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
@@ -151,7 +151,7 @@ pub fn approval_access(
 }
 
 pub fn approval_access_for_elevation(
-    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     world: &World,
     principal: &Authenticated,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
@@ -303,7 +303,7 @@ pub fn approve_exact_request(
 }
 
 pub fn materialize_exact_approval(
-    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     world: &World,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     requested: WorthQueryRequestedElevation,

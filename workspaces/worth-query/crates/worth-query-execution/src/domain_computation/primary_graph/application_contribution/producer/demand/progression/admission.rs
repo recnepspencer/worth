@@ -33,7 +33,7 @@ where
 
     pub fn admit_output_demand<Family>(
         &self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         source_result: crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource<
             FamilySourceQuery<Schema, Family>,
             FamilySourceValue<Schema, Family>,

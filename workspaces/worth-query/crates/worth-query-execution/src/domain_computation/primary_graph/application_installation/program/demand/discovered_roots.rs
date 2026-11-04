@@ -45,7 +45,7 @@ where
     /// it neither duplicates the prepared token nor recovers roots from a receipt.
     pub fn validate_discovered_program_source<Root>(
         &self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         prepared: &WorthQueryPreparedRequiredOutputSource,
         receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
@@ -188,7 +188,7 @@ where
 
     pub fn admit_performed_discovered_program_root_output<Root>(
         &self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         source: WorthQueryApplicationOutputDemandSource<
             SourceQuery<Schema, Root>,
@@ -242,7 +242,7 @@ where
 
     pub fn recover_discovered_program_root_output<Root>(
         &self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         source: WorthQueryApplicationOutputDemandSource<
             SourceQuery<Schema, Root>,

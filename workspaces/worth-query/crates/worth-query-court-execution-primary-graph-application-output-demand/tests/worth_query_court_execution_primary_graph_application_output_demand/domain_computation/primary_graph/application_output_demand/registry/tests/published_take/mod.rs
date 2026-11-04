@@ -9,7 +9,7 @@ use crate::domain_computation::primary_graph::application_output_demand::registr
 fn a_take_checks_the_live_stage_under_its_own_lock() {
     let receipt = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
     let _occurrence = occurrence();
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|_| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|_| {
         for stopped in [false, true] {
             let registry = WorthQueryOutputDemandRegistry::default();
             let row = key("checked-take", 1, 1);

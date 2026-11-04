@@ -1,9 +1,6 @@
 //! Publication request failures use the same SDK-to-Query resource vocabulary.
-use super::{checkpoint_denial, lease_denial, memory_denial};
-use crate::domain_computation::primary_graph::{
-    WorthQueryManagedComputationCheckpointDenial as Checkpoint,
-    WorthQueryManagedComputationInterruption as Interruption,
-};
+use {crate::domain_computation::primary_graph::request_execution::execution_stop::checkpoint_denial, crate::domain_computation::primary_graph::request_execution::execution_stop::lease_denial, crate::domain_computation::primary_graph::request_execution::execution_stop::memory_denial};
+use {crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationCheckpointDenial as Checkpoint, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationInterruption as Interruption};
 use crate::domain_computation::{
     WorthQueryProviderSessionControlStopKind as Control,
     WorthQueryProviderSessionDenialKind as Kind,

@@ -90,7 +90,7 @@ impl std::fmt::Debug for WorthQueryWorkflowGraphExecutionStartFailure {
 }
 
 pub(super) fn begin(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
     running: WorthQueryRunningWorkflowRun,
     stage_identity: &str,
     graph_authority: &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
@@ -206,7 +206,7 @@ impl WorthQueryBoundWorkflowGraphStart {
 impl WorthQueryReadyWorkflowGraphStart {
     fn start_provider(
         mut self,
-        execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        execution: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
     ) -> Result<WorthQueryActiveWorkflowGraphExecution, WorthQueryWorkflowGraphExecutionStartFailure>
     {
         self.bound.running.begin_provider_step_call();

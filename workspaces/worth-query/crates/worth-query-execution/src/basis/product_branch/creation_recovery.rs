@@ -62,7 +62,7 @@ impl WorthQueryProductBranchCreationRecoveryInspection {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryProductBranchRecoveryDenial {
-    Execution(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
+    Execution(crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial),
     OwnerUnavailable,
     ForeignRecovery,
     Missing,
@@ -141,7 +141,7 @@ impl WorthQueryProductBranchCreationRecovery {
     /// Release the original effects and cleanup within the admitted advancement.
     pub fn release_obligations_in_advancement(
         self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         minimum_age_ticks: u64,
     ) -> Result<
         WorthQueryProductBranchCreationRecoveryRelease,

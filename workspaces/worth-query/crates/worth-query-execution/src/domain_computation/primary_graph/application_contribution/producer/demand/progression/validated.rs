@@ -1,7 +1,7 @@
 use super::super::super::registry::InstalledProducerProvider;
 use super::super::disclosure::ValidatedOutputDisclosure;
 use super::*;
-use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase;
 mod entry;
 mod ready;
 use ready::ReadyCertification;

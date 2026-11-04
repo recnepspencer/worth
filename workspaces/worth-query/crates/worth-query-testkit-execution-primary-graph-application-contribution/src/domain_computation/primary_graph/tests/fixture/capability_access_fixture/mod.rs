@@ -14,7 +14,7 @@ use worth_query_execution::facade::domain_computation::WorthQueryAuthenticatedPr
 use worth_query_execution::facade::domain_computation::WorthQueryOperationAuthorizationDenial;
 
 pub fn admit_touch_account_capability(
-    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     world: &AuthorizationWorld,
     principal: &WorthQueryAuthenticatedPrincipal<IdentityExecutionSchema, Principal, u64>,
     request: &WorthQueryRequestScope,

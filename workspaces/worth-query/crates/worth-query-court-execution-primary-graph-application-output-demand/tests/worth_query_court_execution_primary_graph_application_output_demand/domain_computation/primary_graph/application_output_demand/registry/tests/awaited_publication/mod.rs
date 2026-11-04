@@ -8,7 +8,7 @@ use crate::domain_computation::primary_graph::application_output_demand::registr
 pub fn scenario(rejoin: bool, late_hold: bool) {
     let receipt = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
     let _occurrence = occurrence();
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|_| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|_| {
         let registry = WorthQueryOutputDemandRegistry::default();
 
         let old_key = key("awaited", 1, 1);
@@ -151,7 +151,7 @@ fn a_successor_held_after_its_last_awaiting_owner_closed_is_returned() {
 fn closing_the_last_stale_owner_releases_its_held_successor() {
     let receipt = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
     let _occurrence = occurrence();
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|_| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|_| {
         let registry = WorthQueryOutputDemandRegistry::default();
 
         let stale_key = key("held-awaiting", 1, 1);

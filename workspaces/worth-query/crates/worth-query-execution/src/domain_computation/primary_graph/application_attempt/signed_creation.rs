@@ -43,7 +43,7 @@ pub(super) struct SignedCreationState<Schema> {
 pub(super) struct SealedSigningContext<Schema> {
     subject_binding: subject_binding::CapturedSubject,
     _dependencies_memory:
-        crate::domain_computation::primary_graph::application_contribution::QueryMemoryReservation,
+        crate::domain_computation::primary_graph::request_execution::QueryMemoryReservation,
     owner: WorthQueryAuthenticationEventSigningOwner<Schema>,
     principal: Arc<WorthQueryExternalPrincipalIdentity>,
     intent: WorthQueryAuthenticationEventIntent,

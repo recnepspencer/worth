@@ -25,7 +25,7 @@ pub struct WorthQueryProviderSessionRegistrationFailure {
 }
 
 pub fn admit_provider_session<'run>(
-    phase: &'run crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    phase: &'run crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
     running: &'run mut crate::domain_computation::WorthQueryRunningDirectRun,
     graph: &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
     product: crate::basis::WorthQueryProductBranchLease,

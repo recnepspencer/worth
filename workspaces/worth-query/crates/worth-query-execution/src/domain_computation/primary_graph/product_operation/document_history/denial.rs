@@ -1,7 +1,5 @@
 use super::WorthQueryOwnedProductHead;
-use crate::domain_computation::primary_graph::{
-    WorthQueryAdvancementDenial, WorthQueryManagedIndexDenial,
-};
+use {crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial, crate::domain_computation::primary_graph::WorthQueryManagedIndexDenial};
 use worth_relational::facade::branch::RelationalBranchBasisDenial;
 use worth_runtime_world::facade::{RuntimeWorldBranchAdmissionDenial, RuntimeWorldServiceDenial};
 
@@ -62,9 +60,9 @@ impl WorthQueryDocumentHistoryDenial {
     /// as a dependency of the ordinary publication frontend.
     pub fn native_basis_interruption(
         &self,
-    ) -> Option<crate::domain_computation::primary_graph::WorthQueryManagedComputationInterruption>
+    ) -> Option<crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationInterruption>
     {
-        use crate::domain_computation::primary_graph::WorthQueryManagedComputationInterruption as Interruption;
+        use crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationInterruption as Interruption;
         match self {
             Self::NativeBasis(RelationalBranchBasisDenial::Cancelled) => {
                 Some(Interruption::Cancelled)

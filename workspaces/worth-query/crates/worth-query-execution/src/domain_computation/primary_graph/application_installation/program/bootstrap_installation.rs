@@ -3,13 +3,7 @@ use super::{
     WorthQueryApplicationProgramRoots, WorthQueryApplicationProgramRoster,
     WorthQueryProgramApplicationRuntime,
 };
-use crate::domain_computation::primary_graph::{
-    application_installation::{
-        WorthQueryInMemoryApplicationDenial, WorthQueryInMemoryApplicationLimits,
-    },
-    WorthQueryApplicationContributionTuple, WorthQueryBootstrapAdvancementPhase,
-    WorthQueryPrimaryGraphBootstrap, WorthQueryPrimaryGraphInstallationDenial,
-};
+use {crate::domain_computation::primary_graph::application_installation::WorthQueryInMemoryApplicationDenial, crate::domain_computation::primary_graph::application_installation::WorthQueryInMemoryApplicationLimits, crate::domain_computation::primary_graph::WorthQueryApplicationContributionTuple, crate::domain_computation::primary_graph::request_execution::WorthQueryBootstrapAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphBootstrap, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial};
 use worth_query_declaration::facade::{
     application_program::{
         ApplicationProgramDefinition, ApplicationProgramOutputsShape, ValidatedApplicationProgram,
@@ -46,7 +40,7 @@ where
 {
     phase.execution_request().consult().map_err(|cause| {
         WorthQueryInMemoryApplicationDenial::Graph(super::super::super::bootstrap::request_denial(
-            super::super::super::application_contribution::advancement_denial(cause),
+            crate::domain_computation::primary_graph::request_execution::advancement_denial(cause),
         ))
     })?;
     super::construction::in_memory_program_in_advancement(

@@ -12,8 +12,9 @@ use worth_execution::{
 };
 use worth_foundational::facade::PartitionIdentity;
 
-use super::super::request_execution::{query_test_execution_authority_for_test, test_policy};
+use {crate::domain_computation::primary_graph::request_execution::query_test_execution_authority_for_test, crate::domain_computation::primary_graph::request_execution::test_policy};
 use super::*;
+use {crate::domain_computation::primary_graph::request_execution::execution_stop::checkpoint_denial, crate::domain_computation::primary_graph::request_execution::execution_stop::lease_denial, crate::domain_computation::primary_graph::request_execution::execution_stop::memory_denial};
 
 type Denial = WorthQueryPartitionedComputationDenial<u32>;
 type Checkpoint = WorthQueryManagedComputationCheckpointDenial;

@@ -1,0 +1,14 @@
+{
+ "move": "domain_computation::primary_graph::application_contribution::computation::worker_custody -> domain_computation::primary_graph::request_execution::advancement::worker_custody",
+ "files": 1,
+ "edited_files": 9,
+ "widenings": [
+  {
+   "item": "domain_computation::primary_graph::application_contribution::computation::worker_custody @314",
+   "from": "pub(super)",
+   "to": "pub(in crate::domain_computation::primary_graph)"
+  }
+ ],
+ "removed_reexports": [],
+ "problems": []
+}

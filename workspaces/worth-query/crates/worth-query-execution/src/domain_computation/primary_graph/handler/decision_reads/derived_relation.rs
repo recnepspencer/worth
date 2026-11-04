@@ -18,7 +18,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
         let _execution=self.execution().execution_request().map_err(|cause|
             WorthQueryInvariantProjectionTraversalDenial::new(
                 crate::domain_computation::primary_graph::WorthQueryInvariantProjectionTraversalDenialKind::ExecutionRequest(
-                    crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(cause)),relation.name()))?;
+                    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(cause)),relation.name()))?;
         self.reader.decision_derived_relations_from(relation, root)
     }
 
@@ -104,7 +104,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
     ) -> Result<(), WorthQueryInvariantProjectionTraversalDenial> {
         self.execution().execution_request().map_err(|cause| WorthQueryInvariantProjectionTraversalDenial::new(
             crate::domain_computation::primary_graph::WorthQueryInvariantProjectionTraversalDenialKind::ExecutionRequest(
-                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(cause)), subject))?;
+                crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(cause)), subject))?;
         Ok(())
     }
 }

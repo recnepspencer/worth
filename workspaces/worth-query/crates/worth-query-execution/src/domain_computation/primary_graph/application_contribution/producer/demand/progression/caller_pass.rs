@@ -1,7 +1,7 @@
 //! Typed caller disclosure, publication, and requested-output progression.
 use super::*;
 mod own_publication;
-use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase;
 
 /// What one pass of a caller over its own row answered.
 pub(super) enum CallerPass<Query, Value> {

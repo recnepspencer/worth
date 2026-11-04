@@ -3,10 +3,7 @@ use super::*;
 use crate::domain_computation::primary_graph::application_attempt::{
     retained_decision_facts::StoreDenial, WorthQueryProducerIdentityDenial as Identity,
 };
-use crate::domain_computation::primary_graph::application_contribution::{
-    execution_denial::advancement_scope_stop, WorthQueryAdvancementDenial as Advance,
-    WorthQueryManagedComputationInterruption as Interrupted,
-};
+use {crate::domain_computation::primary_graph::application_contribution::execution_denial::advancement_scope_stop, crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial as Advance, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationInterruption as Interrupted};
 use worth_execution::ExecutionAllocationDenialClass;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption;
 

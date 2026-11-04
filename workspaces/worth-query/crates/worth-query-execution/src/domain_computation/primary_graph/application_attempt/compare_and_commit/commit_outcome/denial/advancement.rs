@@ -3,11 +3,7 @@
 use super::{
     WorthQueryApplicationCommitDenial as Denial, WorthQueryApplicationCommitDenialStage as Stage,
 };
-use crate::domain_computation::primary_graph::{
-    WorthQueryAdvancementDenial as Stop, WorthQueryApplicationCommitOutcome as Outcome,
-    WorthQueryApplicationUncommitted as Uncommitted,
-    WorthQueryManagedComputationInterruption as Interruption,
-};
+use {crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial as Stop, crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome as Outcome, crate::domain_computation::primary_graph::WorthQueryApplicationUncommitted as Uncommitted, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationInterruption as Interruption};
 
 impl Stop {
     pub fn into_commit_outcome(self) -> Outcome {
@@ -20,7 +16,7 @@ impl Stop {
         let mut denial = match self {
             Self::Resource(cause) => Denial::execution_resource(cause, None, None, "request admission refused"),
             Self::NestedOpening => Denial::execution_resource(
-                crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::NestedAdvancementOpening,
+                crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::NestedAdvancementOpening,
                 None, None, "second advancement opening refused",
             ),
             Self::NestedStopped => Denial::execution_nested_stopped(None, "request admission stopped"),

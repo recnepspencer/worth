@@ -3,12 +3,7 @@ use super::{
     ApplicationOperationDecisionReadTarget, ApplicationSchema, DecisionReadOutcome,
     WorthQueryApplicationFactKey, WorthQueryApplicationOperationInvariantProjectionReader,
 };
-use crate::domain_computation::primary_graph::{
-    application_contribution::{advancement_denial, QueryRequestExecution},
-    operation_body::{field_value, PreparedRequirementOperand},
-    HandlerExecutionDenial, WorthQueryAdvancementDenial, WorthQueryInvariantEntityIdentity,
-    WorthQueryManagedComputationResourceDenial,
-};
+use {crate::domain_computation::primary_graph::request_execution::advancement_denial, crate::domain_computation::primary_graph::request_execution::QueryRequestExecution, crate::domain_computation::primary_graph::operation_body::field_value, crate::domain_computation::primary_graph::operation_body::PreparedRequirementOperand, crate::domain_computation::primary_graph::HandlerExecutionDenial, crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial, crate::domain_computation::primary_graph::WorthQueryInvariantEntityIdentity, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial};
 use worth_foundational::expression_api::ExpressionValue;
 use worth_query_declaration::facade::application_schema::{
     ApplicationOperationBodyRequirementDirection as Direction,

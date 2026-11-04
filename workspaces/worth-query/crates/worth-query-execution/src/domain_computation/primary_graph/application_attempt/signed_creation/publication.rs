@@ -4,7 +4,7 @@ use super::super::{
     WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationRealizedEffect as Effect,
 };
 use super::{identity, SignedCreationState};
-use crate::domain_computation::primary_graph::application_contribution::QueryRequestExecution;
+use crate::domain_computation::primary_graph::request_execution::QueryRequestExecution;
 use worth_query_admission::facade::authentication_event::WorthQueryAuthenticationEventDenial as AuthenticationDenial;
 use worth_query_declaration::facade::application_schema::{
     ApplicationScalarValueBinding, ApplicationSigningEntityCoordinates,
@@ -23,7 +23,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn publish
     idempotency: &WorthQueryApplicationIdempotencyBinding,
 ) -> Result<(), Outcome> {
     let request = execution.execution_request().map_err(|cause| {
-        crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(cause)
+        crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(cause)
             .into_commit_outcome()
     })?;
     execution
@@ -209,7 +209,7 @@ fn coordinates(
 
 enum PublicationRefusal {
     Denied(Denial),
-    Execution(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
+    Execution(crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial),
 }
 impl From<Denial> for PublicationRefusal {
     fn from(value: Denial) -> Self {

@@ -4,7 +4,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     pub(super) fn restore_generated_output_in_phase<Producer>(
         &self,
         completed: WorthQueryCompletedGeneratedOutputReconstruction<Schema, Producer>,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     ) -> Result<WorthQueryRestoredGeneratedOutput, WorthQueryGeneratedOutputRestorationFailure>
     where

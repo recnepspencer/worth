@@ -9,13 +9,7 @@ use crate::publication_boundary::{
 use std::sync::Arc;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_installation::facade::ApplicationSchema;
-use {
-    crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial,
-    crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind as Kind,
-    crate::domain_computation::primary_graph::WorthQueryAdvancementPhase,
-    crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
-    crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation,
-};
+use {crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind as Kind, crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation, crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation};
 
 impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
     pub(super) fn qualify_completed_output_set<'s>(
@@ -41,7 +35,7 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
             .map_err(|cause| refused(Kind::ExecutionRequest(cause)))?;
         let memory = execution.reserve_retained_memory(retained_bytes).map_err(|cause| {
             refused(Kind::ExecutionRequest(
-                crate::domain_computation::primary_graph::application_contribution::advancement_denial(cause),
+                crate::domain_computation::primary_graph::request_execution::advancement_denial(cause),
             ))
         })?;
         let settlements = std::iter::once(root).chain(dependents);
@@ -53,7 +47,7 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
         }
         execution.check_live().map_err(|cause| {
             refused(Kind::ExecutionRequest(
-                crate::domain_computation::primary_graph::application_contribution::advancement_denial(
+                crate::domain_computation::primary_graph::request_execution::advancement_denial(
                     worth_execution::WorkCeilingDenial::Stopped(cause),
                 ),
             ))

@@ -1,10 +1,6 @@
 //! Current C supplies query authority; the admitted original D supplies rows.
 use super::*;
-use crate::domain_computation::primary_graph::{
-    WorthQueryAdvancementPhase, WorthQueryApplicationOneShotResult,
-    WorthQueryApplicationProjection, WorthQueryHistoryNavigationDenial,
-    WorthQueryHistoryOutputAuthority,
-};
+use {crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryApplicationOneShotResult, crate::domain_computation::primary_graph::WorthQueryApplicationProjection, crate::domain_computation::primary_graph::WorthQueryHistoryNavigationDenial, crate::domain_computation::primary_graph::WorthQueryHistoryOutputAuthority};
 use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
 use worth_query_declaration::facade::{
     application_query::ApplicationQueryBinding,

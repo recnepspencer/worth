@@ -43,7 +43,7 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
         let execution = match phase.execution_request_for(&application.runtime.product_runtime) {
             Ok(execution) => execution,
             Err(cause) => {
-                return crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(
+                return crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::from(
                     cause,
                 )
                 .into_commit_outcome()

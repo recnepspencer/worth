@@ -4,9 +4,7 @@ use super::super::{
     WorthQueryApplicationObservedFact as Fact,
 };
 use super::sealing::WorthQuerySignedCreationPreparationDenial as Denial;
-use crate::domain_computation::primary_graph::application_contribution::{
-    QueryMemoryReservation, QueryRequestExecution,
-};
+use {crate::domain_computation::primary_graph::request_execution::QueryMemoryReservation, crate::domain_computation::primary_graph::request_execution::QueryRequestExecution};
 
 pub(super) fn capture<Schema, Operation, Input, Scope>(
     execution: &QueryRequestExecution<'_>,
@@ -103,15 +101,15 @@ fn source(
     }
 }
 fn resource(
-    cause: crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial,
+    cause: crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial,
 ) -> Denial {
     Denial::Execution(
-        crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(cause),
+        crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(cause),
     )
 }
 fn stopped(cause: worth_execution::MapKernelStop) -> Denial {
     Denial::Execution(
-        crate::domain_computation::primary_graph::application_contribution::advancement_denial(
+        crate::domain_computation::primary_graph::request_execution::advancement_denial(
             worth_execution::WorkCeilingDenial::Stopped(cause),
         ),
     )

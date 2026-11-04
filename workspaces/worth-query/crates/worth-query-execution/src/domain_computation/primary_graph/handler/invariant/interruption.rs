@@ -1,5 +1,5 @@
 //! Failed decision polls stay with preparation even when a handler catches them.
-use super::{HandlerInterruption, QueryRequestExecution};
+use {super::HandlerInterruption, crate::domain_computation::primary_graph::request_execution::QueryRequestExecution};
 use std::cell::Cell;
 
 pub(super) fn checkpoint(
@@ -7,7 +7,7 @@ pub(super) fn checkpoint(
     interruption: &Cell<Option<HandlerInterruption>>,
 ) -> Result<(), HandlerInterruption> {
     let observed = execution.interruption().map(|interruption| {
-        use crate::domain_computation::primary_graph::WorthQueryManagedComputationInterruption as Stop;
+        use crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationInterruption as Stop;
         match interruption {
             Stop::Cancelled => HandlerInterruption::Cancelled,
             Stop::DeadlineExceeded => HandlerInterruption::DeadlineExceeded,

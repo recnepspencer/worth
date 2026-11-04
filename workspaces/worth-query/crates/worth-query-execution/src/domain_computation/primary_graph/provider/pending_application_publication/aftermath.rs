@@ -73,7 +73,7 @@ mod tests {
     use super::*;
     #[test]
     fn checked_aftermath_stop_keeps_recovery_custody_by_value() {
-        use crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial as Resource;
+        use crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource;
         use crate::domain_computation::{
             WorthQueryProviderSessionControlStopKind as Control,
             WorthQueryProviderSessionDenialKind as Kind,

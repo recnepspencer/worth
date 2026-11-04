@@ -11,7 +11,7 @@ impl<Schema: ApplicationSchema + 'static, Program: ApplicationProgramDefinition<
     /// No successful output or publication is created by this operation.
     pub fn finish_unavailable_program_output<Root>(
         &self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         demand: &mut WorthQueryAdmittedProgramOutput<
             Schema,
@@ -63,7 +63,7 @@ impl<Schema: ApplicationSchema + 'static, Program: ApplicationProgramDefinition<
 
 /// Phase custody precedes the installed root's demand-affinity admission.
 pub fn admit_unavailable_completion<'scope>(
-    phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'scope>,
+    phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'scope>,
     runtime: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime,
     owns_demand: impl FnOnce() -> bool,
 ) -> Result<worth_execution::ExecutionRequest<'scope, 'scope>, WorthQueryOutputDemandDenial> {

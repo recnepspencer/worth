@@ -71,7 +71,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     /// The phase witnesses admission before verifier, provenance, or custody access.
     pub(super) fn authenticate_inbound_in_advancement<'a>(
         &'a self,
-        _phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        _phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         handle: &WorthQueryInboundVerifierHandle,
         envelope: &'a [u8],
     ) -> Result<WorthQueryAuthenticatedInboundOccurrence<'a, Schema>, Denial> {
@@ -145,7 +145,7 @@ impl<'a, Schema: ApplicationSchema> WorthQueryAuthenticatedInboundOccurrence<'a,
     /// The phase witnesses admission before verifier, provenance, or custody access.
     pub(super) fn correlate_in_advancement(
         self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
     ) -> Result<WorthQueryCorrelatedInboundOccurrence<'a, Schema>, Denial> {
         let execution = phase
             .execution_request_for(&self.runtime.runtime.product_runtime)
@@ -167,7 +167,7 @@ impl<'a, Schema: ApplicationSchema> WorthQueryCorrelatedInboundOccurrence<'a, Sc
     /// The phase witnesses admission before verifier, provenance, or custody access.
     pub(super) fn accept_in_advancement(
         self,
-        _phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        _phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
     ) -> Result<WorthQueryAdmittedInboundOccurrence<'a, Schema>, Denial> {
         self.authenticated.runtime.accept_correlated_inbound(self)
     }
@@ -189,7 +189,7 @@ impl<Schema: ApplicationSchema> WorthQueryAdmittedInboundOccurrence<'_, Schema> 
 
     pub(super) fn execute_in_advancement(
         mut self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         request: &WorthQueryRequestScope,
     ) -> Result<WorthQueryInboundReceipt, Denial> {
         self.progress(phase, request)
@@ -197,7 +197,7 @@ impl<Schema: ApplicationSchema> WorthQueryAdmittedInboundOccurrence<'_, Schema> 
 
     fn progress(
         &mut self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         request: &WorthQueryRequestScope,
     ) -> Result<WorthQueryInboundReceipt, Denial> {
         let execution = phase

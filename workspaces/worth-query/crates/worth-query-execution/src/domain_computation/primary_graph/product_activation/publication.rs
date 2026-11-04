@@ -5,7 +5,7 @@ use crate::domain_computation::execution_runtime::product_world::publication_den
 use crate::domain_computation::execution_runtime::product_world::{
     prepare_conditional_publication, publish_conditional_definition,
 };
-use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase;
 use std::sync::Arc;
 
 use worth_runtime_bridge::facade::{
@@ -25,7 +25,7 @@ use crate::domain_computation::primary_graph::{
 #[derive(Debug)]
 pub(in crate::domain_computation::primary_graph) enum WorthQueryProductConditionalPublicationDenial
 {
-    ExecutionRequest(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
+    ExecutionRequest(crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial),
     ProductActivation(WorthQueryProductActivationDenial),
     WorldPreparation(NoEffectCompositePublication),
     BridgePreparation(BridgeConditionalDenial),
@@ -59,8 +59,8 @@ where
             let publication = self.runtime.product_runtime.owner.publication_port();
             let prepared_world = match prepare_conditional_publication(&publication, product.observation().clone(), CompositePublicationIntent::with_signal(None), cancellation, None) {
                 Ok(prepared) => prepared,
-                Err(PublicationDenial::ClockMismatch) => return Err(WorthQueryProductConditionalPublicationDenial::ExecutionRequest(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock))),
-Err(PublicationDenial::Stopped(stop)) => return Err(WorthQueryProductConditionalPublicationDenial::ExecutionRequest(crate::domain_computation::primary_graph::application_contribution::advancement_denial(stop))),
+                Err(PublicationDenial::ClockMismatch) => return Err(WorthQueryProductConditionalPublicationDenial::ExecutionRequest(crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock))),
+Err(PublicationDenial::Stopped(stop)) => return Err(WorthQueryProductConditionalPublicationDenial::ExecutionRequest(crate::domain_computation::primary_graph::request_execution::advancement_denial(stop))),
                 Err(PublicationDenial::Refused(denial)) => return Err(WorthQueryProductConditionalPublicationDenial::WorldPreparation(denial)),
             };
             let bridge = self.runtime.bridge.conditional();
@@ -83,8 +83,8 @@ Err(PublicationDenial::Stopped(stop)) => return Err(WorthQueryProductConditional
             match publish_conditional_definition(&publication, phase.execution_request_for(&self.runtime.product_runtime).map_err(|cause| WorthQueryProductConditionalPublicationDenial::ExecutionRequest(cause.into()))?, prepared_world, prepared_bridge, &bridge, cancellation) {
                 Ok(PublicationOutcome::Performed((publication, lowering))) => Ok(RuntimeWorldConditionalDefinitionPublicationOutcome::Performed { publication, lowering }),
                 Ok(PublicationOutcome::ProductUnpublished(effects)) => Ok(RuntimeWorldConditionalDefinitionPublicationOutcome::ProductUnpublished(effects)),
-                Err(PublicationDenial::ClockMismatch) => Err(WorthQueryProductConditionalPublicationDenial::ExecutionRequest(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock))),
-Err(PublicationDenial::Stopped(stop)) => Err(WorthQueryProductConditionalPublicationDenial::ExecutionRequest(crate::domain_computation::primary_graph::application_contribution::advancement_denial(stop))),
+                Err(PublicationDenial::ClockMismatch) => Err(WorthQueryProductConditionalPublicationDenial::ExecutionRequest(crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock))),
+Err(PublicationDenial::Stopped(stop)) => Err(WorthQueryProductConditionalPublicationDenial::ExecutionRequest(crate::domain_computation::primary_graph::request_execution::advancement_denial(stop))),
                 Err(PublicationDenial::Refused(no_effect)) => Ok(RuntimeWorldConditionalDefinitionPublicationOutcome::NoEffect(no_effect)),
             }
         })?

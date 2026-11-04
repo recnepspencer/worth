@@ -15,7 +15,7 @@ use worth_query_execution::facade::domain_computation::WorthQueryWorkflowGraphEx
 
 #[test]
 fn real_installed_workflow_seals_its_evidence_stage_and_converges() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -92,7 +92,7 @@ fn real_installed_workflow_seals_its_evidence_stage_and_converges() {
 
 #[test]
 fn same_semantic_candidate_in_same_stage_workflow_peers_has_distinct_occurrences() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -109,7 +109,7 @@ fn same_semantic_candidate_in_same_stage_workflow_peers_has_distinct_occurrences
 }
 
 pub fn start_workflow_peer(
-    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     scope: &str,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorthQueryStartedWorkflowConvergenceIteration {
@@ -126,7 +126,7 @@ pub fn start_workflow_peer(
 }
 
 pub fn complete_workflow_peer(
-    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     started: WorthQueryStartedWorkflowConvergenceIteration,
 ) -> String {
     let outcome = {
@@ -161,7 +161,7 @@ pub fn complete_workflow_peer(
 
 #[test]
 fn incompatible_stage_queue_contract_denies_before_iteration_and_terminates_cleanly() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 

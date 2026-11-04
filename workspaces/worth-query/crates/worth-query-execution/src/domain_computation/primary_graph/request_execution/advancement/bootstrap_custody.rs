@@ -106,11 +106,7 @@ impl WorthQueryBootstrapAdvancementPhase<'_> {
         worth_execution::ExecutionAllocationPolicy<'policy, 'authority>,
         crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial,
     > {
-        use crate::domain_computation::primary_graph::{
-            WorthQueryManagedComputationResourceDenial as Resource,
-            WorthQueryPrimaryGraphInstallationDenial as D,
-            WorthQueryPrimaryGraphInstallationDenialKind as K,
-        };
+        use {crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial as D, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind as K};
         use worth_execution::ExecutionAllocationPolicy as Policy;
         let funding = self.funded_capture_policy()?;
         match (funding, capture) {

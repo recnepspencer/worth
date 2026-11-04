@@ -2,7 +2,7 @@ use crate::domain_computation::managed_run::tests::readmission_direct_associatio
 
 #[test]
 fn interleaved_readmitted_peers_keep_attempt_ledger_and_release_authority_associated() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 

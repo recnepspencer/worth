@@ -34,7 +34,7 @@ use worth_query_execution::facade::application_contribution::WorthQueryPartition
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::read_set::computation_routing::ComputationRead;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::registry::semantic_edition::InstalledProducerEdition;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::QueryRequestExecution;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::QueryRequestExecution;
 use crate::domain_computation::primary_graph::tests::application_attempt::authenticated_principal;
 use crate::domain_computation::primary_graph::tests::application_attempt::resolved_account;
 use crate::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
@@ -280,7 +280,7 @@ where
         prior,
         request,
         RuntimeWorldExecutionPlacement::Serial(
-        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy(
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::test_placement::test_policy(
             std::num::NonZeroUsize::MIN, None,
         ),
     ),

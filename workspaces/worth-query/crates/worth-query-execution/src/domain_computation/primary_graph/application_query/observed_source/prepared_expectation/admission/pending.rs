@@ -8,7 +8,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema, Operation, Inp
     >(
         self,
         pending: WorthQueryPendingSourceExpectation<Query>,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
     ) -> Result<(), WorthQuerySourceExpectationDenial> {
         let Self { runtime, admission } = self;
 

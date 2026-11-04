@@ -16,7 +16,7 @@ where
 {
     pub fn read_admitted_operation<Operation, Input, Scope, Output>(
         &self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         projection: impl FnOnce(
             &mut WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>,

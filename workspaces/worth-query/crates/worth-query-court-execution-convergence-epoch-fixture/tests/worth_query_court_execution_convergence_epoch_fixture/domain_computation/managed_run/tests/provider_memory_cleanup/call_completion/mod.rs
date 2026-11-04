@@ -1,7 +1,7 @@
 use crate::domain_computation::managed_run::tests::provider_memory_cleanup::*;
 
 pub fn complete_call(
-    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     running: WorthQueryRunningDirectRun,
     graph: &WorthQueryInstalledGraphParticipationAuthority,
@@ -29,7 +29,7 @@ pub fn complete_call(
 }
 
 pub fn complete_workflow_memory_call(
-    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     running: worth_query_execution::facade::domain_computation::WorthQueryRunningWorkflowRun,
     graph: &WorthQueryInstalledGraphParticipationAuthority,

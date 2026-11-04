@@ -29,7 +29,7 @@ impl WorthQueryAuthorizationDecisionFact {
         crate::test_read_stops::every_consult(
             |request| retained.matches_with_retained_activation(request, &observed, runtime, snapshot).map_err(|denial| denial.kind()),
             crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Stopped(Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled)),
-            crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Stopped(Ok(crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionResource { denial: crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::WorkExhausted, partition_identity: None, policy_ancestor: None })),
+            crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Stopped(Ok(crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionResource { denial: crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::WorkExhausted, partition_identity: None, policy_ancestor: None })),
         );
         use crate::domain_computation::primary_graph::application_attempt::consult_observation::{
             Door, ReadConsultObservationForTest,

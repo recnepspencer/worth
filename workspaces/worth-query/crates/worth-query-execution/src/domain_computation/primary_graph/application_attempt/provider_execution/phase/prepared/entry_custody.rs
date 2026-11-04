@@ -81,7 +81,7 @@ impl<'a, Schema: ApplicationSchema, Program: CommitCarrier<Schema>>
     }
     pub(in crate::domain_computation::primary_graph) fn refuse_advancement(
         self,
-        cause: crate::domain_computation::primary_graph::WorthQueryAdvancementDenial,
+        cause: crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
     ) -> Program::Refusal {
         self.program.refuse(cause.into_commit_outcome())
     }

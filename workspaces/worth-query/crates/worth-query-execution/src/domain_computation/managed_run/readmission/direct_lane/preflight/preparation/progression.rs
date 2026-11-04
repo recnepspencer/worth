@@ -91,7 +91,7 @@ pub(super) fn bridge_cleanup_recovery_required(
 }
 
 pub(in crate::domain_computation::managed_run) fn readmit_direct(
-    active_request: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    active_request: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
 
     yielded: WorthQueryYieldedDirectRun,
     query_runtime: &WorthQueryExecutionRuntime,

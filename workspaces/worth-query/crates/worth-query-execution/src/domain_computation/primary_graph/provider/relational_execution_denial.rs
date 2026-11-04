@@ -8,9 +8,7 @@ pub fn relational_execution_kind(
     crate::domain_computation::WorthQueryProviderSessionDenialKind,
     crate::domain_computation::WorthQueryProviderSessionControlStopKind,
 > {
-    use crate::domain_computation::primary_graph::application_contribution::{
-        WorthQueryManagedComputationResourceDenial as Resource, WorthQueryMemoryLimitLevel as Level,
-    };
+    use {crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryMemoryLimitLevel as Level};
     use crate::domain_computation::{
         WorthQueryProviderSessionControlStopKind as Control,
         WorthQueryProviderSessionDenialKind as Kind,

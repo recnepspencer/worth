@@ -23,7 +23,7 @@ where
             let execution = active_phase
                 .execution_request_for(&self.runtime.product_runtime)
                 .map_err(
-                    crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from,
+                    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::from,
                 )?;
             if let Some(denial) = self.direct_operation_commit_denial::<Operation>() {
                 return Ok(WorthQueryElevationRequestOutcome::Denied(denial));

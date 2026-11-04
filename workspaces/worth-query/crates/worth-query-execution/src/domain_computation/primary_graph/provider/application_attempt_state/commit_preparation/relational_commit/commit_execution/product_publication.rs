@@ -291,7 +291,7 @@ fn denied(detail: &'static str) -> crate::domain_computation::WorthQueryProvider
 fn publication_clock_mismatch() -> crate::domain_computation::WorthQueryProviderSessionCommitStop {
     crate::domain_computation::WorthQueryProviderSessionCommitStop::PreEffectDenied(
         crate::domain_computation::WorthQueryProviderSessionFailure::new(
-            crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionResource { denial: crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock, partition_identity: None, policy_ancestor: None },
+            crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionResource { denial: crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock, partition_identity: None, policy_ancestor: None },
             crate::domain_computation::WorthQueryProviderSessionProtocolStage::Commit,
             "publication scope belongs to another monotonic clock",
             crate::domain_computation::WorthQueryProviderSessionProtocolCounters::default(),

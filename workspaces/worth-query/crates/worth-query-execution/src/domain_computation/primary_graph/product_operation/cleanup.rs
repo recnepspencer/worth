@@ -70,7 +70,7 @@ impl WorthQueryApplicationProductBranchCleanup {
     /// A foreign or interrupted phase returns the same cleanup without effects.
     pub fn retry_in_advancement(
         self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
     ) -> Result<
         WorthQueryProductBranchOwnerCleanupReceipt,
         WorthQueryApplicationProductBranchCleanupFailure,

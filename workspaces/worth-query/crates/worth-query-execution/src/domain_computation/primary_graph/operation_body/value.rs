@@ -1,12 +1,6 @@
 //! Once-prepared scalar values retain validation and memory into every sink.
 mod installation;
-use super::super::{
-    application_contribution::{QueryMemoryReservation, QueryRequestExecution},
-    HandlerExecutionDenial, WorthQueryAdvancementDenial, WorthQueryApplicationAttemptDenial,
-    WorthQueryApplicationAttemptDenialKind as Kind,
-    WorthQueryApplicationOperationInvariantProjectionReader, WorthQueryInvariantEntityIdentity,
-    WorthQueryManagedComputationResourceDenial,
-};
+use {crate::domain_computation::primary_graph::request_execution::QueryMemoryReservation, crate::domain_computation::primary_graph::request_execution::QueryRequestExecution, super::super::HandlerExecutionDenial, crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial, super::super::WorthQueryApplicationAttemptDenial, super::super::WorthQueryApplicationAttemptDenialKind as Kind, super::super::WorthQueryApplicationOperationInvariantProjectionReader, super::super::WorthQueryInvariantEntityIdentity, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial};
 pub(super) use installation::install;
 use std::sync::Arc;
 use worth_foundational::{expression_api::ExpressionValue, facade::AspectValue};

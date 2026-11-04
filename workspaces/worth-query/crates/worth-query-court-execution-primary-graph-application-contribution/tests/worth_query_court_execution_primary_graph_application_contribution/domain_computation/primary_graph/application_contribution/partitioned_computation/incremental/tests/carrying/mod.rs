@@ -169,7 +169,7 @@ fn growing_past_the_ceiling_is_denied_as_a_full_run_is_denied() {
         let preparation = declared - 2 * KERNEL_WORK as u64 - full_tree_work;
         let compute_ceiling = WORK_CEILING as u64 - preparation;
         let request = live_scope();
-        let policy = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy(std::num::NonZeroUsize::MIN, None);
+        let policy = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::test_placement::test_policy(std::num::NonZeroUsize::MIN, None);
         let billed = |prior| {
             worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::projected_attempt::attempt_billed(
                 &world,

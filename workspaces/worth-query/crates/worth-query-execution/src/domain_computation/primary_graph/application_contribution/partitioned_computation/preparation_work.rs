@@ -9,11 +9,7 @@ use worth_query_declaration::facade::{
 };
 
 use super::super::super::request_local::{assert_request_local, RequestLocal};
-use super::super::{
-    execution_denial::checkpoint_denial, request_execution::QueryRequestExecution,
-    WorthQueryAdvancementDenial, WorthQueryManagedComputationCheckpointDenial as CheckpointDenial,
-    WorthQueryManagedComputationResourceDenial as Resource,
-};
+use {crate::domain_computation::primary_graph::request_execution::execution_stop::checkpoint_denial, crate::domain_computation::primary_graph::request_execution::QueryRequestExecution, crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationCheckpointDenial as CheckpointDenial, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource};
 use super::WorthQueryPartitionedComputationDenial as Denial;
 
 /// Records canonical preparation work for native full-equivalent reuse.

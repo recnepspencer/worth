@@ -12,14 +12,14 @@ impl CompletedComputationRetention {
         &mut self,
         bytes: impl FnOnce() -> Result<
             Option<u64>,
-            crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial,
+            crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial,
         >,
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         Option<worth_execution::ExecutionMemoryReservation>,
-        crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial,
+        crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial,
     > {
-        use crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial as Resource;
+        use crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource;
         match self {
             Self::Produced(run) => {
                 if let Some(memory) = &mut run.attribution_memory {
@@ -37,7 +37,7 @@ impl CompletedComputationRetention {
                         .map(|bytes| {
                             lease
                                 .reserve_memory(bytes)
-                                .map_err(super::super::super::execution_denial::memory_denial)
+                                .map_err(crate::domain_computation::primary_graph::request_execution::execution_stop::memory_denial)
                         })
                         .transpose()
                 }

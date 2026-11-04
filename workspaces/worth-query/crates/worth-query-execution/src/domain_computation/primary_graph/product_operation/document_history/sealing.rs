@@ -4,14 +4,7 @@ use super::{
     WorthQueryDocumentHistoryOperation, WorthQueryDocumentHistoryReservation,
     WorthQueryHistoryStep,
 };
-use crate::{
-    basis::{WorthQueryProductBranchReadIdentity, WorthQueryProductObservationLease},
-    domain_computation::primary_graph::{
-        WorthQueryAdvancementPhase, WorthQueryApplicationCommitReceipt,
-        WorthQueryCompletedRequiredOutputs, WorthQueryExpectedProductBranch,
-    },
-    publication_boundary::WorthQueryProgramPublicationAccess,
-};
+use {crate::basis::WorthQueryProductBranchReadIdentity, crate::basis::WorthQueryProductObservationLease, crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt, crate::domain_computation::primary_graph::WorthQueryCompletedRequiredOutputs, crate::domain_computation::primary_graph::WorthQueryExpectedProductBranch, crate::publication_boundary::WorthQueryProgramPublicationAccess};
 use worth_query_declaration::facade::{
     application_history::{ApplicationHistoryBinding, ApplicationHistoryModel},
     application_operation::{
@@ -91,7 +84,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             .map_err(Denial::Stopped)?;
         execution.check_live().map_err(|stop| {
             Denial::Stopped(
-                crate::domain_computation::primary_graph::application_contribution::advancement_denial(
+                crate::domain_computation::primary_graph::request_execution::advancement_denial(
                     worth_execution::WorkCeilingDenial::Stopped(stop),
                 ),
             )

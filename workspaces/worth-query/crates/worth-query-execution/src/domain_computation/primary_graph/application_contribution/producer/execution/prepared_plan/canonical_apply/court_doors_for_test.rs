@@ -7,7 +7,7 @@ impl<'owner, Key, Value, Stop> CanonicalApplyCursor<'owner, Key, Value, Stop> {
         OwnerPlan<'owner, Value, Stop>,
         Result<
             crate::domain_computation::primary_graph::application_contribution::computation::wave_dispatch::ComputedMember,
-            crate::domain_computation::primary_graph::WorthQueryAdvancementDenial,
+            crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
         >,
     )>{
         &self.slots
@@ -21,7 +21,7 @@ impl<'owner, Key, Value, Stop> CanonicalApplyCursor<'owner, Key, Value, Stop> {
         published: impl FnMut(Key, Result<Value, Stop>) -> Result<(), Stop>,
         refused: impl FnOnce(
             Key,
-            crate::domain_computation::primary_graph::WorthQueryAdvancementDenial,
+            crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
         ) -> Stop,
     ) -> Result<(), Stop> {
         Self::apply(self, published, refused)

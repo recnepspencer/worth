@@ -10,7 +10,7 @@
 
 #![deny(private_interfaces)]
 
-use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase;
 
 pub(crate) mod denial;
 
@@ -103,7 +103,7 @@ where
     /// `dispatch_external_effect` step (R8.67). The returned proof is privately minted.
     pub fn redispatch_admitted_external_effect<Operation, Input, Scope>(
         &self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
 
         handle: &WorthQueryRecoveryHandle,
         authority: &WorthQueryRecoveryEffectAuthority,

@@ -89,7 +89,7 @@ impl WorthQueryGraphParticipationProvider<ManagedGraph> for EffectProvider {
 
 #[test]
 fn touch_effect_cannot_cross_an_effect_free_step_contract() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -130,7 +130,7 @@ fn touch_effect_cannot_cross_an_effect_free_step_contract() {
 
 #[test]
 fn declared_partial_effect_posture_carries_exact_applied_effect_evidence() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -171,7 +171,7 @@ fn declared_partial_effect_posture_carries_exact_applied_effect_evidence() {
 
 #[test]
 fn rejected_effect_closure_cannot_claim_an_applied_effect() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -222,7 +222,7 @@ fn rejected_effect_closure_cannot_claim_an_applied_effect() {
 
 #[test]
 fn panic_after_effect_attempt_preserves_effect_uncertainty() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -269,7 +269,7 @@ fn panic_after_effect_attempt_preserves_effect_uncertainty() {
 }
 
 pub fn start_effect(
-    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     running: WorthQueryRunningDirectRun,
     graph: &WorthQueryInstalledGraphParticipationAuthority,

@@ -309,7 +309,7 @@ fn principal_adjacency_revision(
         worth_relational::facade::runtime::AdjacencyStructuralRevisionDenial::Execution(cause) => super::resolution_denial::relational_read_denial(cause, binding),
         worth_relational::facade::runtime::AdjacencyStructuralRevisionDenial::WorkBudgetExceeded => {
             WorthQueryPrincipalResolutionDenial::new(
-                WorthQueryPrincipalResolutionDenialKind::Stopped(Ok(crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionResource { denial: crate::domain_computation::primary_graph::application_contribution::WorthQueryManagedComputationResourceDenial::WorkExhausted, partition_identity: None, policy_ancestor: None })),
+                WorthQueryPrincipalResolutionDenialKind::Stopped(Ok(crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionResource { denial: crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::WorkExhausted, partition_identity: None, policy_ancestor: None })),
                 binding,
             )
         }

@@ -72,7 +72,7 @@ where
 {
     pub fn authorize_mandatory_review<Capability, Operation, Input>(
         &self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         mandatory: WorthQueryMandatoryReview,
         access: WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
         operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,

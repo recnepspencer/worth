@@ -145,7 +145,7 @@ fn refused(kind: Kind) -> WorthQueryOutputDemandDenial {
 }
 fn stopped(cause: WorkCeilingDenial) -> WorthQueryOutputDemandDenial {
     refused(Kind::ExecutionRequest(
-        crate::domain_computation::primary_graph::application_contribution::advancement_denial(
+        crate::domain_computation::primary_graph::request_execution::advancement_denial(
             cause,
         ),
     ))

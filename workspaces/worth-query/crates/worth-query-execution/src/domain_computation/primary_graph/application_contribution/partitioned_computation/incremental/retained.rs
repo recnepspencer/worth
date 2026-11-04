@@ -13,7 +13,7 @@ use std::sync::Arc;
 
 use worth_execution::{NativeReductionTree, PartitionItemId};
 
-use super::super::super::request_execution::QueryMemoryReservation;
+use crate::domain_computation::primary_graph::request_execution::QueryMemoryReservation;
 use super::super::items::{ItemDigests, Items};
 use super::super::routing::ComputationPartitionRouting;
 pub(in crate::domain_computation) use super::carriage::ComputationPrior;

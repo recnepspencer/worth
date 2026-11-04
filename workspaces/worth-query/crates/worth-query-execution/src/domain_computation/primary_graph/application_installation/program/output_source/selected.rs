@@ -6,7 +6,7 @@
 //! selection. The occurrence gate still decides: a successor the occurrence
 //! no longer runs is refused before any effect.
 
-use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 
 use crate::facade::runtime::ExecutionAllocationPolicy;
@@ -96,7 +96,7 @@ where
             match phase.execution_request_for(&self.backing.runtime.runtime.product_runtime) {
                 Ok(request) => request,
                 Err(cause) => return Ok((
-                    crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(
+                    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::from(
                         cause,
                     )
                     .into_commit_outcome(),
@@ -154,7 +154,7 @@ where
             match phase.execution_request_for(&self.backing.runtime.runtime.product_runtime) {
                 Ok(request) => request,
                 Err(cause) => return Ok((
-                    crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(
+                    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::from(
                         cause,
                     )
                     .into_commit_outcome(),

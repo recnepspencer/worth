@@ -12,10 +12,7 @@ mod selection;
 mod source;
 mod values;
 use super::super::super::operation_body::{BodyFieldExpectation, PreparedBodySource};
-use super::super::super::{
-    application_contribution::advancement_denial, HandlerExecutionDenial,
-    WorthQueryAdvancementDenial, WorthQueryManagedComputationResourceDenial,
-};
+use {crate::domain_computation::primary_graph::request_execution::advancement_denial, super::super::super::HandlerExecutionDenial, crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial};
 use super::{
     ApplicationMutationBinding, ApplicationMutationScopeBinding, ApplicationSchema, DecisionReader,
 };

@@ -1,10 +1,7 @@
 //! Both genuine admissions are consumed before protected attempt or source inspection.
 use super::super::WorthQueryDocumentHistory;
 use super::*;
-use crate::domain_computation::primary_graph::{
-    application_query::CompletedMetadataRead, WorthQueryAdmittedApplicationOperation,
-    WorthQueryAdvancementPhase, WorthQueryApplicationIdempotencyBinding,
-};
+use {crate::domain_computation::primary_graph::application_query::CompletedMetadataRead, crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation, crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding};
 use worth_query_declaration::facade::{
     application_capability::ApplicationCapabilityRef,
     application_history::{

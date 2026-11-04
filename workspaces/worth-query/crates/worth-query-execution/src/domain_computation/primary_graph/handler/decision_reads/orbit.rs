@@ -16,7 +16,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
         WorthQueryInvariantProjectionTraversalDenial,
     > {
         let _execution = self.execution().execution_request().map_err(|cause| WorthQueryInvariantProjectionTraversalDenial::new(
-            crate::domain_computation::primary_graph::WorthQueryInvariantProjectionTraversalDenialKind::ExecutionRequest(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(cause)), relation.name()))?;
+            crate::domain_computation::primary_graph::WorthQueryInvariantProjectionTraversalDenialKind::ExecutionRequest(crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(cause)), relation.name()))?;
         self.reader.decision_orbit(relation, member)
     }
     /// Select the persistent name through a complete tracked orbit read.

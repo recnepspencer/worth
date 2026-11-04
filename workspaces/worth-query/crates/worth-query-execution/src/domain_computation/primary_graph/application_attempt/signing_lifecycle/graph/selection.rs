@@ -1,8 +1,5 @@
 //! Settled effectiveness depends on distinct selected identity, not edge count or adjacency clock.
-use super::{
-    coordinates, observation, stopped, unavailable, BTreeSet, Batch, Effect, EntityId, Lease,
-    Locus, Outcome, PathDirection, QueryRequestExecution, Rule,
-};
+use {super::coordinates, super::observation, super::stopped, super::unavailable, super::BTreeSet, super::Batch, super::Effect, super::EntityId, super::Lease, super::Locus, super::Outcome, super::PathDirection, crate::domain_computation::primary_graph::request_execution::QueryRequestExecution, super::Rule};
 use crate::domain_computation::primary_graph::application_attempt::signed_creation::PublishedCertifiedSubject;
 use crate::domain_computation::primary_graph::application_attempt::signed_selection::preserves_endpoint;
 

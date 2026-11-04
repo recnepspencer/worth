@@ -4,9 +4,7 @@ use worth_relational::facade::indexes::BoundedRelationJoinLookupDenialKind as Ki
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 #[test]
 fn grant_selection_names_deadlines_and_every_ceiling_as_operational_stops() {
-    use crate::domain_computation::primary_graph::{
-        WorthQueryManagedComputationResourceDenial as Resource, WorthQueryMemoryLimitLevel as Level,
-    };
+    use {crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryMemoryLimitLevel as Level};
     use crate::domain_computation::{
         WorthQueryProviderSessionControlStopKind as Control,
         WorthQueryProviderSessionDenialKind as Session,
@@ -99,7 +97,7 @@ fn grant_selection_names_deadlines_and_every_ceiling_as_operational_stops() {
 
 #[test]
 fn grant_selection_retains_every_structural_execution_cause() {
-    use crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial as Resource;
+    use crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource;
     use crate::domain_computation::WorthQueryProviderSessionDenialKind as Session;
     let resource = |denial| Session::ExecutionResource {
         denial,

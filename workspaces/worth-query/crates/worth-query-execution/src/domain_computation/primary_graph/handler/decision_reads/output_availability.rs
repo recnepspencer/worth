@@ -37,7 +37,7 @@ where
 {
         let _execution = self.execution().execution_request().map_err(|cause| {
             HandlerExecutionDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(
+                crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(
                     cause,
                 ),
             )

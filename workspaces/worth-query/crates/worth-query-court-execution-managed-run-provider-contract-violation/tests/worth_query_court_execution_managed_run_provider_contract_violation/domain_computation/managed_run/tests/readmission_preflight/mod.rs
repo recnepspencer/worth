@@ -3,7 +3,7 @@ use crate::process::domain_computation::managed_run::tests::*;
 
 #[test]
 fn foreign_bridge_denies_before_fresh_query_or_provider_work_and_preserves_retry() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -85,7 +85,7 @@ fn foreign_bridge_denies_before_fresh_query_or_provider_work_and_preserves_retry
 
 #[test]
 fn crossed_bridge_denial_preserves_both_interleaved_direct_peers() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -172,7 +172,7 @@ fn crossed_bridge_denial_preserves_both_interleaved_direct_peers() {
 
 #[test]
 fn successor_installation_denies_stale_yield_before_any_fresh_authority() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 

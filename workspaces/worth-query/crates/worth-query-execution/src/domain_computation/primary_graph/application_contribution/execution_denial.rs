@@ -14,10 +14,7 @@ use super::partitioned_computation::{
     WorthQueryComputationPartitionStop, WorthQueryPartitionedComputationDenial,
     WorthQueryReductionInputDenial as ReductionInput,
 };
-use super::{
-    WorthQueryManagedComputationCheckpointDenial, WorthQueryManagedComputationDenial,
-    WorthQueryManagedComputationInterruption, WorthQueryManagedComputationResourceDenial,
-};
+use {crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationCheckpointDenial, super::WorthQueryManagedComputationDenial, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationInterruption, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial};
 
 type Resource = WorthQueryManagedComputationResourceDenial;
 
@@ -226,9 +223,8 @@ impl<Stopped> WorthQueryComputationPartitionStop<Stopped> {
 #[cfg(test)]
 mod tests;
 
-mod execution_stop;
-pub(in crate::domain_computation) use execution_stop::{checkpoint_denial, lease_denial};
-pub(super) use execution_stop::{interruption_stop, memory_denial};
+
+
 
 mod handler;
 mod publication;
@@ -237,32 +233,35 @@ mod scope;
 pub(in crate::domain_computation::primary_graph) use handler::managed_advancement_denial;
 pub(in crate::domain_computation) use publication::publication_execution_kind;
 pub(in crate::domain_computation) use scope::scope_stop_kind;
+use crate::domain_computation::primary_graph::request_execution::execution_stop::checkpoint_denial;
+use crate::domain_computation::primary_graph::request_execution::execution_stop::interruption_stop;
+use crate::domain_computation::primary_graph::request_execution::execution_stop::lease_denial;
 
 /// Native lifecycle owners keep the original admitted request's exact stop cause.
 pub(in crate::domain_computation) fn advancement_scope_stop(
     denial: WorkCeilingDenial,
-) -> super::WorthQueryAdvancementDenial {
+) -> crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial {
     match denial {
         WorkCeilingDenial::Admission(denial) => {
-            super::WorthQueryAdvancementDenial::Resource(lease_denial(denial))
+            crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(lease_denial(denial))
         }
         WorkCeilingDenial::Stopped(stop) => advancement_checkpoint_stop(stop),
-        WorkCeilingDenial::Panicked => super::WorthQueryAdvancementDenial::Panicked,
+        WorkCeilingDenial::Panicked => crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Panicked,
     }
 }
 
 pub(in crate::domain_computation) fn advancement_checkpoint_stop(
     stop: MapKernelStop,
-) -> super::WorthQueryAdvancementDenial {
+) -> crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial {
     match checkpoint_denial(stop) {
         WorthQueryManagedComputationCheckpointDenial::Resource(resource) => {
-            super::WorthQueryAdvancementDenial::Resource(resource)
+            crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(resource)
         }
         WorthQueryManagedComputationCheckpointDenial::Interrupted(interruption) => {
-            super::WorthQueryAdvancementDenial::Interrupted(interruption)
+            crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Interrupted(interruption)
         }
         WorthQueryManagedComputationCheckpointDenial::NestedPatternStopped => {
-            super::WorthQueryAdvancementDenial::NestedStopped
+            crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::NestedStopped
         }
     }
 }

@@ -22,7 +22,7 @@ impl QueryRequestExecution<'_> {
 }
 
 impl QueryDispatch<'_> {
-    pub(in super::super) fn advance_retained<T, R, E, F>(
+    pub(in crate::domain_computation::primary_graph) fn advance_retained<T, R, E, F>(
         &self,
         ceiling: Option<u64>,
         prior: &worth_execution::ExecutionRetainedRun<R>,
@@ -46,14 +46,14 @@ impl QueryDispatch<'_> {
         )
     }
 
-    pub(in super::super) fn reduce_retained<T, R, E, Kernel, Diagnostic, Combine>(
+    pub(in crate::domain_computation::primary_graph) fn reduce_retained<T, R, E, Kernel, Diagnostic, Combine>(
         &self,
         ceiling: Option<u64>,
         map: &ExecutionMap<T, (), worth_execution::NativePayload>,
         (kernel, diagnostic): (Kernel, Diagnostic),
         identity: R,
         combine: Combine,
-        cause: super::super::partitioned_computation::WorthQueryPartitionedComputationFullCause,
+        cause: crate::domain_computation::primary_graph::application_contribution::partitioned_computation::WorthQueryPartitionedComputationFullCause,
     ) -> Result<NativeRetainedReduction<R, Combine>, RetainedReduceDenial<E>>
     where
         T: Sync,
@@ -76,11 +76,11 @@ impl QueryDispatch<'_> {
             identity,
             combine,
         );
-        super::super::partitioned_computation::observe_retained_full_tree(cause, &outcome);
+        crate::domain_computation::primary_graph::application_contribution::partitioned_computation::observe_retained_full_tree(cause, &outcome);
         if let (Some((seed, kernel, identity, combine)), Ok(result)) =
             (certification, &outcome.result)
         {
-            test_placement::certify_native(
+            crate::domain_computation::primary_graph::request_execution::test_placement::certify_native(
                 map,
                 lease,
                 seed,

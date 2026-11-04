@@ -1,0 +1,17 @@
+{
+ "move": "domain_computation::primary_graph::application_contribution::computation::execution_refusal -> domain_computation::primary_graph::request_execution::execution_refusal",
+ "files": 1,
+ "edited_files": 97,
+ "widenings": [],
+ "removed_reexports": [
+  "domain_computation::primary_graph::application_contribution::WorthQueryManagedComputationCheckpointDenial",
+  "domain_computation::primary_graph::application_contribution::WorthQueryManagedComputationInterruption",
+  "domain_computation::primary_graph::application_contribution::WorthQueryManagedComputationResourceDenial",
+  "domain_computation::primary_graph::application_contribution::WorthQueryMemoryLimitLevel",
+  "domain_computation::primary_graph::application_contribution::computation::WorthQueryManagedComputationCheckpointDenial",
+  "domain_computation::primary_graph::application_contribution::computation::WorthQueryManagedComputationInterruption",
+  "domain_computation::primary_graph::application_contribution::computation::WorthQueryManagedComputationResourceDenial",
+  "domain_computation::primary_graph::application_contribution::computation::WorthQueryMemoryLimitLevel"
+ ],
+ "problems": []
+}

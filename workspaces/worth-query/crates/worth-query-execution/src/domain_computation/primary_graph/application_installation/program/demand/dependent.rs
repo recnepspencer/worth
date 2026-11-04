@@ -10,7 +10,7 @@ where
 {
     pub fn admit_program_dependent_output<ParentDemand, Connection>(
         &self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         parent: &WorthQuerySettledProgramOutput<Schema, Program, ParentDemand>,
         basis: &crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,

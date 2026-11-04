@@ -1,5 +1,5 @@
 mod advancement;
-use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
@@ -106,7 +106,7 @@ where
 {
     pub fn admit_program_root_output<Root>(
         &self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         source: WorthQueryApplicationOutputDemandSource<
             SourceQuery<Schema, WorthQueryProgramRootDemand<Schema, Root>>,
@@ -277,7 +277,7 @@ where
 
     pub fn recover_program_root_output<Root>(
         &self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         source: WorthQueryApplicationOutputDemandSource<
             SourceQuery<Schema, WorthQueryProgramRootDemand<Schema, Root>>,
@@ -340,7 +340,7 @@ where
 
     pub fn admit_performed_program_root_output<Root>(
         &self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         source: WorthQueryApplicationOutputDemandSource<
             SourceQuery<Schema, WorthQueryProgramRootDemand<Schema, Root>>,

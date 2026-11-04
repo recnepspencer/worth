@@ -1,5 +1,5 @@
 use crate::domain_computation::execution_runtime::product_world::publication_denial::WorthQueryProductPublicationDenial as PublicationDenial;
-use crate::domain_computation::primary_graph::application_contribution::advancement_denial;
+use crate::domain_computation::primary_graph::request_execution::advancement_denial;
 use std::collections::{BTreeMap, BTreeSet};
 
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
@@ -81,7 +81,7 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
         Input,
         Scope,
     >,
-    _phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    _phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
     selected: &WorthQuerySelectedProductOperation<'_, Schema>,
     target: &ApplicationProgramRevision,
     expected_requirements: &WorthQueryProgramAdoptionRequirements,
@@ -253,7 +253,7 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
         .prepare_relational_candidate(candidate, request, successor_observation_requested)
         .map_err(|denial| match denial {
             PublicationDenial::ClockMismatch => {
-                WorthQueryBranchAdoptionPreparationDenial::ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock))
+                WorthQueryBranchAdoptionPreparationDenial::ExecutionDenied(crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock))
             },
 PublicationDenial::Stopped(stop) => {
                 WorthQueryBranchAdoptionPreparationDenial::ExecutionDenied(advancement_denial(stop))

@@ -1,9 +1,6 @@
 //! One native approval and its declared attestation share one authenticated candidate.
 use super::*;
-use crate::domain_computation::primary_graph::{
-    MutationHandlerExecutionDenial, WorthQueryAdvancementPhase, WorthQueryOperationBodyDecision,
-    WorthQueryOperationBodyDenial, WorthQueryPrimaryGraphApplicationRuntime,
-};
+use {crate::domain_computation::primary_graph::MutationHandlerExecutionDenial, crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryOperationBodyDecision, crate::domain_computation::primary_graph::WorthQueryOperationBodyDenial, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime};
 use worth_execution::ExecutionAllocationPolicy;
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationIdentities, ApplicationMutationScopeBinding,

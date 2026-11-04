@@ -39,7 +39,7 @@ where
     #[doc(hidden)]
     pub fn capture_native_truth_checkpoint_for_test(
         &self,
-        phase: &super::super::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
     ) -> Result<WorthQueryApplicationCheckpoint, WorthQueryCheckpointCaptureDenial> {
         let policy = WorthQueryCheckpointCapturePolicy::SystemAllocation;
         let execution = phase.execution_request_for(&self.runtime.product_runtime)?;
@@ -65,7 +65,7 @@ where
 
     pub fn capture_application_checkpoint(
         &self,
-        phase: &super::super::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         policy: WorthQueryCheckpointCapturePolicy<'_, '_>,
     ) -> Result<WorthQueryApplicationCheckpoint, WorthQueryCheckpointCaptureDenial> {
         self.capture_application_checkpoint_with_sections(phase, policy)
@@ -76,7 +76,7 @@ where
     /// The sizes describe these exact bytes; no second capture is performed.
     pub fn capture_application_checkpoint_with_sections(
         &self,
-        phase: &super::super::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         policy: WorthQueryCheckpointCapturePolicy<'_, '_>,
     ) -> Result<
         (

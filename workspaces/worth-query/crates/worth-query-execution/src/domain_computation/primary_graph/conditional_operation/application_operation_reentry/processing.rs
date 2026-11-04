@@ -1,5 +1,5 @@
 use super::super::canonical_identity::WorthQueryTemporalRuntimeBindingIdentity;
-use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase;
 use std::collections::BTreeMap;
 
 use worth_query_installation::facade::{

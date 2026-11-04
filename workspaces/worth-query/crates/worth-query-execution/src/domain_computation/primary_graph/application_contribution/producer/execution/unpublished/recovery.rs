@@ -250,10 +250,7 @@ fn recovery_denial(stop: RecoveryDenial) -> WorthQueryOutputDemandDenial {
 }
 
 fn readmission_denial(stop: WorthQueryOutputDemandDenial) -> WorthQueryOutputDemandDenial {
-    use crate::domain_computation::primary_graph::{
-        WorthQueryAdvancementDenial as Advance,
-        WorthQueryManagedComputationResourceDenial as Resource,
-    };
+    use {crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial as Advance, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource};
     if matches!(
         stop.kind(),
         WorthQueryOutputDemandDenialKind::Cancelled

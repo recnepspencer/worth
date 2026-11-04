@@ -166,7 +166,7 @@ where
 {
     pub fn select_application_read_observation(
         &self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         observation: &WorthQueryApplicationReadObservation,
     ) -> Result<
         WorthQuerySelectedProductOperation<'_, Schema>,

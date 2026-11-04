@@ -1,5 +1,5 @@
 //! Native retained-path edits consume accumulated work on every exit.
-use super::super::super::request_execution::QueryRequestExecution;
+use crate::domain_computation::primary_graph::request_execution::QueryRequestExecution;
 use super::super::WorthQueryPartitionedComputationDenial as Denial;
 use super::tree_attempt::{EditDisposition, TreeAttempt};
 use std::collections::BTreeMap;

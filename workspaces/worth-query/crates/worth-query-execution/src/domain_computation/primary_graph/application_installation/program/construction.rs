@@ -27,7 +27,7 @@ pub fn in_memory_program<Schema, Program>(
     build_identity: worth_foundational::facade::ApplicationBuildIdentity,
     limits: WorthQueryInMemoryApplicationLimits,
     initial_state: impl FnOnce(
-        &crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase<'_>,
+        &crate::domain_computation::primary_graph::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
         &mut WorthQueryPrimaryGraphBootstrap<Schema>,
         &WorthQueryInstalledApplicationSchema<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
@@ -62,7 +62,7 @@ pub fn in_memory_program_with_authorization_time_source<Schema, Program>(
     build_identity: worth_foundational::facade::ApplicationBuildIdentity,
     limits: WorthQueryInMemoryApplicationLimits,
     initial_state: impl FnOnce(
-        &crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase<'_>,
+        &crate::domain_computation::primary_graph::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
         &mut WorthQueryPrimaryGraphBootstrap<Schema>,
         &WorthQueryInstalledApplicationSchema<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
@@ -105,7 +105,7 @@ pub fn in_memory_rostered_program<Schema, Program>(
     build_identity: worth_foundational::facade::ApplicationBuildIdentity,
     limits: WorthQueryInMemoryApplicationLimits,
     initial_state: impl FnOnce(
-        &crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase<'_>,
+        &crate::domain_computation::primary_graph::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
         &mut WorthQueryPrimaryGraphBootstrap<Schema>,
         &WorthQueryInstalledApplicationSchema<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
@@ -141,7 +141,7 @@ pub fn in_memory_rostered_program_with_authorization_time_source<Schema, Program
     build_identity: worth_foundational::facade::ApplicationBuildIdentity,
     limits: WorthQueryInMemoryApplicationLimits,
     initial_state: impl FnOnce(
-        &crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase<'_>,
+        &crate::domain_computation::primary_graph::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
         &mut WorthQueryPrimaryGraphBootstrap<Schema>,
         &WorthQueryInstalledApplicationSchema<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
@@ -176,7 +176,7 @@ pub(super) fn in_memory_program_with_optional_authorization_time_source<Schema, 
     build_identity: worth_foundational::facade::ApplicationBuildIdentity,
     limits: WorthQueryInMemoryApplicationLimits,
     initial_state: impl FnOnce(
-        &crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase<'_>,
+        &crate::domain_computation::primary_graph::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
         &mut WorthQueryPrimaryGraphBootstrap<Schema>,
         &WorthQueryInstalledApplicationSchema<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,
@@ -193,7 +193,7 @@ where
         ApplicationProgramOutputsShape<Schema> + WorthQueryApplicationProgramRoots<Schema>,
     Program::Contributions: WorthQueryApplicationContributionTuple<Schema>,
 {
-    crate::domain_computation::primary_graph::with_bootstrap_advancement(
+    crate::domain_computation::primary_graph::request_execution::with_bootstrap_advancement(
         limits.world.execution_policy(),
         |phase| {
             in_memory_program_in_advancement(
@@ -219,7 +219,7 @@ where
 }
 
 pub(super) fn in_memory_program_in_advancement<Schema, Program>(
-    phase: &crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase<'_>,
+    phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
     program: ValidatedApplicationProgram<Schema, Program>,
     roster: WorthQueryApplicationProgramRoster<'_, Schema>,
     declaration: ApplicationSchemaDeclaration<Schema>,
@@ -227,7 +227,7 @@ pub(super) fn in_memory_program_in_advancement<Schema, Program>(
     build_identity: worth_foundational::facade::ApplicationBuildIdentity,
     limits: WorthQueryInMemoryApplicationLimits,
     initial_state: impl FnOnce(
-        &crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase<'_>,
+        &crate::domain_computation::primary_graph::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
         &mut WorthQueryPrimaryGraphBootstrap<Schema>,
         &WorthQueryInstalledApplicationSchema<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,

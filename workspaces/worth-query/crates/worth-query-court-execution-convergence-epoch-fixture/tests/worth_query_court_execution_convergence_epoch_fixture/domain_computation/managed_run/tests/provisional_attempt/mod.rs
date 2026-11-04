@@ -16,7 +16,7 @@ use worth_query_execution::facade::domain_computation::WorthQueryProviderSession
 use worth_query_execution::facade::domain_computation::WorthQueryProvisionalEffectAction;
 #[test]
 fn proposed_state_exposes_typed_overlay_origins_without_mutating_authoritative_truth() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -82,7 +82,7 @@ fn proposed_state_exposes_typed_overlay_origins_without_mutating_authoritative_t
 }
 #[test]
 fn every_provisional_stage_has_a_consuming_discard_that_clears_overlay_and_session() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -96,7 +96,7 @@ fn every_provisional_stage_has_a_consuming_discard_that_clears_overlay_and_sessi
 }
 #[test]
 fn abandoning_each_provisional_state_discards_overlay_before_aborting_session() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -110,7 +110,7 @@ fn abandoning_each_provisional_state_discards_overlay_before_aborting_session() 
 }
 #[test]
 fn equivalent_direct_and_revised_programs_have_the_same_semantic_post_state() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 

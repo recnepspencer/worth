@@ -35,7 +35,7 @@ where
         Scope,
     >(
         &'a self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         query: &'a WorthQueryInstalledApplicationQuery<
             Schema,
             Query,
@@ -109,7 +109,7 @@ where
         Input,
     >(
         &'a self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
         query: &'a WorthQueryInstalledApplicationQuery<
             Schema,
             Query,

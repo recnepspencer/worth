@@ -7,10 +7,7 @@ use super::super::{
 use super::next_tree::NextPartitioning;
 use super::retained::{CarriedItems, RetainedCall};
 use super::*;
-use crate::domain_computation::primary_graph::{
-    application_contribution::request_execution::QueryRequestExecution,
-    invariant_projection::CallVisit,
-};
+use {crate::domain_computation::primary_graph::request_execution::QueryRequestExecution, crate::domain_computation::primary_graph::invariant_projection::CallVisit};
 use worth_execution::ExecutionOrderedMap;
 use worth_query_declaration::facade::application_program::{
     ApplicationComputationPartition, ApplicationFeature, ApplicationManagedComputation,
@@ -68,7 +65,7 @@ impl<K: ApplicationComputationPartition, I: ApplicationComputationPartition, R>
                 .and_then(|count| count.checked_add(1))
                 .and_then(|count| count.checked_mul(64 * size_of::<usize>()))
                 .and_then(|bytes| u64::try_from(bytes).ok())
-                .ok_or(D::Resource(super::super::super::WorthQueryManagedComputationResourceDenial::CapacityOverflow))?;
+                .ok_or(D::Resource(crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::CapacityOverflow))?;
             Some(execution.reserve(bytes).map_err(D::Resource)?)
         } else {
             None
