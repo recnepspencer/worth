@@ -52,7 +52,7 @@ pub(super) fn validate(
             "producer retirement anchors differ from canonical predecessor deletions".into(),
         );
     }
-    let latest = source_scope_closure::current(
+    let latest = source_scope_closure::historical_positions(
         envelope.commit.parents.first().copied(),
         runtime.history.catalog_len(),
         None,

@@ -226,10 +226,7 @@ pub(super) fn validate_groups(
                     && new.kind == edge.kind
                     && new.source == map(edge.source)
                     && (new.target == map(edge.target)
-                        || schema
-                            .registry()
-                            .aggregate_private_kinds
-                            .contains(&edge.kind))
+                        || schema.registry().native_private_kinds.contains(&edge.kind))
             }) {
                 return Err("restoration changes owned relation correspondence".into());
             }

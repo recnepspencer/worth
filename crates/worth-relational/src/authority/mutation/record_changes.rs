@@ -158,8 +158,8 @@ pub(super) fn delete_entity_with_cascade(
         // Native aggregate consequences own metadata deletion. Retaining these
         // edges for audit here hides them from that owner's live after image,
         // leaving cascade rosters without their required true deletion patches.
-        let native_aggregate_metadata = relation_kind
-            .is_some_and(|kind| schema_registry.aggregate_private_kinds.contains(&kind));
+        let native_aggregate_metadata =
+            relation_kind.is_some_and(|kind| schema_registry.native_private_kinds.contains(&kind));
         if native_aggregate_metadata {
             continue;
         }

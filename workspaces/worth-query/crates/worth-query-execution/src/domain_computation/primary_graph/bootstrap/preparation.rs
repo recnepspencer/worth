@@ -109,12 +109,16 @@ impl WorthQueryExecutionInstallationAuthority {
                     denial.subject(),
                 )
             })?;
-        let (layout, additions) = WorthQueryPrimaryGraphLayout::lower(
+        let (layout, mut additions) = WorthQueryPrimaryGraphLayout::lower(
             installed_schema.installed_declaration(),
             installed_schema.native_contracts(),
             &relational_runtime.config().schema.registry,
             installed_schema.value_bindings(),
         )?;
+        if invariant_factories.current_publication_ownership() {
+            additions =
+                super::super::schema_layout::install_current_publication_ownership(additions)?;
+        }
         let (registrations, managed_sources, source_initializer) =
             invariant_factories.lower(&execution, installed_schema.binding_identity(), &layout)?;
         let (mut invariant_installation_receipt, expected_invariant_inventory_digest) =

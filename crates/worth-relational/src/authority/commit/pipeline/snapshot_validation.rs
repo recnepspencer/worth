@@ -24,6 +24,12 @@ pub(super) struct SnapshotValidatedCommitExecution {
 }
 
 impl SnapshotValidatedCommitExecution {
+    pub(super) fn has_codec_publication(&self) -> bool {
+        self.admitted
+            .validation_input()
+            .recovered_codec_publication_custody()
+            .is_some()
+    }
     #[allow(clippy::type_complexity)]
     pub(super) fn into_parts(
         self,

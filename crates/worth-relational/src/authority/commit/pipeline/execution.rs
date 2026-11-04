@@ -71,7 +71,19 @@ pub(crate) fn prepare_consulted_authoritative_commit(
     let runtime = &final_runtime;
     let snapshot_validated =
         validate_snapshot_publication(execution, runtime, history_bound, &scope_control)?;
-    let assembled = assemble_commit_artifacts(execution, runtime, snapshot_validated)?;
+    let defer_publication_lineage = (required_output_publication.is_some()
+        || snapshot_validated.has_codec_publication())
+        && expected_root
+            .schema_authority()
+            .registry()
+            .current_publication_storage
+            .is_some();
+    let assembled = assemble_commit_artifacts(
+        execution,
+        runtime,
+        snapshot_validated,
+        defer_publication_lineage,
+    )?;
     let mut prepared = prepare_commit_publication_execution(
         execution,
         runtime,

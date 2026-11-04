@@ -39,8 +39,8 @@ pub(super) fn require(
             let origin = &publication.origin;
             context.checkpoint((origin.relations.len() + closure.len() + custody.retirements.len() + 1) as u64).map_err(stop)?;
             let covered = writer.is_some_and(|writer| writer.meaning.same_route(&origin.meaning))
-                || closure.iter().any(|p| Arc::ptr_eq(&p.origin, origin))
-                || (writer.is_none() && custody.retirements.iter().any(|p| Arc::ptr_eq(&p.origin, origin)));
+                || closure.iter().any(|p| p.origin.same_publication(origin))
+                || (writer.is_none() && custody.retirements.iter().any(|p| p.origin.same_publication(origin)));
             if origin.source_scope_owned && !covered {
                 deferred_edges.extend(origin.relations.iter().map(|edge| edge.id));
             }
@@ -61,8 +61,8 @@ pub(super) fn require(
                     continue;
                 }
                 let covered = writer.is_some_and(|writer| writer.meaning.same_route(&origin.meaning))
-                    || closure.iter().any(|p| Arc::ptr_eq(&p.origin, origin))
-                    || (writer.is_none() && custody.retirements.iter().any(|p| Arc::ptr_eq(&p.origin, origin)));
+                    || closure.iter().any(|p| p.origin.same_publication(origin))
+                    || (writer.is_none() && custody.retirements.iter().any(|p| p.origin.same_publication(origin)));
                 let owned = match target {
                     RecordRef::Entity(id) => origin.members.iter().any(|m| m.id == id && m.posture != Posture::Retire),
                     RecordRef::Relation(id) => origin.relations.iter().any(|edge| edge.id == id),

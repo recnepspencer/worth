@@ -72,28 +72,7 @@ pub(crate) fn select_authored_source_retirement(
                     return Err(reject(Cause::InvalidAuthoredAnchor, anchor));
                 }
                 let birth = authored_birth(execution, runtime, basis, anchor, context)?;
-                let latest = super::source_scope_closure::current(
-                    basis.inner.root.commit_id(),
-                    runtime.history.catalog_len(),
-                    Some(installed),
-                    &mut |commit| runtime.history.canonical_envelope(commit),
-                    &mut |envelope, context| {
-                        if envelope.required_output_materialization.is_some() {
-                            super::materialization::validate_semantics(
-                                runtime, envelope, context, lease,
-                             basis.inner.root.schema_authority(),
-)?;
-                        }
-                        Ok(())
-                    },
-                    context,
-                )
-                .map_err(|failure| match failure.stop {
-                    Stop::Request(_) => stopped(failure.stop),
-                    Stop::Payload(_) => {
-                        reject(Cause::CorruptPublication, failure.source.unwrap_or(anchor))
-                    }
-                })?;
+                let latest = super::source_scope_closure::current(execution,basis,Some(installed),context)?;
                 let mut anchors = Vec::with_capacity(co_anchors.len() + 1);
                 anchors.push(anchor);
                 let mut births = Vec::with_capacity(co_anchors.len());
@@ -235,6 +214,11 @@ fn authored_birth(
         .history
         .canonical_envelope_for_version(created)
         .ok_or_else(|| reject(Cause::InvalidAuthoredAnchor, anchor))?;
+    if envelope.authored_source_restoration().is_some() {
+        super::source_scope_closure::validate_historical_prefix(
+            execution, runtime, basis, &envelope, anchor, context,
+        )?;
+    }
     require_authored_birth(&envelope, anchor, context).map_err(|failure| match failure {
         Stop::Request(_) => stopped(failure),
         Stop::Payload(_) => reject(Cause::InvalidAuthoredAnchor, anchor),

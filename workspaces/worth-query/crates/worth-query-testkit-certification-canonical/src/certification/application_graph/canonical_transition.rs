@@ -51,3 +51,7 @@ pub use worth_query_host::facade::application_installation::ApplicationBuildIden
 pub use worth_query_host::facade::{
     application_entry::*, application_installation as installation,
 };
+
+pub const OWNERSHIP:
+    worth_query_host::facade::application_contribution::ProducerPublicationOwnership =
+    worth_query_host::facade::application_contribution::ProducerPublicationOwnership::Independent;

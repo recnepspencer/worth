@@ -7,6 +7,7 @@ use crate::{
 };
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
+mod current_retirement;
 
 impl RelationalRuntime {
     /// Reconstruct the selected complete publication behind real ordinary Retire
@@ -24,6 +25,7 @@ impl RelationalRuntime {
                 "foreign installed author for output retirement",
             ));
         }
+        self.refuse_live_owned_retirement(execution, installed, basis, roles)?;
         let selected =
             crate::history::data::select_authored_retirement(execution, self, basis, roles, false)
                 .map_err(custody::cold_stop)?;
@@ -63,6 +65,7 @@ impl RelationalRuntime {
         if installed.source_scope_ownership.is_empty() {
             return Ok(());
         }
+        self.refuse_live_owned_retirement(execution, installed, basis, roles)?;
         if let Some(selected) =
             crate::history::data::select_authored_retirement(execution, self, basis, roles, true)
                 .map_err(custody::cold_stop)?
@@ -88,6 +91,7 @@ impl RelationalRuntime {
         if installed.source_scope_ownership.is_empty() {
             return Ok(());
         }
+        let current = crate::publication::ownership::select_current(execution, basis)?;
         let selected = execution
             .in_scope(|lease| {
                 worth_execution::ExecutionWorkCeiling::new(execution.work_ceiling())
@@ -108,9 +112,7 @@ impl RelationalRuntime {
                             crate::history::data::OwnedScopeDependentSelection::RemovedSources(
                                 &removed,
                             ),
-                            basis.inner.root.commit_id(),
-                            self.history.catalog_len(),
-                            |commit| Ok(self.history.canonical_envelope(commit)),
+                            &current,
                             context,
                         )
                         .map_err(|failure| failure.stop)
@@ -218,6 +220,33 @@ impl RelationalRuntime {
         basis: &AdmittedRelationalBranchBasis,
         origin: &Arc<crate::history::data::CanonicalRequiredOutputOrigin>,
     ) -> Result<RelationalRequiredOutputPublication, TransactionCommitError> {
+        if origin.source_scope_owned
+            && origin
+                .members
+                .iter()
+                .any(|member| member.posture != RequiredOutputRolePosture::Retire)
+        {
+            let roles = origin
+                .members
+                .iter()
+                .map(|member| RequiredOutputRoleTarget {
+                    role: member.role.clone(),
+                    entity_name: member.entity_name.clone(),
+                    kind: member.kind,
+                    posture: member.posture,
+                    target: EntityReference::Existing(member.id),
+                })
+                .collect::<Vec<_>>();
+            return self.readmit_required_output_publication(
+                execution,
+                installed,
+                basis,
+                &origin.producer,
+                &origin.dependency_identity,
+                &origin.meaning,
+                &roles,
+            );
+        }
         // Full current payload admission below must enter the ordinary request's
         // storage regions before the historical association court accesses them.
         use crate::storage::overlay::{CurrentPartitionAccess, PartitionAccess};

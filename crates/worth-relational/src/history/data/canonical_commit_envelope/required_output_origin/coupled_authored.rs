@@ -256,12 +256,8 @@ fn restrict(
     context
         .checkpoint(full.len().saturating_mul(records.len() + 1) as u64)
         .map_err(origin_request)?;
-    let private_lookup = (usize::BITS
-        - registry
-            .aggregate_private_kinds
-            .len()
-            .max(1)
-            .leading_zeros()) as u64;
+    let private_lookup =
+        (usize::BITS - registry.native_private_kinds.len().max(1).leading_zeros()) as u64;
     let mut selected = Vec::new();
     for patch in full {
         context

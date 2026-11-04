@@ -90,6 +90,7 @@ pub(super) fn prepare_commit_publication_execution(
         aspect_evaluation_traces,
         aspect_emission_traces,
         source_interpretation,
+        lineage_deferred,
     ) = assembled.into_parts();
     let publication = {
         let recovered_codec_publication_custody = admitted
@@ -101,6 +102,7 @@ pub(super) fn prepare_commit_publication_execution(
             execution,
             runtime,
             PreparePublicationPhaseInput {
+                lineage_deferred,
                 source_interpretation: &source_interpretation,
                 recovered_codec_publication_custody,
                 required_output_publication,

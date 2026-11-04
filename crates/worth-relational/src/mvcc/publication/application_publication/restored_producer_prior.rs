@@ -52,7 +52,10 @@ impl RelationalRuntime {
         }
         let antecedent = execution
             .run_native_with_checkpoint(|context| {
-                let mut current: Arc<CanonicalCommitEnvelope> = Arc::clone(&publication.envelope);
+                let mut current: Arc<CanonicalCommitEnvelope> = self
+                    .history
+                    .canonical_envelope(publication.origin.commit.commit_id)
+                    .ok_or_else(|| corrupt(publication.origin.meaning.source_scope))?;
                 let mut origin = Arc::clone(&publication.origin);
                 let bound = self.history.catalog_len();
                 for _ in 0..=bound {

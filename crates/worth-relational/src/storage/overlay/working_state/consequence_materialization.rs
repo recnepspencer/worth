@@ -19,13 +19,10 @@ impl WorkingState {
         let mut copied = 0u64;
         for &id in partitions {
             if let Some(prior) = base.get_current_partition(id) {
-                copied = copied.saturating_add(prior.materialize_consequence_partition(
-                    self,
-                    entity_only,
-                    entities,
-                    relations,
-                    &mut admit,
-                )?);
+                copied = copied
+                    .saturating_add(prior.materialize_consequence_partition(
+                        self, entities, relations, &mut admit,
+                    )?);
             }
         }
         Ok(copied)

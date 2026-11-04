@@ -64,9 +64,16 @@ impl RelationalRuntime {
                         |context| {
                             charge(context, self.history.catalog_len().saturating_add(1))
                                 .map_err(failure)?;
-                            self.history
+                            let envelope = self
+                                .history
                                 .canonical_envelope(retirement)
-                                .ok_or_else(|| reject(Cause::CorruptPublication, original))
+                                .ok_or_else(|| reject(Cause::CorruptPublication, original))?;
+                            if envelope.authored_source_retirement().is_some() {
+                                super::source_scope_closure::validate_historical_prefix(
+                                    execution, self, basis, &envelope, original, context,
+                                )?;
+                            }
+                            Ok::<_, TransactionCommitError>(envelope)
                         },
                     )
                 });
@@ -265,7 +272,7 @@ impl RelationalRuntime {
                                         .root
                                         .schema_authority()
                                         .registry()
-                                        .aggregate_private_kinds
+                                        .native_private_kinds
                                         .contains(&edge.kind)
                                     {
                                         let (state, funding) = match payload {

@@ -4,7 +4,7 @@ use super::*;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 
 pub(in crate::domain_computation::primary_graph) struct PendingProducerRegistry<Schema> {
-    declared: BTreeMap<String, DeclaredProducerBinding>,
+    pub(super) declared: BTreeMap<String, DeclaredProducerBinding>,
     /// The operations whose partitioned computation a producer's runs retain.
     retaining: std::collections::HashSet<TypeId>,
     providers: BTreeMap<

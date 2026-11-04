@@ -4,6 +4,7 @@ pub mod bundle;
 mod canonical_history;
 pub mod cdc;
 pub mod data;
+pub(crate) mod ownership;
 pub mod patch;
 
 pub(crate) use access::invariant_failure_diagnostic;

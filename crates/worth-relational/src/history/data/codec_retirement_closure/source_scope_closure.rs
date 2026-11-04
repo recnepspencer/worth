@@ -15,7 +15,7 @@ use worth_execution::MapKernelContext;
 mod coupled;
 
 /// O(H² + P²M), catalog-bounded and charged under the original request.
-pub(crate) fn current(
+pub(crate) fn historical_positions(
     mut next: Option<CommitId>,
     bound: usize,
     installed: Option<&RelationalInstalledApplicationPublicationAuthority>,
@@ -73,7 +73,9 @@ pub(crate) fn current(
                     }
                 }
                 latest.push(SelectedOutputPublication {
-                    envelope: Arc::clone(&envelope),
+                    evidence: crate::publication::ownership::PublicationEvidence::Canonical(
+                        Arc::clone(&envelope),
+                    ),
                     origin: Arc::clone(origin),
                     ordinal,
                 });
@@ -91,6 +93,54 @@ pub(crate) fn current(
     }
     coupled::validate_ancestry(&coupled_ancestry, bound, context)?;
     Ok(latest)
+}
+
+/// Current ownership is selected solely from authenticated current region facts.
+pub(crate) fn current(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    basis: &crate::branch::AdmittedRelationalBranchBasis,
+    installed: Option<&RelationalInstalledApplicationPublicationAuthority>,
+    context: &mut MapKernelContext<'_, '_>,
+) -> Result<Vec<SelectedOutputPublication>, crate::transactions::data::TransactionCommitError> {
+    let roster = Arc::new(crate::publication::ownership::read(
+        execution, basis, context,
+    )?);
+    from_current(roster, installed, context)
+}
+
+pub(crate) fn from_current(
+    roster: Arc<crate::publication::ownership::CurrentPublicationRoster>,
+    installed: Option<&RelationalInstalledApplicationPublicationAuthority>,
+    context: &mut MapKernelContext<'_, '_>,
+) -> Result<Vec<SelectedOutputPublication>, crate::transactions::data::TransactionCommitError> {
+    let mut selected = Vec::with_capacity(roster.origins().len());
+    for (origin, ordinal) in roster.coordinates() {
+        crate::execution::request_stage::checkpoint(context, origin.producer.len() as u64 + 1)
+            .map_err(crate::publication::ownership::request)?;
+        if installed.is_some_and(|installed| {
+            installed
+                .source_scope_ownership
+                .scope_kind(&origin.producer)
+                .is_none()
+        }) {
+            return Err(
+                crate::transactions::data::TransactionCommitError::publication(
+                    crate::publication::data::PublicationError::authored_retirement(
+                        crate::publication::data::AuthoredRetirementRefusal::CorruptPublication,
+                        crate::transactions::data::RecordRef::Entity(origin.meaning.source_scope),
+                    ),
+                ),
+            );
+        }
+        selected.push(SelectedOutputPublication {
+            evidence: crate::publication::ownership::PublicationEvidence::Current(Arc::clone(
+                &roster,
+            )),
+            origin: Arc::clone(origin),
+            ordinal,
+        });
+    }
+    Ok(selected)
 }
 
 pub(crate) fn select(
@@ -141,18 +191,46 @@ pub(crate) fn select(
     Ok(selected)
 }
 
-pub(crate) fn validate_preparation_history(
+/// A genuinely historical source birth or inverse selects its recorded prefix.
+/// This is never called to enforce current ownership or to rebuild its roster.
+pub(crate) fn validate_historical_prefix(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &crate::runtime::RelationalRuntime,
+    basis: &crate::branch::AdmittedRelationalBranchBasis,
     envelope: &CanonicalCommitEnvelope,
-    history: &crate::runtime::RelationalPreparationHistory,
+    source: EntityId,
     context: &mut MapKernelContext<'_, '_>,
-) -> Result<(), Stop> {
-    if envelope.required_output_materialization.is_some() {
-        super::materialization::validate_header(
-            envelope,
-            &mut |commit| history.canonical_envelope(commit),
-            history.canonical_catalog_len(),
-            context,
-        )?;
-    }
-    Ok(())
+) -> Result<(), crate::transactions::data::TransactionCommitError> {
+    execution
+        .consult()
+        .map_err(crate::publication::ownership::request)?;
+    historical_positions(
+        Some(envelope.commit.commit_id),
+        runtime.history.catalog_len(),
+        None,
+        &mut |commit| runtime.history.canonical_envelope(commit),
+        &mut |envelope, context| {
+            if envelope.required_output_materialization.is_some() {
+                super::materialization::validate_semantics(
+                    runtime,
+                    envelope,
+                    context,
+                    None,
+                    basis.inner.root.schema_authority(),
+                )?;
+            }
+            Ok(())
+        },
+        context,
+    )
+    .map(|_| ())
+    .map_err(|failure| match failure.stop {
+        Stop::Request(cause) => crate::publication::ownership::request(cause),
+        Stop::Payload(_) => crate::transactions::data::TransactionCommitError::publication(
+            crate::publication::data::PublicationError::authored_retirement(
+                crate::publication::data::AuthoredRetirementRefusal::CorruptPublication,
+                crate::transactions::data::RecordRef::Entity(failure.source.unwrap_or(source)),
+            ),
+        ),
+    })
 }

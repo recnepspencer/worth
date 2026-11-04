@@ -80,9 +80,11 @@ pub(super) fn select_removed_owning_scopes(
     }
     let dependent = crate::history::data::select_owned_scope_dependent(
         crate::history::data::OwnedScopeDependentSelection::RemovedSources(&anchors),
-        candidate.commit.parents.first().copied(),
-        runtime.history.canonical_catalog_len(),
-        |commit| Ok(runtime.history.canonical_envelope(commit)),
+        runtime.current_ownership.as_deref().ok_or_else(|| {
+            crate::mvcc::origin_denial(
+                "owning-source removal requires Native current ownership storage",
+            )
+        })?,
         context,
     )
     .map_err(|failure| super::relation_stop(failure.stop))?;

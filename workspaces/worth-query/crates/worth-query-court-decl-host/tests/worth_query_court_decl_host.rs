@@ -7,9 +7,6 @@ mod producer_succession;
 #[path = "worth_query_court_decl_host/producer_aggregate_succession/mod.rs"]
 mod producer_aggregate_succession;
 
-#[path = "worth_query_court_decl_host/authored_ownership/mod.rs"]
-mod authored_ownership;
-
 #[path = "worth_query_court_decl_host/certification/mod.rs"]
 mod certification;
 

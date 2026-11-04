@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum AuthoredRetirementRefusal {
+    OrdinaryMetadataWrite,
     OwnedPublicationRequiresCascade {
         publication: crate::history::data::CommitId,
         owner: crate::identity::data::EntityId,
@@ -23,5 +24,8 @@ pub enum AuthoredRetirementRefusal {
     DifferentSourcePublication,
     InvalidAuthoredAnchor,
     CorruptPublication,
+    CorruptCurrentOwnership {
+        publication: crate::history::data::CommitId,
+    },
     IncompleteRestoration,
 }

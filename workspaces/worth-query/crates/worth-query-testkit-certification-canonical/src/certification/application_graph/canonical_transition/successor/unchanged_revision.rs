@@ -85,3 +85,5 @@ pub fn assert_missing_revision_refused(
         "unexpected missing-revision refusal: {refusal:?}"
     );
 }
+
+pub use super::OWNERSHIP;

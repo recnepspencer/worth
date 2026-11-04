@@ -118,7 +118,9 @@ impl RelationalPerformedOutputPublications {
             .into_iter()
             .map(move |selected| RelationalRequiredOutputPublication {
                 runtime_instance_id: installed.runtime_instance_id,
-                envelope: Arc::clone(&self.envelope),
+                evidence: crate::publication::ownership::PublicationEvidence::Canonical(
+                    Arc::clone(&self.envelope),
+                ),
                 authority: installed.authority.seal_required_output_publication_at(
                     self.envelope.commit.commit_id.0,
                     selected.ordinal,

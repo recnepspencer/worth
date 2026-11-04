@@ -26,37 +26,26 @@ impl RelationalRuntime {
         let CanonicalCoupledAuthoredSources::Retirement(source) = &group.sources else {
             return Err(refuse(
                 Cause::InvalidAuthoredAnchor,
-                restoration.entities[0].0,
+                restoration
+                    .entities
+                    .first()
+                    .map(|(id, _)| *id)
+                    .unwrap_or_else(|| match &group.sources {
+                        CanonicalCoupledAuthoredSources::Retirement(source) => source.anchor,
+                        CanonicalCoupledAuthoredSources::Restoration(source) => {
+                            source.original_anchor
+                        }
+                    }),
             ));
         };
         let (owners, current) = execution
             .run_native_with_checkpoint(|context| {
                 let current = crate::history::data::source_scope_closure::current(
-                    restoration.before.inner.root.commit_id(),
-                    self.history.catalog_len(),
+                    execution,
+                    &restoration.before,
                     Some(installed),
-                    &mut |commit| self.history.canonical_envelope(commit),
-                    &mut |envelope, context| {
-                        if envelope.required_output_materialization.is_some() {
-                            super::materialization::validate_semantics(
-                                self,
-                                envelope,
-                                context,
-                                None,
-                                restoration.before.inner.root.schema_authority(),
-                            )?;
-                        }
-                        Ok(())
-                    },
                     context,
-                )
-                .map_err(|failure| match failure.stop {
-                    Stop::Request(cause) => super::authored_cascade::stopped(Stop::Request(cause)),
-                    Stop::Payload(_) => refuse(
-                        Cause::CorruptPublication,
-                        failure.source.unwrap_or(source.anchor),
-                    ),
-                })?;
+                )?;
                 let mut owners = Vec::with_capacity(group.participants.len());
                 for part in &group.participants {
                     let required = &part.origin;

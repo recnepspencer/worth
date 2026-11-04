@@ -39,10 +39,10 @@ impl<'de: 'a, 'a> Deserialize<'de> for Blob<'a> {
 }
 pub fn envelopes(checkpoint: &installation::WorthQueryApplicationCheckpoint) -> Vec<Value> {
     let bytes = checkpoint.bytes();
-    let start = find(bytes, b"WORTH-REL-CHK17\n");
+    let start = find(bytes, b"WORTH-REL-CHK18\n");
     let len = u64::from_be_bytes(bytes[start - 16..start - 8].try_into().unwrap()) as usize;
     let native: Native<'_> =
-        rmp_serde::from_slice(&bytes[start + b"WORTH-REL-CHK17\n".len()..start + len]).unwrap();
+        rmp_serde::from_slice(&bytes[start + b"WORTH-REL-CHK18\n".len()..start + len]).unwrap();
     native
         .envelopes
         .iter()
@@ -81,6 +81,32 @@ pub fn assert_shrink_delta(
     before: &installation::WorthQueryApplicationCheckpoint,
     after: &installation::WorthQueryApplicationCheckpoint,
 ) {
+    // Use the genuine declared output correspondence to identify application
+    // records. Native current-custody records are intentionally additional state.
+    use worth_relational::facade::durability::{CheckpointRecordIdentity, RecordAllocationClass};
+    let mut application = std::collections::BTreeSet::new();
+    for envelope in envelopes(before) {
+        let Some(origin) = envelope
+            .get("required_output_origin")
+            .filter(|origin| !origin.is_null())
+        else {
+            continue;
+        };
+        for (field, class) in [
+            ("members", RecordAllocationClass::Entity),
+            ("relations", RecordAllocationClass::Relation),
+        ] {
+            for record in origin[field].as_array().unwrap() {
+                let id = &record["id"];
+                application.insert(CheckpointRecordIdentity {
+                    class,
+                    partition_id: u32::try_from(id["partition_id"].as_u64().unwrap()).unwrap(),
+                    slot: id["local_slot"].as_u64().unwrap(),
+                    generation: u32::try_from(id["generation"].as_u64().unwrap()).unwrap(),
+                });
+            }
+        }
+    }
     app.with_host_advancement(|phase| {
         let before = app
             .runtime()
@@ -93,6 +119,7 @@ pub fn assert_shrink_delta(
         let removed = before
             .live_records
             .difference(&after.live_records)
+            .filter(|record| application.contains(record))
             .collect::<Vec<_>>();
         let entities = removed
             .iter()
@@ -111,7 +138,7 @@ pub fn omit_leaf_publication(
     checkpoint: &installation::WorthQueryApplicationCheckpoint,
 ) -> installation::WorthQueryApplicationCheckpoint {
     let bytes = checkpoint.bytes();
-    let start = find(bytes, b"WORTH-REL-CHK17\n");
+    let start = find(bytes, b"WORTH-REL-CHK18\n");
     let native_len = u64::from_be_bytes(bytes[start - 16..start - 8].try_into().unwrap()) as usize;
     let native: Native<'_> = rmp_serde::from_slice(&bytes[start + 16..start + native_len]).unwrap();
     let blob = native
@@ -161,7 +188,7 @@ pub fn omit_retirement_group(
     checkpoint: &installation::WorthQueryApplicationCheckpoint,
 ) -> installation::WorthQueryApplicationCheckpoint {
     let bytes = checkpoint.bytes();
-    let start = find(bytes, b"WORTH-REL-CHK17\n");
+    let start = find(bytes, b"WORTH-REL-CHK18\n");
     let native_len = u64::from_be_bytes(bytes[start - 16..start - 8].try_into().unwrap()) as usize;
     let native: Native<'_> = rmp_serde::from_slice(&bytes[start + 16..start + native_len]).unwrap();
     let key = rmp_serde::to_vec("producer_cascade_retirement").unwrap();

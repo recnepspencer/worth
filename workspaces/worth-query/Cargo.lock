@@ -785,6 +785,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "worth-query-court-decl-host-authored-ownership"
+version = "0.1.0"
+dependencies = [
+ "rmp-serde",
+ "serde",
+ "serde_json",
+ "sha2",
+ "worth-execution",
+ "worth-foundational",
+ "worth-query-decl",
+ "worth-query-host",
+ "worth-query-testkit-document-retention",
+ "worth-relational",
+]
+
+[[package]]
+name = "worth-query-court-decl-host-owned-codec-transition"
+version = "0.1.0"
+dependencies = [
+ "worth-query-decl",
+ "worth-query-host",
+ "worth-query-testkit-certification-canonical",
+]
+
+[[package]]
 name = "worth-query-court-decl-host-package-archive-replay-application-graph"
 version = "0.1.0"
 dependencies = [
@@ -1232,6 +1257,7 @@ dependencies = [
  "im",
  "rmp-serde",
  "serde",
+ "serde_json",
  "sha2",
  "sized-chunks",
  "smallvec",

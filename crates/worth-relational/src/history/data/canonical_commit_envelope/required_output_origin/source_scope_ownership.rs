@@ -36,6 +36,23 @@ pub(super) fn validate(
         return Err(invalid());
     }
     let Some(kind) = kind else { return Ok(()) };
+    if basis
+        .inner
+        .root
+        .schema_authority()
+        .registry()
+        .current_publication_storage
+        .is_none()
+    {
+        return Err(TransactionCommitError::publication(
+            crate::publication::data::PublicationError::authored_retirement(
+                crate::publication::data::AuthoredRetirementRefusal::CorruptCurrentOwnership {
+                    publication,
+                },
+                RecordRef::Entity(meaning.source_scope),
+            ),
+        ));
+    }
     let row = basis
         .inner
         .root

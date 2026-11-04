@@ -7,6 +7,7 @@ use worth_execution::{ChargedBytes, MapKernelFailure};
 pub(in crate::aggregate_identity) enum PlanDenial {
     Execution(Cause),
     OrdinaryMetadataWrite,
+    OwnedMetadataWrite(crate::transactions::data::RecordRef),
     InvalidPermutation,
     InvalidComponentGraph,
     InvalidStoredIdentity,
@@ -65,6 +66,14 @@ pub(in crate::aggregate_identity) enum FundingFailure {
 impl FundingFailure {
     pub(in crate::aggregate_identity) fn into_commit(self) -> TransactionCommitError {
         let cause = match self {
+            Self::Domain(PlanDenial::OwnedMetadataWrite(record)) => {
+                return TransactionCommitError::publication(
+                    crate::publication::data::PublicationError::authored_retirement(
+                        crate::publication::data::AuthoredRetirementRefusal::OrdinaryMetadataWrite,
+                        record,
+                    ),
+                );
+            }
             Self::Domain(PlanDenial::DerivedLaw {
                 definition,
                 violation,

@@ -620,3 +620,19 @@ crates/worth-relational/ crates/worth-court-relational-certification/tests/worth
 
 # Checkpoint stage courts observe setup counts and the original request's charge and refusal events.
 crates/worth-execution/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/cost/relational/checkpoint_stage.rs
+
+# Current ownership corruption re-records Native facts; Query checksum/framing remain real.
+crates/worth-relational/ workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/current_roster.rs
+
+# Native-only endpoint verb is selected from real Query-produced current ownership.
+crates/worth-relational/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_runtime/certification_controls/owned_publication.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/endpoint_fence.rs
+
+# A real Query writer reaches Native's stale/Birth participant defenses through receiver corruption.
+crates/worth-relational/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/coupled_assembly.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/coupled/foreign_participant.rs
+
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/coupled/private_membership.rs
+
+crates/worth-relational/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_runtime/certification_controls/owned_publication.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/merged_generation.rs

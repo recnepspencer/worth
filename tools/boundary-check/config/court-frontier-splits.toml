@@ -189,3 +189,26 @@ frontier = ["worth-store", "worth-store-replication"]
 area = "replication"
 owners = ["store/physical_record_journeys/durability_admission/managed_mutation/extent_record_rewrite/copy_failure", "store/physical_record_journeys/durability_admission/managed_mutation/extent_record_rewrite/reused_extent_frame", "store/physical_record_journeys/durability_admission/managed_mutation/segment_retirement", "store/physical_record_journeys/foundational_evidence", "store/physical_record_journeys/generation_policy_truth", "store/physical_record_journeys/integrity_scrub/pressure", "store/physical_record_journeys/locator_free_space", "store/physical_record_journeys/manifest_scale", "store/physical_record_journeys/segment_journeys", "store/physical_record_journeys/segment_journeys/page_reuse", "store/physical_record_journeys/segment_truth", "store/physical_record_journeys/segment_truth/generation_damage"]
 delegates = []
+
+# The original decl-host court exceeds the 15,000-line source ceiling.
+# Its authored-ownership subtree is a self-contained production frontier.
+[[splits]]
+court = "worth-query-court-decl-host"
+frontier = ["worth-query-decl", "worth-query-host"]
+area = "decl-host"
+owners = ["producer_succession", "producer_aggregate_succession", "certification", "aspect_patterns", "cost", "determinism", "effect_order", "content_door", "inspection_refusal"]
+delegates = []
+
+[[splits]]
+court = "worth-query-court-decl-host-authored-ownership"
+frontier = ["worth-query-decl", "worth-query-host"]
+area = "authored-ownership"
+owners = ["authored_ownership"]
+delegates = []
+
+[[splits]]
+court = "worth-query-court-decl-host-owned-codec-transition"
+frontier = ["worth-query-decl", "worth-query-host"]
+area = "owned-codec-transition"
+owners = ["owned_codec_transition"]
+delegates = []

@@ -2,6 +2,18 @@
 use super::*;
 
 impl CanonicalCommitEnvelope {
+    pub(crate) fn complete_lineage(
+        &mut self,
+        lineage: crate::lineage::data::LineageFinalizationArtifact,
+    ) -> Result<(), crate::transactions::data::TransactionCommitError> {
+        if lineage.branch_id() != &self.branch_context || !self.lineage_events().is_empty() {
+            return Err(crate::mvcc::origin_denial(
+                "deferred publication lineage differs from its draft",
+            ));
+        }
+        self.lineage = lineage.publish();
+        Ok(())
+    }
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn new(
         content: crate::content::ContentPublication,

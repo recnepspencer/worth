@@ -123,7 +123,9 @@ pub(super) fn validate_ancestry(
                 )?;
             }
             let selected = SelectedOutputPublication {
-                envelope: Arc::clone(envelope),
+                evidence: crate::publication::ownership::PublicationEvidence::Canonical(
+                    Arc::clone(envelope),
+                ),
                 origin: Arc::clone(origin),
                 ordinal,
             };

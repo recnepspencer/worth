@@ -121,13 +121,6 @@ fn validate_preimage_demand<Schema>(
     {
         return Err(DeclaredPreImageDemandDenial::DuplicateLocus);
     }
-    if loci
-        .iter()
-        .skip(1)
-        .any(|locus| locus.entity() != loci[0].entity())
-    {
-        return Err(DeclaredPreImageDemandDenial::MultipleEntityRoles);
-    }
     Ok(())
 }
 

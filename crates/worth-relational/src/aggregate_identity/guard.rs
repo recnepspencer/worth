@@ -1,4 +1,4 @@
-//! Ordinary graph authors cannot write the kinds bound to Native aggregate ownership.
+//! Ordinary graph authors cannot write Native-owned metadata kinds.
 use crate::identity::data::KindId;
 use crate::schema::data::RelationalSchemaRegistry;
 use crate::transactions::data::{
@@ -15,6 +15,14 @@ pub(crate) fn retained_entity_selection(
     kind: KindId,
 ) -> Result<(), TransactionCommitError> {
     super::funding::run(execution, budget, |work| {
+        if registry
+            .current_publication_storage
+            .as_ref()
+            .is_some_and(|storage| storage.metadata_kinds().contains(&kind))
+        {
+            work.checkpoint(1)?;
+            return work.invalid(super::preparation::PlanDenial::OrdinaryMetadataWrite);
+        }
         for contract in registry
             .relation_kinds
             .values()
@@ -38,21 +46,25 @@ pub(crate) fn ordinary_plan(
     intents: &[MutationIntent],
     mode: Option<crate::mvcc::RelationalMaterializationTransactionMode>,
 ) -> Result<(), TransactionCommitError> {
-    if !registry
-        .relation_kinds
-        .values()
-        .any(|kind| kind.relation_integrity.aggregate_identity.is_some())
+    if registry.current_publication_storage.is_none()
+        && !registry
+            .relation_kinds
+            .values()
+            .any(|kind| kind.relation_integrity.aggregate_identity.is_some())
     {
         return Ok(());
     }
     super::funding::run(execution, budget, |work| {
-    for contract in registry
+    for metadata in registry
         .relation_kinds
         .values()
         .filter_map(|kind| kind.relation_integrity.aggregate_identity.as_ref())
+        .map(|contract| PrivateKinds::Aggregate(contract.metadata_kinds()))
+        .chain(registry.current_publication_storage.as_ref()
+            .map(|storage| PrivateKinds::Publication(storage.metadata_kinds())))
     {
         work.checkpoint(1)?;
-        let private = |kind: KindId| contract.metadata_kinds().contains(&kind);
+        let private = |kind: KindId| metadata.contains(kind);
         for intent in intents {
             work.checkpoint(1)?;
             let (declared, record) = match intent {
@@ -108,12 +120,34 @@ pub(crate) fn ordinary_plan(
                 }
             };
             if declared.into_iter().chain(record).any(private) {
+                if registry.current_publication_storage.is_some() {
+                    let record=match intent {
+                        MutationIntent::Entity(Entity::Delete(value))=>Some(crate::transactions::data::RecordRef::Entity(value.entity_id)),
+                        MutationIntent::Relation(Relation::Delete(value))=>Some(crate::transactions::data::RecordRef::Relation(value.relation_id)),
+                        _=>None,
+                    };
+                    if let Some(record)=record {
+                        return work.invalid(super::preparation::PlanDenial::OwnedMetadataWrite(record));
+                    }
+                }
                 return work.invalid(super::preparation::PlanDenial::OrdinaryMetadataWrite);
             }
         }
     }
     Ok(GuardAdmission)
     }).map(|_| ())
+}
+enum PrivateKinds {
+    Aggregate([KindId; 3]),
+    Publication([KindId; 7]),
+}
+impl PrivateKinds {
+    fn contains(&self, kind: KindId) -> bool {
+        match self {
+            Self::Aggregate(kinds) => kinds.contains(&kind),
+            Self::Publication(kinds) => kinds.contains(&kind),
+        }
+    }
 }
 struct GuardAdmission;
 impl worth_execution::ChargedBytes for GuardAdmission {
@@ -140,5 +174,5 @@ pub(crate) fn is_metadata_record(
             .and_then(|partition| partition.relation_arena().get(id))
             .and_then(|row| row.kind_id()),
     };
-    kind.is_some_and(|kind| registry.aggregate_private_kinds.contains(&kind))
+    kind.is_some_and(|kind| registry.native_private_kinds.contains(&kind))
 }

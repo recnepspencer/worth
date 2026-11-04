@@ -50,3 +50,5 @@ pub use postcondition::InstalledAftermathPostcondition;
 pub use published_posture::{derive_published_posture, PublishedAftermathPosture};
 pub use reconciliation::WorthQueryInstalledReconciliationProcedure;
 pub use recovery_contract::InstalledAftermathRecoveryContract;
+
+mod preimage_anchor_roles;

@@ -31,7 +31,8 @@ impl crate::mvcc::ValidatedRelationalProposal {
             dependency: &[u8; 32],
             context: &mut worth_execution::MapKernelContext<'_, '_>,
         ) -> Result<Option<RelationalRequiredOutputPublication>, TransactionCommitError> {
-            context.checkpoint(1).map_err(custody::execution_stop)?;
+            crate::execution::request_stage::checkpoint(context, 1)
+                .map_err(custody::execution_stop)?;
             if let Some(predecessor) = own_predecessor(publication, producer, dependency) {
                 return Ok(Some(predecessor.clone()));
             }
@@ -75,12 +76,10 @@ impl RelationalRequiredOutputPublication {
     ) -> Result<bool, crate::execution::RelationalExecutionDenialCause> {
         let result = execution
             .run_native_with_checkpoint(|context| {
-                context
-                    .checkpoint(1)
+                crate::execution::request_stage::checkpoint(context, 1)
                     .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
                 let work = u64::from(usize::BITS - self.origin.outputs.len().leading_zeros()) + 1;
-                context
-                    .checkpoint(work)
+                crate::execution::request_stage::checkpoint(context, work)
                     .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
                 Ok(self.origin.outputs.binary_search(&entity).is_ok())
             })

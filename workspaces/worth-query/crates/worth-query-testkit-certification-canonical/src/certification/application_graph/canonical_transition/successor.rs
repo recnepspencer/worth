@@ -169,3 +169,5 @@ pub fn predecessor_checkpoint() -> installation::WorthQueryApplicationCheckpoint
     assert_eq!(sections.accepted_output_count(), 1);
     checkpoint
 }
+
+pub use super::OWNERSHIP;

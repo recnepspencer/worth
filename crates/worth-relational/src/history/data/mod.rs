@@ -59,6 +59,9 @@ pub use canonical_commit_envelope::{
     RelationalDescriptiveTouchPrecision, RelationalReplayRecord, RelationalTouchAdjacencyDirection,
     ReplaySchemaVersion,
 };
+pub(crate) use canonical_commit_envelope::{
+    CanonicalOutputMember, CanonicalRequiredOutputRelation,
+};
 pub use canonical_record_allocation::RecordAllocationClass;
 pub(crate) use canonical_record_allocation::{CanonicalRecordAllocation, RecordAllocationOrigin};
 pub use committed_version::CommittedVersionSummary;

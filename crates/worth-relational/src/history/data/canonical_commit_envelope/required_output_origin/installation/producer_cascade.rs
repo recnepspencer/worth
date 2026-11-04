@@ -53,18 +53,13 @@ pub(super) fn prepare(
         return Ok(None);
     };
     let anchors = removal.anchors;
-    let latest = source_scope_closure::current(
-        candidate.commit.parents.first().copied(),
-        runtime.history.canonical_catalog_len(),
+    let latest = source_scope_closure::from_current(
+        Arc::clone(runtime.current_ownership.as_ref().ok_or_else(|| {
+            crate::mvcc::origin_denial("producer cascade requires current Native ownership")
+        })?),
         Some(installed),
-        &mut |commit| runtime.history.canonical_envelope(commit),
-        &mut |envelope, context| {
-            source_scope_closure::validate_preparation_history(envelope, &runtime.history, context)
-                .map_err(Into::into)
-        },
         context,
-    )
-    .map_err(|failure| typed_corruption(relation_stop(failure.stop), anchors[0]))?;
+    )?;
     let selected =
         source_scope_closure::select(&anchors, &latest, context).map_err(relation_stop)?;
     if selected.is_empty() {
@@ -170,7 +165,7 @@ impl CanonicalCommitEnvelope {
             // Native constructs custody only for the exact canonical selection, never a caller roster.
             let predecessor = crate::mvcc::RelationalRequiredOutputPublication {
                 runtime_instance_id: runtime.runtime_instance_id(),
-                envelope: selected.envelope,
+                evidence: selected.evidence,
                 origin: Arc::clone(origin),
                 authority: installed.authority.seal_required_output_publication_at(
                     origin.commit.commit_id.0,

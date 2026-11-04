@@ -118,4 +118,11 @@ impl PartialEq for CanonicalRequiredOutputOrigin {
 }
 impl Eq for CanonicalRequiredOutputOrigin {}
 
+impl CanonicalRequiredOutputOrigin {
+    /// Native's complete publication coordinate survives current-fact decoding.
+    pub(crate) fn same_publication(&self, other: &Self) -> bool {
+        self.commit == other.commit && self.meaning == other.meaning
+    }
+}
+
 mod source_scope_ownership;

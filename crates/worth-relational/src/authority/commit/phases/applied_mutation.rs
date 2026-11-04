@@ -58,6 +58,15 @@ impl AppliedMutationDraft {
         selected: SelectedRelationalBranchRead<'_>,
         business: &MergedCommitPlan,
     ) -> Result<(), MutationApplyDenial> {
+        crate::publication::ownership::reserve_symbols(
+            selected
+                .selected()
+                .state()
+                .root()
+                .retained_schema_authority()
+                .registry(),
+            &mut self.identities.symbols,
+        )?;
         if let Some(owner) = &self.aggregate {
             let source = owner.borrow(&self.state, selected);
             source.ensure_prepared(execution, runtime.commit_work_budget.as_ref(), business)?;

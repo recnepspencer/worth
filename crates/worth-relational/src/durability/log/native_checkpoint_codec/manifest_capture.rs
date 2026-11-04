@@ -2,13 +2,10 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use super::member_frame::{self, MemberKind};
-#[cfg(test)]
 use crate::durability::checkpoints::aspect_state_images::CheckpointAspectContractCatalog;
-#[cfg(test)]
 use crate::durability::checkpoints::images::partition_from_image;
 use crate::durability::data::*;
 use crate::durability::medium::RelationalDurableMemberLocator;
-#[cfg(test)]
 use crate::storage::overlay::{PartitionContentCommitment, PartitionState};
 
 pub(crate) struct CapturedManifest {
@@ -184,13 +181,24 @@ impl CapturedManifest {
         checkpoint: &DurableCheckpoint,
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<Self, RelationalNativeCheckpointCaptureDenial> {
+        Self::capture_expanded(
+            checkpoint,
+            policy,
+            &mut super::checkpoint_encoding::CheckpointEncodingControl::Policy(policy),
+        )
+    }
+    pub(crate) fn capture_expanded(
+        checkpoint: &DurableCheckpoint,
+        policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+        control: &mut super::checkpoint_encoding::CheckpointEncodingControl<'_, '_, '_, '_, '_>,
+    ) -> Result<Self, RelationalNativeCheckpointCaptureDenial> {
         let mut captured = Self::capture_metadata(
             checkpoint,
             policy,
             None,
             &RelationalCheckpointArtifactPolicy::Embedded,
             Vec::new(),
-            &mut super::checkpoint_encoding::CheckpointEncodingControl::Policy(policy),
+            control,
         )?;
         let rows = checkpoint
             .envelopes
@@ -294,7 +302,6 @@ impl CapturedManifest {
     }
 }
 
-#[cfg(test)]
 fn restore_images(
     images: &[PartitionCheckpointImage],
     schema: &crate::branch::RelationalBranchRootSchemaAuthority,
@@ -318,7 +325,6 @@ fn restore_images(
     Ok(partitions)
 }
 
-#[cfg(test)]
 fn capture_partitions(
     partitions: &BTreeMap<crate::identity::data::PartitionId, PartitionState>,
     schema: &crate::branch::RelationalBranchRootSchemaAuthority,

@@ -7,6 +7,7 @@ use crate::authority::commit::phases::publication::canonical_commit_envelope;
 use crate::publication::{bundle::PublicationStage, data::PublicationError};
 
 pub(super) struct PublicationAuthorityInput<'a> {
+    pub(super) defer_lineage: bool,
     pub(super) working_state: &'a mut crate::runtime::WorkingState,
     pub(super) patch: &'a CanonicalAuthoritativePatch,
     pub(super) commit_reference: &'a RelationalCommitReceipt,
@@ -47,20 +48,38 @@ pub(super) fn prepare_authoritative_publication(
             input.schema_continuity.target_schema_authority().clone(),
         )
         .map_err(TransactionCommitError::publication_failed)?;
-    let prepared_lineage = runtime
-        .lineage_preparation_authority()
-        .ensure_lineage_for_commit(
-            input.working_state,
-            input.commit_reference,
-            &input.merged_plan.commands().merged_intents,
-            input.changed_records,
+    let prepared_lineage = if input.defer_lineage {
+        use crate::lineage::data::{
+            FinalizedLineageEventBatch, LineageDecisionLog, LineageFinalizationArtifact,
+            PreparedLineageFinalization,
+        };
+        // This unpublished draft admits output membership before Native adds
+        // current-ownership consequences. Its one real lineage finalization
+        // follows those consequences, before canonical freezing.
+        PreparedLineageFinalization::new(
+            LineageFinalizationArtifact::new(
+                input.branch_id.clone(),
+                FinalizedLineageEventBatch::new(Vec::new()),
+                LineageDecisionLog::new(Vec::new()),
+            ),
+            Vec::new(),
         )
-        .map_err(|detail| {
-            TransactionCommitError::publication(PublicationError::new(
-                PublicationStage::BundleAssembly,
-                detail,
-            ))
-        })?;
+    } else {
+        runtime
+            .lineage_preparation_authority()
+            .ensure_lineage_for_commit(
+                input.working_state,
+                input.commit_reference,
+                &input.merged_plan.commands().merged_intents,
+                input.changed_records,
+            )
+            .map_err(|detail| {
+                TransactionCommitError::publication(PublicationError::new(
+                    PublicationStage::BundleAssembly,
+                    detail,
+                ))
+            })?
+    };
     let lineage_event_count = prepared_lineage
         .artifact()
         .event_batch()

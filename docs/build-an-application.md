@@ -4023,6 +4023,21 @@ principal scopes refuse with `ProducerOwnershipRequiresEntitySourceScope`, namin
 the producer. Initial and Preserve producers in one family must agree on ownership.
 The ownership rule participates in installed producer identity.
 
+Native retains each live owned publication's members, edges, route and generation
+as private current records. Current custody checks use those facts through cold
+reopen and ordinary source edits; they do not require historical envelopes.
+Only the publication commit path maintains the records. Document checkout must
+restore them together with the producer outputs; their ordinary owned relations
+let the same closure selection include them. Direct metadata writes refuse
+`OrdinaryMetadataWrite`. Older stores without the current roster require the
+new format and refuse readmission; no migration is supplied.
+
+Deleting a member, unlinking an owned edge or changing its endpoints requires
+that exact route's current succession or an admitted cascade covering it.
+Another route's Preserve grants no custody, even when both publications share
+one commit ID. The refusal retains the current publication and actual record
+and owner subjects.
+
 An authored `retire_created` or `restore_retired` binding supplies the exact source
 identity. Native admits an ordinary authored Create as the distinguished anchor
 and independently computes every live opted-in publication scoped by that source,
@@ -4048,6 +4063,9 @@ extra Retire role is still an extra. Each restored anchor comes from its own
 inverse Create, retaining its logical key and receiving a fresh native ID.
 Declare and observe the demanded pre-image fields for each present anchor and
 set the pre-image byte bound for their total payload.
+The demand may include different entity kinds, such as a Feature and its
+co-born Body, when every kind is a declared authored anchor of that operation.
+Installation refuses an unrelated entity kind with that kind as its subject.
 Read a particular co-anchor with
 `preimage.field_for_output(&CoRole::DESCRIPTOR, &locus)`; equal field loci on
 different anchors retain their own original values.

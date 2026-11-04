@@ -231,13 +231,7 @@ fn owned_boundary_equal_write_and_rewire_refuse_warm_and_cold_before_effects() {
                 previous.authority(),
             )
             .unwrap();
-        let meaning = previous
-            .envelope
-            .required_output_origin
-            .as_ref()
-            .unwrap()
-            .meaning
-            .clone();
+        let meaning = previous.origin.as_ref().meaning.clone();
         let mut transaction = world
             .runtime
             .begin_branch_transaction(&selected, RelationalTransactionIntent::ordinary())

@@ -54,10 +54,10 @@ impl WorthQueryPreparedCorrectionSource {
             .map(|locus| {
                 layout
                     .relation(locus.relation())
-                    .expect("installed relation preimage")
-                    .kind
+                    .map(|relation| relation.kind)
+                    .ok_or_else(missing)
             })
-            .collect();
+            .collect::<Result<_, _>>()?;
         let inverse = candidate
             .relation_mutation_footprint(execution, &kinds)
             .map_err(|cause| {

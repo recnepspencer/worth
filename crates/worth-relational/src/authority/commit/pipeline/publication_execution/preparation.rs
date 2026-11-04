@@ -1,4 +1,6 @@
+mod current_ownership;
 mod owned_record_custody;
+mod ownership_completion;
 mod preparation_denial;
 mod root_admission;
 use std::sync::Arc;
@@ -113,6 +115,7 @@ impl PreparedPublicationPhase {
 }
 
 pub(super) struct PreparePublicationPhaseInput<'a> {
+    pub(super) lineage_deferred: bool,
     pub(super) source_interpretation:
         &'a crate::validation::candidate_source::NativeManagedSourceInterpretation,
     pub(super) recovered_codec_publication_custody:
@@ -144,6 +147,7 @@ pub(super) fn prepare_publication_phase(
     input: PreparePublicationPhaseInput<'_>,
 ) -> Result<PreparedPublicationPhase, TransactionCommitError> {
     let PreparePublicationPhaseInput {
+        lineage_deferred,
         source_interpretation,
         recovered_codec_publication_custody,
         required_output_publication,
@@ -151,8 +155,8 @@ pub(super) fn prepare_publication_phase(
         created_entities,
         created_relations,
         commit_log,
-        working_state,
-        mutation_identities,
+        mut working_state,
+        mut mutation_identities,
         selected_branch_state,
         publication,
         version_id,
@@ -164,12 +168,15 @@ pub(super) fn prepare_publication_phase(
         merge_base_commits,
         merge_parent_branches,
     } = input;
+    let current_ownership = current_ownership::select(execution, runtime, &branch_basis)?;
+    let runtime_with_current = runtime.with_current_ownership(current_ownership);
+    let runtime = &runtime_with_current;
     let (
-        artifacts,
-        changed_records,
+        mut artifacts,
+        mut changed_records,
         mut canonical_commit_envelope,
-        _adjacency_deltas,
-        lineage_nodes,
+        adjacency_deltas,
+        mut lineage_nodes,
         deferred_diagnostic_artifacts,
         target_schema_registry,
     ) = publication.into_finalize().into_parts();
@@ -205,6 +212,53 @@ pub(super) fn prepare_publication_phase(
     } else {
         None
     };
+    let check_custody = || {
+        owned_record_custody::require(
+            execution,
+            runtime,
+            &canonical_commit_envelope,
+            &adjacency_deltas,
+        )
+    };
+    match (
+        super::super::request_lease(execution),
+        runtime.commit_work_budget.as_ref(),
+    ) {
+        (Some(_), Some(budget)) => budget
+            .run_stage(*execution, check_custody)
+            .map_err(|cause| TransactionCommitError::execution(cause.into()))?,
+        _ => check_custody(),
+    }?;
+    let _current_ownership_funding = ownership_completion::complete(
+        execution,
+        runtime,
+        &branch_basis,
+        &selected_branch_state,
+        &mut working_state,
+        &mut mutation_identities,
+        &mut canonical_commit_envelope,
+        &mut artifacts,
+        &mut changed_records,
+    )?;
+    if lineage_deferred {
+        let prepared = runtime
+            .lineage_preparation_authority()
+            .ensure_lineage_for_commit(
+                &mut working_state,
+                &canonical_commit_envelope.commit,
+                &canonical_commit_envelope.merged_plan.merged_intents,
+                &changed_records,
+            )
+            .map_err(|detail| {
+                TransactionCommitError::publication(PublicationError::new(
+                    PublicationStage::BundleAssembly,
+                    detail,
+                ))
+            })?;
+        let (lineage, nodes) = prepared.into_parts();
+        canonical_commit_envelope.complete_lineage(lineage)?;
+        lineage_nodes = nodes;
+    }
     let canonical_commit_envelope = canonical_commit_envelope
         .freeze_with_managed_source_history(source_interpretation, *execution)?;
     let clone_mode = working_state.clone_mode();
@@ -219,23 +273,6 @@ pub(super) fn prepare_publication_phase(
             ))
             .with_commit_log(commit_log.clone())
         })?;
-    let check_custody = || {
-        owned_record_custody::require(
-            execution,
-            runtime,
-            &canonical_commit_envelope,
-            &branch_basis,
-        )
-    };
-    match (
-        super::super::request_lease(execution),
-        runtime.commit_work_budget.as_ref(),
-    ) {
-        (Some(_), Some(budget)) => budget
-            .run_stage(*execution, check_custody)
-            .map_err(|cause| TransactionCommitError::execution(cause.into()))?,
-        _ => check_custody(),
-    }?;
     let published_partition_delta =
         crate::storage::RelationalPublishedPartitionDelta::from_committed_partitions(
             &committed_partitions,

@@ -31,6 +31,8 @@ pub(crate) struct RelationalPreparationOwnerBinding {
 /// Narrow cloneable state used only for validation and candidate preparation.
 #[derive(Debug, Clone)]
 pub(crate) struct RelationalPreparationRuntime {
+    pub(crate) current_ownership:
+        Option<Arc<crate::publication::ownership::CurrentPublicationRoster>>,
     pub(crate) authored_coupling: Option<Arc<crate::mvcc::BoundAuthoredCoupling>>,
     pub(crate) symbol_references: Arc<std::collections::BTreeSet<crate::symbols::data::Symbol>>,
     pub(crate) commit_work_budget: Option<crate::execution::RequestWorkBudget>,
@@ -90,6 +92,7 @@ impl RelationalPreparationOwnerBinding {
         configuration: &crate::runtime::RelationalRuntimeConfigurationSnapshot,
     ) -> RelationalPreparationRuntime {
         RelationalPreparationRuntime {
+            current_ownership: None,
             authored_coupling: None,
             symbol_references: Arc::default(),
             commit_work_budget: None,
@@ -112,6 +115,14 @@ impl RelationalPreparationOwnerBinding {
 }
 
 impl RelationalPreparationRuntime {
+    pub(crate) fn with_current_ownership(
+        &self,
+        current: Option<Arc<crate::publication::ownership::CurrentPublicationRoster>>,
+    ) -> Self {
+        let mut runtime = self.clone();
+        runtime.current_ownership = current;
+        runtime
+    }
     pub(crate) fn with_authored_coupling(
         mut self,
         coupling: Option<Arc<crate::mvcc::BoundAuthoredCoupling>>,

@@ -246,7 +246,22 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> DeclaredProducerAssembly<'a, 'run, 
                 stage: Some(CoupledWriterStage::Inspected(writer)),
                 meaning: meaning.clone(),
             });
-            candidate.append_preserve(execution, publication, &content, vec![batch])?;
+            match self
+                .application
+                .runtime
+                .primary_provider
+                .application_attempt_operation_control
+                .take_coupled_participant_corruption()
+            {
+                fault @ (1..=3) => candidate.append_corrupt_participant_for_test(
+                    execution,
+                    publication,
+                    &content,
+                    vec![batch],
+                    fault,
+                )?,
+                _ => candidate.append_preserve(execution, publication, &content, vec![batch])?,
+            }
             let after_own = candidate.pin_source(execution)?;
             let writers = self.writers.borrow();
             let Some(CoupledWriterStage::Inspected(writer)) =

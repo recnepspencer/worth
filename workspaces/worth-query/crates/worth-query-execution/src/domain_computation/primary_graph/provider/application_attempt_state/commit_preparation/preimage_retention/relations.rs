@@ -51,10 +51,15 @@ pub(super) fn retain(
         .map(|locus| {
             layout
                 .relation(locus.relation())
-                .expect("installed public relation locus")
-                .kind
+                .map(|relation| relation.kind)
+                .ok_or_else(|| {
+                    denied(
+                        Cause::MissingObservation,
+                        retained.target_record().cloned().into_iter().collect(),
+                    )
+                })
         })
-        .collect();
+        .collect::<Result<_, _>>()?;
     let footprint = candidate
         .relation_mutation_footprint(execution, &kinds)
         .map_err(|cause| {

@@ -1,6 +1,7 @@
 //! Runtime custody is issued from sealed performed results or cold native readmission.
 use crate::history::data::CanonicalCommitEnvelope;
 use std::sync::Arc;
+mod current;
 mod prepared;
 pub(crate) use prepared::prepare;
 pub use prepared::{RelationalPerformedOutputPublications, RelationalPreparedOutputPublications};
@@ -8,7 +9,7 @@ pub use prepared::{RelationalPerformedOutputPublications, RelationalPreparedOutp
 #[derive(Clone, Debug)]
 pub struct RelationalRequiredOutputPublication {
     pub(crate) runtime_instance_id: u64,
-    pub(crate) envelope: Arc<CanonicalCommitEnvelope>,
+    pub(crate) evidence: crate::publication::ownership::PublicationEvidence,
     pub(crate) origin: Arc<crate::history::data::CanonicalRequiredOutputOrigin>,
     pub(crate) authority: worth_proof::RequiredOutputPublicationAuthority,
     pub(crate) readmitted_at: Option<crate::branch::AdmittedRelationalBranchBasis>,
@@ -67,7 +68,9 @@ impl crate::transactions::data::CommitResult {
                 .is_some_and(|issuer| issuer.same_publication_owner(&installed.authority)))
         .then(|| RelationalRequiredOutputPublication {
             runtime_instance_id: installed.runtime_instance_id,
-            envelope: Arc::clone(envelope),
+            evidence: crate::publication::ownership::PublicationEvidence::Canonical(Arc::clone(
+                envelope,
+            )),
             origin: Arc::clone(
                 envelope
                     .required_output_origin
@@ -110,7 +113,9 @@ impl crate::transactions::data::CommitResult {
                         }
                         Ok(Some(RelationalRequiredOutputPublication {
                             runtime_instance_id: installed.runtime_instance_id,
-                            envelope: Arc::clone(envelope),
+                            evidence: crate::publication::ownership::PublicationEvidence::Canonical(
+                                Arc::clone(envelope),
+                            ),
                             origin: Arc::clone(origin),
                             readmitted_at: None,
                             authority: installed.authority.seal_required_output_publication_at(
@@ -146,6 +151,18 @@ impl crate::runtime::RelationalRuntime {
         RelationalRequiredOutputPublication,
         crate::transactions::data::TransactionCommitError,
     > {
+        if installed
+            .source_scope_ownership
+            .scope_kind(producer)
+            .is_some()
+            && roles
+                .iter()
+                .any(|role| role.posture != super::RequiredOutputRolePosture::Retire)
+        {
+            return current::readmit(
+                execution, installed, basis, producer, dependency, meaning, roles,
+            );
+        }
         if installed.runtime_instance_id != self.runtime_instance_id() {
             return Err(super::origin_denial(
                 "foreign installed publisher for cold readmission",
@@ -156,7 +173,7 @@ impl crate::runtime::RelationalRuntime {
         )
         .map_err(cold_stop)?;
         let crate::history::data::SelectedOutputPublication {
-            envelope,
+            evidence,
             origin,
             ordinal,
         } = selected;
@@ -164,7 +181,7 @@ impl crate::runtime::RelationalRuntime {
             .map_err(cold_stop)?
             != Some(
                 crate::history::data::RequiredOutputRoutePosition::Published(
-                    envelope.commit.commit_id,
+                    origin.commit.commit_id,
                 ),
             )
         {
@@ -196,10 +213,10 @@ impl crate::runtime::RelationalRuntime {
         }
         let authority = installed
             .authority
-            .seal_required_output_publication_at(envelope.commit.commit_id.0, ordinal);
+            .seal_required_output_publication_at(origin.commit.commit_id.0, ordinal);
         Ok(RelationalRequiredOutputPublication {
             runtime_instance_id: installed.runtime_instance_id,
-            envelope,
+            evidence,
             origin,
             authority,
             readmitted_at: Some(basis.clone()),

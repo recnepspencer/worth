@@ -130,6 +130,7 @@ pub(super) fn validate_preimage_coverage(
             "no-declared-reads",
         ));
     }
+    super::preimage_anchor_roles::validate(portable)?;
     for locus in demand.loci() {
         let covered = declared_reads.targets().iter().any(|read| {
             matches!(

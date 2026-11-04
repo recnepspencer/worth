@@ -64,17 +64,13 @@ pub(super) fn capture_created_relations(
                     records.len() as u64
                         + u64::from(
                             usize::BITS
-                                - registry
-                                    .aggregate_private_kinds
-                                    .len()
-                                    .max(1)
-                                    .leading_zeros(),
+                                - registry.native_private_kinds.len().max(1).leading_zeros(),
                         )
                         + 1,
                 )
                 .map_err(origin_request)?;
             if !records.contains(&crate::transactions::data::RecordRef::Relation(*id))
-                && !registry.aggregate_private_kinds.contains(&created.kind_id)
+                && !registry.native_private_kinds.contains(&created.kind_id)
             {
                 continue;
             }

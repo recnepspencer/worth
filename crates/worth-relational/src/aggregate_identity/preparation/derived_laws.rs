@@ -27,14 +27,8 @@ pub(in crate::aggregate_identity) fn validate(
         if entry.parts.laws.is_none() {
             continue;
         }
-        let levels = u64::from(
-            usize::BITS
-                - registry
-                    .aggregate_private_kinds
-                    .len()
-                    .max(1)
-                    .leading_zeros(),
-        );
+        let levels =
+            u64::from(usize::BITS - registry.native_private_kinds.len().max(1).leading_zeros());
         let probes = entry
             .leaves
             .len()
