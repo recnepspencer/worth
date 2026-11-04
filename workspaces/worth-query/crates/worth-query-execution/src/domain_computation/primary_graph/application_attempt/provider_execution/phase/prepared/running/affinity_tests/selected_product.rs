@@ -25,6 +25,7 @@ fn an_exact_sibling_product_cannot_substitute_at_provider_plan_binding() {
                 idempotency(193, 194),
             );
             let WorthQueryRunningApplicationCommit {
+                completion_storage: _completion_storage,
                 admission: _admission,
                 lease,
                 provider_attempt: _provider_attempt,
@@ -80,6 +81,7 @@ fn the_exact_selected_product_binds_at_provider_plan_boundary() {
                 idempotency(195, 196),
             );
             let WorthQueryRunningApplicationCommit {
+                completion_storage: _completion_storage,
                 admission: _admission,
                 lease,
                 provider_attempt: _provider_attempt,

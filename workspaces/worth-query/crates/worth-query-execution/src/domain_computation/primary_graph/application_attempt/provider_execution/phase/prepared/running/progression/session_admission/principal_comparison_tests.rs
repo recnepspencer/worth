@@ -71,6 +71,7 @@ fn principal_staleness_and_request_stop_keep_their_distinct_answers() {
                 let running = start_managed_application_commit(phase, &world.application, prepared)
                     .unwrap_or_else(|outcome| panic!("overlay fixture must start: {outcome:?}"));
                 let WorthQueryRunningApplicationCommit {
+                    completion_storage: _completion_storage,
                     admission,
                     lease,
                     provider_attempt,
