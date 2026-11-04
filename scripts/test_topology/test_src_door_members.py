@@ -96,7 +96,10 @@ class DoorBodyTests(unittest.TestCase):
         from src_door_writes import door_keys, normalized_doors
         one = 'impl<R = A> Set<R> {\n    pub fn get_for_test(&self) {}\n}\n'
         two = 'impl Set<B> {\n    pub fn get_for_test(&self) {}\n}\n'
-        self.assertEqual(door_keys(one), {(None, '<R> Set<R>', 'get_for_test')})
+        self.assertEqual(door_keys(one), {(None, '< R > Set < R >', 'get_for_test')})
+        # rustfmt drops a trailing comma and reflows: the key does not change.
+        self.assertEqual(door_keys('impl<R,> Set<R> {\n    pub fn get_for_test(&self) {}\n}\n'),
+                         door_keys('impl<R>\n    Set<R>\n{\n    pub fn get_for_test(&self) {}\n}\n'))
         self.assertNotEqual(door_keys(one), door_keys(two))
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

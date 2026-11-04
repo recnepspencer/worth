@@ -112,12 +112,16 @@ IMPL_BLOCK = re.compile(r'(?ms)^impl\b(.*?)\{\n(.*?)^\}\n?')
 
 
 def header_key(header):
+    """An impl header as rustfmt-insensitive tokens: no whitespace, no trailing commas, no
+    generic defaults."""
     from src_door_members_text import without_defaults
-    header = re.sub(r'\s+', ' ', header).strip()
-    generics = re.match(r'(<.*?>)\s', header + ' ') if header.startswith('<') else None
+    header = header.strip()
+    generics = re.match(r'(<.*?>)\s', header + ' ', re.S) if header.startswith('<') else None
     if generics:
         header = without_defaults(generics.group(1)) + header[generics.end(1):]
-    return header
+    values = [token.value for token in tokens(header)]
+    kept = [v for k, v in enumerate(values) if not (v == ',' and k + 1 < len(values) and values[k + 1] in ('>', ')', ']'))]
+    return ' '.join(kept)
 
 
 _DEFINITIONS = {}
