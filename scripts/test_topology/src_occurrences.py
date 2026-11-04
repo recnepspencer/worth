@@ -32,7 +32,8 @@ def scan(text, local_heads=()):
     matching = pairs(stream)
     uses, skipped = [], set()
     for i, token in enumerate(stream):
-        if token.value != 'use' or token.kind != 'ident' or (i and stream[i - 1].value in ('.', ':')):
+        if token.value != 'use' or token.kind != 'ident' or (i and stream[i - 1].value in ('.', ':')) \
+                or precise_capture(stream, i):
             continue
         start, visibility = token.start, ''
         if i and stream[i - 1].value == ')' and i >= 2:
@@ -62,7 +63,7 @@ def scan(text, local_heads=()):
         if i in skipped or not rooted or preceded or not colons(stream, i):
             i += 1
             continue
-        if token.value in local_heads and i and stream[i - 1].value in ('fn', 'struct', 'enum', 'let', 'mod'):
+        if token.value in local_heads and i and stream[i - 1].value in ('fn', 'struct', 'enum', 'mod'):
             i += 1
             continue
         segments, j = [token.value], i
@@ -72,6 +73,11 @@ def scan(text, local_heads=()):
         paths.append(PathOccurrence(token.start, stream[j].end, tuple(segments)))
         i = j + 1
     return uses, paths
+
+
+def precise_capture(stream, i):
+    """`use<..>` in a return type's bounds (precise capturing) is not a `use` declaration."""
+    return i + 1 < len(stream) and stream[i + 1].value == '<'
 
 
 def colons(stream, i):

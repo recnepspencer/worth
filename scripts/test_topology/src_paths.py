@@ -18,7 +18,7 @@ def use_trees(text):
     matching = pairs(stream)
     result = []
     for i, token in enumerate(stream):
-        if token.value != 'use' or token.kind != 'ident':
+        if token.value != 'use' or token.kind != 'ident' or (i + 1 < len(stream) and stream[i + 1].value == '<'):
             continue
         if i and stream[i - 1].value in ('.', '::'):
             continue
@@ -62,7 +62,8 @@ def qualified_paths(text):
     matching = pairs(stream)
     skipped = set()
     for i, token in enumerate(stream):
-        if token.value == 'use' and token.kind == 'ident' and not (i and stream[i - 1].value in ('.', '::')):
+        if token.value == 'use' and token.kind == 'ident' and not (i and stream[i - 1].value in ('.', '::')) \
+                and not (i + 1 < len(stream) and stream[i + 1].value == '<'):
             end = i + 1
             while end < len(stream) and stream[end].value != ';':
                 end = matching[end] + 1 if stream[end].value in ('{', '(', '[') else end + 1
