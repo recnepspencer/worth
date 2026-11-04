@@ -1,4 +1,4 @@
-//! Contain scoped-worker setup, join and panic-payload disposal at the Host.
+//! Contain scoped-worker setup, join and panic-payload disposal at the Home owner.
 use std::panic::{catch_unwind, AssertUnwindSafe};
 
 pub(super) fn contain(operation: impl FnOnce()) {

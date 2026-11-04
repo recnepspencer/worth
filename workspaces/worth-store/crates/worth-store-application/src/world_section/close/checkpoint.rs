@@ -27,7 +27,10 @@ where
             request,
         )
         .map_err(crate::close::checkpoint_settlement_denial)?;
-        let result = prior.unwrap_or_else(|| home.checkpoint(request));
+        let result = prior.unwrap_or_else(|| {
+            home.checkpoint_operation(crate::ApplicationHomeCheckpointLimits::default())?
+                .checkpoint_for_close()
+        });
         if let Some(pending) = home.home.checkpoint_observation() {
             return Err(Denial::CheckpointRecoveryRequired(pending));
         }

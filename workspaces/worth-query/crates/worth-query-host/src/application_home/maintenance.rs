@@ -7,15 +7,12 @@ use worth_store_application::{
     ApplicationHomeCheckpointDenial as Denial, ApplicationHomeCheckpointLimits,
     ApplicationHomeCheckpointOperation,
 };
-mod panic_boundary;
-mod resources;
 
 #[derive(Debug)]
 pub(super) struct HomeMaintenance {
     pub(super) operation: Option<ApplicationHomeCheckpointOperation>,
     pub(super) retired_operation:
         Option<worth_store_application::RetiredApplicationHomeCheckpointOperation>,
-    resources: resources::HomeMaintenanceResources,
     _memory: Option<ExecutionMemoryReservation>,
 }
 impl WorthQueryHomeMaintenance for HomeMaintenance {
@@ -24,7 +21,11 @@ impl WorthQueryHomeMaintenance for HomeMaintenance {
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(), worth_query_execution::facade::primary_graph::WorthQueryHomeRetirementDenial>
     {
-        if self.resources.is_active() {
+        if self
+            .operation
+            .as_ref()
+            .is_some_and(|operation| operation.checkpoint_maintenance_is_active())
+        {
             use worth_query_execution::facade::primary_graph::{
                 WorthQueryHomeRetirementDenial, WorthQueryHomeRetirementOwner,
             };
@@ -39,11 +40,9 @@ impl WorthQueryHomeMaintenance for HomeMaintenance {
     fn after_advancement(&self, _: &ExecutionRequest<'_, '_>) {
         // Query retains the exact business value. Actual work/refusal stays in
         // this SAME Store operation's attempt/coverage; there is no error ledger.
-        panic_boundary::contain(|| {
-            if let Some(operation) = self.operation.as_ref() {
-                self.resources.advance(operation);
-            }
-        });
+        if let Some(operation) = self.operation.as_ref() {
+            let _ = operation.automatic_checkpoint_maintenance();
+        }
     }
 }
 pub(super) fn prepare(
@@ -52,7 +51,6 @@ pub(super) fn prepare(
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<Arc<dyn WorthQueryHomeMaintenance>, Denial> {
     let operation = home.checkpoint_operation(limits)?;
-    let resources = resources::HomeMaintenanceResources::install(limits)?;
     let bytes = std::alloc::Layout::new::<(usize, usize)>()
         .extend(std::alloc::Layout::new::<HomeMaintenance>())
         .map_err(|_| Denial::SizeLimit)?
@@ -62,12 +60,10 @@ pub(super) fn prepare(
     let memory = request
         .reserve_retained_memory(bytes as u64)
         .map_err(Denial::Execution)?;
-    // This private Arc is only installed in Query; no public Arc/Weak door
-    // exposes its backing independently of the operation and LAST grant.
+    operation.install_home_checkpoint_maintenance()?;
     Ok(Arc::new(HomeMaintenance {
         operation: Some(operation),
         retired_operation: None,
-        resources,
         _memory: memory,
     }))
 }
