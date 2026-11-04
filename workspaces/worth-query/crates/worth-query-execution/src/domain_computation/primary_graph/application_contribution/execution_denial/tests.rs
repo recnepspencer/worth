@@ -14,6 +14,7 @@ use worth_foundational::facade::PartitionIdentity;
 
 use super::*;
 use {
+    crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryMemoryLimitLevel,
     crate::domain_computation::primary_graph::request_execution::execution_stop::checkpoint_denial,
     crate::domain_computation::primary_graph::request_execution::execution_stop::lease_denial,
     crate::domain_computation::primary_graph::request_execution::execution_stop::memory_denial,
