@@ -16,7 +16,6 @@ use worth_query_declaration::facade::{
     application_history::ApplicationHistoryBinding, application_schema::ApplicationSchema,
 };
 
-
 #[must_use = "retain the original restriction for every native attempt preparation"]
 pub struct WorthQueryDocumentHistoryOperationConstraint {
     model: HistoryModelIdentity,

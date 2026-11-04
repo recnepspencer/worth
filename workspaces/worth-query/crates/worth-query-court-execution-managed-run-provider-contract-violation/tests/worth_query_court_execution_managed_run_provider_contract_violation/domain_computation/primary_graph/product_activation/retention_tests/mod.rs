@@ -13,7 +13,12 @@ fn activation_capacity_follows_reserved_and_retired_gate_allocations() {
     let product = world
         .application
         .product_runtime()
-        .admit_product_branch_for_test(world.application.product_runtime().default_branch_for_test())
+        .admit_product_branch_for_test(
+            world
+                .application
+                .product_runtime()
+                .default_branch_for_test(),
+        )
         .unwrap();
     let limit = test_product_world_resources(
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
@@ -21,7 +26,10 @@ fn activation_capacity_follows_reserved_and_retired_gate_allocations() {
     .budgets_for_test()
     .live_product_branches();
     let registry = WorthQueryProductActivationRegistry::new(limit).unwrap();
-    registry.reserve_for_test().unwrap().commit_for_test(product.observation_for_test());
+    registry
+        .reserve_for_test()
+        .unwrap()
+        .commit_for_test(product.observation_for_test());
     let held_gate = registry.gate_for_test(product.branch_identity()).unwrap();
     let mut pending = (1..limit.get().expect("explicit finite branch policy"))
         .map(|_| registry.reserve_for_test().unwrap())
@@ -79,7 +87,12 @@ fn foreign_product_is_denied_by_owner_affinity_before_local_coordination() {
     let selection = foreign
         .application
         .product_runtime()
-        .admit_product_branch_for_test(foreign.application.product_runtime().default_branch_for_test())
+        .admit_product_branch_for_test(
+            foreign
+                .application
+                .product_runtime()
+                .default_branch_for_test(),
+        )
         .unwrap();
     assert!(matches!(
         (*(*local

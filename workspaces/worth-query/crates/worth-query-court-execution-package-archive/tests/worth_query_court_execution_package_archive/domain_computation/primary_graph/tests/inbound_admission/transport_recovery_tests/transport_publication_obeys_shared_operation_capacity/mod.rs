@@ -24,10 +24,7 @@ fn transport_publication_obeys_shared_operation_capacity() {
         .application
         .admit_external_dispatch_attempt_for_test(owner.clone())
         .unwrap();
-    let in_flight = (*(*world
-        .application
-        .runtime_for_test())
-        .primary_provider_for_test())
+    let in_flight = (*(*world.application.runtime_for_test()).primary_provider_for_test())
         .begin_external_dispatch_in_flight_for_test(&owner)
         .unwrap()
         .unwrap();

@@ -274,15 +274,12 @@ fn worker_only_partition_run_retains_facts_reuses_and_observes_a_real_source_edi
         })
         .unwrap();
     let field = AccountLabel::reference();
-    let locator = (*(*(*(*world
-        .application
-        .runtime_for_test())
-        .primary_provider_for_test())
+    let locator = (*(*(*(*world.application.runtime_for_test()).primary_provider_for_test())
         .graph_for_test())
-        .layout_for_test())
-        .field_locator_for_test(field.entity(), field.aspect(), field.field())
-        .unwrap()
-        .clone();
+    .layout_for_test())
+    .field_locator_for_test(field.entity(), field.aspect(), field.field())
+    .unwrap()
+    .clone();
     let label = "worker-only-updated";
     let request = live_scope();
     world

@@ -34,15 +34,13 @@ fn primary_product_selection_composes_one_exact_application_snapshot() {
         &expected
     );
     assert_eq!(observer.observe().acquisitions(), before.acquisitions() + 1);
-    assert!((*(*(*world
-        .application
-        .runtime_for_test())
-        .primary_provider_for_test())
-        .graph_for_test())
-        .with_runtime(execution, |runtime| runtime
-            .read_truth()
-            .project_snapshot(selected.application_basis_for_test().snapshot_handle())
-            .is_some()));
+    assert!(
+        (*(*(*world.application.runtime_for_test()).primary_provider_for_test()).graph_for_test())
+            .with_runtime(execution, |runtime| runtime
+                .read_truth()
+                .project_snapshot(selected.application_basis_for_test().snapshot_handle())
+                .is_some())
+    );
     drop(selected);
     assert_eq!(observer.observe().active(), before.active());
 }

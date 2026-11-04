@@ -45,13 +45,10 @@ fn absent_parent_write_requires_each_actual_target_observation() {
     );
     assert_eq!(
         cause.locator(),
-        (*(*(*(*runtime
-            .runtime_for_test())
-            .primary_provider_for_test())
-            .graph_for_test())
+        (*(*(*(*runtime.runtime_for_test()).primary_provider_for_test()).graph_for_test())
             .layout_for_test())
-            .field_locator_for_test("Body", "SourceNotes", "SourceContent")
-            .unwrap()
+        .field_locator_for_test("Body", "SourceNotes", "SourceContent")
+        .unwrap()
     );
     assert_eq!(
         denial.recovery_posture(),

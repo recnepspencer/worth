@@ -88,37 +88,32 @@ fn recovery_capacity_denies_before_any_selected_product_head_moves() {
         .descriptor()
         .clone();
     let relational_branch = relational_head_before.branch_id().clone();
-    let publication_cost_scope = (*(*(*world
-        .application
-        .runtime_for_test())
+    let publication_cost_scope =
+        (*(*(*world.application.runtime_for_test()).primary_provider_for_test()).graph_for_test())
+            .with_runtime(request_execution, |runtime| {
+                let identity = runtime
+                    .branch_identity(&relational_branch)
+                    .expect("the sibling's exact Relational branch remains installed");
+                worth_relational::facade::inspection::RelationalMvccCostScope::capture(
+                    runtime,
+                    vec![identity],
+                )
+            });
+    let provider_publications_before = (*(*world.application.runtime_for_test())
         .primary_provider_for_test())
-        .graph_for_test())
-        .with_runtime(request_execution, |runtime| {
-            let identity = runtime
-                .branch_identity(&relational_branch)
-                .expect("the sibling's exact Relational branch remains installed");
-            worth_relational::facade::inspection::RelationalMvccCostScope::capture(
-                runtime,
-                vec![identity],
-            )
-        });
-    let provider_publications_before = (*(*world
-        .application
-        .runtime_for_test())
-        .primary_provider_for_test())
-        .published_application_commit_count_for_test();
+    .published_application_commit_count_for_test();
 
-    let root_slot = (*(*world
-        .application
-        .runtime_for_test())
-        .primary_provider_for_test())
-        .reserve_application_publication_recovery_for_test(root.product().observation_for_test(), None)
+    let root_slot = (*(*world.application.runtime_for_test()).primary_provider_for_test())
+        .reserve_application_publication_recovery_for_test(
+            root.product().observation_for_test(),
+            None,
+        )
         .expect("total minus one recovery slot remains admissible");
-    let sibling_a_slot = (*(*world
-        .application
-        .runtime_for_test())
-        .primary_provider_for_test())
-        .reserve_application_publication_recovery_for_test(sibling_a.product().observation_for_test(), None)
+    let sibling_a_slot = (*(*world.application.runtime_for_test()).primary_provider_for_test())
+        .reserve_application_publication_recovery_for_test(
+            sibling_a.product().observation_for_test(),
+            None,
+        )
         .expect("the final installed recovery slot remains admissible");
     let denied_program = world
         .application
@@ -149,10 +144,7 @@ fn recovery_capacity_denies_before_any_selected_product_head_moves() {
         WorthQueryApplicationCommitOutcome::Aborted
     ));
     assert_eq!(
-        (*(*world
-            .application
-            .runtime_for_test())
-            .primary_provider_for_test())
+        (*(*world.application.runtime_for_test()).primary_provider_for_test())
             .pending_application_publication_count_for_test(),
         2,
         "the denied attempt must not acquire or disturb either retained slot"
@@ -178,26 +170,20 @@ fn recovery_capacity_denies_before_any_selected_product_head_moves() {
         &relational_head_before,
         "recovery capacity must deny before the Relational head moves"
     );
-    let publication_cost = (*(*(*world
-        .application
-        .runtime_for_test())
-        .primary_provider_for_test())
-        .graph_for_test())
-        .with_runtime(request_execution, |runtime| {
-            runtime
-                .observe_mvcc_counters(&publication_cost_scope)
-                .expect("the exact sibling cost scope remains observable")
-        });
+    let publication_cost =
+        (*(*(*world.application.runtime_for_test()).primary_provider_for_test()).graph_for_test())
+            .with_runtime(request_execution, |runtime| {
+                runtime
+                    .observe_mvcc_counters(&publication_cost_scope)
+                    .expect("the exact sibling cost scope remains observable")
+            });
     assert_eq!(
         publication_cost.sharing_cost_delta().publication_attempts,
         0,
         "capacity denial must precede Relational publication owner contact"
     );
     assert_eq!(
-        (*(*world
-            .application
-            .runtime_for_test())
-            .primary_provider_for_test())
+        (*(*world.application.runtime_for_test()).primary_provider_for_test())
             .published_application_commit_count_for_test(),
         provider_publications_before,
         "capacity denial must publish no application causality"
@@ -234,10 +220,7 @@ fn recovery_capacity_denies_before_any_selected_product_head_moves() {
     drop(committed);
     drop(sibling_a_slot);
     assert_eq!(
-        (*(*world
-            .application
-            .runtime_for_test())
-            .primary_provider_for_test())
+        (*(*world.application.runtime_for_test()).primary_provider_for_test())
             .pending_application_publication_count_for_test(),
         0
     );

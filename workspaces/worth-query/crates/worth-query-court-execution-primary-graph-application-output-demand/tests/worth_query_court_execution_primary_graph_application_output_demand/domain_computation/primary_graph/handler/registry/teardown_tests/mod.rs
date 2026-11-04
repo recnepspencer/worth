@@ -69,21 +69,23 @@ fn provider_is_destroyed_before_the_installed_handler() {
         type B = ProgramRequiredMutationBinding;
         let mut world = installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let events = Arc::new(Mutex::new(Vec::new()));
-        *(*(*(*world
-            .application
-            .runtime_for_test())
-            .primary_provider_for_test())
+        *(*(*(*world.application.runtime_for_test()).primary_provider_for_test())
             .teardown_sentinel_for_test())
-            .lock()
-            .unwrap() = Some(Box::new(Sentinel(Arc::clone(&events), panic_in_provider)));
+        .lock()
+        .unwrap() = Some(Box::new(Sentinel(Arc::clone(&events), panic_in_provider)));
         let registry = &mut (*world.application.mutation_handlers_mut_for_test());
         let original = registry
             .get_for_test::<B>()
             .expect("a real installed handler is present");
-        (*(*registry.entries_mut_for_test()).get_mut(B::IDENTITY).unwrap().value_mut_for_test()) = Arc::new(TypedHandlerSlot::<S, B>::new_for_test(Arc::new(RecordedHandler {
-            inner: original,
-            events: Arc::clone(&events),
-        })));
+        (*(*registry.entries_mut_for_test())
+            .get_mut(B::IDENTITY)
+            .unwrap()
+            .value_mut_for_test()) = Arc::new(TypedHandlerSlot::<S, B>::new_for_test(Arc::new(
+            RecordedHandler {
+                inner: original,
+                events: Arc::clone(&events),
+            },
+        )));
         assert!(
             registry.get_for_test::<B>().is_some(),
             "the typed installed handler remains callable"

@@ -191,4 +191,3 @@ pub mod operation_input_capture {
 pub mod capability_command {
     pub use crate::domain_computation::primary_graph::authenticated_principal::WorthQueryCommandPrincipalPin;
 }
-

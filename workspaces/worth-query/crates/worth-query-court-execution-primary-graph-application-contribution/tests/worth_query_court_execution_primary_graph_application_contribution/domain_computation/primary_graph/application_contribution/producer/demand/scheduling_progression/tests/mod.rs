@@ -78,7 +78,11 @@ pub fn installation() -> (
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     let bridge = RuntimeBridge::builder()
-        .with_relational_source((*(*(*world.application.runtime_for_test()).product_runtime_for_test()).source_for_test()).clone())
+        .with_relational_source(
+            (*(*(*world.application.runtime_for_test()).product_runtime_for_test())
+                .source_for_test())
+            .clone(),
+        )
         .with_signal_sink(UnusedSink)
         .register_mapping(BridgeMappingRegistration::new(
             BridgeMappingId::from_stable_name("scheduling-busy"),

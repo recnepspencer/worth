@@ -52,43 +52,39 @@ fn a_marked_fact_is_reverified_at_the_real_native_snapshot() {
                 status.field_path().clone(),
             );
 
-            (*(*(*world
-                .application
-                .runtime_for_test())
-                .primary_provider_for_test())
+            (*(*(*world.application.runtime_for_test()).primary_provider_for_test())
                 .graph_for_test())
-                .with_runtime(&execution, |runtime| {
-                    let basis = runtime
-                        .admit_branch_basis(&runtime.main_branch_identity())
-                        .unwrap();
-                    let snapshot = runtime
-                        .snapshots()
-                        .snapshot_for_observation(&basis.observation())
-                        .unwrap();
-                    let revision = runtime
-                        .read_truth()
-                        .project_snapshot(&snapshot)
-                        .unwrap()
-                        .entity_field_revision(&execution, entity, &locator)
-                        .expect("fixture read request remains live")
-                        .unwrap();
-                    let facts = [WorthQueryApplicationObservedFact::SourceFieldRevision {
-                        entity_id: entity,
-                        locator: locator.clone(),
-                        native_revision: Some(revision),
-                    }];
+            .with_runtime(&execution, |runtime| {
+                let basis = runtime
+                    .admit_branch_basis(&runtime.main_branch_identity())
+                    .unwrap();
+                let snapshot = runtime
+                    .snapshots()
+                    .snapshot_for_observation(&basis.observation())
+                    .unwrap();
+                let revision = runtime
+                    .read_truth()
+                    .project_snapshot(&snapshot)
+                    .unwrap()
+                    .entity_field_revision(&execution, entity, &locator)
+                    .expect("fixture read request remains live")
+                    .unwrap();
+                let facts = [WorthQueryApplicationObservedFact::SourceFieldRevision {
+                    entity_id: entity,
+                    locator: locator.clone(),
+                    native_revision: Some(revision),
+                }];
 
-                    // An ample allowance proves the marked fact current, so any `false`
-                    // below comes from exhaustion alone, never from a changed source.
+                // An ample allowance proves the marked fact current, so any `false`
+                // below comes from exhaustion alone, never from a changed source.
 
-                    assert!(matches!(
-                        marked_facts_permit_reuse(&execution, &facts, runtime, &snapshot),
-                        Ok(true)
-                    ));
+                assert!(matches!(
+                    marked_facts_permit_reuse(&execution, &facts, runtime, &snapshot),
+                    Ok(true)
+                ));
 
-                    runtime.snapshots().release_snapshot(&snapshot).unwrap();
-                },
-            );
+                runtime.snapshots().release_snapshot(&snapshot).unwrap();
+            });
         })
         .expect("the fixture borrows its installed host phase");
 }

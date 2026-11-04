@@ -16,8 +16,12 @@ fn cancelled_commit_is_refused_before_any_advancement_is_funded() {
             .with_host_advancement(|phase| {
                 let principal =
                     authenticated_principal(&phase.test_host_request_for_test(), &world, &request);
-                let account =
-                    resolved_account(&phase.test_host_request_for_test(), &world, "open", &request);
+                let account = resolved_account(
+                    &phase.test_host_request_for_test(),
+                    &world,
+                    "open",
+                    &request,
+                );
                 admitted_program(&phase, &world, &principal, &account, &request, "closed")
             })
             .unwrap();
@@ -63,8 +67,10 @@ pub fn requested_program(
     world
         .application
         .with_host_advancement(|phase| {
-            let principal = authenticated_principal(&phase.test_host_request_for_test(), world, request);
-            let account = resolved_account(&phase.test_host_request_for_test(), world, "open", request);
+            let principal =
+                authenticated_principal(&phase.test_host_request_for_test(), world, request);
+            let account =
+                resolved_account(&phase.test_host_request_for_test(), world, "open", request);
             admitted_program(&phase, world, &principal, &account, request, "closed")
         })
         .unwrap()

@@ -36,7 +36,13 @@ pub fn slot(name: &'static str) -> Arc<ApplicationQueryResultSlotKey> {
 }
 pub fn shape(slot: &Arc<ApplicationQueryResultSlotKey>) -> WorthQueryApplicationProjectionNode {
     let mut root = row();
-    (*root.fields_mut_for_test()).push(WorthQueryApplicationProjectedField::new_for_test("root.name".into(), "name".into(), slot.clone(), None, AspectValue::String("source-secret".into())));
+    (*root.fields_mut_for_test()).push(WorthQueryApplicationProjectedField::new_for_test(
+        "root.name".into(),
+        "name".into(),
+        slot.clone(),
+        None,
+        AspectValue::String("source-secret".into()),
+    ));
     let mut first = row();
     (*first.entity_id_mut_for_test()) = EntityId::new(PartitionId::main(), 10, 1);
     (*first.incoming_relation_mut_for_test()) = Some(RelationId::new(PartitionId::main(), 20, 1));

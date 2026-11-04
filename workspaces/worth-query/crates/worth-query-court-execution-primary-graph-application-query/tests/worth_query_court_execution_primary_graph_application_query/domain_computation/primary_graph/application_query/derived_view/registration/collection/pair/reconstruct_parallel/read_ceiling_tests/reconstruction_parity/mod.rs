@@ -63,7 +63,9 @@ fn unavailable_predicate_snapshot_keeps_masters_kind_and_query_subject() {
             let read = match read_bounded_root_rows(
                 &runtime,
                 &request,
-                &(*(*(*(*world.application.runtime_for_test()).primary_provider_for_test()).graph_for_test()).layout_for_test()),
+                &(*(*(*(*world.application.runtime_for_test()).primary_provider_for_test())
+                    .graph_for_test())
+                .layout_for_test()),
                 &plan,
                 None,
             ) {
@@ -140,7 +142,9 @@ fn unavailable_root_path_snapshot_keeps_masters_kind_and_query_subject() {
             let read = match read_bounded_root_rows(
                 &runtime,
                 &request,
-                &(*(*(*(*world.application.runtime_for_test()).primary_provider_for_test()).graph_for_test()).layout_for_test()),
+                &(*(*(*(*world.application.runtime_for_test()).primary_provider_for_test())
+                    .graph_for_test())
+                .layout_for_test()),
                 &plan,
                 None,
             ) {

@@ -14,13 +14,11 @@ pub fn observe_performed_receipt<Schema: BirthSchema>(
             RequiredOutputRoleTarget {
                 role: role.to_owned(),
                 entity_name: name.to_owned(),
-                kind: (*(*(*(*runtime
-                    .runtime_for_test())
-                    .primary_provider_for_test())
+                kind: (*(*(*(*runtime.runtime_for_test()).primary_provider_for_test())
                     .graph_for_test())
-                    .layout_for_test())
-                    .entity_kind_for_test(name)
-                    .unwrap(),
+                .layout_for_test())
+                .entity_kind_for_test(name)
+                .unwrap(),
                 posture: match posture {
                     WorthQueryApplicationOutputPosture::Create => RequiredOutputRolePosture::Create,
                     WorthQueryApplicationOutputPosture::Preserve => {

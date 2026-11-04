@@ -19,13 +19,10 @@ fn installed_outbox_layout_preserves_every_frozen_physical_field_name() {
         true,
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
-    let layout = (*(*(*(*world
-        .application
-        .runtime_for_test())
-        .primary_provider_for_test())
+    let layout = (*(*(*(*world.application.runtime_for_test()).primary_provider_for_test())
         .graph_for_test())
-        .layout_for_test())
-        .provider_dispatch_outbox_for_test();
+    .layout_for_test())
+    .provider_dispatch_outbox_for_test();
     let expected = |field: &str| {
         AspectFieldLocator::new(
             LocatorAuthority::Planned,

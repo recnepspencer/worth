@@ -51,11 +51,7 @@ fn unrelated_product_drift_preserves_the_prepared_attempt_and_changed_facts_stal
         })
         .expect("the fixture read owns its installed host call");
     let commit_count = || {
-        (*(*(*world
-            .application
-            .runtime_for_test())
-            .primary_provider_for_test())
-            .graph_for_test())
+        (*(*(*world.application.runtime_for_test()).primary_provider_for_test()).graph_for_test())
             .with_runtime(request_execution, |runtime| {
                 runtime.history().immutable_commit_count()
             })

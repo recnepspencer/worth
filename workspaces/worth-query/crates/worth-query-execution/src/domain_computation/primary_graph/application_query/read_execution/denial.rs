@@ -1,6 +1,5 @@
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryApplicationReadExecutionDenialKind
-{
+pub enum WorthQueryApplicationReadExecutionDenialKind {
     Content(worth_relational::facade::content::RelationalContentDenial),
     ExecutionRequest(crate::domain_computation::WorthQueryProviderSessionDenialKind),
     PredicateIndexUnavailable,

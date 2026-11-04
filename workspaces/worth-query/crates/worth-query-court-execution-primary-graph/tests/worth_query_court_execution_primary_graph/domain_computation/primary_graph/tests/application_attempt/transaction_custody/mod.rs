@@ -30,7 +30,8 @@ pub fn candidate(
     let program = world
         .application
         .with_host_advancement(|phase| {
-            let account = resolved_account(&phase.test_host_request_for_test(), world, "open", &request);
+            let account =
+                resolved_account(&phase.test_host_request_for_test(), world, "open", &request);
             admitted_program(&phase, world, &principal, &account, &request, "closed")
         })
         .unwrap();

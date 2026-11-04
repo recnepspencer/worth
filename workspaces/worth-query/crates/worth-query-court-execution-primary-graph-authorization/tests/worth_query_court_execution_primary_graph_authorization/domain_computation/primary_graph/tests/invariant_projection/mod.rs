@@ -224,7 +224,9 @@ fn panicking_projection_releases_its_snapshot_without_poisoning_the_graph() {
         true,
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
-    let baseline = world.invariant.active_snapshot_count_for_test(request_execution);
+    let baseline = world
+        .invariant
+        .active_snapshot_count_for_test(request_execution);
     let panic = world
         .application
         .with_host_advancement(|phase| {

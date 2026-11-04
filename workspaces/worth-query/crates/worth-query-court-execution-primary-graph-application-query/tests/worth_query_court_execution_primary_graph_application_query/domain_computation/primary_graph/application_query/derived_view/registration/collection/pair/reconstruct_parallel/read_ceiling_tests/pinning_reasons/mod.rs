@@ -208,7 +208,8 @@ pub fn missing_door_index(live: bool, predicate_missing: bool) {
                     current_controls(&scope),
                 )
                 .unwrap();
-            let graph = &(*(*(*world.application.runtime_for_test()).primary_provider_for_test()).graph_for_test());
+            let graph = &(*(*(*world.application.runtime_for_test()).primary_provider_for_test())
+                .graph_for_test());
             // Keep all installed bindings except the precise missing index.
             let mut layout = installed_layout();
             for (key, field) in layout.equality_fields_mut_for_test() {

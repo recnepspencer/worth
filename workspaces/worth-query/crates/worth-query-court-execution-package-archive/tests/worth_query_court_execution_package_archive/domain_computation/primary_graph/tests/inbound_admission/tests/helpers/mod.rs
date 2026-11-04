@@ -6,11 +6,7 @@ pub fn owner_commits(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &InboundWorld,
 ) -> usize {
-    (*(*(*world
-        .application
-        .runtime_for_test())
-        .primary_provider_for_test())
-        .graph_for_test())
+    (*(*(*world.application.runtime_for_test()).primary_provider_for_test()).graph_for_test())
         .with_runtime(request_execution, |runtime| {
             runtime.history().immutable_commit_count()
         })
@@ -47,14 +43,11 @@ pub fn completion_records(
                 .default_branch_for_test(),
         )
         .unwrap();
-    let kind = (*(*(*(*world
-        .application
-        .runtime_for_test())
-        .primary_provider_for_test())
+    let kind = (*(*(*(*world.application.runtime_for_test()).primary_provider_for_test())
         .graph_for_test())
-        .layout_for_test())
-        .provider_inbound_completion()
-        .kind;
+    .layout_for_test())
+    .provider_inbound_completion()
+    .kind;
     (*(*(*world
         .application
         .runtime_for_test())

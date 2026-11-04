@@ -38,7 +38,8 @@ fn exact_active_elevation_admits_and_revalidates_with_ordinary_capability_author
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request_for_test();
             authenticated_principal(
-                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
+                &(host_custody.phase_for_application_for_test(&world.application))
+                    .test_host_request_for_test(),
                 &world,
                 &request,
             )
@@ -49,7 +50,8 @@ fn exact_active_elevation_admits_and_revalidates_with_ordinary_capability_author
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request_for_test();
             admit(
-                &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
+                &(host_custody.phase_for_application_for_test(&world.application))
+                    .test_host_request_for_test(),
                 &world,
                 &approved,
                 &principal,

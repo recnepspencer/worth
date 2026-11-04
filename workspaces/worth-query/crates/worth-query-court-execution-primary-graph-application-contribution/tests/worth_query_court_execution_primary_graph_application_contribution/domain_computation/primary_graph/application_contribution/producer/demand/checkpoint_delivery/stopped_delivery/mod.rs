@@ -73,7 +73,9 @@ fn a_terminal_delivery_stop_releases_the_head_with_a_peer_still_present() {
     // Build a genuine lowering, with no dependencies. The foreign root is
     // refused before this lowering or its compute can be used.
     let mut builder = BridgeConditionalRuntimeBuilder::with_owned_signal_graph(
-        (*(*world.application.runtime_for_test()).bridge_for_test()).ordinary_for_test().clone(),
+        (*(*world.application.runtime_for_test()).bridge_for_test())
+            .ordinary_for_test()
+            .clone(),
         worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development(),
     )
     .unwrap();

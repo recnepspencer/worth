@@ -45,10 +45,7 @@ fn callback_winner_is_recognized_before_transport_world_publication() {
         .application
         .admit_external_dispatch_attempt_for_test(owner.clone())
         .unwrap();
-    let in_flight = (*(*world
-        .application
-        .runtime_for_test())
-        .primary_provider_for_test())
+    let in_flight = (*(*world.application.runtime_for_test()).primary_provider_for_test())
         .begin_external_dispatch_in_flight_for_test(&owner)
         .unwrap()
         .unwrap();
@@ -71,10 +68,7 @@ fn callback_winner_is_recognized_before_transport_world_publication() {
             .posture(),
         WorthQueryInboundReceiptPosture::Performed,
     );
-    let before = (*(*world
-        .application
-        .runtime_for_test())
-        .primary_provider_for_test())
+    let before = (*(*world.application.runtime_for_test()).primary_provider_for_test())
         .lookup_completed_inbound_for_test(&correlation)
         .unwrap()
         .unwrap()
@@ -98,10 +92,7 @@ fn callback_winner_is_recognized_before_transport_world_publication() {
         })
         .expect("fixture owner admits its advancement");
 
-    let after = (*(*world
-        .application
-        .runtime_for_test())
-        .primary_provider_for_test())
+    let after = (*(*world.application.runtime_for_test()).primary_provider_for_test())
         .lookup_completed_inbound_for_test(&correlation)
         .unwrap()
         .unwrap()

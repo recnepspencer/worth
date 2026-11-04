@@ -16,8 +16,7 @@ pub struct ReadmittedCommitProgram<'a, Schema, Program> {
 }
 
 /// Commit work borrows the exact advancement that checked its current authority.
-pub struct CurrentCommitProgram<'a, 'phase, 'request, Schema, Program>
-{
+pub struct CurrentCommitProgram<'a, 'phase, 'request, Schema, Program> {
     application: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     program: Program,
     phase: &'phase WorthQueryAdvancementPhase<'request>,
@@ -121,6 +120,5 @@ mod elevation_approval;
 mod elevation_close;
 mod elevation_request;
 mod mandatory_review;
-
 
 mod court_doors_for_test;

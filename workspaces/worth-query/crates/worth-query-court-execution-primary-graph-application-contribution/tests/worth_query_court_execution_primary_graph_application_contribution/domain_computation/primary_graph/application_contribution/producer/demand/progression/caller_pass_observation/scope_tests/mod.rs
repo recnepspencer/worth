@@ -7,11 +7,8 @@ fn dropping_the_arming_guard_clears_the_interleaving() {
         .application
         .interleave_before_owned_reobservation_for_test(|| panic!("a dropped arm must never run"));
     drop(guard);
-    let control = &(*(*(*(*world
-        .application
-        .runtime_for_test())
-        .primary_provider_for_test())
+    let control = &(*(*(*(*world.application.runtime_for_test()).primary_provider_for_test())
         .application_attempt_operation_control_for_test())
-        .caller_pass_for_test());
+    .caller_pass_for_test());
     control.run_interleaving_for_test();
 }

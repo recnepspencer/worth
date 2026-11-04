@@ -7,12 +7,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphApplicationRuntime, WorthQueryProgramMigrationPreparationDenial,
 };
 
-pub fn prepare_program_migration_effects<
-    Schema,
-    Operation,
-    Input,
-    Scope,
->(
+pub fn prepare_program_migration_effects<Schema, Operation, Input, Scope>(
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
 ) -> Result<

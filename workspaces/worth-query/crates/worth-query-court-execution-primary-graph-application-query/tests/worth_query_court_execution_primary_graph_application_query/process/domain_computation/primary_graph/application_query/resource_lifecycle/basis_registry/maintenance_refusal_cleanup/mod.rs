@@ -40,9 +40,7 @@ fn refused_maintenance_cleanup_probe() {
         true,
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
-    let graph = (*world
-        .application
-        .runtime_for_test())
+    let graph = (*world.application.runtime_for_test())
         .primary_graph_for_test()
         .unwrap()
         .integration_handle_for_test();

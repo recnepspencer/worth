@@ -110,9 +110,13 @@ fn cancellation_during_bridge_read_remains_cancellation_in_the_advancement() {
             cancellation.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let (entered, ready) = sync_channel(1);
         let (release, released) = sync_channel(1);
-        let source = (*(*(*world.application.runtime_for_test()).product_runtime_for_test()).source_for_test()).clone();
+        let source = (*(*(*world.application.runtime_for_test()).product_runtime_for_test())
+            .source_for_test())
+        .clone();
         let (_, basis) = source
-            .observe_branch_basis(&(*(*world.application.runtime_for_test()).relational_branch_identity_for_test()))
+            .observe_branch_basis(
+                &(*(*world.application.runtime_for_test()).relational_branch_identity_for_test()),
+            )
             .unwrap();
         let retained = source.retain_branch_basis_for_bridge(&basis).unwrap();
         let branch =
@@ -145,7 +149,9 @@ fn cancellation_during_bridge_read_remains_cancellation_in_the_advancement() {
             .application
             .with_application_advancement(&scope, |phase| {
                 let request = phase
-                    .execution_request_for_for_test(&(*(*world.application.runtime_for_test()).product_runtime_for_test()))
+                    .execution_request_for_for_test(
+                        &(*(*world.application.runtime_for_test()).product_runtime_for_test()),
+                    )
                     .unwrap();
                 let planned = bridge
                     .plan_truth_view_packet(declaration, SnapshotReadPacket::new(vec![]), request)
@@ -168,7 +174,10 @@ fn cancellation_during_bridge_read_remains_cancellation_in_the_advancement() {
                 .with_application_advancement(&scope, |phase| {
                     observation.read_planned_packet(
                         phase
-                            .execution_request_for_for_test(&(*(*world.application.runtime_for_test()).product_runtime_for_test()))
+                            .execution_request_for_for_test(
+                                &(*(*world.application.runtime_for_test())
+                                    .product_runtime_for_test()),
+                            )
                             .unwrap(),
                     )
                 })
@@ -249,7 +258,10 @@ fn cancellation_during_signal_evaluation_remains_cancellation_in_the_advancement
                             Ok(AspectVersion::zero().with(Aspect::new(0), 9))
                         },
                         phase
-                            .execution_request_for_for_test(&(*(*world.application.runtime_for_test()).product_runtime_for_test()))
+                            .execution_request_for_for_test(
+                                &(*(*world.application.runtime_for_test())
+                                    .product_runtime_for_test()),
+                            )
                             .unwrap(),
                     )
                 })

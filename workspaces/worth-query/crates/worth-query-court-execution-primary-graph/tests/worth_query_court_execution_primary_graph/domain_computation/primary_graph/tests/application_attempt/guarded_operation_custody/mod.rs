@@ -209,10 +209,7 @@ fn reserved_publication_custody_is_indeterminate_until_its_owner_releases_it() {
     let reservation = world
         .application
         .with_host_advancement(|phase| {
-            (*(*world
-                .application
-                .runtime_for_test())
-                .primary_provider_for_test())
+            (*(*world.application.runtime_for_test()).primary_provider_for_test())
                 .reserve_application_publication_recovery_for_test(
                     world
                         .selected_product(&(phase).test_host_request_for_test())

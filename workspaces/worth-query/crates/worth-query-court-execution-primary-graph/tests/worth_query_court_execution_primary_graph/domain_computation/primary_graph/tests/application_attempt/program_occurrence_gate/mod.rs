@@ -38,14 +38,11 @@ fn program_activation_changed_after_preparation_cannot_readmit_the_old_program()
     (*world.application.program_support_mut_for_test()) = Some(installed_program_support(
         &(*world.application.installed_schema_for_test()),
     ));
-    let layout = (*(*(*(*world
-        .application
-        .runtime_for_test())
-        .primary_provider_for_test())
+    let layout = (*(*(*(*world.application.runtime_for_test()).primary_provider_for_test())
         .graph_for_test())
-        .layout_for_test())
-        .program_activation()
-        .clone();
+    .layout_for_test())
+    .program_activation()
+    .clone();
     world
         .application
         .with_host_advancement(|phase| {

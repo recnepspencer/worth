@@ -181,11 +181,7 @@ pub fn currentness(
     fact: &Fact,
 ) -> bool {
     let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
-    (*(*(*world
-        .application
-        .runtime_for_test())
-        .primary_provider_for_test())
-        .graph_for_test())
+    (*(*(*world.application.runtime_for_test()).primary_provider_for_test()).graph_for_test())
         .with_runtime(execution, |runtime| {
             let movement = fact
                 .source_currentness_in_for_test(
@@ -196,8 +192,7 @@ pub fn currentness(
                 .unwrap()
                 .unwrap();
             movement.movement_for_test() == Movement::Unmoved
-        },
-    )
+        })
 }
 
 pub fn set_unrelated_status(

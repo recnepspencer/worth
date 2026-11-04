@@ -14,10 +14,7 @@ fn pending_correction_cutover_never_looks_unseen_on_another_branch() {
         .application
         .with_host_advancement(|phase| world.selected_product(&phase.test_host_request_for_test()))
         .unwrap();
-    let _delivery = (*(*world
-        .application
-        .runtime_for_test())
-        .primary_provider_for_test())
+    let _delivery = (*(*world.application.runtime_for_test()).primary_provider_for_test())
         .observe_application_commit_causality_for_test(selected.product());
     let request = live_scope();
     let sibling = world

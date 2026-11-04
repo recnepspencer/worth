@@ -25,4 +25,3 @@ impl<Schema, Operation, Input, Scope>
         Self::validate_installed_mutation_binding(self, descriptor)
     }
 }
-

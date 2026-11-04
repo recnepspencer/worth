@@ -33,7 +33,12 @@ fn ownership_revocation_after_admission_stales_before_effect_commit() {
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
+            resolved_account(
+                &(phase).test_host_request_for_test(),
+                &world,
+                "open",
+                &request,
+            )
         })
         .expect("the fixture read owns its installed host call");
     let program = world
@@ -74,7 +79,12 @@ fn ownership_revocation_after_admission_stales_before_effect_commit() {
     let _still_open = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &live_scope())
+            resolved_account(
+                &(phase).test_host_request_for_test(),
+                &world,
+                "open",
+                &live_scope(),
+            )
         })
         .expect("the fixture read owns its installed host call");
 }
@@ -95,7 +105,12 @@ fn distinct_abilities_sharing_one_policy_retain_exact_provider_cardinality() {
     let account = world
         .application
         .with_host_advancement(|phase| {
-            resolved_account(&(phase).test_host_request_for_test(), &world, "open", &request)
+            resolved_account(
+                &(phase).test_host_request_for_test(),
+                &world,
+                "open",
+                &request,
+            )
         })
         .expect("the fixture read owns its installed host call");
     let operation = world
@@ -191,9 +206,10 @@ pub fn revoke_account_ownership(
     world: &AuthorizationWorld,
     account: worth_relational::facade::identity::EntityId,
 ) {
-    let graph = (*(*(*world.application.runtime_for_test()).primary_provider_for_test()).graph_for_test()).clone();
-    let relation_kind = (*(*graph
-        .layout_for_test())
+    let graph = (*(*(*world.application.runtime_for_test()).primary_provider_for_test())
+        .graph_for_test())
+    .clone();
+    let relation_kind = (*(*graph.layout_for_test())
         .relation(AccountOwner::reference().name())
         .expect("account ownership is installed")
         .kind_for_test());

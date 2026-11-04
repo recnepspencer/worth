@@ -231,7 +231,9 @@ pub fn real_terminal_session<'run>(
 ) -> worth_query_execution::facade::domain_computation::WorthQuerySessionBoundReadsAndEffects<'run>
 {
     running
-        .admit_provider_execution_plan((*world.application.runtime_for_test()).primary_graph_authority_for_test())
+        .admit_provider_execution_plan(
+            (*world.application.runtime_for_test()).primary_graph_authority_for_test(),
+        )
         .unwrap()
         .readmit(execution)
         .unwrap()

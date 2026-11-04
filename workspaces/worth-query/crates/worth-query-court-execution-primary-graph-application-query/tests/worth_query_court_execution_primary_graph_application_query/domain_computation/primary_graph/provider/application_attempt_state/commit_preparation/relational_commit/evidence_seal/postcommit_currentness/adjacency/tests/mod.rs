@@ -17,15 +17,18 @@ fn pair_rebase_uses_native_revision_and_never_retains_partial_facts() {
         true,
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
-    let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
-    let relation_kind = (*(*graph
-        .layout_for_test())
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph_for_test()
+        .unwrap();
+    let relation_kind = (*(*graph.layout_for_test())
         .relation(AccountOwner::reference().name())
         .unwrap()
         .kind_for_test());
     let selected = world
         .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request_for_test()))
+        .with_host_advancement(|phase| {
+            world.selected_product(&(phase).test_host_request_for_test())
+        })
         .expect("the fixture read owns its installed host call");
     let principal = world
         .application

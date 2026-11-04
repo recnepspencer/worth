@@ -19,14 +19,12 @@ fn durable_field_dependency_roundtrips_presence_and_denies_partial_revision() {
         true,
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
-    let layout = &(*(*world
-        .application
-        .runtime_for_test())
+    let layout = &(*(*world.application.runtime_for_test())
         .primary_graph_for_test()
         .unwrap()
         .layout_for_test())
-        .workflow()
-        .evidence_dependency;
+    .workflow()
+    .evidence_dependency;
     let entity = EntityId::new(PartitionId::main(), 17, 2);
     let locator = AspectFieldLocator::new(
         LocatorAuthority::Authoritative,

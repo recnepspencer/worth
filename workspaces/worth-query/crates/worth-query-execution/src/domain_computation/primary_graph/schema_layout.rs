@@ -296,10 +296,7 @@ impl WorthQueryPrimaryGraphLayout {
         ))
     }
 
-    pub fn relation(
-        &self,
-        relation: &str,
-    ) -> Option<&WorthQueryPrimaryRelationLayout> {
+    pub fn relation(&self, relation: &str) -> Option<&WorthQueryPrimaryRelationLayout> {
         self.relation_kinds.get(relation)
     }
 

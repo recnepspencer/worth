@@ -67,10 +67,7 @@ fn reserved_slot_naming_the_exact_binding_is_publication_pending() {
     let reservation = world
         .application
         .with_host_advancement(|phase| {
-            (*(*world
-                .application
-                .runtime_for_test())
-                .primary_provider_for_test())
+            (*(*world.application.runtime_for_test()).primary_provider_for_test())
                 .reserve_application_publication_recovery_for_test(
                     world
                         .selected_product(&(phase).test_host_request_for_test())

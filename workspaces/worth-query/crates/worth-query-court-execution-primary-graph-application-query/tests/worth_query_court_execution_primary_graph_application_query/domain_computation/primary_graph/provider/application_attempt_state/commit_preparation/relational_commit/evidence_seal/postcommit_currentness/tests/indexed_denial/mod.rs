@@ -97,17 +97,14 @@ pub fn committed_indexed_facts(
     else {
         panic!("the installed indexed decision must commit");
     };
-    let facts = (*(*(*world
-        .application
-        .runtime_for_test())
-        .primary_provider_for_test())
+    let facts = (*(*(*world.application.runtime_for_test()).primary_provider_for_test())
         .graph_for_test())
-        .output_lineage
-        .lock()
-        .unwrap()
-        .checkpoint_facts_for_receipt_for_test(&receipt)
-        .unwrap()
-        .0;
+    .output_lineage
+    .lock()
+    .unwrap()
+    .checkpoint_facts_for_receipt_for_test(&receipt)
+    .unwrap()
+    .0;
     facts.iter().cloned().collect()
 }
 
@@ -213,7 +210,9 @@ fn sparse_indexed_rebase_keeps_complete_dependencies_without_work_estimates() {
                 )
             })
             .expect("the fixture read owns its installed host call");
-        let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
+        let graph = (*world.application.runtime_for_test())
+            .primary_graph_for_test()
+            .unwrap();
         let observed = world.application.with_host_advancement(|phase| {   let borrowed_execution = phase.execution_request_for_for_test(&(*(*world.application.runtime_for_test()).product_runtime_for_test())).expect("fixture borrows its runtime request"); let execution = &borrowed_execution; graph.integration_handle_for_test().with_runtime(&phase.borrowed_request_for_test(), |runtime| {
         let snapshot = selected.application_basis_for_test().snapshot_handle();
         let observed = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::indexed_entity_selection::observe_indexed_entity_selection(

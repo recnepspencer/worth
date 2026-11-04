@@ -17,10 +17,11 @@ fn present_optional_source_denies_equal_value_after_aba() {
         })
         .expect("the fixture read owns its installed host call");
     assert_eq!(before.note(), Some("reviewed"));
-    let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph_for_test()
+        .unwrap();
     let note = AccountNote::reference();
-    let locator = (*graph
-        .layout_for_test())
+    let locator = (*graph.layout_for_test())
         .field_locator_for_test(note.entity(), note.aspect(), note.field())
         .unwrap()
         .clone();

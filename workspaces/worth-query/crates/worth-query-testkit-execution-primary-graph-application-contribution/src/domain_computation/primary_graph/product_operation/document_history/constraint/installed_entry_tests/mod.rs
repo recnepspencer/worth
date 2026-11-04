@@ -37,10 +37,17 @@ impl InstalledEntryTestsWorthQueryDocumentHistoryOperationConstraintForTest
             world
                 .application
                 .with_host_advancement(|phase| {
-                    let principal =
-                        authenticated_principal(&phase.test_host_request_for_test(), &world, &request);
-                    let account =
-                        resolved_account(&phase.test_host_request_for_test(), &world, "open", &request);
+                    let principal = authenticated_principal(
+                        &phase.test_host_request_for_test(),
+                        &world,
+                        &request,
+                    );
+                    let account = resolved_account(
+                        &phase.test_host_request_for_test(),
+                        &world,
+                        "open",
+                        &request,
+                    );
                     let operation = world
                         .application
                         .installed_schema()
@@ -58,14 +65,20 @@ impl InstalledEntryTestsWorthQueryDocumentHistoryOperationConstraintForTest
                         )
                         .unwrap();
                     let binding = idempotency(185, 186);
-                    let restriction = WorthQueryDocumentHistoryOperationConstraint::new_for_test(HistoryModelIdentity::from_resolved_for_test(&account), world
+                    let restriction = WorthQueryDocumentHistoryOperationConstraint::new_for_test(
+                        HistoryModelIdentity::from_resolved_for_test(&account),
+                        world
                             .application
                             .product_runtime()
                             .admit_product_occurrence_for_test(
                                 world.application.current_world().occurrence_for_test(),
                             )
                             .unwrap()
-                            .read_lease_for_test(), world.application.current_world(), binding.bind_admission_for_test(&admission), None);
+                            .read_lease_for_test(),
+                        world.application.current_world(),
+                        binding.bind_admission_for_test(&admission),
+                        None,
+                    );
                     if forged {
                         let donor = world
                             .application

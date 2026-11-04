@@ -225,7 +225,9 @@ fn cancelling_one_caller_during_producer_commit_keeps_the_other_callers_row_live
     runtime
         .with_application_advancement(&fresh, |phase| {
             let execution = phase
-                .execution_request_for_for_test(&(*(*runtime.runtime_for_test()).product_runtime_for_test()))
+                .execution_request_for_for_test(
+                    &(*(*runtime.runtime_for_test()).product_runtime_for_test()),
+                )
                 .unwrap();
             let advanced = runtime
                 .advance_program_output_demand_for_test(

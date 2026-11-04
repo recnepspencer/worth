@@ -35,10 +35,7 @@ impl ComparisonTestsWorthQueryRegisteredProviderAttemptForTest
         request: &WorthQueryRequestScope,
         cancellation: &WorthQueryCancellationSource,
     ) {
-        (*(*world
-            .application
-            .runtime_for_test())
-            .primary_provider_for_test())
+        (*(*world.application.runtime_for_test()).primary_provider_for_test())
             .assert_comparison_scope_lifecycle(
                 execution,
                 &(*self.staged_for_test()).read_authority(),
@@ -60,10 +57,7 @@ impl ComparisonTestsWorthQueryRegisteredProviderAttemptForTest
         request: &WorthQueryRequestScope,
         relation: worth_relational::facade::identity::RelationId,
     ) {
-        (*(*world
-            .application
-            .runtime_for_test())
-            .primary_provider_for_test())
+        (*(*world.application.runtime_for_test()).primary_provider_for_test())
             .assert_principal_stale_and_stopped(
                 execution,
                 &(*self.staged_for_test()).read_authority(),

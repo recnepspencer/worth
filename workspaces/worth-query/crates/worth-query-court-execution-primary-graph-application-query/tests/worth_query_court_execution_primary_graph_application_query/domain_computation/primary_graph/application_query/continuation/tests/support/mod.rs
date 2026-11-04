@@ -255,9 +255,7 @@ impl ContinuationTestContext {
                 .installed_packages_for_test()
                 .successor_generation(),
         );
-        (*self.world
-            .application
-            .runtime_mut_for_test())
+        (*self.world.application.runtime_mut_for_test())
             .execution_mut_for_test()
             .commit_successor_installation(successor)
             .unwrap();

@@ -349,9 +349,10 @@ pub fn grow_unrelated_accounts(
     if count == 0 {
         return;
     }
-    let graph = (*(*(*world.application.runtime_for_test()).primary_provider_for_test()).graph_for_test()).clone();
-    let kind = (*graph
-        .layout_for_test())
+    let graph = (*(*(*world.application.runtime_for_test()).primary_provider_for_test())
+        .graph_for_test())
+    .clone();
+    let kind = (*graph.layout_for_test())
         .entity_kind_for_test(Account::reference().name())
         .expect("account kind is installed");
     let locator = |entity: &str, aspect: &str, field: &str| {

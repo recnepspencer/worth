@@ -74,9 +74,10 @@ pub fn native_prepared_records_are_admitted_before_effects_and_shared_until_last
                     .clone()
             })
             .expect("the fixture read owns its installed host call");
-        let graph = (*(*(*world.application.runtime_for_test()).primary_provider_for_test()).graph_for_test()).clone();
-        let kind = (*graph
-            .layout_for_test())
+        let graph = (*(*(*world.application.runtime_for_test()).primary_provider_for_test())
+            .graph_for_test())
+        .clone();
+        let kind = (*graph.layout_for_test())
             .entity_kind_for_test(Account::reference().name())
             .unwrap();
         let locator = |entity, aspect, field| {

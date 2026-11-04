@@ -118,17 +118,14 @@ fn handler_predicate_rebases_and_its_codec_compares_against_the_reopened_world()
     let WorthQueryApplicationCommitOutcome::Committed(receipt) = outcome else {
         panic!("the indexed handler publishes through the production commit lane: {outcome:?}");
     };
-    let facts = (*(*(*world
-        .application
-        .runtime_for_test())
-        .primary_provider_for_test())
+    let facts = (*(*(*world.application.runtime_for_test()).primary_provider_for_test())
         .graph_for_test())
-        .output_lineage
-        .lock()
-        .unwrap()
-        .checkpoint_facts_for_receipt_for_test(&receipt)
-        .map(|(facts, _)| facts)
-        .unwrap();
+    .output_lineage
+    .lock()
+    .unwrap()
+    .checkpoint_facts_for_receipt_for_test(&receipt)
+    .map(|(facts, _)| facts)
+    .unwrap();
     let subject = receipt
         .output_correspondence()
         .outputs_of_for_test::<OptionalOutputs>()
@@ -227,10 +224,7 @@ pub fn selection(
             application.product_runtime().default_branch_for_test(),
         )
         .unwrap();
-    (*(*(*application
-        .runtime_for_test())
-        .primary_provider_for_test())
-        .graph_for_test())
+    (*(*(*application.runtime_for_test()).primary_provider_for_test()).graph_for_test())
         .with_runtime(execution, |runtime| {
             compare_retained_output_dependencies(
                 execution,
@@ -240,8 +234,7 @@ pub fn selection(
                 Some(facts),
             )
             .unwrap()
-        },
-    )
+        })
 }
 
 pub fn change_status(

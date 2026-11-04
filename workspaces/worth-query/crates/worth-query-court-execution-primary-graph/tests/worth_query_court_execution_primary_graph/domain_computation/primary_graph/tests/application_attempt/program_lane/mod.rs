@@ -149,9 +149,7 @@ fn installed_program_denies_raw_commit_for_an_unlisted_operation() {
         true,
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
-    assert!(!(*world
-        .application
-        .program_required_operations_for_test())
+    assert!(!(*world.application.program_required_operations_for_test())
         .contains(&TypeId::of_for_test::<TouchAccountOperation>()));
     (*world.application.program_support_mut_for_test()) = Some(installed_program_support(
         &(*world.application.installed_schema_for_test()),

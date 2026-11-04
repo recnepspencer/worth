@@ -1,7 +1,17 @@
 //! Sealed test doors over this module's private members.
 use super::*;
 
-impl<Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, Scope, Target, Binding,>
+impl<
+        Schema,
+        Query,
+        Parameters,
+        QueryResult,
+        Principal,
+        PrincipalIdentity,
+        Scope,
+        Target,
+        Binding,
+    >
     WorthQueryApplicationLiveLease<
         '_,
         Schema,

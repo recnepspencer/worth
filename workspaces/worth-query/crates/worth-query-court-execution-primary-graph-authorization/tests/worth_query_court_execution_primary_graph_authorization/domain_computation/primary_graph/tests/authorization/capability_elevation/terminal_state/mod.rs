@@ -213,7 +213,9 @@ pub fn observed_field<Schema>(
 where
     Schema: worth_query_installation::facade::ApplicationSchema,
 {
-    let graph = (*runtime.runtime_for_test()).primary_graph_for_test().unwrap();
+    let graph = (*runtime.runtime_for_test())
+        .primary_graph_for_test()
+        .unwrap();
     let selected = runtime
         .select_product_branch_for_test(
             execution,

@@ -22,8 +22,10 @@ pub fn requested_program(
     world
         .application
         .with_host_advancement(|phase| {
-            let principal = authenticated_principal(&phase.test_host_request_for_test(), world, request);
-            let account = resolved_account(&phase.test_host_request_for_test(), world, "open", request);
+            let principal =
+                authenticated_principal(&phase.test_host_request_for_test(), world, request);
+            let account =
+                resolved_account(&phase.test_host_request_for_test(), world, "open", request);
             admitted_program(&phase, world, &principal, &account, request, "closed")
         })
         .unwrap()
@@ -45,10 +47,9 @@ fn entry_custody_preparation_refreshes_lapse_before_program_fact_work() {
     let mut program = requested_program(&world, &request);
     // Inject another real result's routes: the facts cannot satisfy this binding.
     let donor = requested_program(&world, &request);
-    (*(*program.read_set_mut_for_test()).effect_routes_mut_for_test()) = donor.read_set_into_for_test().effect_routes_into_for_test();
-    assert!(!(*(*program
-        .read_set_for_test())
-        .effect_routes_for_test())
+    (*(*program.read_set_mut_for_test()).effect_routes_mut_for_test()) =
+        donor.read_set_into_for_test().effect_routes_into_for_test();
+    assert!(!(*(*program.read_set_for_test()).effect_routes_for_test())
         .matches_body_for_test(&(*(*program.read_set_for_test()).facts_for_test())));
     world
         .application

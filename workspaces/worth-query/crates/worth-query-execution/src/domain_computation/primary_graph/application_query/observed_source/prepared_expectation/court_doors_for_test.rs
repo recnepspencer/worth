@@ -23,8 +23,8 @@ where
     ) -> Result<PreparedObservedSourceExpectation, WorthQuerySourceExpectationDenial>
     where
         Binding: worth_query_declaration::facade::application_operation::ApplicationMutationBinding<
-                Schema,
-            >,
+            Schema,
+        >,
     {
         Self::prepare_application_source_expectation::<Binding, Scope>(
             self, phase, admission, source, input,

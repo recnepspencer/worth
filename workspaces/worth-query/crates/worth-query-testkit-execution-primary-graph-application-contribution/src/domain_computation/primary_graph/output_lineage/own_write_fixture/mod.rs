@@ -286,10 +286,7 @@ pub fn commit_own_write(
         .rfind(|cell| (*cell.get().unwrap().source_partition_identity_for_test()) == Some([7; 32]))
         .cloned()
         .expect("the committed output has a retained cell");
-    let completed = (*(*world
-        .application
-        .runtime_for_test())
-        .primary_provider_for_test())
+    let completed = (*(*world.application.runtime_for_test()).primary_provider_for_test())
         .observe_completed_application_for_test(receipt.commit_reference())
         .unwrap();
     assert!(

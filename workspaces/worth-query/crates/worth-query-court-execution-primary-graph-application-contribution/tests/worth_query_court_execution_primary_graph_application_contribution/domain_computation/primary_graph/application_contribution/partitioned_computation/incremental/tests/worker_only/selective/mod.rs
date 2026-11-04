@@ -111,15 +111,12 @@ fn native_value_key_and_membership_edits_carry_unaffected_partitions() {
         ("urimar", vec![1]),     // remove an odd member
     ] {
         let field = AccountLabel::reference();
-        let locator = (*(*(*(*world
-            .application
-            .runtime_for_test())
-            .primary_provider_for_test())
+        let locator = (*(*(*(*world.application.runtime_for_test()).primary_provider_for_test())
             .graph_for_test())
-            .layout_for_test())
-            .field_locator_for_test(field.entity(), field.aspect(), field.field())
-            .unwrap()
-            .clone();
+        .layout_for_test())
+        .field_locator_for_test(field.entity(), field.aspect(), field.field())
+        .unwrap()
+        .clone();
         let request = live_scope();
         world.application.with_application_advancement(&request, |phase| {
             let active = phase.execution_for_for_test(&(*(*world.application.runtime_for_test()).product_runtime_for_test())).unwrap();

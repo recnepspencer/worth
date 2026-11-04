@@ -178,12 +178,9 @@ impl LiveContext {
     }
 
     pub fn close_source(&self) {
-        (*(*(*self.world
-            .application
-            .runtime_for_test())
-            .primary_provider_for_test())
+        (*(*(*self.world.application.runtime_for_test()).primary_provider_for_test())
             .live_delivery_for_test())
-            .close_for_test();
+        .close_for_test();
     }
 
     pub fn overflow_source(&self) {
@@ -201,10 +198,7 @@ impl LiveContext {
 
     pub fn assert_source_released(&self) {
         assert_eq!(
-            (*(*self.world
-                .application
-                .runtime_for_test())
-                .primary_provider_for_test())
+            (*(*self.world.application.runtime_for_test()).primary_provider_for_test())
                 .active_application_commit_causality_partitions_for_test(),
             0
         );

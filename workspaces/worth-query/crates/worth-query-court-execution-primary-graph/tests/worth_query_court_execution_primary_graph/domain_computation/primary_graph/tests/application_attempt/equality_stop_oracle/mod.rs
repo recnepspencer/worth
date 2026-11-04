@@ -169,10 +169,7 @@ pub fn run(
             Stop::Denied(denial.stage(), denial.execution_denial_cause())
         };
         assert_eq!(
-            (*(*world
-                .application
-                .runtime_for_test())
-                .primary_provider_for_test())
+            (*(*world.application.runtime_for_test()).primary_provider_for_test())
                 .published_application_commit_count_for_test(),
             0
         );
