@@ -47,7 +47,7 @@ pub mod interruption_control {
 
 mod product;
 pub(in crate::domain_computation) use product::WorthQueryIssuedSelectedScope;
-mod resolved;
+pub(crate) mod resolved;
 pub(crate) mod retained_selector;
 pub(in crate::domain_computation) use retained_selector::WorthQueryObservedScopeSelector;
 
@@ -83,7 +83,7 @@ pub struct WorthQueryInstalledEntityResolutionContext {
     layout: Arc<WorthQueryPrimaryGraphLayout>,
 }
 
-pub(in crate::domain_computation) struct WorthQueryEntityResolutionTruth<'truth> {
+pub struct WorthQueryEntityResolutionTruth<'truth> {
     installed: &'truth WorthQueryInstalledEntityResolutionContext,
     relational: &'truth worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &'truth worth_relational::facade::snapshots::SnapshotHandle,

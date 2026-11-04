@@ -2,7 +2,7 @@ mod cleanup_inspection;
 mod counters;
 pub(crate) mod direct_lane;
 mod direct_outcome;
-mod evidence;
+pub(crate) mod evidence;
 mod readmitted_execution;
 mod recovery;
 mod workflow_outcome;

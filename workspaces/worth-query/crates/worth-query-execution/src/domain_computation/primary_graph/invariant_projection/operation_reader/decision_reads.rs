@@ -5,7 +5,7 @@ use std::collections::BTreeSet;
 mod aggregates;
 mod aspect_presence;
 mod components;
-mod computation_inputs;
+pub(crate) mod computation_inputs;
 pub(crate) mod expected_keys;
 mod managed_sources;
 mod source_publications;

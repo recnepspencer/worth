@@ -40,35 +40,21 @@ fn approval_request_round_trip_preserves_every_authorization_axis() {
             worth_relational::facade::identity::PartitionId::main(),
             2,
             0,
-        ), Arc::new(worth_query_execution::court_doors_for_test::domain_computation::authorization::retained_capability_request::RetainedCapabilityRequestData {
-            _codec_funding: None,
-            resource_entity: Arc::from("resource"),
-            elevation: Some(EntityId::new(
+        ), Arc::new(worth_query_execution::court_doors_for_test::domain_computation::authorization::retained_capability_request::RetainedCapabilityRequestData::new_for_test(None, Arc::from("resource"), Some(EntityId::new(
                 worth_relational::facade::identity::PartitionId::main(),
                 3,
                 0,
-            )),
-            action: AspectValue::UInt64(4),
-            purpose: AspectValue::UInt64(5),
-            related_relation: Some(ApplicationCapabilityRelationBinding::from_untrusted_parts(
+            )), AspectValue::UInt64(4), AspectValue::UInt64(5), Some(ApplicationCapabilityRelationBinding::from_untrusted_parts(
                 WorthQueryPortableApplicationCapabilityRelationBindingParts {
                     relation: "related".into(),
                     from: "resource".into(),
                     to: "subject".into(),
                 },
-            )),
-            related: Some(EntityId::new(
+            )), Some(EntityId::new(
                 worth_relational::facade::identity::PartitionId::main(),
                 6,
                 0,
-            )),
-            field: Some(AspectValue::UInt64(7)),
-            magnitude: Some(AspectValue::UInt64(8)),
-            cardinality: 9,
-            context_name: Arc::from("context"),
-            context_type: Arc::from("context-type"),
-            context: worth_query_execution::court_doors_for_test::domain_computation::authorization::retained_capability_request::context::RetainedContext::Native(BTreeMap::new()),
-        }));
+            )), Some(AspectValue::UInt64(7)), Some(AspectValue::UInt64(8)), 9, Arc::from("context"), Arc::from("context-type"), worth_query_execution::court_doors_for_test::domain_computation::authorization::retained_capability_request::context::RetainedContext::Native(BTreeMap::new()))));
     let context_key = serde_json::from_str::<WorthQueryCapabilityContextKey>(
             r#"{"context":"context","context_type":"context-type","slot":"peer","slot_type":"entity","entity":"subject"}"#,
         )

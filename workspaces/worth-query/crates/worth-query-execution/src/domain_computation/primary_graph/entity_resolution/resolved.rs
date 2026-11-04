@@ -72,7 +72,7 @@ pub struct WorthQueryApplicationEntityIdentity<Schema, Entity> {
     _marker: PhantomData<fn() -> (Schema, Entity)>,
 }
 
-pub(in crate::domain_computation) struct WorthQueryResolvedEntity {
+pub struct WorthQueryResolvedEntity {
     entity_id: EntityId,
     entity_kind: KindId,
     entity_name: String,

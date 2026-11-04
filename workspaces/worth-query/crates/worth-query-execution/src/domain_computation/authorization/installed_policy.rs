@@ -85,7 +85,7 @@ pub(super) struct BridgePathBinding {
     rule_effect: BridgeAuthorizationRuleEffect,
 }
 
-pub(in crate::domain_computation) struct WorthQueryInstalledAuthorizationRegistry {
+pub struct WorthQueryInstalledAuthorizationRegistry {
     bridge: BridgeAuthorizationRuntime,
     policies: BTreeMap<PolicyKey, WorthQueryInstalledAuthorizationPolicy>,
     capabilities: WorthQueryInstalledCapabilityRegistry,

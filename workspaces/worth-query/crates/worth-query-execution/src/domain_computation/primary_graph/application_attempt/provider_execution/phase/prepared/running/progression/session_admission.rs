@@ -7,7 +7,7 @@ pub struct WorthQueryAdmittedProviderSession<'run> {
         crate::domain_computation::provider_session::WorthQueryProviderSessionBoundMutationRun,
 }
 
-pub(super) struct WorthQueryProviderSessionAdmissionFailure {
+pub struct WorthQueryProviderSessionAdmissionFailure {
     outcome: WorthQueryProviderProgressionOutcome,
     mutation_run: crate::domain_computation::provider_session::WorthQueryMutationRunBinding,
 }

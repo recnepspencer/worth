@@ -26,7 +26,7 @@ mod elevation_progression;
 mod graph_work_session;
 pub(in crate::domain_computation) use graph_work_session::start_selected_operation_graph_work_admitted;
 pub(in crate::domain_computation) use graph_work_session::SelectedOperationGraphWorkStop;
-mod installed_policy;
+pub(crate) mod installed_policy;
 mod lowering;
 pub(crate) mod operation_progression;
 pub(crate) mod operation_scope_binding;

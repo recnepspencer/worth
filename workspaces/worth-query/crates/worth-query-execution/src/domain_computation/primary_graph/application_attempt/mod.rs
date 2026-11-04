@@ -55,7 +55,7 @@ pub(crate) mod provider_compare_denial;
 pub(crate) mod provider_execution;
 mod provider_recomparison;
 mod read_phase;
-mod read_scope;
+pub(crate) mod read_scope;
 pub(crate) mod read_set;
 pub(in crate::domain_computation::primary_graph) use dependency_identity::CompletedFactRoutes;
 pub(in crate::domain_computation::primary_graph) mod signed_creation;

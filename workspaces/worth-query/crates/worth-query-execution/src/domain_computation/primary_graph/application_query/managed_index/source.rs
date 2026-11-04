@@ -1,6 +1,6 @@
 //! Managed Source installation, persistent occurrences and Native preparation.
 pub(super) mod failure;
-pub(in crate::domain_computation::primary_graph) mod initialization;
+pub(crate) mod initialization;
 pub(crate) mod installation;
 pub(super) mod occurrences;
 pub(super) mod projection;
