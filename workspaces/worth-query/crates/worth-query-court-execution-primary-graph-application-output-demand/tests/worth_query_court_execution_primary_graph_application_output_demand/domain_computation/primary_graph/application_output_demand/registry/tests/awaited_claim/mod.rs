@@ -19,7 +19,7 @@ pub fn last_claim_closes(held_successor: bool) {
     worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|_| {
         let registry = WorthQueryOutputDemandRegistry::default();
         let unrelated = crate::domain_computation::primary_graph::application_output_demand::registry::tests::reservation_baseline::install(
-            &mut (*registry.state_mut_for_test()).lock().unwrap(),
+            &mut (*registry.state_for_test()).lock().unwrap(),
             receipt.clone(),
         );
         let stale_key = key("claim-awaited", 1, 1);
