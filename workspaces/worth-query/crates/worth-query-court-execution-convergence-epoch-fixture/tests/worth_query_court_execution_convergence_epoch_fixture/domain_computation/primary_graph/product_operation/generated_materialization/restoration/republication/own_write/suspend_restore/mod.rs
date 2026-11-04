@@ -26,23 +26,19 @@ pub fn suspend_restore_and_read() {
         ).expect("the real committed record qualifies its suspension");
         // Provider registration is irrelevant to record continuity; all runtime,
         // correspondence, facts and source identity come from that exact record.
-        let producer = ProducerQualification {
-
-            binding_type: TypeId::of_for_test::<OwnWriteOutputs>(),
-            output_binding_type: TypeId::of_for_test::<OwnWriteOutputs>(),
-            binding_identity: "test-own-write", provider_identity: "test-own-write",
-            runtime_source_identity: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryRuntimeSourceIdentity::new_for_test([11;32]),
-            checkpoint_source_identity: worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryCheckpointSourceIdentity::new_for_test([11;32]),
-            recorded_source_identity: (*exact.source_identity_for_test()),
-            source_partition_identity: (*exact.source_partition_identity_for_test()),
-            producer_dependency_identity: (*exact.producer_dependency_identity_for_test()),
-            producing_implementation: (*exact.producing_implementation_for_test()),
-            idempotency_key_identity: (*exact.idempotency_key_identity_for_test()),
-            runtime_authority: (*exact.runtime_authority_for_test()), schema: exact.schema_into_for_test(), scope: exact.scope,
-            output_occurrence: observation.lifecycle_incarnation(),
-            output_generation: observation.reference_generation().get(),
-            observed_source_facts: exact.observed_source_facts_into_for_test(),
-        };
+        let (
+            producing_implementation,
+            correspondence,
+            source_identity,
+            source_partition_identity,
+            producer_dependency_identity,
+            idempotency_key_identity,
+            runtime_authority,
+            schema,
+            scope,
+            observed_source_facts,
+        ) = exact.into_parts_for_test();
+        let producer = ProducerQualification::new_for_test(TypeId::of_for_test::<OwnWriteOutputs>(), TypeId::of_for_test::<OwnWriteOutputs>(), "test-own-write", "test-own-write", worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryRuntimeSourceIdentity::new_for_test([11;32]), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryCheckpointSourceIdentity::new_for_test([11;32]), source_identity, source_partition_identity, producer_dependency_identity, producing_implementation, idempotency_key_identity, runtime_authority, schema, scope, observation.lifecycle_incarnation(), observation.reference_generation().get(), observed_source_facts);
         let generated = receipt
             .output_correspondence()
             .created_entity_ids()
@@ -234,7 +230,7 @@ pub fn suspend_restore_and_read() {
                 application.record_restored_generated_output_for_test(
                     execution,
                     &observation,
-                    exact.correspondence_into_for_test(),
+                    correspondence,
                     producer,
                 )
             })
