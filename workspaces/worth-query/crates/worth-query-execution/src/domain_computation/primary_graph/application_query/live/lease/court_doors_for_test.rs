@@ -271,3 +271,44 @@ where
         &mut self.basis
     }
 }
+
+impl<
+    'runtime,
+    Schema,
+    Query,
+    Parameters,
+    QueryResult,
+    Principal,
+    PrincipalIdentity,
+    Scope,
+    Target,
+    Binding,
+>
+    WorthQueryApplicationLiveLease<
+        'runtime,
+        Schema,
+        Query,
+        Parameters,
+        QueryResult,
+        Principal,
+        PrincipalIdentity,
+        Scope,
+        Target,
+        Binding,
+    >
+where
+    Binding: ApplicationQueryLiveCauseBinding<Schema, Query, Scope, Target>,
+{
+    #[doc(hidden)]
+    /// The cause queue and the native basis, both mutable: one borrow, two fields.
+    pub fn queue_basis_mut_for_test(
+        &mut self,
+    ) -> (
+        &mut WorthQueryLiveCauseQueue<
+            <Binding::PayloadBinding as ApplicationStructuredValueBinding>::Value,
+        >,
+        &mut Option<WorthQueryManagedLowerExecutionBasis>,
+    ) {
+        (&mut self.queue, &mut self.basis)
+    }
+}
