@@ -279,6 +279,9 @@ pub fn append_duplicate_mapping(
             kind_id: (*layout.mapping_kind_for_test()),
             client_key: mapping_key.clone(),
         };
+        // Read before the status locator moves the layout out.
+        let principal_identity_locator = (*layout.principal_identity_locator_for_test()).clone();
+        let relation_kind = (*layout.relation_kind_for_test());
         let fields = AspectFieldPatch::from(BTreeMap::from([
             (
                 (*layout.identity_locator_for_test()).clone(),
@@ -299,7 +302,7 @@ pub fn append_duplicate_mapping(
                 kind_id: principal.kind_id,
                 client_key: principal_key,
                 fields: AspectFieldPatch::from(BTreeMap::from([(
-                    (*layout.principal_identity_locator_for_test()).clone(),
+                    principal_identity_locator,
                     U64ApplicationValueBinding::encode(&99_u64).unwrap(),
                 )])),
             })))
@@ -312,7 +315,7 @@ pub fn append_duplicate_mapping(
             .push(MutationIntent::Create(CreateIntent::Relation(
                 RelationSpec {
                     partition_id,
-                    kind_id: (*layout.relation_kind_for_test()),
+                    kind_id: relation_kind,
                     client_key: ClientKey::raw("duplicate-target"),
                     source: EntityReference::Created(mapping),
                     target: EntityReference::Created(principal),
