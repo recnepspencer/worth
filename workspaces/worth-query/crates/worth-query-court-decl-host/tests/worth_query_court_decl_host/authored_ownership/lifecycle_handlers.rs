@@ -43,6 +43,7 @@ impl<S: Scenario> OperationHandler<S, CreateBinding<S>> for Handler {
             writer.initialize_field(&created, Id::reference(), input.id)?;
             writer.initialize_field(&created, Value::reference(), input.id)?;
             writer.create_output::<Created<S>>(&created)?;
+            let mut stage_records = Vec::new();
             for (index, &id) in input
                 .co_anchors
                 .iter()
@@ -55,64 +56,69 @@ impl<S: Scenario> OperationHandler<S, CreateBinding<S>> for Handler {
                     WorthQueryApplicationEntityKey::new(format!("authored-{id}")).unwrap(),
                 )?;
                 writer.initialize_field(&co, Id::reference(), id)?;
-                writer.initialize_field(&co, Value::reference(), id)?;
-                match index {
-                    0 => writer.create_output::<CoCreated<S, 0>>(&co)?,
-                    1 => writer.create_output::<CoCreated<S, 1>>(&co)?,
-                    _ => unreachable!(),
-                }
-            }
-            Ok(())
-        })();
-        match result {
-            Ok(()) => HandlerResult::Completed(()),
-            Err(cause) => HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause)),
-        }
-    }
-}
-impl<S: Scenario> OperationHandler<S, RestoreBinding<S>> for Handler {
-    fn decide(
-        &self,
-        input: &Restore,
-        reader: &mut DecisionReader<'_, '_, '_, S, RestoreBinding<S>>,
-    ) -> HandlerResult<Target<S>, ()> {
-        match reader
-            .resolve_entity(Id::reference(), input.scope)
-            .and_then(|entity| reader.mutation_target(&entity))
-        {
-            Ok(target) => HandlerResult::Completed(target),
-            Err(cause) => HandlerResult::ExecutionDenied(cause),
-        }
-    }
-    fn build_candidate(
-        &self,
-        input: &Restore,
-        target: Target<S>,
-        writer: &mut CandidateWriter<'_, S, RestoreBinding<S>>,
-    ) -> HandlerResult<(), ()> {
-        let result: Result<(), WorthQueryApplicationAttemptDenial> = (|| {
-            let scope = writer.projected_entity(&target)?;
-            let created = writer.create_entity_in_context(
-                &scope,
-                Node::reference(),
-                WorthQueryApplicationEntityKey::new(format!("authored-{}", input.id)).unwrap(),
-            )?;
-            writer.initialize_field(&created, Id::reference(), input.id)?;
-            writer.initialize_field(&created, Value::reference(), input.value)?;
-            writer.create_output::<Created<S>>(&created)?;
-            for (index, &id) in input.co_anchors.iter().enumerate() {
-                let co = writer.create_entity_in_context(
-                    &scope,
-                    Node::reference(),
-                    WorthQueryApplicationEntityKey::new(format!("authored-{id}")).unwrap(),
+                writer.initialize_field(
+                    &co,
+                    Value::reference(),
+                    if S::COUPLED { input.id } else { id },
                 )?;
-                writer.initialize_field(&co, Id::reference(), id)?;
-                writer.initialize_field(&co, Value::reference(), input.co_values[index])?;
                 match index {
                     0 => writer.create_output::<CoCreated<S, 0>>(&co)?,
                     1 => writer.create_output::<CoCreated<S, 1>>(&co)?,
                     _ => unreachable!(),
                 }
+                if S::MODE == 27 && id == 11 {
+                    writer.link(
+                        SourceLink::reference(),
+                        "authored-upstream-source",
+                        &created,
+                        &co,
+                    )?;
+                }
+                if matches!(S::MODE, 21 | 30 | 39 | 40 | 41) {
+                    stage_records.push(co);
+                }
+            }
+            if matches!(S::MODE, 30 | 39 | 40 | 41) && input.depth > 0 && stage_records.len() == 2 {
+                writer.link(
+                    PreviousStage::reference(),
+                    "stage20-previous10",
+                    &stage_records[0],
+                    &created,
+                )?;
+                writer.link(
+                    PreviousStage::reference(),
+                    "stage30-previous20",
+                    &stage_records[1],
+                    &stage_records[0],
+                )?;
+                if input.depth == 2 {
+                    writer.link(
+                        PreviousStage::reference(),
+                        "foreign-unchanged-stage-link",
+                        &created,
+                        &stage_records[1],
+                    )?;
+                }
+                writer.link(
+                    StageVisible::reference(),
+                    "authored-stage-visibility",
+                    &created,
+                    &stage_records[1],
+                )?;
+            }
+            if S::MODE == 21 {
+                writer.link(
+                    PreviousStage::reference(),
+                    "authored-stage-predecessor",
+                    &stage_records[0],
+                    &stage_records[1],
+                )?;
+                writer.link(
+                    StageVisible::reference(),
+                    "authored-stage-visibility",
+                    &created,
+                    &stage_records[1],
+                )?;
             }
             Ok(())
         })();
@@ -122,6 +128,7 @@ impl<S: Scenario> OperationHandler<S, RestoreBinding<S>> for Handler {
         }
     }
 }
+mod restoration;
 impl<S: Scenario> OperationHandler<S, RetireBinding<S>> for Handler {
     fn decide(
         &self,
@@ -131,6 +138,8 @@ impl<S: Scenario> OperationHandler<S, RetireBinding<S>> for Handler {
         let result = (|| {
             let mut targets = Vec::new();
             let mut edges = Vec::new();
+            let mut stage_edges = Vec::new();
+            let mut stage_relinks = Vec::new();
             for (index, id) in std::iter::once(&input.id)
                 .chain(&input.co_anchors)
                 .chain(&input.descendants)
@@ -144,14 +153,42 @@ impl<S: Scenario> OperationHandler<S, RetireBinding<S>> for Handler {
                     reader.field(&entity, Id::reference())?;
                     reader.field(&entity, Value::reference())?;
                 }
-                if S::MODE == 5 {
+                if matches!(S::MODE, 5 | 13 | 19 | 20) {
                     for edge in reader
                         .relations_to(Peer::reference(), &entity)
                         .map_err(HandlerExecutionDenial::new)?
                     {
+                        if matches!(S::MODE, 19 | 20) {
+                            let from = reader
+                                .field(edge.from(), Id::reference())?
+                                .expect("business peer has its logical key");
+                            if !input.descendants.contains(&from) {
+                                continue;
+                            }
+                        }
                         edges.push((
                             reader.mutation_target(edge.from())?,
                             reader.mutation_target(&entity)?,
+                        ));
+                    }
+                }
+                if matches!(S::MODE, 30 | 39 | 40 | 41) {
+                    relation_splice::read_retirement(
+                        reader,
+                        &entity,
+                        &mut stage_edges,
+                        &mut stage_relinks,
+                        input.relation_fault,
+                    )?;
+                }
+                if S::MODE == 21 {
+                    for edge in reader
+                        .relations_from(PreviousStage::reference(), &entity)
+                        .map_err(HandlerExecutionDenial::new)?
+                    {
+                        stage_edges.push((
+                            reader.mutation_target(edge.from())?,
+                            reader.mutation_target(edge.to())?,
                         ));
                     }
                 }
@@ -160,6 +197,8 @@ impl<S: Scenario> OperationHandler<S, RetireBinding<S>> for Handler {
             Ok(RetirementTargets {
                 nodes: targets,
                 edges,
+                stage_edges,
+                stage_relinks,
             })
         })();
         match result {
@@ -174,6 +213,21 @@ impl<S: Scenario> OperationHandler<S, RetireBinding<S>> for Handler {
         writer: &mut CandidateWriter<'_, S, RetireBinding<S>>,
     ) -> HandlerResult<(), ()> {
         let result: Result<(), WorthQueryApplicationAttemptDenial> = (|| {
+            for (from, to) in targets.stage_edges {
+                let from = writer.projected_entity(&from)?;
+                let to = writer.projected_entity(&to)?;
+                writer.unlink(PreviousStage::reference(), &from, &to)?;
+            }
+            for (index, (from, to)) in targets.stage_relinks.into_iter().enumerate() {
+                let from = writer.projected_entity(&from)?;
+                let to = writer.projected_entity(&to)?;
+                writer.link(
+                    PreviousStage::reference(),
+                    &format!("splice-{index}"),
+                    &from,
+                    &to,
+                )?;
+            }
             for (from, to) in targets.edges {
                 let from = writer.projected_entity(&from)?;
                 let to = writer.projected_entity(&to)?;

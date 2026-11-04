@@ -28,7 +28,7 @@ impl<S: Scenario> ApplicationCorrectionBinding<S> for UndoCreate<S> {
     fn authored_identity() -> Option<ApplicationAuthoredCorrection<S>> {
         let identity =
             ApplicationAuthoredCorrection::retire_created::<Self, Family, Created<S>, Retired<S>>();
-        Some(if S::MODE == 5 {
+        Some(if matches!(S::MODE, 5 | 19 | 20) {
             identity
                 .co_retire_created::<Self, Family, CoCreated<S, 0>, CoRetired<S, 0>>()
                 .co_retire_created::<Self, Family, CoCreated<S, 1>, CoRetired<S, 1>>()
@@ -72,6 +72,7 @@ impl<S: Scenario> ApplicationCorrectionBinding<S> for UndoCreate<S> {
             }
         }
         Ok(Retire {
+            relation_fault: 0,
             corrupt_restoration: false,
             co_anchors: original.co_anchors.clone(),
             scope: original.scope,
@@ -107,7 +108,7 @@ impl<S: Scenario> ApplicationCorrectionBinding<S> for UndoRetire<S> {
         let identity =
             ApplicationAuthoredCorrection::restore_retired::<Self, Family, Retired<S>, Created<S>>(
             );
-        Some(if S::MODE == 5 {
+        Some(if matches!(S::MODE, 5 | 19 | 20) {
             identity
                 .co_restore_retired::<Self, Family, CoRetired<S, 0>, CoCreated<S, 0>>()
                 .co_restore_retired::<Self, Family, CoRetired<S, 1>, CoCreated<S, 1>>()
@@ -115,17 +116,38 @@ impl<S: Scenario> ApplicationCorrectionBinding<S> for UndoRetire<S> {
             identity
         })
     }
+    fn visit_coupled_outputs<V: ApplicationCoupledOutputVisitor<S, Self::Source>>(visitor: &mut V) {
+        if S::MODE == 24 {
+            visitor.required::<coupled::multi::SecondStart>();
+        } else if S::MODE != 11 {
+            <Self::Source as ApplicationMutationBinding<S>>::visit_coupled_outputs(visitor);
+        }
+    }
     fn mechanism() -> DeclaredCorrectionMechanism<S> {
-        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
-            DeclaredPreImageDemand::new(
-                [
-                    DeclaredPreImageLocus::from_field(Id::reference::<S>()),
-                    DeclaredPreImageLocus::from_field(Value::reference::<S>()),
-                ],
-                if S::MODE == 5 { 54 } else { 18 },
-            )
-            .unwrap(),
+        let demand = DeclaredPreImageDemand::new(
+            [
+                DeclaredPreImageLocus::from_field(Id::reference::<S>()),
+                DeclaredPreImageLocus::from_field(Value::reference::<S>()),
+            ],
+            if matches!(S::MODE, 30 | 39 | 40) {
+                4096
+            } else if matches!(S::MODE, 5 | 19 | 20) {
+                54
+            } else {
+                18
+            },
         )
+        .unwrap();
+        let demand = if matches!(S::MODE, 30 | 39 | 40 | 41) {
+            demand
+                .with_relations([DeclaredPreImageRelationLocus::from_relation(
+                    PreviousStage::reference(),
+                )])
+                .unwrap()
+        } else {
+            demand
+        };
+        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(demand)
     }
     fn derive_correction(
         original: &Retire,
@@ -170,7 +192,11 @@ impl<S: Scenario> ApplicationCorrectionBinding<S> for UndoRetire<S> {
         if original.corrupt_restoration {
             co_values[0] += 1;
         }
+        let (retired_entity, relation_material) =
+            relation_splice::derive::<S>(fields, original.relation_fault)?;
         Ok(Restore {
+            retired_entity,
+            relation_material,
             co_values,
             co_anchors: original.co_anchors.clone(),
             scope: original.scope,
@@ -180,6 +206,14 @@ impl<S: Scenario> ApplicationCorrectionBinding<S> for UndoRetire<S> {
     }
     fn inverse_key(key: &str) -> Result<String, ApplicationValueEncodeDenial> {
         Ok(format!("restore:{key}"))
+    }
+    fn reapplication_key(key: &str) -> Result<String, ApplicationValueEncodeDenial> {
+        Ok(format!("reapply:{key}"))
+    }
+    fn visit_reapplication<V: ApplicationReapplicationVisitor<S>>(
+        dispatch: ApplicationReapplicationDispatch<S, Self, V>,
+    ) -> V::Output {
+        dispatch.conventional()
     }
     fn visit<V: ApplicationCorrectionVisitor<S>>(
         dispatch: ApplicationCorrectionDispatch<S, Self, V>,

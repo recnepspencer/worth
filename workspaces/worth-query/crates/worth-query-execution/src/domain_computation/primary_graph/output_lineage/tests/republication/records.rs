@@ -56,6 +56,7 @@ pub(super) fn performed(
         )
         .unwrap();
     RecordedOutput {
+        coupled_completion: None,
         producing_implementation: None,
         required_publication: None,
         native_prior_checkpoint: None,
@@ -103,6 +104,7 @@ pub(super) fn untracked(row: RecordedOutput, context: DecisionContextUse) -> Rec
     let completed = boundary.seal_decision_reuse(decision(DECISION_KEY), context);
     assert!(completed.is_none());
     RecordedOutput {
+        coupled_completion: None,
         producing_implementation: None,
         required_publication: None,
         completed_handler_facts: Some(boundary),

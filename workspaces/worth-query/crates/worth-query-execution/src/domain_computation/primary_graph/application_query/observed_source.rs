@@ -77,8 +77,12 @@ impl WorthQueryBoundSourceExpectation {
             .bind_source_partition(&self.partition_identity)
     }
 }
+mod applied;
 pub(in crate::domain_computation::primary_graph) mod source_identity;
 pub(in crate::domain_computation::primary_graph) use super::super::entity_resolution::WorthQueryObservedScopeSelector;
+pub(in crate::domain_computation::primary_graph) use applied::{
+    AppliedQuerySource, AppliedSourcePublication,
+};
 pub(in crate::domain_computation::primary_graph::application_query) use retained_parameters::WorthQueryRetainedObservedParameters;
 pub(in crate::domain_computation::primary_graph) use root_selection::WorthQueryObservedRootSelection;
 pub(in crate::domain_computation::primary_graph::application_query) use root_selection::{

@@ -130,7 +130,7 @@ impl RelationalRuntime {
         Ok(())
     }
 
-    /// Reissue succeeds this selected authored retirement, never a fresh Birth.
+    /// Reissue succeeds the selected authored retirement or its Native restoration, never a fresh Birth.
     /// The current route and complete retired membership come from Native's
     /// canonical history, not an old producer head or caller description.
     pub fn readmit_authored_output_retirement_successor(
@@ -203,6 +203,7 @@ impl RelationalRuntime {
         if !matches!(
             origin.publication,
             crate::history::data::CanonicalOutputPublication::AuthoredRetirement { .. }
+                | crate::history::data::CanonicalOutputPublication::AuthoredRestoration { .. }
         ) {
             return Ok(None);
         }
@@ -210,7 +211,7 @@ impl RelationalRuntime {
             .map(Some)
     }
 
-    pub(super) fn readmit_canonical_publication(
+    pub(crate) fn readmit_canonical_publication(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         installed: &RelationalInstalledApplicationPublicationAuthority,

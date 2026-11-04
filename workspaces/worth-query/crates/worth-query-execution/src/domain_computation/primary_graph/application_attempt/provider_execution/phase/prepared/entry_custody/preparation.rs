@@ -22,6 +22,7 @@ where
     Input: Clone + Send + Sync + 'static,
 {
     let WorthQueryApplicationCommitPreparationRequest {
+        coordination,
         entry,
         idempotency,
         elevation_currentness,
@@ -56,7 +57,20 @@ where
     let workflow_deadline = read_set.workflow_deadline;
     let new_commit_refusal = read_set.new_commit_refusal;
     let signed_creation = read_set.signed_creation;
-    let mutation_proof = read_set.mutation_handler_binding;
+    let mut mutation_proof = read_set.mutation_handler_binding;
+    let coupled_outputs = aftermath_causality
+        .as_ref()
+        .and_then(|causality| {
+            causality
+                .prepared_correction()
+                .capture_coupled_outputs(execution)
+        })
+        .unwrap_or_else(|| {
+            mutation_proof
+                .as_mut()
+                .map(|proof| std::mem::take(&mut proof.coupled_outputs))
+                .unwrap_or_default()
+        });
     let workflow_approval_authority = workflow_settlement
         .as_ref()
         .and_then(|binding| binding.approval_authority.clone());
@@ -105,6 +119,7 @@ where
         &current_product,
         idempotency,
         aftermath_causality.as_ref(),
+        coordination,
     ) {
         return terminal(outcome);
     }
@@ -193,6 +208,7 @@ where
     prepare_authorized_application_commit(
         application,
         WorthQueryCurrentApplicationCommit {
+            coupled_outputs,
             admission,
             lease,
             provider: WorthQueryProviderAttemptPreparation {

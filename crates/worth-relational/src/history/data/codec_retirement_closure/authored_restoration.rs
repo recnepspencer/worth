@@ -72,7 +72,7 @@ impl RelationalRuntime {
                     .map_err(|cause| failure(super::request(cause)))?
                     .map_err(|cause| failure(super::request(cause)))?
                     .0?;
-                let Some(event) = &envelope.authored_cascade_retirement else {
+                let Some(event) = envelope.authored_source_retirement() else {
                     return Ok(None);
                 };
                 if event.anchor != original {
@@ -169,6 +169,7 @@ impl RelationalRuntime {
                             }
                             let mut inverse = Vec::new();
                             let mut relations = Vec::new();
+                            let mut aggregate_memberships = Vec::new();
                             for prior in &publications {
                                 let predecessor =
                                     prior.origin.publication.predecessor().ok_or_else(|| {
@@ -188,7 +189,13 @@ impl RelationalRuntime {
                                             reject(Cause::CorruptPublication, member.id)
                                         })?;
                                     let payload = super::membership::reconstruct(
-                                        self, &live, member.id, plan, context, lease,
+                                        self,
+                                        &live,
+                                        member.id,
+                                        plan,
+                                        context,
+                                        lease,
+                                        basis.inner.root.schema_authority(),
                                     )
                                     .map_err(failure)?;
                                     charge(context, entities.len()).map_err(failure)?;
@@ -226,9 +233,42 @@ impl RelationalRuntime {
                                             reject(Cause::CorruptPublication, original)
                                         })?;
                                     let payload = super::relation_payload::reconstruct(
-                                        self, &live, edge.id, plan, context, lease,
+                                        self,
+                                        &live,
+                                        edge.id,
+                                        plan,
+                                        context,
+                                        lease,
+                                        basis.inner.root.schema_authority(),
                                     )
                                     .map_err(failure)?;
+                                    if basis
+                                        .inner
+                                        .root
+                                        .schema_authority()
+                                        .registry()
+                                        .aggregate_private_kinds
+                                        .contains(&edge.kind)
+                                    {
+                                        let (state, funding) = match payload {
+                                            Some(payload) => {
+                                                let (state, funding) =
+                                                    payload.into_retained_parts();
+                                                (state, Some(funding))
+                                            }
+                                            None => (None, None),
+                                        };
+                                        aggregate_memberships.push(
+                                            crate::aggregate_identity::RestoredMembership::capture(
+                                                edge.id,
+                                                edge.kind,
+                                                edge.source,
+                                                state,
+                                                funding,
+                                            ),
+                                        );
+                                        continue;
+                                    }
                                     charge(context, entities.len().saturating_mul(2))
                                         .map_err(failure)?;
                                     let resolve = |id| {
@@ -269,14 +309,19 @@ impl RelationalRuntime {
                                     relations.push((edge.id, target));
                                 }
                             }
-                            Ok::<_, TransactionCommitError>((entities, relations, inverse))
+                            Ok::<_, TransactionCommitError>((
+                                entities,
+                                relations,
+                                inverse,
+                                aggregate_memberships,
+                            ))
                         },
                     )
                 });
                 execution
                     .consult()
                     .map_err(|cause| failure(super::request(cause)))?;
-                let (entities, relations, inverse) = result
+                let (entities, relations, inverse, aggregate_memberships) = result
                     .map_err(|cause| failure(super::request(cause)))?
                     .map_err(|cause| failure(super::request(cause)))?
                     .0?;
@@ -288,6 +333,7 @@ impl RelationalRuntime {
                     relations,
                     publications,
                     inverse,
+                    aggregate_memberships,
                 }))
             })
             .map_err(|cause| failure(super::request(cause)))?

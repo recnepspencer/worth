@@ -12,6 +12,7 @@ pub(super) struct ApplicationInvariantCandidateMaterial {
     pub(super) producer_required_invariants:
         &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement],
     pub(super) authored_restoration: Option<(worth_relational::facade::history::CommitId, worth_relational::facade::identity::EntityId, worth_relational::facade::transactions::CreatedEntityRef, Vec<(worth_relational::facade::identity::EntityId, worth_relational::facade::transactions::CreatedEntityRef)>)>,
+    pub(super) restoration_plan: Option<worth_relational::facade::mvcc::RelationalAuthoredRestoration>,
     pub(super) restoration_publication: Option<worth_relational::facade::mvcc::RequiredOutputPublication>,
     pub(super) batch: worth_relational::facade::transactions::WorkerIntentBatch,
     pub(super) branch: worth_relational::facade::history::BranchId,
@@ -45,6 +46,7 @@ impl ApplicationInvariantCandidateMaterial {
             requirements: staged.invariant_requirements().to_vec(),
             producer_required_invariants: staged.producer_required_invariants(),
             batch: staged.batch().clone(),
+            restoration_plan: None,
             restoration_publication: None,
             authored_restoration: staged.authored_restoration_anchor()?,
             branch: staged.branch().clone(),

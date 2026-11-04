@@ -56,8 +56,8 @@ fn member_retirement_preserves_component_name_and_invalidates_old_membership() {
                 .collect::<BTreeSet<_>>();
             assert_eq!(keys, BTreeSet::from([0, 1]));
             assert_eq!(current.identity(), prior.output().1.identity(), "retirement without a split preserves the persistent name");
-            let pin = reader.runtime.read_truth().pin_read_capability(reader.snapshot, &[], reader.execution).unwrap();
-            assert_ne!(pin.snapshot().version_id(), prior.output().1.aggregate().source().version_id());
+            let pin = reader.native.committed_runtime().expect("committed fixture read").read_truth().pin_read_capability(reader.snapshot, &[], reader.execution).unwrap();
+            assert_ne!(pin.snapshot().version_id(), prior.output().1.aggregate().source().committed_snapshot().expect("committed fixture read").version_id());
             let equal = reader.execution.run_native_with_checkpoint(|context|
                 prior.output().1.aggregate().remains_equal_at(&pin, reader.execution, context, None).unwrap()).unwrap();
             assert!(!equal.0, "actual changed-product membership cannot reuse the old component answer");

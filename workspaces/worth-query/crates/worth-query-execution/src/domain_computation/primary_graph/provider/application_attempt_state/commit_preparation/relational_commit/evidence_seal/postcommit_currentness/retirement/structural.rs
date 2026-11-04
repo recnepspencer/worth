@@ -28,6 +28,9 @@ pub(in super::super) fn prepare(
         Fact::DerivedSource { .. } => return Ok(None),
         _ => return Ok(None),
     };
+    let Some(source) = source.committed_snapshot() else {
+        return Ok(None);
+    };
     if source.runtime_instance_id() != snapshot.runtime_instance_id()
         || source.branch_id() != snapshot.branch_id()
         || !retired.contains(&anchor)

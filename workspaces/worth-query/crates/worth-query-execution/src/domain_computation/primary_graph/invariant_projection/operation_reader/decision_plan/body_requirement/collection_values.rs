@@ -49,6 +49,11 @@ impl<Schema: ApplicationSchema, Operation>
                 kind,
                 entity: to.clone().into(),
                 authority_identity: self.reader.authority_identity,
+                phase: self
+                    .reader
+                    .native
+                    .candidate_identity()
+                    .map(|id| id.qualification()),
                 _marker: std::marker::PhantomData,
             };
             let locator = self

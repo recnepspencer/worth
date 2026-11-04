@@ -6,16 +6,19 @@
 
 mod compensation;
 mod portable_recorded_inverse;
+mod preimage_demand;
+mod preimage_locus;
+mod preimage_relation;
 mod recorded_inverse;
+pub use preimage_demand::{DeclaredPreImageDemand, DeclaredPreImageDemandDenial};
+pub use preimage_locus::DeclaredPreImageLocus;
+pub use preimage_relation::{DeclaredPreImageRelationLocus, PortablePreImageRelationLocus};
 
 pub use compensation::DeclaredCompensation;
 pub use portable_recorded_inverse::{
     PortablePreImageDemand, PortablePreImageLocus, PortableRecordedInverse,
 };
-pub use recorded_inverse::{
-    DeclaredLoweringCorrespondenceRef, DeclaredPreImageDemand, DeclaredPreImageDemandDenial,
-    DeclaredPreImageLocus, DeclaredRecordedInverse,
-};
+pub use recorded_inverse::{DeclaredLoweringCorrespondenceRef, DeclaredRecordedInverse};
 
 /// How the corrected state is produced when correction authority permits it.
 pub enum DeclaredCorrectionMechanism<Schema> {

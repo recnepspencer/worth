@@ -118,13 +118,17 @@ impl<Schema: ApplicationSchema + 'static, Operation>
             // positions fences the loan; the descriptors grant no read authority.
             let original = self
                 .reader
-                .runtime
+                .native
+                .committed_runtime()
+                .ok_or(Cause::ContextUnavailable)?
                 .read_truth()
                 .positioned_snapshot(self.reader.snapshot)
                 .map_err(|_| Cause::SourceMismatch)?;
             let borrowed = self
                 .reader
-                .runtime
+                .native
+                .committed_runtime()
+                .ok_or(Cause::ContextUnavailable)?
                 .read_truth()
                 .positioned_snapshot(selected.application_basis().snapshot_handle())
                 .map_err(|_| Cause::SourceMismatch)?;
@@ -148,7 +152,10 @@ impl<Schema: ApplicationSchema + 'static, Operation>
                         .runtime
                         .primary_graph()
                         .ok_or(Cause::ContextUnavailable)?,
-                    self.reader.runtime,
+                    self.reader
+                        .native
+                        .committed_runtime_mut()
+                        .ok_or(Cause::ContextUnavailable)?,
                 )
                 .map_err(|cause| {
                     Cause::SourceQuery(SourceQueryObservationStop::Admission(cause))
@@ -176,7 +183,9 @@ impl<Schema: ApplicationSchema + 'static, Operation>
 
                 let selected = self
                     .reader
-                    .runtime
+                    .native
+                    .committed_runtime()
+                    .ok_or(Cause::ContextUnavailable)?
                     .read_truth()
                     .positioned_snapshot(self.reader.snapshot)
                     .map_err(|_| Cause::SourceMismatch)?;
@@ -200,7 +209,10 @@ impl<Schema: ApplicationSchema + 'static, Operation>
                             execution,
                             candidate,
                             &owner,
-                            self.reader.runtime,
+                            self.reader
+                                .native
+                                .committed_runtime()
+                                .ok_or(Cause::ContextUnavailable)?,
                             self.reader.snapshot,
                             &selected,
                         )

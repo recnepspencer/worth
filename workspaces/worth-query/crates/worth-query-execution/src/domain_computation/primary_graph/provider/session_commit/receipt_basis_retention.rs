@@ -56,7 +56,7 @@ impl Eq for WorthQueryRetainedApplicationCommitBasis {}
 pub(in crate::domain_computation::primary_graph) struct WorthQueryReceiptBasisRetentionStore {
     order: VecDeque<CommitId>,
     by_commit: BTreeMap<CommitId, WorthQueryRetainedApplicationCommitBasis>,
-    mandatory: BTreeMap<CommitId, WorthQueryRetainedApplicationCommitBasis>,
+    mandatory: BTreeMap<CommitId, (WorthQueryRetainedApplicationCommitBasis, usize)>,
 }
 
 impl WorthQueryReceiptBasisRetentionStore {
@@ -71,10 +71,14 @@ impl WorthQueryReceiptBasisRetentionStore {
         &mut self,
         commit: CommitId,
     ) {
-        assert!(
-            self.mandatory.remove(&commit).is_some(),
-            "terminal release owns an exact mandatory basis"
-        );
+        let (_, claims) = self
+            .mandatory
+            .get_mut(&commit)
+            .expect("terminal release owns its exact dispatch-basis claim");
+        *claims = claims.checked_sub(1).expect("a live dispatch claim");
+        if *claims == 0 {
+            self.mandatory.remove(&commit);
+        }
     }
     pub(in crate::domain_computation::primary_graph::provider) fn release(
         &mut self,
@@ -95,16 +99,18 @@ impl WorthQueryReceiptBasisRetentionStore {
         }
     }
 
-    pub(in crate::domain_computation::primary_graph::provider) fn retain(
+    pub(in crate::domain_computation::primary_graph::provider) fn retain_group(
         &mut self,
         commit: CommitId,
         lease: RelationalBranchRetentionLease,
-        mandatory: bool,
+        dispatch_claims: usize,
     ) {
         let retention = WorthQueryRetainedApplicationCommitBasis::new(lease);
-        if mandatory {
+        if dispatch_claims != 0 {
             assert!(
-                self.mandatory.insert(commit, retention).is_none(),
+                self.mandatory
+                    .insert(commit, (retention, dispatch_claims))
+                    .is_none(),
                 "one mandatory dispatch basis per commit"
             );
             return;
@@ -129,6 +135,7 @@ impl WorthQueryReceiptBasisRetentionStore {
     ) -> Option<WorthQueryRetainedApplicationCommitBasis> {
         self.mandatory
             .get(&commit)
+            .map(|(basis, _)| basis)
             .or_else(|| self.by_commit.get(&commit))
             .cloned()
     }

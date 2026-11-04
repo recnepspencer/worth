@@ -15,7 +15,7 @@ pub(super) fn bind(
         return Ok(proposal);
     };
     let targets = attempt.native_publication_roles();
-    let anchor = authored_anchor(attempt)?;
+    let anchor = crate::domain_computation::primary_graph::provider::authored_retirement_selection::authored_anchor(attempt).map_err(native_output_witness_stop)?;
     let all_retire = targets
         .clone()
         .all(|(_, posture, _, _)| posture == Posture::Retire);
@@ -47,24 +47,12 @@ pub(super) fn bind(
         }
         Ok(())
     })?;
-    let mut roles = Vec::with_capacity(targets.len());
-    for (role, posture, name, target) in targets {
-        roles.push(RequiredOutputRoleTarget {
-            role: role.to_owned(),
-            entity_name: name.to_owned(),
-            kind: provider
-                .graph
-                .layout
-                .entity_kind(name)
-                .ok_or_else(mismatch)?,
-            posture: match posture {
-                Posture::Create => RequiredOutputRolePosture::Create,
-                Posture::Preserve => RequiredOutputRolePosture::Preserve,
-                Posture::Retire => RequiredOutputRolePosture::Retire,
-            },
-            target: target.clone(),
-        });
-    }
+    let (roles, _) =
+        crate::domain_computation::primary_graph::provider::native_publication_roles::collect(
+            &provider.graph.layout,
+            targets,
+        )
+        .ok_or_else(mismatch)?;
     if let Some((anchor, co_anchors)) = anchor {
         let cascade = provider
             .graph
@@ -140,72 +128,4 @@ pub(super) fn bind(
             },
         )
         .map_err(transaction_commit_stop)
-}
-
-/// The installed correction declaration chooses the role. Roster order and
-/// reference reachability never choose an authored source.
-fn authored_anchor(
-    attempt: &WorthQueryPrimaryGraphApplicationAttempt,
-) -> Result<
-    Option<(
-        worth_relational::facade::identity::EntityId,
-        Vec<worth_relational::facade::identity::EntityId>,
-    )>,
-    crate::domain_computation::WorthQueryProviderSessionCommitStop,
-> {
-    if let Some(anchor) = attempt
-        .aftermath_causality()
-        .and_then(|causality| causality.prepared_correction().authored_retirement_anchor())
-    {
-        let prepared = attempt
-            .aftermath_causality()
-            .expect("selected correction anchor")
-            .prepared_correction();
-        return Ok(Some((anchor, prepared.authored_retirement_co_anchors())));
-    }
-    let identity = attempt
-        .original_authority()
-        .retained_governed_input_carrier()
-        .and_then(|input| input.correction())
-        .and_then(|original| original.association().declaration().authored_identity());
-    let Some(identity) = identity else {
-        return Ok(None);
-    };
-    let parts = identity.parts();
-    if parts.source_posture != Posture::Retire {
-        return Ok(None);
-    }
-    let mut matches = attempt
-        .native_publication_roles()
-        .filter(|(role, posture, _, _)| *role == parts.source_role && *posture == Posture::Retire);
-    let target = matches.next().and_then(|(_, _, _, target)| match target {
-        EntityReference::Existing(id) => Some(*id),
-        _ => None,
-    });
-    if target.is_none() || matches.next().is_some() {
-        return Err(native_output_witness_stop(
-            CompanionPreflightStop::SelectedSourceMismatch,
-        ));
-    }
-    let mut co_anchors = Vec::with_capacity(identity.co_anchors().len());
-    for declaration in identity.co_anchors() {
-        let mut matched = attempt
-            .native_publication_roles()
-            .filter(|(role, posture, _, _)| {
-                *role == declaration.parts().source_role && *posture == Posture::Retire
-            });
-        let co_anchor = matched.next().and_then(|(_, _, _, target)| match target {
-            EntityReference::Existing(id) => Some(*id),
-            _ => None,
-        });
-        if matched.next().is_some() || (co_anchor.is_none() && !declaration.is_optional()) {
-            return Err(native_output_witness_stop(
-                CompanionPreflightStop::SelectedSourceMismatch,
-            ));
-        }
-        if let Some(id) = co_anchor {
-            co_anchors.push(id);
-        }
-    }
-    Ok(target.map(|anchor| (anchor, co_anchors)))
 }

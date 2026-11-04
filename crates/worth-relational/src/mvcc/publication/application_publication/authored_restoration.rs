@@ -8,6 +8,7 @@ use crate::{
 };
 use std::sync::Arc;
 
+#[derive(Clone)]
 pub struct RelationalAuthoredRestoration {
     pub(crate) before: AdmittedRelationalBranchBasis,
     pub(crate) retirement: Arc<CanonicalCommitEnvelope>,
@@ -16,6 +17,7 @@ pub struct RelationalAuthoredRestoration {
     pub(crate) relations: Vec<(RelationId, CreatedRelationRef)>,
     pub(crate) publications: Vec<RelationalRequiredOutputPublication>,
     pub(crate) inverse: Vec<MutationIntent>,
+    pub(crate) aggregate_memberships: Vec<crate::aggregate_identity::RestoredMembership>,
 }
 impl std::fmt::Debug for RelationalAuthoredRestoration {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

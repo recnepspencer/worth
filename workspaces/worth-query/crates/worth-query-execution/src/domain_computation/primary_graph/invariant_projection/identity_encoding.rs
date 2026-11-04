@@ -29,6 +29,7 @@ mod tests {
                 kind: KindId(1),
                 entity: Arc::from("Entry"),
                 authority_identity: authority,
+                phase: None,
                 _marker: PhantomData,
             };
             let identity =

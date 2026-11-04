@@ -22,6 +22,9 @@ pub(super) fn bind(
     ValidatedRelationalProposal,
     crate::domain_computation::WorthQueryProviderSessionCommitStop,
 > {
+    if proposal.has_coupled_authored_publication() {
+        return Ok(proposal);
+    }
     let Some(required) = required else {
         return authored_retirement::bind(proposal, execution, before, provider, attempt);
     };
@@ -72,27 +75,12 @@ pub(super) fn bind(
         )
         .map_err(native_output_witness_stop)?;
     let (producer, source_epoch) = required.native_prior_checkpoint_input();
-    let mut roles = Vec::with_capacity(targets.len());
-    let mut all_created = true;
-    for (role, posture, name, target) in targets {
-        let kind = provider
-            .graph
-            .layout
-            .entity_kind(name)
-            .ok_or_else(overflow)?;
-        all_created &= posture == Posture::Create;
-        roles.push(RequiredOutputRoleTarget {
-            role: role.to_owned(),
-            entity_name: name.to_owned(),
-            kind,
-            posture: match posture {
-                Posture::Create => RequiredOutputRolePosture::Create,
-                Posture::Preserve => RequiredOutputRolePosture::Preserve,
-                Posture::Retire => RequiredOutputRolePosture::Retire,
-            },
-            target: target.clone(),
-        });
-    }
+    let (roles, all_created) =
+        crate::domain_computation::primary_graph::provider::native_publication_roles::collect(
+            &provider.graph.layout,
+            targets,
+        )
+        .ok_or_else(overflow)?;
     let source_scope = scope.scope();
     let meaning = RequiredOutputPublicationMeaning {
         implementation: attempt

@@ -21,7 +21,7 @@ pub(in crate::domain_computation::primary_graph) use selection::AggregateSelecti
 pub(in crate::domain_computation) struct AggregateObservation<Member = EntityId> {
     key: AggregateKey<Member>,
     native: PinnedAggregateRead<Member>,
-    source: SnapshotHandle,
+    source: super::projection_read_origin::ProjectionReadOrigin,
     _allocation: Option<Arc<super::source_facts::SourceFactsAllocation>>,
 }
 pub(in crate::domain_computation::primary_graph) struct AggregateQuery<'a> {
@@ -36,6 +36,14 @@ pub(in crate::domain_computation::primary_graph) struct AggregateQuery<'a> {
 impl AggregateObservation {
     pub(in crate::domain_computation::primary_graph) fn read(
         pin: &RelationalPinnedRead,
+        execution: &ExecutionRequest<'_, '_>,
+        query: AggregateQuery<'_>,
+    ) -> Result<Arc<Self>, PinnedAggregateReadDenial> {
+        Self::read_projected(pin, crate::domain_computation::primary_graph::projection_read_origin::ProjectionReadOriginRef::Committed(pin.snapshot()), execution, query)
+    }
+    pub(in crate::domain_computation::primary_graph) fn read_projected<Phase>(
+        pin: &RelationalPinnedRead<Phase>,
+        origin: crate::domain_computation::primary_graph::projection_read_origin::ProjectionReadOriginRef<'_>,
         execution: &ExecutionRequest<'_, '_>,
         query: AggregateQuery<'_>,
     ) -> Result<Arc<Self>, PinnedAggregateReadDenial> {
@@ -57,9 +65,28 @@ impl AggregateObservation {
         Ok(Arc::new(Self {
             key,
             native,
-            source: pin.snapshot().clone(),
+            source: origin.retained(),
             _allocation: query.allocation.cloned(),
         }))
+    }
+    pub(in crate::domain_computation::primary_graph) fn refresh_at(
+        &self,
+        pin: &RelationalPinnedRead,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<Arc<Self>, PinnedAggregateReadDenial> {
+        Self::read(
+            pin,
+            execution,
+            AggregateQuery {
+                allocation: self._allocation.as_ref(),
+                subject: self.key.subject(),
+                entity_kind: self.key.entity_kind(),
+                selection: self.key.selection,
+                member: self.key.member(),
+                maximum_work: None,
+                control: None,
+            },
+        )
     }
     pub(in crate::domain_computation::primary_graph) fn same_truth_with_poll<E>(
         &self,
@@ -111,7 +138,9 @@ impl<Member> AggregateObservation<Member> {
     ) -> &PinnedAggregateRead<Member> {
         &self.native
     }
-    pub(in crate::domain_computation::primary_graph) fn source(&self) -> &SnapshotHandle {
+    pub(in crate::domain_computation::primary_graph) fn source(
+        &self,
+    ) -> &super::projection_read_origin::ProjectionReadOrigin {
         &self.source
     }
 }

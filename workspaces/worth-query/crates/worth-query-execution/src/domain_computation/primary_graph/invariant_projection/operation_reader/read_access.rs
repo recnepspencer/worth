@@ -1,4 +1,5 @@
 use super::*;
+use worth_query_declaration::facade::application_schema::ApplicationEntityRef;
 
 #[path = "read_access/lineage.rs"]
 mod lineage;
@@ -19,7 +20,29 @@ where
     /// The actual Native runtime that owns this projection. This is descriptive
     /// identity for comparing stored references, not admission or mutation authority.
     pub fn runtime_instance_id(&self) -> u64 {
-        self.reader.runtime.runtime_instance_id()
+        self.reader.native.runtime_instance_id()
+    }
+
+    /// Reacquire a descriptive historical endpoint at this operation's actual
+    /// image. Live kind, phase, entity-read admission and authorization all apply.
+    pub fn resolve_historical_entity<Entity>(
+        &mut self,
+        _entity: ApplicationEntityRef<Schema, Entity>,
+        id: worth_foundational::facade::EntityId,
+    ) -> Result<WorthQueryInvariantEntityIdentity<Schema, Entity>, WorthQueryCurrentOutputDenial>
+    where
+        Entity: ApplicationEntityMarkerIdentity<Schema> + OperationReads<Operation>,
+    {
+        let execution = *self.reader.execution;
+        self.live_current_identity(
+            &execution,
+            Entity::IDENTIFIER,
+            worth_relational::facade::identity::EntityId::new(
+                worth_relational::facade::identity::PartitionId::new(id.partition_id.0),
+                id.local_slot.0,
+                id.generation.0,
+            ),
+        )
     }
 
     pub fn resolve_entity<Aspect, Entity, Field, Value, Write, Unit>(
@@ -110,6 +133,11 @@ where
         }
         Ok(WorthQueryInvariantMutationTarget {
             entity_id: identity.entity_id,
+            phase: self
+                .reader
+                .native
+                .candidate_identity()
+                .map(|id| id.qualification()),
             entity: Arc::clone(&identity.entity),
             runtime_authority: self.runtime_authority,
             binding_identity: self.binding_identity.clone(),

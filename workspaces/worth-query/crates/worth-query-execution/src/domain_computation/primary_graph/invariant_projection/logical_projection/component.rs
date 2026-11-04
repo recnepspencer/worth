@@ -42,9 +42,8 @@ impl<S: ApplicationSchema> Reader<'_, S> {
         let (native, allocation) =
             self.read_logical_source(relation, member.key.clone(), Shape::Component)?;
         let pin = self
-            .runtime
-            .read_truth()
-            .pin_read_capability(self.snapshot, &[], self.execution)
+            .native
+            .pin(self.snapshot, self.execution)
             .map_err(|cause| match cause {
                 RelationalPinnedReadAdmissionDenial::Request(stop) => {
                     self.walk_stop(stop, set.name())

@@ -1,6 +1,6 @@
 use super::super::WorthQueryApplicationAttemptDenial as SelfDenial;
 use super::{
-    adjacency, indexed_entity_selection, workflow_definition_predecessor, workflow_history_basis,
+    indexed_entity_selection, workflow_definition_predecessor, workflow_history_basis,
     workflow_instance_capacity, WorthQueryApplicationObservedFact,
 };
 
@@ -11,6 +11,24 @@ impl WorthQueryApplicationObservedFact {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     ) -> Result<bool, super::super::WorthQueryApplicationAttemptDenial> {
+        self.remains_equal_in_image(runtime, execution, snapshot, None)
+    }
+    pub(in crate::domain_computation::primary_graph) fn remains_equal_in_image(
+        &self,
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+        applied: Option<
+            &worth_relational::facade::runtime::RelationalPinnedRead<
+                worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+            >,
+        >,
+    ) -> Result<bool, super::super::WorthQueryApplicationAttemptDenial> {
+        let image = super::image::FactReadImage {
+            runtime,
+            before: snapshot,
+            applied,
+        };
         super::super::super::fact_verification_observation::value_comparison();
         let check_request = || {
             execution.consult().map_err(|stop| {
@@ -29,7 +47,10 @@ impl WorthQueryApplicationObservedFact {
                 super::WorthQuerySourceCurrentnessFailure::Execution(cause) => SelfDenial::relational_read_stopped(cause, "managed Source comparison"),
                 _ => SelfDenial::new(super::super::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact, "managed Source comparison"),
             })?,
-            Self::ComponentSelection { observation } => observation.remains_equal(runtime,execution,snapshot,None)
+            Self::ComponentSelection { observation } => match applied {
+                None => observation.remains_equal(runtime,execution,snapshot,None),
+                Some(pin) => crate::domain_computation::primary_graph::source_read_verification::SourceReadVerification::open_applied(runtime, snapshot, pin).check_component(observation, execution, None),
+            }
                 .map_err(|cause| match cause {
                     super::WorthQuerySourceCurrentnessFailure::OutputObservation(stop) => SelfDenial::output_observation(stop),
                     super::WorthQuerySourceCurrentnessFailure::ManagedIndex(cause) => SelfDenial::managed_index(cause, "decision source consistency"),
@@ -37,7 +58,10 @@ impl WorthQueryApplicationObservedFact {
                     super::WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded => SelfDenial::new(super::super::WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,"component selection comparison"),
                     super::WorthQuerySourceCurrentnessFailure::Unavailable => SelfDenial::new(super::super::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact,"component selection comparison"),
                 })?,
-            Self::Aggregate { observation } => observation.remains_equal(runtime,execution,snapshot,None)
+            Self::Aggregate { observation } => match applied {
+                None => observation.remains_equal(runtime,execution,snapshot,None),
+                Some(pin) => crate::domain_computation::primary_graph::source_read_verification::SourceReadVerification::open_applied(runtime, snapshot, pin).check_aggregate(observation, execution, None),
+            }
                 .map_err(|cause| match cause {
                     super::WorthQuerySourceCurrentnessFailure::OutputObservation(stop) => SelfDenial::output_observation(stop),
                     super::WorthQuerySourceCurrentnessFailure::ManagedIndex(cause) => SelfDenial::managed_index(cause, "decision source consistency"),
@@ -45,7 +69,10 @@ impl WorthQueryApplicationObservedFact {
                     super::WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded => SelfDenial::new(super::super::WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,"aggregate comparison"),
                     super::WorthQuerySourceCurrentnessFailure::Unavailable => SelfDenial::new(super::super::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact,"aggregate comparison"),
                 })?,
-            Self::DerivedSource { observation } => observation.remains_equal(runtime,execution,snapshot)
+            Self::DerivedSource { observation } => match applied {
+                None => observation.remains_equal(runtime,execution,snapshot),
+                Some(pin) => crate::domain_computation::primary_graph::source_read_verification::SourceReadVerification::open_applied(runtime, snapshot, pin).check_derived(observation, execution, None),
+            }
                 .map_err(|cause| match cause {
                     super::WorthQuerySourceCurrentnessFailure::OutputObservation(stop) => SelfDenial::output_observation(stop),
                     super::WorthQuerySourceCurrentnessFailure::ManagedIndex(cause) => SelfDenial::managed_index(cause, "decision source consistency"),
@@ -53,7 +80,10 @@ impl WorthQueryApplicationObservedFact {
                     super::WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded => SelfDenial::new(super::super::WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,"derived source comparison"),
                     super::WorthQuerySourceCurrentnessFailure::Unavailable => SelfDenial::new(super::super::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact,"derived source comparison"),
                 })?,
-            Self::StructuralWalk { observation } => observation.remains_equal(runtime,execution,snapshot)
+            Self::StructuralWalk { observation } => match applied {
+                None => observation.remains_equal(runtime,execution,snapshot),
+                Some(pin) => crate::domain_computation::primary_graph::source_read_verification::SourceReadVerification::open_applied(runtime, snapshot, pin).check_walk(observation, execution, None),
+            }
                 .map_err(|cause| match cause {
                     super::WorthQuerySourceCurrentnessFailure::OutputObservation(stop) => SelfDenial::output_observation(stop),
                     super::WorthQuerySourceCurrentnessFailure::ManagedIndex(cause) => SelfDenial::managed_index(cause, "decision source consistency"),
@@ -69,8 +99,8 @@ impl WorthQueryApplicationObservedFact {
                     super::WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded => SelfDenial::new(super::super::WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded, "source publication comparison"),
                     super::WorthQuerySourceCurrentnessFailure::Unavailable => SelfDenial::new(super::super::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact, "source publication comparison"),
                 })?,
-            Self::RetiredOutputEntity { entity_id, kind, created_at, deleted_at, .. } => super::retirement_equality::remains_equal(runtime, execution, snapshot, *entity_id, *kind, *created_at, *deleted_at).map_err(|cause| SelfDenial::relational_read_stopped(cause, "retirement comparison"))?,
-            Self::SourceEntity { entity_id } => match runtime.read_truth().project_snapshot(snapshot) {
+            Self::RetiredOutputEntity { entity_id, kind, created_at, deleted_at, .. } => super::retirement_equality::remains_equal(image.view().as_ref(), execution, *entity_id, *kind, *created_at, *deleted_at).map_err(|cause| SelfDenial::relational_read_stopped(cause, "retirement comparison"))?,
+            Self::SourceEntity { entity_id } => match image.view() {
                 Some(view) => {
                     view.entity_record_with_projection_scope(execution,
                         *entity_id,
@@ -89,14 +119,11 @@ impl WorthQueryApplicationObservedFact {
                 entity_id,
                 aspect,
                 native_revision,
-            } => runtime
-                .read_truth()
-                 .read_exact_snapshot_entity_aspect_version(execution, snapshot, *entity_id, aspect)
-                .map_err(|cause| SelfDenial::relational_read_stopped(cause, "source aspect comparison"))?
+            } => image.aspect_revision(execution, *entity_id, aspect)?
                 == Some(*native_revision),
             Self::SourceFieldRevision { entity_id, locator, native_revision } =>
                 if let Some(expected) = native_revision {
-                    match runtime.read_truth().project_snapshot(snapshot) {
+                    match image.view() {
                         Some(view) => view.entity_field_revision(execution, *entity_id, locator)
                             .map_err(|cause| SelfDenial::relational_read_stopped(cause, "source field comparison"))? == Some(*expected),
                         None => false,
@@ -109,7 +136,7 @@ impl WorthQueryApplicationObservedFact {
                 native_revision,
                 comparison_work_limit,
                 ..
-            } => match runtime.read_truth().project_snapshot(snapshot) {
+            } => match image.view() {
                 Some(view) => {
                     match view.bounded_adjacency_structural_revision(execution,
                         *anchor,
@@ -133,9 +160,7 @@ impl WorthQueryApplicationObservedFact {
             },
             Self::Entity {
                 entity_id, kind, ..
-            } => runtime
-                .read_truth()
-                 .read_exact_snapshot_live_entity_kind_status(execution, snapshot, *entity_id)
+            } => image.live_kind(execution, *entity_id)
                 .map_err(|cause| SelfDenial::relational_read_stopped(cause, "source entity comparison"))?
                 == Some(Some(*kind)),
             Self::Field {
@@ -144,21 +169,17 @@ impl WorthQueryApplicationObservedFact {
                 locator,
                 value,
                 ..
-            } => super::super::observation::observe_field_value(
-                runtime, execution, snapshot, *entity_id, *kind, locator,
-            )?
-            .is_some_and(|current| current == *value),
+            } => image.field(execution, *entity_id, *kind, locator)?
+                .is_some_and(|current| matches!(current, super::super::observation::WorthQueryApplicationFieldObservation::Present(current) if current == *value)),
             Self::AspectPresence { entity_id, kind, aspect, present } => {
-                super::super::observation::observe_aspect_presence(
-                    runtime, execution, snapshot, *entity_id, *kind, aspect,
-                )? == Some(*present)
+                image.aspect_presence(execution, *entity_id, *kind, aspect)? == Some(*present)
             }
             Self::AbsentField {
                 entity_id,
                 kind,
                 locator,
             } => matches!(
-                super::super::observation::observe_field(runtime, execution, snapshot, *entity_id, *kind, locator)?,
+                image.field(execution, *entity_id, *kind, locator)?,
                 Some(super::super::observation::WorthQueryApplicationFieldObservation::Absent)
             ),
             Self::OptionalAspectAbsent {
@@ -166,7 +187,7 @@ impl WorthQueryApplicationObservedFact {
                 kind,
                 locator,
             } => matches!(
-                super::super::observation::observe_field(runtime, execution, snapshot, *entity_id, *kind, locator)?,
+                image.field(execution, *entity_id, *kind, locator)?,
                 Some(super::super::observation::WorthQueryApplicationFieldObservation::AspectAbsent)
             ),
             Self::Relation {
@@ -175,14 +196,7 @@ impl WorthQueryApplicationObservedFact {
                 to,
                 matching_relations,
                 ..
-            } => super::super::observation::exact_relations(
-                runtime,
-                execution,
-                snapshot,
-                *relation_kind,
-                *from,
-                *to,
-            )
+            } => image.relations(execution, *relation_kind, *from, *to)
             ? == *matching_relations,
             Self::Adjacency {
                 relation_kind,
@@ -191,16 +205,8 @@ impl WorthQueryApplicationObservedFact {
                 maximum_work_units,
                 relations,
                 ..
-            } => adjacency::remains_equal(
-                runtime,
-                execution,
-                snapshot,
-                *relation_kind,
-                *anchor,
-                *direction,
-                *maximum_work_units,
-                relations,
-            )?,
+            } => image.adjacency(execution, *relation_kind, *anchor, *direction, *maximum_work_units)?
+                .is_some_and(|current| current == *relations),
             Self::IndexedEntitySelection {
                 index_id,
                 definition,
@@ -209,7 +215,9 @@ impl WorthQueryApplicationObservedFact {
                 value,
                 candidate_limit,
                 candidates,
-            } => indexed_entity_selection::remains_equal(
+            } => match applied {
+                Some(candidate) => indexed_entity_selection::applied::compare(self, execution, runtime, snapshot, None, candidate)?,
+                None => indexed_entity_selection::remains_equal(
                 runtime,
                 execution,
                 snapshot,
@@ -221,6 +229,7 @@ impl WorthQueryApplicationObservedFact {
                 *candidate_limit,
                 candidates,
             )?,
+            },
             Self::WorkflowDefinitionPredecessor {
                 relation_kind,
                 lineage,

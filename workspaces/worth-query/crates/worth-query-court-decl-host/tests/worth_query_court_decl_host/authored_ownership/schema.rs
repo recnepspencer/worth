@@ -3,6 +3,8 @@ pub trait Scenario:
     ApplicationSchema + ApplicationSchemaComposition<Contributions = (Contribution,)>
 {
     const MODE: u8;
+    const COUPLED: bool = matches!(Self::MODE, 6..=12 | 14..=28 | 30 | 39 | 40 | 41 | 42);
+    const TWO_BODIES: bool = matches!(Self::MODE, 7 | 8 | 9 | 15..=18 | 20 | 27 | 28 | 42);
 }
 pub struct Model<const MODE: u8>;
 impl<const MODE: u8> Scenario for Model<MODE> {
@@ -83,6 +85,12 @@ pub fn actor<S: Scenario>(
         },
     )
 }
+pub struct Components;
+impl Components {
+    pub fn reference<S: Scenario>() -> ApplicationComponentSetRef<S, Self, Node> {
+        ApplicationComponentSetRef::new("OwnedComponents", Node::reference())
+    }
+}
 pub struct Contribution;
 impl<S: Scenario> ApplicationSchemaContribution<S> for Contribution {
     const IDENTITY: ApplicationSchemaContributionIdentity =
@@ -108,6 +116,22 @@ impl<S: Scenario> ApplicationSchemaContribution<S> for Contribution {
                 .application_query_binding::<query::Binding<S>>(),
         ))
         .correction::<correction::UndoCreate<S>>();
+        let schema = if matches!(S::MODE, 13 | 14) {
+            schema.components(
+                ApplicationComponentSetDefinition::new(Components::reference())
+                    .coupled_by(Peer::reference()),
+            )
+        } else {
+            schema
+        };
+        let schema = stage_schema::declare(schema);
+        let schema = relation_splice::declare(schema);
+        let schema = projected_memberships::schema::declare(schema);
+        let schema = if S::COUPLED {
+            coupled::producer::declare(schema)
+        } else {
+            schema
+        };
         if S::MODE == 4 {
             // The inverse Retire has no correction declaration: only the
             // prepared retire_created correction can supply its anchor.
@@ -149,6 +173,10 @@ impl<S: Scenario> WorthQueryApplicationContribution<S> for Contribution {
         contracts: &mut WorthQueryApplicationContributionContracts<S>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         contracts.producer::<producer::Producer<S>>()?;
+        if S::COUPLED {
+            contracts.producer::<coupled::producer::Producer<S>>()?;
+            contracts.conditional::<coupled::producer::readiness::Readiness>()?;
+        }
         contracts.conditional::<readiness::Readiness>()?;
         Ok(())
     }
@@ -156,12 +184,27 @@ impl<S: Scenario> WorthQueryApplicationContribution<S> for Contribution {
         _: (),
         setup: &mut WorthQueryApplicationContributionSetup<'_, S>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+        if matches!(S::MODE, 30 | 39 | 40 | 41) {
+            setup.handler::<relation_splice::inspection::Binding<S>, _>(
+                relation_splice::inspection::Handler,
+            )?;
+        }
+        if S::MODE == 29 {
+            setup.handler::<projected_memberships::inspection::Binding<S>, _>(
+                projected_memberships::inspection::Handler,
+            )?;
+        }
         setup.handler::<lifecycle::CreateBinding<S>, _>(lifecycle_handlers::Handler)?;
         setup.handler::<lifecycle::RetireBinding<S>, _>(lifecycle_handlers::Handler)?;
         setup.handler::<lifecycle::RestoreBinding<S>, _>(lifecycle_handlers::Handler)?;
         setup.handler::<lifecycle::PlainBinding<S>, _>(lifecycle_handlers::Handler)?;
         setup.handler::<producer::Binding<S>, _>(producer::Provider)?;
         setup.producer::<producer::Producer<S>>(producer::Provider)?;
+        if S::COUPLED {
+            setup.handler::<coupled::producer::Binding<S>, _>(coupled::producer::Provider)?;
+            setup.producer::<coupled::producer::Producer<S>>(coupled::producer::Provider)?;
+            setup.conditional::<coupled::producer::readiness::Readiness>(())?;
+        }
         setup.conditional::<readiness::Readiness>(())
     }
 }

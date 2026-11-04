@@ -5,7 +5,7 @@ use crate::domain_computation::primary_graph::application_attempt::{
     snapshot_lease::WorthQueryApplicationSnapshotLease,
 };
 
-pub(in crate::domain_computation::primary_graph::invariant_projection) struct CompletedSnapshotRead<
+pub(in crate::domain_computation::primary_graph::invariant_projection) struct CompletedProjectionRead<
     Output,
 > {
     pub(in crate::domain_computation::primary_graph::invariant_projection) output: Output,
@@ -34,7 +34,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
             &mut WorthQueryApplicationInvariantProjectionReader<'_, Schema>,
         ) -> Output,
         retention_control: StorageControl<'_, '_>,
-    ) -> Result<CompletedSnapshotRead<Output>, WorthQueryInvariantProjectionDenial> {
+    ) -> Result<CompletedProjectionRead<Output>, WorthQueryInvariantProjectionDenial> {
         self.read_snapshot(
             execution,
             maximum_work.map_or_else(
@@ -58,70 +58,106 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
             &mut WorthQueryApplicationInvariantProjectionReader<'_, Schema>,
         ) -> Output,
         retention_control: StorageControl<'_, '_>,
-    ) -> Result<CompletedSnapshotRead<Output>, WorthQueryInvariantProjectionDenial> {
+    ) -> Result<CompletedProjectionRead<Output>, WorthQueryInvariantProjectionDenial> {
+        self.read_native(
+            execution,
+            work_budget,
+            basis,
+            snapshot,
+            None,
+            projection,
+            retention_control,
+        )
+    }
+
+    pub(in crate::domain_computation::primary_graph::invariant_projection) fn read_native<
+        Output,
+    >(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        work_budget: WorthQueryInvariantProjectionWorkBudget,
+        basis: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,
+        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+        applied: Option<(
+            &worth_relational::facade::runtime::RelationalPinnedRead,
+            &worth_relational::facade::runtime::RelationalPinnedRead<
+                worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+            >,
+        )>,
+        projection: impl FnOnce(
+            &mut WorthQueryApplicationInvariantProjectionReader<'_, Schema>,
+        ) -> Output,
+        retention_control: StorageControl<'_, '_>,
+    ) -> Result<CompletedProjectionRead<Output>, WorthQueryInvariantProjectionDenial> {
+        // The applied reader's aggregate cache is private to this image. Its
+        // backing must not enter the committed version cache before publication.
+        let _applied_cache_memory = if applied.is_some() {
+            let bytes = (std::mem::size_of::<
+                std::sync::Mutex<
+                    super::super::super::aggregate_projection::WorthQueryAggregateProjections,
+                >,
+            >() + 2 * std::mem::size_of::<usize>()) as u64;
+            Some(
+                retention_control
+                    .policy()
+                    .reserve_memory(bytes)
+                    .map_err(|cause| {
+                        WorthQueryInvariantProjectionDenial::source_retention_denied(
+                            cause.into(),
+                            WorthQueryInvariantProjectionWork::default(),
+                        )
+                    })?,
+            )
+        } else {
+            None
+        };
         let decode_work = std::cell::Cell::new(None);
         let decode =
             super::super::super::value_decode::ValueDecodeState::new(self.value_bindings.clone());
-        let decoded = decode.run(execution, |value_decode| {
-            self.graph.with_runtime_mut(execution, |runtime| catch_unwind(AssertUnwindSafe(|| {
-                let mut reader = WorthQueryApplicationInvariantProjectionReader {
-                    value_bindings: &self.value_bindings,
-                    value_decode,
+        let decoded = decode.run(execution, |value_decode| match applied {
+            None => self.graph.with_runtime_mut(execution, |runtime| {
+                catch_unwind(AssertUnwindSafe(|| {
+                    self.execute_reader(
+                        execution,
+                        NativeProjectionRead::Committed(runtime),
+                        value_decode,
+                        basis,
+                        snapshot,
+                        work_budget,
+                        projection,
+                        retention_control,
+                        &decode_work,
+                    )
+                }))
+            }),
+            Some((before, candidate)) => catch_unwind(AssertUnwindSafe(|| {
+                self.execute_reader(
                     execution,
-                    runtime,
-                    layout: &self.layout,
+                    NativeProjectionRead::Applied { before, candidate },
+                    value_decode,
+                    basis,
                     snapshot,
-                    observation: basis.observation(),
-                    entity_resolution: &self.entity_resolution,
-                    authority_identity: self.authority_identity,
-                    binding_identity: &self.binding_identity,
-                    program_activation: self.program_activation.as_ref(),
-                    work: WorthQueryInvariantProjectionWork::default(),
                     work_budget,
-                    retention_exhausted: false,
-                    native_read_stop: None,
-                    realized_scope: WorthQueryRealizedProjectionScope::default(),
-                    aggregate_projections: Arc::clone(&self.graph.aggregate_projections),
-                    output_lineage: Arc::clone(&self.graph.output_lineage),
-                    invalidation_owner: Arc::clone(&self.graph.source_owner.invalidation_owner),
-                    managed_views: self.graph.managed_derived_views(),
-                    selected_product_occurrence: None,
-                    selected_product_generation: None,
-                    selected_source_partition_identity: None,
-                    prior_output_bindings: HashMap::new(),
-                    current_output_families: HashMap::new(),
-                    dependent_source_facts: super::super::super::application_attempt::retained_decision_facts::AuthoringSourceFacts::vacant(),
+                    projection,
                     retention_control,
-                    consumed_outputs: BTreeMap::new(),
-                    _schema: PhantomData,
-                };
-                let output = projection(&mut reader);
-                decode_work.set(Some(reader.work));
-                (
-                    output,
-                    reader.work,
-                    reader.realized_scope,
-                    reader.consumed_outputs,
-                    reader.dependent_source_facts.finish(retention_control),
-                    (reader.work_budget.exceeded(), reader.work_budget.overflowed()),
-                    reader.retention_exhausted,
-                    reader.native_read_stop,
+                    &decode_work,
                 )
-            })))
+            })),
         });
         let projected = decoded.map_err(|cause| {
             WorthQueryInvariantProjectionDenial::value_decode_stopped(cause, decode_work.get())
         })?;
-        let (
+        let super::reader_execution::ProjectionExecution {
             output,
             work,
             realized_scope,
             consumed_outputs,
             source_facts,
-            (exceeded, overflowed),
+            exceeded,
+            overflowed,
             exhausted,
             stopped,
-        ) = match projected {
+        } = match projected {
             Ok(projected) => projected,
             // Unwind only after the native runtime loan ends. The owning
             // entrance releases its snapshot; the borrowed entrance never does.
@@ -157,7 +193,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
         decode.check(execution).map_err(|cause| {
             WorthQueryInvariantProjectionDenial::value_decode_handoff_stopped(cause, Some(work))
         })?;
-        Ok(CompletedSnapshotRead {
+        Ok(CompletedProjectionRead {
             output,
             work,
             realized_scope,

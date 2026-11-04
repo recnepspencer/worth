@@ -50,6 +50,9 @@ pub(super) struct PreparedPublicationCompletion {
 }
 
 impl PreparedPublicationPhase {
+    pub(super) fn canonical_envelope(&self) -> &Arc<crate::history::data::CanonicalCommitEnvelope> {
+        self.prepared_history.canonical_envelope()
+    }
     pub(super) fn descriptive_touches(
         &self,
     ) -> &crate::history::data::RelationalDescriptiveTouchGraph {

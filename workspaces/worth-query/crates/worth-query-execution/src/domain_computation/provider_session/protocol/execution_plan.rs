@@ -93,22 +93,30 @@ impl WorthQueryValidatedProviderPlan<'_> {
     }
 }
 
-pub(super) enum WorthQueryProviderRunBorrow<'run> {
+mod owned_direct;
+pub(in crate::domain_computation) use owned_direct::{
+    CoupledProviderPlanAdmission, ReturnedProviderDirectRun,
+};
+mod direct;
+
+pub(super) enum WorthQueryProviderRunCustody<'run> {
     Direct(&'run mut WorthQueryRunningDirectRun),
     Workflow(&'run mut WorthQueryRunningWorkflowRun),
+    CoupledDirect(Box<owned_direct::OwnedDirectRun>),
 }
 
-impl WorthQueryProviderRunBorrow<'_> {
+impl WorthQueryProviderRunCustody<'_> {
     pub(super) fn run_identity(&self) -> &str {
         match self {
             Self::Direct(run) => run.identity(),
             Self::Workflow(run) => run.identity(),
+            Self::CoupledDirect(run) => run.run().identity(),
         }
     }
 }
 
 pub struct WorthQueryAdmittedProviderExecutionPlan<'run> {
-    run: WorthQueryProviderRunBorrow<'run>,
+    run: WorthQueryProviderRunCustody<'run>,
     contract: WorthQueryProviderExecutionPlanContract,
     provider: Arc<WorthQueryGraphProviderAnchor>,
     product: WorthQueryProviderProductAffinity,
@@ -130,51 +138,39 @@ impl<'run> WorthQueryAdmittedProviderExecutionPlan<'run> {
         run: &'run mut WorthQueryRunningDirectRun,
         graph: &WorthQueryInstalledGraphParticipationAuthority,
     ) -> Result<Self, WorthQueryProviderSessionFailure> {
-        let mut counters = WorthQueryProviderSessionProtocolCounters::default();
-        let operation = run.provider_plan_operation();
-        let session = run.provider_plan_session();
-        let (resources, evidence) = run.provider_plan_resources();
-        counters.checked_authority();
-        validate_common_authority(
-            WorthQueryProviderPlanAuthorityObservation {
-                operation,
-                session_identity: session.identity(),
-                session_attempt_identity: session.attempt_identity(),
-                resource_authority_matches: operation
-                    .admits_provider_plan_resources(None, resources),
-                evidence_session_identity: evidence.provider_session_identity(),
-                evidence_attempt_identity: evidence.provider_session_attempt_identity(),
-                bridge: run.provider_plan_bridge_basis(),
-                graph,
-                stage_identity: None,
-            },
-            &counters,
-        )?;
-        let provider = retain_session_provider(graph, &counters)?;
-        let snapshot_identity = run.execution_snapshot_reference();
-        let contract = operation
-            .provider_plan_contract(WorthQueryValidatedProviderPlan {
-                operation,
-                stage_identity: None,
-                managed_run_identity: run.identity(),
-                execution_basis_identity: run.provider_plan_bridge_basis().identity().as_str(),
-                admitted_session_identity: session.identity(),
-                resource_attempt_identity: session.attempt_identity(),
-                graph,
-                snapshot_identity: &snapshot_identity,
-                resource_envelope_identity: resources.envelope_identity(),
-                provider_identity: provider.provider_identity(),
-                provider_generation: provider.provider_generation(),
-            })
-            .ok_or_else(|| undeclared_scope(&counters))?;
-        counters.bound_closure_items(contract.closure_width());
+        let (contract, provider, counters) = direct::prepare(run, graph)?;
         Ok(Self {
-            run: WorthQueryProviderRunBorrow::Direct(run),
+            run: WorthQueryProviderRunCustody::Direct(run),
             contract,
             provider,
             product: WorthQueryProviderProductAffinity::standalone(),
             counters,
         })
+    }
+
+    pub(in crate::domain_computation) fn coupled_direct(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        run: WorthQueryRunningDirectRun,
+        graph: &WorthQueryInstalledGraphParticipationAuthority,
+    ) -> CoupledProviderPlanAdmission<'run> {
+        let (run, returned) = match owned_direct::OwnedDirectRun::new(execution, run) {
+            Ok(owned) => owned,
+            Err((run, cause)) => {
+                return CoupledProviderPlanAdmission::AllocationDenied { run, cause }
+            }
+        };
+        let prepared =
+            direct::prepare(run.run(), graph).map(|(contract, provider, counters)| Self {
+                run: WorthQueryProviderRunCustody::CoupledDirect(run),
+                contract,
+                provider,
+                product: WorthQueryProviderProductAffinity::standalone(),
+                counters,
+            });
+        match prepared {
+            Ok(plan) => CoupledProviderPlanAdmission::Admitted { plan, returned },
+            Err(cause) => CoupledProviderPlanAdmission::Refused { cause, returned },
+        }
     }
 
     pub(in crate::domain_computation) fn workflow_stage(
@@ -224,7 +220,7 @@ impl<'run> WorthQueryAdmittedProviderExecutionPlan<'run> {
             .ok_or_else(|| undeclared_scope(&counters))?;
         counters.bound_closure_items(contract.closure_width());
         Ok(Self {
-            run: WorthQueryProviderRunBorrow::Workflow(run),
+            run: WorthQueryProviderRunCustody::Workflow(run),
             contract,
             provider,
             product: WorthQueryProviderProductAffinity::standalone(),
@@ -274,11 +270,15 @@ impl<'run> WorthQueryAdmittedProviderExecutionPlan<'run> {
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'run>,
     ) -> Result<WorthQueryProviderPlanReadmission<'run>, WorthQueryProviderSessionFailure> {
         let (source_instance, owner_identity) = match &self.run {
-            WorthQueryProviderRunBorrow::Direct(run) => (
+            WorthQueryProviderRunCustody::Direct(run) => (
                 run.execution_source_instance_id(),
                 run.execution_owner_identity(),
             ),
-            WorthQueryProviderRunBorrow::Workflow(run) => (
+            WorthQueryProviderRunCustody::CoupledDirect(owned) => (
+                owned.run().execution_source_instance_id(),
+                owned.run().execution_owner_identity(),
+            ),
+            WorthQueryProviderRunCustody::Workflow(run) => (
                 run.execution_source_instance_id(),
                 run.execution_owner_identity(),
             ),

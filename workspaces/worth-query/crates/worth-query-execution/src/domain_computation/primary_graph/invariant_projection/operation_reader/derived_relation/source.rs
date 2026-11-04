@@ -102,8 +102,7 @@ impl<Schema: ApplicationSchema, Operation: ApplicationOperationMarkerIdentity<Sc
             .map_err(|_| denied())?;
         }
         let native={
-            let pin=self.reader.runtime.read_truth()
-                .pin_read_capability(self.reader.snapshot,&[],self.reader.execution)
+            let pin=self.reader.native.pin(self.reader.snapshot, self.reader.execution)
                 .map_err(|cause| match cause {
                     worth_relational::facade::runtime::RelationalPinnedReadAdmissionDenial::Request(stop)=>
                         self.reader.walk_stop(stop,relation.name()),

@@ -19,10 +19,10 @@ pub(super) fn validate_member(
     plan: &crate::schema::data::LoweredAspectContractPlan,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
+    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
 ) -> Result<(), Stop> {
     let event = current
-        .authored_cascade_restoration
-        .as_ref()
+        .authored_source_restoration()
         .ok_or("restored birth lost recorded inverse")?;
     let origin = current.output_origin_for_entity(id, context)?;
     charge(
@@ -74,7 +74,8 @@ pub(super) fn validate_member(
     {
         return Err("restored member changes original role or kind".into());
     }
-    let expected = super::membership::reconstruct(runtime, &original, old, plan, context, lease)?;
+    let expected =
+        super::membership::reconstruct(runtime, &original, old, plan, context, lease, schema)?;
     charge(context, current.patch.authoritative_record_patches.len())?;
     let patch = current
         .patch
@@ -102,8 +103,9 @@ pub(super) fn validate_groups(
     runtime: &RelationalRuntime,
     current: &CanonicalCommitEnvelope,
     context: &mut MapKernelContext<'_, '_>,
+    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
 ) -> Result<(), Stop> {
-    let Some(event) = &current.authored_cascade_restoration else {
+    let Some(event) = current.authored_source_restoration() else {
         return Ok(());
     };
     current.validate_restoration_header(context)?;
@@ -113,8 +115,7 @@ pub(super) fn validate_groups(
         .canonical_envelope(event.retirement)
         .ok_or("restoration retirement absent")?;
     let original = retired
-        .authored_cascade_retirement
-        .as_ref()
+        .authored_source_retirement()
         .ok_or("restoration retirement is not authored")?;
     if original.anchor != event.original_anchor
         || original.publications.len() != event.publications.len()
@@ -224,7 +225,11 @@ pub(super) fn validate_groups(
                 new.id == id
                     && new.kind == edge.kind
                     && new.source == map(edge.source)
-                    && new.target == map(edge.target)
+                    && (new.target == map(edge.target)
+                        || schema
+                            .registry()
+                            .aggregate_private_kinds
+                            .contains(&edge.kind))
             }) {
                 return Err("restoration changes owned relation correspondence".into());
             }
@@ -243,12 +248,12 @@ pub(super) fn validate_relation(
     plan: &crate::schema::data::LoweredAspectContractPlan,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
+    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
 ) -> Result<(), Stop> {
     use worth_foundational::facade::*;
-    validate_groups(runtime, current, context)?;
+    validate_groups(runtime, current, context, schema)?;
     let event = current
-        .authored_cascade_restoration
-        .as_ref()
+        .authored_source_restoration()
         .ok_or("restored edge lost inverse")?;
     if event.retirement != retirement {
         return Err("restored edge changes retirement".into());
@@ -270,8 +275,9 @@ pub(super) fn validate_relation(
     if original.commit.version_id >= current.commit.version_id {
         return Err("restored edge ancestry moves forward".into());
     }
-    let expected =
-        super::relation_payload::reconstruct(runtime, &original, old, plan, context, lease)?;
+    let expected = super::relation_payload::reconstruct(
+        runtime, &original, old, plan, context, lease, schema,
+    )?;
     let patch = super::authored_restoration::creation_patch(
         expected.as_ref().and_then(|p| p.state.as_ref()),
         plan,

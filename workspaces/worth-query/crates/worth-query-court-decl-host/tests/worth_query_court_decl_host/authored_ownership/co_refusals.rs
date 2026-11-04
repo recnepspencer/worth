@@ -27,6 +27,7 @@ fn changed_co_anchor_payload_refuses_with_that_original_source_subject() {
     let outcome = request
         .advanced()
         .mutate(Retire {
+            relation_fault: 0,
             corrupt_restoration: true,
             co_anchors: vec![20],
             scope: 1,

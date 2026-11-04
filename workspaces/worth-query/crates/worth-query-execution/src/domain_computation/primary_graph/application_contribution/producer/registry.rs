@@ -9,6 +9,7 @@ use worth_query_installation::facade::ApplicationSchema;
 
 mod checkpoint;
 mod codec_transition;
+mod coupled_selection;
 mod declaration;
 
 use super::scheduling;
@@ -130,26 +131,34 @@ where
     pub(super) fn select_entry<Family>(
         &self,
 
-        mut accepts: impl FnMut(&Arc<InstalledProducerProvider<Schema>>) -> bool,
+        accepts: impl FnMut(&Arc<InstalledProducerProvider<Schema>>) -> bool,
         missing: WorthQueryOutputDemandDenialKind,
     ) -> Result<&Arc<InstalledProducerProvider<Schema>>, WorthQueryOutputDemandDenial>
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
+        self.select_matching_entry(accepts, missing, Family::IDENTITY)
+    }
+    fn select_matching_entry(
+        &self,
+        mut accepts: impl FnMut(&Arc<InstalledProducerProvider<Schema>>) -> bool,
+        missing: WorthQueryOutputDemandDenialKind,
+        subject: &'static str,
+    ) -> Result<&Arc<InstalledProducerProvider<Schema>>, WorthQueryOutputDemandDenial> {
         let mut selected = None;
         for entry in self.entries.values() {
             if accepts(entry) {
                 if selected.is_some() {
                     return Err(WorthQueryOutputDemandDenial::new(
                         WorthQueryOutputDemandDenialKind::AmbiguousApplicableProducer,
-                        Family::IDENTITY,
+                        subject,
                     ));
                 }
                 selected = Some(entry);
             }
         }
         let selected =
-            selected.ok_or_else(|| WorthQueryOutputDemandDenial::new(missing, Family::IDENTITY))?;
+            selected.ok_or_else(|| WorthQueryOutputDemandDenial::new(missing, subject))?;
 
         Ok(selected)
     }

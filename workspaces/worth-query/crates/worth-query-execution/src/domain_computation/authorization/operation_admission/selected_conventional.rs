@@ -243,7 +243,8 @@ where
         original_input: None,
         original_inspection_disclosure: None,
         authorization_basis: ErasedAuthorizationBasis::Conventional,
-        graph_work,
+        graph_work: graph_work
+            .with_actor_authentication(principal.principal().retain_authentication()),
         source_partition_identity: None,
         source_expectation_kind: None,
         source_facts: Vec::new(),

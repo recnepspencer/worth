@@ -18,6 +18,16 @@ pub(in crate::domain_computation::primary_graph) fn observe_aspect_presence(
     let Some(view) = runtime.read_truth().project_snapshot(snapshot) else {
         return Ok(None);
     };
+    observe_aspect_presence_in_view(&view, execution, entity, kind, aspect)
+}
+
+pub(in crate::domain_computation::primary_graph) fn observe_aspect_presence_in_view(
+    view: &worth_relational::facade::runtime::VisibilityProjectionView,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    entity: EntityId,
+    kind: KindId,
+    aspect: &AspectKey,
+) -> Result<Option<bool>, worth_relational::facade::transactions::RelationalExecutionDenialCause> {
     view.entity_record_with_projection_scope(
         execution,
         entity,

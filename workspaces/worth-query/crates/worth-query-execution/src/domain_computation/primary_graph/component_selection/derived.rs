@@ -12,12 +12,13 @@ impl ComponentSelection {
         layout: ComponentSetLayout,
         root: EntityId,
         member: Key,
-        source: SnapshotHandle,
+        source: impl Into<ProjectionReadOrigin>,
         aggregates: Vec<Arc<AggregateObservation<Key>>>,
         facts: Vec<SourceFacts>,
         allocation: Arc<super::super::source_facts::SourceFactsAllocation>,
         mut poll: impl FnMut() -> Result<(), Cause>,
     ) -> Result<Option<Self>, Cause> {
+        let source = source.into();
         let Some(handle) = layout.source.as_ref() else {
             return Ok(None);
         };

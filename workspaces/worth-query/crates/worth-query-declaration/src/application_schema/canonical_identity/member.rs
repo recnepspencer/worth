@@ -1,3 +1,4 @@
+mod coupled_outputs;
 use crate::application_schema::canonical_basis::ApplicationSchemaCanonicalBasis;
 use crate::application_schema::ApplicationSchemaMember;
 

@@ -23,20 +23,7 @@ impl PreparedTouchedRecords {
         allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<Self, WorthQueryProviderSessionCommitStop> {
         candidate
-            .with_prepared_changed_records(|exact| {
-                let mut records = ExecutionArrayBuilder::allocate(exact.len(), allocation_policy)
-                    .map_err(allocation_denied)?;
-                for record in exact {
-                    records
-                        .push(WorthQueryTouchedRecordIdentity::from_commit_record(
-                            record.clone(),
-                        ))
-                        .map_err(allocation_denied)?;
-                }
-                Ok(Self {
-                    records: Arc::new(records.seal().map_err(allocation_denied)?),
-                })
-            })
+            .with_prepared_changed_records(|exact| Self::from_records(exact, allocation_policy))
             .unwrap_or_else(|| {
                 Err(WorthQueryProviderSessionCommitStop::PreEffectDenied(
                     super::failure(
@@ -44,6 +31,24 @@ impl PreparedTouchedRecords {
                     ),
                 ))
             })
+    }
+
+    pub(in crate::domain_computation::primary_graph::provider) fn from_records(
+        exact: &[RecordRef],
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
+    ) -> Result<Self, WorthQueryProviderSessionCommitStop> {
+        let mut records = ExecutionArrayBuilder::allocate(exact.len(), allocation_policy)
+            .map_err(allocation_denied)?;
+        for record in exact {
+            records
+                .push(WorthQueryTouchedRecordIdentity::from_commit_record(
+                    record.clone(),
+                ))
+                .map_err(allocation_denied)?;
+        }
+        Ok(Self {
+            records: Arc::new(records.seal().map_err(allocation_denied)?),
+        })
     }
 
     /// Publication already occurred. This only checks the native performed

@@ -9,7 +9,16 @@ use super::{
     WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationOutputLineage,
 };
 
+mod native_prior;
+mod prior_output;
 mod republication;
+pub(in crate::domain_computation::primary_graph) enum PriorOutputOrigin {
+    Recovered {
+        source_identity: RecordedSourceIdentity,
+        checkpoint: Option<crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity>,
+    },
+    NativeRestored(worth_relational::facade::mvcc::RelationalRequiredOutputPublication),
+}
 
 /// A recorded checkpoint output and the source facts its verification covers.
 pub(in crate::domain_computation::primary_graph) struct RestoredRecord {
@@ -205,6 +214,7 @@ impl WorthQueryApplicationOutputLineage {
             .as_ref()
             .map_or_else(|| observed_source_facts.clone(), |output| output.facts());
         let mut recorded = RecordedOutput {
+            coupled_completion: None,
             producing_implementation,
             required_publication: None,
             native_prior_checkpoint: checkpoint
@@ -275,110 +285,5 @@ impl WorthQueryApplicationOutputLineage {
             return witness;
         };
         Arc::clone(recorded.native_output_witness.get_or_init(|| witness))
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    pub(in crate::domain_computation::primary_graph) fn record_recovered_prior_output(
-        &mut self,
-        output_binding: TypeId,
-        runtime_authority: u64,
-        schema: ApplicationSchemaBindingIdentity,
-        scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
-        occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
-        generation: u64,
-        correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
-        source_identity: RecordedSourceIdentity,
-        source_partition_identity: [u8; 32],
-        producer_dependency_identity: Option<[u8; 32]>,
-        idempotency_key_identity: [u8; 32],
-        checkpoint: Option<crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity>,
-    ) {
-        let source = SemanticSource {
-            runtime_authority,
-            schema,
-            scope,
-            output_binding: self
-                .binding_identity(output_binding)
-                .expect("recovered binding is installed"),
-        };
-        // Recovery supplies an initial prior correspondence, never a newer
-        // publication than one already retained for this partition.
-        if self
-            .partition_index
-            .latest(
-                &source,
-                super::ProductCoordinate {
-                    occurrence,
-                    generation,
-                },
-                source_partition_identity,
-            )
-            .is_some()
-        {
-            return;
-        }
-        if self.partition_index.has_address(
-            &source,
-            super::ProductCoordinate {
-                occurrence,
-                generation,
-            },
-            source_partition_identity,
-        ) {
-            return;
-        }
-        let records = self
-            .by_source
-            .entry(source.clone())
-            .or_default()
-            .entry(occurrence)
-            .or_default()
-            .entry(generation)
-            .or_default();
-        let slot = records.len();
-        let recorded = RecordedOutput {
-            producing_implementation: checkpoint
-                .as_ref()
-                .map(|checkpoint| checkpoint.implementation),
-            required_publication: None,
-            native_prior_checkpoint: checkpoint
-                .map(super::native_prior_checkpoint::NativePriorCheckpointLocator::Recovered),
-            computation_source: super::ComputationSourceEvidence::unavailable(),
-            performed_origin: None,
-            consumed_outputs: Arc::from([]),
-            completed_handler_facts: None,
-            completed_decision_reuse: None,
-            prepared_input_reuse_key: None,
-            native_output_witness: OnceLock::new(),
-            mutable: Mutex::new(RecordedOutputMutable::new(
-                Some(super::invalidation::FullVerificationReason::CheckpointRestore),
-                None,
-                super::retained_computation::RecordedComputation::Absent(PriorAbsence::Restored),
-            )),
-            settlement_identity: super::RecordedSettlementIdentity::retain(
-                &source,
-                super::ProductCoordinate {
-                    occurrence,
-                    generation,
-                },
-                slot,
-            ),
-            correspondence,
-            source_identity: Some(source_identity),
-            source_partition_identity: Some(source_partition_identity),
-            producer_dependency_identity,
-            idempotency_key_identity,
-        };
-        let cell = Arc::new(OnceLock::new());
-        assert!(cell.set(recorded).is_ok());
-        records.push(cell);
-        self.partition_index.insert(
-            source,
-            occurrence,
-            generation,
-            Some(source_partition_identity),
-            slot,
-        );
-        self.live_occurrences.insert(occurrence);
     }
 }

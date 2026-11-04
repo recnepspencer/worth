@@ -154,7 +154,10 @@ impl<Schema, Operation>
     ) -> Option<
         crate::domain_computation::primary_graph::output_lineage::invalidation::ComputationChanges,
     > {
-        prior.changes_at_snapshot(self.reader.runtime, self.reader.snapshot)
+        prior.changes_at_snapshot(
+            self.reader.native.committed_runtime()?,
+            self.reader.snapshot,
+        )
     }
     pub(in crate::domain_computation::primary_graph) fn computation_snapshot(
         &self,
@@ -185,7 +188,7 @@ impl<Schema, Operation>
     ) -> Result<ObservedRetained, WorthQueryApplicationAttemptDenial> {
         observe_admitted_fact(
             execution,
-            &*self.reader.runtime,
+            self.reader.native.committed_runtime().ok_or_else(|| WorthQueryApplicationAttemptDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact, "candidate retained computation"))?,
             self.reader.snapshot,
             self.reader.layout,
             key,

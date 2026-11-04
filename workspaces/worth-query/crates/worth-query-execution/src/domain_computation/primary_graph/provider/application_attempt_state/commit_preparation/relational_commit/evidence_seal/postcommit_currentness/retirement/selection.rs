@@ -176,6 +176,6 @@ fn sealed_rebase(
                         None,
                     ),
                 )
-                .unwrap(), correspondence, changed, true, crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(execution.allocation_policy(), None)))
+                .unwrap(), correspondence, changed, None, true, crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(execution.allocation_policy(), None)))
         })
 }

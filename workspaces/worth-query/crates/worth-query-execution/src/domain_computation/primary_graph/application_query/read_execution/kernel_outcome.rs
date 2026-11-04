@@ -73,7 +73,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn project_n
     decode: &ValueDecodeState,
     kernel: RawNonLiveKernelOutcome,
     governance: &crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationQueryGovernance,
-    mut validate: impl FnMut() -> Result<(), Denial>,
+    validate: impl FnMut() -> Result<(), Denial>,
     map_projection_denial: impl Fn(WorthQueryApplicationProjectionDenial) -> Denial,
 ) -> Result<ProjectedNonLiveKernelOutcome<QueryResult>, Denial>
 where
@@ -81,9 +81,44 @@ where
     QueryResult: WorthQueryApplicationProjection<Schema, Query>,
 {
     let RawNonLiveKernelOutcome { mut raw } = kernel;
+    let rows = decode_projection_tree::<Schema, Query, QueryResult, Denial>(
+        execution,
+        decode,
+        &raw.rows,
+        governance,
+        validate,
+        map_projection_denial,
+    )?;
+    raw.rows.clear();
+    let result_count = rows.len();
+    let truncation_count = usize::from(raw.has_more);
+    Ok(ProjectedNonLiveKernelOutcome {
+        rows,
+        receipt: NonLiveKernelReceiptEvidence {
+            read: raw,
+            result_count,
+            truncation_count,
+        },
+    })
+}
+
+/// One value decoder for committed and applied projection phases. It creates
+/// values only; neither a Current source nor an access receipt is issued here.
+pub(super) fn decode_projection_tree<Schema, Query, QueryResult, Denial>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    decode: &ValueDecodeState,
+    tree: &super::super::projection::WorthQueryApplicationDisclosedProjectionTree,
+    governance: &crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationQueryGovernance,
+    mut validate: impl FnMut() -> Result<(), Denial>,
+    map_projection_denial: impl Fn(WorthQueryApplicationProjectionDenial) -> Denial,
+) -> Result<Vec<QueryResult>, Denial>
+where
+    Schema: ApplicationSchema,
+    QueryResult: WorthQueryApplicationProjection<Schema, Query>,
+{
     let projected = decode.run(execution, |session| {
-        let mut rows = Vec::with_capacity(raw.rows.raw_rows().len());
-        for node in raw.rows.iter() {
+        let mut rows = Vec::with_capacity(tree.raw_rows().len());
+        for node in tree.iter() {
             validate()?;
             let value = QueryResult::project(&WorthQueryApplicationProjectionRow::new(
                 node, governance, session,
@@ -109,17 +144,7 @@ where
     decode.check(execution).map_err(map_decode_denial)?;
     let projected = projected.map_err(map_decode_denial)?;
     let rows = projected?;
-    raw.rows.clear();
-    let result_count = rows.len();
-    let truncation_count = usize::from(raw.has_more);
-    Ok(ProjectedNonLiveKernelOutcome {
-        rows,
-        receipt: NonLiveKernelReceiptEvidence {
-            read: raw,
-            result_count,
-            truncation_count,
-        },
-    })
+    Ok(rows)
 }
 
 /// Internal completion carrier only: () is not the application's result binding.
@@ -150,4 +175,14 @@ pub(in crate::domain_computation::primary_graph::application_query) fn project_n
         },
         tree,
     ))
+}
+
+/// A single source row carries the complete selection that admitted that row.
+pub(in crate::domain_computation::primary_graph::application_query) fn complete_single_source_selection(
+    rows: &mut [super::super::observed_source::WorthQueryObservedSourceFootprint],
+    selection: &std::sync::Arc<super::super::observed_source::WorthQueryObservedRootSelection>,
+) {
+    if let [row] = rows {
+        row.root_selection = Some(std::sync::Arc::clone(selection));
+    }
 }

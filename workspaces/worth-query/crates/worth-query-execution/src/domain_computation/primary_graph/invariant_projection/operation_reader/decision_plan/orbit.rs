@@ -32,10 +32,10 @@ impl<Schema: ApplicationSchema, Operation>
             self.admit_decision_target(&relation_target(&relation))
                 .map_err(|denial| decision_traversal_denial(&denial))?;
             let orbit = self.reader.orbit(relation, member)?;
-            if !orbit
-                .walk()
-                .issued_at(self.reader.snapshot, self.reader.authority_identity)
-                || orbit.aggregate().source() != self.reader.snapshot
+            if !orbit.walk().issued_at(
+                &self.reader.native.origin(self.reader.snapshot),
+                self.reader.authority_identity,
+            ) || *orbit.aggregate().source() != self.reader.native.origin(self.reader.snapshot)
             {
                 return Err(WorthQueryInvariantProjectionTraversalDenial::new(
                     Kind::ForeignIdentity,

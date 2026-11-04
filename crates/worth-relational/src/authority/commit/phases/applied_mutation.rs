@@ -1,7 +1,7 @@
 //! The exact applied draft judged by invariants and later offered for publication.
 use crate::authority::commit::phases::mutation::branch_local_delete_allowance_for_plan;
 use crate::authority::mutation::{
-    apply_plan_to_working_state, MutationApplyDenial, MutationApplyOutcome,
+    apply_plan_with_publication_edges, MutationApplyDenial, MutationApplyOutcome,
 };
 use crate::branch::SelectedRelationalBranchRead;
 use crate::runtime::{
@@ -14,6 +14,9 @@ pub(crate) struct PendingMutationIdentities {
     pub(crate) records: PendingRecordAllocations,
     pub(crate) symbols: PendingSymbolMeanings,
 }
+
+pub(crate) mod ordinary_apply;
+pub(crate) use ordinary_apply::AppliedMutationCore;
 
 pub(crate) struct AppliedMutationDraft {
     pub(crate) state: WorkingState,
@@ -97,44 +100,30 @@ pub(crate) fn apply_mutation_draft(
         adjacency_policy: runtime.config.storage.adjacency_policy.clone(),
         cross_context_policy: runtime.config.storage.cross_context_policy,
     };
-    crate::aggregate_identity::guard::ordinary_plan(
-        execution,
-        runtime.commit_work_budget.as_ref(),
-        schema.registry(),
-        &crate::validation::engine::state_view::InvariantStateView::new(
+    let core = if let Some(binding) = &runtime.authored_coupling {
+        binding.adopt_applied(execution, identity, merged_plan, &mut symbols)?
+    } else {
+        ordinary_apply::apply(
+            execution,
+            runtime,
             selected_state,
-            selected_state.version_id(),
-        ),
-        &merged_plan.merged_intents,
-        materialization,
-    )?;
-    let mut state = working_state.clone();
-    let allowance = branch_local_delete_allowance_for_plan(selected_state, &state, merged_plan);
-    let mut records = runtime.record_identity.begin_allocations();
-    let outcome = apply_plan_to_working_state(
-        &mut state,
-        &apply_plan,
-        &config,
-        schema.registry(),
-        schema.aspect_plans(),
-        &mut symbols,
-        allowance,
-        &mut records,
-        crate::authority::commit::pipeline::request_lease(execution),
-        runtime.commit_work_budget.clone(),
-    )?;
-    crate::authority::mutation::apply_adjacency_deltas(
-        &mut state,
-        &outcome.effect.adjacency.deltas,
-        version_id,
-    );
-    let aggregate = crate::aggregate_identity::AggregateProposal::capture(
-        schema,
-        selected_state.selected(),
-        identity,
-        outcome.effect.clone(),
-        materialization,
-    );
+            working_state,
+            merged_plan,
+            &apply_plan,
+            &config,
+            schema,
+            identity,
+            symbols,
+            materialization,
+        )?
+    };
+    let AppliedMutationCore {
+        state,
+        outcome,
+        aggregate,
+        identities: PendingMutationIdentities { records, symbols },
+        coupled_publication: _,
+    } = core;
     Ok(AppliedMutationDraft {
         source_interpretation,
         aggregate,

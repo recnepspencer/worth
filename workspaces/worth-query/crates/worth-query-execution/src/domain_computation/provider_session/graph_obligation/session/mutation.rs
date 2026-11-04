@@ -5,6 +5,10 @@ use crate::basis::WorthQueryProductObservationLease;
 pub(super) struct MutationProductBasis {
     pub(super) lease: Option<WorthQueryApplicationSnapshotLease>,
     control: Option<WorthQueryProductObservationLease>,
+    coupled_handler: Option<
+        crate::domain_computation::primary_graph::output_lineage::ProducerHandlerPreparation,
+    >,
+    authentication: Option<std::sync::Arc<dyn std::any::Any + Send + Sync>>,
 }
 
 impl MutationProductBasis {
@@ -33,6 +37,61 @@ impl MutationProductBasis {
 }
 
 impl WorthQueryManagedGraphWorkSession {
+    pub(in crate::domain_computation) fn arm_coupled_handler(&mut self) {
+        let WorthQueryGraphWorkBasis::Mutation(basis) = &mut self.basis else {
+            unreachable!("typed mutation admission")
+        };
+        assert!(
+            basis.coupled_handler.is_none(),
+            "one producer handler preparation"
+        );
+        basis.coupled_handler = Some(crate::domain_computation::primary_graph::output_lineage::ProducerHandlerPreparation::new());
+    }
+    pub(in crate::domain_computation) fn coupled_handler(
+        &self,
+    ) -> Option<&crate::domain_computation::primary_graph::output_lineage::ProducerHandlerPreparation>
+    {
+        let WorthQueryGraphWorkBasis::Mutation(basis) = &self.basis else {
+            return None;
+        };
+        basis.coupled_handler.as_ref()
+    }
+    pub(in crate::domain_computation) fn coupled_handler_mut(
+        &mut self,
+    ) -> Option<
+        &mut crate::domain_computation::primary_graph::output_lineage::ProducerHandlerPreparation,
+    > {
+        let WorthQueryGraphWorkBasis::Mutation(basis) = &mut self.basis else {
+            return None;
+        };
+        basis.coupled_handler.as_mut()
+    }
+    pub(in crate::domain_computation) fn take_coupled_handler(
+        &mut self,
+    ) -> Option<crate::domain_computation::primary_graph::output_lineage::ProducerHandlerPreparation>
+    {
+        let WorthQueryGraphWorkBasis::Mutation(basis) = &mut self.basis else {
+            return None;
+        };
+        basis.coupled_handler.take()
+    }
+
+    pub(in crate::domain_computation) fn with_actor_authentication(
+        mut self,
+        proof: std::sync::Arc<dyn std::any::Any + Send + Sync>,
+    ) -> Self {
+        if let WorthQueryGraphWorkBasis::Mutation(basis) = &mut self.basis {
+            basis.authentication = Some(proof);
+        }
+        self
+    }
+    pub(in crate::domain_computation) fn authenticating_principal<Schema: 'static>(&self) -> Option<&worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal<Schema>>{
+        let WorthQueryGraphWorkBasis::Mutation(basis) = &self.basis else {
+            return None;
+        };
+        basis.authentication.as_ref()?.downcast_ref()
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub(in crate::domain_computation) fn start_mutation(
         plan: WorthQueryAdmittedGraphWorkPlan,
@@ -96,6 +155,8 @@ impl WorthQueryManagedGraphWorkSession {
             WorthQueryGraphWorkBasis::Mutation(MutationProductBasis {
                 lease: Some(lease),
                 control,
+                authentication: None,
+                coupled_handler: None,
             }),
             provider,
         )

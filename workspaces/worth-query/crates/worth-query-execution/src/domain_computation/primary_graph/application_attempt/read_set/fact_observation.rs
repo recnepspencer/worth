@@ -46,7 +46,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_fact(
     layout: &WorthQueryPrimaryGraphLayout,
     key: &WorthQueryApplicationFactKey,
 ) -> Result<WorthQueryApplicationObservedFact, WorthQueryApplicationAttemptDenial> {
-    observe_fact_inner(execution, runtime, snapshot, layout, key, false)
+    observe_fact_inner(execution, runtime, snapshot, layout, key, false, None)
 }
 
 /// Retained comparisons have already been bounded by the computation's
@@ -59,7 +59,20 @@ pub(in crate::domain_computation::primary_graph) fn observe_admitted_fact(
     key: &WorthQueryApplicationFactKey,
 ) -> Result<WorthQueryApplicationObservedFact, WorthQueryApplicationAttemptDenial> {
     super::super::super::fact_verification_observation::retained_native();
-    observe_fact_inner(execution, runtime, snapshot, layout, key, true)
+    observe_fact_inner(execution, runtime, snapshot, layout, key, true, None)
+}
+
+pub(in crate::domain_computation::primary_graph) fn observe_applied_fact(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    snapshot: &SnapshotHandle,
+    layout: &WorthQueryPrimaryGraphLayout,
+    key: &WorthQueryApplicationFactKey,
+    pin: &worth_relational::facade::runtime::RelationalPinnedRead<
+        worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+    >,
+) -> Result<WorthQueryApplicationObservedFact, WorthQueryApplicationAttemptDenial> {
+    observe_fact_inner(execution, runtime, snapshot, layout, key, false, Some(pin))
 }
 
 fn observe_fact_inner(
@@ -69,6 +82,11 @@ fn observe_fact_inner(
     layout: &WorthQueryPrimaryGraphLayout,
     key: &WorthQueryApplicationFactKey,
     admitted: bool,
+    applied: Option<
+        &worth_relational::facade::runtime::RelationalPinnedRead<
+            worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+        >,
+    >,
 ) -> Result<WorthQueryApplicationObservedFact, WorthQueryApplicationAttemptDenial> {
     match key {
         WorthQueryApplicationFactKey::SourcePublication(_)
@@ -87,9 +105,9 @@ fn observe_fact_inner(
                     entity,
                 )
             })?;
-            let exists = runtime
-                .read_truth()
-                .project_snapshot(snapshot)
+            let exists = applied
+                .map(|pin| pin.project_candidate())
+                .or_else(|| runtime.read_truth().project_snapshot(snapshot))
                 .map(|view| {
                     let project =
                         |record: worth_relational::facade::runtime::EntityProjectionRecord<'_>| {
@@ -145,9 +163,18 @@ fn observe_fact_inner(
                     entity,
                 )
             })?;
-            let present = super::super::observation::observe_aspect_presence(
-                runtime, execution, snapshot, *entity_id, kind, aspect,
-            )
+            let present = match applied {
+                Some(pin) => super::super::observation::observe_aspect_presence_in_view(
+                    &pin.project_candidate(),
+                    execution,
+                    *entity_id,
+                    kind,
+                    aspect,
+                ),
+                None => super::super::observation::observe_aspect_presence(
+                    runtime, execution, snapshot, *entity_id, kind, aspect,
+                ),
+            }
             .map_err(|cause| {
                 WorthQueryApplicationAttemptDenial::relational_read_stopped(cause, entity)
             })?
@@ -175,7 +202,18 @@ fn observe_fact_inner(
                     entity,
                 )
             })?;
-            let observation = if admitted {
+            let observation = if let Some(pin) = applied {
+                super::super::observation::observe_field_from_view_admitted(
+                    &pin.project_candidate(),
+                    execution,
+                    *entity_id,
+                    kind,
+                    locator,
+                    |raw| {
+                        super::super::observation::WorthQueryApplicationFieldObservation::from(raw)
+                    },
+                )
+            } else if admitted {
                 super::super::observation::observe_field_observation_borrowed_admitted(
                     runtime,
                     execution,
@@ -240,14 +278,34 @@ fn observe_fact_inner(
                     relation,
                 )
             })?;
-            let matching_relations = super::super::observation::exact_relations(
-                runtime,
-                execution,
-                snapshot,
-                layout.kind,
-                *from,
-                *to,
-            )?;
+            let matching_relations = match applied {
+                Some(pin) => super::super::fact::observe_adjacency_in_pin(
+                    pin,
+                    execution,
+                    layout.kind,
+                    *from,
+                    super::super::fact::WorthQueryApplicationAdjacencyDirection::Outgoing,
+                    None,
+                )?
+                .ok_or_else(|| {
+                    denial(
+                        WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact,
+                        relation,
+                    )
+                })?
+                .into_iter()
+                .filter(|record| record.to == *to)
+                .map(|record| record.relation_id)
+                .collect(),
+                None => super::super::observation::exact_relations(
+                    runtime,
+                    execution,
+                    snapshot,
+                    layout.kind,
+                    *from,
+                    *to,
+                )?,
+            };
             Ok(WorthQueryApplicationObservedFact::Relation {
                 relation_kind: layout.kind,
                 from: *from,
@@ -267,15 +325,25 @@ fn observe_fact_inner(
                     relation,
                 )
             })?;
-            let relations = observe_adjacency(
-                runtime,
-                execution,
-                snapshot,
-                layout.kind,
-                *anchor,
-                *direction,
-                *maximum_work_units,
-            )?;
+            let relations = match applied {
+                Some(pin) => super::super::fact::observe_adjacency_in_pin(
+                    pin,
+                    execution,
+                    layout.kind,
+                    *anchor,
+                    *direction,
+                    Some(*maximum_work_units),
+                ),
+                None => observe_adjacency(
+                    runtime,
+                    execution,
+                    snapshot,
+                    layout.kind,
+                    *anchor,
+                    *direction,
+                    *maximum_work_units,
+                ),
+            }?;
             let relations = relations.ok_or_else(|| {
                 denial(
                     WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,

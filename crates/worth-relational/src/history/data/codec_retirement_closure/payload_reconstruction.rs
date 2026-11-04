@@ -13,6 +13,17 @@ pub(super) struct ReconstructedPayload {
     _funding: worth_execution::ExecutionMemoryReservation,
 }
 
+impl ReconstructedPayload {
+    pub(super) fn into_retained_parts(
+        self,
+    ) -> (
+        Option<AuthoritativeRecordAspectState>,
+        worth_execution::ExecutionMemoryReservation,
+    ) {
+        (self.state, self._funding)
+    }
+}
+
 pub(super) fn apply(
     current: Option<&AuthoritativeRecordAspectState>,
     patch: &Patch,

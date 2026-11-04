@@ -32,7 +32,7 @@ fn failure_of_second_orbit_registration_vetoes_the_partial_pair() {
         let execution = host.execution_request_for(world.application.product_runtime()).unwrap();
         let (admission,_) = authorize(&world, &phase, &execution, &request, 0, ReplaceNext::reference());
         let (_, projection, _) = world.invariant.project_admitted_operation(&phase, &admission, |reader, root| {
-            assert!(!earlier.walk().issued_at(reader.reader.snapshot, reader.reader.authority_identity));
+            assert!(!earlier.walk().issued_at(&reader.reader.native.origin(reader.reader.snapshot), reader.reader.authority_identity));
             let contracts = reader.admitted_contracts.as_ref().unwrap().clone();
             let admitted = reader.admission_identity.unwrap();
             // The deliberately conflicting registry value is a genuine earlier

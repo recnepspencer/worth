@@ -24,16 +24,18 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
             >,
         >,
     ) -> Result<std::sync::Arc<AggregateObservation>, Denial> {
-        let pin = self
-            .runtime
-            .read_truth()
-            .pin_read_capability(self.snapshot, &[], self.execution)
-            .map_err(|denial| match denial {
-                RelationalPinnedReadAdmissionDenial::Request(stop) => self.walk_stop(stop, subject),
-                _ => Denial::new(Kind::EndpointUnavailable, subject),
-            })?;
-        let result = AggregateObservation::read(
+        let pin =
+            self.native
+                .pin(self.snapshot, self.execution)
+                .map_err(|denial| match denial {
+                    RelationalPinnedReadAdmissionDenial::Request(stop) => {
+                        self.walk_stop(stop, subject)
+                    }
+                    _ => Denial::new(Kind::EndpointUnavailable, subject),
+                })?;
+        let result = AggregateObservation::read_projected(
             &pin,
+            self.native.origin(self.snapshot),
             self.execution,
             AggregateQuery {
                 allocation,
@@ -50,7 +52,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
 
     pub(super) fn read_member_aggregate_identity(
         &mut self,
-        pin: &worth_relational::facade::runtime::RelationalPinnedRead,
+        pin: &worth_relational::facade::runtime::RelationalPinnedRead<()>,
         member_kind: worth_relational::facade::identity::KindId,
         definition: worth_foundational::facade::AggregateDefinitionIdentity,
         member: worth_relational::facade::schema::NativeMemberKey,
@@ -62,8 +64,9 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
         std::sync::Arc<AggregateObservation<worth_relational::facade::schema::NativeMemberKey>>,
         Denial,
     > {
-        let result = AggregateObservation::read_member(
+        let result = AggregateObservation::read_member_projected(
             pin,
+            self.native.origin(self.snapshot),
             self.execution,
             subject,
             member_kind,

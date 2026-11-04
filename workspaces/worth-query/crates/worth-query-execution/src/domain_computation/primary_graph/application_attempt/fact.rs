@@ -4,9 +4,12 @@ use worth_relational::facade::indexes::{DerivedIndexDefinition, DerivedIndexId};
 
 mod adjacency;
 mod dependency_key;
+mod effect_support;
 mod entity_touch;
 mod equality;
+mod image;
 mod indexed_entity_selection;
+pub(in crate::domain_computation::primary_graph) use indexed_entity_selection::applied::observe as observe_applied_indexed_entity_selection;
 mod locator_identity;
 mod managed_source_read;
 mod movement;
@@ -26,9 +29,11 @@ mod workflow_definition_predecessor;
 mod workflow_history_basis;
 pub(in crate::domain_computation) use workflow_history_basis::WorkflowHistoryRequirement;
 mod workflow_instance_capacity;
-pub(in crate::domain_computation::primary_graph) use adjacency::observe_adjacency;
 pub(in crate::domain_computation::primary_graph) use adjacency::observe_adjacency_with_work;
 pub(in crate::domain_computation::primary_graph) use adjacency::observe_audit_outgoing_adjacency;
+pub(in crate::domain_computation::primary_graph) use adjacency::{
+    observe_adjacency, observe_adjacency_in_pin,
+};
 pub(in crate::domain_computation::primary_graph) use adjacency::{
     observe_adjacency_checked, AdjacencyObservationDenial,
 };
@@ -283,3 +288,5 @@ mod cancellation_tests;
 
 #[cfg(test)]
 pub(in crate::domain_computation) mod consult_observation;
+
+pub(in crate::domain_computation::primary_graph) use effect_support::source_stop as candidate_support_source_stop;

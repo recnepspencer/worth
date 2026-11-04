@@ -23,7 +23,7 @@ pub(super) fn reject(cause: Cause, id: EntityId) -> TransactionCommitError {
         RecordRef::Entity(id),
     ))
 }
-fn stopped(stop: Stop) -> TransactionCommitError {
+pub(super) fn stopped(stop: Stop) -> TransactionCommitError {
     match stop {
         Stop::Payload(detail) => crate::mvcc::origin_denial(detail),
         Stop::Request(cause) => {
@@ -33,6 +33,19 @@ fn stopped(stop: Stop) -> TransactionCommitError {
             })
         }
     }
+}
+
+pub(crate) struct SelectedAuthoredRetirement {
+    pub(crate) birth: CommitId,
+    pub(crate) co_anchors: Vec<(EntityId, CommitId)>,
+    pub(crate) retirements: Vec<SelectedOutputPublication>,
+    pub(crate) coupled_owners: Vec<SelectedOutputPublication>,
+    pub(crate) current: Vec<SelectedOutputPublication>,
+}
+
+pub(crate) enum AuthoredRetirementSelection {
+    SourceScopeClosure,
+    ClosureAndLinkedOwners,
 }
 
 /// O(H² + P²M + R² + PMR), bounded by the actual catalog H, latest publications P,
@@ -45,14 +58,8 @@ pub(crate) fn select_authored_source_retirement(
     anchor: EntityId,
     co_anchors: &[EntityId],
     roles: &[RequiredOutputRoleTarget],
-) -> Result<
-    (
-        CommitId,
-        Vec<(EntityId, CommitId)>,
-        Vec<SelectedOutputPublication>,
-    ),
-    TransactionCommitError,
-> {
+    selection: AuthoredRetirementSelection,
+) -> Result<SelectedAuthoredRetirement, TransactionCommitError> {
     let result = execution.in_scope(|lease| {
         ExecutionWorkCeiling::new(execution.work_ceiling()).run_with_checkpoint(
             lease,
@@ -74,7 +81,8 @@ pub(crate) fn select_authored_source_retirement(
                         if envelope.required_output_materialization.is_some() {
                             super::materialization::validate_semantics(
                                 runtime, envelope, context, lease,
-                            )?;
+                             basis.inner.root.schema_authority(),
+)?;
                         }
                         Ok(())
                     },
@@ -140,8 +148,18 @@ pub(crate) fn select_authored_source_retirement(
                         return Err(reject(Cause::CorruptPublication, source));
                     }
                 }
+                let coupled_owners = super::scope_dependents::linked_owners(
+                    &anchors, &selected, &latest, context,
+                ).map_err(stopped)?;
+                if matches!(selection, AuthoredRetirementSelection::SourceScopeClosure)
+                    && let Some(required) = coupled_owners.first()
+                {
+                    return Err(reject(Cause::MissingCoupledOwner, required.origin.meaning.source_scope));
+                }
                 if selected.is_empty() {
-                    return Ok((birth, births, selected));
+                    return Ok(SelectedAuthoredRetirement {
+                        birth, co_anchors: births, retirements: selected, coupled_owners, current: latest,
+                    });
                 }
                 require_roster(anchor, &anchors, roles, &selected, &latest, context)?;
                 // Cover the exact fixed-width legality-seal comparisons performed by proof admission.
@@ -167,7 +185,9 @@ pub(crate) fn select_authored_source_retirement(
                         return Err(reject(Cause::InvalidAuthoredAnchor, id));
                     }
                 }
-                Ok((birth, births, selected))
+                Ok(SelectedAuthoredRetirement {
+                    birth, co_anchors: births, retirements: selected, coupled_owners, current: latest,
+                })
             },
         )
     });
@@ -187,7 +207,6 @@ fn authored_birth(
     anchor: EntityId,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<CommitId, TransactionCommitError> {
-    use crate::publication::patch::data::RecordStructuralChange as Change;
     if anchor.generation_value() == 0 {
         return Err(reject(Cause::InvalidAuthoredAnchor, anchor));
     }
@@ -216,14 +235,26 @@ fn authored_birth(
         .history
         .canonical_envelope_for_version(created)
         .ok_or_else(|| reject(Cause::InvalidAuthoredAnchor, anchor))?;
+    require_authored_birth(&envelope, anchor, context).map_err(|failure| match failure {
+        Stop::Request(_) => stopped(failure),
+        Stop::Payload(_) => reject(Cause::InvalidAuthoredAnchor, anchor),
+    })?;
+    Ok(envelope.commit.commit_id)
+}
+
+pub(super) fn require_authored_birth(
+    envelope: &crate::history::data::CanonicalCommitEnvelope,
+    anchor: EntityId,
+    context: &mut MapKernelContext<'_, '_>,
+) -> Result<(), Stop> {
+    use crate::publication::patch::data::RecordStructuralChange as Change;
     charge(
         context,
         envelope.record_allocations.len() + envelope.patch.authoritative_record_patches.len() + 1,
-    )
-    .map_err(stopped)?;
+    )?;
     let mut owned = false;
     for origin in envelope.output_origins() {
-        charge(context, origin.outputs.len()).map_err(stopped)?;
+        charge(context, origin.outputs.len())?;
         owned |= origin.outputs.contains(&anchor);
     }
     if owned
@@ -242,7 +273,7 @@ fn authored_birth(
                     && patch.structural_change == Change::Created
             })
     {
-        return Err(reject(Cause::InvalidAuthoredAnchor, anchor));
+        return Err("authored birth is absent or belongs to a producer publication".into());
     }
-    Ok(envelope.commit.commit_id)
+    Ok(())
 }

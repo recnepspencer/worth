@@ -271,6 +271,14 @@ impl WorthQueryRegisteredProviderEffects {
         self.emissions
     }
 
+    pub(super) fn seal_output_correspondence_from_publication(
+        &self,
+        publication: &worth_relational::facade::mvcc::RelationalRequiredOutputPublication,
+    ) -> super::super::effect_program::WorthQueryApplicationOutputCorrespondence {
+        self.output_correspondence
+            .clone()
+            .seal_from_publication(publication)
+    }
     pub(super) fn seal_output_correspondence(
         &self,
         commit: &worth_relational::facade::transactions::CommitResult,

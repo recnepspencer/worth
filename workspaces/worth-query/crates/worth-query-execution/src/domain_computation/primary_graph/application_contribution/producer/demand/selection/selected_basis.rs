@@ -174,3 +174,48 @@ where
     }
     Ok(selected)
 }
+
+/// Retained discovery must name the genuine selected occurrence before producer lookup.
+pub(super) fn require_retained_source<Schema: ApplicationSchema + 'static>(
+    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    retained_program_basis: Option<&WorthQueryApplicationReadObservation>,
+    selected_override: Option<&SharedSelectedProductOperation<'_, Schema>>,
+    observation: &crate::basis::WorthQueryProductBranchReadIdentity,
+    family: &'static str,
+) -> Result<(), WorthQueryOutputDemandDenial> {
+    if let Some(retained_basis) = retained_program_basis {
+        if let Some(shared) = selected_override {
+            if !selected_basis::historical_basis_matches(runtime, retained_basis, shared)? {
+                return Err(WorthQueryOutputDemandDenial::new(
+                    WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
+                    family,
+                ));
+            }
+        } else {
+            let retained = runtime
+                .select_application_read_observation_with_request(execution, retained_basis)
+                .map_err(|cause| match cause {
+                    cause @ crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(_) => {
+                        WorthQueryOutputDemandDenial::product_selection(cause, family)
+                    }
+                    crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(_) => {
+                        WorthQueryOutputDemandDenial::new(
+                            WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
+                            family,
+                        )
+                    }
+                })?;
+            if crate::basis::WorthQueryProductBranchReadIdentity::from_observation(
+                retained.product().observation(),
+            ) != *observation
+            {
+                return Err(WorthQueryOutputDemandDenial::new(
+                    WorthQueryOutputDemandDenialKind::ForeignSource,
+                    family,
+                ));
+            }
+        }
+    }
+    Ok(())
+}

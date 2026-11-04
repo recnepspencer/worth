@@ -61,6 +61,11 @@ pub(crate) fn prepare_consulted_authoritative_commit(
         })?
         .publication_cell();
     let diagnostic_capture = runtime.diagnostics.begin_operation_capture();
+    let coupled_read = context
+        .validation_input
+        .coupled_proposal()
+        .cloned()
+        .map(|proposal| (context.validation_input.basis().clone(), proposal));
     let history_bound = prepare_bound_history(execution, runtime, context, &scope_control)?;
     let final_runtime = runtime.with_candidate_symbols(history_bound.candidate_symbols());
     let runtime = &final_runtime;
@@ -139,7 +144,7 @@ pub(crate) fn prepare_consulted_authoritative_commit(
         return Err(TransactionCommitError::interrupted(interruption));
     }
     prepared.release_transaction_retention();
-    let candidate = crate::mvcc::PreparedRelationalCommitCandidate::new(
+    let mut candidate = crate::mvcc::PreparedRelationalCommitCandidate::new(
         runtime_instance_id,
         runtime.schema_contract_runtime.custom_invariant_generation,
         publication_binding,
@@ -167,6 +172,9 @@ pub(crate) fn prepare_consulted_authoritative_commit(
             TransactionCommitError::publication_failed(failure)
         }
     })?;
+    if let Some((before, proposal)) = coupled_read {
+        candidate.retain_coupled_read(runtime, before, proposal);
+    }
     runtime
         .history
         .record_candidate_preparation(candidate.branch());

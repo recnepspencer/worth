@@ -3,6 +3,8 @@ use super::{WorthQueryPrimaryGraphApplicationAttempt, WorthQueryPrimaryGraphComm
 use crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationOwner;
 use std::sync::Arc;
 pub(in crate::domain_computation::primary_graph) struct WorthQueryPendingApplicationPublication {
+    pub(super) members: Vec<crate::domain_computation::primary_graph::provider::CoupledApplicationMember>,
+    pub(super) group_emissions: Option<crate::domain_computation::primary_graph::application_attempt::WorthQueryAdmittedApplicationEmissionBatch>,
     pub(super) predicate: Option<PredicatePreparationOwner>,
     pub(super) product_incarnation: worth_runtime_world::facade::ProductBranchIncarnation,
     pub(super) idempotency: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding,
@@ -46,6 +48,8 @@ impl WorthQueryPendingApplicationPublication {
         let emitted_effect_count = attempt.emitted_effect_count();
         let outcome_identity = attempt.outcome_identity();
         Self {
+            members: Vec::new(),
+            group_emissions: None,
             predicate: None,
             product_incarnation,
             idempotency,
@@ -64,6 +68,19 @@ impl WorthQueryPendingApplicationPublication {
         }
     }
 
+    pub(in crate::domain_computation::primary_graph::provider) fn retain_members(
+        &mut self,
+        members: Vec<crate::domain_computation::primary_graph::provider::CoupledApplicationMember>,
+        emissions: Option<crate::domain_computation::primary_graph::application_attempt::WorthQueryAdmittedApplicationEmissionBatch>,
+    ) {
+        self.members = members;
+        self.group_emissions = emissions;
+    }
+    pub(in crate::domain_computation::primary_graph::provider) fn omit_shared_before_lease(
+        &mut self,
+    ) {
+        self.before = None;
+    }
     pub(super) fn release_before(
         &mut self,
         runtime: &mut worth_relational::facade::runtime::RelationalRuntime,

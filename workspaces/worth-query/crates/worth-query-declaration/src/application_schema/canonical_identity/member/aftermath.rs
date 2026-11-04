@@ -11,6 +11,11 @@ pub(super) fn append_declared_aftermath(
     append_authority(basis, prefix, contract.authority());
     append_mechanism(basis, prefix, contract.mechanism());
     if let Some(binding) = contract.correction_binding() {
+        super::coupled_outputs::append(
+            basis,
+            &format!("{prefix}.correction"),
+            binding.coupled_outputs(),
+        );
         basis.optional_text(
             format!("{prefix}.correction.reapplication-source"),
             binding
@@ -143,6 +148,17 @@ fn append_mechanism(
                 basis.text(format!("{prefix}.preimage-{index}.entity"), locus.entity());
                 basis.text(format!("{prefix}.preimage-{index}.aspect"), locus.aspect());
                 basis.text(format!("{prefix}.preimage-{index}.field"), locus.field());
+            }
+            for (index, locus) in inverse.preimage_demand().relations().iter().enumerate() {
+                basis.text(
+                    format!("{prefix}.preimage-relation-{index}.kind"),
+                    locus.relation(),
+                );
+                basis.text(
+                    format!("{prefix}.preimage-relation-{index}.from"),
+                    locus.from(),
+                );
+                basis.text(format!("{prefix}.preimage-relation-{index}.to"), locus.to());
             }
         }
         Some(PortableCorrectionMechanism::Compensation(compensation)) => {

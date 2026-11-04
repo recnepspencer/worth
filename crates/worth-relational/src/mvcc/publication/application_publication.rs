@@ -2,10 +2,22 @@ use crate::transactions::data::TransactionCommitError;
 mod authored_cascade;
 mod authored_restoration;
 mod authored_retirement;
+mod restored_producer_prior;
 pub use authored_cascade::RelationalAuthoredRetirement;
 pub use authored_restoration::RelationalAuthoredRestoration;
+pub use restored_producer_prior::RelationalRestoredProducerPrior;
 mod completion;
+mod coupled_assembly;
+mod coupled_owners;
 mod custody;
+pub(crate) use coupled_assembly::BoundAuthoredCoupling;
+pub use coupled_assembly::{
+    RelationalAuthoredCoupledCandidate, RelationalAuthoredCoupledProducerAssembly,
+    RelationalAuthoredCoupledTransaction, RelationalCoupledAssemblyFailure,
+    RelationalCoupledAuthoredPublication,
+};
+pub use coupled_owners::{RelationalAuthoredCoupledOwners, RelationalDeclaredCoupledOwner};
+mod predecessor_observation;
 mod producing_implementation;
 mod route_absence;
 mod scope_ownership;
@@ -13,7 +25,11 @@ pub use completion::{
     RequiredOutputPublication, RequiredOutputPublicationMeaning, RequiredOutputRolePosture,
     RequiredOutputRoleTarget,
 };
-pub use custody::RelationalRequiredOutputPublication;
+pub(crate) use custody::prepare as prepare_publications;
+pub use custody::{
+    RelationalPerformedOutputPublications, RelationalPreparedOutputPublications,
+    RelationalRequiredOutputPublication,
+};
 pub use producing_implementation::RequiredOutputProducingImplementation;
 pub use route_absence::RelationalRequiredOutputRouteAbsence;
 
@@ -54,6 +70,19 @@ impl crate::mvcc::ValidatedRelationalProposal {
     /// Bind a running installed producer before immutable publication preparation.
     /// Target references remain untrusted selectors until native allocation and
     /// canonical operation/payload coverage have been checked.
+    /// The real scoped assembly has already bound each admitted writer's
+    /// publication. An outer authored origin must not bind it a second time.
+    pub fn has_coupled_authored_publication(&self) -> bool {
+        self.required_output_publication
+            .as_ref()
+            .is_some_and(|admission| {
+                matches!(
+                    admission.publication,
+                    RequiredOutputPublication::CoupledAuthored { .. }
+                )
+            })
+    }
+
     pub fn bind_required_output_publication(
         mut self,
         installed: &RelationalInstalledApplicationPublicationAuthority,

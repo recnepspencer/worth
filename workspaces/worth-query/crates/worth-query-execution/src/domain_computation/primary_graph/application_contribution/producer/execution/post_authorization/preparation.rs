@@ -82,6 +82,41 @@ where
             commit_authority.mode().clone(),
         )?;
     let identities = owned_identities.borrow();
+    if let Some(adoption) =
+        super::super::coupled_adoption::CoupledAdoption::select::<Schema, Binding, _, _, _>(
+            phase,
+            &input_execution,
+            runtime,
+            selected,
+            &admission,
+            &observed_source,
+            identities.input_identity(),
+            edition,
+        )?
+    {
+        let fresh = runtime
+            .prepare_application_source_expectation::<Operation<Schema, Binding>, _>(
+                phase,
+                &admission,
+                observed_source,
+                identities.mutation_input(),
+            )
+            .map_err(|cause| input_cutoff::source_preparation_denial(Binding::IDENTITY, cause))?;
+        let bound = fresh
+            .consume_stable(&admission)
+            .map_err(|cause| failed(Binding::IDENTITY, cause))?;
+        return Ok(super::super::prepared_plan::ProducerExecutionPlan::new(
+            Vec::new(),
+            move |slots| {
+                assert!(
+                    slots.is_empty(),
+                    "completed coupled output has no fresh compute work"
+                );
+                let _source = bound;
+                adoption.publish(phase, runtime, selected, required_output, Binding::IDENTITY)
+            },
+        ));
+    }
     let prepared_key = prepared_key(&observed_source, *identities.input_identity(), edition)?;
     let prepared_context = if let Some(contract) = Binding::INPUT_REUSE.filter(|contract| {
         contract.determinism() == worth_foundational::facade::DeterminismContract::CanonicalBitwise

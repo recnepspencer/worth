@@ -55,21 +55,39 @@ impl<S: Scenario> ApplicationProgramDefinition<S> for Program {
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("ownership.program.v1");
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        vec![
-            ApplicationFeatureSpec::root::<S, Entry>()
-                .provides::<Output>()
-                .native_action::<lifecycle::CreateBinding<S>>()
-                .finish_action()
-                .native_action::<lifecycle::RetireBinding<S>>()
-                .finish_action()
-                .native_action::<lifecycle::RestoreBinding<S>>()
-                .finish_action()
-                .native_action::<lifecycle::PlainBinding<S>>()
-                .finish_action()
-                .finish(),
-            ApplicationFeatureSpec::root::<S, Parent>()
-                .conditional_operation::<producer::Operation>()
-                .finish(),
-        ]
+        vec![entry_spec::<S>(), {
+            let spec = ApplicationFeatureSpec::root::<S, Parent>()
+                .conditional_operation::<producer::Operation>();
+            let spec = if S::COUPLED {
+                spec.conditional_operation::<coupled::producer::Operation>()
+            } else {
+                spec
+            };
+            spec.finish()
+        }]
+    }
+}
+
+pub(super) fn entry_spec<S: Scenario>() -> ApplicationFeatureSpec {
+    let spec = ApplicationFeatureSpec::root::<S, Entry>()
+        .provides::<Output>()
+        .native_action::<lifecycle::CreateBinding<S>>()
+        .finish_action()
+        .native_action::<lifecycle::RetireBinding<S>>()
+        .finish_action()
+        .native_action::<lifecycle::RestoreBinding<S>>()
+        .finish_action()
+        .native_action::<lifecycle::PlainBinding<S>>()
+        .finish_action();
+    if matches!(S::MODE, 30 | 39 | 40 | 41) {
+        spec.native_action::<relation_splice::inspection::Binding<S>>()
+            .finish_action()
+            .finish()
+    } else if S::MODE == 29 {
+        spec.native_action::<projected_memberships::inspection::Binding<S>>()
+            .finish_action()
+            .finish()
+    } else {
+        spec.finish()
     }
 }

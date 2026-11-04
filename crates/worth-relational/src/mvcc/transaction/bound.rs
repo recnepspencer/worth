@@ -9,6 +9,9 @@ use super::{
 /// It contains no reference to `RelationalRuntime`.
 #[derive(Debug)]
 pub struct BranchBoundRelationalTransaction {
+    pub(crate) prepared_coupled_commands:
+        std::sync::Mutex<Option<crate::transactions::data::MergedCommitPlan>>,
+    pub(crate) authored_coupling: Option<std::sync::Arc<crate::mvcc::BoundAuthoredCoupling>>,
     pub(crate) symbols: crate::runtime::RuntimeSymbolTable,
     pub(crate) read_leases: std::collections::BTreeMap<
         crate::identity::data::PartitionId,

@@ -11,6 +11,7 @@ use super::super::decode_budget::RecordDecodeAttempt;
 mod authorization;
 mod capability;
 mod component_set;
+mod coupled_outputs;
 mod derived_component_set;
 mod derived_relation;
 mod document_history;

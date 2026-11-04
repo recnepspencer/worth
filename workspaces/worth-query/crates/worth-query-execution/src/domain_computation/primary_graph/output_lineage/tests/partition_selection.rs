@@ -56,7 +56,7 @@ fn unrelated_partition_selection(population: u64) {
         "RestoredOutputBinding",
     );
 
-    lineage.record_recovered_prior_output(
+    lineage.record_prior_output(
         lineage.binding_type(&source.output_binding),
         runtime_authority,
         schema.clone(),
@@ -64,14 +64,16 @@ fn unrelated_partition_selection(population: u64) {
         occurrence,
         1,
         Arc::clone(&target),
-        checkpoint_identity([0x31; 32]),
+        crate::domain_computation::primary_graph::output_lineage::PriorOutputOrigin::Recovered {
+            source_identity: checkpoint_identity([0x31; 32]),
+            checkpoint: None,
+        },
         partition(0),
         None,
         [0x41; 32],
-        None,
     );
     for number in 1..=population {
-        lineage.record_recovered_prior_output(
+        lineage.record_prior_output(
             lineage.binding_type(&source.output_binding),
             runtime_authority,
             schema.clone(),
@@ -79,11 +81,10 @@ fn unrelated_partition_selection(population: u64) {
             occurrence,
             number + 1,
             Arc::clone(&sibling),
-            checkpoint_identity([0x31; 32]),
+            crate::domain_computation::primary_graph::output_lineage::PriorOutputOrigin::Recovered { source_identity: checkpoint_identity([0x31; 32]), checkpoint: None },
             partition(number),
             None,
             [0x41; 32],
-            None,
         );
     }
     let coordinate = ProductCoordinate {
@@ -122,6 +123,7 @@ fn unrelated_partition_selection(population: u64) {
         .or_default();
     let slot = records.len();
     let recorded = RecordedOutput {
+        coupled_completion: None,
             producing_implementation: None,
             required_publication: None,
             native_prior_checkpoint: None,

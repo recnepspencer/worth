@@ -33,6 +33,7 @@ pub use operation_reader::{
     WorthQueryObservedOutputAvailability, WorthQueryOutputAvailabilityDenial,
     WorthQueryOutputAvailabilityState,
 };
+mod read_basis;
 mod realized_scope;
 mod relation_field;
 mod relation_identity;
@@ -89,8 +90,9 @@ pub use operation_projection_denial::{
 };
 pub(in crate::domain_computation::primary_graph) use operation_reader::WorthQueryPriorOutputRead;
 pub(in crate::domain_computation::primary_graph) use operation_reader::{
-    CallSequenceDenial, CallShape, CallShapeTransition, CallVisit, ComputationCallCharge,
-    ComputationCallSequence, ExpectedFactKeys, ObservedComputationInputs, PreparedCurrentInputs,
+    AppliedOperationProjection, CallSequenceDenial, CallShape, CallShapeTransition, CallVisit,
+    ComputationCallCharge, ComputationCallSequence, DecisionReads, ExpectedFactKeys,
+    ObservedComputationInputs, PreparedCurrentInputs,
 };
 pub use operation_reader::{
     WorthQueryApplicationOperationInvariantProjectionReader,
@@ -158,6 +160,7 @@ pub struct WorthQueryInvariantEntityIdentity<Schema, Entity> {
     kind: KindId,
     entity: Arc<str>,
     authority_identity: u64,
+    phase: Option<worth_relational::facade::runtime::RelationalAppliedCandidateReadQualification>,
     _marker: PhantomData<fn() -> (Schema, Entity)>,
 }
 
@@ -173,6 +176,8 @@ pub struct WorthQueryInvariantMutationTarget<Schema, Entity> {
         ApplicationSchemaBindingIdentity,
     pub(in crate::domain_computation::primary_graph) admission_identity:
         crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity,
+    pub(in crate::domain_computation::primary_graph) phase:
+        Option<worth_relational::facade::runtime::RelationalAppliedCandidateReadQualification>,
     _marker: PhantomData<fn() -> (Schema, Entity)>,
 }
 

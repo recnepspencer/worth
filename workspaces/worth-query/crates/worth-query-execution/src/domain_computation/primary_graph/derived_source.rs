@@ -21,7 +21,7 @@ pub(in crate::domain_computation) struct DerivedSourceObservation {
     definition: DerivedRelationHandle,
     native: PinnedDerivedRelationRead,
     commitment: [u8; 32],
-    snapshot: SnapshotHandle,
+    snapshot: super::projection_read_origin::ProjectionReadOrigin,
     _memory: Option<ExecutionMemoryReservation>,
 }
 impl DerivedSourceObservation {
@@ -41,7 +41,9 @@ impl DerivedSourceObservation {
     pub(in crate::domain_computation::primary_graph) fn commitment(&self) -> [u8; 32] {
         self.commitment
     }
-    pub(in crate::domain_computation::primary_graph) fn source(&self) -> &SnapshotHandle {
+    pub(in crate::domain_computation::primary_graph) fn source(
+        &self,
+    ) -> &super::projection_read_origin::ProjectionReadOrigin {
         &self.snapshot
     }
     pub(in crate::domain_computation::primary_graph) fn checkpoint(

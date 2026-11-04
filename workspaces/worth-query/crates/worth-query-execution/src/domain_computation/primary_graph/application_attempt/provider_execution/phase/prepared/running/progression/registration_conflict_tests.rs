@@ -84,6 +84,7 @@ fn reject_occupied_registration(
     let execution = phase;
 
     let WorthQueryRunningApplicationCommit {
+        coupled_outputs: _,
         admission,
         lease,
         provider_attempt,
@@ -190,6 +191,7 @@ fn while_peer_is_registered(
     let execution = phase;
 
     let WorthQueryRunningApplicationCommit {
+        coupled_outputs,
         admission,
         lease,
         provider_attempt,
@@ -257,6 +259,7 @@ fn while_peer_is_registered(
         .application_branch_commit_lane(product.observation());
     let coordination = commit_lane.enter();
     let authority = WorthQueryApplicationCommitProgressionAuthority {
+        coupled_outputs: &coupled_outputs,
         application: &world.application,
         provider: &world.application.runtime.primary_provider,
         admission: &admission,
@@ -274,6 +277,7 @@ fn while_peer_is_registered(
         registered
             .progress(
                 &phase.borrowed_request_for_test(),
+                phase,
                 &authority,
                 crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )

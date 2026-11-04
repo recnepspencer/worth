@@ -25,7 +25,8 @@ pub use canonical_basis::WorthQueryAftermathCanonicalArtifact;
 pub use correction_authority::InstalledCorrectionAuthority;
 pub use correction_mechanism::{
     InstalledCompensation, InstalledCorrectionMechanism, InstalledLoweringCorrespondenceRef,
-    InstalledPreImageDemand, InstalledPreImageLocus, InstalledRecordedInverse,
+    InstalledPreImageDemand, InstalledPreImageLocus, InstalledPreImageRelationLocus,
+    InstalledRecordedInverse,
 };
 pub use denial::{
     WorthQueryAftermathInstallationDenial, WorthQueryAftermathInstallationDenialKind,

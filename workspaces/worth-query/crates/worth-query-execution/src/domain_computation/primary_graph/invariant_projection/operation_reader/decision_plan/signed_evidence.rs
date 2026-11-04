@@ -61,6 +61,11 @@ impl<Schema: ApplicationSchema, Operation>
                 kind,
                 entity: source.evidence_entity.clone().into(),
                 authority_identity: self.reader.authority_identity,
+                phase: self
+                    .reader
+                    .native
+                    .candidate_identity()
+                    .map(|id| id.qualification()),
                 _marker: std::marker::PhantomData,
             };
             let locator = self
@@ -113,6 +118,11 @@ impl<Schema: ApplicationSchema, Operation>
             kind: layout.entity_kind,
             entity: "native program activation".into(),
             authority_identity: self.reader.authority_identity,
+            phase: self
+                .reader
+                .native
+                .candidate_identity()
+                .map(|id| id.qualification()),
             _marker: std::marker::PhantomData,
         };
         self.reader

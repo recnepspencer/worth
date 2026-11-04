@@ -44,6 +44,16 @@ impl StructuralWalkObservation {
         context: &mut MapKernelContext<'_, '_>,
         control: Option<&dyn Fn() -> Result<(), Cause>>,
     ) -> Result<bool, Failure> {
+        self.remains_equal_on_pin(pin, pin.snapshot().into(), execution, context, control)
+    }
+    pub(in crate::domain_computation::primary_graph) fn remains_equal_on_pin<Phase>(
+        &self,
+        pin: &RelationalPinnedRead<Phase>,
+        origin: crate::domain_computation::primary_graph::projection_read_origin::ProjectionReadOriginRef<'_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        context: &mut MapKernelContext<'_, '_>,
+        control: Option<&dyn Fn() -> Result<(), Cause>>,
+    ) -> Result<bool, Failure> {
         let mut poll = || {
             Self::checkpoint(context).map_err(Failure::Execution)?;
             if let Some(control) = control {
@@ -54,7 +64,7 @@ impl StructuralWalkObservation {
         poll()?;
         // Both the original body and selected pin are owner-issued actual truth.
         // Admission above is mandatory even for this immutable-source shortcut.
-        if self.source() == pin.snapshot() {
+        if self.source() == &origin {
             poll()?;
             return Ok(true);
         }
@@ -81,19 +91,26 @@ impl StructuralWalkObservation {
                 }
             }
         };
-        if current.visits().len() != self.native.visits().len()
-            || current.relations().len() != self.native.relations().len()
+        Self::same_native(&self.native, &current, poll)
+    }
+    pub(super) fn same_native(
+        original: &PinnedStructuralWalk,
+        current: &PinnedStructuralWalk,
+        mut poll: impl FnMut() -> Result<(), Failure>,
+    ) -> Result<bool, Failure> {
+        if current.visits().len() != original.visits().len()
+            || current.relations().len() != original.relations().len()
         {
             poll()?;
             return Ok(false);
         }
-        for (before, after) in self.native.visits().iter().zip(current.visits()) {
+        for (before, after) in original.visits().iter().zip(current.visits()) {
             poll()?;
             if before != after {
                 return Ok(false);
             }
         }
-        for (before, after) in self.native.relations().iter().zip(current.relations()) {
+        for (before, after) in original.relations().iter().zip(current.relations()) {
             poll()?;
             if before != after {
                 return Ok(false);

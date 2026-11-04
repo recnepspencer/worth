@@ -39,6 +39,11 @@ impl PreparedSelections {
         fact: &WorthQueryApplicationObservedFact,
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
+        applied: Option<
+            &worth_relational::facade::runtime::RelationalPinnedRead<
+                worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+            >,
+        >,
         control: StorageControl<'_, '_>,
     ) -> Result<bool, WorthQueryDecisionReadSetFailure> {
         super::check_control(control)?;
@@ -55,7 +60,7 @@ impl PreparedSelections {
         } = fact
         else {
             return fact
-                .remains_equal_in(runtime, execution, snapshot)
+                .remains_equal_in_image(runtime, execution, snapshot, applied)
                 .map_err(super::super::fact_read_set_failure);
         };
         // Preserve scalar malformed-limit refusal before index admission.
@@ -89,6 +94,19 @@ impl PreparedSelections {
             self.selectors.insert(key.clone(), prepared);
         }
         let prepared = &self.selectors[&key];
+        if let Some(candidate) = applied {
+            return match candidate.lookup_applied_entity_field(execution, prepared, value, BoundedIndexParityMode::Production, *candidate_limit) {
+                Ok(current) => Ok(!current.overflowed()
+                    && prepared.retain_definition().as_ref() == definition.as_ref()
+                    && current.candidate_entity_ids() == candidates),
+                Err(worth_relational::facade::indexes::AppliedEntityFieldLookupDenial::Execution(cause)) => Err(super::super::fact_read_set_failure(
+                    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::relational_read_stopped(cause, "applied indexed comparison"))),
+                Err(worth_relational::facade::indexes::AppliedEntityFieldLookupDenial::PredecessorIndex(cause)) => comparison_stop(BoundedEntityFieldLookupAdmissionStop::Lookup(cause)),
+                Err(worth_relational::facade::indexes::AppliedEntityFieldLookupDenial::InvalidCandidateLimit
+                    | worth_relational::facade::indexes::AppliedEntityFieldLookupDenial::ForeignPredecessor
+                    | worth_relational::facade::indexes::AppliedEntityFieldLookupDenial::ExactBasisRequired) => Ok(false),
+            };
+        }
         let current = runtime.index_access().execute_prepared_entity_field_lookup(
             prepared,
             value,

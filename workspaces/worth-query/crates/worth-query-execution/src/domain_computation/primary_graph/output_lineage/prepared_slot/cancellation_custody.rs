@@ -45,6 +45,7 @@ fn a_canceled_prepared_publication_cannot_take_its_priors_custody() {
     let output_binding_type = lineage.binding_type(&source.output_binding);
     let owner = Arc::new(Mutex::new(lineage));
     let mut prepared = PreparedOutputLineageSlot {
+        coupled_completion: None,
         owner: Arc::clone(&owner),
         output_binding_type,
         source,

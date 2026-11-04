@@ -50,6 +50,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
                 kind: layout.from,
                 entity: member.entity.clone(),
                 authority_identity: self.authority_identity,
+                phase: self.native.candidate_identity().map(|id| id.qualification()),
                 _marker: std::marker::PhantomData,
             };
             // Both Native pins are admitted at this reader's same immutable snapshot.

@@ -34,6 +34,7 @@ pub(crate) use embedded_checkpoint::EmbeddedCheckpointEnvelopeRef;
 pub use retained_entity_selection::CanonicalRetainedEntitySelection;
 #[path = "canonical_commit_envelope/descriptive_touches.rs"]
 mod descriptive_touches;
+mod payload_encoding;
 mod required_output_codec_retirement;
 mod required_output_materialization;
 mod required_output_origin;
@@ -49,9 +50,9 @@ pub(crate) use required_output_materialization::{
 };
 pub(crate) use required_output_origin::validate_authored_restoration_candidate;
 pub(crate) use required_output_origin::{
-    CanonicalAuthoredRestoration, CanonicalAuthoredRetirement, CanonicalOutputMember,
-    CanonicalOutputPublication, CanonicalProducerRetirement, CanonicalRequiredOutputOrigin,
-    CanonicalRequiredOutputRelation,
+    CanonicalAuthoredRestoration, CanonicalAuthoredRetirement, CanonicalCoupledAuthoredPublication,
+    CanonicalCoupledAuthoredSources, CanonicalOutputMember, CanonicalOutputPublication,
+    CanonicalProducerRetirement, CanonicalRequiredOutputOrigin, CanonicalRequiredOutputRelation,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -67,6 +68,9 @@ pub struct CanonicalCommitEnvelope {
     pub(crate) producer_cascade_retirement: Option<std::sync::Arc<CanonicalProducerRetirement>>,
     pub(crate) authored_cascade_retirement: Option<std::sync::Arc<CanonicalAuthoredRetirement>>,
     pub(crate) authored_cascade_restoration: Option<std::sync::Arc<CanonicalAuthoredRestoration>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) coupled_authored_publication:
+        Option<std::sync::Arc<CanonicalCoupledAuthoredPublication>>,
     #[serde(default)]
     pub(crate) required_output_materialization:
         Option<std::sync::Arc<CanonicalRequiredOutputMaterialization>>,
@@ -171,6 +175,7 @@ impl CanonicalCommitEnvelope {
             producer_cascade_retirement: None,
             authored_cascade_retirement: None,
             authored_cascade_restoration: None,
+            coupled_authored_publication: None,
             required_output_materialization: None,
             commit,
             branch_context,
@@ -264,62 +269,6 @@ impl CanonicalCommitEnvelope {
         let mut bytes = Vec::new();
         self.write_authoritative_payload(&mut bytes)?;
         Ok(bytes)
-    }
-
-    fn write_authoritative_payload<W: std::io::Write>(
-        &self,
-        writer: &mut W,
-    ) -> Result<(), rmp_serde::encode::Error> {
-        let identity_and_authority = (
-            &self.commit,
-            &self.branch_context,
-            &self.branch_cell_checkpoint,
-            &self.authority_kind,
-            &self.strategy_artifacts,
-            &self.merge_execution_authority,
-            &self.merge_parent_branches,
-            &self.merge_base_commits,
-        );
-        let canonical_semantics = (
-            &self.required_output_origin,
-            &self.authored_cascade_retirement,
-            &self.authored_cascade_restoration,
-            &self.required_output_materialization,
-            &self.schema_version,
-            &self.schema_authority,
-            &self.merged_plan,
-            &self.record_allocations,
-            &self.patch,
-            &self.descriptive_touches,
-            &self.lineage,
-            &self.schema_transition,
-            &self.schema_continuation_descriptor,
-            &self.schema_reconciliation_descriptor,
-            &self.descriptor_semantics_version,
-        );
-        if let Some(event) = &self.producer_cascade_retirement {
-            return rmp_serde::encode::write_named(
-                writer,
-                &(
-                    identity_and_authority,
-                    canonical_semantics,
-                    &self.authored_index_writes,
-                    event,
-                ),
-            );
-        }
-        if self.authored_index_writes.is_unavailable() {
-            rmp_serde::encode::write_named(writer, &(identity_and_authority, canonical_semantics))
-        } else {
-            rmp_serde::encode::write_named(
-                writer,
-                &(
-                    identity_and_authority,
-                    canonical_semantics,
-                    &self.authored_index_writes,
-                ),
-            )
-        }
     }
 
     pub(crate) fn committed_record_changes(

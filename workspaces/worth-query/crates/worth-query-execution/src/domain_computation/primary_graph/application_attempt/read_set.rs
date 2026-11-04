@@ -64,6 +64,7 @@ mod aggregate;
 mod components;
 mod observation_admission;
 mod observations;
+mod projected_admission;
 mod projected_completion;
 mod projected_extension;
 mod relation_observation;
@@ -316,18 +317,6 @@ where
         >,
         WorthQueryApplicationAttemptDenial,
     > {
-        if !admission.belongs_to(
-            self.runtime.authority_identity(),
-            &self.installed_schema.binding_identity(),
-        ) {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::ForeignApplication,
-                admission.operation(),
-            ));
-        }
-        admission
-            .validate_installed_operation(&self.runtime.installed_operations)
-            .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)?;
         if !projection.belongs_to(
             self.runtime.authority_identity(),
             &self.installed_schema.binding_identity(),
@@ -338,55 +327,12 @@ where
                 admission.operation(),
             ));
         }
-        admission
-            .validate_current_authority()
-            .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)?;
-        let graph = self.runtime.primary_graph().ok_or_else(|| {
-            denial(
-                WorthQueryApplicationAttemptDenialKind::ForeignApplication,
-                admission.operation(),
-            )
-        })?;
-        let root = admission.scope_entity_id();
-        let (lease, projected_scope, decision_reads, dependent_source_facts, consumed_outputs) =
-            projection.into_lease_and_realized_scope();
-        // A read whose failure the decision swallowed left an outcome its fact
-        // does not hold, so no fact can stand for it.
-        let (expected_facts, computation_reads) = decision_reads
-            .into_expected(execution)
-            .map_err(|failed| failed.into_attempt_denial(admission.operation()))?;
-        let mut admission = admission;
-        let admitted_source_facts = validate_source_facts(execution, &mut admission, &lease)?;
-        let source_facts = merge_source_facts(
-            admitted_source_facts,
-            dependent_source_facts,
-            admission.operation(),
-            super::retained_decision_facts::StorageControl::new(
-                allocation_policy,
-                Some(admission.publication_request()),
-            )
-            .with_execution(*execution),
-        )?;
-        let layout = Arc::clone(&lease.layout);
-        Ok(WorthQueryApplicationReadAttempt {
-            execution: *execution,
-            value_decode: super::super::value_decode::ValueDecodeState::new(
-                self.installed_schema.value_bindings().clone(),
-            ),
+        self.begin_projected_read_parts(
+            execution,
             admission,
-            lease,
-            layout,
-            entity_resolution: graph.retain_entity_resolution_context(),
-            read_scope: WorthQueryApplicationReadScope::projected(root, projected_scope),
-            expected_facts: Some(expected_facts),
-            computation_reads,
-            installed_read_scopes: BTreeMap::new(),
-            facts: BTreeMap::new(),
-            source_facts,
-            consumed_outputs,
-            native_completion: None,
-            _phase: PhantomData,
-        })
+            projected_admission::ProjectedReadParts::from_projection(projection),
+            allocation_policy,
+        )
     }
 }
 mod entity_resolution;

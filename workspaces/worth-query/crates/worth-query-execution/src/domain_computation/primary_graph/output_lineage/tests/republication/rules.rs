@@ -183,6 +183,7 @@ fn a_republished_stable_alias_holds_the_performed_sequence() {
             suspended_generation,
             |row| {
                 let mut row = RecordedOutput {
+                    coupled_completion: None,
                     producing_implementation: None,
                     required_publication: None,
                     native_prior_checkpoint: None,
@@ -253,6 +254,7 @@ fn a_stable_alias_is_compared_by_the_witness_of_its_origin() {
         stage.retain(
             alias_generation,
             |row| RecordedOutput {
+                coupled_completion: None,
                 producing_implementation: None,
                 required_publication: None,
                 native_prior_checkpoint: None,

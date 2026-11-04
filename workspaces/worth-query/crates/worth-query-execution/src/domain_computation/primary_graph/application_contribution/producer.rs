@@ -4,12 +4,12 @@ use worth_query_declaration::facade::application_operation::{
     ApplicationQueryMutationSource, WorthQueryApplicationOutputRole, WorthQueryExactlyOneOutput,
 };
 use worth_query_declaration::facade::application_query::ApplicationQueryBinding;
+use worth_query_declaration::facade::application_schema::ApplicationInvariantExecutionPoint;
 use worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding;
-use worth_query_declaration::facade::application_schema::{
-    ApplicationEntityMarkerIdentity, ApplicationInvariantExecutionPoint,
-};
 use worth_query_installation::facade::ApplicationSchema;
 
+mod coupled_assembly;
+pub(in crate::domain_computation::primary_graph) use coupled_assembly::DeclaredProducerAssembly;
 mod demand;
 mod denial_value;
 pub(in crate::domain_computation::primary_graph) use demand::MatchedRequiredPredecessors;
@@ -68,54 +68,10 @@ pub(in crate::domain_computation::primary_graph) use source_qualification::{
     OutputSourceAddress, QualifiedOutputSource,
 };
 
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub enum WorthQueryProducerLifecyclePosture {
-    Initial,
-    Preserve,
-}
-
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub struct WorthQueryProducerApplicability {
-    profile_kind: &'static str,
-    lifecycle: WorthQueryProducerLifecyclePosture,
-}
-
-impl WorthQueryProducerApplicability {
-    pub const fn new(
-        profile_kind: &'static str,
-        lifecycle: WorthQueryProducerLifecyclePosture,
-    ) -> Self {
-        Self {
-            profile_kind,
-            lifecycle,
-        }
-    }
-
-    pub const fn profile_kind(self) -> &'static str {
-        self.profile_kind
-    }
-
-    pub const fn lifecycle(self) -> WorthQueryProducerLifecyclePosture {
-        self.lifecycle
-    }
-}
-
-pub trait WorthQueryProducerOutputFamily<Schema>: Sized + 'static
-where
-    Schema: ApplicationSchema,
-{
-    type Source: ApplicationQueryBinding<Schema>;
-    /// The entity every producer of this family outputs. A producer whose
-    /// output role names another entity fails to compile.
-    type Entity: ApplicationEntityMarkerIdentity<Schema> + 'static;
-
-    const IDENTITY: &'static str;
-    const SUPPORTED: &'static [WorthQueryProducerApplicability];
-
-    fn profile_kind(
-        source: &<<Self::Source as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value,
-    ) -> &'static str;
-}
+pub use worth_query_declaration::facade::application_program::{
+    WorthQueryApplicationOutputDemand, WorthQueryProducerApplicability,
+    WorthQueryProducerLifecyclePosture, WorthQueryProducerOutputFamily,
+};
 
 pub(super) type ProducerSourceBinding<Schema, Binding> =
     <<Binding as WorthQueryApplicationProducerBinding<Schema>>::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::Source;
@@ -140,18 +96,6 @@ where
     fn assessment_posture(
         source: &<<Self::Source as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value,
     ) -> WorthQueryWorkflowAssessmentPosture;
-}
-
-/// Typed request for one installed output family from one authored source.
-pub trait WorthQueryApplicationOutputDemand<Schema>: Sized + 'static
-where
-    Schema: ApplicationSchema,
-{
-    type OutputFamily: WorthQueryProducerOutputFamily<Schema>;
-
-    fn source_intent(
-        &self,
-    ) -> <<Self::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::Source as ApplicationQueryBinding<Schema>>::Input;
 }
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]

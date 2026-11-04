@@ -11,7 +11,9 @@ use worth_query_host::facade::{
 use worth_query_testkit_document_retention::facade::document_retention_model::host::host_limits;
 mod readiness;
 mod schema;
+mod stage_schema;
 use schema::*;
+use stage_schema::*;
 mod co_checkpoint_tamper;
 mod co_courts;
 mod co_history;
@@ -19,8 +21,10 @@ mod co_refusals;
 mod co_roles;
 mod correction;
 mod correction_courts;
+mod coupled;
 mod lifecycle;
 mod lifecycle_handlers;
+mod native_checkpoint_tamper;
 mod producer;
 mod program;
 mod query;
@@ -80,3 +84,7 @@ fn independent_producer_keeps_shared_context_installation() {
     let installed = install::<3>();
     assert!(installed.is_ok(), "{:?}", installed.err());
 }
+
+mod projected_memberships;
+
+mod relation_splice;

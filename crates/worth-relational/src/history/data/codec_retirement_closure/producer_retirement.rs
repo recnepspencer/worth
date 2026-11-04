@@ -11,6 +11,7 @@ pub(super) fn validate(
     runtime: &RelationalRuntime,
     envelope: &CanonicalCommitEnvelope,
     context: &mut MapKernelContext<'_, '_>,
+    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
 ) -> Result<(), Stop> {
     let Some(event) = &envelope.producer_cascade_retirement else {
         return Ok(());
@@ -58,7 +59,7 @@ pub(super) fn validate(
         &mut |commit| runtime.history.canonical_envelope(commit),
         &mut |event, context| {
             if event.required_output_materialization.is_some() {
-                super::materialization::validate_semantics(runtime, event, context, None)?;
+                super::materialization::validate_semantics(runtime, event, context, None, schema)?;
             }
             Ok(())
         },

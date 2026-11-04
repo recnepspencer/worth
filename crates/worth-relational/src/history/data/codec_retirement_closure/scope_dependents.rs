@@ -115,3 +115,44 @@ fn select(
     }
     Ok(None)
 }
+
+/// Surviving opted-in writers whose owned edges consume a retiring authored source
+/// or a member of its admitted source-scope closure. Selection uses the closure
+/// owner's already-authenticated current publications; this never walks history.
+pub(super) fn linked_owners(
+    anchors: &[EntityId],
+    retiring: &[crate::history::data::SelectedOutputPublication],
+    current: &[crate::history::data::SelectedOutputPublication],
+    context: &mut MapKernelContext<'_, '_>,
+) -> Result<Vec<crate::history::data::SelectedOutputPublication>, Stop> {
+    let mut selected = Vec::new();
+    for publication in current {
+        let origin = &publication.origin;
+        charge(context, retiring.len() + origin.members.len() + 1)?;
+        if !origin.source_scope_owned
+            || origin
+                .members
+                .iter()
+                .all(|m| m.posture == RequiredOutputRolePosture::Retire)
+            || retiring.iter().any(|p| Arc::ptr_eq(&p.origin, origin))
+        {
+            continue;
+        }
+        let mut linked = false;
+        for edge in &origin.relations {
+            charge(context, anchors.len() + 1)?;
+            linked |= anchors.contains(&edge.source) || anchors.contains(&edge.target);
+            for removed in retiring {
+                charge(context, removed.origin.members.len())?;
+                linked |= removed.origin.members.iter().any(|m| {
+                    m.posture != RequiredOutputRolePosture::Retire
+                        && (m.id == edge.source || m.id == edge.target)
+                });
+            }
+        }
+        if linked {
+            selected.push(publication.clone());
+        }
+    }
+    Ok(selected)
+}

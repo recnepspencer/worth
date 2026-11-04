@@ -83,6 +83,13 @@ pub enum WorthQueryProviderSessionDenialKind {
 /// this description does not itself grant retry or cleanup authority.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryProviderSessionFailure {
+    relation_preimage: Option<
+        std::sync::Arc<
+            crate::domain_computation::application_aftermath::WorthQueryRelationPreImageFailure,
+        >,
+    >,
+    candidate_support:
+        Option<std::sync::Arc<crate::domain_computation::WorthQueryInvariantExecutionFailure>>,
     managed_index:
         Option<crate::domain_computation::primary_graph::WorthQueryManagedIndexWorkDenial>,
     kind: WorthQueryProviderSessionDenialKind,
@@ -108,6 +115,33 @@ pub struct WorthQueryProviderSessionFailure {
 }
 
 impl WorthQueryProviderSessionFailure {
+    pub fn relation_preimage_failure(
+        &self,
+    ) -> Option<&crate::domain_computation::application_aftermath::WorthQueryRelationPreImageFailure>
+    {
+        self.relation_preimage.as_deref()
+    }
+    pub(in crate::domain_computation) fn with_relation_preimage_failure(
+        mut self,
+        cause: crate::domain_computation::application_aftermath::WorthQueryRelationPreImageFailure,
+    ) -> Self {
+        self.relation_preimage = Some(std::sync::Arc::new(cause));
+        self
+    }
+    /// Exact typed complete-candidate support refusal, including the affected writer source.
+    pub fn candidate_support_failure(
+        &self,
+    ) -> Option<&crate::domain_computation::WorthQueryInvariantExecutionFailure> {
+        self.candidate_support.as_deref()
+    }
+    pub(in crate::domain_computation) fn with_candidate_support_failure(
+        mut self,
+        cause: crate::domain_computation::WorthQueryInvariantExecutionFailure,
+    ) -> Self {
+        self.detail = cause.detail().to_owned();
+        self.candidate_support = Some(std::sync::Arc::new(cause));
+        self
+    }
     pub fn new(
         kind: WorthQueryProviderSessionDenialKind,
         stage: WorthQueryProviderSessionProtocolStage,
@@ -115,6 +149,8 @@ impl WorthQueryProviderSessionFailure {
         counters: WorthQueryProviderSessionProtocolCounters,
     ) -> Self {
         Self {
+            relation_preimage: None,
+            candidate_support: None,
             managed_index: None,
             kind,
             stage,

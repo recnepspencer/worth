@@ -1,5 +1,8 @@
 //! Primary Graph application contracts.
 mod managed_index;
+pub use crate::domain_computation::application_aftermath::{
+    WorthQueryRelationPreImageDenial, WorthQueryRelationPreImageFailure,
+};
 pub use crate::domain_computation::primary_graph::application_attempt::WorthQuerySignedCreationPreparationDenial;
 pub use crate::domain_computation::primary_graph::application_resource::{
     WorthQueryApplicationResource, WorthQueryApplicationResourceProvider,

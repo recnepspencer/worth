@@ -92,6 +92,7 @@ fn primary_comparison_scope_preserves_registration_cancellation_cleanup_and_retr
                 let running = start_managed_application_commit(phase, &world.application, prepared)
                     .unwrap_or_else(|outcome| panic!("overlay fixture must start: {outcome:?}"));
                 let WorthQueryRunningApplicationCommit {
+                    coupled_outputs: _,
                     admission,
                     lease,
                     provider_attempt,

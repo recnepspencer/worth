@@ -76,6 +76,58 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     where
         Binding: ApplicationMutationBinding<Schema>,
     {
+        self.prepare_mutation_handler_plan_on_basis::<Binding>(
+            phase,
+            identities,
+            principal_identity,
+            source_query,
+            admission,
+            None,
+            on_contact,
+            allocation_policy,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub(in crate::domain_computation::primary_graph) fn prepare_mutation_handler_plan_on_basis<
+        'advance: 'authority,
+        'authority,
+        Binding,
+    >(
+        &self,
+        phase: &'advance WorthQueryAdvancementPhase<'advance>,
+        identities: &ApplicationMutationIdentities<'_, Schema, Binding>,
+        principal_identity: &Binding::PrincipalIdentity,
+        source_query: Option<
+            &crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess<
+                '_,
+                Schema,
+            >,
+        >,
+        admission: WorthQueryAdmittedApplicationOperation<
+            Schema,
+            Binding::Operation,
+            Binding::Input,
+            <Binding::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
+        >,
+        applied: Option<(
+            &worth_relational::facade::runtime::RelationalPinnedRead,
+            &worth_relational::facade::runtime::RelationalPinnedRead<
+                worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+            >,
+        )>,
+        on_contact: impl FnOnce(),
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, 'authority>,
+    ) -> Result<
+        PreparedMutationHandler<'advance, 'authority, Schema, Binding>,
+        WorthQueryMutationHandlerExecutionReport<
+            WorthQueryCompletedMutationCandidate<Schema, Binding>,
+            Binding::Denial,
+        >,
+    >
+    where
+        Binding: ApplicationMutationBinding<Schema>,
+    {
         let execution = match phase.execution_for(&self.runtime.product_runtime) {
             Ok(execution) => execution,
             Err(cause) => {
@@ -156,12 +208,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 WorthQueryMutationHandlerWork::NotStarted,
             ));
         }
-        let projected = {
-            self.mutation_projection
-                .project_admitted_operation_with_source_access(
-                    &phase_request,
-                    &admission,
-                    |reader, scope| {
+        let projection = |reader: &mut crate::domain_computation::primary_graph::WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Binding::Operation>, scope: &crate::domain_computation::primary_graph::WorthQueryInvariantEntityIdentity<Schema, <Binding::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope>| {
                         let mut decision_reader = DecisionReader::<Schema, Binding>::new(
                             reader,
                             scope,
@@ -178,11 +225,46 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         on_contact();
                         handler_contacted = true;
                         handler.prepare_decision(input, &mut decision_reader)
-                    },
+                    };
+        let projected = match applied {
+            None => self
+                .mutation_projection
+                .project_admitted_operation_with_source_access(
+                    &phase_request,
+                    &admission,
+                    projection,
                     allocation_control.policy(),
                     source_query,
                     Some(&context_use),
                 )
+                .map(|projected| {
+                    let (plan, projection, work) = projected.into_parts();
+                    (
+                        plan,
+                        super::projection::PreparedMutationProjection::Committed(projection),
+                        work,
+                    )
+                }),
+            Some((before, candidate)) => self
+                .mutation_projection
+                .project_applied_operation(
+                    &phase_request,
+                    &admission,
+                    before,
+                    candidate,
+                    projection,
+                    allocation_control.policy(),
+                )
+                .map(|(plan, decision, work)| {
+                    (
+                        plan,
+                        super::projection::PreparedMutationProjection::Applied {
+                            decision,
+                            pin: candidate.clone(),
+                        },
+                        work,
+                    )
+                }),
         };
         let projected = match projected {
             Ok(projected) => projected,
@@ -198,7 +280,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 ));
             }
         };
-        let (plan, projection, work) = projected.into_parts();
+        let (plan, projection, work) = projected;
         // A decision can swallow its poll result, but cannot turn an observed
         // interruption into prepared compute, a candidate, or reusable input.
         if let Some(interruption) = interruption.get() {
@@ -238,11 +320,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     };
                     let mut admission = admission;
                     admission.record_decision_context_use(context_use);
-                    let reads = runtime
-                        .begin_projected_application_read_attempt_with_request(
+                    let reads = projection
+                        .begin_read_attempt(
+                            runtime,
                             &phase_request,
                             admission,
-                            projection,
                             allocation_control.policy(),
                         )
                         .map_err(MutationHandlerExecutionDenial::Attempt)?

@@ -15,6 +15,7 @@ impl WorthQueryPrimaryGraphProvider {
             &crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
         >,
         restoration: Option<worth_relational::facade::mvcc::RequiredOutputPublication>,
+        coupling: Option<super::authored_coupling::NativeAuthoredCoupling<'_>>,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         (worth_relational::facade::mvcc::ValidatedRelationalProposal, Option<crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationOwner>),
@@ -58,38 +59,100 @@ impl WorthQueryPrimaryGraphProvider {
         } else {
             None
         };
-        let candidate = self.graph.with_runtime_mut(execution, |runtime| {
-            if let Some(pending) = aftermath_causality {
-                let observed_parent = basis
-                    .observation()
-                    .commit_receipt()
-                    .cloned()
-                    .ok_or_else(aftermath_failure)?;
-                if pending.parent() != &observed_parent || pending.target_branch() != branch {
-                    return Err(aftermath_failure());
+        let candidate = match coupling {
+            None => self.graph.with_runtime_mut(execution, |runtime| {
+                if let Some(pending) = aftermath_causality {
+                    let observed_parent = basis
+                        .observation()
+                        .commit_receipt()
+                        .cloned()
+                        .ok_or_else(aftermath_failure)?;
+                    if pending.parent() != &observed_parent || pending.target_branch() != branch {
+                        return Err(aftermath_failure());
+                    }
                 }
+                let mut transaction = runtime
+                    .begin_branch_transaction_with_control(
+                        basis,
+                        worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+                        control.relational().clone(),
+                    )
+                    .map_err(map_transaction_admission_failure)?;
+                transaction
+                    .push_batch(batch, allocation_control.policy())
+                    .map_err(map_transaction_staging_failure)?;
+                #[cfg(test)]
+                self.fault_port.candidate_staged_for_validation();
+                Ok::<_, WorthQueryInvariantExecutionFailure>(match &factory {
+                    Some(factory) => runtime.validate_branch_transaction_with_source_context(
+                        execution,
+                        transaction,
+                        factory,
+                    ),
+                    None => transaction.validate(execution, runtime),
+                })
+            }),
+            Some(coupling) => {
+                let publisher = self
+                    .graph
+                    .application_publication
+                    .as_ref()
+                    .ok_or_else(owner_failure)?;
+                let retirement = if coupling.owners.retirement_authorities().next().is_some() {
+                    Some(
+                        publisher
+                            .owner
+                            .admit_authored_output_retirements(
+                                coupling.owners.retirement_authorities(),
+                            )
+                            .ok_or_else(owner_failure)?,
+                    )
+                } else {
+                    None
+                };
+                let transaction = self.graph.with_runtime_mut(execution, |runtime| {
+                    let mut transaction = runtime
+                        .begin_branch_transaction_with_control(
+                            basis,
+                            worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+                            control.relational().clone(),
+                        )
+                        .map_err(map_transaction_admission_failure)?;
+                    transaction
+                        .push_batch(batch, allocation_control.policy())
+                        .map_err(map_transaction_staging_failure)?;
+                    transaction
+                        .bind_authored_coupled_producers(
+                            &publisher.native,
+                            coupling.owners,
+                            retirement,
+                        )
+                        .map_err(map_validation_failure)
+                })?;
+                let port = self
+                    .graph
+                    .with_runtime(execution, |runtime| runtime.preparation_port());
+                let transaction = port
+                    .prepare_authored_coupled_transaction(execution, transaction, coupling.assembly)
+                    .map_err(map_validation_failure)?
+                    .ok_or_else(|| {
+                        WorthQueryInvariantExecutionFailure::new(
+                            WorthQueryInvariantExecutionDenialKind::ProviderRejected,
+                            "declared producer refused coupled preparation",
+                        )
+                    })?;
+                Ok(self
+                    .graph
+                    .with_runtime_mut(execution, |runtime| match &factory {
+                        Some(factory) => runtime.validate_branch_transaction_with_source_context(
+                            execution,
+                            transaction,
+                            factory,
+                        ),
+                        None => transaction.validate(execution, runtime),
+                    }))
             }
-            let mut transaction = runtime
-                .begin_branch_transaction_with_control(
-                    basis,
-                    worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
-                    control.relational().clone(),
-                )
-                .map_err(map_transaction_admission_failure)?;
-            transaction
-                .push_batch(batch, allocation_control.policy())
-                .map_err(map_transaction_staging_failure)?;
-            #[cfg(test)]
-            self.fault_port.candidate_staged_for_validation();
-            Ok::<_, WorthQueryInvariantExecutionFailure>(match &factory {
-                Some(factory) => runtime.validate_branch_transaction_with_source_context(
-                    execution,
-                    transaction,
-                    factory,
-                ),
-                None => transaction.validate(execution, runtime),
-            })
-        });
+        };
         let candidate = candidate?.map_err(|failure| map_failed_candidate(failure, &control))?;
         let candidate = match restoration {
             Some(publication) => candidate

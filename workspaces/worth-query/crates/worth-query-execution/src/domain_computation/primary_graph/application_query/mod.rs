@@ -199,3 +199,7 @@ pub use projection::retained_projection::{
     WorthQueryMaterializedQueryProjection, WorthQueryMaterializedQueryRelation,
     WorthQueryMaterializedQueryRow, WorthQueryProjectionMaterializationRefusal,
 };
+
+pub(in crate::domain_computation::primary_graph) use observed_source::{
+    AppliedQuerySource, AppliedSourcePublication,
+};

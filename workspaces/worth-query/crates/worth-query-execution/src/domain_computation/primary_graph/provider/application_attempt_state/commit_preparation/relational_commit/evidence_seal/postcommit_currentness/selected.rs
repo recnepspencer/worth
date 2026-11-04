@@ -123,6 +123,7 @@ impl SelectedRebase {
         snapshot: &SnapshotHandle,
         retired: &BTreeSet<EntityId>,
         producer: bool,
+        predecessor: Option<&worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
 
         control: StorageControl<'_, '_>,
     ) -> RebasedSourceFacts {
@@ -143,7 +144,14 @@ impl SelectedRebase {
                 continue;
             }
             let prepared = resolution::PreparedFactRebase::prepare(
-                runtime, execution, snapshot, fact, retired, producer, endpoints,
+                runtime,
+                execution,
+                snapshot,
+                fact,
+                retired,
+                producer,
+                predecessor,
+                endpoints,
             );
             match prepared {
                 Err(stop) => {

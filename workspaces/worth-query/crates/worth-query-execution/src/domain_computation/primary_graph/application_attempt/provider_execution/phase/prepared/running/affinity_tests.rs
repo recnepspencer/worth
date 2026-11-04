@@ -53,6 +53,7 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
                 idempotency(187, 188),
             );
             let WorthQueryRunningApplicationCommit {
+                coupled_outputs: _,
                 admission,
                 lease,
                 provider_attempt: _provider_attempt,
@@ -180,6 +181,7 @@ fn a_real_peer_plan_and_session_cannot_substitute_for_the_captured_attempt() {
                 idempotency(191, 192),
             );
             let WorthQueryRunningApplicationCommit {
+                coupled_outputs: _,
                 admission: _first_admission,
                 lease: first_lease,
                 provider_attempt: _first_provider_attempt,
@@ -193,6 +195,7 @@ fn a_real_peer_plan_and_session_cannot_substitute_for_the_captured_attempt() {
                 workflow_settlement_publication: _first_workflow_settlement_publication,
             } = first;
             let WorthQueryRunningApplicationCommit {
+                coupled_outputs: _,
                 admission: _second_admission,
                 lease: second_lease,
                 provider_attempt: _second_provider_attempt,

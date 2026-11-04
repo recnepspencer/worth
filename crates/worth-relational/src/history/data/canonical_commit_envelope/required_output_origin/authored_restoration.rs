@@ -36,15 +36,14 @@ pub(super) fn install(
     created_relations: &CommitCreatedRelationBindings,
     state: &WorkingState,
     installed: RelationalInstalledApplicationPublicationAuthority,
-    admission: worth_proof::AdmittedAuthoredOutputRetirement,
-    restoration: RelationalAuthoredRestoration,
+    admission: Option<&worth_proof::AdmittedAuthoredOutputRetirement>,
+    restoration: &RelationalAuthoredRestoration,
     lease: Option<&ExecutionResourceLease<'_>>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<RequiredOutputPublicationPositions, TransactionCommitError> {
     let old = restoration
         .retirement
-        .authored_cascade_retirement
-        .as_ref()
+        .authored_source_retirement()
         .ok_or_else(|| crate::mvcc::origin_denial("restoration lost its exact retirement"))?;
     let refuse = || {
         TransactionCommitError::publication(
@@ -55,7 +54,8 @@ pub(super) fn install(
         )
     };
     if restoration.before.descriptor() != basis.descriptor()
-        || admission.publication_count() != restoration.publications.len()
+        || admission.map_or(0, |admission| admission.publication_count())
+            != restoration.publications.len()
     {
         return Err(refuse());
     }
@@ -64,7 +64,7 @@ pub(super) fn install(
         state,
         created,
         created_relations,
-        &restoration,
+        restoration,
         context,
     )?;
     let anchor = created.resolve(&restoration.anchor).ok_or_else(refuse)?;
@@ -150,10 +150,11 @@ pub(super) fn install(
     let mut publications = Vec::with_capacity(restoration.publications.len());
     let mut positions = basis.inner.root.output_publication_positions.clone();
     for prior in &restoration.publications {
-        if !installed
-            .authority
-            .admits_authored_output_retirement(&admission, prior.authority())
-        {
+        if !admission.is_some_and(|admission| {
+            installed
+                .authority
+                .admits_authored_output_retirement(admission, prior.authority())
+        }) {
             return Err(refuse());
         }
         let origin = &prior.origin;
@@ -205,6 +206,25 @@ pub(super) fn install(
             context
                 .checkpoint((relations.len() + entities.len() * 2) as u64)
                 .map_err(origin_request)?;
+            if let Some(membership) = restoration
+                .aggregate_memberships
+                .iter()
+                .find(|membership| membership.original == edge.id)
+            {
+                let (id, source, target) =
+                    membership.resolve(state, created_relations, &entities, context)?;
+                relations.push((edge.id, id));
+                edges.push(CanonicalRequiredOutputRelation {
+                    id,
+                    kind: edge.kind,
+                    source,
+                    target,
+                    birth: envelope.commit.commit_id,
+                    before_write: None,
+                    after_write: envelope.commit.version_id,
+                });
+                continue;
+            }
             let id = relations
                 .iter()
                 .find(|(old, _)| *old == edge.id)

@@ -64,6 +64,7 @@ impl PreparedFactRebase {
         fact: &Fact,
         retired: &std::collections::BTreeSet<worth_relational::facade::identity::EntityId>,
         producer_output: bool,
+        predecessor: Option<&worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
 
         prepared_endpoints: Option<
             crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints,
@@ -82,6 +83,19 @@ impl PreparedFactRebase {
                     .map(Self::Replace)
                     .ok_or_else(|| unavailable.clone()),
             );
+        }
+        if producer_output && let Some(predecessor) = predecessor {
+            match super::predecessor_output::refresh(
+                runtime,
+                execution,
+                snapshot,
+                fact,
+                predecessor,
+            ) {
+                Ok(Some(observed)) => return Ok(Ok(Self::Replace(observed))),
+                Ok(None) => {}
+                Err(cause) => return Ok(Err(cause)),
+            }
         }
         if producer_output
             && let Fact::OptionalAspectAbsent {

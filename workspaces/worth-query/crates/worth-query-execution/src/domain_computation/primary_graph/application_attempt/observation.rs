@@ -11,7 +11,9 @@ use super::{WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDeni
 
 mod aspect_presence;
 mod predecode_admission;
-pub(in crate::domain_computation::primary_graph) use aspect_presence::observe_aspect_presence;
+pub(in crate::domain_computation::primary_graph) use aspect_presence::{
+    observe_aspect_presence, observe_aspect_presence_in_view,
+};
 #[cfg(test)]
 mod read_rendezvous;
 #[cfg(test)]
@@ -25,8 +27,8 @@ pub(in crate::domain_computation::primary_graph) fn take_native_field_contacts()
     NATIVE_FIELD_CONTACTS.with(|count| count.replace(0))
 }
 pub(in crate::domain_computation::primary_graph) use predecode_admission::{
-    observe_aspect_absence, observe_field_observation_borrowed_admitted,
-    observe_field_value_borrowed, observe_field_value_borrowed_admitted,
+    observe_aspect_absence, observe_field_from_view_admitted,
+    observe_field_observation_borrowed_admitted, observe_field_value_borrowed,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]

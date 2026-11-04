@@ -208,7 +208,15 @@ fn retain_matching(
     mutates: impl Fn(&WorthQueryObservedPreImageCandidate) -> bool,
 ) -> Result<WorthQueryRetainedPreImage, WorthQueryPreImageRetentionDenial> {
     if demand.loci().is_empty() {
-        return Err(WorthQueryPreImageRetentionDenial::EmptyDemand);
+        if demand.relations().is_empty() {
+            return Err(WorthQueryPreImageRetentionDenial::EmptyDemand);
+        }
+        return Ok(WorthQueryRetainedPreImage::from_retention_seal(
+            WorthQueryRetainedPreImageSeal {
+                fields: Vec::new(),
+                total_encoded_bytes: 0,
+            },
+        ));
     }
     if mutation_is_empty {
         return Err(WorthQueryPreImageRetentionDenial::NoMutatedRecord);

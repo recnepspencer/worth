@@ -41,7 +41,7 @@ pub(super) fn observe(
     let steps = effects.expected_steps().iter().map(observe_step).collect();
     let intents = effects.batch().intents.clone();
     let emissions = effects.into_emissions();
-    let emissions = emissions.into_emissions();
+    let (emissions, _memory) = emissions.into_live_emissions();
     LoweringObservation {
         steps,
         intents,

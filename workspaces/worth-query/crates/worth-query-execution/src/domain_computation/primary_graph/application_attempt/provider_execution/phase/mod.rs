@@ -27,3 +27,8 @@ pub(super) use prepared::running::{
 pub(super) use prepared::running::WorthQueryRunningApplicationCommit;
 
 pub(in crate::domain_computation::primary_graph) use prepared::ReadmittedCommitProgram;
+
+pub(in crate::domain_computation::primary_graph) use prepared::{
+    inspect_coupled_application, prepare_coupled_application, register_coupled_application,
+    ApprovedCoupledWriter, CommitPreparedCoupledWriter, InspectedCoupledWriter,
+};

@@ -3,8 +3,9 @@ use super::*;
 use worth_foundational::facade::AggregateDefinitionIdentity;
 use worth_relational::facade::{runtime::PinnedAggregateReadScope, schema::NativeMemberKey as Key};
 impl AggregateObservation<Key> {
-    pub(in crate::domain_computation::primary_graph) fn read_member(
-        pin: &RelationalPinnedRead,
+    pub(in crate::domain_computation::primary_graph) fn read_member_projected<Phase>(
+        pin: &RelationalPinnedRead<Phase>,
+        origin: crate::domain_computation::primary_graph::projection_read_origin::ProjectionReadOriginRef<'_>,
         execution: &ExecutionRequest<'_, '_>,
         subject: &str,
         carrier_kind: KindId,
@@ -19,7 +20,7 @@ impl AggregateObservation<Key> {
         Ok(Arc::new(Self {
             key: AggregateKey::for_member(subject, carrier_kind, definition, member),
             native,
-            source: pin.snapshot().clone(),
+            source: origin.retained(),
             _allocation: allocation.cloned(),
         }))
     }
@@ -71,8 +72,8 @@ impl AggregateKey<Key> {
 }
 
 impl AggregateObservation<Key> {
-    pub(in crate::domain_computation::primary_graph) fn remains_equal_at(
-        &self, pin:&RelationalPinnedRead, execution:&ExecutionRequest<'_, '_>,
+    pub(in crate::domain_computation::primary_graph) fn remains_equal_at<Phase>(
+        &self, pin:&RelationalPinnedRead<Phase>, execution:&ExecutionRequest<'_, '_>,
         context:&mut MapKernelContext<'_, '_>, control:Option<&dyn Fn()->Result<(),Cause>>,
     )->Result<bool,crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure>{
         use crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure as Failure;
@@ -123,5 +124,49 @@ impl AggregateObservation<Key> {
         // This answer exposes identity and complete membership, not incident lineage.
         poll()?;
         Ok(true)
+    }
+}
+
+impl AggregateObservation<Key> {
+    pub(in crate::domain_computation::primary_graph) fn support_equal_between<A, B>(
+        &self, execution: &ExecutionRequest<'_, '_>, left: &RelationalPinnedRead<A>, right: &RelationalPinnedRead<B>,
+    ) -> Result<bool, crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure>{
+        use crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure as Failure;
+        let answer = execution
+            .run_native_with_checkpoint(|context| {
+                let scope = || {
+                    PinnedAggregateReadScope::for_member_definition(
+                        self.key.definition(),
+                        self.key.member().clone(),
+                    )
+                };
+                let left = left
+                    .read_projected_aggregate(execution, scope())
+                    .map_err(super::currentness::support_stop)?;
+                let right = right
+                    .read_projected_aggregate(execution, scope())
+                    .map_err(super::currentness::support_stop)?;
+                if left.definition() != right.definition()
+                    || left.identity() != right.identity()
+                    || left.len() != right.len()
+                {
+                    return Ok(false);
+                }
+                for (a, b) in left.members().zip(right.members()) {
+                    AggregateObservation::checkpoint(context).map_err(Failure::Execution)?;
+                    super::member_work::checkpoint_names(a, &mut || {
+                        AggregateObservation::checkpoint(context).map_err(Failure::Execution)
+                    })?;
+                    super::member_work::checkpoint_names(b, &mut || {
+                        AggregateObservation::checkpoint(context).map_err(Failure::Execution)
+                    })?;
+                    if a != b {
+                        return Ok(false);
+                    }
+                }
+                Ok(true)
+            })
+            .map_err(|cause| Failure::Execution(cause.into()))?;
+        answer.0
     }
 }

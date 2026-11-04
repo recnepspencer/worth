@@ -31,6 +31,7 @@ pub(crate) struct RelationalPreparationOwnerBinding {
 /// Narrow cloneable state used only for validation and candidate preparation.
 #[derive(Debug, Clone)]
 pub(crate) struct RelationalPreparationRuntime {
+    pub(crate) authored_coupling: Option<Arc<crate::mvcc::BoundAuthoredCoupling>>,
     pub(crate) symbol_references: Arc<std::collections::BTreeSet<crate::symbols::data::Symbol>>,
     pub(crate) commit_work_budget: Option<crate::execution::RequestWorkBudget>,
     pub(crate) config: Arc<RelationalRuntimeConfig>,
@@ -89,6 +90,7 @@ impl RelationalPreparationOwnerBinding {
         configuration: &crate::runtime::RelationalRuntimeConfigurationSnapshot,
     ) -> RelationalPreparationRuntime {
         RelationalPreparationRuntime {
+            authored_coupling: None,
             symbol_references: Arc::default(),
             commit_work_budget: None,
             config: Arc::clone(&configuration.config),
@@ -110,6 +112,14 @@ impl RelationalPreparationOwnerBinding {
 }
 
 impl RelationalPreparationRuntime {
+    pub(crate) fn with_authored_coupling(
+        mut self,
+        coupling: Option<Arc<crate::mvcc::BoundAuthoredCoupling>>,
+    ) -> Self {
+        self.authored_coupling = coupling;
+        self
+    }
+
     pub(crate) fn with_candidate_symbols(
         &self,
         symbols: &crate::runtime::PendingSymbolMeanings,

@@ -13,6 +13,9 @@ use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
 /// Completed read proofs and the sealed computation move across a World recovery plan. The cancelled address
 /// and its retained capacity stay with the original slot's Drop path.
 pub(in crate::domain_computation::primary_graph) struct PreparedLineageRecoveryMetadata {
+    coupled_completion: Option<super::super::CoupledOutputCompletion>,
+    native_prior_checkpoint:
+        Option<super::super::native_prior_checkpoint::NativePriorCheckpointLocator>,
     computation: SealedComputationRetention,
     prior_computation:
         Option<crate::domain_computation::primary_graph::output_lineage::PriorComputationRecord>,
@@ -57,6 +60,8 @@ impl PreparedOutputLineageSlot {
         mut self,
     ) -> PreparedLineageRecoveryMetadata {
         let metadata = PreparedLineageRecoveryMetadata {
+            coupled_completion: self.coupled_completion.take(),
+            native_prior_checkpoint: self.native_prior_checkpoint.take(),
             computation: self.computation.take(),
             prior_computation: self.prior_computation.take(),
             handler: self.completed_handler_facts.take(),
@@ -75,6 +80,9 @@ impl PreparedOutputLineageSlot {
         assert!(self.completed_decision_reuse.is_none());
         assert!(self.prepared_input_reuse_key.is_none());
 
+        self.coupled_completion = metadata.coupled_completion.take();
+        assert!(self.native_prior_checkpoint.is_none());
+        self.native_prior_checkpoint = metadata.native_prior_checkpoint.take();
         self.computation.assign(metadata.computation);
         self.prior_computation = metadata.prior_computation.take();
         self.completed_handler_facts = metadata.handler.take();
@@ -146,6 +154,7 @@ mod tests {
                     .partition_index
                     .insert_vacancy(source.clone(), coordinate, None);
             PreparedOutputLineageSlot {
+                coupled_completion: None,
                 owner: Arc::clone(&owner),
                 output_binding_type: TypeId::of::<()>(),
                 source: source.clone(),

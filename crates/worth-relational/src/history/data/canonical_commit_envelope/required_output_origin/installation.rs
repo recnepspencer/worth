@@ -42,6 +42,7 @@ impl CanonicalCommitEnvelope {
                             created_relations,
                             state,
                             admission,
+                            None,
                             lease,
                             context,
                         )
@@ -63,6 +64,7 @@ impl CanonicalCommitEnvelope {
         created_relations: &CommitCreatedRelationBindings,
         state: &WorkingState,
         admission: crate::mvcc::RequiredOutputPublicationAdmission,
+        contribution_records: Option<&[crate::transactions::data::RecordRef]>,
         lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
         context: &mut MapKernelContext<'_, '_>,
     ) -> Result<crate::history::data::RequiredOutputPublicationPositions, TransactionCommitError>
@@ -89,6 +91,20 @@ impl CanonicalCommitEnvelope {
                 "required-output installation changed before native preparation",
             ));
         }
+        if let Publication::CoupledAuthored { group } = publication {
+            return super::coupled_authored::install(
+                self,
+                runtime,
+                basis,
+                created,
+                created_relations,
+                state,
+                installed,
+                group,
+                lease,
+                context,
+            );
+        }
         if let Publication::AuthoredCascadeRestoration {
             admission,
             restoration,
@@ -102,8 +118,8 @@ impl CanonicalCommitEnvelope {
                 created_relations,
                 state,
                 installed,
-                admission,
-                restoration,
+                Some(&admission),
+                &restoration,
                 lease,
                 context,
             );
@@ -121,7 +137,7 @@ impl CanonicalCommitEnvelope {
                 created_relations,
                 state,
                 installed,
-                admission,
+                &admission,
                 predecessor,
                 lease,
                 context,
@@ -168,7 +184,8 @@ impl CanonicalCommitEnvelope {
                 )?;
                 (meaning, roles, Some(origin))
             }
-            Publication::AuthoredCascadeRetirement { .. }
+            Publication::CoupledAuthored { .. }
+            | Publication::AuthoredCascadeRetirement { .. }
             | Publication::AuthoredCascadeRestoration { .. } => {
                 unreachable!("cascade consumed before ordinary installation")
             }
@@ -218,6 +235,7 @@ impl CanonicalCommitEnvelope {
                 state,
                 &installed,
                 route_completion::RouteCompletion {
+                    contribution_records,
                     producer,
                     dependency_identity,
                     meaning,
@@ -265,6 +283,7 @@ impl CanonicalCommitEnvelope {
             state,
             &installed,
             route_completion::RouteCompletion {
+                contribution_records,
                 producer,
                 dependency_identity,
                 meaning,

@@ -6,12 +6,20 @@ use crate::domain_computation::WorthQueryProposedFact;
 
 pub(in crate::domain_computation::primary_graph::provider) struct WorthQueryApprovedApplicationCandidate
 {
+    pub(in crate::domain_computation::primary_graph::provider) members:
+        Vec<super::CoupledApplicationMember>,
     pub(in crate::domain_computation::primary_graph::provider) native:
         worth_relational::facade::mvcc::ValidatedRelationalProposal,
     pub(in crate::domain_computation::primary_graph::provider) work:
         WorthQueryPrimaryMutationWorkCounters,
     pub(in crate::domain_computation::primary_graph::provider) predicate:
         Option<PredicatePreparationOwner>,
+}
+pub(in crate::domain_computation::primary_graph::provider) struct ApprovedCoupledContribution {
+    pub(in crate::domain_computation::primary_graph::provider) evidence:
+        worth_relational::facade::mvcc::RelationalMutationInvariantEvidence,
+    pub(in crate::domain_computation::primary_graph::provider) work:
+        WorthQueryPrimaryMutationWorkCounters,
 }
 /// The caller releases the actual retired phase after leaving the attempt gate.
 pub(in crate::domain_computation::primary_graph::provider) struct WorthQueryRetiredApplicationAttemptPhase
@@ -37,6 +45,10 @@ enum PhaseState {
     InvariantApproved {
         overlay: WorthQueryPrimaryGraphOverlay,
         approved: WorthQueryApprovedApplicationCandidate,
+    },
+    CoupledInvariantApproved {
+        overlay: WorthQueryPrimaryGraphOverlay,
+        approved: ApprovedCoupledContribution,
     },
     InvariantApprovedAfterOverlayDiscard,
 }
@@ -77,7 +89,10 @@ impl WorthQueryApplicationAttemptPhase {
             return None;
         }
         let prior = std::mem::replace(&mut self.0, PhaseState::Registered);
-        if matches!(&prior, PhaseState::InvariantApproved { .. }) {
+        if matches!(
+            &prior,
+            PhaseState::InvariantApproved { .. } | PhaseState::CoupledInvariantApproved { .. }
+        ) {
             self.0 = PhaseState::InvariantApprovedAfterOverlayDiscard;
         }
         Some(WorthQueryRetiredApplicationAttemptPhase {
@@ -87,9 +102,9 @@ impl WorthQueryApplicationAttemptPhase {
 
     pub(super) fn overlay(&self) -> Option<&WorthQueryPrimaryGraphOverlay> {
         match &self.0 {
-            PhaseState::OverlayStaged(overlay) | PhaseState::InvariantApproved { overlay, .. } => {
-                Some(overlay)
-            }
+            PhaseState::OverlayStaged(overlay)
+            | PhaseState::InvariantApproved { overlay, .. }
+            | PhaseState::CoupledInvariantApproved { overlay, .. } => Some(overlay),
             PhaseState::Registered | PhaseState::InvariantApprovedAfterOverlayDiscard => None,
         }
     }
@@ -116,24 +131,41 @@ impl WorthQueryApplicationAttemptPhase {
         }
     }
 
+    fn approve_contribution(
+        &mut self,
+        approved: ApprovedCoupledContribution,
+    ) -> Result<(), &'static str> {
+        let prior = std::mem::replace(&mut self.0, PhaseState::Registered);
+        match prior {
+            PhaseState::OverlayStaged(overlay) => {
+                self.0 = PhaseState::CoupledInvariantApproved { overlay, approved };
+                Ok(())
+            }
+            prior => {
+                self.0 = prior;
+                Err("coupled writer has no staged contribution")
+            }
+        }
+    }
+    fn approved_evidence(
+        &self,
+    ) -> Option<&worth_relational::facade::mvcc::RelationalMutationInvariantEvidence> {
+        match &self.0 {
+            PhaseState::InvariantApproved { approved, .. } => {
+                Some(approved.native.invariant_evidence())
+            }
+            PhaseState::CoupledInvariantApproved { approved, .. } => Some(&approved.evidence),
+            _ => None,
+        }
+    }
+
     pub(super) const fn is_preparable(&self) -> bool {
         matches!(
             self.0,
-            PhaseState::OverlayStaged(_) | PhaseState::InvariantApproved { .. }
+            PhaseState::OverlayStaged(_)
+                | PhaseState::InvariantApproved { .. }
+                | PhaseState::CoupledInvariantApproved { .. }
         )
-    }
-
-    pub(super) const fn is_commit_ready(&self) -> bool {
-        matches!(self.0, PhaseState::InvariantApproved { .. })
-    }
-
-    pub(super) fn approved_candidate(
-        &self,
-    ) -> Option<&worth_relational::facade::mvcc::ValidatedRelationalProposal> {
-        match &self.0 {
-            PhaseState::InvariantApproved { approved, .. } => Some(&approved.native),
-            _ => None,
-        }
     }
 
     pub(super) fn take_commit_ready(self) -> Option<WorthQueryApprovedApplicationCandidate> {
@@ -148,7 +180,7 @@ impl WorthQueryApplicationAttemptPhase {
         match &self.0 {
             PhaseState::Registered | PhaseState::InvariantApprovedAfterOverlayDiscard => 1,
             PhaseState::OverlayStaged(_) => 3,
-            PhaseState::InvariantApproved { .. } => 5,
+            PhaseState::InvariantApproved { .. } | PhaseState::CoupledInvariantApproved { .. } => 5,
         }
     }
 }
@@ -163,6 +195,11 @@ impl WorthQueryApplicationAttemptState {
         }
     }
 
+    pub(super) fn attempt_mut(
+        &mut self,
+    ) -> &mut super::super::WorthQueryPrimaryGraphApplicationAttempt {
+        &mut self.attempt
+    }
     pub(super) const fn attempt(&self) -> &super::super::WorthQueryPrimaryGraphApplicationAttempt {
         &self.attempt
     }
@@ -195,18 +232,20 @@ impl WorthQueryApplicationAttemptState {
         self.phase.approve(incoming)
     }
 
+    pub(super) fn approve_contribution(
+        &mut self,
+        approved: ApprovedCoupledContribution,
+    ) -> Result<(), &'static str> {
+        self.phase.approve_contribution(approved)
+    }
+    pub(super) fn approved_evidence(
+        &self,
+    ) -> Option<&worth_relational::facade::mvcc::RelationalMutationInvariantEvidence> {
+        self.phase.approved_evidence()
+    }
+
     pub(super) const fn is_preparable(&self) -> bool {
         self.phase.is_preparable()
-    }
-
-    pub(super) const fn phase_is_commit_ready(&self) -> bool {
-        self.phase.is_commit_ready()
-    }
-
-    pub(super) fn approved_candidate(
-        &self,
-    ) -> Option<&worth_relational::facade::mvcc::ValidatedRelationalProposal> {
-        self.phase.approved_candidate()
     }
 
     pub(super) fn take_commit_parts(
@@ -217,6 +256,27 @@ impl WorthQueryApplicationAttemptState {
     )> {
         let approved = self.phase.take_commit_ready()?;
         Some((self.attempt, approved))
+    }
+
+    pub(super) fn coupled_members(&self) -> Option<&[super::CoupledApplicationMember]> {
+        match &self.phase.0 {
+            PhaseState::InvariantApproved { approved, .. } => Some(&approved.members),
+            _ => None,
+        }
+    }
+    pub(super) fn is_coupled_ready(&self) -> bool {
+        matches!(self.phase.0, PhaseState::CoupledInvariantApproved { .. })
+    }
+    pub(super) fn take_coupled_parts(
+        self,
+    ) -> (
+        super::super::WorthQueryPrimaryGraphApplicationAttempt,
+        ApprovedCoupledContribution,
+    ) {
+        let PhaseState::CoupledInvariantApproved { approved, .. } = self.phase.0 else {
+            unreachable!("coupled member extraction follows the atomic precheck")
+        };
+        (self.attempt, approved)
     }
 
     pub(super) fn discard_overlay(

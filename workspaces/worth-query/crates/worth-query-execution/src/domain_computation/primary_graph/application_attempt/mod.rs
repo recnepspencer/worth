@@ -46,8 +46,8 @@ pub(in crate::domain_computation::primary_graph) use observation::take_native_fi
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use observation::ReadRendezvous;
 pub(in crate::domain_computation::primary_graph) use observation::{
-    observe_aspect_absence, observe_field, observe_field_value_borrowed,
-    observe_field_value_borrowed_admitted, WorthQueryApplicationFieldObservation,
+    observe_aspect_absence, observe_field_from_view_admitted, observe_field_value_borrowed,
+    WorthQueryApplicationFieldObservation,
 };
 pub(in crate::domain_computation::primary_graph) mod precondition_binding;
 mod provider_binding;
@@ -78,7 +78,7 @@ pub use signed_creation::{
     WorthQuerySignedCreationAdapter, WorthQuerySignedCreationPreparationDenial,
 };
 mod retained_commit;
-pub(in crate::domain_computation::primary_graph) mod retained_decision_facts;
+pub(in crate::domain_computation) mod retained_decision_facts;
 pub(super) mod snapshot_lease;
 mod workflow_deadline;
 mod workflow_definition_program;
@@ -242,3 +242,12 @@ pub(in crate::domain_computation::primary_graph) use read_set::CompletedReadScop
 pub(in crate::domain_computation::primary_graph) use compare_and_commit::MaterializedCommittedField;
 
 pub(in crate::domain_computation::primary_graph) use provider_execution::ReadmittedCommitProgram;
+
+pub(in crate::domain_computation::primary_graph) mod coupled_outputs;
+
+pub(in crate::domain_computation::primary_graph) use provider_execution::{
+    inspect_coupled_application, prepare_coupled_application, register_coupled_application,
+    ApprovedCoupledWriter, CommitPreparedCoupledWriter, InspectedCoupledWriter,
+};
+
+pub(in crate::domain_computation::primary_graph) use fact::candidate_support_source_stop;

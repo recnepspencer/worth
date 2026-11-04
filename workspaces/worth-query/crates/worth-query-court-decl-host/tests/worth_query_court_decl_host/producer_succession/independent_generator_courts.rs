@@ -1,5 +1,5 @@
 //! Generator ownership is independent of the opted-in publications its children own.
-use super::{courts::*, producers::independent_parent, *};
+use super::{producers::independent_parent, settlement::*, *};
 
 pub(super) fn settle_independent(app: &world::App, request: &Request<'_, '_, '_>) {
     let mut operation = request

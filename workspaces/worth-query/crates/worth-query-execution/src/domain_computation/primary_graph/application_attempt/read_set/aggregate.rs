@@ -36,7 +36,7 @@ pub(super) fn observe<Schema, Operation, Input, Scope>(
             key,
             admission.admission_identity(),
             &admission.retain_graph_contract(),
-            lease.snapshot(),
+            lease.projection_origin(),
         )
         .ok_or_else(mismatch)?;
     let descriptor = super::super::WorthQueryApplicationFactKey::Aggregate(key.clone());

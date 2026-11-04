@@ -21,8 +21,7 @@ pub(in crate::domain_computation::primary_graph::application_query) enum WorthQu
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph::application_query) struct WorthQueryApplicationReadExecutionDenial
-{
+pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationReadExecutionDenial {
     kind: WorthQueryApplicationReadExecutionDenialKind,
     subject: String,
 }

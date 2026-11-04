@@ -12,6 +12,7 @@ use crate::{
 };
 use std::sync::Arc;
 use worth_execution::MapKernelContext;
+mod coupled;
 
 /// O(H² + P²M), catalog-bounded and charged under the original request.
 pub(crate) fn current(
@@ -26,11 +27,15 @@ pub(crate) fn current(
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<Vec<SelectedOutputPublication>, Failure> {
     let mut latest: Vec<SelectedOutputPublication> = Vec::with_capacity(bound);
+    let mut coupled_ancestry = Vec::new();
     for _ in 0..bound {
         let Some(commit) = next else { break };
         charge(context, bound.saturating_add(1))?;
         let envelope = load(commit).ok_or("source-scope closure lost canonical history")?;
         require_linear_history(&envelope)?;
+        if envelope.coupled_authored_publication.is_some() || !coupled_ancestry.is_empty() {
+            coupled_ancestry.push(Arc::clone(&envelope));
+        }
         for (ordinal, origin) in envelope.output_origins().enumerate() {
             charge(context, latest.len() + 1)?;
             let work = latest.iter().fold(origin.members.len(), |sum, prior| {
@@ -84,6 +89,7 @@ pub(crate) fn current(
     if next.is_some() {
         return Err("source-scope ancestry incomplete or cyclic".into());
     }
+    coupled::validate_ancestry(&coupled_ancestry, bound, context)?;
     Ok(latest)
 }
 

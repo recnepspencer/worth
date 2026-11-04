@@ -4,11 +4,22 @@ use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
 use worth_query_testkit_document_retention::facade::document_retention_model::operator_identity::*;
 type Host<S = Schema> = WorthQueryProgramApplicationRuntime<S, Program>;
 pub(super) fn install_program<S: Scenario>() -> Host<S> {
+    install_definition::<S, Program>()
+}
+pub(super) fn install_definition<
+    S: Scenario,
+    P: ApplicationProgramDefinition<S, Contributions = (Contribution,)>,
+>() -> WorthQueryProgramApplicationRuntime<S, P>
+where
+    P::Outputs: WorthQueryApplicationProgramRoots<S>,
+{
+    let schema = S::declaration().unwrap();
     in_memory_program(
-        ApplicationProgramAuthoring::<S, Program>::begin()
+        ApplicationProgramAuthoring::<S, P>::begin()
+            .with_schema(&schema)
             .validated_program()
             .unwrap(),
-        S::declaration().unwrap(),
+        schema,
         ((),),
         ApplicationBuildIdentity::parse("919b0039-0000-0000-0000-000000000002").unwrap(),
         host_limits(),
@@ -24,7 +35,11 @@ pub(super) fn install_program<S: Scenario>() -> Host<S> {
     )
     .unwrap()
 }
-fn require_lifecycle<S: Scenario>(depth: u64, expected: &[u64], retire_from_created: bool) {
+pub(super) fn require_lifecycle<S: Scenario>(
+    depth: u64,
+    expected: &[u64],
+    retire_from_created: bool,
+) {
     let host = install_program::<S>();
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
@@ -83,6 +98,16 @@ fn require_lifecycle<S: Scenario>(depth: u64, expected: &[u64], retire_from_crea
         })
         .collect::<Vec<_>>();
     assert_eq!(original.len(), expected.len());
+    if S::MODE == 29 {
+        for id in &expected[1..] {
+            projected_memberships::inspection::inspect(
+                &host,
+                &request,
+                *id,
+                &format!("initial-cases-{id}"),
+            );
+        }
+    }
     route_choice_refusal(&host, &request, depth);
     let retired = if retire_from_created {
         reverse(&request, &created, "retire-created")
@@ -90,6 +115,7 @@ fn require_lifecycle<S: Scenario>(depth: u64, expected: &[u64], retire_from_crea
         let outcome = request
             .advanced()
             .mutate(Retire {
+                relation_fault: 0,
                 corrupt_restoration: false,
                 co_anchors: vec![],
                 scope: 1,
@@ -158,6 +184,52 @@ fn require_lifecycle<S: Scenario>(depth: u64, expected: &[u64], retire_from_crea
                 .id,
             *id
         );
+    }
+    if S::MODE == 29 {
+        for id in &expected[1..] {
+            projected_memberships::inspection::inspect(
+                &host,
+                &request,
+                *id,
+                &format!("restored-cases-{id}"),
+            );
+        }
+    }
+    if matches!(S::MODE, 13 | 29) {
+        let outcome = request
+            .advanced()
+            .mutate(Retire {
+                relation_fault: 0,
+                corrupt_restoration: false,
+                co_anchors: vec![],
+                scope: 1,
+                id: 10,
+                descendants: expected[1..].to_vec(),
+            })
+            .without_source()
+            .idempotency(&"retire-restored-aggregate".to_owned())
+            .execute_in_program(&host, ExecutionAllocationPolicy::SystemAllocation)
+            .unwrap();
+        let WorthQueryApplicationMutationOutcome::Committed { receipt, .. } = outcome else {
+            panic!("readmission of restored memberships: {outcome:?}")
+        };
+        for id in expected {
+            assert!(request.query(query::Input { id: *id }).execute().is_err());
+        }
+        reverse(&request, &receipt, "restore-aggregate-again");
+        for id in expected {
+            assert!(request.query(query::Input { id: *id }).execute().is_ok());
+        }
+        if S::MODE == 29 {
+            for id in &expected[1..] {
+                projected_memberships::inspection::inspect(
+                    &host,
+                    &request,
+                    *id,
+                    &format!("restored-again-cases-{id}"),
+                );
+            }
+        }
     }
 }
 fn route_choice_refusal<S: Scenario>(
@@ -259,4 +331,9 @@ fn retire_created_supplies_the_anchor_without_an_inverse_correction_declaration(
 #[test]
 fn nested_retire_created_supplies_the_anchor_without_an_inverse_correction_declaration() {
     require_lifecycle::<Model<4>>(3, &[10, 101, 102, 1021, 1022, 10221, 10222], true);
+}
+
+#[test]
+fn authored_cascade_derives_private_aggregate_membership_deletions() {
+    require_lifecycle::<Model<13>>(1, &[10, 101, 102], false);
 }

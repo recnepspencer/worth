@@ -1,6 +1,9 @@
 //! Runtime custody is issued from sealed performed results or cold native readmission.
 use crate::history::data::CanonicalCommitEnvelope;
 use std::sync::Arc;
+mod prepared;
+pub(crate) use prepared::prepare;
+pub use prepared::{RelationalPerformedOutputPublications, RelationalPreparedOutputPublications};
 
 #[derive(Clone, Debug)]
 pub struct RelationalRequiredOutputPublication {
@@ -12,6 +15,39 @@ pub struct RelationalRequiredOutputPublication {
 }
 
 impl RelationalRequiredOutputPublication {
+    pub fn producer(&self) -> &str {
+        &self.origin.producer
+    }
+    pub fn meaning(&self) -> &super::RequiredOutputPublicationMeaning {
+        &self.origin.meaning
+    }
+    /// Actual performed roles, including retired members, in canonical native order.
+    pub fn members(
+        &self,
+    ) -> impl ExactSizeIterator<
+        Item = (
+            &str,
+            &str,
+            super::RequiredOutputRolePosture,
+            crate::identity::data::EntityId,
+        ),
+    > {
+        self.origin.members.iter().map(|member| {
+            (
+                member.role.as_str(),
+                member.entity_name.as_str(),
+                member.posture,
+                member.id,
+            )
+        })
+    }
+    /// A genuine Native correction origin, independent of a producer execution locator.
+    pub fn is_authored_restoration(&self) -> bool {
+        matches!(
+            self.origin.publication,
+            crate::history::data::CanonicalOutputPublication::AuthoredRestoration { .. }
+        )
+    }
     pub fn authority(&self) -> &worth_proof::RequiredOutputPublicationAuthority {
         &self.authority
     }
@@ -43,6 +79,54 @@ impl crate::transactions::data::CommitResult {
                 .authority
                 .seal_required_output_publication(envelope.commit.commit_id.0),
         })
+    }
+    /// Issue each genuine route's own ordinal seal from this performed commit.
+    /// Iteration funds only the reached origins under the original request.
+    pub fn required_output_publications<'a>(
+        &'a self,
+        installed: &'a super::RelationalInstalledApplicationPublicationAuthority,
+        execution: &'a worth_execution::ExecutionRequest<'_, '_>,
+    ) -> impl Iterator<
+        Item = Result<
+            RelationalRequiredOutputPublication,
+            crate::transactions::data::TransactionCommitError,
+        >,
+    > + 'a {
+        let envelope = &self.publication().envelope;
+        envelope
+            .output_origins()
+            .enumerate()
+            .filter_map(move |(ordinal, origin)| {
+                let selected = execution
+                    .run_native_with_checkpoint(|context| {
+                        // Reaching a foreign origin still consumes traversal work.
+                        context.checkpoint(1).map_err(execution_stop)?;
+                        if self.snapshot.runtime_instance_id() != installed.runtime_instance_id
+                            || !origin.issuer.as_ref().is_some_and(|issuer| {
+                                issuer.same_publication_owner(&installed.authority)
+                            })
+                        {
+                            return Ok(None);
+                        }
+                        Ok(Some(RelationalRequiredOutputPublication {
+                            runtime_instance_id: installed.runtime_instance_id,
+                            envelope: Arc::clone(envelope),
+                            origin: Arc::clone(origin),
+                            readmitted_at: None,
+                            authority: installed.authority.seal_required_output_publication_at(
+                                envelope.commit.commit_id.0,
+                                ordinal,
+                            ),
+                        }))
+                    })
+                    .map_err(execution_stop)
+                    .and_then(|answer| answer.0);
+                match selected {
+                    Ok(None) => None,
+                    Ok(Some(publication)) => Some(Ok(publication)),
+                    Err(cause) => Some(Err(cause)),
+                }
+            })
     }
 }
 

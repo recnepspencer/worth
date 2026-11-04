@@ -40,6 +40,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt::provider_e
     Input,
     Scope,
 > {
+    coupled_outputs: crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemands,
     admission: crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<
         Schema,
         Operation,
@@ -78,6 +79,7 @@ where
     Schema: ApplicationSchema,
 {
     let WorthQueryPreparedApplicationCommit {
+        coupled_outputs,
         mut admission,
         lease,
         provider_attempt,
@@ -152,6 +154,7 @@ where
         return Err(denied(DenialStage::ManagedRunAdmission));
     };
     Ok(WorthQueryRunningApplicationCommit {
+        coupled_outputs,
         admission,
         lease,
         provider_attempt,

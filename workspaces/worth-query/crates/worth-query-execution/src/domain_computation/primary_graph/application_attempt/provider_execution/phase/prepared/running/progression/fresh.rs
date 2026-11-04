@@ -58,6 +58,9 @@ impl<'run> WorthQueryFreshProviderAttempt<'run> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         steps: std::sync::Arc<[crate::domain_computation::WorthQueryProvisionalEffectStep]>,
         provider: &std::sync::Arc<WorthQueryPrimaryGraphProvider>,
+        assembly: Option<
+            &dyn crate::domain_computation::primary_graph::provider::CoupledProducerAssembly,
+        >,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         crate::domain_computation::WorthQueryInvariantApprovedProposedState<'run>,
@@ -70,6 +73,7 @@ impl<'run> WorthQueryFreshProviderAttempt<'run> {
             &self.request,
             steps,
             provider,
+            assembly,
             allocation_policy,
         )
     }
@@ -101,22 +105,8 @@ where
         authority.admission().publication_request(),
         allocation_policy,
     );
-    let receipt = match authority.provider().capture_application_read_set(
-        execution,
-        &staged.read_authority(),
-        graph::application_attempt::retained_decision_facts::StorageControl::new(
-            allocation_control.policy(),
-            Some(authority.admission().publication_request()),
-        ),
-    ) {
-        Ok(receipt) => receipt,
-        Err(failure) => {
-            let _ = staged.abort();
-            return WorthQueryProviderReadSetProgression::Terminal(read_set_failure(failure));
-        }
-    };
-    match authority.provider().compare_application_read_set(execution,
-        &staged.read_authority(), receipt,
+    match authority.provider().capture_and_compare_application_read_set(execution,
+        &staged.read_authority(), None,
         crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(
             allocation_control.policy(), Some(authority.admission().publication_request()),
         ),

@@ -110,6 +110,7 @@ fn whole_multi_stage_retirement_restores_every_authored_anchor_with_fresh_ids() 
     let outcome = request
         .advanced()
         .mutate(Retire {
+            relation_fault: 0,
             corrupt_restoration: false,
             scope: 1,
             id: 10,
@@ -195,6 +196,7 @@ fn undeclared_extra_authored_source_is_not_implicitly_adopted_as_a_co_anchor() {
     let outcome = request
         .advanced()
         .mutate(Retire {
+            relation_fault: 0,
             corrupt_restoration: false,
             scope: 1,
             id: 10,

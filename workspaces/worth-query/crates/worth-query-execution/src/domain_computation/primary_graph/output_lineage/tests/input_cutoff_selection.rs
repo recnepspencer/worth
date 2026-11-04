@@ -88,7 +88,7 @@ fn cutoff_candidate_pins_the_selected_ancestor_partition() {
         "RestoredOutputBinding",
     );
 
-    lineage.record_recovered_prior_output(
+    lineage.record_prior_output(
         lineage.binding_type(&source.output_binding),
         runtime_authority,
         schema.clone(),
@@ -96,13 +96,15 @@ fn cutoff_candidate_pins_the_selected_ancestor_partition() {
         parent.lifecycle_incarnation(),
         parent.reference_generation().get(),
         Arc::clone(&target),
-        checkpoint_identity([0x31; 32]),
+        crate::domain_computation::primary_graph::output_lineage::PriorOutputOrigin::Recovered {
+            source_identity: checkpoint_identity([0x31; 32]),
+            checkpoint: None,
+        },
         target_partition,
         None,
         [0x41; 32],
-        None,
     );
-    lineage.record_recovered_prior_output(
+    lineage.record_prior_output(
         lineage.binding_type(&source.output_binding),
         runtime_authority,
         schema,
@@ -110,11 +112,13 @@ fn cutoff_candidate_pins_the_selected_ancestor_partition() {
         parent.lifecycle_incarnation(),
         parent.reference_generation().get(),
         sibling,
-        checkpoint_identity([0x32; 32]),
+        crate::domain_computation::primary_graph::output_lineage::PriorOutputOrigin::Recovered {
+            source_identity: checkpoint_identity([0x32; 32]),
+            checkpoint: None,
+        },
         sibling_partition,
         None,
         [0x42; 32],
-        None,
     );
     lineage.register_fork(parent, &child);
     let selected_cell = &lineage.by_source[&source][&parent.lifecycle_incarnation()]

@@ -15,6 +15,7 @@ impl WorthQueryApplicationCommitDenial {
     pub fn invariant_execution_failure(&self) -> Option<&WorthQueryInvariantExecutionFailure> {
         match self.cause.as_deref() {
             Some(DenialCause::InvariantExecution(failure)) => Some(failure),
+            Some(DenialCause::ProviderSession(failure)) => failure.candidate_support_failure(),
             _ => None,
         }
     }

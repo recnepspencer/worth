@@ -218,6 +218,7 @@ pub mod runtime {
         QueryReadExecutionStop, QueryReadPacketDenial, RecoveredCheckpointProgramActivationUpdate,
         RelationProjectionRecord, RelationRecordProjection, RelationalAdjacencyDirection,
         RelationalAdjacencySupportDenial, RelationalAdjacencyVisit,
+        RelationalAppliedCandidateReadIdentity, RelationalAppliedCandidateReadQualification,
         RelationalAspectPresenceSupportDenial, RelationalBorrowedRecordReadDenial,
         RelationalCandidateInputCounters, RelationalEntityMetadata,
         RelationalEntityMetadataPinDenial, RelationalEntityRetirement,

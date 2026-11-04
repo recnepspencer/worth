@@ -6,15 +6,17 @@ mod canonical_commit_allocation;
 mod canonical_commit_envelope;
 pub(crate) use canonical_commit_envelope::validate_authored_restoration_candidate;
 mod codec_retirement_closure;
+pub(crate) use codec_retirement_closure::source_scope_closure;
 mod codec_retirement_preservation;
+pub(crate) use canonical_commit_envelope::CanonicalCoupledAuthoredSources;
 pub(crate) use codec_retirement_closure::select_owned_scope_dependent;
 pub(crate) use codec_retirement_closure::OwnedScopeDependentSelection;
 pub(crate) use codec_retirement_closure::{
     capture_materialization_producers, derive_codec_retirement_closure,
     output_materialization_write_matches, prepare_materialization_continuity,
     readmit_required_output_route, select_authored_retirement, select_authored_source_retirement,
-    validate_codec_output_correspondence, CodecRetirementClosureStop, OwnedCodecRetirementClosure,
-    SelectedOutputPublication,
+    validate_codec_output_correspondence, AuthoredRetirementSelection, CodecRetirementClosureStop,
+    OwnedCodecRetirementClosure, SelectedAuthoredRetirement, SelectedOutputPublication,
 };
 pub(crate) use codec_retirement_preservation::validate_retired_codec_closure;
 mod canonical_record_allocation;

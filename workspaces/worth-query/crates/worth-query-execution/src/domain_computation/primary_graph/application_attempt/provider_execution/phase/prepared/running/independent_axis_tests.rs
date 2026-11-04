@@ -211,6 +211,7 @@ fn release(
     WorthQueryApplicationSnapshotLease,
 ){
     let WorthQueryRunningApplicationCommit {
+        coupled_outputs: _,
         lease,
         running,
         mutation_run,

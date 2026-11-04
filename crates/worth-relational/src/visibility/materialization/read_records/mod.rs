@@ -33,6 +33,7 @@ pub use reader::{
     PinnedStructuralWalkReads, PinnedStructuralWalkScope, PinnedStructuralWalkVisit,
     PositionedRelationalSnapshot, QueryLeasedReadOutcome, QueryReadExecutionStop,
     QueryReadPacketDenial, RelationKindTruthReadDenial, RelationKindTruthReadLimitExceeded,
+    RelationalAppliedCandidateReadIdentity, RelationalAppliedCandidateReadQualification,
     RelationalEntityMetadataPinDenial, RelationalPinnedEntityMetadata, RelationalPinnedRead,
     RelationalPinnedReadAdmissionDenial, RelationalSnapshotPositionAdmissionStop,
     SnapshotPositionDenial, VisibilityReadContext,

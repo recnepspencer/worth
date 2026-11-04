@@ -234,7 +234,7 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
         "RestoredOutputBinding",
     );
 
-    lineage.record_recovered_prior_output(
+    lineage.record_prior_output(
         TypeId::of::<RestoredOutputBinding>(),
         runtime_authority,
         schema.clone(),
@@ -242,13 +242,15 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
         observation.lifecycle_incarnation(),
         observation.reference_generation().get(),
         Arc::clone(&correspondence),
-        source_identity,
+        crate::domain_computation::primary_graph::output_lineage::PriorOutputOrigin::Recovered {
+            source_identity: source_identity,
+            checkpoint: None,
+        },
         partition,
         None,
         [0x41; 32],
-        None,
     );
-    lineage.record_recovered_prior_output(
+    lineage.record_prior_output(
         TypeId::of::<RestoredOutputBinding>(),
         runtime_authority,
         schema.clone(),
@@ -256,11 +258,13 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
         observation.lifecycle_incarnation(),
         observation.reference_generation().get() + 1,
         Arc::clone(&correspondence),
-        source_identity,
+        crate::domain_computation::primary_graph::output_lineage::PriorOutputOrigin::Recovered {
+            source_identity: source_identity,
+            checkpoint: None,
+        },
         partition,
         None,
         [0x41; 32],
-        None,
     );
     let semantic_source = SemanticSource {
         runtime_authority,

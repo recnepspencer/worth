@@ -3,6 +3,7 @@
 use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as NativeReadStop;
 mod admitted_scope;
+mod applied;
 mod freshness;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) mod interruption_control;

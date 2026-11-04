@@ -50,7 +50,7 @@ impl MutationReadAttemptCore<'_, '_, '_> {
                                 key,
                                 self.admission.admission_identity(),
                                 &self.admission.retain_graph_contract(),
-                                self.lease.snapshot(),
+                                self.lease.projection_origin(),
                             )
                         })
                         .is_some_and(|issued| std::sync::Arc::ptr_eq(issued, observation))
@@ -71,7 +71,7 @@ impl MutationReadAttemptCore<'_, '_, '_> {
                                 key,
                                 self.admission.admission_identity(),
                                 &self.admission.retain_graph_contract(),
-                                self.lease.snapshot(),
+                                self.lease.projection_origin(),
                             )
                         })
                         .is_some_and(|issued| std::sync::Arc::ptr_eq(issued, observation))
@@ -92,7 +92,7 @@ impl MutationReadAttemptCore<'_, '_, '_> {
                                 key,
                                 self.admission.admission_identity(),
                                 &self.admission.retain_graph_contract(),
-                                self.lease.snapshot(),
+                                self.lease.projection_origin(),
                             )
                         })
                         .is_some_and(|issued| std::sync::Arc::ptr_eq(issued, observation))
@@ -281,7 +281,7 @@ impl MutationReadAttemptCore<'_, '_, '_> {
         // Original facts and their checked metadata exist before retention seals;
         // postcommit facts are authored later into a distinct carrier.
         let retained = completed
-            .seal_at(computation_facts.clone(), self.lease.snapshot())
+            .seal_at_projection(computation_facts.clone(), self.lease.projection_origin())
             .map_err(|()| {
                 denial(
                     WorthQueryApplicationAttemptDenialKind::DecisionDependencyMismatch,

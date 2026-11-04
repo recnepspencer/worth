@@ -10,33 +10,37 @@ use super::denial::{
 };
 use super::external_effect_contract::InstalledExternalEffectContract;
 
-/// Exact field targets projected from an operation's retained portable reads.
+/// Exact field and relation targets projected from an operation's retained portable reads.
 ///
 /// Built only at the operation-compile resolution site (and crate-internal
 /// tests of that derivation). There is no public constructor: a caller cannot
 /// author a coverage list independent of the operation being installed.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) struct OperationDeclaredReadFields {
-    field_targets: Vec<ApplicationOperationDecisionReadTarget>,
+pub(crate) struct OperationDeclaredPreImageReads {
+    targets: Vec<ApplicationOperationDecisionReadTarget>,
 }
 
-impl OperationDeclaredReadFields {
+impl OperationDeclaredPreImageReads {
     pub(crate) fn from_targets<'a>(
         targets: impl IntoIterator<Item = &'a ApplicationOperationDecisionReadTarget>,
     ) -> Self {
         Self {
-            field_targets: targets
+            targets: targets
                 .into_iter()
                 .filter(|target| {
-                    matches!(target, ApplicationOperationDecisionReadTarget::Field { .. })
+                    matches!(
+                        target,
+                        ApplicationOperationDecisionReadTarget::Field { .. }
+                            | ApplicationOperationDecisionReadTarget::Relation { .. }
+                    )
                 })
                 .cloned()
                 .collect(),
         }
     }
 
-    pub(crate) fn field_targets(&self) -> &[ApplicationOperationDecisionReadTarget] {
-        &self.field_targets
+    pub(crate) fn targets(&self) -> &[ApplicationOperationDecisionReadTarget] {
+        &self.targets
     }
 }
 
@@ -95,13 +99,13 @@ pub(super) fn validate_axis_pair(
 
 pub(super) fn validate_preimage_coverage(
     portable: &PortableApplicationAftermathContract,
-    declared_reads: &OperationDeclaredReadFields,
+    declared_reads: &OperationDeclaredPreImageReads,
 ) -> Result<(), WorthQueryAftermathInstallationDenial> {
     let Some(PortableCorrectionMechanism::RecordedInverse(inverse)) = portable.mechanism() else {
         return Ok(());
     };
     let demand = inverse.preimage_demand();
-    if demand.loci().is_empty() && demand.maximum_encoded_bytes() == 0
+    if demand.loci().is_empty() && demand.relations().is_empty() && demand.maximum_encoded_bytes() == 0
         && portable.correction_binding().and_then(|binding| binding.authored_identity())
             .is_some_and(|identity| identity.parts().source_posture == worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture::Create)
     {
@@ -118,14 +122,16 @@ pub(super) fn validate_preimage_coverage(
     // installation mistake from one that declares reads and misses a slot, and
     // the installer needs to be told which. Behind the per-slot loop this arm
     // was unreachable, because the loop returns on the first uncovered slot.
-    if declared_reads.field_targets().is_empty() && !demand.loci().is_empty() {
+    if declared_reads.targets().is_empty()
+        && (!demand.loci().is_empty() || !demand.relations().is_empty())
+    {
         return Err(WorthQueryAftermathInstallationDenial::new(
             WorthQueryAftermathInstallationDenialKind::MissingDeclaredReadsCoverage,
             "no-declared-reads",
         ));
     }
     for locus in demand.loci() {
-        let covered = declared_reads.field_targets().iter().any(|read| {
+        let covered = declared_reads.targets().iter().any(|read| {
             matches!(
                 read,
                 ApplicationOperationDecisionReadTarget::Field {
@@ -141,6 +147,23 @@ pub(super) fn validate_preimage_coverage(
             return Err(WorthQueryAftermathInstallationDenial::new(
                 WorthQueryAftermathInstallationDenialKind::PreImageDemandNotCoveredByDeclaredReads,
                 format!("{}.{}.{}", locus.entity(), locus.aspect(), locus.field()),
+            ));
+        }
+    }
+    for (index, locus) in demand.relations().iter().enumerate() {
+        let covered = !locus.relation().trim().is_empty()
+            && !locus.from().trim().is_empty()
+            && !locus.to().trim().is_empty()
+            && !demand.relations()[..index].contains(locus)
+            && declared_reads.targets().iter().any(|read| {
+                matches!(read,
+                ApplicationOperationDecisionReadTarget::Relation { relation, from, to }
+                if relation == locus.relation() && from == locus.from() && to == locus.to())
+            });
+        if !covered {
+            return Err(WorthQueryAftermathInstallationDenial::new(
+                WorthQueryAftermathInstallationDenialKind::PreImageDemandNotCoveredByDeclaredReads,
+                format!("{}:{}->{}", locus.relation(), locus.from(), locus.to()),
             ));
         }
     }

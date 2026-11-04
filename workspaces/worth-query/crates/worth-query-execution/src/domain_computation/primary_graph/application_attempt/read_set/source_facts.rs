@@ -29,6 +29,18 @@ fn compare_source_facts<Schema, Operation, Input, Scope>(
     admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     lease: &WorthQueryApplicationSnapshotLease,
 ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+    if let Some(expected) = lease.applied_source_qualification() {
+        // Source expansion was sealed from this exact immutable Native image.
+        // Its qualification is separate from the before authorization lease.
+        return if lease.applied_qualification() == Some(expected) {
+            Ok(())
+        } else {
+            Err(denial(
+                WorthQueryApplicationAttemptDenialKind::SourceChanged,
+                admission.operation(),
+            ))
+        };
+    }
     for fact in admission.source_facts() {
         super::super::super::fact_verification_observation::source_admission();
         if let Some(stop) = admission.publication_request().interruption() {

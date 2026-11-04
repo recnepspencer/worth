@@ -32,6 +32,7 @@ mod tests {
                 kind: KindId(7),
                 entity: Arc::from("x".repeat(length)),
                 authority_identity: 19,
+                phase: None,
                 _marker: PhantomData,
             };
             let weak = Arc::downgrade(&identity.entity);

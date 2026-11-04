@@ -85,11 +85,15 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
         );
         self.realized_scope.record(identity.entity_id);
         let reads = &mut self.work;
-        match crate::domain_computation::primary_graph::application_attempt::observe_field_value_borrowed_admitted(
-            self.runtime, self.execution, self.snapshot, identity.entity_id, identity.kind,
-            locator, |raw| {
+        match self.native.observe_field(
+            self.execution,
+            self.snapshot,
+            identity.entity_id,
+            identity.kind,
+            locator,
+            |raw| {
                 reads.record_fields(1);
-                observe(raw)
+                observe(raw.value())
             },
         ) {
             Ok(Some(value)) => value,
@@ -101,7 +105,9 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
             )),
             Err(cause) => {
                 self.native_read_stop.get_or_insert(cause);
-                Err(HandlerExecutionDenial::new(WorthQueryApplicationAttemptDenial::from(cause)))
+                Err(HandlerExecutionDenial::new(
+                    WorthQueryApplicationAttemptDenial::from(cause),
+                ))
             }
         }
     }

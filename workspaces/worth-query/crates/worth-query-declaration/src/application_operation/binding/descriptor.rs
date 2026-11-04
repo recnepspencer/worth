@@ -208,6 +208,14 @@ impl ApplicationMutationBindingDescriptor {
         }
     }
 
+    pub(crate) fn with_coupled_outputs(
+        mut self,
+        connections: Vec<crate::application_program::DeclaredCoupledOutputConnection>,
+    ) -> Self {
+        self.description = self.description.with_coupled_outputs(connections);
+        self
+    }
+
     pub fn description(&self) -> &ApplicationMutationDescription {
         &self.description
     }

@@ -1,3 +1,4 @@
+pub(crate) use publication::BoundAuthoredCoupling;
 mod observation;
 pub(crate) mod publication;
 pub use publication::RelationalPublicationReadDependencyDenial;
@@ -42,10 +43,15 @@ pub(crate) use publication::{
     PublicationPreparationDenial,
 };
 pub use publication::{
-    RelationalAuthoredRestoration, RelationalAuthoredRetirement,
+    RelationalAuthoredCoupledCandidate, RelationalAuthoredCoupledOwners,
+    RelationalAuthoredCoupledProducerAssembly, RelationalAuthoredCoupledTransaction,
+    RelationalAuthoredRestoration, RelationalAuthoredRetirement, RelationalCoupledAssemblyFailure,
+    RelationalCoupledAuthoredPublication, RelationalDeclaredCoupledOwner,
+    RelationalPerformedOutputPublications, RelationalPreparedOutputPublications,
     RelationalRequiredOutputPublication, RelationalRequiredOutputRouteAbsence,
-    RequiredOutputProducingImplementation, RequiredOutputPublication,
-    RequiredOutputPublicationMeaning, RequiredOutputRolePosture, RequiredOutputRoleTarget,
+    RelationalRestoredProducerPrior, RequiredOutputProducingImplementation,
+    RequiredOutputPublication, RequiredOutputPublicationMeaning, RequiredOutputRolePosture,
+    RequiredOutputRoleTarget,
 };
 pub use retained_entity_selection::{
     RelationalRetainedEntitySelection, RelationalRetainedEntitySelectionDenial,
@@ -71,7 +77,8 @@ pub use validation::{
     ValidatedEntityStructTouch, ValidatedMutationFootprint, ValidatedMutationFootprintNotRequested,
     ValidatedMutationFootprintProjection, ValidatedMutationFootprintWork, ValidatedMutationTouch,
     ValidatedMutationTouchProjectionError, ValidatedMutationTouchProjectionWork,
-    ValidatedMutationTouches, ValidatedRelationalProposal,
+    ValidatedMutationTouches, ValidatedRelationMutation, ValidatedRelationMutationFootprint,
+    ValidatedRelationalProposal,
 };
 
 #[cfg(test)]

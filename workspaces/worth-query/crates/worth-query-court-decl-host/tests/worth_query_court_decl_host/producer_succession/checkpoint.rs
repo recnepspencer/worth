@@ -39,10 +39,10 @@ impl<'de: 'a, 'a> Deserialize<'de> for Blob<'a> {
 }
 pub fn envelopes(checkpoint: &installation::WorthQueryApplicationCheckpoint) -> Vec<Value> {
     let bytes = checkpoint.bytes();
-    let start = find(bytes, b"WORTH-REL-CHK16\n");
+    let start = find(bytes, b"WORTH-REL-CHK17\n");
     let len = u64::from_be_bytes(bytes[start - 16..start - 8].try_into().unwrap()) as usize;
     let native: Native<'_> =
-        rmp_serde::from_slice(&bytes[start + b"WORTH-REL-CHK16\n".len()..start + len]).unwrap();
+        rmp_serde::from_slice(&bytes[start + b"WORTH-REL-CHK17\n".len()..start + len]).unwrap();
     native
         .envelopes
         .iter()
@@ -111,7 +111,7 @@ pub fn omit_leaf_publication(
     checkpoint: &installation::WorthQueryApplicationCheckpoint,
 ) -> installation::WorthQueryApplicationCheckpoint {
     let bytes = checkpoint.bytes();
-    let start = find(bytes, b"WORTH-REL-CHK16\n");
+    let start = find(bytes, b"WORTH-REL-CHK17\n");
     let native_len = u64::from_be_bytes(bytes[start - 16..start - 8].try_into().unwrap()) as usize;
     let native: Native<'_> = rmp_serde::from_slice(&bytes[start + 16..start + native_len]).unwrap();
     let blob = native
@@ -161,7 +161,7 @@ pub fn omit_retirement_group(
     checkpoint: &installation::WorthQueryApplicationCheckpoint,
 ) -> installation::WorthQueryApplicationCheckpoint {
     let bytes = checkpoint.bytes();
-    let start = find(bytes, b"WORTH-REL-CHK16\n");
+    let start = find(bytes, b"WORTH-REL-CHK17\n");
     let native_len = u64::from_be_bytes(bytes[start - 16..start - 8].try_into().unwrap()) as usize;
     let native: Native<'_> = rmp_serde::from_slice(&bytes[start + 16..start + native_len]).unwrap();
     let key = rmp_serde::to_vec("producer_cascade_retirement").unwrap();

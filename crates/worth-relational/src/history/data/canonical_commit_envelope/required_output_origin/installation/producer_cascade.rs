@@ -218,6 +218,7 @@ impl CanonicalCommitEnvelope {
                 state,
                 installed,
                 RouteCompletion {
+                    contribution_records: None,
                     producer: &origin.producer,
                     dependency_identity: origin.dependency_identity,
                     meaning: &origin.meaning,

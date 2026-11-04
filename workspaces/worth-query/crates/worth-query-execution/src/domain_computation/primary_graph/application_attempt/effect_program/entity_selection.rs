@@ -115,7 +115,8 @@ impl<Schema, Operation, Input, Scope>
                     )
                 })
                 .any(|fact| fact.touches_entity(target.entity_id));
-        if target.runtime_authority != self.read_set.admission.runtime_authority()
+        if target.phase != self.read_set.lease.applied_qualification()
+            || target.runtime_authority != self.read_set.admission.runtime_authority()
             || &target.binding_identity != self.read_set.admission.binding_identity()
             || target.admission_identity != self.read_set.admission.admission_identity()
             || !observed

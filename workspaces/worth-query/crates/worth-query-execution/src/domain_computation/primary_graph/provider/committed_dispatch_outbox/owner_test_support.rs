@@ -93,7 +93,7 @@ pub(super) fn retain_commit_basis(
         .receipt_basis_retention
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner())
-        .retain(committed.commit.commit_id, retention, false);
+        .retain_group(committed.commit.commit_id, retention, 0);
 }
 
 pub(super) fn record_for(identity: u64) -> WorthQueryDispatchOutboxRecord {

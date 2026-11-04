@@ -39,7 +39,13 @@ pub(super) fn candidate_matches(
                     .entity_aspect_plan(entry.kind)
                     .ok_or("maintenance entity contract absent")?;
                 let expected = super::super::membership::reconstruct(
-                    runtime, original, id, plan, context, lease,
+                    runtime,
+                    original,
+                    id,
+                    plan,
+                    context,
+                    lease,
+                    basis.inner.root.schema_authority(),
                 )?;
                 let (_, partition) = current_entity_partition_source_for_slot(
                     &after,
@@ -75,7 +81,13 @@ pub(super) fn candidate_matches(
                     .relation_aspect_plan(entry.kind)
                     .ok_or("maintenance relation contract absent")?;
                 let expected = super::super::relation_payload::reconstruct(
-                    runtime, original, id, plan, context, lease,
+                    runtime,
+                    original,
+                    id,
+                    plan,
+                    context,
+                    lease,
+                    basis.inner.root.schema_authority(),
                 )?;
                 let (_, partition) = current_relation_partition_source_for_slot(
                     &after,
@@ -115,8 +127,9 @@ pub(super) fn validate(
     envelope: &CanonicalCommitEnvelope,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
+    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
 ) -> Result<(), Failure> {
-    validate_one(runtime, envelope, context, lease)?;
+    validate_one(runtime, envelope, context, lease, schema)?;
     let event = envelope
         .required_output_materialization
         .as_ref()
@@ -145,7 +158,7 @@ pub(super) fn validate(
         if previous.required_output_materialization.is_some() {
             // The header pass has authenticated this pair and its source jump.
             // Validate its own payload once; do not recursively revisit its prefix.
-            validate_one(runtime, &previous, context, lease)?;
+            validate_one(runtime, &previous, context, lease, schema)?;
         }
         next = previous
             .required_output_materialization
@@ -161,6 +174,7 @@ fn validate_one(
     envelope: &CanonicalCommitEnvelope,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
+    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
 ) -> Result<(), Failure> {
     let event = envelope
         .required_output_materialization
@@ -182,7 +196,7 @@ fn validate_one(
             .ok_or("maintenance producer origin absent")?
             .meaning
             .source_scope;
-        validate_record(runtime, envelope, &original, member, context, lease)
+        validate_record(runtime, envelope, &original, member, context, lease, schema)
             .map_err(|stop| Failure::at_source(source, stop))?;
     }
     Ok(())
@@ -195,6 +209,7 @@ fn validate_record(
     member: &CanonicalRequiredOutputMaterializationRecord,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
+    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
 ) -> Result<(), Stop> {
     let origin = original.validate_output_membership_header()?;
     let (plan, expected) = match member.record {
@@ -218,7 +233,7 @@ fn validate_record(
             (
                 plan,
                 super::super::membership::reconstruct_canonical_payload(
-                    runtime, original, id, plan, context, lease,
+                    runtime, original, id, plan, context, lease, schema,
                 )?,
             )
         }
@@ -243,7 +258,7 @@ fn validate_record(
             (
                 plan,
                 super::super::relation_payload::reconstruct(
-                    runtime, original, id, plan, context, lease,
+                    runtime, original, id, plan, context, lease, schema,
                 )?,
             )
         }

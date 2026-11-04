@@ -34,13 +34,19 @@ pub use crate::mvcc::{
     ValidatedMutationFootprint, ValidatedMutationFootprintNotRequested,
     ValidatedMutationFootprintProjection, ValidatedMutationFootprintWork, ValidatedMutationTouch,
     ValidatedMutationTouchProjectionError, ValidatedMutationTouchProjectionWork,
-    ValidatedMutationTouches, ValidatedRelationalProposal,
+    ValidatedMutationTouches, ValidatedRelationMutation, ValidatedRelationMutationFootprint,
+    ValidatedRelationalProposal,
 };
 pub use crate::mvcc::{
-    RelationalAuthoredRestoration, RelationalAuthoredRetirement,
+    RelationalAuthoredCoupledCandidate, RelationalAuthoredCoupledOwners,
+    RelationalAuthoredCoupledProducerAssembly, RelationalAuthoredCoupledTransaction,
+    RelationalAuthoredRestoration, RelationalAuthoredRetirement, RelationalCoupledAssemblyFailure,
+    RelationalCoupledAuthoredPublication, RelationalDeclaredCoupledOwner,
+    RelationalPerformedOutputPublications, RelationalPreparedOutputPublications,
     RelationalRequiredOutputPublication, RelationalRequiredOutputRouteAbsence,
-    RequiredOutputProducingImplementation, RequiredOutputPublication,
-    RequiredOutputPublicationMeaning, RequiredOutputRolePosture, RequiredOutputRoleTarget,
+    RelationalRestoredProducerPrior, RequiredOutputProducingImplementation,
+    RequiredOutputPublication, RequiredOutputPublicationMeaning, RequiredOutputRolePosture,
+    RequiredOutputRoleTarget,
 };
 pub use crate::publication::RelationalSettlementPort;
 pub use crate::transactions::data::{

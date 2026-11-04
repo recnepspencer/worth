@@ -241,6 +241,7 @@ fn candidate(
 ) -> RetainedInputCutoffCandidate {
     let boundary = CompletedHandlerFactBoundary::completed_for_test(prefix.len());
     RetainedInputCutoffCandidate::from_exact_cell(Arc::new(OnceLock::from(RecordedOutput {
+        coupled_completion: None,
         producing_implementation: None,
         required_publication: None,
         computation_source: ComputationSourceEvidence::for_test(false),

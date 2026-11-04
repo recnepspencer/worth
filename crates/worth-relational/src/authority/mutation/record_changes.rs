@@ -88,6 +88,7 @@ pub(super) fn delete_entity_with_cascade(
     schema_registry: &RelationalSchemaRegistry,
     default_cascade_delete_policy: CascadeDeletePolicy,
     outcome: &mut MutationOutcome,
+    deferred_publication_edges: Option<&BTreeSet<RelationId>>,
 ) -> Result<(), CommitConflict> {
     let slot = entity_id.slot_index();
     state.mark_entity_slot_touched(entity_id.partition_id, slot);
@@ -143,14 +144,26 @@ pub(super) fn delete_entity_with_cascade(
         reverse_adjacency.extend_into(&mut attached);
     }
     for relation_id in attached {
-        let cascade_policy = state
+        if deferred_publication_edges.is_some_and(|edges| edges.contains(&relation_id)) {
+            continue;
+        }
+        let relation_kind = state
             .get_current_partition(relation_id.partition_id)
             .and_then(|partition| {
                 partition
                     .relation_arena()
                     .get(&relation_id)
                     .and_then(|slot| slot.kind_id())
-            })
+            });
+        // Native aggregate consequences own metadata deletion. Retaining these
+        // edges for audit here hides them from that owner's live after image,
+        // leaving cascade rosters without their required true deletion patches.
+        let native_aggregate_metadata = relation_kind
+            .is_some_and(|kind| schema_registry.aggregate_private_kinds.contains(&kind));
+        if native_aggregate_metadata {
+            continue;
+        }
+        let cascade_policy = relation_kind
             .and_then(|kind_id| {
                 schema_registry
                     .relation_registration(kind_id)

@@ -66,6 +66,7 @@ fn second_real_overlay_is_rejected_without_orphaning_the_first_overlay() {
             let running = start_managed_application_commit(phase, &world.application, prepared)
                 .unwrap_or_else(|outcome| panic!("overlay fixture must start: {outcome:?}"));
             let WorthQueryRunningApplicationCommit {
+                coupled_outputs: _,
                 admission,
                 lease: _lease,
                 provider_attempt,

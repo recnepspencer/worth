@@ -6,6 +6,11 @@ use crate::identity::data::{EntityId, KindId, VersionId};
 use crate::transactions::data::TransactionCommitError;
 use serde::{Deserialize, Serialize};
 mod authored_cascade;
+mod coupled_authored;
+mod coupled_authored_header;
+pub(crate) use coupled_authored::{
+    CanonicalCoupledAuthoredPublication, CanonicalCoupledAuthoredSources,
+};
 mod authored_restoration;
 mod installation;
 pub(crate) use authored_cascade::CanonicalAuthoredRetirement;

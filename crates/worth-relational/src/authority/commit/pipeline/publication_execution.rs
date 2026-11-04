@@ -267,6 +267,11 @@ pub(crate) struct PreparedCommitPublicationCompletion {
 }
 
 impl PreparedCommitPublicationExecution {
+    pub(crate) fn canonical_envelope(
+        &self,
+    ) -> &std::sync::Arc<crate::history::data::CanonicalCommitEnvelope> {
+        self.publication.canonical_envelope()
+    }
     pub(crate) fn descriptive_touches(
         &self,
     ) -> &crate::history::data::RelationalDescriptiveTouchGraph {

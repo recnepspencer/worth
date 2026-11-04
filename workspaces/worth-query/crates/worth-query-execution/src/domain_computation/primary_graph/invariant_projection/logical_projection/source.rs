@@ -33,16 +33,15 @@ impl<S: ApplicationSchema> Reader<'_, S> {
             )
             .map_err(|cause| self.walk_stop(cause, relation.name()))?;
         let native = {
-            let pin = self
-                .runtime
-                .read_truth()
-                .pin_read_capability(self.snapshot, &[], self.execution)
-                .map_err(|cause| match cause {
-                    RelationalPinnedReadAdmissionDenial::Request(stop) => {
-                        self.walk_stop(stop, relation.name())
-                    }
-                    _ => Denial::new(Kind::EndpointUnavailable, relation.name()),
-                })?;
+            let pin =
+                self.native
+                    .pin(self.snapshot, self.execution)
+                    .map_err(|cause| match cause {
+                        RelationalPinnedReadAdmissionDenial::Request(stop) => {
+                            self.walk_stop(stop, relation.name())
+                        }
+                        _ => Denial::new(Kind::EndpointUnavailable, relation.name()),
+                    })?;
             pin.derived_source(
                 self.execution,
                 &definition,

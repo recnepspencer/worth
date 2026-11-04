@@ -45,6 +45,7 @@ fn cancellation_at_registration_binding_is_cancelled_not_denied() {
                 "interrupted-registration",
             );
             let WorthQueryRunningApplicationCommit {
+                coupled_outputs: _,
                 admission,
                 lease,
                 provider_attempt,

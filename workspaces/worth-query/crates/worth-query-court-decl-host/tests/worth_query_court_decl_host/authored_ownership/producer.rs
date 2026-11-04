@@ -47,7 +47,7 @@ impl<S: Scenario> ApplicationMutationBinding<S> for Binding<S> {
     type Result = ();
     type ResultBinding = UnitBinding;
     type IdempotencyKey = u64;
-    type Decision = WorthQueryInvariantMutationTarget<S, Node>;
+    type Decision = InitialTargets<S>;
     type Denial = ();
     type DenialBinding = UnitBinding;
     type Output = Outputs;
@@ -89,16 +89,32 @@ impl<S: Scenario> WorthQueryProducerOutputFamily<S> for Family {
     type Source = query::Binding<S>;
     type Entity = Node;
     const IDENTITY: &'static str = "authored-ownership.family.v1";
-    const SUPPORTED: &'static [WorthQueryProducerApplicability] =
+    const SUPPORTED: &'static [WorthQueryProducerApplicability] = if S::COUPLED {
+        &[
+            WorthQueryProducerApplicability::new(
+                "node",
+                WorthQueryProducerLifecyclePosture::Initial,
+            ),
+            WorthQueryProducerApplicability::new(
+                "node",
+                WorthQueryProducerLifecyclePosture::Preserve,
+            ),
+        ]
+    } else {
         &[WorthQueryProducerApplicability::new(
             "node",
             WorthQueryProducerLifecyclePosture::Initial,
-        )];
+        )]
+    };
     fn profile_kind(_: &Row) -> &'static str {
         "node"
     }
 }
 pub struct Producer<S>(PhantomData<fn() -> S>);
+pub struct InitialTargets<S> {
+    source: WorthQueryInvariantMutationTarget<S, Node>,
+    stage: Option<WorthQueryInvariantMutationTarget<S, Node>>,
+}
 pub struct Provider;
 impl<S: Scenario> WorthQueryApplicationProducerBinding<S> for Producer<S> {
     type Operation = Binding<S>;
@@ -107,7 +123,10 @@ impl<S: Scenario> WorthQueryApplicationProducerBinding<S> for Producer<S> {
     type OutputRole = Role<S>;
     const IDENTITY: &'static str = "authored-ownership.producer.v1";
     const APPLICABILITY: &'static [WorthQueryProducerApplicability] =
-        <Family as WorthQueryProducerOutputFamily<S>>::SUPPORTED;
+        &[WorthQueryProducerApplicability::new(
+            "node",
+            WorthQueryProducerLifecyclePosture::Initial,
+        )];
     const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement] = &[];
     const REUSE_POLICY: &'static str = "exact-source";
     const OWNERSHIP: ProducerPublicationOwnership = if S::MODE == 3 {
@@ -131,10 +150,25 @@ impl<S: Scenario> OperationHandler<S, Binding<S>> for Provider {
         &self,
         input: &Input,
         reader: &mut DecisionReader<'_, '_, '_, S, Binding<S>>,
-    ) -> HandlerResult<WorthQueryInvariantMutationTarget<S, Node>, ()> {
-        let result = reader
-            .resolve_entity(Id::reference(), input.id)
-            .and_then(|source| reader.mutation_target(&source));
+    ) -> HandlerResult<InitialTargets<S>, ()> {
+        let result = (|| {
+            let source = reader.resolve_entity(Id::reference(), input.id)?;
+            let source = reader.mutation_target(&source)?;
+            let stage = if S::COUPLED {
+                let stage = reader.resolve_entity(
+                    Id::reference(),
+                    if S::MODE == 17 && input.id == 11 {
+                        30
+                    } else {
+                        20
+                    },
+                )?;
+                Some(reader.mutation_target(&stage)?)
+            } else {
+                None
+            };
+            Ok::<_, HandlerExecutionDenial>(InitialTargets { source, stage })
+        })();
         match result {
             Ok(target) => HandlerResult::Completed(target),
             Err(cause) => HandlerResult::ExecutionDenied(cause),
@@ -143,14 +177,14 @@ impl<S: Scenario> OperationHandler<S, Binding<S>> for Provider {
     fn build_candidate(
         &self,
         input: &Input,
-        target: WorthQueryInvariantMutationTarget<S, Node>,
+        target: InitialTargets<S>,
         writer: &mut CandidateWriter<'_, S, Binding<S>>,
     ) -> HandlerResult<(), ()> {
         let Some(id) = input.id.checked_mul(10).and_then(|id| id.checked_add(1)) else {
             return HandlerResult::DomainDenied(());
         };
         let build = (|| {
-            let source = writer.projected_entity(&target)?;
+            let source = writer.projected_entity(&target.source)?;
             let created = writer.create_entity_in_context(
                 &source,
                 Node::reference(),
@@ -174,6 +208,33 @@ impl<S: Scenario> OperationHandler<S, Binding<S>> for Provider {
             )?;
             writer.initialize_field(&cell, Id::reference(), id + 1)?;
             writer.initialize_field(&cell, Value::reference(), 39)?;
+            if S::MODE == 13 {
+                writer.link(
+                    Peer::reference(),
+                    "component-business-edge",
+                    &created,
+                    &cell,
+                )?;
+            }
+            if let Some(stage) = &target.stage {
+                let stage = writer.projected_entity(stage)?;
+                writer.link(Peer::reference(), "body-stage", &cell, &stage)?;
+            }
+            if S::MODE == 42 {
+                writer.link(OwnCell::reference(), "owned-cell", &cell, &created)?;
+            }
+            if matches!(S::MODE, 22 | 23 | 26 | 27 | 28) {
+                writer.link(StageVisible::reference(), "body-visible", &source, &created)?;
+                writer.link(OwnCell::reference(), "owned-cell", &cell, &created)?;
+            }
+            if S::MODE == 40 {
+                writer.link(
+                    PreviousStage::reference(),
+                    "owned-stage-predecessor",
+                    &cell,
+                    &created,
+                )?;
+            }
             writer.create_output::<Cell<S>>(&cell)
         })();
         match build {

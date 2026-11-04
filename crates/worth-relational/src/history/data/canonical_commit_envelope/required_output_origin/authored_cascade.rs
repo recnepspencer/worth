@@ -38,7 +38,7 @@ pub(super) fn install(
     created_relations: &CommitCreatedRelationBindings,
     state: &WorkingState,
     installed: crate::mvcc::RelationalInstalledApplicationPublicationAuthority,
-    admission: worth_proof::AdmittedAuthoredOutputRetirement,
+    admission: &worth_proof::AdmittedAuthoredOutputRetirement,
     mut predecessor: RelationalAuthoredRetirement,
     lease: Option<&ExecutionResourceLease<'_>>,
     context: &mut MapKernelContext<'_, '_>,
@@ -180,6 +180,7 @@ pub(super) fn install(
                         roles: members,
                     },
                 },
+                None,
                 lease,
                 context,
             )

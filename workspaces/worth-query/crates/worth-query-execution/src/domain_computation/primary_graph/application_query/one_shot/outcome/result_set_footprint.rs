@@ -31,9 +31,9 @@ impl<'a> ResultSetFootprint<'a> {
         );
         // Single-row producer input also depends on the complete selection:
         // a new matching root invalidates reuse even if this row did not change.
-        if let [row] = rows.as_mut_slice() {
-            row.root_selection = Some(Arc::clone(&selection));
-        }
+        super::super::super::read_execution::complete_single_source_selection(
+            &mut rows, &selection,
+        );
         Ok((rows, selection))
     }
     pub(super) fn prepare(

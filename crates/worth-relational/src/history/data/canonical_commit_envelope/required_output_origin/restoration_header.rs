@@ -11,9 +11,22 @@ impl CanonicalCommitEnvelope {
         &self,
         context: &mut MapKernelContext<'_, '_>,
     ) -> Result<(), Stop> {
-        let Some(event) = &self.authored_cascade_restoration else {
+        let Some(event) = self.authored_source_restoration() else {
             return Ok(());
         };
+        self.validate_authored_restoration_components(
+            event,
+            self.coupled_authored_publication.is_some(),
+            context,
+        )
+    }
+
+    pub(super) fn validate_authored_restoration_components(
+        &self,
+        event: &CanonicalAuthoredRestoration,
+        allow_empty: bool,
+        context: &mut MapKernelContext<'_, '_>,
+    ) -> Result<(), Stop> {
         let charge = super::super::super::codec_retirement_closure::charge;
         charge(
             context,
@@ -22,7 +35,7 @@ impl CanonicalCommitEnvelope {
         if self.producer_cascade_retirement.is_some()
             || self.required_output_origin.is_some()
             || self.authored_cascade_retirement.is_some()
-            || event.publications.is_empty()
+            || (!allow_empty && event.publications.is_empty())
             || event.original_anchor == event.anchor
             || !event
                 .entities

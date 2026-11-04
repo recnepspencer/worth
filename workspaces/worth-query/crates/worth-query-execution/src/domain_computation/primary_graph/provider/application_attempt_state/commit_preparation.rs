@@ -10,10 +10,14 @@ use super::super::{
     WorthQueryPrimaryGraphProvider,
 };
 
+mod coupled;
+pub(super) use coupled::CoupledCommitPreparation;
 mod preimage_retention;
 mod relational_commit;
 pub(in crate::domain_computation::primary_graph) use preimage_retention::WorthQueryPreImageRetentionWork;
-pub(crate) use preimage_retention::WorthQueryRetainedPreImageSeal;
+pub(crate) use preimage_retention::{
+    WorthQueryRetainedPreImageSeal, WorthQueryRetainedRelationPreImageSeal,
+};
 pub(in crate::domain_computation::primary_graph::provider) use relational_commit::publish_recovered;
 pub(in crate::domain_computation::primary_graph::provider) use relational_commit::ManagedUnpublishedAttempt;
 pub(in crate::domain_computation::primary_graph) use relational_commit::RebaseVerificationFailure;
@@ -24,6 +28,7 @@ pub(in crate::domain_computation::primary_graph) use relational_commit::{
 
 pub(super) struct WorthQueryPreparedApplicationCommit {
     attempt: WorthQueryPrimaryGraphApplicationAttempt,
+    members: Vec<super::CoupledApplicationMember>,
     candidate: worth_relational::facade::mvcc::ValidatedRelationalProposal,
     predicate: Option<crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationOwner>,
     work: WorthQueryPrimaryMutationWorkCounters,
@@ -59,8 +64,20 @@ pub(in crate::domain_computation::primary_graph::provider) fn commit_prepared_ap
     crate::domain_computation::WorthQueryProviderTerminalDescription,
     crate::domain_computation::WorthQueryProviderSessionCommitStop,
 > {
-    let prepared = take_prepared_session(provider, session, allocation_policy)
-        .map_err(crate::domain_computation::WorthQueryProviderSessionCommitStop::from)?;
+    // Preserve the new checks' precise pre-effect causes through cleanup.
+    // Existing single-publication preparation refusals keep their established route.
+    let prepared =
+        take_prepared_session(provider, session, allocation_policy).map_err(|failure| {
+            if failure.relation_preimage_failure().is_some()
+                || failure.candidate_support_failure().is_some()
+            {
+                crate::domain_computation::WorthQueryProviderSessionCommitStop::PreEffectDenied(
+                    failure,
+                )
+            } else {
+                crate::domain_computation::WorthQueryProviderSessionCommitStop::Denied(failure)
+            }
+        })?;
     if provider.take_rejected_commit_before_transaction() {
         return Err(
             crate::domain_computation::WorthQueryProviderSessionCommitStop::Denied(
@@ -100,16 +117,30 @@ fn take_prepared_session(
     })?;
     let (mut attempt, approved, completion) = prepared.into_parts();
     let super::WorthQueryApprovedApplicationCandidate {
+        mut members,
         native: candidate,
         work,
         predicate,
     } = approved;
+    coupled::prepare(
+        &mut members,
+        &candidate,
+        &session.execution_request(),
+        &provider.graph.layout,
+        allocation_policy,
+    )?;
     let source_fact_rebase = attempt.take_source_fact_rebase();
-    let (retained_preimage, preimage_retention_work) =
-        preimage_retention::retain_attempt_preimage(&attempt, &candidate, allocation_policy)?
-            .into_parts();
+    let (retained_preimage, preimage_retention_work) = preimage_retention::retain_attempt_preimage(
+        &attempt,
+        &candidate,
+        &session.execution_request(),
+        &provider.graph.layout,
+        allocation_policy,
+    )?
+    .into_parts();
     Ok(WorthQueryPreparedApplicationCommit {
         attempt,
+        members,
         candidate,
         predicate,
         work,

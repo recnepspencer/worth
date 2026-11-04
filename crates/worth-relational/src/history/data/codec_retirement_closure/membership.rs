@@ -42,7 +42,13 @@ pub(super) fn latest(
         }
         if writes(&envelope, id, context)? {
             if let Some(event) = &envelope.required_output_materialization {
-                super::materialization::validate_semantics(runtime, &envelope, context, lease)?;
+                super::materialization::validate_semantics(
+                    runtime,
+                    &envelope,
+                    context,
+                    lease,
+                    basis.inner.root.schema_authority(),
+                )?;
                 for publication in &event.producer_publications {
                     let original = runtime
                         .history
@@ -70,7 +76,12 @@ pub(super) fn validate_member(
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
 ) -> Result<Arc<CanonicalRequiredOutputOrigin>, Stop> {
-    super::restoration_payload::validate_groups(runtime, selected, context)?;
+    super::restoration_payload::validate_groups(
+        runtime,
+        selected,
+        context,
+        basis.inner.root.schema_authority(),
+    )?;
     let origin = selected.output_origin_for_entity(id, context)?;
     let member = origin
         .members
@@ -120,7 +131,15 @@ pub(super) fn validate_member(
     let plan = schema
         .entity_aspect_plan(member.kind)
         .ok_or("output physical contract plan absent")?;
-    let reconstructed = reconstruct(runtime, selected, id, plan, context, lease)?;
+    let reconstructed = reconstruct(
+        runtime,
+        selected,
+        id,
+        plan,
+        context,
+        lease,
+        basis.inner.root.schema_authority(),
+    )?;
     charge(
         context,
         payload.map_or(0, |payload| payload.owned_allocation_capacity_bytes()),
@@ -143,8 +162,9 @@ pub(super) fn reconstruct(
     plan: &crate::schema::data::LoweredAspectContractPlan,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
+    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
 ) -> Result<Option<super::payload_reconstruction::ReconstructedPayload>, Stop> {
-    reconstruct_chain(runtime, selected, id, plan, context, lease, true)
+    reconstruct_chain(runtime, selected, id, plan, context, lease, true, schema)
 }
 
 /// Canonical producer patches supply expected bytes; their maintenance gaps
@@ -156,8 +176,9 @@ pub(super) fn reconstruct_canonical_payload(
     plan: &crate::schema::data::LoweredAspectContractPlan,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
+    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
 ) -> Result<Option<super::payload_reconstruction::ReconstructedPayload>, Stop> {
-    reconstruct_chain(runtime, selected, id, plan, context, lease, false)
+    reconstruct_chain(runtime, selected, id, plan, context, lease, false, schema)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -169,8 +190,9 @@ fn reconstruct_chain(
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
     validate_gap_payload: bool,
+    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
 ) -> Result<Option<super::payload_reconstruction::ReconstructedPayload>, Stop> {
-    super::restoration_payload::validate_groups(runtime, selected, context)?;
+    super::restoration_payload::validate_groups(runtime, selected, context, schema)?;
     let origin = selected.output_origin_for_entity(id, context)?;
     let _member = origin
         .members
@@ -202,23 +224,36 @@ fn reconstruct_chain(
                 {
                     return Err("publication birth identity differs".into());
                 }
-                super::codec_disposition::validate_birth(runtime, &current, context, lease)?;
+                super::codec_disposition::validate_birth(
+                    runtime, &current, context, lease, schema,
+                )?;
                 break;
             }
             CanonicalOutputPublication::AuthoredRestoration {
                 retirement,
                 predecessor,
             } => {
-                super::restoration_payload::validate_member(
-                    runtime,
-                    &current,
-                    id,
-                    retirement,
-                    predecessor,
-                    plan,
-                    context,
-                    lease,
-                )?;
+                super::restoration_payload::validate_groups(runtime, &current, context, schema)?;
+                // A later Preserve can introduce a distinct member after this
+                // restoration base. Its actual Create is verified during replay;
+                // only the base's members have an original restored payload.
+                if current_origin
+                    .members
+                    .binary_search_by_key(&id, |member| member.id)
+                    .is_ok()
+                {
+                    super::restoration_payload::validate_member(
+                        runtime,
+                        &current,
+                        id,
+                        retirement,
+                        predecessor,
+                        plan,
+                        context,
+                        lease,
+                        schema,
+                    )?;
+                }
                 break;
             }
             CanonicalOutputPublication::Preserve { predecessor }
@@ -230,7 +265,7 @@ fn reconstruct_chain(
                     .ok_or("publication predecessor history missing")?;
                 let prior = previous.output_origin_for_route(&current_origin.meaning, context)?;
                 super::publication_succession::validate_succession(
-                    runtime, &current, prior, context,
+                    runtime, &current, prior, context, schema,
                 )?;
                 super::publication_succession::validate_gap(
                     runtime,
@@ -240,6 +275,7 @@ fn reconstruct_chain(
                     context,
                     lease,
                     validate_gap_payload,
+                    schema,
                 )?;
                 current = previous;
             }

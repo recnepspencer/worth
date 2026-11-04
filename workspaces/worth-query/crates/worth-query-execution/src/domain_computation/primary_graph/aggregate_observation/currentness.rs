@@ -38,6 +38,16 @@ impl AggregateObservation {
         context: &mut MapKernelContext<'_, '_>,
         control: Option<&dyn Fn() -> Result<(), Cause>>,
     ) -> Result<bool, Failure> {
+        self.remains_equal_on_pin(pin, pin.snapshot().into(), execution, context, control)
+    }
+    pub(in crate::domain_computation::primary_graph) fn remains_equal_on_pin<Phase>(
+        &self,
+        pin: &RelationalPinnedRead<Phase>,
+        origin: crate::domain_computation::primary_graph::projection_read_origin::ProjectionReadOriginRef<'_>,
+        execution: &ExecutionRequest<'_, '_>,
+        context: &mut MapKernelContext<'_, '_>,
+        control: Option<&dyn Fn() -> Result<(), Cause>>,
+    ) -> Result<bool, Failure> {
         let mut poll = || {
             Self::checkpoint(context).map_err(Failure::Execution)?;
             if let Some(control) = control {
@@ -46,7 +56,7 @@ impl AggregateObservation {
             Ok::<(), Failure>(())
         };
         poll()?;
-        if self.source() == pin.snapshot() {
+        if self.source() == &origin {
             poll()?;
             return Ok(true);
         }
@@ -68,13 +78,20 @@ impl AggregateObservation {
             }
         };
         poll()?;
-        if current.definition() != self.native.definition()
-            || current.identity() != self.native.identity()
-            || current.len() != self.native.len()
+        Self::same_native(&self.native, &current, poll)
+    }
+    fn same_native(
+        original: &PinnedAggregateRead,
+        current: &PinnedAggregateRead,
+        mut poll: impl FnMut() -> Result<(), Failure>,
+    ) -> Result<bool, Failure> {
+        if current.definition() != original.definition()
+            || current.identity() != original.identity()
+            || current.len() != original.len()
         {
             return Ok(false);
         }
-        for (old, now) in self.native.members().zip(current.members()) {
+        for (old, now) in original.members().zip(current.members()) {
             poll()?;
             if old != now {
                 return Ok(false);
@@ -82,5 +99,33 @@ impl AggregateObservation {
         }
         poll()?;
         Ok(true)
+    }
+    pub(in crate::domain_computation::primary_graph) fn support_equal_between<A, B>(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        left: &RelationalPinnedRead<A>,
+        right: &RelationalPinnedRead<B>,
+    ) -> Result<bool, Failure> {
+        let answer = execution
+            .run_native_with_checkpoint(|context| {
+                let left = left
+                    .read_aggregate(execution, self.key.native_scope())
+                    .map_err(support_stop)?;
+                let right = right
+                    .read_aggregate(execution, self.key.native_scope())
+                    .map_err(support_stop)?;
+                Self::same_native(&left, &right, || {
+                    Self::checkpoint(context).map_err(Failure::Execution)
+                })
+            })
+            .map_err(|cause| Failure::Execution(cause.into()))?;
+        answer.0
+    }
+}
+
+pub(super) fn support_stop(stop: PinnedAggregateReadDenial) -> Failure {
+    match stop.kind {
+        Denial::Read(cause) => Failure::Execution(cause),
+        _ => Failure::Unavailable,
     }
 }

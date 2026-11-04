@@ -28,6 +28,36 @@ pub(crate) fn apply_plan_to_working_state(
     lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
     commit_work_budget: Option<crate::execution::RequestWorkBudget>,
 ) -> Result<MutationApplyOutcome, super::MutationApplyDenial> {
+    apply_plan_with_publication_edges(
+        state,
+        apply_plan,
+        config,
+        schema_registry,
+        aspect_plans,
+        symbols,
+        branch_local_delete_allowance,
+        record_allocations,
+        lease,
+        commit_work_budget,
+        None,
+    )
+}
+
+pub(crate) fn apply_plan_with_publication_edges(
+    state: &mut WorkingState,
+    apply_plan: &AuthoritativeApplyPlan,
+    config: &MutationConfig,
+    schema_registry: &RelationalSchemaRegistry,
+    aspect_plans: &AspectContractPlanCatalog,
+    symbols: &mut crate::runtime::PendingSymbolMeanings,
+    branch_local_delete_allowance: BranchLocalDeleteAllowance,
+    record_allocations: &mut crate::runtime::PendingRecordAllocations,
+    lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+    commit_work_budget: Option<crate::execution::RequestWorkBudget>,
+    deferred_publication_edges: Option<
+        &std::collections::BTreeSet<crate::identity::data::RelationId>,
+    >,
+) -> Result<MutationApplyOutcome, super::MutationApplyDenial> {
     let mut workspace = MutationWorkspace::new(
         state,
         symbols,
@@ -39,6 +69,9 @@ pub(crate) fn apply_plan_to_working_state(
         Some(record_allocations),
         commit_work_budget,
     );
+    if let Some(edges) = deferred_publication_edges {
+        workspace.defer_publication_edges(edges);
+    }
     let (expected_change_count, expected_event_count) =
         estimated_mutation_effect_shape(&apply_plan.merged_intents);
     let mut effect = MutationEffect::with_capacity(expected_change_count, expected_event_count);

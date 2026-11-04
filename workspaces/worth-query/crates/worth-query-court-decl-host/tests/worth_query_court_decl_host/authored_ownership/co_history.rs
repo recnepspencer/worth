@@ -30,6 +30,7 @@ fn corrupt_recorded_co_anchor_refuses_at_the_real_closure_owner_with_its_source_
     let retired = request
         .advanced()
         .mutate(Retire {
+            relation_fault: 0,
             corrupt_restoration: false,
             scope: 1,
             id: 10,
@@ -109,6 +110,7 @@ fn retire_sentinel(
     let outcome = request
         .advanced()
         .mutate(Retire {
+            relation_fault: 0,
             corrupt_restoration: false,
             scope: 1,
             id: 40,

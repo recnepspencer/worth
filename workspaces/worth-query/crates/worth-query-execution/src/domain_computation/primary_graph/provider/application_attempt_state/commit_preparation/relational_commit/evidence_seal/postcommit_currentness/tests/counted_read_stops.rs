@@ -51,7 +51,7 @@ fn selected_native_rebase_preserves_stops_at_every_consult() {
                 Err(cause) => panic!("unexpected preparation refusal: {cause:?}"),
             };
 let result = world.application.runtime.primary_graph().unwrap().integration_handle().with_runtime(execution, |runtime| {
-                prepared.rebase(execution, runtime, snapshot, &BTreeSet::new(), true, StorageControl::new(execution.allocation_policy(), None))
+                prepared.rebase(execution, runtime, snapshot, &BTreeSet::new(), true, None, StorageControl::new(execution.allocation_policy(), None))
             });
 
 

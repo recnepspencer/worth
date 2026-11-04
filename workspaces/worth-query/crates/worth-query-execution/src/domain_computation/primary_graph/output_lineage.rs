@@ -8,6 +8,8 @@ pub(in crate::domain_computation::primary_graph) use source_facts::RetainedSourc
 pub(in crate::domain_computation::primary_graph) use source_publication::CoveredSourcePublication;
 pub(in crate::domain_computation::primary_graph) use source_publication::SourcePublication;
 mod computation_source;
+mod handler_preparation;
+pub(in crate::domain_computation) use handler_preparation::ProducerHandlerPreparation;
 mod implementation_build;
 pub(in crate::domain_computation::primary_graph) use computation_source::ComputationSourceEvidence;
 pub(in crate::domain_computation::primary_graph) use computation_source::CurrentComputation;
@@ -18,6 +20,8 @@ mod denial;
 mod family_selection;
 pub(in crate::domain_computation::primary_graph) use family_selection::NativePriorCheckpointOutput;
 mod input_cutoff;
+pub(in crate::domain_computation::primary_graph) use input_cutoff::RetainedInputCutoffCandidate;
+mod coupled_completion;
 mod input_reuse_key;
 pub(in crate::domain_computation::primary_graph) mod invalidation;
 mod native_output_witness;
@@ -29,6 +33,7 @@ mod prepared_slot;
 mod qualification;
 mod recorded_output;
 mod recorded_source_identity;
+pub(in crate::domain_computation::primary_graph) use coupled_completion::CoupledOutputCompletion;
 mod required_publication;
 mod required_settlement;
 pub(in crate::domain_computation::primary_graph) use required_settlement::AcceptedCurrentCandidate;
@@ -39,6 +44,7 @@ pub(in crate::domain_computation::primary_graph) use required_settlement::Requir
 mod resolution;
 mod resources;
 mod restoration;
+pub(in crate::domain_computation::primary_graph) use restoration::PriorOutputOrigin;
 mod retained_computation;
 pub(in crate::domain_computation::primary_graph) use retained_computation::PriorComputationRecord;
 mod fork_origin;
@@ -289,6 +295,7 @@ impl WorthQueryApplicationOutputLineage {
             };
         let computation_source = ComputationSourceEvidence::from_completed(application);
         let recorded = RecordedOutput {
+            coupled_completion: prepared.and_then(|slot| slot.coupled_completion.clone()),
             required_publication: prepared.and_then(|slot| slot.required_publication.clone()),
             native_prior_checkpoint,
             computation_source,

@@ -10,6 +10,7 @@ pub struct Create {
 }
 #[derive(Clone, Debug, worth_foundational::facade::WorthValue)]
 pub struct Retire {
+    pub relation_fault: u8,
     pub corrupt_restoration: bool,
     pub co_anchors: Vec<u64>,
     pub scope: u64,
@@ -18,6 +19,8 @@ pub struct Retire {
 }
 #[derive(Clone, Debug, worth_foundational::facade::WorthValue)]
 pub struct Restore {
+    pub relation_material: Vec<super::relation_splice::Material>,
+    pub retired_entity: Option<super::relation_splice::Coordinate>,
     pub co_values: Vec<u64>,
     pub co_anchors: Vec<u64>,
     pub scope: u64,
@@ -100,6 +103,8 @@ impl<S: Scenario> ApplicationMutationOutputContract<S> for RetiredOutputs {
 }
 pub type Target<S> = WorthQueryInvariantMutationTarget<S, Node>;
 pub struct RetirementTargets<S: Scenario> {
+    pub stage_edges: Vec<(Target<S>, Target<S>)>,
+    pub stage_relinks: Vec<(Target<S>, Target<S>)>,
     pub nodes: Vec<Target<S>>,
     pub edges: Vec<(Target<S>, Target<S>)>,
 }
@@ -119,6 +124,7 @@ worth_query_mutation_binding!(
     identity "ownership.retire.v1", input RetireInput, operation RetireOp,
     result query::UnitBinding, idempotency String, identity "ownership.command.v1",
     decision RetirementTargets<S>, denial query::UnitBinding, handler identity "ownership.retire.handler.v1",
+    coupled_outputs |visitor| { if S::COUPLED && S::MODE != 10 { visitor.required::<program::Start>(); } if S::TWO_BODIES && S::MODE != 18 { visitor.required::<coupled::multi::SecondStart>(); } },
     outputs RetiredOutputs, source NoApplicationMutationSource,
     principal binding actor(), binding_type Actor, mapping Mapping, principal_entity Node,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
@@ -129,7 +135,8 @@ worth_query_mutation_binding!(
     pub RestoreBinding for Restore, schema generic S: Scenario,
     identity "ownership.restore.v1", input RestoreInput, operation RestoreOp,
     result query::UnitBinding, idempotency String, identity "ownership.command.v1",
-    decision Target<S>, denial query::UnitBinding, handler identity "ownership.restore.handler.v1",
+    decision super::relation_splice::Restoration<S>, denial query::UnitBinding, handler identity "ownership.restore.handler.v1",
+    coupled_outputs |visitor| { if S::COUPLED { visitor.required::<program::Start>(); } if S::TWO_BODIES { visitor.required::<coupled::multi::SecondStart>(); } },
     outputs CreatedOutputs, source NoApplicationMutationSource,
     principal binding actor(), binding_type Actor, mapping Mapping, principal_entity Node,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
@@ -157,6 +164,13 @@ impl<S: Scenario> ApplicationDeclaredOperation<S> for CreateOp {
     fn declare_access(
         schema: ApplicationSchemaDeclarationBuilder<S>,
     ) -> ApplicationSchemaDeclarationBuilder<S> {
+        let schema = if matches!(S::MODE, 21 | 30 | 39 | 40 | 41) {
+            schema
+                .operation_link(Self::reference(), PreviousStage::reference())
+                .operation_link(Self::reference(), StageVisible::reference())
+        } else {
+            schema
+        };
         schema
             .operation_read_field(Self::reference(), Id::reference())
             .operation_read_entity(Self::reference(), Node::reference())
@@ -168,12 +182,22 @@ impl<S: Scenario> ApplicationDeclaredOperation<S> for CreateOp {
 }
 impl OperationCreates<RestoreOp> for Node {}
 impl OperationReads<RestoreOp> for Id {}
+impl OperationReads<RestoreOp> for Node {}
 impl OperationWrites<RestoreOp> for Id {}
 impl OperationWrites<RestoreOp> for Value {}
 impl<S: Scenario> ApplicationDeclaredOperation<S> for RestoreOp {
     fn declare_access(
         schema: ApplicationSchemaDeclarationBuilder<S>,
     ) -> ApplicationSchemaDeclarationBuilder<S> {
+        let schema = if matches!(S::MODE, 30 | 39 | 40 | 41) {
+            schema
+                .operation_read_entity(Self::reference(), Node::reference())
+                .operation_read_relation(Self::reference(), PreviousStage::reference())
+                .operation_unlink(Self::reference(), PreviousStage::reference())
+                .operation_link(Self::reference(), PreviousStage::reference())
+        } else {
+            schema
+        };
         schema
             .operation_read_field(Self::reference(), Id::reference())
             .operation_create(Self::reference(), Node::reference())
@@ -191,6 +215,21 @@ impl<S: Scenario> ApplicationDeclaredOperation<S> for RetireOp {
     fn declare_access(
         schema: ApplicationSchemaDeclarationBuilder<S>,
     ) -> ApplicationSchemaDeclarationBuilder<S> {
+        let schema = if matches!(S::MODE, 30 | 39 | 40 | 41) {
+            schema.operation_link(Self::reference(), PreviousStage::reference())
+        } else {
+            schema
+        };
+        let schema = if matches!(S::MODE, 21 | 30 | 39 | 40 | 41) {
+            let schema = if S::MODE == 39 {
+                schema
+            } else {
+                schema.operation_read_relation(Self::reference(), PreviousStage::reference())
+            };
+            schema.operation_unlink(Self::reference(), PreviousStage::reference())
+        } else {
+            schema
+        };
         schema
             .operation_read_entity(Self::reference(), Node::reference())
             .operation_read_field(Self::reference(), Id::reference())

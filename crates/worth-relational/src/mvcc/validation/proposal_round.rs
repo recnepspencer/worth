@@ -18,6 +18,7 @@ pub(super) struct PreparedProposalRound {
     pub(super) mutation: AppliedMutationDraft,
     pub(super) identity: RelationalMutationProposalIdentity,
     pub(super) validation_input: RelationalTransactionValidationInput,
+    pub(super) coupled_publication: Option<crate::mvcc::RequiredOutputPublicationAdmission>,
     pub(super) commit_boundary: crate::validation::engine::InvariantExecutionResult,
     pub(super) mutation_sensitive: crate::validation::engine::InvariantExecutionResult,
     pub(super) publication: crate::validation::engine::InvariantExecutionResult,
@@ -37,7 +38,9 @@ impl RelationalPreparationRuntime {
             execution,
             &selected.with_symbol_admission(&self.services.symbols),
             |partitions| {
-                let round = self.preparation_round();
+                let round = self
+                    .preparation_round()
+                    .with_authored_coupling(transaction.authored_coupling.clone());
                 let read =
                     crate::branch::SelectedRelationalBranchRead::in_round(&selected, partitions);
                 let answer = round.prepare_proposal_symbol_round(
@@ -93,6 +96,9 @@ impl RelationalPreparationRuntime {
                     if let Some(prior) = &transaction.pending_symbols {
                         symbols.adopt(prior)?;
                     }
+                    if let Some(binding) = &transaction.authored_coupling {
+                        binding.inherit_prepared_symbols(&mut symbols)?;
+                    }
                     transaction.validate_staged_branch_locality(&selected, symbols.interner())?;
                     let input = RelationalTransactionValidationInput::from_transaction(transaction);
                     let (identity, source_interpretation) =
@@ -103,6 +109,9 @@ impl RelationalPreparationRuntime {
                         self.config.identity.client_key_symbol_policy,
                         execution.allocation_policy(),
                     )?;
+                    if let Some(binding) = &transaction.authored_coupling {
+                        binding.adopt_prepared_symbols(&identity, &mut symbols)?;
+                    }
                     let runtime = round.with_candidate_symbols(&symbols);
                     let prepared = match source {
                         RelationalProposalSource::Transaction { lowered: Some((_, plan)), .. } => prepare_lowered_working_state_scope(
@@ -193,6 +202,9 @@ impl RelationalPreparationRuntime {
                         mutation,
                         identity,
                         validation_input,
+                        coupled_publication: transaction.authored_coupling.as_ref().and_then(|binding| {
+                            binding.completed.lock().unwrap_or_else(|e| e.into_inner()).take()
+                        }),
                         commit_boundary,
                         mutation_sensitive,
                         publication,

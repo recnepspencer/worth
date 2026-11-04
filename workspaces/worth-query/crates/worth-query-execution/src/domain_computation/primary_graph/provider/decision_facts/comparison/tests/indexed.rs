@@ -85,7 +85,7 @@ fn scoped_indexed_comparison_preserves_pinned_absence_limits_and_foreign_affinit
                     .with_runtime(&borrowed_execution, |runtime| {
                         assert!(fact.remains_equal_in(runtime, execution, snapshot).unwrap());
                         assert!(selectors
-                            .remains_equal(execution, fact, runtime, snapshot, control)
+                            .remains_equal(execution, fact, runtime, snapshot, None, control)
                             .unwrap());
                     });
             }
@@ -101,7 +101,7 @@ fn scoped_indexed_comparison_preserves_pinned_absence_limits_and_foreign_affinit
                 .graph
                 .with_runtime(&borrowed_execution, |runtime| {
                     assert!(!selectors
-                        .remains_equal(execution, &present, runtime, snapshot, control)
+                        .remains_equal(execution, &present, runtime, snapshot, None, control)
                         .unwrap());
                 });
             publish_relational_mutation_on_application(
@@ -122,7 +122,7 @@ fn scoped_indexed_comparison_preserves_pinned_absence_limits_and_foreign_affinit
                 .integration_handle()
                 .with_runtime(&borrowed_execution, |runtime| {
                     assert!(selectors
-                        .remains_equal(execution, &present, runtime, snapshot, control)
+                        .remains_equal(execution, &present, runtime, snapshot, None, control)
                         .unwrap())
                 });
             let current = world.selected_product(
@@ -134,7 +134,14 @@ fn scoped_indexed_comparison_preserves_pinned_absence_limits_and_foreign_affinit
                 .integration_handle()
                 .with_runtime(&borrowed_execution, |runtime| {
                     assert!(!current_selectors
-                        .remains_equal(execution, &present, runtime, current_snapshot, control)
+                        .remains_equal(
+                            execution,
+                            &present,
+                            runtime,
+                            current_snapshot,
+                            None,
+                            control
+                        )
                         .unwrap());
                     let complete = observe_indexed_entity_selection(
                         runtime,
@@ -152,7 +159,14 @@ fn scoped_indexed_comparison_preserves_pinned_absence_limits_and_foreign_affinit
                     };
                     assert_eq!(candidates.len(), 2);
                     assert!(current_selectors
-                        .remains_equal(execution, &complete, runtime, current_snapshot, control)
+                        .remains_equal(
+                            execution,
+                            &complete,
+                            runtime,
+                            current_snapshot,
+                            None,
+                            control
+                        )
                         .unwrap());
                     for limit in [0, 1, usize::MAX] {
                         let mut narrowed = complete.clone();
@@ -170,6 +184,7 @@ fn scoped_indexed_comparison_preserves_pinned_absence_limits_and_foreign_affinit
                                     &narrowed,
                                     runtime,
                                     current_snapshot,
+                                    None,
                                     control
                                 )
                                 .unwrap(),
@@ -204,7 +219,7 @@ fn prepared_indexed_comparison_keeps_a_native_cancellation() {
                 StringApplicationValueBinding::encode(&"open".to_owned()).unwrap(), 2).unwrap();
             let mut prepared = PreparedSelections::new();
             let control = StorageControl::new(ExecutionAllocationPolicy::SystemAllocation, None);
-            assert!(prepared.remains_equal(&execution, &fact, runtime, snapshot, control).unwrap());
+            assert!(prepared.remains_equal(&execution, &fact, runtime, snapshot,None,  control).unwrap());
             let seen = Rc::new(Cell::new(0));
             let contacts = Rc::clone(&seen);
             // Query entry + Native admission precede the Native collector.
@@ -214,7 +229,7 @@ fn prepared_indexed_comparison_keeps_a_native_cancellation() {
                 contacts.set(contacts.get() + 1);
                 if contacts.get() == NATIVE_COLLECTION_CONSULT { source.cancel(); }
             });
-            let answer = prepared.remains_equal(&execution, &fact, runtime, snapshot, control);
+            let answer = prepared.remains_equal(&execution, &fact, runtime, snapshot,None,  control);
             (answer, seen.get())
         });
         assert_eq!(seen, 3);

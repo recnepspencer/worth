@@ -66,6 +66,18 @@ impl CompletedOriginalRead {
         self.graph_work == graph_work
     }
 
+    pub(in crate::domain_computation::primary_graph) fn matches_applied_source(
+        &self,
+        candidate: &worth_relational::facade::runtime::RelationalPinnedRead<
+            worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+        >,
+        control: StorageControl<'_, '_>,
+    ) -> Result<bool, StoreDenial> {
+        control.check_live()?;
+        Ok(self.lease.applied_qualification()
+            == Some(candidate.candidate_identity().qualification()))
+    }
+
     pub(in crate::domain_computation::primary_graph) fn matches_source(
         &self,
         runtime: &RelationalRuntime,
@@ -75,6 +87,9 @@ impl CompletedOriginalRead {
         // Both are actual live native observations. No digest or snapshot ID
         // substitutes for native source-position correspondence.
 
+        if self.lease.applied_projection().is_some() {
+            return Ok(false);
+        }
         let truth = runtime.read_truth();
         let original = truth.positioned_snapshot(self.lease.snapshot());
         let current = truth.positioned_snapshot(snapshot);

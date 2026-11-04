@@ -13,6 +13,7 @@ pub struct WorthQueryInvariantProjectionWalk<Schema, Relation, Entity> {
     observation: Arc<StructuralWalkObservation>,
     entity: Option<Arc<str>>,
     authority_identity: u64,
+    phase: Option<worth_relational::facade::runtime::RelationalAppliedCandidateReadQualification>,
     kind: Option<KindId>,
     _marker: PhantomData<fn() -> (Schema, Relation, Entity)>,
 }
@@ -34,11 +35,15 @@ impl<Schema, Relation, Entity> WorthQueryInvariantProjectionWalk<Schema, Relatio
         observation: Arc<StructuralWalkObservation>,
         root: Option<&WorthQueryInvariantEntityIdentity<Schema, Entity>>,
         authority_identity: u64,
+        phase: Option<
+            worth_relational::facade::runtime::RelationalAppliedCandidateReadQualification,
+        >,
     ) -> Self {
         Self {
             observation,
             entity: root.map(|r| Arc::clone(&r.entity)),
             authority_identity,
+            phase,
             kind: root.map(|r| r.kind),
             _marker: PhantomData,
         }
@@ -46,10 +51,10 @@ impl<Schema, Relation, Entity> WorthQueryInvariantProjectionWalk<Schema, Relatio
 
     pub(in crate::domain_computation::primary_graph::invariant_projection) fn issued_at(
         &self,
-        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+        origin: &crate::domain_computation::primary_graph::projection_read_origin::ProjectionReadOriginRef<'_>,
         cookie: u64,
     ) -> bool {
-        self.observation.source() == snapshot && self.authority_identity == cookie
+        self.observation.source() == origin && self.authority_identity == cookie
     }
 
     pub(in crate::domain_computation::primary_graph::invariant_projection) fn cookie(&self) -> u64 {
@@ -109,6 +114,7 @@ impl<Schema, Relation, Entity> WorthQueryInvariantProjectionWalk<Schema, Relatio
                     .expect("a nonempty walk has a root name"),
             ),
             authority_identity: self.authority_identity,
+            phase: self.phase,
             _marker: PhantomData,
         }
     }

@@ -154,7 +154,10 @@ fn classify(
         let entry = origin.relations.iter().find(|entry| entry.id == id);
         // Multi-publication restore names the unique owning route explicitly.
         // Another group's endpoint reference never transfers this edge's custody.
-        if envelope.authored_cascade_restoration.is_some() && entry.is_none() {
+        if (envelope.authored_cascade_restoration.is_some()
+            || envelope.coupled_authored_publication.is_some())
+            && entry.is_none()
+        {
             continue;
         }
         let (_, source, target) =

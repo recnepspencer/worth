@@ -7,6 +7,7 @@ use worth_relational::facade::identity::EntityId;
 pub use worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture as WorthQueryApplicationOutputPosture;
 
 mod checkpoint;
+mod restoration;
 mod storage;
 use storage::CorrespondenceStorage;
 

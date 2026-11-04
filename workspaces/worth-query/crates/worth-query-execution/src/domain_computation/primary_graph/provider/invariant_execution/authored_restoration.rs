@@ -33,10 +33,6 @@ impl WorthQueryPrimaryGraphProvider {
         let Some(plan) = plan else {
             return Ok(material);
         };
-        let admission = publisher
-            .owner
-            .admit_authored_output_retirements(plan.authorities())
-            .ok_or_else(owner_failure)?;
         let original = std::mem::replace(
             &mut material.batch,
             worth_relational::facade::transactions::WorkerIntentBatch::new(String::new()),
@@ -44,11 +40,31 @@ impl WorthQueryPrimaryGraphProvider {
         material.batch = plan
             .extend_batch(execution, original)
             .map_err(map_validation_failure)?;
+        material.restoration_plan = Some(plan);
+        Ok(material)
+    }
+
+    pub(super) fn bind_independent_restoration(
+        &self,
+        material: &mut ApplicationInvariantCandidateMaterial,
+    ) -> Result<(), WorthQueryInvariantExecutionFailure> {
+        let Some(plan) = material.restoration_plan.take() else {
+            return Ok(());
+        };
+        let publisher = self
+            .graph
+            .application_publication
+            .as_ref()
+            .ok_or_else(owner_failure)?;
+        let admission = publisher
+            .owner
+            .admit_authored_output_retirements(plan.authorities())
+            .ok_or_else(owner_failure)?;
         material.restoration_publication =
             Some(RequiredOutputPublication::AuthoredCascadeRestoration {
                 admission,
                 restoration: plan,
             });
-        Ok(material)
+        Ok(())
     }
 }

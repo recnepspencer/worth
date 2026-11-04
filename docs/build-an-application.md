@@ -4033,6 +4033,78 @@ Read a particular co-anchor with
 `preimage.field_for_output(&CoRole::DESCRIPTOR, &locus)`; equal field loci on
 different anchors retain their own original values.
 
+If a retired authored source is still linked by a surviving source-owned
+publication, declare that owner's root through the program's existing output
+connection. The mutation binding implements
+`WorthQueryApplicationRequiredOutputSource<Schema, BodyRoot>` and lists the
+connection in its mutation declaration. Coupled demands implement `Send` so the
+mutation request can move between execution workers:
+
+```rust,ignore
+coupled_outputs |visitor| {
+    visitor.required::<BodyRoot>();
+},
+```
+
+`demand_from_source` derives the typed demand from the original input;
+`demand_from_preimage` can also use the retained correction material. For example,
+a stage retirement can derive its body demand from that stage's body key.
+`ApplicationCorrectionBinding::visit_coupled_outputs` declares the correction's
+roots and defaults to the source binding's declaration. Install those same roots
+and connections in the program output graph.
+
+Query runs the declared owners' Preserve producers against the unpublished
+candidate. Each producer removes and replaces its own records and edges. Native
+independently determines the required owner set; missing, repeated, extra or
+foreign participants refuse with typed causes and affected records. The authored
+retirement and every admitted Preserve publish in one atomic commit. A required
+coupling with no declaration refuses before any effect. Declarations remain
+inert when no surviving owner is required; a closed owner already covered by the
+retirement closure does not run a producer.
+
+Correction derives the same declared coupling with fresh source IDs. Native
+restores closed publications, while surviving owners run their own Preserves.
+A subsequent demand for a recreated owner follows ordinary Preserve and reuse
+rules using the actual producer antecedent, including after repeated Native-only
+restore/retire cycles. Restoration grants no producer readiness or replayable
+producer-input contract.
+
+For an authored splice that changes relations, add typed relation loci to the
+recorded inverse's pre-image demand:
+
+```rust,ignore
+let demand = DeclaredPreImageDemand::new(field_loci, maximum_encoded_bytes)?
+    .with_relations([
+        DeclaredPreImageRelationLocus::from_relation(PreviousStage::reference()),
+    ])?;
+```
+
+Use `relations_only` when the inverse needs no field material. The original
+operation must declare and perform the relation reads, including absence at a
+new endpoint pair. Correction material distinguishes an authenticated empty
+locus from unavailable material with `relation_count`; `relation_at` supplies
+each original/performed endpoint pair. `output_entity` supplies the original
+role coordinate. These coordinates describe history and grant no current write
+access: reacquire a surviving endpoint with `reader.resolve_historical_entity`,
+and use each inverse Create for a restored authored anchor. Remove the original
+replacement links and recreate exactly the prior endpoint pairs. A changed,
+missing, extra or foreign inverse refuses before effect with
+`relation_preimage_failure()` and its actual `affected_records`. Audit-retained
+relation deletion currently refuses `UnsupportedVisibility` before the source
+edit because the existing correction support rules cannot reverse that visibility.
+Explicit Unlink supports a true deletion and exact restoration.
+
+A tracked orbit whose aggregate and complete walk are wholly within the actual
+admitted producer's own predecessor publication supplies output reads. On succession Query retains the
+actual committed postcondition, so replacing an owned edge does not cause a
+second publication. A real upstream change still re-runs the producer, and a
+read of another publication remains a source observation. The original raw reads
+still participate in candidate admission and complete-candidate support checks.
+
+Native derives private aggregate membership deletion and recreation through its
+existing aggregate consequence owner. Applications supply the exact changes for
+application-visible owned edges; they never supply private membership records.
+
 An owned publication cannot use the independent single-publication retirement
 path, including a warm publication capsule. It refuses with
 `OwnedPublicationRequiresCascade`, identifying the publication and its owner.

@@ -1,5 +1,6 @@
 //! Source material and exact target retained between inverse preparation and publication.
 use super::*;
+mod relation_inverse;
 mod workflow;
 use crate::basis::WorthQueryProductBranchReadIdentity;
 use crate::domain_computation::application_aftermath::{
@@ -23,6 +24,7 @@ use worth_relational::facade::{
 /// material until publication releases this preparation; it grants no standalone
 /// mutation or recovery authority.
 pub struct WorthQueryPreparedCorrectionSource {
+    coupled_capture: Option<fn(&WorthQueryPrimaryGraphCommittedApplication, &worth_execution::ExecutionRequest<'_, '_>) -> crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemands>,
     authored_identity: Option<super::authored_identity::PreparedAuthoredIdentity>,
     workflow: Option<PreparedWorkflowCorrection>,
     ancestry: ProductBranchAncestorSelection,
@@ -105,6 +107,8 @@ impl WorthQueryPreparedCorrectionSource {
             target, source, key, &lineage,
         );
         Ok(Self {
+            coupled_capture: (lineage.role() == WorthQueryAftermathCausalRole::RecordedReverse)
+                .then_some(super::material::capture_coupled::<Schema, C>),
             authored_identity,
             workflow,
             ancestry,
@@ -122,6 +126,13 @@ impl WorthQueryPreparedCorrectionSource {
             target_branch: basis.identity().branch_id().clone(),
             intent,
         })
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn capture_coupled_outputs(
+        &self, execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Option<crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemands>{
+        self.coupled_capture
+            .map(|capture| capture(&self.material, execution))
     }
 
     /// The immutable descriptive command intent carried into ordinary idempotency admission.

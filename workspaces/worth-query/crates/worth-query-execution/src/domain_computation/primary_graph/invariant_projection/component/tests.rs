@@ -79,9 +79,9 @@ fn fresh_issued_snapshot_reselects_components_by_definition_and_foreign_members_
         let fresh = world.invariant.project(&phase, |reader| {
             assert_eq!(reader.component_of(Shells::reference(), foreign.output()).unwrap_err().kind(), Kind::ForeignIdentity);
             let old = prior.output().aggregate();
-            let pin = reader.runtime.read_truth().pin_read_capability(reader.snapshot, &[], reader.execution).unwrap();
-            assert_ne!(old.source().snapshot_id(), pin.snapshot().snapshot_id(), "independently issued Native snapshot, not a copied handle");
-            assert_eq!(old.source().version_id(), pin.snapshot().version_id());
+            let pin = reader.native.committed_runtime().expect("committed fixture read").read_truth().pin_read_capability(reader.snapshot, &[], reader.execution).unwrap();
+            assert_ne!(old.source().committed_snapshot().expect("committed fixture read").snapshot_id(), pin.snapshot().snapshot_id(), "independently issued Native snapshot, not a copied handle");
+            assert_eq!(old.source().committed_snapshot().expect("committed fixture read").version_id(), pin.snapshot().version_id());
             let result = reader.execution.run_native_with_checkpoint(|context|
                 old.remains_equal_at(&pin, reader.execution, context, None).unwrap()).unwrap();
             assert!(result.0, "the actual definition-qualified reselect matches the admitted product image");
