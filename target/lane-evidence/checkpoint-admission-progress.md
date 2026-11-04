@@ -1,3 +1,143 @@
+FUNDING IN PROGRESS ? no funding source commit or approval; two owner decisions pending.
+
+2026-11-04 final this resume: Host controls2/0/0, Native missing-base and long-
+prefix controls2/0/0, fully accounted attribution1/0/0. New quote16,240,012
+versus old16,236,875 at head41/covered0; approximately unchanged because all41
+originals are T and required visibility computation remains payable. Dominant
+phase package hash/copy3,798,489. No selected-prefix performance proof claimed.
+All diagnostics removed; marker-free production rebuild PASS0/0/0.
+
+Independent review REJECT P1 lineage inventory omission, P1 incomplete
+qualification. Agree both. Long-prefix absence corrected and qualified; other
+qualification remains unrun. Prior basis is retained but prior lineage pages
+are not yet carried; this can emit an inconsistent manifest. Do not merge or
+certify this uncommitted producer. Exact funded carry method and Embedded
+contract decisions remain unanswered; see funding-state-scope-handoff.md.
+
+No source work discarded. No ignored/exhaustive/scenario/query-scale tests,
+phase gates, queue work, cleanup, merge or push. Latest C:86GiB free, above25GB
+floor. Logs/counts: funding-state-lanes.md; source snapshot, failure map,
+attribution and independent review records are adjacent. P-C transfer of
+checkpoint_complete has NOT happened. No raw digest conversion there.
+
+--- Earlier chronological notes, superseded where stated above ---
+
+FUNDING IN PROGRESS - fresh capture and Host-funded close controls GREEN2/0/0.
+
+2026-11-04 source HEAD3be5798075 + dirty producer/close slice. Named corrected
+Host controls PASS2/0/0 in funding-state-fresh-and-close-corrected.log. The
+actually executed binary passed the marker-free check. Exact unchanged tests:
+close_checkpoint_uses_host_allowance_with_an_ordinary_close_caller and
+automatic_checkpoint_exhaustion_keeps_business_results_and_explicit_capture_uses_its_own_allowance.
+The target-comparison product bug is fixed, not worked around: all actual
+semantic target fields and generation/truth/posture are retained; runtime frame
+identity is excluded exactly as in the existing canonical component contract.
+Diagnostic confirms old failing final guard at regions/grouping.rs:120; removed
+before the successful rebuilt run. Both provenance review findings are fixed.
+
+One NEW instrumented head41/covered0 comparison run is building. Its temporary
+owner instrumentation and diagnostic-only court will be retired after capture;
+it does not qualify production. Previous quote16,236,875 is retained unchanged.
+
+Selected recapture remains incomplete pending the exact lineage event-page
+owner method grant and Embedded contract ruling. The prepared consumer patch
+also migrates the pure metadata test's new prior argument to None, assertions
+unchanged. No recapture/bounded/cold-tail/growth/ACK/CDC/recovery result claimed.
+No FUNDING LANDED, phase completion, new code commit or whole-slice approval.
+The decoder/D13/digest/BC9002 queue is unstarted, respecting required ordering.
+
+FUNDING IN PROGRESS - first runtime controls RED; fresh component classification fix identified.
+
+2026-11-04 focused Host controls failed0/2/0, both actual first capture returning
+OriginalAuthorityUnavailable. Product side is wrong: new current-component DATA
+classifier compared whole targets, including runtime IDs, while actual captured
+component descriptors are normalized to the canonical runtime frame. HEAD's
+nearest working Axes::matches_basis compared commit/version/parents/roots only.
+Fresh read-only review identified this source mismatch. Pending one diagnostic
+run will confirm the exact final current-main guard; then preserve generation,
+truth, posture and ALL semantic target fields, omitting only runtime frame as
+required by the existing canonicalization contract. Assertions unchanged.
+
+The two agreed provenance findings are corrected in source (bound normalized
+reparse and private Base getters). Fresh whole-funding approval still absent.
+Pending owner questions remain lineage push_carried and Embedded placement.
+No production qualification or funding landing claimed. Queue unstarted.
+
+FUNDING IN PROGRESS - selected-state producer and close dispatch compile; recapture not qualified.
+
+2026-11-04 current HEAD3be5798075; all implementation remains uncommitted.
+Final selected Root/Store checks and Native/Query court cargo checks PASS (0/0/0).
+One stale private capture_lineage call failed compilation; migrated its extra
+prior-base argument to None without changing the assertion; focused check green.
+Fresh/explicit Host controls are building under the owned runner. No runtime
+result claimed yet. The unchanged bounded-tail court has not been rerun on this
+producer. No new instrumented cost quote yet.
+
+Close source boundary review: no material findings. Strong Store registration
+retains ONLY Resources, with no operation/Home/runtime/provider back edge; the
+Query HomeMaintenance Arc has no new aliases. Resources carries the same Host
+allowance and joined scoped worker for advancement and close. The actual close
+admission/settlement/interruption requests are unchanged. Worker backing is the
+last field, retained through the final resource owner. This is source review,
+not behavioral or enforcement qualification.
+
+Fresh capture coherence review identified a real remaining provenance flaw:
+the cold base cloned a replaceable normalized Arc and exposed mutable fields.
+Fix queued after current single build: derive/fund normalized from bound source
+bytes and make Base fields private with shared getters. Live seal witness is
+private and installation checks the exact publication slot Arc.
+
+Two exact owner decisions requested, no answer yet: funded push_carried in the
+lineage event-page owner (prepared patch in lane-evidence); and selected Embedded
+contract (explicit original-frame export versus typed refusal/court recipe
+cutover). Current recapture metadata intentionally remains unfinished pending
+its intrinsic-funded carry operation. It is NOT safe to certify or land as done.
+No P-C root/open-request/lifecycle or integration bootstrap files changed.
+C: last~109GiB free, above25GB floor. No cleanup/merge/push. Queue unstarted.
+
+--- Prior chronological notes (superseded where stated above) ---
+
+FUNDING IN PROGRESS - state capture rewritten; two exact rulings pending.
+
+2026-11-04 current source batch (uncommitted): actual current/external roots,
+covered metadata/image rows and original-input records carried; only tail frames
+read/verified; no FoldedRoots/working-state replay. Selected-base carriers wired
+through same prepared publication/ACK and recovered binding. Independent partial
+review found descriptive-only base constructor; corrected with sealed producer
+witness tied to original publication slot, and exact existing admitted binding
+join for recovery. No raw cache constructor remains.
+Close capture dispatch installed on SAME Store owner and SAME Host resources.
+The scheduler resources own a separately funded Arc; weak registration targets
+that Arc, never Query's exclusively retired HomeMaintenance payload. Query's
+existing Arc::get_mut preflight/retirement stays unchanged. Closed method has an
+exact factory entry/caller and two Store facade types; Query exports existing
+close outcome for public observation.
+Root --tests initial syntax check failed on one stale private test arg; fixed.
+Root --tests proof batch PASS; Query --tests initial batch PASS; Store --tests
+PASS. New public Native growth/missing-base and Host live/cold/close controls are
+written, not run yet. No test or broad lane run this resume.
+Pending exact owner push_carried method proposal: proposed-lineage-event-page-
+carry.patch (data owner source untouched). Also awaiting ruling for Embedded
+selected captures: format embeds all canonical bodies; Home external captures
+must never pay that cost. Destination current-members eligibility is explicitly
+checked; no silent carry across missing destination membership.
+All P-C/bootstrap-publication/World branch/root_* exclusions remain untouched.
+C: last113GiB free; no merge/push/cleanup. Queue unstarted.
+
+FUNDING IN PROGRESS - Native state-bounded capture implementation resumed.
+
+Coordinator accepted bf5e74e0c3/3be5798075 and granted exact selected-base
+carriers, branch visibility DATA operation, checkpoint_complete producer rewrite,
+close capture call site and one Query Clippy correction. No merge requested.
+Selection/ACK/recovery carriers and actual held-root roster are being wired;
+covered canonical bodies will never be demanded. Close boundary review identified
+weak registration through SAME Store owner as the narrow typed worker handoff.
+One extra exact owner method is pending: funded push_carried for lineage event
+page descriptors; current builder has only push(actual event rows), private
+backing and no way for capture to retain copied descriptor funding externally.
+No P-C root/open-request/lifecycle/bootstrap publication file is changed.
+No builds/tests have run this resume yet. C: last122GiB free, above25GB floor.
+
 FUNDING IN PROGRESS - Host partial bf5e74e0c3 committed; whole funding not landed.
 
 2026-11-04 Host funding implementation is in the worktree: default 1Gi work,
