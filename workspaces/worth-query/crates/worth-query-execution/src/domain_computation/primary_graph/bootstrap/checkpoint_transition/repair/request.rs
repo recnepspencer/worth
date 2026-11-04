@@ -16,8 +16,9 @@ impl WorthQueryCheckpointTransitionRecovery {
             let policy = match phase.funded_capture_policy() {
                 Ok(policy) => policy,
                 Err(cause) => {
-                    original
-                        .retain_capture_denial(WorthQueryCheckpointCaptureDenial::Execution(cause));
+                    original.retain_capture_denial(WorthQueryCheckpointCaptureDenial::Execution(
+                        cause.into(),
+                    ));
                     return Err(original);
                 }
             };

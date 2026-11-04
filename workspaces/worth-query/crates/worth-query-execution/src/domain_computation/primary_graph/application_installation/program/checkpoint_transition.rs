@@ -126,7 +126,7 @@ where
 {
     let capture_policy = phase
         .admit_capture_policy(capture_policy)
-        .map_err(WorthQueryInMemoryApplicationDenial::Graph)?;
+        .map_err(|refusal| WorthQueryInMemoryApplicationDenial::Graph(refusal.into()))?;
     transition_in_advancement(
         phase,
         program,
@@ -178,7 +178,7 @@ where
     if resources.capture_memory_limit_is_set() {
         phase
             .funded_capture_policy()
-            .map_err(WorthQueryInMemoryApplicationDenial::Graph)?;
+            .map_err(|refusal| WorthQueryInMemoryApplicationDenial::Graph(refusal.into()))?;
     }
     let capture_lease = resources
         .capture_lease(phase.execution_request(), capture_policy)

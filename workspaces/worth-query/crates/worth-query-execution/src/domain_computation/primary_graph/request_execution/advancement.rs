@@ -81,6 +81,7 @@ mod bootstrap_opening;
 pub use bootstrap_opening::with_bootstrap_advancement_from_request;
 mod bootstrap_custody;
 pub use bootstrap_custody::WorthQueryBootstrapAdvancementPhase;
+pub(in crate::domain_computation::primary_graph) use bootstrap_custody::WorthQueryCapturePolicyRefusal;
 pub(crate) mod opening_custody;
 use opening_custody::OpeningCustody;
 

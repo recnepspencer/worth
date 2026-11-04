@@ -374,3 +374,16 @@ impl From<worth_relational::facade::runtime::RelationalRuntimeConstructionDenial
         )
     }
 }
+
+impl From<super::request_execution::advancement::WorthQueryCapturePolicyRefusal>
+    for WorthQueryPrimaryGraphInstallationDenial
+{
+    fn from(
+        refusal: super::request_execution::advancement::WorthQueryCapturePolicyRefusal,
+    ) -> Self {
+        Self::new(
+            WorthQueryPrimaryGraphInstallationDenialKind::ExecutionDenied { kind: refusal.kind },
+            refusal.subject,
+        )
+    }
+}

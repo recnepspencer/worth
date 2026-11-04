@@ -76,18 +76,13 @@ impl WorthQueryBootstrapAdvancementPhase<'_> {
 impl WorthQueryBootstrapAdvancementPhase<'_> {
     pub(in crate::domain_computation::primary_graph) fn funded_capture_policy(
         &self,
-    ) -> Result<
-        worth_execution::ExecutionAllocationPolicy<'_, '_>,
-        crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial,
-    > {
-        use crate::domain_computation::primary_graph::{
-            WorthQueryPrimaryGraphInstallationDenial as D,
-            WorthQueryPrimaryGraphInstallationDenialKind as K,
-        };
+    ) -> Result<worth_execution::ExecutionAllocationPolicy<'_, '_>, WorthQueryCapturePolicyRefusal>
+    {
         if !self.request.is_leased() {
-            return Err(D::new(K::ExecutionDenied {
+            return Err(WorthQueryCapturePolicyRefusal {
                 kind: crate::domain_computation::WorthQueryProviderSessionDenialKind::ResourceEnvelopeMismatch,
-            }, "original-request checkpoint capture requires leased backing; serial system allocation is unsupported"));
+                subject: "original-request checkpoint capture requires leased backing; serial system allocation is unsupported",
+            });
         }
         Ok(self.request.allocation_policy())
     }
@@ -104,14 +99,10 @@ impl WorthQueryBootstrapAdvancementPhase<'_> {
         capture: worth_execution::ExecutionAllocationPolicy<'policy, 'authority>,
     ) -> Result<
         worth_execution::ExecutionAllocationPolicy<'policy, 'authority>,
-        crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial,
+        WorthQueryCapturePolicyRefusal,
     > {
+        use crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource;
         use worth_execution::ExecutionAllocationPolicy as Policy;
-        use {
-            crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource,
-            crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial as D,
-            crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind as K,
-        };
         let funding = self.funded_capture_policy()?;
         match (funding, capture) {
             (Policy::Execution(funding), Policy::Execution(lease))
@@ -119,27 +110,32 @@ impl WorthQueryBootstrapAdvancementPhase<'_> {
             {
                 Ok(capture)
             }
-            (Policy::Execution(_), Policy::Execution(_)) => Err(D::new(
-                K::ExecutionDenied {
-                    kind: crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionResource {
-                        denial: Resource::NestedLeaseMisuse,
-                        partition_identity: None,
-                        policy_ancestor: None,
-                    },
+            (Policy::Execution(_), Policy::Execution(_)) => Err(WorthQueryCapturePolicyRefusal {
+                kind: crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionResource {
+                    denial: Resource::NestedLeaseMisuse,
+                    partition_identity: None,
+                    policy_ancestor: None,
                 },
-                "checkpoint capture requires a lease descending from the transition's funding lease",
-            )),
+                subject: "checkpoint capture requires a lease descending from the transition's funding lease",
+            }),
             // Naming no lease never inherits the funding lease; funding that is
             // not leased was already refused by `funded_capture_policy`.
             (Policy::Execution(_) | Policy::SystemAllocation, Policy::SystemAllocation)
-            | (Policy::SystemAllocation, Policy::Execution(_)) => Err(D::new(
-                K::ExecutionDenied {
-                    kind: crate::domain_computation::WorthQueryProviderSessionDenialKind::ResourceEnvelopeMismatch,
-                },
-                "checkpoint capture requires leased backing; system allocation is unsupported",
-            )),
+            | (Policy::SystemAllocation, Policy::Execution(_)) => Err(WorthQueryCapturePolicyRefusal {
+                kind: crate::domain_computation::WorthQueryProviderSessionDenialKind::ResourceEnvelopeMismatch,
+                subject: "checkpoint capture requires leased backing; system allocation is unsupported",
+            }),
         }
     }
+}
+
+/// Why a checkpoint capture's allocation policy was refused, before any work or charge.
+/// Installation reports it as an execution denial.
+#[derive(Debug)]
+pub(in crate::domain_computation::primary_graph) struct WorthQueryCapturePolicyRefusal {
+    pub(in crate::domain_computation::primary_graph) kind:
+        crate::domain_computation::WorthQueryProviderSessionDenialKind,
+    pub(in crate::domain_computation::primary_graph) subject: &'static str,
 }
 
 impl<'scope> WorthQueryBootstrapAdvancementPhase<'scope> {
