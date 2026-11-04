@@ -1,0 +1,3 @@
+# Phase 1 coupling, domain_computation::primary_graph (module_coupling.py report; pairs are refs a->b / b->a)
+baseline e91e90bc21: component 57 of 79; 155 upward edges, 2313 refs; 108 mutual pairs, lighter-side weight 1533; application_output_demand/application_contribution 198/197
+step 1 output-demand refusals: component 57 of 79; 162 upward edges, 2265 refs; 110 mutual pairs, lighter-side weight 1372; application_output_demand/application_contribution 41/379
