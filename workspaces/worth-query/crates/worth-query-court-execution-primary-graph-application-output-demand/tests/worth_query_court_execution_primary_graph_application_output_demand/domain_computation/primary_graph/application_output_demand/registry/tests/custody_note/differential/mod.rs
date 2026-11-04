@@ -153,7 +153,7 @@ fn registry_custody_note_full_entry_oracle_covers_held_unhold_steps() {
                 .take((seed / 4) as usize)
                 .map(|(_, r)| r.clone())
                 .collect();
-            let mut state = result.0(*.state_for_test()).lock().unwrap();
+            let mut state = (*result.0.state_for_test()).lock().unwrap();
             worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::walk_bounds::add_custody_in_scope(&mut state, &foreign, 1 + seed % 3, scope);
             for (key, mut row) in &mut state.records {
                 if key.producer.starts_with("custody-unrelated-") {

@@ -29,7 +29,7 @@ fn insert_retire_changes_only_paths_preserving_order_history_range_and_fresh_clo
         1,
         1,
     );
-    calls[3].1 .0(*.reached_mut_for_test()) = Arc::from([entity]);
+    (*calls[3].1 .0.reached_mut_for_test()) = Arc::from([entity]);
     let prior = ComputationCallSequence::build_for_test(
         || {
             calls
