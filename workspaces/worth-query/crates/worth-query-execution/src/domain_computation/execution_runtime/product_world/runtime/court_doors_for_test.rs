@@ -37,3 +37,10 @@ impl WorthQueryProductRuntime {
         &mut self.owner_cleanup
     }
 }
+
+impl WorthQueryProductRuntime {
+    #[doc(hidden)]
+    pub fn clock_for_test(&self) -> &WorthQueryProductWorldClock {
+        &self.clock
+    }
+}

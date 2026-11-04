@@ -20,12 +20,12 @@ pub fn seed_program_activation(
     world: &AuthorizationWorld,
     revision: &ApplicationProgramRevision,
 ) {
-    let layout = world
+    let layout = (*(*(*(*world
         .application
-        .runtime
-        .primary_provider
-        .graph
-        .layout
+        .runtime_for_test())
+        .primary_provider_for_test())
+        .graph_for_test())
+        .layout_for_test())
         .program_activation()
         .clone();
     let created = CreatedEntityRef {
@@ -47,7 +47,7 @@ pub fn seed_program_activation(
     let request = worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope::new(
         None,
         worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource::new().token(),
-        world.application.product_runtime().clock.admission_clock.clone(),
+        (*(*world.application.product_runtime().clock_for_test()).admission_clock_for_test()).clone(),
     );
     let prepared =
         prepare_relational_mutation_on_application(execution, &world.application, batch, &request);
@@ -62,18 +62,18 @@ pub fn seed_program_activation(
         .unwrap();
     let basis = performed.commit().basis().relational_basis().clone();
     drop(performed.consume());
-    world
+    (*(*(*world
         .application
-        .runtime
-        .primary_provider
-        .graph
-        .with_runtime_mut(execution, |runtime| {
-            world
+        .runtime_for_test())
+        .primary_provider_for_test())
+        .graph_for_test())
+        .with_runtime_mut_for_test(execution, |runtime| {
+            (*(*(*world
                 .application
-                .runtime
-                .primary_provider
-                .graph
-                .ensure_primary_indexes_for_basis(execution, runtime, &basis)
+                .runtime_for_test())
+                .primary_provider_for_test())
+                .graph_for_test())
+                .ensure_primary_indexes_for_basis_for_test(execution, runtime, &basis)
                 .unwrap();
         },
     );

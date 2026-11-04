@@ -27,7 +27,7 @@ impl<Schema, Operation, Input, Scope>
     }
 
     /// Corrupts tag and core together with another genuine installed seal.
-    pub(in crate::domain_computation) fn forge_installed_seal_for_test(
+    pub fn forge_installed_seal_for_test(
         &mut self,
         donor: worth_query_installation::facade::InstalledOperationView<'_>,
     ) {

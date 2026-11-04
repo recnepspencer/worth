@@ -49,7 +49,7 @@ pub fn recorded_settlements(
         .expect("fixture product occurrence is live");
     let observation = product.observation_for_test();
     let runtime_authority = (*world.application.runtime_for_test())
-        .authority_identity()
+        .authority_identity_for_test()
         .as_u64();
     let schema = (*world.application.installed_schema_for_test()).binding_identity();
     let entity = worth_relational::facade::identity::EntityId::new(

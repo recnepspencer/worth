@@ -51,10 +51,10 @@ pub struct AuthorizationWorld {
 
 impl AuthorizationWorld {
     pub fn declare_output_contract<Contract: 'static>(&self, identity: &str) {
-        self.application
-            .runtime
-            .primary_provider
-            .graph
+        (*(*(*self.application
+            .runtime_for_test())
+            .primary_provider_for_test())
+            .graph_for_test())
             .output_lineage
             .lock()
             .unwrap()

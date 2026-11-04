@@ -43,8 +43,8 @@ pub fn committed_handle(
         .application
         .with_host_advancement(|phase| {
             (
-                authenticated_principal(&phase.test_host_request(), world, &request),
-                resolved_account(&phase.test_host_request(), world, "open", &request),
+                authenticated_principal(&phase.test_host_request_for_test(), world, &request),
+                resolved_account(&phase.test_host_request_for_test(), world, "open", &request),
             )
         })
         .unwrap();
@@ -57,7 +57,7 @@ pub fn committed_handle(
         .application
         .with_host_advancement(|phase| {
             let program = crate::domain_computation::primary_graph::tests::application_attempt::preimage_evidence::retained_status_program(
-                &phase.test_host_request(),
+                &phase.test_host_request_for_test(),
                 world,
                 &principal,
                 &account,
@@ -66,7 +66,7 @@ pub fn committed_handle(
                 crate::domain_computation::primary_graph::tests::application_attempt::preimage_evidence::RetentionMutationBreadth::Narrow,
             );
             let admission = world
-                .selected_product(&phase.test_host_request())
+                .selected_product(&phase.test_host_request_for_test())
                 .authorize_operation(
                     &phase,
                     &principal,

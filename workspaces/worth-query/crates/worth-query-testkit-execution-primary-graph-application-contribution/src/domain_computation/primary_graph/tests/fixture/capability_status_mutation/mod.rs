@@ -66,7 +66,7 @@ pub fn installed_field(
     field: &str,
 ) -> AspectFieldLocator {
     (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap()
         .layout_for_test()
         .field_locator_for_test(entity, aspect, field)

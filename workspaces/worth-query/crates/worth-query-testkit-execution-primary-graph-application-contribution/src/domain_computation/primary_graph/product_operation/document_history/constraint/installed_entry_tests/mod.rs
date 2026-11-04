@@ -38,16 +38,16 @@ impl InstalledEntryTestsWorthQueryDocumentHistoryOperationConstraintForTest
                 .application
                 .with_host_advancement(|phase| {
                     let principal =
-                        authenticated_principal(&phase.test_host_request(), &world, &request);
+                        authenticated_principal(&phase.test_host_request_for_test(), &world, &request);
                     let account =
-                        resolved_account(&phase.test_host_request(), &world, "open", &request);
+                        resolved_account(&phase.test_host_request_for_test(), &world, "open", &request);
                     let operation = world
                         .application
                         .installed_schema()
                         .installed_operation(TouchAccountOperation::reference())
                         .unwrap();
                     let mut admission = world
-                        .selected_product(&phase.test_host_request())
+                        .selected_product(&phase.test_host_request_for_test())
                         .authorize_operation(
                             &phase,
                             &principal,
@@ -59,17 +59,17 @@ impl InstalledEntryTestsWorthQueryDocumentHistoryOperationConstraintForTest
                         .unwrap();
                     let binding = idempotency(185, 186);
                     let restriction = WorthQueryDocumentHistoryOperationConstraint {
-                        model: HistoryModelIdentity::from_resolved(&account),
+                        model: HistoryModelIdentity::from_resolved_for_test(&account),
                         source: world
                             .application
                             .product_runtime()
-                            .admit_product_occurrence(
-                                world.application.current_world().occurrence(),
+                            .admit_product_occurrence_for_test(
+                                world.application.current_world().occurrence_for_test(),
                             )
                             .unwrap()
-                            .read_lease(),
+                            .read_lease_for_test(),
                         candidate: world.application.current_world(),
-                        meaning: binding.bind_admission(&admission),
+                        meaning: binding.bind_admission_for_test(&admission),
                         candidate_predecessor: None,
                     };
                     if forged {

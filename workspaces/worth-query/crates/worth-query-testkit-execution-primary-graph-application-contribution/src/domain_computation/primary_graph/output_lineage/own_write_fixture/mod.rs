@@ -195,7 +195,7 @@ pub fn commit_own_write(
         effects.finish().unwrap().with_output_demand_observation()
     }).expect("the fixture host admits its own-write preparation");
     let graph = (*world.application.runtime_for_test())
-        .primary_graph()
+        .primary_graph_for_test()
         .unwrap();
     let handle = graph.integration_handle_for_test();
     let (key, dependency) = world
@@ -286,11 +286,11 @@ pub fn commit_own_write(
         .rfind(|cell| (*cell.get().unwrap().source_partition_identity_for_test()) == Some([7; 32]))
         .cloned()
         .expect("the committed output has a retained cell");
-    let completed = world
+    let completed = (*(*world
         .application
-        .runtime
-        .primary_provider
-        .observe_completed_application(receipt.commit_reference())
+        .runtime_for_test())
+        .primary_provider_for_test())
+        .observe_completed_application_for_test(receipt.commit_reference())
         .unwrap();
     assert!(
         completed

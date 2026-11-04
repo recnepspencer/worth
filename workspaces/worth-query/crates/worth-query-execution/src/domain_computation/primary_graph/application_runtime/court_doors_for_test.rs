@@ -63,3 +63,9 @@ where
     }
 }
 
+impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    #[doc(hidden)]
+    pub fn runtime_for_test(&self) -> &WorthQueryApplicationRuntimeCore {
+        &self.runtime
+    }
+}

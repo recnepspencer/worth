@@ -22,7 +22,7 @@ pub fn publish_relational_mutation_on_application<
     let request = worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope::new(
         None,
         worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource::new().token(),
-        application.product_runtime().clock.admission_clock.clone(),
+        (*(*application.product_runtime().clock_for_test()).admission_clock_for_test()).clone(),
     );
 
     let (prepared, before_lease) =
@@ -33,7 +33,7 @@ pub fn publish_relational_mutation_on_application<
     };
     let published_basis = performed.commit().basis().relational_basis().clone();
     drop(performed.consume());
-    let graph = (*application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*application.runtime_for_test()).primary_graph_for_test().unwrap();
     let handle = graph.integration_handle_for_test();
     handle.with_runtime_mut_for_test(request_execution, |runtime| {
         let observation = published_basis.observation();
@@ -86,7 +86,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         )
         .expect("the fixture product branch remains admitted");
     let (_, product, application_basis) = selected.into_parts_for_test();
-    let graph = (*application.runtime_for_test()).primary_graph().unwrap();
+    let graph = (*application.runtime_for_test()).primary_graph_for_test().unwrap();
     let handle = graph.integration_handle_for_test();
     let candidate = handle.with_runtime_mut_for_test(execution, |runtime| {
         let mut transaction = runtime

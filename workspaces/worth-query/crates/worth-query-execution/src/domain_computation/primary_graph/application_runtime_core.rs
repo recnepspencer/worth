@@ -223,3 +223,6 @@ impl WorthQueryApplicationRuntimeCore {
         &self.installed_operations
     }
 }
+
+#[path = "application_runtime_core_court_doors_for_test.rs"]
+mod court_doors_for_test;

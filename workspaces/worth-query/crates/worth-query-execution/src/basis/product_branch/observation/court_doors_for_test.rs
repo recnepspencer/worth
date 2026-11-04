@@ -47,3 +47,10 @@ impl WorthQueryProductObservationLease {
         Self::relational_basis(self)
     }
 }
+
+impl WorthQueryProductBranchLease {
+    #[doc(hidden)]
+    pub fn read_lease_for_test(&self) -> WorthQueryProductObservationLease {
+        Self::read_lease(self)
+    }
+}

@@ -35,19 +35,19 @@ impl OwnershipTestsWorthQueryDocumentHistoryOperationConstraintForTest
                 .application
                 .with_host_advancement(|phase| {
                     let principal =
-                        world.selected_product(&phase.test_host_request()).resolve_authenticated_principal(&phase, &world.binding, &external, &request, worth_query_execution::facade::domain_computation::WorthQueryPrincipalResolutionMode::Ordinary).unwrap();
+                        world.selected_product(&phase.test_host_request_for_test()).resolve_authenticated_principal(&phase, &world.binding, &external, &request, worth_query_execution::facade::domain_computation::WorthQueryPrincipalResolutionMode::Ordinary).unwrap();
                     let account =
-                        resolved_account(&phase.test_host_request(), &world, "open", &request);
+                        resolved_account(&phase.test_host_request_for_test(), &world, "open", &request);
                     let other =
-                        resolved_account(&phase.test_host_request(), &world, "unrelated", &request);
-                    assert_ne!(account.entity_id(), other.entity_id());
+                        resolved_account(&phase.test_host_request_for_test(), &world, "unrelated", &request);
+                    assert_ne!(account.entity_id_for_test(), other.entity_id_for_test());
                     let operation = world
                         .application
                         .installed_schema()
                         .installed_operation(TouchAccountOperation::reference())
                         .unwrap();
                     let admission = world
-                        .selected_product(&phase.test_host_request())
+                        .selected_product(&phase.test_host_request_for_test())
                         .authorize_operation(
                             &phase,
                             &principal,
@@ -59,17 +59,17 @@ impl OwnershipTestsWorthQueryDocumentHistoryOperationConstraintForTest
                         .unwrap();
                     let binding = idempotency(190, 191);
                     let restriction = Self {
-                        model: HistoryModelIdentity::from_resolved(&other),
+                        model: HistoryModelIdentity::from_resolved_for_test(&other),
                         source: world
                             .application
                             .product_runtime()
-                            .admit_product_occurrence(
-                                world.application.current_world().occurrence(),
+                            .admit_product_occurrence_for_test(
+                                world.application.current_world().occurrence_for_test(),
                             )
                             .unwrap()
-                            .read_lease(),
+                            .read_lease_for_test(),
                         candidate: world.application.current_world(),
-                        meaning: binding.bind_admission(&admission),
+                        meaning: binding.bind_admission_for_test(&admission),
                         candidate_predecessor: None,
                     };
                     admission
