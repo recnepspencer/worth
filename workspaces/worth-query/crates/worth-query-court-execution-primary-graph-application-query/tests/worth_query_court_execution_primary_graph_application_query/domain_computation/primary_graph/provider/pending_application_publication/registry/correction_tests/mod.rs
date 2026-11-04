@@ -8,9 +8,7 @@ use worth_query_execution::court_doors_for_test::domain_computation::primary_gra
 #[test]
 fn reserved_command_is_visible_across_branches_and_released_with_its_slot() {
     let product_incarnation = || {
-        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(
-            true,
-        )
+        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system())
         .application
         .current_world()
         .occurrence_for_test()

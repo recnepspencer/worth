@@ -162,7 +162,10 @@ pub fn mutation_work(
     unrelated_accounts: usize,
     idempotency_key: u8,
 ) -> worth_query_execution::facade::domain_computation::WorthQueryPrimaryMutationWorkEvidence {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let program = world
         .application
         .with_host_advancement(|phase| {
@@ -203,7 +206,10 @@ pub fn no_demand_mutation_work(
     wide: bool,
     idempotency_key: u8,
 ) -> worth_query_execution::facade::domain_computation::WorthQueryPrimaryMutationWorkEvidence {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let program = world
         .application
         .with_host_advancement(|phase| {
@@ -343,9 +349,10 @@ pub fn grow_unrelated_accounts(
     if count == 0 {
         return;
     }
-    let graph = (*(*world.application.primary_provider_for_test()).graph_for_test()).clone();
-    let kind = (*graph.layout_for_test())
-        .entity_kind_for_test(Account::reference().name())
+    let graph = world.application.runtime.primary_provider.graph.clone();
+    let kind = graph
+        .layout
+        .entity_kind(Account::reference().name())
         .expect("account kind is installed");
     let locator = |entity: &str, aspect: &str, field: &str| {
         (*graph.layout_for_test())

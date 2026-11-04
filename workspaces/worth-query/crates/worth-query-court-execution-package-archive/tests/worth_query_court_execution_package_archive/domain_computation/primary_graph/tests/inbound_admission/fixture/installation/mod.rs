@@ -36,7 +36,7 @@ pub fn installed_world_with_verifier(
                 &phase.bootstrap_for_test(),
                 &runtime,
                 &schema,
-                test_product_world_resources(),
+                test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()),
             )
             .unwrap();
         bootstrap

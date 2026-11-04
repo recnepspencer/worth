@@ -1,10 +1,10 @@
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::progressed::finish_application_commit;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::commit_preparation::prepare_application_commit;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::progress_application_commit;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::start_managed_application_commit;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::WorthQueryApplicationCommitPreparation;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::WorthQueryApplicationCommitPreparationRequest;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::WorthQueryRunningApplicationCommit;
+pub use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::progressed::finish_application_commit;
+pub use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::entry_custody::preparation::prepare_application_commit;
+pub use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::progress_application_commit;
+pub use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::start_managed_application_commit;
+pub use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::WorthQueryApplicationCommitPreparation;
+pub use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::WorthQueryApplicationCommitPreparationRequest;
+pub use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::WorthQueryRunningApplicationCommit;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::preimage_evidence::retained_status_program;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::preimage_evidence::RetainedAccount;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::preimage_evidence::RetentionMutationBreadth;
@@ -26,7 +26,6 @@ pub use worth_query_execution::facade::domain_computation::WorthQueryApplication
 pub use worth_query_execution::facade::domain_computation::WorthQueryPrimaryGraphApplicationRuntime;
 pub use worth_execution::ExecutionAllocationPolicy;
 pub use std::time::Duration;
-pub use std::time::Instant;
 pub use worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource;
 pub use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 
@@ -123,9 +122,7 @@ pub fn assert_interleaved_terminal(
     assert_victim: impl FnOnce(&WorthQueryApplicationCommitOutcome),
 ) {
     let world =
-        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(
-            true,
-        );
+        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     world
         .application
         .with_host_advancement(|active_phase| {
@@ -280,10 +277,10 @@ pub fn start(
 > {
     let prepared = prepare_application_commit(
         &phase.borrowed_request_for_test(),
-        phase,
-        application,
-        WorthQueryApplicationCommitPreparationRequest::new_for_test(
-            program,
+        WorthQueryApplicationCommitPreparationRequest::new(
+            application
+                .validate_commit_program_in_advancement(phase, program)
+                .unwrap_or_else(|outcome| panic!("fixture admission: {outcome:?}")),
             idempotency,
             None,
             None,

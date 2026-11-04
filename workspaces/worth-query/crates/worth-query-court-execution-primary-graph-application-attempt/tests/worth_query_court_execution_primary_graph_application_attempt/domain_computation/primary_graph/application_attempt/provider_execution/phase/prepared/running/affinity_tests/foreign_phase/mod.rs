@@ -6,22 +6,22 @@ use worth_query_execution::facade::domain_computation::WorthQueryProviderSession
 #[test]
 fn prepared_running_refuses_foreign_phase_with_the_same_typed_cause() {
     let world =
-        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(
-            true,
-        );
+        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     let foreign =
-        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(
-            true,
-        );
+        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     let prepared = world
         .application
         .with_host_advancement(|phase| {
             let preparation = prepare_application_commit(
                 &phase.borrowed_request_for_test(),
-                &phase,
-                &world.application,
-                WorthQueryApplicationCommitPreparationRequest::new_for_test(
-                    retained_program(&phase, &world, "foreign-phase"),
+                WorthQueryApplicationCommitPreparationRequest::new(
+                    world
+                        .application
+                        .validate_commit_program_in_advancement(
+                            &phase,
+                            retained_program(&phase, &world, "foreign-phase"),
+                        )
+                        .unwrap_or_else(|outcome| panic!("fixture admission: {outcome:?}")),
                     idempotency(197, 198),
                     None,
                     None,

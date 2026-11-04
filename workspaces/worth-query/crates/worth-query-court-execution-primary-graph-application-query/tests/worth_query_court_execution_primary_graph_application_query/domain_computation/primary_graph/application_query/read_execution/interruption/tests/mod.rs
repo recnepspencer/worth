@@ -4,7 +4,6 @@ pub use std::cell::RefCell;
 pub use std::num::NonZeroUsize;
 pub use std::rc::Rc;
 pub use std::time::Duration;
-pub use std::time::Instant;
 
 pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationQueryResourceProfile;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world_with_resource_profile;
@@ -32,8 +31,9 @@ fn cancellation_during_real_nested_materialization_releases_all_read_resources()
     );
     let cancellation = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(60)),
+        Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
         cancellation.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let selected = world
@@ -136,8 +136,12 @@ fn cancellation_during_real_nested_materialization_releases_all_read_resources()
 #[test]
 fn deadline_is_checked_at_kernel_safe_points() {
     let cancellation = WorthQueryCancellationSource::new();
-    let request = WorthQueryRequestScope::new(Some(Instant::now()), cancellation.token());
-    let denial = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::read_execution::interruption::checkpoint(&request, "root/relation[0]").unwrap_err();
+    let request = WorthQueryRequestScope::new(
+        Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now()),
+        cancellation.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
+    let denial = worth_query_execution::domain_computation::primary_graph::application_query::read_execution::interruption::checkpoint(&request, "root/relation[0]").unwrap_err();
     assert_eq!(
         denial.kind(),
         worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::read_execution::denial::WorthQueryApplicationReadExecutionDenialKind::DeadlineExceeded

@@ -1,7 +1,10 @@
 use crate::domain_computation::primary_graph::application_query::derived_view::registration::collection::pair::reconstruct_parallel::read_ceiling_tests::*;
 #[test]
 fn map_read_preserves_its_callers_work_stop_and_releases_transient_memory() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let scope = live_scope();
     world
         .application

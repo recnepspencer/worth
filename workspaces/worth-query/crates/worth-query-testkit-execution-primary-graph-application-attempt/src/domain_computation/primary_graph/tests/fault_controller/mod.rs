@@ -13,11 +13,19 @@ use worth_query_execution::court_doors_for_test::domain_computation::primary_gra
 pub struct PrimaryGraphFaultController {
     pub scheduled: AtomicU16,
     pub staged_validation_cancellation: Mutex<Option<WorthQueryCancellationSource>>,
-    pub native_preparation_cancellation:
-        Mutex<Option<(WorthQueryCancellationSource, Option<std::time::Instant>)>>,
+    pub native_preparation_cancellation: Mutex<
+        Option<(
+            WorthQueryCancellationSource,
+            Option<(worth_execution::MonotonicTimeController, std::time::Instant)>,
+        )>,
+    >,
     pub native_preparation_interruptions: AtomicUsize,
-    pub aftermath_interruption:
-        Mutex<Option<(WorthQueryCancellationSource, Option<std::time::Instant>)>>,
+    pub aftermath_interruption: Mutex<
+        Option<(
+            WorthQueryCancellationSource,
+            Option<(worth_execution::MonotonicTimeController, std::time::Instant)>,
+        )>,
+    >,
     pub aftermath_interruptions: AtomicUsize,
     pub failed_post_commit_snapshot_consumptions: AtomicUsize,
     pub panicked_pending_publication_consumptions: AtomicUsize,
@@ -27,7 +35,7 @@ impl PrimaryGraphFaultController {
     pub fn interrupt_next_aftermath_seal(
         &self,
         source: WorthQueryCancellationSource,
-        deadline: Option<std::time::Instant>,
+        deadline: Option<(worth_execution::MonotonicTimeController, std::time::Instant)>,
     ) {
         *self.aftermath_interruption.lock().unwrap() = Some((source, deadline));
     }
@@ -100,14 +108,12 @@ impl WorthQueryPrimaryGraphFaultPort for PrimaryGraphFaultController {
             self.aftermath_interruptions.fetch_add(1, Ordering::AcqRel);
             match deadline {
                 None => source.cancel(),
-                // Wait for this request's real deadline, at the sealing boundary.
-                // No synthetic stop or timing race chooses the outcome.
-                Some(deadline) => {
-                    while let Some(remaining) =
-                        deadline.checked_duration_since(std::time::Instant::now())
-                    {
-                        std::thread::sleep(remaining);
-                    }
+                // Advance the owning request clock at the sealing boundary.
+                Some((time, deadline)) => {
+                    let elapsed = deadline
+                        .checked_duration_since(time.clock().now())
+                        .expect("the held request is fresh before its event");
+                    time.advance(elapsed).unwrap();
                 }
             }
         }
@@ -121,12 +127,11 @@ impl WorthQueryPrimaryGraphFaultPort for PrimaryGraphFaultController {
                 .fetch_add(1, Ordering::AcqRel);
             match deadline {
                 None => source.cancel(),
-                Some(deadline) => {
-                    while let Some(remaining) =
-                        deadline.checked_duration_since(std::time::Instant::now())
-                    {
-                        std::thread::sleep(remaining);
-                    }
+                Some((time, deadline)) => {
+                    let elapsed = deadline
+                        .checked_duration_since(time.clock().now())
+                        .expect("the held request is fresh before its event");
+                    time.advance(elapsed).unwrap();
                 }
             }
         }

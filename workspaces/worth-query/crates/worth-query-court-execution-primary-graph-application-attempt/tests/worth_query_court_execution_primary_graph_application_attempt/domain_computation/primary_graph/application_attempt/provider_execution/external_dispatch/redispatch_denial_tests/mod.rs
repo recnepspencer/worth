@@ -49,7 +49,8 @@ pub const FRESH_AUTHORITY: [Kind; 3] = [
 /// refusal cannot skip this court.
 pub fn every_refusal() -> Vec<Redispatch> {
     let listed = |denial: Redispatch| match denial {
-        Redispatch::FreshAuthority(_)
+        Redispatch::AdmissionAuthorization(_)
+        | Redispatch::FreshAuthority(_)
         | Redispatch::AdmissionCancelled
         | Redispatch::AdmissionDeadlineExceeded
         | Redispatch::AdmissionAuthenticationExpired
@@ -72,6 +73,8 @@ pub fn every_refusal() -> Vec<Redispatch> {
         | Redispatch::CompletionExecutionRequest(_) => denial,
     };
     [
+        Redispatch::AdmissionAuthorization(worth_query_execution::facade::domain_computation::WorthQueryOperationAuthorizationDenialKind::Refused(worth_query_execution::facade::domain_computation::WorthQueryOperationAuthorizationRefusalKind::StaleInstalledOperation)),
+        Redispatch::AdmissionAuthorization(worth_query_execution::facade::domain_computation::WorthQueryOperationAuthorizationDenialKind::Refused(worth_query_execution::facade::domain_computation::WorthQueryOperationAuthorizationRefusalKind::InputNotAdmitted)),
         Redispatch::AdmissionCancelled,
         Redispatch::AdmissionDeadlineExceeded,
         Redispatch::AdmissionAuthenticationExpired,
@@ -199,5 +202,12 @@ fn fresh_authority_and_current_admission_refusals_stay_distinct() {
         kind(Redispatch::AdmissionAuthenticationExpired),
         Kind::AdmissionAuthenticationExpired
     );
+    for refusal in [
+        worth_query_execution::facade::domain_computation::WorthQueryOperationAuthorizationRefusalKind::StaleInstalledOperation,
+        worth_query_execution::facade::domain_computation::WorthQueryOperationAuthorizationRefusalKind::InputNotAdmitted,
+    ] {
+        let cause = worth_query_execution::facade::domain_computation::WorthQueryOperationAuthorizationDenialKind::Refused(refusal);
+        assert_eq!(kind(Redispatch::AdmissionAuthorization(cause)), Kind::AdmissionAuthorization(cause));
+    }
     assert_eq!(kind(Redispatch::ForeignAdmission), Kind::ForeignRuntime);
 }

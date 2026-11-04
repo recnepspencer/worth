@@ -17,7 +17,6 @@ pub use worth_query_testkit_execution_primary_graph_application_contribution::do
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::current_output_source::TestAccountSourceBinding;
 pub use std::num::NonZeroUsize;
 pub use std::time::Duration;
-pub use std::time::Instant;
 pub use worth_execution::ExecutionAllocationPolicy;
 pub use worth_execution::ExecutionAuthority;
 pub use worth_execution::LeaseRequest;
@@ -25,12 +24,16 @@ pub use worth_query_admission::facade::authenticated_principal::WorthQueryCancel
 
 #[test]
 fn cancelled_after_consuming_completion_cannot_publish_and_keeps_original_payer() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     crate::domain_computation::primary_graph::causal_inspection::application_inspection::admission::publication_tests::uninstalled::assert_original_installation_cause(world.application.installed_schema());
     let cancellation = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(60)),
+        Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
         cancellation.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let original = observe(&world, &external, &request, false);

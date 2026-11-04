@@ -16,7 +16,7 @@ fn cancellation_during_compute_has_a_witness_and_a_safe_canonical_prefix() {
         for width in [None, Some(1), Some(2), Some(5)] {
             let cancellation = WorthQueryCancellationSource::new();
             let schedule = Arc::new((Mutex::new(Schedule::default()), Condvar::new()));
-            let scope = WorthQueryRequestScope::new(None, cancellation.token());
+            let scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
             let policy = worker_policy(width.unwrap_or(1));
             let placement = width.map_or(RuntimeWorldExecutionPlacement::Serial(policy), |_| {
                 RuntimeWorldExecutionPlacement::Leased {

@@ -2,7 +2,6 @@
 
 use std::num::NonZeroUsize;
 use std::sync::OnceLock;
-use std::time::Instant;
 use worth_execution::CancellationSource;
 use worth_execution::CancellationToken;
 use worth_execution::ExecutionAuthority;

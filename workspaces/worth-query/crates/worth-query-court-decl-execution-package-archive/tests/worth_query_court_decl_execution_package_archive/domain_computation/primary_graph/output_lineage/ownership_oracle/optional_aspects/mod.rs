@@ -57,5 +57,7 @@ pub mod required_content_read;
 pub mod retained_recovery;
 #[path = "schema/mod.rs"]
 pub mod schema;
+#[path = "source_admission/mod.rs"]
+pub mod source_admission;
 #[path = "tracked_reads/mod.rs"]
 pub mod tracked_reads;

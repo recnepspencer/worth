@@ -63,7 +63,10 @@ pub fn colliding(
 fn a_collision_met_routing_again_makes_the_run_in_full() {
     let _observation =
         worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let installed = WorthQueryInstalledPartitionedComputation::<_, _, Computation, _>::new(
         Rerouted::default(),
         ComputationRetention::ProducerOperation,
@@ -108,7 +111,10 @@ fn a_collision_met_routing_again_makes_the_run_in_full() {
 fn replacing_a_sole_member_key_with_a_prefix_collision_matches_a_fresh_run() {
     let _observation =
         worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let installed = WorthQueryInstalledPartitionedComputation::<_, _, Computation, _>::new(
         Rerouted::default(),
         ComputationRetention::ProducerOperation,

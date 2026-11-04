@@ -4,7 +4,7 @@ use crate::domain_computation::primary_graph::tests::application_attempt::emitte
 #[test]
 fn external_receipt_clones_do_not_pin_an_evicted_historical_basis() {
     {
-        let world = installed_authorization_world(true);
+        let world = installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
 
         let selected = world
             .application
@@ -16,8 +16,11 @@ fn external_receipt_clones_do_not_pin_an_evicted_historical_basis() {
                 )
             })
             .expect("the fixture read owns its installed host call");
-        let _live = (*world.application.primary_provider_for_test())
-            .observe_application_commit_causality_for_test(selected.product());
+        let _live = world
+            .application
+            .runtime
+            .primary_provider
+            .observe_application_commit_causality(selected.product());
         let request = live_scope();
         let principal = world
             .application
@@ -127,8 +130,11 @@ fn external_receipt_clones_do_not_pin_an_evicted_historical_basis() {
             current_status = replacement;
         }
         assert!(
-            (*world.application.primary_provider_for_test())
-                .committed_application_emissions_for_test(original.committed_product_publication())
+            world
+                .application
+                .runtime
+                .primary_provider
+                .committed_application_emissions(original.committed_product_publication())
                 .is_empty(),
             "the first batch must be absent from the bounded live source"
         );
@@ -150,7 +156,11 @@ fn external_receipt_clones_do_not_pin_an_evicted_historical_basis() {
         assert_eq!(recovered.emitted_effect_count(), 1);
         let external_recovered_clone = recovered.clone();
         assert_eq!(
-            (*world.application.primary_provider_for_test()).retained_receipt_basis_count(),
+            world
+                .application
+                .runtime
+                .primary_provider
+                .retained_receipt_basis_count(),
             64,
             "completed evidence must not grow the bounded receipt-basis owner"
         );

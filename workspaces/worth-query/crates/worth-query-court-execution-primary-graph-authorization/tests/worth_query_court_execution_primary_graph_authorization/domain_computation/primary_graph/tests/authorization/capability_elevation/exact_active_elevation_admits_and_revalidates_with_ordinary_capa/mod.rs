@@ -13,8 +13,8 @@ fn exact_active_elevation_admits_and_revalidates_with_ordinary_capability_author
     );
     let (_, _, request_role) = (*world
         .application
-        .authorization_for_test())
-        .elevation_lifecycle_operation_for_test::<IdentityExecutionSchema, RequestCapabilityElevationOperation>(
+        .runtime.authorization
+        .elevation_lifecycle_operation::<IdentityExecutionSchema, RequestCapabilityElevationOperation>(
             "RequestCapabilityElevationOperation",
             <RequestElevationInput as worth_query_declaration::facade::portable_identity::WorthQueryPortableType>::PORTABLE_TYPE_IDENTITY.as_str(),
         )
@@ -23,8 +23,8 @@ fn exact_active_elevation_admits_and_revalidates_with_ordinary_capability_author
     assert_eq!(format!("{request_role:?}"), "Request");
     assert!((*world
         .application
-        .authorization_for_test())
-        .elevation_lifecycle_operation_for_test::<
+        .runtime.authorization
+        .elevation_lifecycle_operation::<
             IdentityExecutionSchema,
             AliasedRequestCapabilityElevationOperation,
         >(

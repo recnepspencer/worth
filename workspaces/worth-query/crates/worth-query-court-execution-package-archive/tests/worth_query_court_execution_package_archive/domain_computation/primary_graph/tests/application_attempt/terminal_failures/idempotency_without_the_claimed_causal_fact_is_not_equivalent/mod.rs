@@ -4,7 +4,7 @@ use worth_query_testkit_execution_primary_graph_application_contribution::domain
 
 #[test]
 fn idempotency_without_the_claimed_causal_fact_is_not_equivalent() {
-    let world = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::correction_source::install();
+    let world = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::correction_source::install(worth_execution::MonotonicClock::system());
     let source = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::correction_source::edit(&world, "equivalence-source", "edited-label");
     let first = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::correction_source::prepare(&world, &source, "causal-equivalence");
     let retry = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::correction_source::prepare(&world, &source, "causal-equivalence");

@@ -1,5 +1,6 @@
 use worth_query_admission::facade::application_query::admit_application_query_parameters;
 use worth_query_admission::facade::application_query::WorthQueryApplicationQueryLane;
+use worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock;
 use worth_query_admission::facade::graph_read_access::WorthQueryGraphIndexInventory;
 use worth_query_admission::facade::graph_read_access::WorthQueryGraphIndexLifecycleClass;
 use worth_query_admission::facade::graph_read_access::WorthQueryGraphIndexLifecycleOwner;
@@ -26,7 +27,7 @@ use worth_query_execution::court_doors_for_test::domain_computation::primary_gra
 
 #[test]
 fn live_support_requires_the_exact_contract_and_both_equality_indexes() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(true, WorthQueryAdmissionClock::system());
     let query = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_query::installed_live_query(&world);
     let live = query.live().expect("fixture installs live meaning");
     let parameters =
@@ -102,7 +103,7 @@ fn live_support_requires_the_exact_contract_and_both_equality_indexes() {
 
 #[test]
 fn provider_mechanism_deletion_mints_no_support_row() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(true, WorthQueryAdmissionClock::system());
     let query = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_query::installed_nested_query(&world);
     let parameters = admit_application_query_parameters(
         &query,
@@ -157,7 +158,7 @@ fn provider_mechanism_deletion_mints_no_support_row() {
 
 #[test]
 fn continuation_ordering_requires_the_installed_seek_mechanism() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(true, WorthQueryAdmissionClock::system());
     let query = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_query::installed_live_query(&world);
     let parameters =
         admit_application_query_parameters(&query, live_account_parameters("account-1")).unwrap();
@@ -201,7 +202,7 @@ fn continuation_ordering_requires_the_installed_seek_mechanism() {
 
 #[test]
 fn query_runtime_mechanism_deletion_denies_plan_review() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(true, WorthQueryAdmissionClock::system());
     let query = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_query::installed_nested_query(&world);
     let parameters = admit_application_query_parameters(
         &query,
@@ -336,6 +337,7 @@ pub fn lower_layout<Schema: ApplicationSchema>(
         installed.installed_declaration(),
         installed.native_contracts(),
         &RelationalSchemaRegistry::new(),
+        installed.value_bindings(),
     )
     .unwrap()
     .0

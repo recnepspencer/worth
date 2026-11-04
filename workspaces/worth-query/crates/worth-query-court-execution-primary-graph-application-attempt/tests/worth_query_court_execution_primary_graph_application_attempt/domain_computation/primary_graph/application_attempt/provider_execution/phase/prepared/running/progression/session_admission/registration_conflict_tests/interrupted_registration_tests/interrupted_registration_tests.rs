@@ -17,11 +17,13 @@ use worth_query_admission::facade::authenticated_principal::WorthQueryRequestSco
 #[test]
 fn cancellation_at_registration_binding_is_cancelled_not_denied() {
     let world =
-        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(
-            true,
-        );
+        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     let cancellation = WorthQueryCancellationSource::new();
-    let request = WorthQueryRequestScope::new(None, cancellation.token());
+    let request = WorthQueryRequestScope::new(
+        None,
+        cancellation.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     world
         .application
         .with_host_advancement(|active_phase| {
@@ -45,7 +47,7 @@ fn cancellation_at_registration_binding_is_cancelled_not_denied() {
             let admitted = admit_provider_session(
                 phase,
                 &mut running,
-                &(*world.application.primary_graph_authority_for_test()),
+                world.application.runtime.primary_graph_authority(),
                 attempt_basis.retained_product(),
                 mutation_run,
             )
@@ -57,8 +59,8 @@ fn cancellation_at_registration_binding_is_cancelled_not_denied() {
                 &mut authorization,
                 provider_attempt,
                 attempt_basis,
-                WorthQueryProviderAttemptRegistrationContext::new_for_test(
-                    &(*world.application.primary_provider_for_test()),
+                WorthQueryProviderAttemptRegistrationContext::new(
+                    &world.application.runtime.primary_provider,
                     &admission,
                     idempotency,
                     outcome_identity,
@@ -87,8 +89,9 @@ fn cancellation_at_registration_binding_is_cancelled_not_denied() {
             assert_eq!(
                 (*world
                     .application
-                    .primary_provider_for_test())
-                    .application_attempt_resource_count_for_test(),
+                    .runtime
+                    .primary_provider
+                    .application_attempt_resource_count(),
                 0
             );
             assert_eq!(

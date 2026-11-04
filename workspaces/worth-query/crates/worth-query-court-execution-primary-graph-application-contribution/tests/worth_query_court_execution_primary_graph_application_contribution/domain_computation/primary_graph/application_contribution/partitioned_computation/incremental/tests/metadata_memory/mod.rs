@@ -7,7 +7,10 @@ use worth_query_execution::court_doors_for_test::domain_computation::primary_gra
 fn partition_metadata_refusal_preserves_prior_and_its_funded_view_lasts_until_final_drop() {
     let _observation =
         worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let first = first_run(&world, &installed(StatusRead::Gather(1), sum));
     let sealed = first.sealed.unwrap().unwrap();
     let prior = (*(*sealed.state_for_test()).typed_for_test())

@@ -12,8 +12,7 @@ pub use std::cell::RefCell;
 pub use std::rc::Rc;
 pub use std::sync::Mutex;
 pub use std::time::Duration;
-pub use std::time::Instant;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy;
+pub use worth_query_execution::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy;
 pub use worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource;
 
 pub struct ResultValue {
@@ -31,10 +30,9 @@ fn every_compute_precedes_owner_completion_and_failure_destroys_the_suffix() {
     for failure in 0..3 {
         let cancellation = WorthQueryCancellationSource::new();
         let request = WorthQueryRequestScope::new(
-            Some(Instant::now() + Duration::from_secs(60)),
-            cancellation.token(),
-        );
-        let execution = QueryRequestExecution::open_for_test(
+            Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
+            cancellation.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
+        let execution = QueryRequestExecution::open(
             worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(test_policy(
                 std::num::NonZeroUsize::MIN,
                 None,

@@ -10,9 +10,7 @@ use worth_query_execution::court_doors_for_test::domain_computation::primary_gra
 #[should_panic(expected = "one restored output partition keeps one exact identity")]
 fn restoration_rejects_conflicting_identity_for_the_same_partition() {
     let world =
-        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(
-            true,
-        );
+        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     let product = world
         .application
         .product_runtime()

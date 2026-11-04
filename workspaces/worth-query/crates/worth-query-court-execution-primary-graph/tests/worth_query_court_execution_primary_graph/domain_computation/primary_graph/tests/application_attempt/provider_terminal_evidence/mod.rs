@@ -10,7 +10,10 @@ use worth_query_execution::facade::domain_computation::WorthQueryApplicationComm
 
 #[test]
 fn owner_terminal_evidence_resolves_the_direct_provider_commit() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application

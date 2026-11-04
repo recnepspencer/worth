@@ -10,7 +10,10 @@ fn current_output_source_adjacency_tracks_actual_anchor_retirement() {
     use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact as Fact;
     use worth_relational::facade::runtime::RelationalAdjacencyDirection;
 
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let (_, _, account, _) = world
         .application
         .with_host_advancement(|phase| {

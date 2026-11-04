@@ -90,7 +90,7 @@ pub fn context(live: bool) -> ElevatedQueryContext {
             let custody = phase.test_host_request_for_test();
             let phase_custody = &custody;
             let borrowed_execution = phase
-                .execution_request_for_for_test(&(*world.application.product_runtime_for_test()))
+                .execution_request_for(&world.application.runtime.product_runtime)
                 .expect("the context read belongs to its installed world");
             let execution = &borrowed_execution;
             let principal =

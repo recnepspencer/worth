@@ -110,9 +110,15 @@ fn ambiguous_index_and_changed_mapping_revoke_application_principal_proof() {
 
 #[test]
 fn application_principal_proof_expires_with_its_external_authentication() {
-    let world = installed_world(&[("dana", WorthQueryPrincipalMappingStatus::Enabled)]);
-    let scope = live_scope();
-    let external = world.authenticate("dana", Duration::from_millis(20), &scope);
+    let time = worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionTimeController::new().unwrap();
+    let held = time.hold();
+    let world = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(true, time.clock());
+    let scope = WorthQueryRequestScope::new(
+        Some(held + Duration::from_secs(60)),
+        WorthQueryCancellationSource::new().token(),
+        time.clock(),
+    );
+    let external = world.authenticate("alice", Duration::from_secs(1), &scope);
     let principal = world
         .application
         .with_host_advancement(|phase| {
@@ -128,7 +134,7 @@ fn application_principal_proof_expires_with_its_external_authentication() {
                 .unwrap()
         })
         .expect("the fixture read owns its installed host call");
-    std::thread::sleep(Duration::from_millis(30));
+    time.advance(Duration::from_secs(2)).unwrap();
     world
         .application
         .with_host_advancement(|phase| {

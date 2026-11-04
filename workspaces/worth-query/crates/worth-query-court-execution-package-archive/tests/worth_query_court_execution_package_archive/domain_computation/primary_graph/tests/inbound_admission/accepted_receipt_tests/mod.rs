@@ -1,6 +1,5 @@
 use std::sync::Arc;
 use std::time::Duration;
-use std::time::Instant;
 
 use worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
@@ -253,8 +252,9 @@ fn old_executed_phase_drop_cannot_release_a_new_publication_claim() {
     let cancellation = WorthQueryCancellationSource::new();
     cancellation.cancel();
     let cancelled = WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(60)),
+        Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
         cancellation.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     let receipt = old_phase.progress_for_test(&cancelled).unwrap();
     assert_eq!(receipt.posture(), Posture::AcceptedPending);

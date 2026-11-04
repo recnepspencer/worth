@@ -11,7 +11,10 @@ use worth_query_declaration::facade::application_operation::ApplicationMutationO
 
 #[test]
 fn pending_candidate_rejects_changed_own_evidence_without_certifying_upstream() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let selected = world
         .application
         .with_host_advancement(|phase| {

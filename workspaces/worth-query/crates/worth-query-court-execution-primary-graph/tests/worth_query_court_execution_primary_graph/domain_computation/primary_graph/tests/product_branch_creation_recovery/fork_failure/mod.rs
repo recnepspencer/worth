@@ -18,8 +18,11 @@ pub fn create(
     WorthQueryProductBranch,
 ) {
     let root = world.application.current_world();
-    let source = (*world.application.product_runtime_for_test())
-        .admit_product_occurrence_for_test(root.occurrence_for_test())
+    let source = world
+        .application
+        .runtime
+        .product_runtime
+        .admit_product_occurrence(root.occurrence())
         .expect("the root occurrence remains selectable");
     let occupied_signal =
         worth_signal::facade::branch::validate_signal_branch_name("query-product-1-signal")
@@ -35,10 +38,12 @@ pub fn create(
     )
     .expect("the owner-driven collision fixture is valid");
     let cancellation = RuntimeWorldCancellationSource::new();
-    let RuntimeWorldBranchCreationOutcome::Performed(occupied) =
-        (*world.application.product_runtime_for_test())
-            .create_product_branch_for_test(execution, &source, None, intent, &cancellation.token())
-            .expect("the real Signal destination is occupied through World")
+    let RuntimeWorldBranchCreationOutcome::Performed(occupied) = world
+        .application
+        .runtime
+        .product_runtime
+        .create_product_branch(execution, &source, None, intent, &cancellation.token())
+        .expect("the real Signal destination is occupied through World")
     else {
         panic!("the collision fixture must publish its Signal fork");
     };

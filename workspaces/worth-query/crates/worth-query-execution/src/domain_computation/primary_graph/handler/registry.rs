@@ -5,8 +5,6 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 mod operation_body;
 mod registration;
-#[cfg(test)]
-mod teardown_tests;
 use registration::HandlerOrigin;
 
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;

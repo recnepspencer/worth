@@ -2,7 +2,10 @@ use crate::domain_computation::primary_graph::tests::application_attempt::touche
 
 #[test]
 fn one_field_family_instance_cannot_satisfy_two_planned_entity_dependencies() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     world
         .application

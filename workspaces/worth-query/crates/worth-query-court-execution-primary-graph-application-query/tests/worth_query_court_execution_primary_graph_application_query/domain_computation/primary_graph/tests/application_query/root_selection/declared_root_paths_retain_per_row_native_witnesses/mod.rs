@@ -7,7 +7,11 @@ use worth_query_execution::publication_boundary::program_publication_access;
 fn declared_root_paths_retain_per_row_native_witnesses() {
     let host_request = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
-    let world = installed_authorization_world(true);
+
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
@@ -173,7 +177,7 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
             let selected = world.selected_product(&phase.test_host_request_for_test());
             let serial_retained = dependencies.assert_storage_custody_for_test(
                 phase
-                    .checked_execution_request_for(&(*world.application.product_runtime_for_test()))
+                    .checked_execution_request_for(&world.application.runtime.product_runtime)
                     .unwrap(),
             );
             selected

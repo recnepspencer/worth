@@ -56,9 +56,12 @@ pub struct ContinuationTestContext {
 }
 
 impl ContinuationTestContext {
-    pub fn new(authentication_lifetime: Duration) -> Self {
-        let world = installed_authorization_world(true);
-        let request = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
+    pub fn new(
+        authentication_lifetime: Duration,
+        clock: worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock,
+    ) -> Self {
+        let world = installed_authorization_world(true, clock.clone());
+        let request = worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope::new(Some(clock.now() + Duration::from_secs(60)), worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource::new().token(), clock.clone());
         let external = world.authenticate("alice", authentication_lifetime, &request);
         let (principal, account, query) = world
             .application
@@ -125,7 +128,7 @@ impl ContinuationTestContext {
         &self,
         phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     ) -> TestContinuation {
-        let request = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
+        let request = worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope::new(Some(self.principal.clock().now() + Duration::from_secs(60)), worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource::new().token(), self.principal.clock().clone());
         let access = WorthQueryApplicationQueryAccessContext::new(&self.principal, &self.account);
         let plan = self
             .world
@@ -230,12 +233,6 @@ impl ContinuationTestContext {
             .acquisitions()
     }
 
-    pub fn expire_authentication(&mut self) {
-        self.world
-            .application
-            .fix_authentication_time_for_test(self.principal.valid_until());
-    }
-
     pub fn assert_resource_baseline(&self) {
         let basis = self
             .world
@@ -258,7 +255,10 @@ impl ContinuationTestContext {
                 .installed_packages()
                 .successor_generation(),
         );
-        (*self.world.application.runtime_mut_for_test())
+        self.world
+            .application
+            .runtime
+            .execution_mut()
             .commit_successor_installation(successor)
             .unwrap();
     }

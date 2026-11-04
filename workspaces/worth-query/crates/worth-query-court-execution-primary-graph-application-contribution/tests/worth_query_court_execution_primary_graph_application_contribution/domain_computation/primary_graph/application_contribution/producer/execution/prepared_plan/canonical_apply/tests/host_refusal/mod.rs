@@ -7,15 +7,14 @@ use worth_runtime_world::facade::RuntimeWorldExecutionPlacement;
 
 #[test]
 fn a_refused_author_host_call_completes_on_the_owner_and_applies_only_its_prefix() {
-    let application = Arc::new(worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(false).application);
+    let application = Arc::new(worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(false, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()).application);
     for workers in [1, 2, 4] {
         for product in [false, true] {
             let cancel = WorthQueryCancellationSource::new();
             let scope = WorthQueryRequestScope::new(
-                Some(Instant::now() + Duration::from_secs(60)),
-                cancel.token(),
-            );
-            let execution = QueryRequestExecution::open_for_test(
+                Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
+                cancel.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
+            let execution = QueryRequestExecution::open(
                 RuntimeWorldExecutionPlacement::Leased {
                     authority: test_authority(),
                     policy: test_policy(std::num::NonZeroUsize::new(workers).unwrap(), None),

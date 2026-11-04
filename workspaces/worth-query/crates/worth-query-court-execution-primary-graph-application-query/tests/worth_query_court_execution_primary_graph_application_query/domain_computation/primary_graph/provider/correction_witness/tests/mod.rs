@@ -16,7 +16,7 @@ use worth_foundational::ExecutionRequestPolicy;
 
 #[test]
 fn performed_correction_capture_preserves_original_payer_and_preclone_refusal() {
-    let world = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::correction_source::install();
+    let world = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::correction_source::install(worth_execution::MonotonicClock::system());
     let source = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::correction_source::edit(&world, "funded-witness-source", "edited-label");
     let prepared = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::correction_source::prepare(&world, &source, "funded-witness-reverse");
     let reversed = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::correction_source::committed(worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::correction_source::publish(&world, prepared));
@@ -50,8 +50,11 @@ fn performed_correction_capture_preserves_original_payer_and_preclone_refusal() 
                     )
                     .unwrap()
             });
-            let captured = (*world.application.primary_provider_for_test())
-                .capture_correction_witness_for_test(execution, receipt);
+            let captured = world
+                .application
+                .runtime
+                .primary_provider
+                .capture_correction_witness(execution, receipt);
             if saturate {
                 match captured {
                     Err(CorrectionWitnessDenial::CopyAdmission(WorkCeilingDenial::Admission(
@@ -105,8 +108,11 @@ fn performed_correction_capture_preserves_original_payer_and_preclone_refusal() 
         CancellationSource::new().token(),
         None,
     );
-    let witness = (*world.application.primary_provider_for_test())
-        .capture_correction_witness_for_test(ExecutionRequest::serial(&retry), receipt)
+    let witness = world
+        .application
+        .runtime
+        .primary_provider
+        .capture_correction_witness(ExecutionRequest::serial(&retry), receipt)
         .unwrap()
         .unwrap();
     assert_eq!(witness.aftermath.as_ref(), reversed.aftermath_causality());

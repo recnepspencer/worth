@@ -331,7 +331,7 @@ impl AggregateWorld {
                 .bind_application_schema(AggregateSchema::declaration().expect("schema redeclares"))
                 .expect("aggregate schema binds");
             let mut bootstrap = authority
-            .prepare_primary_graph(&phase.bootstrap_for_test(), &runtime, &installed, worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources())
+            .prepare_primary_graph(&phase.bootstrap_for_test(), &runtime, &installed, worth_query_execution::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()))
             .expect("primary graph prepares");
             let binding = installed
                 .principal_binding(AggregateIdentityBinding::reference())

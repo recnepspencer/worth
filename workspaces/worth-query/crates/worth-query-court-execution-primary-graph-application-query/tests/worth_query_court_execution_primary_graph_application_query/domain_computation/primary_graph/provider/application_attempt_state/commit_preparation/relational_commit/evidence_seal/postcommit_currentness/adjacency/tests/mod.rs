@@ -13,11 +13,13 @@ fn pair_rebase_uses_native_revision_and_never_retains_partial_facts() {
     let host_request = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let world = installed_authorization_world(true);
-    let graph = (*world.application.runtime_for_test())
-        .primary_graph()
-        .unwrap();
-    let relation_kind = (*(*graph.layout_for_test())
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
+    let graph = world.application.runtime.primary_graph().unwrap();
+    let relation_kind = graph
+        .layout
         .relation(AccountOwner::reference().name())
         .unwrap()
         .kind_for_test());

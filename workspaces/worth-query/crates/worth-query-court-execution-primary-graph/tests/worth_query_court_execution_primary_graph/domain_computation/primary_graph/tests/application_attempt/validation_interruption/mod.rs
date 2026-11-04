@@ -9,13 +9,15 @@ use worth_query_execution::facade::domain_computation::WorthQueryApplicationComm
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitOutcome;
 use worth_query_execution::facade::domain_computation::WorthQueryInvariantExecutionDenialKind;
 use std::time::Duration;
-use std::time::Instant;
 use worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 
 #[test]
 fn omitted_work_budget_keeps_live_cancellation_through_native_validation() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let installed = world
         .application
         .installed_schema()
@@ -25,8 +27,9 @@ fn omitted_work_budget_keeps_live_cancellation_through_native_validation() {
         .optional_scale_ceiling(worth_query_declaration::facade::domain_computation::WorthQuerySemanticScaleAxis::WorkItems), None);
     let source = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(30)),
+        Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(30)),
         source.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     let principal = world
         .application
@@ -80,8 +83,11 @@ fn omitted_work_budget_keeps_live_cancellation_through_native_validation() {
         )
     );
     assert_eq!(
-        (*world.application.primary_provider_for_test())
-            .published_application_commit_count_for_test(),
+        world
+            .application
+            .runtime
+            .primary_provider
+            .published_application_commit_count(),
         0
     );
     let fresh = live_scope();

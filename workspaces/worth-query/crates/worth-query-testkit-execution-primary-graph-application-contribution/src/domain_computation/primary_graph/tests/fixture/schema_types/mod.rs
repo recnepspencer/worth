@@ -278,8 +278,9 @@ pub fn external_identity(subject: &str) -> WorthQueryExternalPrincipalIdentity {
 pub fn live_scope() -> WorthQueryRequestScope {
     let source = WorthQueryCancellationSource::new();
     WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(60)),
+        Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
         source.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     )
 }
 

@@ -51,19 +51,37 @@ pub fn install<const O: bool>(
     graph: Graph,
     observer: crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::probe::Probe<O>,
 ) -> World<O> {
-    install_with_visibility(graph, observer, Vec::new())
+    install_with_visibility(
+        graph,
+        observer,
+        Vec::new(),
+        worth_execution::MonotonicClock::system(),
+    )
 }
 pub fn install_orbit_with_component_visibility(
     graph: Graph,
     observer: crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::probe::Probe,
     extra_visibility: Vec<(u64, u64)>,
 ) -> World {
-    install_with_visibility(graph, observer, extra_visibility)
+    install_with_visibility(
+        graph,
+        observer,
+        extra_visibility,
+        worth_execution::MonotonicClock::system(),
+    )
+}
+pub fn install_orbit_on_clock(
+    graph: Graph,
+    observer: crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::probe::Probe,
+    clock: worth_execution::MonotonicClock,
+) -> World {
+    install_with_visibility(graph, observer, Vec::new(), clock)
 }
 pub fn install_with_visibility<const O: bool>(
     graph: Graph,
     observer: crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::probe::Probe<O>,
     extra_visibility: Vec<(u64, u64)>,
+    clock: worth_execution::MonotonicClock,
 ) -> World<O> {
     let observation = crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::probe::Observation::default();
     with_test_advancement(|phase| {
@@ -121,7 +139,7 @@ pub fn install_with_visibility<const O: bool>(
                 worth_relational::facade::runtime::RelationalRuntimeApi::builder()
                     .build()
                     .expect("valid native fixture configuration"),
-                worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(),
+                worth_query_execution::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(clock.clone()),
                 factories,
             )
             .unwrap();
@@ -179,12 +197,13 @@ pub fn install_with_visibility<const O: bool>(
         crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::decision::components::handler::install(&schema, &mut bootstrap);
         let invariant = bootstrap.retain_invariant_projection_authority();
         let application = bootstrap
-            .publish_application_runtime(
+            .publish_application_runtime_with_authorization_time_source(
                 &phase.bootstrap_for_test(),
                 runtime,
                 authority,
                 schema,
                 worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development(),
+                worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::tests::fixture::authorization_time::AuthorizationTimeController::on_clock(clock),
             )
             .unwrap();
         World {

@@ -2,7 +2,6 @@ use worth_query_execution::court_doors_for_test::domain_computation::execution_r
 use worth_relational::facade::transactions::WorkerIntentBatch;
 
 use crate::domain_computation::primary_graph::tests::fixture::authorization_world_installation::AuthorizationWorld;
-use crate::domain_computation::primary_graph::tests::fixture::schema_types::live_scope;
 
 /// Publishes one fixture mutation through the real World owner boundary.
 pub fn publish_relational_mutation(
@@ -20,7 +19,11 @@ pub fn publish_relational_mutation_on_application<
     application: &worth_query_execution::facade::domain_computation::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     batch: WorkerIntentBatch,
 ) {
-    let request = live_scope();
+    let request = worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope::new(
+        None,
+        worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource::new().token(),
+        application.product_runtime().clock.admission_clock.clone(),
+    );
 
     let (prepared, before_lease) =
         prepare_relational_mutation_with_before(request_execution, application, batch, &request);

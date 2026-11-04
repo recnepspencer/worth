@@ -70,7 +70,10 @@ fn non_correctable_source_keeps_disclosure_and_releases_its_native_input() {
     let _observation =
         worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
     let _placement = RestorePlacement::choose(Placement::Leased(std::num::NonZeroUsize::MIN));
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let caller = worth_execution::ExecutionResourceLease::serial(worth_execution::LeaseRequest {
         policy: worth_foundational::ExecutionRequestPolicy::new(
@@ -132,7 +135,7 @@ fn non_correctable_source_keeps_disclosure_and_releases_its_native_input() {
         };
         let source_commit = receipt.commit_reference().clone();
         let source_branch = receipt.product_branch();
-        assert!((*world.application.primary_provider_for_test()).observe_completed_application_for_test(&source_commit).is_some());
+        assert!(world.application.runtime.primary_provider.observe_completed_application(&source_commit).is_some());
         let carrier = receipt.authority_binding().clone();
         drop(receipt);
         assert!(carrier.retained_governed_input_carrier_for_test().is_none());
@@ -154,7 +157,7 @@ fn non_correctable_source_keeps_disclosure_and_releases_its_native_input() {
         assert!(sibling.original_inspection_disclosure_for_test().is_some());
         let closed = world.application.on_branch(source_branch).close(&phase).expect("the ordinary product occurrence closes");
         assert!(closed.is_complete());
-        assert!((*world.application.primary_provider_for_test()).observe_completed_application_for_test(&source_commit).is_some(), "native history still owns the completed source after ordinary close");
+        assert!(world.application.runtime.primary_provider.observe_completed_application(&source_commit).is_some(), "native history still owns the completed source after ordinary close");
         sibling
     }).unwrap();
     drop(world);
@@ -183,12 +186,14 @@ fn serial_placement_source_capture_preserves_success_and_original_cancellation()
     let _observation =
         worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
     let _placement = RestorePlacement::choose(Placement::Serial);
-    let resources =
-        test_product_world_resources().with_execution_policy(ExecutionRequestPolicy::for_workers(
-            ExecutionPosture::Serial,
-            DeterminismContract::CanonicalBitwise,
-            std::num::NonZeroUsize::MIN,
-        ));
+    let resources = test_product_world_resources(
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    )
+    .with_execution_policy(ExecutionRequestPolicy::for_workers(
+        ExecutionPosture::Serial,
+        DeterminismContract::CanonicalBitwise,
+        std::num::NonZeroUsize::MIN,
+    ));
     let world = installed_authorization_world_with_product_resources(resources);
     for cancel_capture in [true, false] {
         let before = world
@@ -202,7 +207,7 @@ fn serial_placement_source_capture_preserves_success_and_original_cancellation()
             })
             .unwrap();
         let cancellation = WorthQueryCancellationSource::new();
-        let request = WorthQueryRequestScope::new(None, cancellation.token());
+        let request = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let result = world.application.with_application_advancement(&request, |phase| {
             let execution = phase.checked_execution_request_for(world.application.product_runtime()).unwrap();
             let (accounted, _) = execution.run_native_with_checkpoint(|context| context.has_accounting()).unwrap();

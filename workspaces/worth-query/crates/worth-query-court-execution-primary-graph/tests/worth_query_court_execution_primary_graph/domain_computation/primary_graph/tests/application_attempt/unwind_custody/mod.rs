@@ -1,7 +1,8 @@
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::unwind_custody::assert_idempotency_refuses_unpublished;
+
 use std::num::NonZeroUsize;
 use std::panic::catch_unwind;
 use std::panic::AssertUnwindSafe;
-
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::program_fixture::admitted_program;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::authenticated_principal;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::idempotency;
@@ -11,10 +12,12 @@ use worth_query_testkit_execution_primary_graph_application_contribution::domain
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitDenialKind;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitDenialStage;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitOutcome;
-
 #[test]
 fn world_unwind_retains_and_releases_the_exact_query_idempotency_slot() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application
@@ -101,7 +104,11 @@ fn world_unwind_retains_and_releases_the_exact_query_idempotency_slot() {
         "only the unwind guard inspects its exact World recovery identity",
     );
     assert_eq!(
-        (*world.application.primary_provider_for_test()).unpublished_idempotency_count(),
+        world
+            .application
+            .runtime
+            .primary_provider
+            .unpublished_idempotency_count(),
         1,
     );
 
@@ -134,7 +141,11 @@ fn world_unwind_retains_and_releases_the_exact_query_idempotency_slot() {
         .unwrap();
     assert_eq!(receipt.retired_component_count(), 0);
     assert_eq!(
-        (*world.application.primary_provider_for_test()).unpublished_idempotency_count(),
+        world
+            .application
+            .runtime
+            .primary_provider
+            .unpublished_idempotency_count(),
         0,
         "cleanup releases Query's exact recovery-indexed slot",
     );
@@ -151,19 +162,5 @@ fn world_unwind_retains_and_releases_the_exact_query_idempotency_slot() {
         denial.stage(),
         WorthQueryApplicationCommitDenialStage::Idempotency,
         "cleanup removes the retained idempotency denial before fresh admission",
-    );
-}
-
-pub fn assert_idempotency_refuses_unpublished(outcome: WorthQueryApplicationCommitOutcome) {
-    let WorthQueryApplicationCommitOutcome::Denied(denial) = outcome else {
-        panic!("owner-local idempotency row without original product publication must remain ineligible: {outcome:?}");
-    };
-    assert_eq!(
-        denial.stage(),
-        WorthQueryApplicationCommitDenialStage::Idempotency
-    );
-    assert_eq!(
-        denial.kind(),
-        WorthQueryApplicationCommitDenialKind::ProviderRejected
     );
 }

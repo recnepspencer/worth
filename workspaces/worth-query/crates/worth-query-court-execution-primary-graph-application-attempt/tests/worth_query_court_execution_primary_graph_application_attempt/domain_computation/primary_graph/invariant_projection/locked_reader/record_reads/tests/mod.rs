@@ -11,7 +11,10 @@ use worth_execution::SerialRequest;
 
 #[test]
 fn absent_fields_and_predecode_refusal_observe_the_same_acquired_field() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let completed = world
         .application
         .with_host_advancement(|phase| {
@@ -81,7 +84,10 @@ fn absent_fields_and_predecode_refusal_observe_the_same_acquired_field() {
 
 #[test]
 fn cancelled_field_acquisition_contributes_no_field_observation() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let cancellation = CancellationSource::new();
     let host =
         SerialRequest::from_memory(SerialMemoryBudget::new(None), cancellation.token(), None);

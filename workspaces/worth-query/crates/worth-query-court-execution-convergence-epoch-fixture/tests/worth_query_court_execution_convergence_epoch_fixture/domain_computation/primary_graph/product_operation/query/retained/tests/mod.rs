@@ -26,7 +26,10 @@ fn retained_and_batch_selection_keep_original_interruption_causes() {
 
 #[test]
 fn retained_query_rejects_security_from_a_sibling_branch() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let application = &world.application;
     let root = application.current_world();
     let sibling = world
@@ -53,7 +56,7 @@ fn retained_query_rejects_security_from_a_sibling_branch() {
     let denied = application
         .with_host_advancement(|phase| {
             let execution = phase
-                .execution_request_for_for_test(&(*application.product_runtime_for_test()))
+                .execution_request_for(&application.runtime.product_runtime)
                 .unwrap();
             security.retained_query_controls_for_test(&execution, retained, "sibling", controls)
         })

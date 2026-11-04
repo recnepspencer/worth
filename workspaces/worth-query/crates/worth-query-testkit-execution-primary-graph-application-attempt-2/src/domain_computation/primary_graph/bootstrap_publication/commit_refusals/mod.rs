@@ -2,7 +2,6 @@ use crate::domain_computation::primary_graph::bootstrap_publication::execution_r
 use crate::domain_computation::primary_graph::bootstrap_publication::execution_refusals::isolated;
 use crate::domain_computation::primary_graph::bootstrap_publication::execution_refusals::request;
 use std::num::NonZeroUsize;
-use std::time::Instant;
 use worth_execution::CancellationSource;
 use worth_execution::LeaseRequest;
 use worth_foundational::DeterminismContract;

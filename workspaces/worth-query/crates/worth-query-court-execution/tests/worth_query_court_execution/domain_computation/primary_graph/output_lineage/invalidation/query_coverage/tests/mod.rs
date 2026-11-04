@@ -15,7 +15,10 @@ use worth_query_execution::facade::domain_computation::WorthQueryPrincipalResolu
 
 #[test]
 fn released_query_backing_preserves_historical_truth_and_marks_only_live_readers() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let (historical, projection) = world
         .application
         .with_host_advancement(|phase| {

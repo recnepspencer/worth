@@ -11,7 +11,10 @@ use worth_query_execution::facade::domain_computation::WorthQueryApplicationIdem
 
 #[test]
 fn guarded_operation_custody_recovers_only_the_exact_committed_mutation() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application
@@ -158,7 +161,10 @@ fn guarded_operation_custody_recovers_only_the_exact_committed_mutation() {
 
 #[test]
 fn reserved_publication_custody_is_indeterminate_until_its_owner_releases_it() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application
@@ -203,8 +209,11 @@ fn reserved_publication_custody_is_indeterminate_until_its_owner_releases_it() {
     let reservation = world
         .application
         .with_host_advancement(|phase| {
-            (*world.application.primary_provider_for_test())
-                .reserve_application_publication_recovery_for_test(
+            world
+                .application
+                .runtime
+                .primary_provider
+                .reserve_application_publication_recovery(
                     world
                         .selected_product(&(phase).test_host_request_for_test())
                         .product()

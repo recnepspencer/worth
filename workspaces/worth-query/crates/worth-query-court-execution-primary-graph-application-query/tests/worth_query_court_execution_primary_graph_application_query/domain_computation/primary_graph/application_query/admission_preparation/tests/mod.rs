@@ -36,12 +36,11 @@ fn published_schema_validation_keeps_query_and_generation_authority() {
         )
     );
 
-    let rebuilt = Arc::new(
-        (*world.application.runtime_for_test())
-            .installed_packages()
-            .rebuild(),
-    );
-    (*world.application.runtime_mut_for_test())
+    let rebuilt = Arc::new(world.application.runtime.installed_packages().rebuild());
+    world
+        .application
+        .runtime
+        .execution_mut()
         .replace_rebuilt_installation(rebuilt)
         .unwrap();
     assert!(world
@@ -54,7 +53,10 @@ fn published_schema_validation_keeps_query_and_generation_authority() {
             .installed_packages()
             .successor_generation(),
     );
-    (*world.application.runtime_mut_for_test())
+    world
+        .application
+        .runtime
+        .execution_mut()
         .commit_successor_installation(successor)
         .unwrap();
     assert_eq!(

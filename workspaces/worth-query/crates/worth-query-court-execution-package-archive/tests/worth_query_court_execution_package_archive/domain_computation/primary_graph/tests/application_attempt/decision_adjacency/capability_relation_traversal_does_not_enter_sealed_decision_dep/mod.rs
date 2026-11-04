@@ -3,7 +3,10 @@ use crate::domain_computation::primary_graph::tests::application_attempt::decisi
 
 #[test]
 fn capability_relation_traversal_does_not_enter_sealed_decision_dependencies() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let actor = world
         .application

@@ -87,9 +87,16 @@ pub fn run(
 ) -> (usize, Option<Stop>) {
     let _observation =
         worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let source = WorthQueryCancellationSource::new();
-    let request = WorthQueryRequestScope::new(None, source.token());
+    let request = WorthQueryRequestScope::new(
+        None,
+        source.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let program = world
         .application
         .with_host_advancement(|phase| {
@@ -162,8 +169,11 @@ pub fn run(
             Stop::Denied(denial.stage(), denial.execution_denial_cause())
         };
         assert_eq!(
-            (*world.application.primary_provider_for_test())
-                .published_application_commit_count_for_test(),
+            world
+                .application
+                .runtime
+                .primary_provider
+                .published_application_commit_count(),
             0
         );
         Some(stop)

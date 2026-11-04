@@ -1,5 +1,4 @@
 pub use std::time::Duration;
-pub use std::time::Instant;
 
 pub use worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource;
 pub use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
@@ -90,7 +89,7 @@ impl LiveContext {
         // Instant deadline comparison is `now >= deadline`, so the
         // current instant makes the next delivery sample DeadlineExceeded
         // without sleeping or racing open.
-        WorthQueryRequestScope::new(Some(Instant::now()), live_cancellation.token())
+        WorthQueryRequestScope::new(Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now()), live_cancellation.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system())
     }
 
     pub fn principal(
@@ -179,8 +178,12 @@ impl LiveContext {
     }
 
     pub fn close_source(&self) {
-        (*(*self.world.application.primary_provider_for_test()).live_delivery_for_test())
-            .close_for_test();
+        self.world
+            .application
+            .runtime
+            .primary_provider
+            .live_delivery
+            .close();
     }
 
     pub fn overflow_source(&self) {
@@ -198,8 +201,11 @@ impl LiveContext {
 
     pub fn assert_source_released(&self) {
         assert_eq!(
-            (*self.world.application.primary_provider_for_test())
-                .active_application_commit_causality_partitions_for_test(),
+            self.world
+                .application
+                .runtime
+                .primary_provider
+                .active_application_commit_causality_partitions(),
             0
         );
     }

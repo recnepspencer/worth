@@ -20,7 +20,7 @@ pub fn materialize_source_in_phase<Schema: BirthSchema>(
 ) {
     let scope = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
     let execution = phase
-        .execution_request_for_for_test(&(*runtime.product_runtime_for_test()))
+        .execution_request_for(&runtime.runtime.product_runtime)
         .unwrap();
     let source = runtime
         .on_branch(runtime.current_world())

@@ -54,8 +54,8 @@ fn installed_member_preserves_explicit_accounting_and_worker_only_polling() {
     };
     for policy in [native, accounted(None), accounted(Some(2))] {
         let cancellation = WorthQueryCancellationSource::new();
-        let scope = WorthQueryRequestScope::new(None, cancellation.token());
-        let execution = QueryRequestExecution::open_for_test(
+        let scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
+        let execution = QueryRequestExecution::open(
             worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy),
             &scope,
         );

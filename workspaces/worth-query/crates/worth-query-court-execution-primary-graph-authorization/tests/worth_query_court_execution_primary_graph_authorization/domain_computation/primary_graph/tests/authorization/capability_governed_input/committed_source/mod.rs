@@ -38,8 +38,11 @@ fn original_governed_input_is_owned_by_the_committed_occurrence() {
     drop(receipt);
     drop(copy);
 
-    let occurrence = (*world.application.primary_provider_for_test())
-        .observe_completed_application_for_test(&source_commit)
+    let occurrence = world
+        .application
+        .runtime
+        .primary_provider
+        .observe_completed_application(&source_commit)
         .expect("the provider retains the performed source independently of receipts");
     assert_eq!(
         occurrence

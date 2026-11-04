@@ -6,7 +6,10 @@ use crate::domain_computation::primary_graph::provider::application_attempt_stat
 
 #[test]
 fn producer_decision_field_uses_native_revision_after_value_aba() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let (entity, locator) = world
         .application
         .with_host_advancement(|phase| account_note(&phase, &world, "account-1"))

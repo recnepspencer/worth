@@ -27,7 +27,10 @@ pub use crate::domain_computation::primary_graph::workflow::definition::compilat
 
 #[test]
 fn started_revision_actual_producer_is_immutable_but_current_revision_can_change() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let (support, original, successor) =
         installed_provenance_support(world.application.installed_schema());
     assert_ne!(original, successor);
@@ -203,7 +206,10 @@ fn started_revision_actual_producer_is_immutable_but_current_revision_can_change
 
 #[test]
 fn started_revision_current_capture_restore_retains_exact_data_after_original_payer_drop() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let (support, original, _) = installed_provenance_support(world.application.installed_schema());
     let original_payer = payer();
     let execution = ExecutionRequest::leased(&original_payer);

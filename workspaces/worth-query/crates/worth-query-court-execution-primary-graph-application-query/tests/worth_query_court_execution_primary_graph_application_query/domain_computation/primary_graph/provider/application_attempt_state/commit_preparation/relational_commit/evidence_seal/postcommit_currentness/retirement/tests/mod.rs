@@ -27,7 +27,10 @@ pub use worth_relational::facade::transactions::WorkerIntentBatch;
 
 #[test]
 fn external_deleted_input_and_live_adjacency_anchor_keep_their_own_comparison() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     world
         .application
         .with_host_advancement(|phase| {

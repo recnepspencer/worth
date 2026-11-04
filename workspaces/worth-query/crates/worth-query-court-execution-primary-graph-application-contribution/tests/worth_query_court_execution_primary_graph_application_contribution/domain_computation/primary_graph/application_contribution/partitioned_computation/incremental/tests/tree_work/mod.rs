@@ -45,7 +45,10 @@ pub type Retained = RetainedPartitions<
 pub type Tree = NativeReductionTree<u64, fn(&u64, &u64) -> u64>;
 
 pub fn template() -> SealedComputationRun {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     // Keep the source run's memory reservation alive throughout each test.
     first_run(&world, &installed(StatusRead::Gather(1), sum))
         .sealed
@@ -283,7 +286,10 @@ fn every_edit_obeys_its_pre_edit_shape_bound_and_reconciles() {
 fn public_incremental_observation_reports_actual_work_apart_from_charge() {
     let _observation =
         worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let installed = installed(StatusRead::Gather(1), counted);
     let first = first_run(&world, &installed);
     let charge = first.outcome.as_ref().unwrap().1;

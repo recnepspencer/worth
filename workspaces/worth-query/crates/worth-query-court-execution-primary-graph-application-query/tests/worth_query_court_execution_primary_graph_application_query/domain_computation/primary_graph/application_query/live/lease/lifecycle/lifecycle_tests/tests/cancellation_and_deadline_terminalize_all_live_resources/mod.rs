@@ -23,12 +23,14 @@ fn native_value_decode_refusal_cancels_live_custody_before_delivery_consumption(
         229,
         93,
     );
-    // The buffer capacity is read before the queue and basis are borrowed mutably.
-    let buffer_capacity = (*lease.controls_for_test()).buffer_capacity();
-    let (queue, basis) = lease.queue_basis_mut_for_test();
-    queue.fill_for_test(
-        &(*(*context.world.application.primary_provider_for_test()).live_delivery_for_test()),
-        basis.as_mut().expect("opening owns its native basis"),
+    lease.queue.fill(
+        &context
+            .world
+            .application
+            .runtime
+            .primary_provider
+            .live_delivery,
+        lease.basis.as_mut().expect("opening owns its native basis"),
         LiveAccountActivityCause::effect(),
         buffer_capacity,
         |_| true,
@@ -64,8 +66,9 @@ fn native_value_decode_refusal_cancels_live_custody_before_delivery_consumption(
 fn cancellation_and_deadline_terminalize_all_live_resources() {
     let cancellation = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(60)),
+        Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
         cancellation.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     let context = LiveContext::new(request);
     let mut lease = context
@@ -149,7 +152,7 @@ fn cancellation_and_deadline_terminalize_all_live_resources() {
 fn read_stops_survive_a_failed_live_lease_termination() {
     for mode in 0..3 {
         let cancellation = WorthQueryCancellationSource::new();
-        let context = LiveContext::new(WorthQueryRequestScope::new(None, cancellation.token()));
+        let context = LiveContext::new(WorthQueryRequestScope::new(None, cancellation.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()));
         let mut lease = context
             .world
             .application

@@ -3,7 +3,10 @@ use crate::domain_computation::primary_graph::tests::application_attempt::preima
 
 #[test]
 fn two_field_cross_record_retention_denial_commits_nothing() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application

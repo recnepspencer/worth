@@ -10,7 +10,10 @@ use worth_query_execution::facade::domain_computation::WorthQueryApplicationComm
 
 #[test]
 fn pre_effect_index_budget_denial_leaves_no_effect_and_retries_through_query() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application
@@ -64,8 +67,11 @@ fn pre_effect_index_budget_denial_leaves_no_effect_and_retries_through_query() {
         WorthQueryApplicationCommitDenialStage::ProviderCommit
     );
     assert_eq!(
-        (*world.application.primary_provider_for_test())
-            .published_application_commit_count_for_test(),
+        world
+            .application
+            .runtime
+            .primary_provider
+            .published_application_commit_count(),
         0
     );
     let _still_open = world

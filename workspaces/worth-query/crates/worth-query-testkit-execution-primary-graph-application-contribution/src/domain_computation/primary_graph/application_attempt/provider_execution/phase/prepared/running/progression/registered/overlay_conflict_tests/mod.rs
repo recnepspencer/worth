@@ -14,16 +14,17 @@ pub fn assert_second_real_overlay_is_rejected(
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         None,
     );
-    let receipt = (*world.application.primary_provider_for_test())
-        .capture_application_read_set_for_test(execution, &staged.read_authority(), control)
+    let receipt = world
+        .application
+        .runtime
+        .primary_provider
+        .capture_application_read_set(execution, &staged.read_authority(), control)
         .expect("real registered facts must produce a decision read set");
-    let fresh = match (*world.application.primary_provider_for_test())
-        .compare_application_read_set_for_test(
-            execution,
-            &staged.read_authority(),
-            receipt,
-            control,
-        )
+    let fresh = match world
+        .application
+        .runtime
+        .primary_provider
+        .compare_application_read_set(execution, &staged.read_authority(), receipt, control)
         .expect("real registered facts must compare")
     {
         WorthQueryDecisionReadSetFreshnessOutcome::Fresh(fresh) => fresh,

@@ -21,7 +21,10 @@ pub use worth_relational::facade::transactions::WorkerIntentBatch;
 
 #[test]
 fn distinct_absent_predicates_survive_sealing_and_compare_only_their_own_matches() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let actor = world
         .application
@@ -177,10 +180,13 @@ pub fn currentness(
     world: &AuthorizationWorld,
     fact: &Fact,
 ) -> bool {
-    let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
-    (*(*world.application.primary_provider_for_test()).graph_for_test()).with_runtime(
-        execution,
-        |runtime| {
+    let selected = world.selected_product(&(phase_custody).test_host_request());
+    world
+        .application
+        .runtime
+        .primary_provider
+        .graph
+        .with_runtime(execution, |runtime| {
             let movement = fact
                 .source_currentness_in_for_test(
                     runtime,

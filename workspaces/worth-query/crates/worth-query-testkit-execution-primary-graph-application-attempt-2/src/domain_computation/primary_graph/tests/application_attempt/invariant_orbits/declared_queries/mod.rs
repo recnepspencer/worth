@@ -36,7 +36,10 @@ use worth_query_execution::facade::domain_computation::WorthQueryPrincipalResolu
 use worth_query_execution::facade::domain_computation::WorthQueryProductQueryControls;
 use crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::declared_queries::declarations::*;
 pub fn world() -> World {
-    world::install_orbit(
+    world_on_clock(worth_execution::MonotonicClock::system())
+}
+pub fn world_on_clock(clock: worth_execution::MonotonicClock) -> World {
+    world::install_orbit_on_clock(
         Graph {
             nodes: 5,
             edges: vec![(0, 2), (2, 1), (1, 0), (3, 4), (4, 3)],
@@ -44,6 +47,7 @@ pub fn world() -> World {
             blocked: vec![],
         },
         crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::probe::Probe::new(|_, _, _| {}),
+        clock,
     )
 }
 pub fn native_oracle(

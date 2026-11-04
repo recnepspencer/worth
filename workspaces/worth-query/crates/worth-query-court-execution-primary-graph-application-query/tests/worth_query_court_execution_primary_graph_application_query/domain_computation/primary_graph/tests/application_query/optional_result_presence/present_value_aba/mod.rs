@@ -3,11 +3,11 @@ use super::*;
 
 #[test]
 fn present_optional_source_denies_equal_value_after_aba() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(true, WorthQueryAdmissionClock::system());
     let (before, fact, account) = world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request_for_test();
+            let host_custody = phase.test_host_request();
             execute_with_note_fact(
                 &phase,
                 &host_custody.borrowed_request_for_test(),
@@ -17,18 +17,17 @@ fn present_optional_source_denies_equal_value_after_aba() {
         })
         .expect("the fixture read owns its installed host call");
     assert_eq!(before.note(), Some("reviewed"));
-    let graph = (*world.application.runtime_for_test())
-        .primary_graph()
-        .unwrap();
+    let graph = world.application.runtime.primary_graph().unwrap();
     let note = AccountNote::reference();
-    let locator = (*graph.layout_for_test())
-        .field_locator_for_test(note.entity(), note.aspect(), note.field())
+    let locator = graph
+        .layout
+        .field_locator(note.entity(), note.aspect(), note.field())
         .unwrap()
         .clone();
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request_for_test();
+            let host_custody = phase.test_host_request();
             set_string_field(
                 &host_custody.borrowed_request_for_test(),
                 &world,
@@ -41,7 +40,7 @@ fn present_optional_source_denies_equal_value_after_aba() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request_for_test();
+            let host_custody = phase.test_host_request();
             set_string_field(
                 &host_custody.borrowed_request_for_test(),
                 &world,
@@ -63,7 +62,7 @@ fn present_optional_source_denies_equal_value_after_aba() {
     world
         .application
         .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request_for_test();
+            let host_custody = phase.test_host_request();
             assert!(
                 !current(
                     &phase,

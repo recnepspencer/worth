@@ -8,9 +8,7 @@ use worth_query_execution::court_doors_for_test::domain_computation::primary_gra
 
 pub fn selected() -> std::sync::Arc<PositionedRelationalSnapshot> {
     let world =
-        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(
-            true,
-        );
+        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     world
         .application
         .with_host_advancement(|phase| {
@@ -19,9 +17,7 @@ pub fn selected() -> std::sync::Arc<PositionedRelationalSnapshot> {
                 .unwrap()
                 .with_runtime_for_test(
                     &phase
-                        .execution_request_for_for_test(
-                            &(*world.application.product_runtime_for_test()),
-                        )
+                        .execution_request_for(&world.application.runtime.product_runtime)
                         .unwrap(),
                     |runtime| {
                         let basis = runtime

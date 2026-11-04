@@ -11,7 +11,6 @@ use worth_query_execution::facade::application_contribution::WorthQueryManagedCo
 use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
 use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionDenialKind as QueryKind;
 use std::num::NonZeroUsize;
-use std::time::Instant;
 use worth_execution::CancellationSource;
 use worth_execution::LeaseRequest;
 use worth_foundational::DeterminismContract;
@@ -61,9 +60,8 @@ fn bootstrap_commit_preserves_real_leased_work_refusal() {
                 );
                 let partition_identity = denial.partition_identity;
                 assert_eq!(
-                    partition_identity,
-                    Some(1),
-                    "residency admission attributes the refused Head read to main"
+                    partition_identity, None,
+                    "content directory admission exhausts Work before partition residency"
                 );
                 let validation = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::invariant_execution_failure::map_validation_failure(error.clone());
                 assert_eq!(
@@ -132,7 +130,10 @@ fn bootstrap_commit_preserves_real_control_stops() {
             let mut canceled = request();
             canceled.cancellation = cancellation.token();
             let mut expired = request();
-            expired.deadline = Some(Instant::now());
+            expired.deadline = Some({
+                let clock = worth_execution::MonotonicClock::system();
+                clock.deadline_at(clock.now())
+            });
             for (request, expected) in
                 [(canceled, Control::Cancelled), (expired, Control::TimedOut)]
             {
@@ -156,7 +157,10 @@ fn bootstrap_operation_interruption_keeps_heads_generic_commit_rejection() {
     let source = RelationalCancellationSource::new();
     source.cancel();
     let canceled: RelationalOperationControl = source.token().into();
-    let expired = RelationalOperationControl::uninterrupted().with_deadline(Instant::now());
+    let expired = RelationalOperationControl::uninterrupted().with_deadline({
+        let clock = worth_execution::MonotonicClock::system();
+        clock.deadline_at(clock.now())
+    });
     for control in [canceled, expired] {
         let event = control
             .observe(RelationalInterruptionBoundary::CandidatePreparation)

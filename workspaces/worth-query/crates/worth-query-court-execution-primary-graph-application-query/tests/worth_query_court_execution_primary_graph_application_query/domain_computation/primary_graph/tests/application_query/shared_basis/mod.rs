@@ -9,7 +9,10 @@ fn shared_basis_keeps_one_exact_native_owner_until_last_explicit_release() {
     let host_request = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let observer = world.application.application_query_basis_observer();
     let before = observer.observe();
 
@@ -53,12 +56,15 @@ fn shared_basis_keeps_one_exact_native_owner_until_last_explicit_release() {
     world
         .application
         .with_host_advancement(|_phase| {
-            assert!(
-                (*(*world.application.primary_provider_for_test()).graph_for_test()).with_runtime(
-                    request_execution,
-                    |runtime| runtime.read_truth().project_snapshot(&snapshot).is_some()
-                )
-            )
+            assert!(world
+                .application
+                .runtime
+                .primary_provider
+                .graph
+                .with_runtime(request_execution, |runtime| runtime
+                    .read_truth()
+                    .project_snapshot(&snapshot)
+                    .is_some()))
         })
         .expect("the fixture read owns its installed host call");
     drop(product_b);
@@ -69,19 +75,25 @@ fn shared_basis_keeps_one_exact_native_owner_until_last_explicit_release() {
     world
         .application
         .with_host_advancement(|_phase| {
-            assert!(
-                (*(*world.application.primary_provider_for_test()).graph_for_test()).with_runtime(
-                    request_execution,
-                    |runtime| runtime.read_truth().project_snapshot(&snapshot).is_none()
-                )
-            )
+            assert!(world
+                .application
+                .runtime
+                .primary_provider
+                .graph
+                .with_runtime(request_execution, |runtime| runtime
+                    .read_truth()
+                    .project_snapshot(&snapshot)
+                    .is_none()))
         })
         .expect("the fixture read owns its installed host call");
 }
 
 #[test]
 fn exclusive_basis_refuses_identity_copy_and_releases_its_sole_owner() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let observer = world.application.application_query_basis_observer();
     let selected = world
         .application
@@ -113,8 +125,14 @@ fn exclusive_basis_refuses_identity_copy_and_releases_its_sole_owner() {
 
 #[test]
 fn denied_identity_copy_and_foreign_owner_leave_no_hidden_shared_custody() {
-    let world = installed_authorization_world(true);
-    let foreign = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
+    let foreign = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let observer = world.application.application_query_basis_observer();
     let before = observer.observe();
 
@@ -178,7 +196,10 @@ fn shared_basis_drop_releases_the_final_native_owner() {
     let host_request = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let observer = world.application.application_query_basis_observer();
     let before = observer.observe();
 
@@ -207,12 +228,15 @@ fn shared_basis_drop_releases_the_final_native_owner() {
     world
         .application
         .with_host_advancement(|_phase| {
-            assert!(
-                (*(*world.application.primary_provider_for_test()).graph_for_test()).with_runtime(
-                    request_execution,
-                    |runtime| runtime.read_truth().project_snapshot(&snapshot).is_none()
-                )
-            )
+            assert!(world
+                .application
+                .runtime
+                .primary_provider
+                .graph
+                .with_runtime(request_execution, |runtime| runtime
+                    .read_truth()
+                    .project_snapshot(&snapshot)
+                    .is_none()))
         })
         .expect("the fixture read owns its installed host call");
 }
@@ -228,7 +252,10 @@ fn shared_basis_real_query_completes_without_claiming_physical_release() {
     use std::num::NonZeroUsize;
     use std::time::Duration;
     use worth_query_declaration::facade::application_query::ApplicationQueryParameterSet;
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world

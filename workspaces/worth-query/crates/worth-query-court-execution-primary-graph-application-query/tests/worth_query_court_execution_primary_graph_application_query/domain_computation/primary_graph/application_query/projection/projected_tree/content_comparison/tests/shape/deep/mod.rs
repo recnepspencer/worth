@@ -1,6 +1,6 @@
 //! Equality of raw deep representations, never installed nested admission.
 use crate::domain_computation::primary_graph::application_query::projection::projected_tree::content_comparison::tests::shape::*;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::projection::projected_tree::content_storage::ProjectionContentStorageFault as Fault;
+use worth_query_execution::domain_computation::primary_graph::application_query::projection::projected_tree::content_comparison::ProjectionContentComparisonFault as Fault;
 pub fn deep(key: &Arc<ApplicationQueryResultSlotKey>) -> WorthQueryApplicationProjectionNode {
     let mut root = shape(key);
     (*(*root.relations_mut_for_test())[0].rows_mut_for_test())[0] = shape(key);
@@ -17,6 +17,7 @@ pub fn compare(
         &mut |_| Ok(()),
         &mut |_| Ok(None),
         &mut |cause| cause,
+        &mut |_, _| panic!("representation fixture has no Native frames"),
     )
 }
 #[test]
@@ -96,7 +97,8 @@ fn finite_stack_refuses_before_unfunded_or_undeclared_growth() {
             usize::MAX,
             &mut |_| Ok(()),
             &mut reserve,
-            &mut |cause| cause
+            &mut |cause| cause,
+            &mut |_, _| panic!("representation fixture has no Native frames"),
         ),
         Err(Fault::CapacityOverflow)
     );
@@ -108,7 +110,8 @@ fn finite_stack_refuses_before_unfunded_or_undeclared_growth() {
             4,
             &mut |_| Ok(()),
             &mut |_| Err("original-memory"),
-            &mut |_| "physical"
+            &mut |_| "physical",
+            &mut |_, _| panic!("representation fixture has no Native frames"),
         ),
         Err("original-memory")
     );
@@ -119,7 +122,8 @@ fn finite_stack_refuses_before_unfunded_or_undeclared_growth() {
             4,
             &mut |_| Err("original-work"),
             &mut |_| panic!("no reserve after stop"),
-            &mut |_| "physical"
+            &mut |_| "physical",
+            &mut |_, _| panic!("representation fixture has no Native frames"),
         ),
         Err("original-work")
     );
@@ -138,7 +142,8 @@ fn finite_stack_refuses_before_unfunded_or_undeclared_growth() {
             3,
             &mut |_| Ok(()),
             &mut |_| Ok(None),
-            &mut |cause| cause
+            &mut |cause| cause,
+            &mut |_, _| panic!("representation fixture has no Native frames"),
         ),
         Err(Fault::CapacityOverflow)
     );
@@ -149,7 +154,8 @@ fn finite_stack_refuses_before_unfunded_or_undeclared_growth() {
             4,
             &mut |work| if work == 0 { Err("final-stop") } else { Ok(()) },
             &mut |_| Ok(None),
-            &mut |_| "physical"
+            &mut |_| "physical",
+            &mut |_, _| panic!("representation fixture has no Native frames"),
         ),
         Err("final-stop")
     );
@@ -165,7 +171,8 @@ fn shallow_profile_uses_no_scratch_and_still_refuses_unadmitted_descendants() {
             2,
             &mut |_| Ok::<_, ()>(()),
             &mut |_| panic!("shallow reserve"),
-            &mut |_| panic!("shallow physical fault")
+            &mut |_| panic!("shallow physical fault"),
+            &mut |_, _| panic!("representation fixture has no Native frames"),
         ),
         Ok(true)
     );
@@ -176,7 +183,8 @@ fn shallow_profile_uses_no_scratch_and_still_refuses_unadmitted_descendants() {
             2,
             &mut |_| Ok::<_, ()>(()),
             &mut |_| panic!("shallow reserve"),
-            &mut |_| panic!("shallow physical fault")
+            &mut |_| panic!("shallow physical fault"),
+            &mut |_, _| panic!("representation fixture has no Native frames"),
         ),
         Ok(false)
     );

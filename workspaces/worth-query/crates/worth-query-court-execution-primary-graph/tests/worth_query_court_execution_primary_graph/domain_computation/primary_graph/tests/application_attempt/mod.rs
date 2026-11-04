@@ -52,6 +52,8 @@ pub mod program_occurrence_gate;
 pub mod provider_terminal_evidence;
 #[path = "read_rendezvous/mod.rs"]
 pub mod read_rendezvous;
+#[path = "recovery_custody/mod.rs"]
+pub mod recovery_custody;
 #[path = "request_read_stops/mod.rs"]
 pub mod request_read_stops;
 #[path = "response_loss_resolves_the_published_commit_before_returning/mod.rs"]
@@ -62,6 +64,8 @@ pub mod retry_outbox_rebind;
 pub mod structured_effect_validation;
 #[path = "touched_graph_closure/mod.rs"]
 pub mod touched_graph_closure;
+#[path = "transaction_custody/mod.rs"]
+pub mod transaction_custody;
 #[path = "unwind_custody/mod.rs"]
 pub mod unwind_custody;
 #[path = "validation_interruption/mod.rs"]

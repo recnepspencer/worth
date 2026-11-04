@@ -45,8 +45,12 @@ fn absent_parent_write_requires_each_actual_target_observation() {
     );
     assert_eq!(
         cause.locator(),
-        (*(*(*runtime.primary_provider_for_test()).graph_for_test()).layout_for_test())
-            .field_locator_for_test("Body", "SourceNotes", "SourceContent")
+        runtime
+            .runtime
+            .primary_provider
+            .graph
+            .layout
+            .field_locator("Body", "SourceNotes", "SourceContent")
             .unwrap()
     );
     assert_eq!(

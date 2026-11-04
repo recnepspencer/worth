@@ -41,7 +41,10 @@ pub fn install_zero_invariant_transport(
 
 #[test]
 fn missing_owner_candidate_is_denied_before_semantic_invariant_execution() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application
@@ -89,8 +92,11 @@ fn missing_owner_candidate_is_denied_before_semantic_invariant_execution() {
         WorthQueryApplicationCommitDenialStage::InvariantExecution
     );
     assert_eq!(
-        (*world.application.primary_provider_for_test())
-            .published_application_commit_count_for_test(),
+        world
+            .application
+            .runtime
+            .primary_provider
+            .published_application_commit_count(),
         0,
         "owner validation denial must precede commit and outbox publication"
     );
@@ -109,7 +115,10 @@ fn missing_owner_candidate_is_denied_before_semantic_invariant_execution() {
 
 #[test]
 fn relational_invariant_violation_denies_before_provider_commit() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application
@@ -171,7 +180,10 @@ fn relational_invariant_violation_denies_before_provider_commit() {
 
 #[test]
 fn zero_semantic_invariants_still_require_relational_candidate_validation() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let transport = install_zero_invariant_transport(&world);
     let request = live_scope();
     let principal = world
@@ -213,8 +225,11 @@ fn zero_semantic_invariants_still_require_relational_candidate_validation() {
         WorthQueryApplicationCommitDenialStage::InvariantExecution
     );
     assert_eq!(
-        (*world.application.primary_provider_for_test())
-            .published_application_commit_count_for_test(),
+        world
+            .application
+            .runtime
+            .primary_provider
+            .published_application_commit_count(),
         0,
         "zero-requirement owner denial must precede commit and outbox publication"
     );
@@ -223,7 +238,10 @@ fn zero_semantic_invariants_still_require_relational_candidate_validation() {
 
 #[test]
 fn zero_semantic_invariants_commit_after_owner_candidate_admission() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let transport = install_zero_invariant_transport(&world);
     let request = live_scope();
     let principal = world
@@ -274,7 +292,10 @@ fn zero_semantic_invariants_commit_after_owner_candidate_admission() {
 
 #[test]
 fn owner_validated_application_touch_outside_installed_ceiling_is_denied() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application

@@ -34,7 +34,10 @@ pub use worth_query_execution::facade::domain_computation::WorthQueryApplication
 pub use worth_query_execution::facade::domain_computation::WorthQueryAuthenticatedPrincipal;
 #[test]
 fn later_commit_recovery_selects_exact_evidence_and_rejects_foreign_reference_axes() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application
@@ -152,8 +155,8 @@ fn later_commit_recovery_selects_exact_evidence_and_rejects_foreign_reference_ax
         assert!(
             (*world
                 .application
-                .primary_provider_for_test())
-                .observe_completed_application_for_test(&foreign)
+                .runtime.primary_provider
+                .observe_completed_application(&foreign)
                 .is_none(),
             "equal CommitId with any foreign RelationalCommitReceipt axis must not observe evidence"
         );

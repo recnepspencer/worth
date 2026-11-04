@@ -22,8 +22,11 @@ fn publication_stop_transport_completion_remains_ready_without_redispatch() {
         .application
         .admit_external_dispatch_attempt_for_test(owner.clone())
         .unwrap();
-    let in_flight = (*world.application.primary_provider_for_test())
-        .begin_external_dispatch_in_flight_for_test(&owner)
+    let in_flight = world
+        .application
+        .runtime
+        .primary_provider
+        .begin_external_dispatch_in_flight(&owner)
         .unwrap()
         .unwrap();
     let transport = CompletingTransport(AtomicUsize::new(0));
@@ -35,7 +38,11 @@ fn publication_stop_transport_completion_remains_ready_without_redispatch() {
         .record_installed_transport_completion_for_test(evidence, in_flight)
         .unwrap();
     let source = WorthQueryCancellationSource::new();
-    let request = WorthQueryRequestScope::new(None, source.token());
+    let request = WorthQueryRequestScope::new(
+        None,
+        source.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     source.cancel();
     let result = world
         .application

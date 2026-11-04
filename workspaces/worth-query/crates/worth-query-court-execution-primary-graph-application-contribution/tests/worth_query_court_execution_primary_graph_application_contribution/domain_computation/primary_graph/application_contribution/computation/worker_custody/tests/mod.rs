@@ -12,17 +12,17 @@ pub use worth_query_execution::facade::application_contribution::WorthQueryAdvan
 pub use std::num::NonZeroUsize;
 pub use std::sync::Arc;
 pub use std::time::Duration;
-pub use std::time::Instant;
 pub use worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource;
 pub use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 
 #[test]
 fn author_held_application_and_product_handles_receive_nested_opening() {
-    let application = Arc::new(worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(false).application);
+    let application = Arc::new(worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(false, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()).application);
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(60)),
+        Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
         cancellation.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     for workers in [0, 1, 2, 4] {
         let root = QueryRequestExecution::open_for_test(

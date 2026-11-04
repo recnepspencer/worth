@@ -4,7 +4,10 @@ use crate::domain_computation::primary_graph::provider::application_attempt_stat
 /// effect moved a fact its source query read, on either side of the failure.
 #[test]
 fn a_failed_rebase_carries_out_what_its_effect_did_to_its_source_reads() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     world
         .application
         .with_host_advancement(|phase| {

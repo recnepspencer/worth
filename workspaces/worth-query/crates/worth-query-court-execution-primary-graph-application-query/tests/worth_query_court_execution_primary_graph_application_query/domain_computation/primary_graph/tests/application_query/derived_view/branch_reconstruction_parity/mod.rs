@@ -8,7 +8,10 @@ use worth_execution::ExecutionWorkCeiling;
 fn members_admitted_on_another_branch_are_foreign_after_the_reads() {
     let _observation =
         worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let scope = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &scope);
     world

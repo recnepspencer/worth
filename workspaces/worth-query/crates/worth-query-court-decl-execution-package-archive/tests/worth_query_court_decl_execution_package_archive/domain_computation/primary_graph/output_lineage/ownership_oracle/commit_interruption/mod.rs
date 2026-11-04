@@ -157,7 +157,11 @@ fn cancelling_one_caller_during_producer_commit_keeps_the_other_callers_row_live
     let app = crate::domain_computation::primary_graph::output_lineage::ownership_oracle::installation::install_with_interruption(interruption.clone());
     let runtime = &app;
     let cancellation = WorthQueryCancellationSource::new();
-    let scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let scope = WorthQueryRequestScope::new(
+        None,
+        cancellation.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let external = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::authentication::authenticate_external(
         runtime.installed_schema(),
         "alice",
@@ -168,7 +172,7 @@ fn cancelling_one_caller_during_producer_commit_keeps_the_other_callers_row_live
         .with_application_advancement(&scope, |phase| {
             use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
             let execution = phase
-                .execution_request_for_for_test(&(*runtime.product_runtime_for_test()))
+                .execution_request_for(&runtime.runtime.product_runtime)
                 .unwrap();
             let admit = || {
                 runtime
@@ -221,7 +225,7 @@ fn cancelling_one_caller_during_producer_commit_keeps_the_other_callers_row_live
     runtime
         .with_application_advancement(&fresh, |phase| {
             let execution = phase
-                .execution_request_for_for_test(&(*runtime.product_runtime_for_test()))
+                .execution_request_for(&runtime.runtime.product_runtime)
                 .unwrap();
             let advanced = runtime
                 .advance_program_output_demand_for_test(

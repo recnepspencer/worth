@@ -40,7 +40,10 @@ pub use worth_relational::facade::transactions::UpdateEntityFieldsIntent;
 pub use worth_relational::facade::transactions::WorkerIntentBatch;
 #[test]
 fn recovered_witness_requires_complete_unambiguous_original_aspects() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let selected = world
         .application
         .with_host_advancement(|phase| {

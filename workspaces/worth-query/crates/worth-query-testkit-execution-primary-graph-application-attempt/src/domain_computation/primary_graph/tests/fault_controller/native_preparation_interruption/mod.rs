@@ -8,7 +8,7 @@ impl PrimaryGraphFaultController {
     pub fn interrupt_next_native_preparation_for_test(
         &self,
         source: WorthQueryCancellationSource,
-        deadline: Option<std::time::Instant>,
+        deadline: Option<(worth_execution::MonotonicTimeController, std::time::Instant)>,
     ) -> NativePreparationInterruptionForTest<'_> {
         *self.native_preparation_cancellation.lock().unwrap() = Some((source, deadline));
         NativePreparationInterruptionForTest {

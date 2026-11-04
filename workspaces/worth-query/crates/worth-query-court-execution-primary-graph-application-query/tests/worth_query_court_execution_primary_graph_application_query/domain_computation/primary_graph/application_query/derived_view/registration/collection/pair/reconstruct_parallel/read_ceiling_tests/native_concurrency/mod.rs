@@ -12,7 +12,10 @@ fn two_distinct_roots_hold_the_whole_native_read_without_the_owner_lock() {
             NonZeroUsize::new(2).unwrap(),
         ),
     );
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let scope = live_scope();
     let selected = world
         .application
@@ -56,9 +59,13 @@ fn two_distinct_roots_hold_the_whole_native_read_without_the_owner_lock() {
         .installed_schema()
         .certification_query(PublicScopedAccountSummaryQuery::reference())
         .unwrap();
-    let owner_probe = (*(*(*world.application.primary_provider_for_test()).graph_for_test())
-        .source_owner_for_test())
-    .read_lock_probe_for_test();
+    let owner_probe = world
+        .application
+        .runtime
+        .primary_provider
+        .graph
+        .source_owner
+        .read_lock_probe_for_test();
     assert!(!owner_probe.is_locked_for_test());
     world.application.with_host_advancement(|phase| {
         let host_custody = phase.test_host_request_for_test();

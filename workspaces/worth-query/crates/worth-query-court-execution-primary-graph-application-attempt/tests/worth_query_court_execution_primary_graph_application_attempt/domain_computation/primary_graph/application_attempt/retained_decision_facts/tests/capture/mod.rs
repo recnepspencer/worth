@@ -22,7 +22,10 @@ fn installed_absence_projection_refuses_before_retention_and_releases_snapshot()
         return;
     }
     let _serial = SERIAL.lock().unwrap();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request_scope = live_scope();
     let actor = world
         .application

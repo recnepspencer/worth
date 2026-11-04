@@ -57,9 +57,7 @@ pub fn with_cleanup(
     body: impl FnOnce(WorthQueryProductRuntime, WorthQueryProductBranchOwnerCleanup, Arc<Probe>),
 ) {
     let world =
-        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(
-            true,
-        );
+        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     let branch = world
         .application
         .with_host_advancement(|phase| {
@@ -79,7 +77,7 @@ pub fn with_cleanup(
                 .unwrap()
         })
         .unwrap();
-    let mut runtime = (*world.application.product_runtime_for_test()).clone();
+    let mut runtime = world.application.runtime.product_runtime.clone();
     // Isolate this protocol observer from the real provider's follower. The World
     // reference, Native/Signal components and deletion ports are the real owners.
     (*runtime.owner_cleanup_mut_for_test()) =

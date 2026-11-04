@@ -22,7 +22,7 @@ fn receipt_lineage_preserves_original_cancellation_and_deadline() {
         let cancelled = CancellationSource::new();
         cancelled.cancel();
         let stopped = live.clone().with_cancellation(cancelled.token());
-        let expired = live.clone().with_deadline(Some(std::time::Instant::now()));
+        let expired = live.clone().with_deadline(Some({ let clock = worth_execution::MonotonicClock::system(); clock.deadline_at(clock.now()) }));
         for (request, expected) in [
             (&stopped, worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled),
             (&expired, worth_relational::facade::transactions::RelationalExecutionDenialCause::DeadlineElapsed),

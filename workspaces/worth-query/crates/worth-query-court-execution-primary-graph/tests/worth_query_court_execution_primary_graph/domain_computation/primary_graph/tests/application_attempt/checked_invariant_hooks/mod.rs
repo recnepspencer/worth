@@ -56,6 +56,7 @@ pub fn run_case(
     let scope = WorthQueryRequestScope::new(
         Some(std::time::Instant::now() + Duration::from_secs(60)),
         source.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     let program = crate::domain_computation::primary_graph::tests::application_attempt::checked_invariant_hooks::program::prepare(&world, &scope);
     // Installation completes before the rule control targets this commit.
@@ -104,8 +105,11 @@ pub fn run_case(
         opening,
         work,
         contacts: std::array::from_fn(|index| after[index] - before[index]),
-        publications: (*world.application.primary_provider_for_test())
-            .published_application_commit_count_for_test(),
+        publications: world
+            .application
+            .runtime
+            .primary_provider
+            .published_application_commit_count(),
     }
 }
 

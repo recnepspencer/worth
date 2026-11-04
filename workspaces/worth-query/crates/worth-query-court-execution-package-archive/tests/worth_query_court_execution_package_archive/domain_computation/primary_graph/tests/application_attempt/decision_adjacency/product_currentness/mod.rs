@@ -99,7 +99,11 @@ fn unrelated_adjacency_growth_preserves_prepared_decision_facts() {
         )
         .unwrap();
     let commit_count = || {
-        (*(*world.application.primary_provider_for_test()).graph_for_test())
+        world
+            .application
+            .runtime
+            .primary_provider
+            .graph
             .with_runtime(request_execution, |runtime| {
                 runtime.history().immutable_commit_count()
             })

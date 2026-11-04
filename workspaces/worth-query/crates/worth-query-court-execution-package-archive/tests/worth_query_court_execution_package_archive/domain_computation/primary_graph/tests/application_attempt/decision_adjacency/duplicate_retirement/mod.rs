@@ -14,7 +14,10 @@ use worth_query_execution::facade::domain_computation::WorthQueryApplicationAtte
 
 #[test]
 fn reused_relation_key_is_denied_during_public_authoring() {
-    let world = installed_authorization_world(false);
+    let world = installed_authorization_world(
+        false,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let actor = world
         .application
@@ -135,7 +138,7 @@ fn reused_relation_key_is_denied_during_public_authoring() {
 #[test]
 fn two_real_relation_deletes_share_one_ordered_provisional_step_through_commit() {
     {
-        let world = installed_authorization_world(false);
+        let world = installed_authorization_world(false, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let request = live_scope();
 
         let actor = world

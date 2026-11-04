@@ -27,8 +27,13 @@ fn actual_content_controls_and_resource_stops_keep_their_own_native_disposition(
         };
         for deadline in [false, true] {
             let source = CancellationSource::new();
-            let child =
-                lease.controlled_child(source.token(), deadline.then(std::time::Instant::now));
+            let child = lease.controlled_child(
+                source.token(),
+                deadline.then(|| {
+                    let clock = worth_execution::MonotonicClock::system();
+                    clock.deadline_at(clock.now())
+                }),
+            );
             if !deadline {
                 source.cancel();
             }

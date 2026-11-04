@@ -19,8 +19,11 @@ impl FreshnessCancellationGuardForTest {
     ) -> Self {
         Self::install(Action::Cancel(source), preceding_reads)
     }
-    pub fn deadline_on_this_thread(deadline: std::time::Instant) -> Self {
-        Self::install(Action::Deadline(deadline), 0)
+    pub fn deadline_on_this_thread(
+        time: worth_execution::MonotonicTimeController,
+        deadline: std::time::Instant,
+    ) -> Self {
+        Self::install(Action::Deadline { time, deadline }, 0)
     }
     pub fn install(action: Action, preceding_reads: usize) -> Self {
         assert!(worth_query_execution::court_doors_for_test::domain_computation::execution_observation::is_installed());

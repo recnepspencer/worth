@@ -12,7 +12,10 @@ use worth_query_testkit_execution_primary_graph_application_contribution::domain
 
 #[test]
 fn compile_capability_does_not_widen_the_installed_effect_program() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     world
         .application
@@ -113,7 +116,10 @@ fn compile_capability_does_not_widen_the_installed_effect_program() {
 
 #[test]
 fn entity_from_another_admitted_scope_cannot_become_an_effect_target() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     world
         .application

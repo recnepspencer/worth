@@ -5,17 +5,20 @@ use worth_query_testkit_execution_primary_graph_application_contribution::domain
 use worth_query_execution::facade::domain_computation::HandlerInterruption;
 use std::cell::Cell;
 use std::time::Duration;
-use std::time::Instant;
 use worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 
 #[test]
 fn cancelled_before_admission_never_enters_the_raw_callback() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let source = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(60)),
+        Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
         source.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     let called = Cell::new(false);
     let result = world
@@ -43,11 +46,15 @@ fn cancelled_before_admission_never_enters_the_raw_callback() {
 
 #[test]
 fn cancellation_during_preflight_is_observable_without_reborrowing_reader() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let source = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(60)),
+        Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
         source.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     let observed = Cell::new(None);
     let result = world
@@ -81,10 +88,12 @@ fn cancellation_during_preflight_is_observable_without_reborrowing_reader() {
 
 #[test]
 fn deadline_during_preflight_preserves_its_distinct_request_reason() {
-    let world = installed_authorization_world(true);
+    let time = worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionTimeController::new().unwrap();
+    let held = time.hold();
+    let world = installed_authorization_world(true, time.clock());
     let source = WorthQueryCancellationSource::new();
-    let deadline = Instant::now() + Duration::from_secs(1);
-    let request = WorthQueryRequestScope::new(Some(deadline), source.token());
+    let deadline = held + Duration::from_secs(1);
+    let request = WorthQueryRequestScope::new(Some(deadline), source.token(), time.clock());
     let observed = Cell::new(None);
     let result = world
         .application
@@ -96,7 +105,7 @@ fn deadline_during_preflight_preserves_its_distinct_request_reason() {
                     AccountStatus::reference(),
                     |_, checkpoint| {
                         assert_eq!(checkpoint(), Ok(()));
-                        std::thread::sleep(deadline.saturating_duration_since(Instant::now()));
+                        time.advance(Duration::from_secs(1)).unwrap();
                         observed.set(checkpoint().err());
                         Ok::<_, ()>(())
                     },

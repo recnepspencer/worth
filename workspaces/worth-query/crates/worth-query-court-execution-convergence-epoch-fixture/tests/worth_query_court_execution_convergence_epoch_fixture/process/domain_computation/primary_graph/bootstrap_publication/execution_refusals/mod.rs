@@ -7,7 +7,6 @@ pub use worth_query_testkit_execution_primary_graph_application_attempt_2::domai
 
 pub use std::num::NonZeroUsize;
 pub use std::sync::OnceLock;
-pub use std::time::Instant;
 pub use worth_execution::CancellationSource;
 pub use worth_execution::CancellationToken;
 pub use worth_execution::ExecutionAuthority;
@@ -116,7 +115,10 @@ fn cancellation_and_deadline_are_control_stops() {
             let mut cancelled = request();
             cancelled.cancellation = cancellation.token();
             let mut timed_out = request();
-            timed_out.deadline = Some(Instant::now());
+            timed_out.deadline = Some({
+                let clock = worth_execution::MonotonicClock::system();
+                clock.deadline_at(clock.now())
+            });
             for (request, expected) in [
                 (cancelled, Control::Cancelled),
                 (timed_out, Control::TimedOut),
@@ -150,7 +152,10 @@ fn unleased_bootstrap_index_stop_keeps_execution_denial() {
         let host = SerialRequest::from_memory(
             SerialMemoryBudget::new(None),
             source.token(),
-            expired.then(Instant::now),
+            expired.then(|| {
+                let clock = worth_execution::MonotonicClock::system();
+                clock.deadline_at(clock.now())
+            }),
         );
         let execution = worth_execution::ExecutionRequest::serial(&host);
         let build = runtime

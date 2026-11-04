@@ -35,7 +35,10 @@ impl WorthQueryExternalEffectTransport for CompletingTransport {
 
 #[test]
 fn response_loss_retry_performs_no_second_managed_application_attempt() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let transport = Arc::new(CompletingTransport(AtomicUsize::new(0)));
     world
         .application

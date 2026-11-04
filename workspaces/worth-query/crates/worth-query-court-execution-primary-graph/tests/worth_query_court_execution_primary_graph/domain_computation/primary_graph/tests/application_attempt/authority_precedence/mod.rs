@@ -2,7 +2,6 @@
 //! ownership is refused before authentication lapse and before any read.
 
 use std::time::Duration;
-use std::time::SystemTime;
 use worth_query_execution::facade::domain_computation::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::idempotency;
@@ -39,9 +38,8 @@ pub fn expiring_admissions(
     world: &AuthorizationWorld,
     request: &WorthQueryRequestScope,
     count: usize,
-) -> (Vec<Admission>, SystemTime, u64) {
+) -> (Vec<Admission>, u64) {
     let external = world.authenticate("alice", LIFETIME, request);
-    let expires_at = external.expires_at();
     let principal = world
         .application
         .with_host_advancement(|phase| {
@@ -93,7 +91,7 @@ pub fn expiring_admissions(
                 .expect("the fixture read owns its installed host call")
         })
         .collect::<Vec<_>>();
-    (admissions, expires_at, *principal.principal_identity())
+    (admissions, *principal.principal_identity())
 }
 
 pub fn execute_on(
@@ -144,10 +142,16 @@ pub fn assert_refused_as_foreign_runtime(denial: MutationHandlerExecutionDenial)
 
 #[test]
 fn a_live_foreign_admission_is_refused_as_foreign_at_mutation_execution() {
-    let source_world = installed_authorization_world(true);
-    let target_world = installed_authorization_world(true);
+    let source_world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
+    let target_world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
-    let (mut admissions, _, principal_identity) = expiring_admissions(&source_world, &request, 1);
+    let (mut admissions, principal_identity) = expiring_admissions(&source_world, &request, 1);
     assert_refused_as_foreign_runtime(execute_on(
         &target_world,
         principal_identity,
@@ -157,18 +161,21 @@ fn a_live_foreign_admission_is_refused_as_foreign_at_mutation_execution() {
 
 #[test]
 fn a_foreign_and_expired_admission_is_refused_as_foreign_at_every_entry() {
-    let source_world = installed_authorization_world(true);
-    let target_world = installed_authorization_world(true);
-    let request = live_scope();
-    let (mut admissions, expires_at, principal_identity) =
-        expiring_admissions(&source_world, &request, 3);
+    let time = worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionTimeController::new().unwrap();
+    let held = time.hold();
+    let source_world = installed_authorization_world(true, time.clock());
+    let target_world = installed_authorization_world(true, time.clock());
+    let request = WorthQueryRequestScope::new(
+        Some(held + Duration::from_secs(60)),
+        worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource::new()
+            .token(),
+        time.clock(),
+    );
+    let (mut admissions, principal_identity) = expiring_admissions(&source_world, &request, 3);
     for admission in &admissions {
         assert!(admission.validate_current_authority().is_ok());
     }
-    let until_expiry = expires_at
-        .duration_since(SystemTime::now())
-        .unwrap_or_default();
-    std::thread::sleep(until_expiry + Duration::from_millis(10));
+    time.advance(Duration::from_secs(3)).unwrap();
     assert_eq!(
         admissions[0]
             .validate_current_authority()

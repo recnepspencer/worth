@@ -18,7 +18,10 @@ use worth_relational::facade::transactions::WorkerIntentBatch;
 
 #[test]
 fn optional_aspect_initialization_reconstructed_presence_detects_present_empty() {
-    let world = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(true);
+    let world = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
     world.application.with_host_advancement(|phase| {
         let host = phase.test_host_request_for_test();

@@ -30,14 +30,14 @@ pub fn readmit_with_ordinary<Schema: BirthSchema>(
     runtime
         .with_application_advancement(&scope, |phase| {
             let execution = phase
-                .execution_request_for_for_test(&(*runtime.product_runtime_for_test()))
+                .execution_request_for(&runtime.runtime.product_runtime)
                 .unwrap();
             let (_, product, _basis) = runtime
                 .on_branch(runtime.current_world())
                 .select(&phase)
                 .unwrap()
-                .into_parts_for_test();
-            let graph = &(*(*runtime.primary_provider_for_test()).graph_for_test());
+                .into_parts();
+            let graph = &runtime.runtime.primary_provider.graph;
             let publisher = graph.application_publication.as_ref().unwrap();
             let roles: Vec<_> = settled
                 .output_correspondence
@@ -168,7 +168,7 @@ pub fn edit_source_to<Schema: BirthSchema>(
     runtime
         .with_application_advancement(&scope, |phase| {
             let execution = phase
-                .execution_request_for_for_test(&(*runtime.product_runtime_for_test()))
+                .execution_request_for(&runtime.runtime.product_runtime)
                 .unwrap();
             let source = runtime
                 .on_branch(runtime.current_world())
@@ -182,11 +182,12 @@ pub fn edit_source_to<Schema: BirthSchema>(
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .unwrap();
-            let locator =(*(* (*runtime
-                .primary_provider_for_test())
-                .graph_for_test())
-                .layout_for_test())
-                .field_locator_for_test("Body", "PlanarPosition", "PositionY")
+            let locator = runtime
+                .runtime
+                .primary_provider
+                .graph
+                .layout
+                .field_locator("Body", "PlanarPosition", "PositionY")
                 .unwrap()
                 .clone();
             let batch =

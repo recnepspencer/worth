@@ -18,7 +18,6 @@ use worth_query_execution::facade::domain_computation::WorthQueryApplicationLive
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationLiveOpenDenialKind;
 use worth_query_execution::facade::domain_computation::WorthQueryPrincipalResolutionMode;
 use std::time::Duration;
-use std::time::Instant;
 use std::time::UNIX_EPOCH;
 use worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
@@ -26,11 +25,11 @@ use worth_query_admission::facade::authenticated_principal::WorthQueryRequestSco
 #[test]
 fn foreign_phase_refuses_both_live_doors_before_cancelled_read_admission() {
     for governed in [false, true] {
-        let issuer = installed_authorization_world(true);
+        let issuer = installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let receiver = if governed {
             installed_capability_live_world()
         } else {
-            installed_authorization_world(true)
+            installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system())
         };
         if governed {
             receiver.authorization_time.script([
@@ -40,9 +39,8 @@ fn foreign_phase_refuses_both_live_doors_before_cancelled_read_admission() {
         }
         let cancellation = WorthQueryCancellationSource::new();
         let request = WorthQueryRequestScope::new(
-            Some(Instant::now() + Duration::from_secs(60)),
-            cancellation.token(),
-        );
+            Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
+            cancellation.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let external = receiver.authenticate("alice", Duration::from_secs(60), &request);
         let (principal, account, capability, selected) = receiver
             .application

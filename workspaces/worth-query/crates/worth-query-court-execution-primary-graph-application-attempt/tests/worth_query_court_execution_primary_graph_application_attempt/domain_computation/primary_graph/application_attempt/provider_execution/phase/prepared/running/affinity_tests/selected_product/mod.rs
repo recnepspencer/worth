@@ -5,9 +5,7 @@ fn an_exact_sibling_product_cannot_substitute_at_provider_plan_binding() {
     let _observation =
         worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
     let world =
-        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(
-            true,
-        );
+        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     world
         .application
         .with_host_advancement(|active_phase| {
@@ -46,9 +44,7 @@ fn an_exact_sibling_product_cannot_substitute_at_provider_plan_binding() {
             drop(sibling_application_basis);
 
             let result = direct_run
-                .admit_provider_execution_plan(
-                    &(*world.application.primary_graph_authority_for_test()),
-                )
+                .admit_provider_execution_plan(world.application.runtime.primary_graph_authority())
                 .expect("the application authorities admit the provider plan")
                 .bind_application_product_for_test(sibling_product);
             assert!(result.is_err());
@@ -62,9 +58,7 @@ fn the_exact_selected_product_binds_at_provider_plan_boundary() {
     let _observation =
         worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
     let world =
-        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(
-            true,
-        );
+        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     world
         .application
         .with_host_advancement(|active_phase| {
@@ -95,9 +89,7 @@ fn the_exact_selected_product_binds_at_provider_plan_boundary() {
                 _aftermath_causality,
             ) = running.into_parts_for_test();
             let result = direct_run
-                .admit_provider_execution_plan(
-                    &(*world.application.primary_graph_authority_for_test()),
-                )
+                .admit_provider_execution_plan(world.application.runtime.primary_graph_authority())
                 .expect("the application authorities admit the provider plan")
                 .bind_application_product_for_test(lease.product().retained_clone_for_test());
             assert!(result.is_ok());
@@ -122,13 +114,9 @@ fn foreign_installed_phase_refuses_provider_readmission_before_read_or_charge() 
     ] {
         let previous = place(placement);
         let a =
-            worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(
-                true,
-            );
+            worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let b =
-            worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(
-                true,
-            );
+            worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let scope = live_scope();
         let mut arun = a
             .application
@@ -156,11 +144,9 @@ fn foreign_installed_phase_refuses_provider_readmission_before_read_or_charge() 
         a.application
             .with_application_advancement(&scope, |phase| {
                 let before = reads();
-                // Read before the running run is borrowed mutably.
-                let product = (*brun.lease_for_test()).product().retained_clone_for_test();
-                let plan = (*brun
-                    .running_mut_for_test())
-                    .admit_provider_execution_plan(&(*b.application.primary_graph_authority_for_test()))
+                let plan = brun
+                    .running
+                    .admit_provider_execution_plan(b.application.runtime.primary_graph_authority())
                     .unwrap()
                     .bind_application_product_for_test(product)
                     .unwrap();

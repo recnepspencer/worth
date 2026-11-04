@@ -3,7 +3,10 @@ use crate::domain_computation::primary_graph::tests::application_attempt::idempo
 
 #[test]
 fn equivalent_retry_recovers_original_receipt_while_intent_drift_is_denied() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application

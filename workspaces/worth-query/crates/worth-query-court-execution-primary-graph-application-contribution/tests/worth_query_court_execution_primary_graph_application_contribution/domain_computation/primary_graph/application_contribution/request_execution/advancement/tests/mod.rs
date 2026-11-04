@@ -123,7 +123,10 @@ fn reentrant_host_open_is_typed_at_serial_and_leased_placements() {
         worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
     use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
     use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope;
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let scope = live_scope();
     let _restore = Restore(place(Placement::World), bound(None));
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
@@ -140,7 +143,7 @@ fn reentrant_host_open_is_typed_at_serial_and_leased_placements() {
                 assert!(matches!(
                     charged_request(
                         phase
-                            .execution_request_for_for_test(&(*world.application.product_runtime_for_test()))
+                            .execution_request_for(&world.application.runtime.product_runtime)
                             .expect("the issuer accepts its own phase"),
                         1
                     ),

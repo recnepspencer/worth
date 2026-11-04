@@ -112,7 +112,7 @@ pub fn install() -> World {
                 &phase.bootstrap_for_test(),
                 &runtime,
                 &schema,
-                worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(),
+                worth_query_execution::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()),
             )
             .unwrap();
         crate::domain_computation::primary_graph::invariant_projection::component::tests::fixture::principal_binding::seed(&mut bootstrap, &schema);

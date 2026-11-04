@@ -13,7 +13,10 @@ use worth_query_testkit_execution_primary_graph_application_contribution::domain
     use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionDenialKind as Kind;
 pub type Evidence = (Stage, Option<Result<Kind, Control>>, Option<Authority>);
 pub fn commit_at(ceiling: u64) -> (bool, Option<Evidence>, Vec<u64>) {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let scope = live_scope();
     let program = world
         .application
@@ -91,7 +94,11 @@ fn authority_evidence_exposes_request_resources_by_value_through_the_commit_door
         .into_iter()
         .filter(|required| *required > 0)
         .collect();
-    for required in unique {
+    eprintln!("authority charge probes={}", unique.len());
+    for (probe, required) in unique.into_iter().enumerate() {
+        if probe % 100 == 0 {
+            eprintln!("authority probe={probe}, required={required}, reached={reached}");
+        }
         let (committed, evidence, _) = commit_at(required - 1);
         assert!(!committed, "charge {required}");
         if let Some((Stage::DecisionReadSet, _, Some(Authority::Stopped(_)))) = evidence {
@@ -104,6 +111,7 @@ fn authority_evidence_exposes_request_resources_by_value_through_the_commit_door
                 )),
                 "charge {required}"
             );
+            eprintln!("authority witness probe={probe}, required={required}");
             reached += 1;
         }
     }

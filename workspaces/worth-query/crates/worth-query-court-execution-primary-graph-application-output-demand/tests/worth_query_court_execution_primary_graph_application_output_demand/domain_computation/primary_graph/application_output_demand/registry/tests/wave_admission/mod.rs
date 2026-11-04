@@ -8,9 +8,7 @@ fn uncommitted_upstream_never_admits_a_prepared_member() {
     let registry = WorthQueryOutputDemandRegistry::default();
     let _owner = SourceInvalidationOwner::new(WorthQueryInvalidationResources::new(), 1);
     let world =
-        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(
-            true,
-        );
+        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     let selected = world
         .application
         .with_host_advancement(|phase| {
@@ -19,9 +17,7 @@ fn uncommitted_upstream_never_admits_a_prepared_member() {
                 .unwrap()
                 .with_runtime_for_test(
                     &phase
-                        .execution_request_for_for_test(
-                            &(*world.application.product_runtime_for_test()),
-                        )
+                        .execution_request_for(&world.application.runtime.product_runtime)
                         .unwrap(),
                     |runtime| {
                         let basis = runtime

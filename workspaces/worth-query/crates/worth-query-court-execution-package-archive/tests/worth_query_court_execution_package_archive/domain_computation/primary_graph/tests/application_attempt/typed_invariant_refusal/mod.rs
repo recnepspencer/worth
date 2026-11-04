@@ -75,9 +75,12 @@ pub fn checkpoint(
         .application
         .with_host_advancement(|phase| {
             let execution = phase.borrowed_request_for_test();
-            (*(*world.application.primary_provider_for_test()).graph_for_test()).with_runtime(
-                &execution,
-                |runtime| {
+            world
+                .application
+                .runtime
+                .primary_provider
+                .graph
+                .with_runtime(&execution, |runtime| {
                     runtime
                         .durability_authority()
                         .native_checkpoint(&execution, execution.allocation_policy())
@@ -111,7 +114,11 @@ pub fn run_cancelled_by(status: String, canceller: Option<u64>) -> Case {
     };
     let world = crate::domain_computation::primary_graph::tests::application_attempt::typed_invariant_refusal::world::install(rule(1), rule(2));
     reads.lock().unwrap().clear();
-    let scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let scope = WorthQueryRequestScope::new(
+        None,
+        cancellation.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let program = crate::domain_computation::primary_graph::tests::application_attempt::typed_invariant_refusal::program::prepare(&world, &scope, status);
     let before = checkpoint(&world);
     let reservations = world

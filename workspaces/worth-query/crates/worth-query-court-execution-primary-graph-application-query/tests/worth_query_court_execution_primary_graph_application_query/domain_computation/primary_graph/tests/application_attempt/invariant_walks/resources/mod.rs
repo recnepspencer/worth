@@ -65,6 +65,7 @@ pub fn run(leased: bool, roots: usize, ceiling: Option<u64>, cancel: bool) -> Ca
     let request = WorthQueryRequestScope::new(
         Some(std::time::Instant::now() + std::time::Duration::from_secs(60)),
         source.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     let program = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_walks::program::activation::set_active(&world, &request, true);
     let before = world.checkpoint();
@@ -84,6 +85,10 @@ pub fn run(leased: bool, roots: usize, ceiling: Option<u64>, cancel: bool) -> Ca
     let requests = reports();
     assert_eq!(requests.len(), 1, "one original funded application attempt");
     let charged = requests[0].as_ref().unwrap().charged_work();
+    // Verification has a separate funded request; the attempt and its captured
+    // bill retain the original finite ceiling.
+    place(Placement::Serial);
+    bound(None);
     if matches!(outcome, WorthQueryApplicationCommitOutcome::Denied(_)) {
         assert_eq!(world.checkpoint(), before);
     }

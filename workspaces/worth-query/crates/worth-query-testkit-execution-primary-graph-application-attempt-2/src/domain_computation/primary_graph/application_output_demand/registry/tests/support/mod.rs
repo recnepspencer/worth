@@ -5,9 +5,7 @@ pub fn occurrence() -> worth_runtime_world::facade::ProductBranchIncarnation {
         std::sync::OnceLock::new();
     *OCCURRENCE.get_or_init(|| {
         let world =
-            worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(
-                true,
-            );
+            worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let product = world
             .application
             .product_runtime()

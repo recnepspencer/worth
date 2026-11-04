@@ -23,7 +23,7 @@ fn product_transaction_refuses_zero_budgets_before_revalidation() {
         worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
         let _placement = Restore(place(placement), bound(None));
-        let control = installed_authorization_world(true);
+        let control = installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let scope = live_scope();
         let principal = control
             .application
@@ -70,7 +70,7 @@ fn product_transaction_refuses_zero_budgets_before_revalidation() {
             "admitted product transaction must contact its reader"
         );
         for zero_memory in [false, true] {
-            let world = installed_authorization_world(true);
+            let world = installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
             let request = live_scope();
             let principal = world
                 .application
@@ -185,5 +185,7 @@ fn product_transaction_refuses_zero_budgets_before_revalidation() {
     }
 }
 
+#[path = "cancellation/mod.rs"]
+pub mod cancellation;
 #[path = "runtime_identity/mod.rs"]
 pub mod runtime_identity;

@@ -134,8 +134,11 @@ fn cleanup_verification_of_a_completed_inbound_keeps_the_terminal_owner() {
             .posture(),
         Posture::Performed
     );
-    let sealed = (*world.application.primary_provider_for_test())
-        .lookup_completed_inbound_for_test(&correlation)
+    let sealed = world
+        .application
+        .runtime
+        .primary_provider
+        .lookup_completed_inbound(&correlation)
         .unwrap()
         .expect("the terminal owner holds the completion");
     world
@@ -143,8 +146,11 @@ fn cleanup_verification_of_a_completed_inbound_keeps_the_terminal_owner() {
         .verify_completed_inbound_for_cleanup_for_test(&[correlation], u64::MAX)
         .expect("World-paired durable row permits exact expiry turnover");
     assert_eq!(
-        (*world.application.primary_provider_for_test())
-            .lookup_completed_inbound_for_test(&correlation)
+        world
+            .application
+            .runtime
+            .primary_provider
+            .lookup_completed_inbound(&correlation)
             .unwrap(),
         Some(sealed)
     );

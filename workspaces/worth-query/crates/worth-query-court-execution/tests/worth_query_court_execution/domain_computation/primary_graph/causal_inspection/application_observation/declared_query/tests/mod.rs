@@ -21,7 +21,10 @@ pub type SourceQuery =
 
 #[test]
 fn native_query_observations_preserve_exact_binding_without_retaining_a_reader() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let schema = world.application.installed_schema();
     let original = schema
         .installed_query_binding::<TestAccountSourceBinding>()
@@ -143,7 +146,10 @@ fn native_query_observations_preserve_exact_binding_without_retaining_a_reader()
 
 #[test]
 fn native_query_observation_preserves_many_and_empty_rosters_separately_from_selection() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let schema = world.application.installed_schema();
     let many = schema
         .certification_query(CrossRootQuery::reference())

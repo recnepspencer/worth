@@ -3,7 +3,10 @@ use crate::domain_computation::primary_graph::tests::application_query::lifecycl
 
 #[test]
 fn principal_revocation_after_product_admission_denies_before_projection() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world

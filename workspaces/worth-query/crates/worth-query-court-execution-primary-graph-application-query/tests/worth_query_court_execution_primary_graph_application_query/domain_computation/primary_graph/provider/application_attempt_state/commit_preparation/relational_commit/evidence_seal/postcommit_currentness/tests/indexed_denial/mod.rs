@@ -97,7 +97,11 @@ pub fn committed_indexed_facts(
     else {
         panic!("the installed indexed decision must commit");
     };
-    let facts = (*(*world.application.primary_provider_for_test()).graph_for_test())
+    let facts = world
+        .application
+        .runtime
+        .primary_provider
+        .graph
         .output_lineage
         .lock()
         .unwrap()
@@ -109,7 +113,10 @@ pub fn committed_indexed_facts(
 
 #[test]
 fn indexed_postcommit_rebase_preserves_the_native_denial_and_fact_ordinal() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     {
         let mut facts = committed_indexed_facts(&world);
         let mut ordinal = facts
@@ -167,7 +174,10 @@ fn indexed_postcommit_rebase_preserves_the_native_denial_and_fact_ordinal() {
 
 #[test]
 fn sparse_indexed_rebase_keeps_complete_dependencies_without_work_estimates() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     {
         let committed = committed_indexed_facts(&world);
         let selected_value =
@@ -203,12 +213,10 @@ fn sparse_indexed_rebase_keeps_complete_dependencies_without_work_estimates() {
                 )
             })
             .expect("the fixture read owns its installed host call");
-        let graph = (*world.application.runtime_for_test())
-            .primary_graph()
-            .unwrap();
-        let observed = world.application.with_host_advancement(|phase| {   let borrowed_execution = phase.execution_request_for_for_test(&(*world.application.product_runtime_for_test())).expect("fixture borrows its runtime request"); let execution = &borrowed_execution; graph.integration_handle_for_test().with_runtime(&phase.borrowed_request_for_test(), |runtime| {
-        let snapshot = selected.application_basis_for_test().snapshot_handle();
-        let observed = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::indexed_entity_selection::observe_indexed_entity_selection(
+        let graph = world.application.runtime.primary_graph().unwrap();
+        let observed = world.application.with_host_advancement(|phase| {   let borrowed_execution = phase.execution_request_for(&world.application.runtime.product_runtime).expect("fixture borrows its runtime request"); let execution = &borrowed_execution; graph.integration_handle().with_runtime(&phase.borrowed_request_for_test(), |runtime| {
+        let snapshot = selected.application_basis().snapshot_handle();
+        let observed = worth_query_execution::domain_computation::primary_graph::application_attempt::fact::indexed_entity_selection::observe_indexed_entity_selection(
             runtime,execution,  snapshot, *index_id, *entity_kind, locator.clone(), value.clone(), 100_001,
         ).expect("the installed index supplies a genuine complete sparse observation");
         assert!(matches!(&observed,
@@ -281,7 +289,7 @@ fn sparse_indexed_rebase_keeps_complete_dependencies_without_work_estimates() {
             .application
             .with_host_advancement(|phase| {
                 let borrowed_execution = phase
-                    .execution_request_for_for_test(&(*world.application.product_runtime_for_test()))
+                    .execution_request_for(&world.application.runtime.product_runtime)
                     .expect("fixture borrows its runtime request");
                 let execution = &borrowed_execution;
                 graph

@@ -16,7 +16,6 @@ pub use std::num::NonZeroUsize;
 pub use std::sync::Arc;
 pub use std::sync::Mutex;
 pub use std::time::Duration;
-pub use std::time::Instant;
 pub use worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource;
 pub use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 pub use worth_runtime_world::facade::RuntimeWorldExecutionPlacement;
@@ -69,7 +68,11 @@ pub fn run_handoff(
     Result<worth_foundational::ExecutionPhysicalReport, worth_execution::WorkCeilingDenial>,
 ) {
     let cancel = WorthQueryCancellationSource::new();
-    let scope = WorthQueryRequestScope::new(None, cancel.token());
+    let scope = WorthQueryRequestScope::new(
+        None,
+        cancel.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let policy = worker_policy(width.unwrap_or(1));
     let placement = width.map_or(RuntimeWorldExecutionPlacement::Serial(policy), |_| {
         RuntimeWorldExecutionPlacement::Leased {

@@ -27,6 +27,8 @@ pub enum CapabilityGrantPopulation {
 }
 
 pub struct AuthorizationWorldSpec<'a> {
+    pub admission_clock:
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock,
     pub owner_bindings: &'a [(&'a str, &'a str)],
     pub blocked: bool,
     pub principal_count: usize,
@@ -49,7 +51,10 @@ pub struct AuthorizationWorld {
 
 impl AuthorizationWorld {
     pub fn declare_output_contract<Contract: 'static>(&self, identity: &str) {
-        (*(*self.application.primary_provider_for_test()).graph_for_test())
+        self.application
+            .runtime
+            .primary_provider
+            .graph
             .output_lineage
             .lock()
             .unwrap()
@@ -84,10 +89,11 @@ pub struct PreparedAuthorizationWorld {
 }
 
 pub fn install_authorization_world(spec: AuthorizationWorldSpec<'_>) -> AuthorizationWorld {
-    install_authorization_world_with_product_resources(
-        spec,
-        worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(),
-    )
+    let resources =
+        worth_query_execution::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(
+            spec.admission_clock.clone(),
+        );
+    install_authorization_world_with_product_resources(spec, resources)
 }
 
 pub fn install_authorization_world_with_product_resources(
@@ -108,7 +114,7 @@ pub fn install_authorization_world_in_advancement(
 ) -> AuthorizationWorld {
     let mut prepared = prepare_authorization_world(phase, spec.resources, None, product_resources);
     populate_authorization_world(&mut prepared, &spec);
-    publish_authorization_world(phase, prepared)
+    publish_authorization_world(phase, prepared, spec.admission_clock)
 }
 
 pub fn populate_authorization_world(

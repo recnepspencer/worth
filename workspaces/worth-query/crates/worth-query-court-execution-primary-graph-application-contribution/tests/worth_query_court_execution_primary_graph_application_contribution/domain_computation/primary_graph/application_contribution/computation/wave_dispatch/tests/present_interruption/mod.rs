@@ -10,7 +10,7 @@ fn a_present_interruption_dispatches_no_member_at_any_matrix_width() {
                 cancellation.cancel();
             }
             let scope =
-                WorthQueryRequestScope::new(deadline.then(Instant::now), cancellation.token());
+                WorthQueryRequestScope::new(deadline.then(|| worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now()), cancellation.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
             let policy = worker_policy(width.unwrap_or(1));
             let placement = width.map_or(RuntimeWorldExecutionPlacement::Serial(policy), |_| {
                 RuntimeWorldExecutionPlacement::Leased {

@@ -131,3 +131,26 @@ fn the_decision_read_entry_refuses_a_forged_tag_type_before_basis_preparation() 
         Some(MutationHandlerExecutionDenial::InputNotAdmitted)
     ));
 }
+
+#[test]
+fn foreign_installed_seal_is_stale_at_decision_entry_before_basis_work() {
+    let world = installed_decision_read_world();
+    let donor_world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
+    let request = live_scope();
+    let donor = donor_world
+        .application
+        .installed_schema()
+        .installed_operation(TouchAccountOperation::reference())
+        .unwrap();
+    let mut admission = world.admit(&request);
+    admission.forge_installed_seal_for_test(donor.installed_view());
+    let execution = execute_decision(&world, &request, admission);
+    assert!(execution.did_nothing());
+    assert_projection_refused(
+        execution.denial,
+        AuthorizationRefusal::StaleInstalledOperation,
+    );
+}

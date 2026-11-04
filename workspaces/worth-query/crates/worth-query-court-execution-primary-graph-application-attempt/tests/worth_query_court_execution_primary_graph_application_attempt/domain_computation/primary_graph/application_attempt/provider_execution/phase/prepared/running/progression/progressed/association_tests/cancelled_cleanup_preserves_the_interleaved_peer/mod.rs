@@ -5,9 +5,7 @@ use crate::domain_computation::primary_graph::application_attempt::provider_exec
 #[test]
 fn cancelled_cleanup_preserves_the_interleaved_peer() {
     let world =
-        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(
-            true,
-        );
+        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     world
         .application
         .with_host_advancement(|active_phase| {
@@ -19,9 +17,8 @@ fn cancelled_cleanup_preserves_the_interleaved_peer() {
                 .active_snapshot_count_for_test(&active_phase.borrowed_request_for_test());
             let cancellation = WorthQueryCancellationSource::new();
             let request = WorthQueryRequestScope::new(
-                Some(Instant::now() + Duration::from_secs(60)),
-                cancellation.token(),
-            );
+                Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
+                cancellation.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
             let principal = authenticated_principal(
                 &(host_custody.phase_for_application_for_test(&world.application))
                     .test_host_request_for_test(),

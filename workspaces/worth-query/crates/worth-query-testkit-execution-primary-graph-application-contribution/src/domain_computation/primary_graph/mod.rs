@@ -6,5 +6,7 @@ pub mod application_contribution;
 pub mod causal_inspection;
 #[path = "output_lineage/mod.rs"]
 pub mod output_lineage;
+#[path = "product_operation/mod.rs"]
+pub mod product_operation;
 #[path = "tests/mod.rs"]
 pub mod tests;

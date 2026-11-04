@@ -47,7 +47,10 @@ pub fn with_admitted_facts(
 ) {
     let _observation =
         worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let (admission, selected) = world
         .application
@@ -68,7 +71,11 @@ pub fn with_admitted_facts(
     let source = CancellationSource::new();
     let serial = SerialRequest::from_memory(SerialMemoryBudget::new(None), source.token(), None);
     let execution = ExecutionRequest::serial(&serial);
-    let outcome = (*(*world.application.primary_provider_for_test()).graph_for_test())
+    let outcome = world
+        .application
+        .runtime
+        .primary_provider
+        .graph
         .with_runtime(&execution, |runtime| {
             std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                 body(

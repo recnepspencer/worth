@@ -1,10 +1,10 @@
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::start_managed_application_commit;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::application_attempt_affinity::WorthQueryApplicationAttemptBasis;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::WorthQueryRunningApplicationCommit;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::commit_preparation::prepare_application_commit;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::WorthQueryApplicationCommitPreparation;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::WorthQueryApplicationCommitPreparationRequest;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::application_attempt_affinity::WorthQueryApplicationAttemptAffinityMismatch as M;
+pub use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::start_managed_application_commit;
+pub use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::application_attempt_affinity::WorthQueryApplicationAttemptBasis;
+pub use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::WorthQueryRunningApplicationCommit;
+pub use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::entry_custody::preparation::prepare_application_commit;
+pub use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::WorthQueryApplicationCommitPreparation;
+pub use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::WorthQueryApplicationCommitPreparationRequest;
+pub use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::application_attempt_affinity::WorthQueryApplicationAttemptAffinityMismatch as M;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::preimage_evidence::retained_status_program;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::preimage_evidence::RetentionMutationBreadth;
 pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::authenticated_principal;
@@ -31,13 +31,9 @@ pub type RetainedProgram = WorthQueryApplicationEffectProgram<
 #[test]
 fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_branch_drift() {
     let world =
-        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(
-            true,
-        );
+        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     let foreign_world =
-        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(
-            true,
-        );
+        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     world
         .application
         .with_host_advancement(|active_phase| {
@@ -83,9 +79,7 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
 
             let substitute_lease = WorthQueryApplicationSnapshotLease::acquire_for_test(
                 &phase
-                    .execution_request_for_for_test(
-                        &(*world.application.product_runtime_for_test()),
-                    )
+                    .execution_request_for(&world.application.runtime.product_runtime)
                     .expect("fixture issuer"),
                 lease.handle_for_test().clone(),
                 std::sync::Arc::clone(&(*lease.layout_for_test())),
@@ -110,9 +104,7 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
 
             let foreign_branch_snapshot = lease.handle_for_test().with_runtime_mut_for_test(
                 &phase
-                    .execution_request_for_for_test(
-                        &(*world.application.product_runtime_for_test()),
-                    )
+                    .execution_request_for(&world.application.runtime.product_runtime)
                     .expect("fixture issuer"),
                 |runtime| {
                     let foreign = worth_relational::facade::history::BranchId(
@@ -124,9 +116,7 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
                     runtime
                         .fork_branch(
                             &phase
-                                .execution_request_for_for_test(
-                                    &(*world.application.product_runtime_for_test()),
-                                )
+                                .execution_request_for(&world.application.runtime.product_runtime)
                                 .expect("fixture issuer"),
                             foreign.clone(),
                             fork_basis,
@@ -149,9 +139,7 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
             .is_err());
             assert!(lease.handle_for_test().with_runtime_mut_for_test(
                 &phase
-                    .execution_request_for_for_test(
-                        &(*world.application.product_runtime_for_test())
-                    )
+                    .execution_request_for(&world.application.runtime.product_runtime)
                     .expect("fixture issuer"),
                 |runtime| {
                     runtime
@@ -169,9 +157,7 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
 #[test]
 fn a_real_peer_plan_and_session_cannot_substitute_for_the_captured_attempt() {
     let world =
-        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(
-            true,
-        );
+        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     world
         .application
         .with_host_advancement(|active_phase| {
@@ -300,7 +286,7 @@ pub fn real_terminal_session<'run>(
 ) -> worth_query_execution::facade::domain_computation::WorthQuerySessionBoundReadsAndEffects<'run>
 {
     running
-        .admit_provider_execution_plan(&(*world.application.primary_graph_authority_for_test()))
+        .admit_provider_execution_plan(world.application.runtime.primary_graph_authority())
         .expect("real application authorities must admit their provider plan")
         .bind_application_product_for_test(product)
         .expect("the exact selected product must bind its provider plan")
@@ -340,10 +326,11 @@ pub fn start(
 > {
     let prepared = prepare_application_commit(
         &phase.borrowed_request_for_test(),
-        phase,
-        &world.application,
-        WorthQueryApplicationCommitPreparationRequest::new_for_test(
-            program,
+        WorthQueryApplicationCommitPreparationRequest::new(
+            world
+                .application
+                .validate_commit_program_in_advancement(phase, program)
+                .unwrap_or_else(|outcome| panic!("fixture admission: {outcome:?}")),
             idempotency,
             None,
             None,

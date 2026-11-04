@@ -15,6 +15,11 @@ use worth_query_execution::facade::domain_computation::WorthQueryApplicationAtte
 pub struct FixedTime(Option<u64>);
 
 impl WorthQueryRuntimeTimeSource for FixedTime {
+    fn admission_clock(
+        &self,
+    ) -> worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock {
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()
+    }
     fn current_time(&self) -> Result<SystemTime, WorthQueryRuntimeTimeSourceDenial> {
         self.0
             .map(|milliseconds| UNIX_EPOCH + Duration::from_millis(milliseconds))

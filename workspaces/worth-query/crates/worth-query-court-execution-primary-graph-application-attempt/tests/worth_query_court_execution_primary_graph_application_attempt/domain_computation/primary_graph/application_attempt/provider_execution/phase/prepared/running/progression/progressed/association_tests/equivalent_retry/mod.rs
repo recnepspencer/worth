@@ -3,7 +3,10 @@ use worth_query_testkit_execution_primary_graph_application_contribution::domain
 
 #[test]
 fn genuinely_interleaved_equivalent_sessions_validate_retry_cleanup_separately() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     world
         .application
         .with_application_advancement(

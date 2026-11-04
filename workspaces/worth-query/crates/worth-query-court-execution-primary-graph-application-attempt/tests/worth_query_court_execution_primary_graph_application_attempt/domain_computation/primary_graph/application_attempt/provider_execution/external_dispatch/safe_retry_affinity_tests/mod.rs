@@ -4,7 +4,6 @@ pub use std::sync::atomic::AtomicUsize;
 pub use std::sync::atomic::Ordering;
 pub use std::sync::Arc;
 pub use std::time::Duration;
-pub use std::time::Instant;
 
 pub use worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource;
 pub use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
@@ -234,8 +233,9 @@ fn safe_retry_denies_when_the_handle_carries_no_co_committed_outbox() {
 fn redispatch_names_fresh_authority_and_current_admission_failures_apart() {
     let cancellation = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(60)),
+        Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
         cancellation.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     let (world, _receipt, handle, admission) =
         real_handle_under(215, "notify-death-lapsed", request);

@@ -3,7 +3,10 @@ use worth_query_execution::facade::domain_computation::WorthQueryApplicationQuer
 fn installed_schedule_preserves_exact_slots_and_plan_association() {
     use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
     use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::current_output_source::TestAccountSourceBinding;
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let binding = world
         .application
         .installed_schema()

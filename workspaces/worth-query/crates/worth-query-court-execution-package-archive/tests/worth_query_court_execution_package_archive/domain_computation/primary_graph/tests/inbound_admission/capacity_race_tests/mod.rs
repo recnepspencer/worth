@@ -64,8 +64,11 @@ fn callback_terminal_defers_outstanding_capacity_turnover_until_physical_attempt
                     .unwrap()
             })
             .expect("the fixture read owns its installed host call");
-        let in_flight = (*world.application.primary_provider_for_test())
-            .begin_external_dispatch_in_flight_for_test(&owner)
+        let in_flight = world
+            .application
+            .runtime
+            .primary_provider
+            .begin_external_dispatch_in_flight(&owner)
             .expect("exact original is committed")
             .expect("installed inbound effect reserves physical attempt");
 
@@ -80,8 +83,11 @@ fn callback_terminal_defers_outstanding_capacity_turnover_until_physical_attempt
                 .posture(),
             WorthQueryInboundReceiptPosture::Performed,
         );
-        assert!((*world.application.primary_provider_for_test())
-            .lookup_completed_inbound_for_test(record.correlation())
+        assert!(world
+            .application
+            .runtime
+            .primary_provider
+            .lookup_completed_inbound(record.correlation())
             .unwrap()
             .is_some());
         match world.attempt_dispatch_on(
@@ -145,8 +151,11 @@ fn callback_winning_during_physical_send_keeps_capacity_until_completed_custody_
             ));
             let first_record = first_receipt.dispatch_outbox().unwrap();
             assert_eq!(first_record.correlation().bytes(), &token);
-            assert!((*world.application.primary_provider_for_test())
-                .lookup_completed_inbound_for_test(first_record.correlation())
+            assert!(world
+                .application
+                .runtime
+                .primary_provider
+                .lookup_completed_inbound(first_record.correlation())
                 .unwrap()
                 .is_some());
             assert!(world

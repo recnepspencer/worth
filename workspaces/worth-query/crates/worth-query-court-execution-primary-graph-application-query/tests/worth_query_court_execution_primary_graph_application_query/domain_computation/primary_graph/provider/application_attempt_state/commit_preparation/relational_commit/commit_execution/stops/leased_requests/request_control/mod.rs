@@ -1,6 +1,5 @@
 //! Cancellation and deadline preparation retain the production control cause.
 use crate::process::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::commit_execution::stops::leased_requests::*;
-use std::time::Instant;
 use worth_execution::CancellationSource;
 
 #[test]
@@ -28,7 +27,10 @@ fn deadline_through_both_public_doors() {
         concat!(module_path!(), "::deadline_through_both_public_doors"),
         || {
             let mut request = request(32 * 1024 * 1024, 1_000_000);
-            request.deadline = Some(Instant::now());
+            request.deadline = Some({
+                let clock = worth_execution::MonotonicClock::system();
+                clock.deadline_at(clock.now())
+            });
             check_requests(request, |stop| {
                 let Outcome::Denied(denial) = stop else {
                     panic!("lost deadline cause");

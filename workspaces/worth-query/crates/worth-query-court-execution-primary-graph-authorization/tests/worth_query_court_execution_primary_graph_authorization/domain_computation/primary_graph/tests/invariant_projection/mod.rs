@@ -15,7 +15,10 @@ fn installed_invariant_projection_reads_one_pinned_typed_graph_snapshot() {
     let host_request = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let snapshot = world
         .application
         .with_host_advancement(|phase| world.invariant.snapshot(&phase))
@@ -56,8 +59,14 @@ fn independently_installed_graphs_mint_distinct_projection_identities() {
     let host_request = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let first = installed_authorization_world(true);
-    let second = installed_authorization_world(true);
+    let first = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
+    let second = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let first_snapshot = first
         .application
         .with_host_advancement(|phase| first.invariant.snapshot(&phase))
@@ -87,7 +96,10 @@ fn independently_installed_graphs_mint_distinct_projection_identities() {
 
 #[test]
 fn invariant_entity_identity_exposes_the_resolved_instance() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let completed = world
         .application
         .with_host_advancement(|phase| {
@@ -115,7 +127,10 @@ fn invariant_entity_identity_exposes_the_resolved_instance() {
 
 #[test]
 fn locked_projection_uses_indexes_and_directional_adjacency_without_graph_scans() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let completed = world
         .application
         .with_host_advancement(|phase| {
@@ -169,7 +184,10 @@ fn locked_projection_uses_indexes_and_directional_adjacency_without_graph_scans(
 
 #[test]
 fn optional_locked_resolution_distinguishes_absence_from_ambiguity_and_counts_work() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let completed = world
         .application
         .with_host_advancement(|phase| {
@@ -202,10 +220,11 @@ fn panicking_projection_releases_its_snapshot_without_poisoning_the_graph() {
     let host_request = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let world = installed_authorization_world(true);
-    let baseline = world
-        .invariant
-        .active_snapshot_count_for_test(request_execution);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
+    let baseline = world.invariant.active_snapshot_count(request_execution);
     let panic = world
         .application
         .with_host_advancement(|phase| {
@@ -244,7 +263,10 @@ fn panicking_projection_releases_its_snapshot_without_poisoning_the_graph() {
 
 #[test]
 fn admitted_projection_supplies_its_exact_root_without_an_equality_lookup() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world

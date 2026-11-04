@@ -36,12 +36,13 @@ pub fn slot(name: &'static str) -> Arc<ApplicationQueryResultSlotKey> {
 }
 pub fn shape(slot: &Arc<ApplicationQueryResultSlotKey>) -> WorthQueryApplicationProjectionNode {
     let mut root = row();
-    (*root.fields_mut_for_test()).push(WorthQueryApplicationProjectedField::new_for_test(
-        "root.name".into(),
-        "name".into(),
-        slot.clone(),
-        AspectValue::String("source-secret".into()),
-    ));
+    root.fields.push(WorthQueryApplicationProjectedField {
+        result_path: "root.name".into(),
+        slot_type: "name".into(),
+        slot_key: slot.clone(),
+        content: None,
+        value: AspectValue::String("source-secret".into()),
+    });
     let mut first = row();
     (*first.entity_id_mut_for_test()) = EntityId::new(PartitionId::main(), 10, 1);
     (*first.incoming_relation_mut_for_test()) = Some(RelationId::new(PartitionId::main(), 20, 1));
@@ -66,7 +67,12 @@ fn complete_raw_shape_compares_fields_relations_negative_support_order_and_depth
     let key = slot("content");
     let reference = tree(shape(&key));
     assert!(reference
-        .same_one_hop_content(&tree(shape(&key)), &mut |_| Ok::<_, ()>(()))
+        .same_one_hop_content(
+            &tree(shape(&key)),
+            &mut |_| Ok::<_, ()>(()),
+            &mut |_| (),
+            &mut |_, _| panic!("representation fixture has no Native frames"),
+        )
         .unwrap());
     // Each hostile differs from a separately built lawful twin on one axis.
     for axis in 0..14 {
@@ -118,7 +124,12 @@ fn complete_raw_shape_compares_fields_relations_negative_support_order_and_depth
         }
         assert!(
             !reference
-                .same_one_hop_content(&tree(hostile), &mut |_| Ok::<_, ()>(()))
+                .same_one_hop_content(
+                    &tree(hostile),
+                    &mut |_| Ok::<_, ()>(()),
+                    &mut |_| (),
+                    &mut |_, _| panic!("representation fixture has no Native frames"),
+                )
                 .unwrap(),
             "axis {axis}"
         );
@@ -133,7 +144,12 @@ fn complete_raw_shape_compares_fields_relations_negative_support_order_and_depth
         .relations_mut_for_test())
     .push(relation);
     assert!(!tree(deeper)
-        .same_one_hop_content(&tree(same_deeper), &mut |_| Ok::<_, ()>(()))
+        .same_one_hop_content(
+            &tree(same_deeper),
+            &mut |_| Ok::<_, ()>(()),
+            &mut |_| (),
+            &mut |_, _| panic!("representation fixture has no Native frames"),
+        )
         .unwrap());
 }
 

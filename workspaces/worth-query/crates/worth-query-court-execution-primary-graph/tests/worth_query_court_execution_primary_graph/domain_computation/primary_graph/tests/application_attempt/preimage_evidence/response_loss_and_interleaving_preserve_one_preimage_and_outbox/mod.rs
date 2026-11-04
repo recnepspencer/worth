@@ -6,7 +6,10 @@ fn response_loss_and_interleaving_preserve_one_preimage_and_outbox_bundle() {
     let host_request = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application
@@ -47,7 +50,11 @@ fn response_loss_and_interleaving_preserve_one_preimage_and_outbox_bundle() {
         )
         .unwrap();
     let commit_count = || {
-        (*(*world.application.primary_provider_for_test()).graph_for_test())
+        world
+            .application
+            .runtime
+            .primary_provider
+            .graph
             .with_runtime(request_execution, |runtime| {
                 runtime.history().immutable_commit_count()
             })
@@ -179,8 +186,11 @@ fn response_loss_and_interleaving_preserve_one_preimage_and_outbox_bundle() {
     let original_preimage = original.retained_preimage_for_test().cloned();
     drop(original);
     drop(recovered);
-    let occurrence = (*world.application.primary_provider_for_test())
-        .observe_completed_application_for_test(&commit)
+    let occurrence = world
+        .application
+        .runtime
+        .primary_provider
+        .observe_completed_application(&commit)
         .expect("response loss and receipt disposal preserve the performed source");
     assert_eq!(
         occurrence.commit_evidence().original_authority_for_test(),

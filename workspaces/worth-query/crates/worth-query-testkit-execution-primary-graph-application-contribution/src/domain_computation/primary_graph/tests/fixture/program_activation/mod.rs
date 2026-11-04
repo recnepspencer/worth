@@ -20,10 +20,14 @@ pub fn seed_program_activation(
     world: &AuthorizationWorld,
     revision: &ApplicationProgramRevision,
 ) {
-    let layout = (*(*(*world.application.primary_provider_for_test()).graph_for_test())
-        .layout_for_test())
-    .program_activation()
-    .clone();
+    let layout = world
+        .application
+        .runtime
+        .primary_provider
+        .graph
+        .layout
+        .program_activation()
+        .clone();
     let created = CreatedEntityRef {
         partition_id: PartitionId::main(),
         kind_id: (*layout.entity_kind_for_test()),
@@ -40,8 +44,11 @@ pub fn seed_program_activation(
             )])),
         }),
     ));
-    let request =
-        crate::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
+    let request = worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope::new(
+        None,
+        worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource::new().token(),
+        world.application.product_runtime().clock.admission_clock.clone(),
+    );
     let prepared =
         prepare_relational_mutation_on_application(execution, &world.application, batch, &request);
     let Ok(PublicationOutcome::Performed(performed)) = prepared.execute_for_test(*execution) else {
@@ -55,11 +62,18 @@ pub fn seed_program_activation(
         .unwrap();
     let basis = performed.commit().basis().relational_basis().clone();
     drop(performed.consume());
-    (*(*world.application.primary_provider_for_test()).graph_for_test()).with_runtime_mut_for_test(
-        execution,
-        |runtime| {
-            (*(*world.application.primary_provider_for_test()).graph_for_test())
-                .ensure_primary_indexes_for_basis_for_test(execution, runtime, &basis)
+    world
+        .application
+        .runtime
+        .primary_provider
+        .graph
+        .with_runtime_mut(execution, |runtime| {
+            world
+                .application
+                .runtime
+                .primary_provider
+                .graph
+                .ensure_primary_indexes_for_basis(execution, runtime, &basis)
                 .unwrap();
         },
     );

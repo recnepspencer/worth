@@ -18,7 +18,10 @@ use worth_query_execution::court_doors_for_test::domain_computation::primary_gra
 fn world_recovery_metadata_carries_the_original_computation_and_absence() {
     let _observation =
             worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let product = world
         .application
         .product_runtime()

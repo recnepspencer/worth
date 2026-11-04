@@ -8,7 +8,9 @@ fn ordinary_resolution_keeps_lookup_cancellation_and_deadline() {
     let _observation =
         worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
     for deadline_stop in [false, true] {
-        let world = installed_authorization_world(true);
+        let time = worth_execution::MonotonicTimeController::new().unwrap();
+        let held = time.hold();
+        let world = installed_authorization_world(true, time.clock());
         let selected = world
             .application
             .with_host_advancement(|phase| {
@@ -16,14 +18,17 @@ fn ordinary_resolution_keeps_lookup_cancellation_and_deadline() {
             })
             .unwrap();
         let cancellation = WorthQueryCancellationSource::new();
-        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(1);
-        let request =
-            WorthQueryRequestScope::new(deadline_stop.then_some(deadline), cancellation.token());
+        let deadline = held + std::time::Duration::from_secs(1);
+        let request = WorthQueryRequestScope::new(
+            deadline_stop.then_some(deadline),
+            cancellation.token(),
+            time.clock(),
+        );
         world
             .application
             .with_application_advancement(&request, |phase| {
                 let control = if deadline_stop {
-                    FreshnessCancellationGuardForTest::deadline_on_this_thread(deadline)
+                    FreshnessCancellationGuardForTest::deadline_on_this_thread(time.clone(), deadline)
                 } else {
                     FreshnessCancellationGuardForTest::install_on_this_thread(cancellation, 0)
                 };

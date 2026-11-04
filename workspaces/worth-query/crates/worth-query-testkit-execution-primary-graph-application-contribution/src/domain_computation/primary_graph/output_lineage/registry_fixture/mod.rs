@@ -36,9 +36,7 @@ pub fn recorded_settlements(
     Vec<Arc<RecordedSettlementIdentity>>,
 ) {
     let world =
-        crate::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(
-            true,
-        );
+        crate::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     let product = world
         .application
         .product_runtime()

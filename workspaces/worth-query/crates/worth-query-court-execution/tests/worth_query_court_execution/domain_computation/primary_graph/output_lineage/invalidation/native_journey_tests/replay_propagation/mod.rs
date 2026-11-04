@@ -6,7 +6,10 @@ use crate::domain_computation::primary_graph::output_lineage::invalidation::nati
 
 #[test]
 fn retained_re_registration_marks_existing_consumers_pending() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let selected = world
         .application
         .with_host_advancement(|phase| {

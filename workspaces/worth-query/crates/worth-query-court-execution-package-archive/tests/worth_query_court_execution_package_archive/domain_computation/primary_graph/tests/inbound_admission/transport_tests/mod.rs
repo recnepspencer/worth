@@ -38,8 +38,11 @@ fn synchronous_completed_and_later_signed_callback_share_one_world_terminal() {
     let receipt = { world.commit_dispatch(91, "synchronous-rail-completed") };
     assert_eq!(transport.0.load(Ordering::Acquire), 1);
     let record = receipt.dispatch_outbox().expect("co-committed dispatch");
-    let terminal = (*world.application.primary_provider_for_test())
-        .lookup_completed_inbound_for_test(record.correlation())
+    let terminal = world
+        .application
+        .runtime
+        .primary_provider
+        .lookup_completed_inbound(record.correlation())
         .expect("complete derived index")
         .expect("Completed enters World terminal owner");
     assert_eq!(
@@ -79,8 +82,11 @@ fn synchronous_completed_and_later_signed_callback_share_one_world_terminal() {
     ));
     assert_eq!(transport.0.load(Ordering::Acquire), 1);
     assert_eq!(
-        (*world.application.primary_provider_for_test())
-            .lookup_completed_inbound_for_test(record.correlation())
+        world
+            .application
+            .runtime
+            .primary_provider
+            .lookup_completed_inbound(record.correlation())
             .unwrap()
             .unwrap()
             .completion_world_commit_for_test(),
@@ -148,20 +154,21 @@ fn transport_candidate_rejects_another_owner_and_terminal_matches_later_attempt(
                 .product_incarnation(),
         )
         .unwrap();
-    world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request_for_test(); assert!(matches!(
-        (*world.application.primary_provider_for_test()).prepare_installed_transport_completion_candidate_for_test(&host_custody.borrowed_request_for_test(),
-            lease.relational_basis_for_test(), &other_owner, &completed, &other_binding,
+    world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); assert!(matches!(
+        world.application.runtime.primary_provider.prepare_installed_transport_completion_candidate(&host_custody.borrowed_request_for_test(),
+            lease.relational_basis(), &other_owner, &completed, &other_binding,
         ),
         Err(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::inbound_completion::WorthQueryInboundCompletionPreparationDenial::DispatchOwnerMismatch)
     )) }).expect("the fixture read owns its installed host call");
 
-    let evidence = InstalledTransportCompletion::from_observed_dispatch_for_test(
-        first_owner.clone(),
-        &completed,
-    )
-    .unwrap();
-    let in_flight = (*world.application.primary_provider_for_test())
-        .begin_external_dispatch_in_flight_for_test(&first_owner)
+    let evidence =
+        InstalledTransportCompletion::from_observed_dispatch(first_owner.clone(), &completed)
+            .unwrap();
+    let in_flight = world
+        .application
+        .runtime
+        .primary_provider
+        .begin_external_dispatch_in_flight(&first_owner)
         .unwrap()
         .unwrap();
     world
@@ -187,8 +194,11 @@ fn transport_candidate_rejects_another_owner_and_terminal_matches_later_attempt(
         })
         .expect("fixture owner admits its advancement");
 
-    let terminal = (*world.application.primary_provider_for_test())
-        .lookup_completed_inbound_for_test(first_owner.record().correlation())
+    let terminal = world
+        .application
+        .runtime
+        .primary_provider
+        .lookup_completed_inbound(first_owner.record().correlation())
         .unwrap()
         .unwrap();
     let later_evidence =
@@ -218,12 +228,18 @@ fn two_real_completed_attempts_share_the_first_world_terminal() {
         .application
         .admit_external_dispatch_attempt_for_test(owner.clone())
         .unwrap();
-    let first_lease = (*world.application.primary_provider_for_test())
-        .begin_external_dispatch_in_flight_for_test(&owner)
+    let first_lease = world
+        .application
+        .runtime
+        .primary_provider
+        .begin_external_dispatch_in_flight(&owner)
         .unwrap()
         .unwrap();
-    let second_lease = (*world.application.primary_provider_for_test())
-        .begin_external_dispatch_in_flight_for_test(&owner)
+    let second_lease = world
+        .application
+        .runtime
+        .primary_provider
+        .begin_external_dispatch_in_flight(&owner)
         .unwrap()
         .unwrap();
     let transport = CompletingTransport(AtomicUsize::new(0));
@@ -265,16 +281,19 @@ fn two_real_completed_attempts_share_the_first_world_terminal() {
         })
         .expect("fixture owner admits its advancement");
 
-    let winner = (*world.application.primary_provider_for_test())
-        .lookup_completed_inbound_for_test(owner.record().correlation())
+    let winner = world
+        .application
+        .runtime
+        .primary_provider
+        .lookup_completed_inbound(owner.record().correlation())
         .unwrap()
         .unwrap();
 
     assert_eq!(
         (*world
             .application
-            .primary_provider_for_test())
-            .begin_external_dispatch_in_flight_for_test(&owner)
+            .runtime.primary_provider
+            .begin_external_dispatch_in_flight(&owner)
             .err(),
         Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::outstanding_dispatch::in_flight::WorthQueryOutstandingInFlightDenial::TerminalReached),
         "a physical attempt after the World terminal names completion, not a mismatch"
@@ -306,9 +325,12 @@ fn two_real_completed_attempts_share_the_first_world_terminal() {
 
     assert!(!world
         .application
-        .has_retained_installed_transport_completion_for_test(owner.record().correlation()));
-    let after = (*world.application.primary_provider_for_test())
-        .lookup_completed_inbound_for_test(owner.record().correlation())
+        .has_retained_installed_transport_completion(owner.record().correlation()));
+    let after = world
+        .application
+        .runtime
+        .primary_provider
+        .lookup_completed_inbound(owner.record().correlation())
         .unwrap()
         .unwrap();
     assert_eq!(

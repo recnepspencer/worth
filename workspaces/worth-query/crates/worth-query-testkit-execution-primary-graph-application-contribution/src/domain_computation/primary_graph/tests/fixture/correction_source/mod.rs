@@ -35,8 +35,8 @@ impl PreparedLabelCorrection {
     }
 }
 
-pub fn install() -> AuthorizationWorld {
-    let mut world = crate::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(true);
+pub fn install(clock: worth_execution::MonotonicClock) -> AuthorizationWorld {
+    let mut world = crate::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(true, clock);
     crate::domain_computation::primary_graph::tests::fixture::correction_source::program::install(
         &mut world,
     );
@@ -62,8 +62,7 @@ pub fn edit(
     key: &str,
     label: &str,
 ) -> WorthQueryApplicationCommitReceipt {
-    let request =
-        crate::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
+    let request = request_scope(world);
     world.application.with_application_advancement(&request, |phase| {
         let input = world.application.capture_operation_input_in_advancement::<LabelInput>(
             &phase, &worth_query_execution::publication_boundary::program_publication_access(), &request,
@@ -94,8 +93,7 @@ pub fn publish(
     world: &AuthorizationWorld,
     prepared: PreparedLabelCorrection,
 ) -> WorthQueryApplicationCommitOutcome {
-    let request =
-        crate::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
+    let request = request_scope(world);
     world
         .application
         .with_application_advancement(&request, |phase| {
@@ -132,8 +130,7 @@ pub fn publish_without_causality(
     world: &AuthorizationWorld,
     prepared: PreparedLabelCorrection,
 ) -> WorthQueryApplicationCommitOutcome {
-    let request =
-        crate::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
+    let request = request_scope(world);
     world
         .application
         .with_application_advancement(&request, |phase| {
@@ -172,8 +169,7 @@ pub fn replay(
     world: &AuthorizationWorld,
     binding: WorthQueryApplicationIdempotencyBinding,
 ) -> WorthQueryApplicationIdempotencyResolution {
-    let request =
-        crate::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
+    let request = request_scope(world);
     world
         .application
         .with_application_advancement(&request, |phase| {
@@ -185,6 +181,19 @@ pub fn replay(
                 .into_resolution()
         })
         .unwrap()
+}
+
+pub fn request_scope(
+    world: &AuthorizationWorld,
+) -> worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope {
+    use worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource;
+    use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+    let clock = world.authorization_time.admission_clock.clone();
+    WorthQueryRequestScope::new(
+        Some(clock.now() + std::time::Duration::from_secs(60)),
+        WorthQueryCancellationSource::new().token(),
+        clock,
+    )
 }
 
 #[path = "label_edit/mod.rs"]

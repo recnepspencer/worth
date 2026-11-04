@@ -8,7 +8,6 @@ use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_co
 use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationResourceDenial as Resource;
 use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
 use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionDenialKind as Kind;
-use std::time::Instant;
 use worth_execution::CancellationSource;
 
 #[test]
@@ -33,7 +32,7 @@ fn restoration_preserves_real_execution_refusals() {
                     kind,
                     Kind::ExecutionResource {
                         denial: Resource::WorkExhausted,
-                        partition_identity: Some(1),
+                        partition_identity: None,
                         policy_ancestor: None
                     }
                 );
@@ -51,7 +50,10 @@ fn restoration_preserves_real_execution_refusals() {
                 let mut canceled = request();
                 canceled.cancellation = source.token();
                 let mut expired = request();
-                expired.deadline = Some(Instant::now());
+                expired.deadline = Some({
+                    let clock = worth_execution::MonotonicClock::system();
+                    clock.deadline_at(clock.now())
+                });
                 for (request, expected) in
                     [(canceled, Control::Cancelled), (expired, Control::TimedOut)]
                 {

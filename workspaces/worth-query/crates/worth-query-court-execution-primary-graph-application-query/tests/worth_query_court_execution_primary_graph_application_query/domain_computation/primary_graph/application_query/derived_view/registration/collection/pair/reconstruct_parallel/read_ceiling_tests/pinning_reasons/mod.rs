@@ -38,7 +38,10 @@ fn worker_pin_keeps_index_absence_at_the_root() {
 pub fn check(case: Case) {
     let _observation =
         worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let scope = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &scope);
     world
@@ -160,7 +163,10 @@ pub fn missing_door_index(live: bool, predicate_missing: bool) {
     use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::read_execution::live_target::read_live_target;
     let _observation =
         worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let scope = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &scope);
     world
@@ -202,7 +208,7 @@ pub fn missing_door_index(live: bool, predicate_missing: bool) {
                     current_controls(&scope),
                 )
                 .unwrap();
-            let graph = &(*(*world.application.primary_provider_for_test()).graph_for_test());
+            let graph = &world.application.runtime.primary_provider.graph;
             // Keep all installed bindings except the precise missing index.
             let mut layout = installed_layout();
             for (key, field) in layout.equality_fields_mut_for_test() {

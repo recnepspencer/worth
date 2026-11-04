@@ -5,9 +5,7 @@ use crate::domain_computation::primary_graph::application_attempt::provider_exec
 #[test]
 fn stale_read_set_cleanup_preserves_the_interleaved_peer() {
     let world =
-        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(
-            true,
-        );
+        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     world.application.with_host_advancement(|active_phase| {
 let host_custody = active_phase.test_host_request_for_test();
         let phase = &active_phase;

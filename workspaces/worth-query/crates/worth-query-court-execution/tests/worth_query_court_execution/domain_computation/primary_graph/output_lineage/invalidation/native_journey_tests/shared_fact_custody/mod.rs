@@ -8,7 +8,10 @@ use worth_query_testkit_execution_primary_graph_application_contribution::domain
 #[test]
 fn shared_original_facts_survive_restored_prerequisite_custody() {
     let _observation = worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     world.application.with_host_advancement(|phase| {
         let custody = phase.test_host_request_for_test();
         let execution = custody.borrowed_request_for_test();

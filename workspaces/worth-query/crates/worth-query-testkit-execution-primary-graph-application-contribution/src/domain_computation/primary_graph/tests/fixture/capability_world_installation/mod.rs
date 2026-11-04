@@ -117,6 +117,9 @@ pub fn capability_spec(
     capability_grants: CapabilityGrantPopulation,
 ) -> AuthorizationWorldSpec<'_> {
     AuthorizationWorldSpec {
+        admission_clock:
+            worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(
+            ),
         owner_bindings: &[],
         blocked: false,
         principal_count,

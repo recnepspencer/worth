@@ -1,7 +1,10 @@
 use crate::process::domain_computation::primary_graph::tests::application_attempt::predecode_admission::*;
 #[test]
 fn installed_handler_reader_admits_actual_raw_scalar_and_uses_declared_decoder() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let completed = world
             .application
@@ -32,7 +35,10 @@ fn installed_handler_reader_admits_actual_raw_scalar_and_uses_declared_decoder()
 fn actual_admission_denial_is_preserved_without_a_decoded_value() {
     #[derive(Debug, PartialEq)]
     struct OwnerDenied(usize);
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let result = world
             .application
@@ -189,8 +195,14 @@ fn isolated_ordinary_field_decode() {
 
 #[test]
 fn undeclared_and_foreign_reads_deny_before_raw_callback() {
-    let world = installed_authorization_world(true);
-    let other = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
+    let other = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let foreign = other
         .application

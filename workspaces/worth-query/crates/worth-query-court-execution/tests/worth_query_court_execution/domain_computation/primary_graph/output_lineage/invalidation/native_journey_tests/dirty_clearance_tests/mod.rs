@@ -19,7 +19,10 @@ use worth_relational::facade::transactions::RelationSpec;
 
 #[test]
 fn native_reverification_clears_only_the_verified_live_image() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let selected = world
         .application
         .with_host_advancement(|phase| {

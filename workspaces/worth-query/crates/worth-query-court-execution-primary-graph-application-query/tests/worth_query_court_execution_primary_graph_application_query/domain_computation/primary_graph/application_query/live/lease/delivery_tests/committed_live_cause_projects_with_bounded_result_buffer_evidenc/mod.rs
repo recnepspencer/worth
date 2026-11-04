@@ -3,7 +3,10 @@ use crate::domain_computation::primary_graph::application_query::live::lease::de
 
 #[test]
 fn committed_live_cause_projects_with_bounded_result_buffer_evidence() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let retained_predecessor = world
         .application

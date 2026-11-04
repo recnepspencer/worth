@@ -82,7 +82,9 @@ pub fn derive(
     wire_key: &str,
 ) -> PreparedLabelCorrection {
     let request =
-        crate::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
+        crate::domain_computation::primary_graph::tests::fixture::correction_source::request_scope(
+            world,
+        );
     world.application.with_application_advancement(&request, |phase| {
         let principal = crate::domain_computation::primary_graph::tests::fixture::authentication::authenticate_external(
             world.application.installed_schema(), "alice", std::time::Duration::from_secs(120), &request,

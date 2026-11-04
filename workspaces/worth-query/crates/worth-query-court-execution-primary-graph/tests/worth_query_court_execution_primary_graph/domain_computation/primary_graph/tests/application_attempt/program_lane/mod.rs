@@ -6,7 +6,10 @@ use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeI
 
 #[test]
 fn declaration_derived_program_requirement_denies_the_raw_commit_entry() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application
@@ -142,11 +145,16 @@ fn declaration_derived_program_requirement_denies_the_raw_commit_entry() {
 
 #[test]
 fn installed_program_denies_raw_commit_for_an_unlisted_operation() {
-    let mut world = installed_authorization_world(true);
-    assert!(!(*world.application.program_required_operations_for_test())
-        .contains(&TypeId::of_for_test::<TouchAccountOperation>()));
-    (*world.application.program_support_mut_for_test()) = Some(installed_program_support(
-        &(*world.application.installed_schema_for_test()),
+    let mut world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
+    assert!(!world
+        .application
+        .program_required_operations
+        .contains(&TypeId::of::<TouchAccountOperation>()));
+    world.application.program_support = Some(installed_program_support(
+        &world.application.installed_schema,
     ));
     let request = live_scope();
     let principal = world
@@ -228,9 +236,9 @@ fn installed_program_denies_raw_commit_for_an_unlisted_operation() {
 #[test]
 fn program_output_producer_names_an_operation_not_installed_as_conditional() {
     {
-        let mut world = installed_authorization_world(true);
-        (*world.application.program_support_mut_for_test()) = Some(installed_program_support(
-            &(*world.application.installed_schema_for_test()),
+        let mut world = installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
+        world.application.program_support = Some(installed_program_support(
+            &world.application.installed_schema,
         ));
         let request = live_scope();
         let principal = world

@@ -9,8 +9,8 @@ fn foreign_runtime_phase_refuses_query_and_commit_before_source_read() {
         let _restore = Restore(place(placement), bound(None));
         let mut control_work = None;
         for foreign in [false, true] {
-            let a = installed_authorization_world(true);
-            let b = installed_authorization_world(true);
+            let a = installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
+            let b = installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
             let request = live_scope();
             let a_principal = a
                 .application
@@ -142,7 +142,10 @@ fn foreign_runtime_phase_refuses_query_and_commit_before_source_read() {
 fn mutable_principal_reader_moves_the_installed_source_counter() {
     let _observation =
         worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let external = world.authenticate("alice", std::time::Duration::from_secs(60), &request);
     let selected = world

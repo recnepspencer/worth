@@ -23,7 +23,10 @@ pub fn assert_live_reservation_denial(
     identity: u8,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application
@@ -52,10 +55,16 @@ pub fn assert_live_reservation_denial(
         .unwrap();
     let product_before = selected.product().selected_commit().clone();
     let bridge_before = bridge_head_commit(&world, resource_request);
-    let _live = (*world.application.primary_provider_for_test())
-        .observe_application_commit_causality_for_test(selected.product());
-    (*world.application.primary_provider_for_test())
-        .set_application_commit_causality_limits_for_test(batch_capacity);
+    let _live = world
+        .application
+        .runtime
+        .primary_provider
+        .observe_application_commit_causality(selected.product());
+    world
+        .application
+        .runtime
+        .primary_provider
+        .set_application_commit_causality_limits(batch_capacity);
     let program = world
         .application
         .with_application_advancement(&request, |phase| {
@@ -98,8 +107,11 @@ pub fn assert_live_reservation_denial(
     assert_eq!(product_after.product().selected_commit(), &product_before);
     assert_eq!(bridge_head_commit(&world, resource_request), bridge_before);
     assert_eq!(
-        (*world.application.primary_provider_for_test())
-            .published_application_commit_count_for_test(),
+        world
+            .application
+            .runtime
+            .primary_provider
+            .published_application_commit_count(),
         0
     );
     world
@@ -121,8 +133,9 @@ pub fn bridge_head_commit(
 ) -> worth_runtime_bridge::facade::TruthCommitIdentity {
     (*(*world
         .application
-        .primary_provider_for_test())
-        .graph_for_test())
+        .runtime
+        .primary_provider
+        .graph
         .relational_bridge_source()
         .load_branch_head_patch(
             &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_branch::primary_truth_branch_identity(),

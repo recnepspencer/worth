@@ -97,7 +97,7 @@ pub fn observe(
     runtime
         .with_application_advancement(&request, |phase| {
             let execution = phase
-                .execution_request_for_for_test(&(*runtime.product_runtime_for_test()))
+                .execution_request_for(&runtime.runtime.product_runtime)
                 .unwrap();
             let current = runtime
                 .on_branch(runtime.current_world())

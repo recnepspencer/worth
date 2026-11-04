@@ -10,7 +10,7 @@ fn completion_failure_publishes_no_member_or_suffix() {
     const FAILURE: usize = 0;
     for width in [None, Some(1), Some(2), Some(5)] {
         let cancellation = WorthQueryCancellationSource::new();
-        let scope = WorthQueryRequestScope::new(None, cancellation.token());
+        let scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let policy = worth_foundational::ExecutionRequestPolicy::for_workers(
             worth_foundational::ExecutionPosture::Automatic,
             worth_foundational::DeterminismContract::CanonicalBitwise,

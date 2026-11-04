@@ -1,6 +1,5 @@
 pub use std::num::NonZeroUsize;
 pub use std::time::Duration;
-pub use std::time::Instant;
 
 pub(super) use crate::domain_computation::primary_graph::tests::application_query::lifecycle_mutations::disable_mapping;
 pub(super) use crate::domain_computation::primary_graph::tests::application_query::lifecycle_mutations::revoke_account_ownership;
@@ -20,8 +19,14 @@ pub use worth_query_declaration::facade::application_query::ApplicationQueryPara
 
 #[test]
 fn foreign_runtime_rejects_plan_and_releases_its_basis() {
-    let world = installed_authorization_world(true);
-    let foreign = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
+    let foreign = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
@@ -113,7 +118,10 @@ fn foreign_runtime_rejects_plan_and_releases_its_basis() {
 
 #[test]
 fn exact_query_observation_reuses_its_live_snapshot_for_fresh_security_stages() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let selected = world
@@ -200,11 +208,15 @@ fn exact_query_observation_reuses_its_live_snapshot_for_fresh_security_stages() 
 
 #[test]
 fn cancellation_after_admission_releases_basis_before_projection() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let cancellation = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(60)),
+        Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
         cancellation.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world

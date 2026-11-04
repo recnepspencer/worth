@@ -9,7 +9,10 @@ use worth_query_execution::facade::domain_computation::WorthQueryPrincipalResolu
 
 #[test]
 fn owner_retained_program_basis_survives_a_new_head_without_admitting_foreign_or_direct_reads() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let selected = world
         .application
         .with_host_advancement(|host_phase| {
@@ -56,7 +59,10 @@ fn owner_retained_program_basis_survives_a_new_head_without_admitting_foreign_or
     assert!(source_basis_is_admitted(&source, current, true));
     assert!(!source_basis_is_admitted(&source, current, false));
 
-    let foreign = installed_authorization_world(true);
+    let foreign = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let selected_foreign = foreign
         .application
         .with_host_advancement(|host_phase| {

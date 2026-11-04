@@ -11,7 +11,10 @@ use std::time::Duration;
 
 #[test]
 fn absent_admitted_demand_refuses_with_required_successor_state_unavailable() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let scope = live_scope();
     let principal = world.authenticate("alice", Duration::from_secs(60), &scope);
     // This is the emptied state after custody releases its admitted demand.

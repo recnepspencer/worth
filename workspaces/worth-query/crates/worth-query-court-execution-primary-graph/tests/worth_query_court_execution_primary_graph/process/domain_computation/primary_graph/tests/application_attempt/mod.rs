@@ -26,7 +26,10 @@ pub(crate) use worth_query_testkit_execution_primary_graph_application_attempt::
 pub(crate) use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::tests::application_attempt::decision_currentness::assert_product_basis_stale;
 #[test]
 fn concurrent_equivalent_attempts_publish_one_transaction() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application
@@ -93,7 +96,10 @@ fn concurrent_equivalent_attempts_publish_one_transaction() {
 }
 #[test]
 fn preparation_commit_recovery_and_retry_perform_no_execution_digest_derivation() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application

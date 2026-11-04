@@ -8,9 +8,7 @@ pub struct TestClock;
 pub fn granular_installation(
 ) -> worth_query_execution::facade::domain_computation::WorthQueryGranularInvalidationInstallation {
     let world =
-        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(
-            true,
-        );
+        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     world.application.granular_invalidation_installation()
 }
 

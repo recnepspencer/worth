@@ -4,7 +4,10 @@ use crate::domain_computation::primary_graph::application_contribution::partitio
 #[test]
 fn a_tree_stop_keeps_no_kernel_completion_receipt_with_reuse_either_way() {
     let _observation = QueryObservation::install_on_this_thread();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let installed = installed(StatusRead::Gather(1), sum);
     let request = live_scope();
     let policy = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy(

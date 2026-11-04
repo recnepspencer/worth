@@ -106,7 +106,7 @@ fn composed_field_refusal_preserves_configuration_and_seed() {
     let configured = Arc::new(AtomicUsize::new(0));
     let seeded = Cell::new(0);
     let limits = worth_query_execution::facade::application_installation::WorthQueryInMemoryApplicationLimits::new(
-        worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(),
+        worth_query_execution::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()),
         worth_query_execution::facade::domain_computation::WorthQueryApplicationQueryResourceProfile::new(
             std::num::NonZeroUsize::new(128).unwrap()),
         worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development(),

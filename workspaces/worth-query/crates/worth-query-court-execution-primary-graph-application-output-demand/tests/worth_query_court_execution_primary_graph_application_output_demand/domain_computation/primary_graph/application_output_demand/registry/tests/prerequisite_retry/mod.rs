@@ -79,12 +79,8 @@ fn an_upstream_retired_after_the_execution_read_it_is_a_retryable_stale_claim() 
     // settlement of its demand retired it.
     let (_lineage, retired) = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::output_lineage::registry_fixture::recorded_settlement();
     let world =
-        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(
-            true,
-        );
-    let graph = (*world.application.runtime_for_test())
-        .primary_graph()
-        .unwrap();
+        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
+    let graph = world.application.runtime.primary_graph().unwrap();
     let selected = graph
         .integration_handle_for_test()
         .with_runtime(request_execution, |runtime| {

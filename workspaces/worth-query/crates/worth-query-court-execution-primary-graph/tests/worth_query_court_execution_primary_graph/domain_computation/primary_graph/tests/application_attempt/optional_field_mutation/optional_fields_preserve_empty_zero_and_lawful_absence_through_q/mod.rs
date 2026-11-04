@@ -3,7 +3,10 @@ use crate::domain_computation::primary_graph::tests::application_attempt::option
 
 #[test]
 fn optional_fields_preserve_empty_zero_and_lawful_absence_through_query() {
-    let world = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(true);
+    let world = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application

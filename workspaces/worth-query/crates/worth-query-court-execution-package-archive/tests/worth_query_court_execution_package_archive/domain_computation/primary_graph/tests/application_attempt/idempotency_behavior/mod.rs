@@ -13,7 +13,10 @@ pub use worth_execution::ExecutionAllocationPolicy;
 
 #[test]
 fn equivalent_retry_prepared_at_the_original_product_recovers_exact_owner_evidence() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application
@@ -94,7 +97,10 @@ fn equivalent_retry_prepared_at_the_original_product_recovers_exact_owner_eviden
 
 #[test]
 fn same_caller_intent_cannot_cross_installed_operation_identity() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application
@@ -178,7 +184,10 @@ fn same_caller_intent_cannot_cross_installed_operation_identity() {
 
 #[test]
 fn same_operation_intent_cannot_cross_an_admitted_scope() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application

@@ -3,6 +3,7 @@ use crate::domain_computation::primary_graph::tests::fixture::authorization_worl
 pub fn publish_authorization_world(
     phase: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     prepared: PreparedAuthorizationWorld,
+    admission_clock: worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock,
 ) -> AuthorizationWorld {
     let PreparedAuthorizationWorld {
         runtime,
@@ -14,7 +15,7 @@ pub fn publish_authorization_world(
     crate::domain_computation::primary_graph::tests::fixture::handler_installation::install_fixture_handlers(&schema, &mut bootstrap);
 
     let invariant = bootstrap.retain_invariant_projection_authority();
-    let authorization_time = AuthorizationTimeController::default();
+    let authorization_time = AuthorizationTimeController::on_clock(admission_clock);
     let faults = std::sync::Arc::new(
         worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::tests::fault_controller::PrimaryGraphFaultController::default(),
     );

@@ -17,7 +17,7 @@ fn lost_terminal_index_denies_until_bounded_owner_reconstruction() {
             .posture(),
         Posture::Performed
     );
-    let provider = &(*world.application.primary_provider_for_test());
+    let provider = &world.application.runtime.primary_provider;
     let sealed = provider
         .lookup_completed_inbound_for_test(&correlation)
         .unwrap()

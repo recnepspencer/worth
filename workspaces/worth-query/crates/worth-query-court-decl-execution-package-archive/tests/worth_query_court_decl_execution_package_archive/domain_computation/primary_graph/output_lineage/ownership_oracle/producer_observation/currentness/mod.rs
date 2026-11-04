@@ -10,16 +10,16 @@ fn retained_currentness_refuses_corrupted_fact_coordinates_before_clean_marks() 
     let original = crate::domain_computation::primary_graph::output_lineage::ownership_oracle::journey::complete(&runtime);
     let receipt = original.application_commit_receipt().unwrap();
     runtime.with_host_advancement(|phase| {
-        let execution = phase.execution_request_for_for_test(&(*runtime.product_runtime_for_test())).unwrap();
+        let execution = phase.execution_request_for(&runtime.runtime.product_runtime).unwrap();
         let selected = runtime.on_branch(runtime.current_world()).select(&phase).unwrap();
         let mut read = {
-            let lineage =(* (*runtime.primary_provider_for_test()).graph_for_test()).output_lineage.lock().unwrap();
-            lineage.source_facts_for_receipt_for_test((*runtime.runtime_for_test()).authority_identity().as_u64(),
-                &(*runtime.installed_schema_for_test()).binding_identity(), selected.product().observation_for_test(), receipt, &execution).unwrap().unwrap()
+            let lineage = runtime.runtime.primary_provider.graph.output_lineage.lock().unwrap();
+            lineage.source_facts_for_receipt(runtime.runtime.authority_identity().as_u64(),
+                &runtime.installed_schema.binding_identity(), selected.product().observation(), receipt, &execution).unwrap().unwrap()
         };
-        assert!(!(*read.facts_for_test()).as_ref().unwrap().is_empty_for_test(), "real retained producer facts");(*
-        (*runtime.primary_provider_for_test()).graph_for_test()).with_runtime(&execution, |native| {
-            selected.require_current_read_for_test(&execution, native, &read, Some(receipt)).unwrap();
+        assert!(!read.facts.as_ref().unwrap().is_empty(), "real retained producer facts");
+        runtime.runtime.primary_provider.graph.with_runtime(&execution, |native| {
+            selected.require_current_read(&execution, native, &read, Some(receipt)).unwrap();
             for (valid, requirement, expected) in [
                 (Requirement::NativeFactRevisionUnavailable(0), Requirement::NativeFactRevisionUnavailable(usize::MAX), Reason::NativeFactRevisionUnavailable),
                 (Requirement::IndexedSelectionFactDenied(0, Indexed::Overflow), Requirement::IndexedSelectionFactDenied(usize::MAX, Indexed::Overflow), Reason::IndexedSelectionFactDenied(Indexed::Overflow)),

@@ -14,7 +14,10 @@ use worth_query_execution::facade::domain_computation::WorthQueryPrincipalResolu
 
 #[test]
 fn a_marked_fact_is_reverified_at_the_real_native_snapshot() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     world
         .application
         .with_host_advancement(|phase| {
@@ -49,9 +52,12 @@ fn a_marked_fact_is_reverified_at_the_real_native_snapshot() {
                 status.field_path().clone(),
             );
 
-            (*(*world.application.primary_provider_for_test()).graph_for_test()).with_runtime(
-                &execution,
-                |runtime| {
+            world
+                .application
+                .runtime
+                .primary_provider
+                .graph
+                .with_runtime(&execution, |runtime| {
                     let basis = runtime
                         .admit_branch_basis(&runtime.main_branch_identity())
                         .unwrap();
@@ -118,7 +124,10 @@ fn a_clean_settlement_reuses_without_fact_reverification() {
     use std::sync::Mutex;
     use std::sync::OnceLock;
 
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     world
         .application
         .with_host_advancement(|phase| {

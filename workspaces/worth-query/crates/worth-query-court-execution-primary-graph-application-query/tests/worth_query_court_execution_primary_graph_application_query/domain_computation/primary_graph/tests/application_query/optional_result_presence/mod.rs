@@ -1,5 +1,6 @@
 use std::num::NonZeroUsize;
 use std::time::Duration;
+use worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock;
 
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::movement::Movement;
 
@@ -29,7 +30,7 @@ use worth_query_execution::facade::domain_computation::WorthQueryPrincipalResolu
 
 #[test]
 fn optional_result_field_distinguishes_present_value_from_lawful_absence() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(true, WorthQueryAdmissionClock::system());
 
     let present = world
         .application
@@ -49,7 +50,7 @@ fn optional_result_field_distinguishes_present_value_from_lawful_absence() {
 
 #[test]
 fn absent_optional_source_stays_current_across_sibling_edit_but_not_presence_change() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(true, WorthQueryAdmissionClock::system());
     let (_, absent_fact, account) = world
         .application
         .with_host_advancement(|phase| {

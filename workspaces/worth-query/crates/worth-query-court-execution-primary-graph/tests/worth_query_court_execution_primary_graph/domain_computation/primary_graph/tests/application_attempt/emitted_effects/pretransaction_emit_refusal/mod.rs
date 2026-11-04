@@ -2,7 +2,10 @@ use crate::domain_computation::primary_graph::tests::application_attempt::emitte
 
 #[test]
 fn rejection_before_transaction_publishes_no_emit_causality() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application
@@ -51,8 +54,11 @@ fn rejection_before_transaction_publishes_no_emit_causality() {
         "rejected transaction claimed commit: {outcome:?}"
     );
     assert_eq!(
-        (*world.application.primary_provider_for_test())
-            .published_application_commit_count_for_test(),
+        world
+            .application
+            .runtime
+            .primary_provider
+            .published_application_commit_count(),
         0
     );
 }

@@ -12,10 +12,8 @@ fn patch_read_failure_preserves_storage_cause_and_observed_committed_context() {
     let host = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     let world =
-        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(
-            true,
-        );
-    let graph = &(*(*world.application.primary_provider_for_test()).graph_for_test());
+        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
+    let graph = &world.application.runtime.primary_provider.graph;
     let (commit, position) = graph.with_runtime(execution, |runtime| {
         (
             runtime

@@ -2,7 +2,6 @@
 use crate::domain_computation::primary_graph::tests::application_query::derived_view::*;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::PublicAccountMembershipQuery;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::PublicScopedAccountSummaryQuery;
-use std::time::Instant;
 use worth_execution::CancellationSource;
 use worth_execution::CancellationToken;
 use worth_execution::ExecutionRequest;
@@ -12,7 +11,10 @@ fn zero_memory_cancellation_and_expired_deadline_refuse_before_any_read() {
     let _owner = worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::tests::fixture::reconstruction_execution::isolated_request_owner();
     let _observation =
         worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let scope = live_scope();
     let selected = world
         .application
@@ -116,7 +118,10 @@ fn zero_memory_cancellation_and_expired_deadline_refuse_before_any_read() {
                                 } else {
                                     CancellationToken::new()
                                 },
-                                deadline: (index == 2).then(Instant::now),
+                                deadline: (index == 2).then(|| {
+                                    let clock = worth_execution::MonotonicClock::system();
+                                    clock.deadline_at(clock.now())
+                                }),
                             };
                             if index == 3 {
                                 worth_execution::ExecutionResourceLease::serial(policy).unwrap()

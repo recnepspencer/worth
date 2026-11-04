@@ -48,8 +48,7 @@ fn component_reads_preserve_original_cancellation_and_live_twin() {
         let world = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::world::install_with_probe(crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::component_invariants::census::graph(), observer.clone());
         let request = WorthQueryRequestScope::new(
             Some(std::time::Instant::now() + std::time::Duration::from_secs(60)),
-            source.token(),
-        );
+            source.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let operation = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::program::swap_successors(&world, &request, 0, 1);
         let before = world.committed_version();
         observer.arm();

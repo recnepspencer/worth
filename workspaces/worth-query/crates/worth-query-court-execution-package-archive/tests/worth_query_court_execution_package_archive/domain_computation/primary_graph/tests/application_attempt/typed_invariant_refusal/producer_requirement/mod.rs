@@ -39,7 +39,11 @@ pub fn install() -> crate::domain_computation::primary_graph::tests::application
 }
 
 pub fn scope() -> WorthQueryRequestScope {
-    WorthQueryRequestScope::new(None, WorthQueryCancellationSource::new().token())
+    WorthQueryRequestScope::new(
+        None,
+        WorthQueryCancellationSource::new().token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    )
 }
 
 pub fn commit<Operation, Input>(

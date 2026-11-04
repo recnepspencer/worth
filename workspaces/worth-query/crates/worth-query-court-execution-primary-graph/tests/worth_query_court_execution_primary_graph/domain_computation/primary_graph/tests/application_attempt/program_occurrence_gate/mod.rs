@@ -31,14 +31,21 @@ fn program_activation_changed_after_preparation_cannot_readmit_the_old_program()
     use worth_relational::facade::transactions::MutationIntent;
     use worth_relational::facade::transactions::UpdateEntityFieldsIntent;
     use worth_relational::facade::transactions::WorkerIntentBatch;
-    let mut world = installed_authorization_world(true);
-    (*world.application.program_support_mut_for_test()) = Some(installed_program_support(
-        &(*world.application.installed_schema_for_test()),
+    let mut world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
+    world.application.program_support = Some(installed_program_support(
+        &world.application.installed_schema,
     ));
-    let layout = (*(*(*world.application.primary_provider_for_test()).graph_for_test())
-        .layout_for_test())
-    .program_activation()
-    .clone();
+    let layout = world
+        .application
+        .runtime
+        .primary_provider
+        .graph
+        .layout
+        .program_activation()
+        .clone();
     world
         .application
         .with_host_advancement(|phase| {
@@ -152,9 +159,12 @@ fn program_activation_changed_after_preparation_cannot_readmit_the_old_program()
 
 #[test]
 fn a_program_action_on_an_unseeded_occurrence_names_the_unresolved_activation() {
-    let mut world = installed_authorization_world(true);
-    (*world.application.program_support_mut_for_test()) = Some(installed_program_support(
-        &(*world.application.installed_schema_for_test()),
+    let mut world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
+    world.application.program_support = Some(installed_program_support(
+        &world.application.installed_schema,
     ));
     let request = live_scope();
     let principal = world
@@ -237,9 +247,12 @@ fn a_program_action_on_an_unseeded_occurrence_names_the_unresolved_activation() 
 
 #[test]
 fn a_required_output_source_on_an_unseeded_occurrence_is_gated_like_its_siblings() {
-    let mut world = installed_authorization_world(true);
-    (*world.application.program_support_mut_for_test()) = Some(installed_program_support(
-        &(*world.application.installed_schema_for_test()),
+    let mut world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
+    world.application.program_support = Some(installed_program_support(
+        &world.application.installed_schema,
     ));
     let request = live_scope();
     let principal = world

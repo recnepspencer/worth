@@ -9,7 +9,10 @@ use worth_query_execution::facade::domain_computation::WorthQueryApplicationOneS
 fn unavailable_predicate_snapshot_keeps_masters_kind_and_query_subject() {
     let _observation =
         worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let scope = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &scope);
     world
@@ -60,8 +63,7 @@ fn unavailable_predicate_snapshot_keeps_masters_kind_and_query_subject() {
             let read = match read_bounded_root_rows(
                 &runtime,
                 &request,
-                &(*(*(*world.application.primary_provider_for_test()).graph_for_test())
-                    .layout_for_test()),
+                &world.application.runtime.primary_provider.graph.layout,
                 &plan,
                 None,
             ) {
@@ -84,7 +86,10 @@ fn unavailable_predicate_snapshot_keeps_masters_kind_and_query_subject() {
 fn unavailable_root_path_snapshot_keeps_masters_kind_and_query_subject() {
     let _observation =
         worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let scope = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &scope);
     world
@@ -135,8 +140,7 @@ fn unavailable_root_path_snapshot_keeps_masters_kind_and_query_subject() {
             let read = match read_bounded_root_rows(
                 &runtime,
                 &request,
-                &(*(*(*world.application.primary_provider_for_test()).graph_for_test())
-                    .layout_for_test()),
+                &world.application.runtime.primary_provider.graph.layout,
                 &plan,
                 None,
             ) {

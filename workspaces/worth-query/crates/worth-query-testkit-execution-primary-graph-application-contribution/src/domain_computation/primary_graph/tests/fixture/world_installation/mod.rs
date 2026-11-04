@@ -38,7 +38,7 @@ pub fn installed_world_with_policy_fact(
         let binding = schema
             .principal_binding(IdentityBinding::reference())
             .unwrap();
-        let mut bootstrap = authority.prepare_primary_graph(&phase.bootstrap_for_test(), &runtime, &schema, worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources()).unwrap();
+        let mut bootstrap = authority.prepare_primary_graph(&phase.bootstrap_for_test(), &runtime, &schema, worth_query_execution::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system())).unwrap();
         for (ordinal, (subject, status)) in rows.iter().enumerate() {
             bootstrap
                 .bind_principal(
@@ -120,7 +120,7 @@ pub fn restored_world(
         &runtime,
         &schema,
         worth_relational::facade::runtime::RelationalRuntimeApi::builder().build().expect("valid native runtime configuration"),
-        worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(),
+        worth_query_execution::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()),
         worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantFactories::for_installed_schema(&schema),
         &decoded,
         false,
@@ -142,8 +142,12 @@ pub fn restored_world(
     })
 }
 
-pub fn installed_authorization_world(include_owner_relation: bool) -> AuthorizationWorld {
+pub fn installed_authorization_world(
+    include_owner_relation: bool,
+    admission_clock: worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock,
+) -> AuthorizationWorld {
     install_authorization_world(AuthorizationWorldSpec {
+        admission_clock,
         owner_bindings: owner_bindings(include_owner_relation),
         ..standard_spec()
     })
@@ -213,6 +217,9 @@ pub fn installed_blocked_authorization_world() -> AuthorizationWorld {
 
 pub fn standard_spec<'a>() -> AuthorizationWorldSpec<'a> {
     AuthorizationWorldSpec {
+        admission_clock:
+            worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(
+            ),
         owner_bindings: &[],
         blocked: false,
         principal_count: 1,

@@ -35,7 +35,10 @@ fn touch_projection_preserves_request_stops_and_committed_truth() {
         let expired = SerialRequest::from_memory(
             SerialMemoryBudget::new(execution.memory_limit()),
             CancellationSource::new().token(),
-            Some(std::time::Instant::now()),
+            Some({
+                let clock = worth_execution::MonotonicClock::system();
+                clock.deadline_at(clock.now())
+            }),
         );
         let stopped = world
             .admit(&ExecutionRequest::serial(&expired), &candidate, true)

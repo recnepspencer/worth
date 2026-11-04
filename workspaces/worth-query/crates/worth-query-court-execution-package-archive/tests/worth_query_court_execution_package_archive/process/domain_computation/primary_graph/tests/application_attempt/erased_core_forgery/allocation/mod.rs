@@ -27,7 +27,10 @@ fn isolated_brand_check_allocation_probe() {
     if std::env::var_os(PROBE).is_none() {
         return;
     }
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let (principal, account) = party(&world, &request);
     let admission = admit!(
@@ -44,13 +47,20 @@ fn isolated_brand_check_allocation_probe() {
 
     let region = stats_alloc::Region::new(&stats_alloc::INSTRUMENTED_SYSTEM);
     for _ in 0..64 {
-        std::hint::black_box(admission.validate_runtime_ownership_for_test(runtime, &binding))
-            .unwrap();
+        std::hint::black_box(admission.validate_installed_entry(
+            runtime,
+            &binding,
+            &world.application.runtime.installed_operations,
+        ))
+        .unwrap();
         assert!(std::hint::black_box(
             admission.belongs_to_for_test(runtime, &binding)
         ));
-        std::hint::black_box(admission.validate_installed_mutation_binding_for_test(descriptor))
-            .unwrap();
+        std::hint::black_box(
+            admission.validate_installed_operation(&world.application.runtime.installed_operations),
+        )
+        .unwrap();
+        std::hint::black_box(admission.validate_installed_mutation_binding(descriptor)).unwrap();
         std::hint::black_box(admission.capability_input());
     }
     let change = region.change();

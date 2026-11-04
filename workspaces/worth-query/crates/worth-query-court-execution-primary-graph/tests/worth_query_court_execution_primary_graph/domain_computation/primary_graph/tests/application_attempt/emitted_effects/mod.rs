@@ -11,15 +11,21 @@ pub use worth_query_execution::facade::domain_computation::WorthQueryApplication
 
 #[test]
 fn typed_emission_is_published_with_the_exact_provider_commit() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let selected = world
         .application
         .with_host_advancement(|phase| {
             world.selected_product(&(phase).test_host_request_for_test())
         })
         .expect("the fixture read owns its installed host call");
-    let _live = (*world.application.primary_provider_for_test())
-        .observe_application_commit_causality_for_test(selected.product());
+    let _live = world
+        .application
+        .runtime
+        .primary_provider
+        .observe_application_commit_causality(selected.product());
     let request = live_scope();
     let principal = world
         .application
@@ -63,8 +69,11 @@ fn typed_emission_is_published_with_the_exact_provider_commit() {
         panic!("typed emission attempt must commit");
     };
     assert_eq!(receipt.emitted_effect_count(), 1);
-    let emissions = (*world.application.primary_provider_for_test())
-        .committed_application_emissions_for_test(receipt.committed_product_publication());
+    let emissions = world
+        .application
+        .runtime
+        .primary_provider
+        .committed_application_emissions(receipt.committed_product_publication());
     assert_eq!(emissions.len(), 1);
     assert_eq!(emissions[0].effect_for_test(), "AccountActivityEffect");
     assert_eq!(
@@ -77,7 +86,10 @@ fn typed_emission_is_published_with_the_exact_provider_commit() {
 
 #[test]
 fn response_loss_recovers_emit_receipt_without_duplicate_publication() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application
@@ -155,15 +167,21 @@ fn response_loss_recovers_emit_receipt_without_duplicate_publication() {
     );
     assert_eq!(recovered.emitted_effect_count(), 1);
     assert_eq!(
-        (*world.application.primary_provider_for_test())
-            .published_application_commit_count_for_test(),
+        world
+            .application
+            .runtime
+            .primary_provider
+            .published_application_commit_count(),
         1
     );
 }
 
 #[test]
 fn in_window_receipt_admits_its_exact_historical_basis() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application

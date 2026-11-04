@@ -9,7 +9,10 @@ use worth_query_testkit_execution_primary_graph_application_contribution::domain
 
 #[test]
 fn projection_capability_does_not_widen_the_installed_decision_manifest() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     world
         .application

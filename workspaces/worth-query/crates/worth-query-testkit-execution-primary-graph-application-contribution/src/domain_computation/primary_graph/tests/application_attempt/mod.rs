@@ -91,3 +91,7 @@ pub fn resolved_account(
 pub mod preimage_evidence;
 #[path = "program_fixture/mod.rs"]
 pub mod program_fixture;
+#[path = "recovery_custody/mod.rs"]
+pub mod recovery_custody;
+#[path = "unwind_custody/mod.rs"]
+pub mod unwind_custody;

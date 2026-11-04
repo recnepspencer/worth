@@ -370,6 +370,8 @@ pub fn string(value: &str) -> AspectValue {
 pub mod equivalent_request_retry_recovers_the_same_authoritative_commit;
 #[path = "exact_request_commits_query_derived_state_and_returns_one_reques/mod.rs"]
 pub mod exact_request_commits_query_derived_state_and_returns_one_reques;
+#[path = "installed_seal/mod.rs"]
+pub mod installed_seal;
 #[path = "ordinary_progression_refusal/mod.rs"]
 pub mod ordinary_progression_refusal;
 #[path = "zero_or_overlong_duration_and_invalid_storage_key_fail_before_co/mod.rs"]

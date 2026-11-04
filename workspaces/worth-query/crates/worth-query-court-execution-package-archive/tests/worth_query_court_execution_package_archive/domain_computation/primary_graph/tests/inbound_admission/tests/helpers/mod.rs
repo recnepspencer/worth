@@ -6,7 +6,11 @@ pub fn owner_commits(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &InboundWorld,
 ) -> usize {
-    (*(*world.application.primary_provider_for_test()).graph_for_test())
+    world
+        .application
+        .runtime
+        .primary_provider
+        .graph
         .with_runtime(request_execution, |runtime| {
             runtime.history().immutable_commit_count()
         })
@@ -43,15 +47,20 @@ pub fn completion_records(
                 .default_branch_for_test(),
         )
         .unwrap();
-    let kind = (*(*(*world.application.primary_provider_for_test()).graph_for_test())
-        .layout_for_test())
-    .provider_inbound_completion()
-    .kind;
-    (*(*world
+    let kind = world
         .application
-        .primary_provider_for_test())
-        .graph_for_test())
-        .with_runtime_mut_for_test(execution, |runtime| {
+        .runtime
+        .primary_provider
+        .graph
+        .layout
+        .provider_inbound_completion()
+        .kind;
+    world
+        .application
+        .runtime
+        .primary_provider
+        .graph
+        .with_runtime_mut(execution, |runtime| {
             let snapshot =
                 worth_query_execution::court_doors_for_test::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(
                     runtime,

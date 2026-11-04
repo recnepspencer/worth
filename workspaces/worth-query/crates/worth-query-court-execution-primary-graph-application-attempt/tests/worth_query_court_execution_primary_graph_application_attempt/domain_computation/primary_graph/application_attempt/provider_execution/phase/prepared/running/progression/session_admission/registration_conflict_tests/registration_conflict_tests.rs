@@ -1,14 +1,14 @@
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::WorthQueryApplicationCommitProgressionAuthority;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::WorthQueryProgressedApplicationCommit;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::WorthQueryProviderProgressionCompletion;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::session_admission::admit_provider_session;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::progressed::finish_application_commit;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::commit_preparation::prepare_application_commit;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::start_managed_application_commit;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::WorthQueryApplicationCommitPreparation;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::WorthQueryApplicationCommitPreparationRequest;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::WorthQueryRunningApplicationCommit;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::application_attempt_affinity::WorthQueryApplicationAttemptBasis;
+use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::WorthQueryApplicationCommitProgressionAuthority;
+use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::WorthQueryProgressedApplicationCommit;
+use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::WorthQueryProviderProgressionCompletion;
+use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::session_admission::admit_provider_session;
+use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::progressed::finish_application_commit;
+use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::entry_custody::preparation::prepare_application_commit;
+use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::start_managed_application_commit;
+use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::WorthQueryApplicationCommitPreparation;
+use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::WorthQueryApplicationCommitPreparationRequest;
+use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::WorthQueryRunningApplicationCommit;
+use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::application_attempt_affinity::WorthQueryApplicationAttemptBasis;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::preimage_evidence::retained_status_program;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::preimage_evidence::RetentionMutationBreadth;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::authenticated_principal;
@@ -43,9 +43,7 @@ pub type RunningRetainedCommit = WorthQueryRunningApplicationCommit<
 #[test]
 fn occupied_real_registration_cleans_the_conflict_and_preserves_an_interleaved_peer() {
     let world =
-        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(
-            true,
-        );
+        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     world
         .application
         .with_host_advancement(|active_phase| {
@@ -95,7 +93,7 @@ pub fn reject_occupied_registration(
     let admitted_session = admit_provider_session(
         execution,
         &mut running,
-        &(*world.application.primary_graph_authority_for_test()),
+        world.application.runtime.primary_graph_authority(),
         attempt_basis.retained_product(),
         unbound_run,
     )
@@ -106,14 +104,16 @@ pub fn reject_occupied_registration(
         .expect("the real terminal session must bind its captured attempt basis");
     let reservation = (*world
         .application
-        .primary_provider_for_test())
-        .reserve_application_attempt_for_test(&reserved_affinity)
+        .runtime
+        .primary_provider
+        .reserve_application_attempt(&reserved_affinity)
         .expect("the rightful reservation must occupy the actual attempt store");
     assert_eq!(
         (*world
             .application
-            .primary_provider_for_test())
-            .application_attempt_resource_count_for_test(),
+            .runtime
+            .primary_provider
+            .application_attempt_resource_count(),
         2,
         "the peer registration and victim reservation must coexist before cleanup"
     );
@@ -122,8 +122,8 @@ pub fn reject_occupied_registration(
         &mut authorization,
         provider_attempt,
         attempt_basis,
-        WorthQueryProviderAttemptRegistrationContext::new_for_test(
-            &(*world.application.primary_provider_for_test()),
+        WorthQueryProviderAttemptRegistrationContext::new(
+            &world.application.runtime.primary_provider,
             &admission,
             idempotency,
             outcome_identity,
@@ -144,8 +144,9 @@ pub fn reject_occupied_registration(
     assert_eq!(
         (*world
             .application
-            .primary_provider_for_test())
-            .application_attempt_resource_count_for_test(),
+            .runtime
+            .primary_provider
+            .application_attempt_resource_count(),
         1,
         "duplicate-registration cleanup must release only its exact stale reservation"
     );
@@ -173,8 +174,8 @@ pub fn while_peer_is_registered(
     let admitted = admit_provider_session(
         execution,
         &mut running,
-        &(*world.application.primary_graph_authority_for_test()),
-        product.retained_clone_for_test(),
+        world.application.runtime.primary_graph_authority(),
+        product.retained_clone(),
         mutation_run,
     )
     .unwrap_or_else(|_| panic!("the interleaved peer session must reach registration"));
@@ -183,8 +184,8 @@ pub fn while_peer_is_registered(
             &mut authorization,
             provider_attempt,
             attempt_basis,
-            WorthQueryProviderAttemptRegistrationContext::new_for_test(
-                &(*world.application.primary_provider_for_test()),
+            WorthQueryProviderAttemptRegistrationContext::new(
+                &world.application.runtime.primary_provider,
                 &admission,
                 idempotency,
                 outcome_identity,
@@ -199,8 +200,9 @@ pub fn while_peer_is_registered(
     assert_eq!(
         (*world
             .application
-            .primary_provider_for_test())
-            .application_attempt_resource_count_for_test(),
+            .runtime
+            .primary_provider
+            .application_attempt_resource_count(),
         1,
         "the peer must occupy the actual application-attempt store"
     );
@@ -209,18 +211,30 @@ pub fn while_peer_is_registered(
     assert_eq!(
         (*world
             .application
-            .primary_provider_for_test())
-            .application_attempt_resource_count_for_test(),
+            .runtime
+            .primary_provider
+            .application_attempt_resource_count(),
         1,
         "victim cleanup must preserve the exact registered peer"
     );
 
     let commit_lane = (*world
         .application
-        .primary_provider_for_test())
-        .application_branch_commit_lane_for_test(product.observation_for_test());
-    let coordination = commit_lane.enter_for_test();
-    let authority = WorthQueryApplicationCommitProgressionAuthority::new_for_test(&world.application, &(*world.application.primary_provider_for_test()), &admission, authorization, idempotency, &coordination, &product, aftermath_causality, None);
+        .runtime
+        .primary_provider
+        .application_branch_commit_lane(product.observation());
+    let coordination = commit_lane.enter();
+    let authority = WorthQueryApplicationCommitProgressionAuthority {
+        application: &world.application,
+        provider: &world.application.runtime.primary_provider,
+        admission: &admission,
+        authorization,
+        idempotency,
+        coordination: &coordination,
+        product: &product,
+        aftermath_causality,
+        history: None,
+    };
     let peer = finish_application_commit(
         &phase.borrowed_request_for_test(),
         phase,
@@ -259,9 +273,15 @@ pub fn start(
 > {
     let prepared = prepare_application_commit(
         &phase.borrowed_request_for_test(),
-        phase,
-        &world.application,
-        WorthQueryApplicationCommitPreparationRequest::new_for_test(program, idempotency, None, None),
+        WorthQueryApplicationCommitPreparationRequest::new(
+            world
+                .application
+                .validate_commit_program_in_advancement(phase, program)
+                .unwrap_or_else(|outcome| panic!("fixture admission: {outcome:?}")),
+            idempotency,
+            None,
+            None,
+        ),
     );
     let WorthQueryApplicationCommitPreparation::Ready(prepared) = prepared else {
         panic!("registration fixture must reach ordinary prepared posture")

@@ -16,10 +16,6 @@ use worth_query_declaration::facade::{
     application_history::ApplicationHistoryBinding, application_schema::ApplicationSchema,
 };
 
-#[cfg(test)]
-mod installed_entry_tests;
-#[cfg(test)]
-mod ownership_tests;
 
 #[must_use = "retain the original restriction for every native attempt preparation"]
 pub struct WorthQueryDocumentHistoryOperationConstraint {

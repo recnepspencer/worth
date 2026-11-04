@@ -8,9 +8,7 @@ use worth_query_execution::court_doors_for_test::domain_computation::primary_gra
 #[test]
 fn subscription_count_exhaustion_refuses_without_panicking() {
     let world =
-        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(
-            true,
-        );
+        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     let runtime = world.application.product_runtime();
     let product = runtime
         .admit_product_branch_for_test(runtime.default_branch_for_test())
@@ -117,9 +115,7 @@ fn subscription_count_exhaustion_refuses_without_panicking() {
 #[test]
 fn subscription_drop_saturates_underflow_without_panicking() {
     let world =
-        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(
-            true,
-        );
+        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     let runtime = world.application.product_runtime();
     let product = runtime
         .admit_product_branch_for_test(runtime.default_branch_for_test())

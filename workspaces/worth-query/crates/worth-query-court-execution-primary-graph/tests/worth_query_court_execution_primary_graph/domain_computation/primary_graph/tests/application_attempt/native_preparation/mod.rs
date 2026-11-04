@@ -8,17 +8,20 @@ use worth_query_testkit_execution_primary_graph_application_contribution::domain
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitOutcome;
 use worth_execution::ExecutionAllocationPolicy;
 use std::time::Duration;
-use std::time::Instant;
 use worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 
 #[test]
 fn native_preparation_cancellation_leaves_head_and_key_available_for_fresh_retry() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let source = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(30)),
+        Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(30)),
         source.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     let principal = world
         .application
@@ -85,8 +88,11 @@ fn native_preparation_cancellation_leaves_head_and_key_available_for_fresh_retry
         })
         .expect("the fixture read owns its installed host call");
     assert_eq!(
-        (*world.application.primary_provider_for_test())
-            .published_application_commit_count_for_test(),
+        world
+            .application
+            .runtime
+            .primary_provider
+            .published_application_commit_count(),
         0
     );
     let fresh = live_scope();
@@ -131,8 +137,11 @@ fn native_preparation_cancellation_leaves_head_and_key_available_for_fresh_retry
         "the cancelled preparation must not consume its idempotency key: {outcome:?}"
     );
     assert_eq!(
-        (*world.application.primary_provider_for_test())
-            .published_application_commit_count_for_test(),
+        world
+            .application
+            .runtime
+            .primary_provider
+            .published_application_commit_count(),
         1
     );
     let landed = world

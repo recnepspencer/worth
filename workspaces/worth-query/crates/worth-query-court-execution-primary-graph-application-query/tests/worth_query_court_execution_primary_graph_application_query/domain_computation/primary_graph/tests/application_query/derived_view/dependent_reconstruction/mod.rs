@@ -142,7 +142,7 @@ pub fn journey(case: Case) {
                                 if case == Case::Memory { Some(0) } else { None },
                                 if case == Case::Work { Some(1) } else { parent.policy().work_ceiling() }),
                         ), cancellation: cancellation.token(),
-                        deadline: (case == Case::Deadline).then(std::time::Instant::now),
+                        deadline: (case == Case::Deadline).then(|| { let clock = worth_execution::MonotonicClock::system(); clock.deadline_at(clock.now()) }),
                     }).unwrap()
                 }).unwrap()
             });

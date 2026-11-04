@@ -13,6 +13,7 @@ worth-execution = { path = "../../../../crates/worth-execution" }
 worth-foundational = { path = "../../../../crates/worth-foundational" }
 worth-proof = { path = "../../../../crates/worth-proof" }
 worth-query-admission = { path = "../worth-query-admission" }
+worth-query-declaration = { path = "../worth-query-declaration" }
 worth-query-execution = { path = "../worth-query-execution" }
 worth-query-installation = { path = "../worth-query-installation" }
 worth-query-testkit-execution-primary-graph-application-attempt = { path = "../worth-query-testkit-execution-primary-graph-application-attempt" }

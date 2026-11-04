@@ -51,7 +51,84 @@ use worth_query_decl::facade::worth_query_portable_type;
 use worth_query_decl::facade::worth_query_structured_value_binding;
 use worth_query_decl::facade::worth_query_unit;
 
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph;
+pub use worth_query_execution::domain_computation::primary_graph;
+pub use worth_query_execution::facade as runtime_api;
+pub use worth_query_execution::facade::domain_computation::CandidateWriter;
+pub use worth_query_execution::facade::domain_computation::DecisionReader;
+pub use worth_query_execution::facade::domain_computation::HandlerExecutionDenial;
+pub use worth_query_execution::facade::domain_computation::HandlerResult;
+pub use worth_query_execution::facade::domain_computation::MutationHandlerExecutionDenial;
+pub use worth_query_execution::facade::domain_computation::OperationHandler;
+pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationAttemptDenialKind;
+pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitDenialKind;
+pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitDenialStage;
+pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitOutcome;
+pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitReceipt;
+pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationEntityKey;
+pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationEntitySeed;
+pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationIdempotencyBinding;
+pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationInvariantProjectionAuthority;
+pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationOutputDemandSource;
+pub use worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture as WorthQueryApplicationOutputPosture;
+pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationPrincipalKey;
+pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationProjection;
+pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationProjectionDenial;
+pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationProjectionRow;
+pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationQueryAccessContext;
+pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationReadObservation;
+pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationRelationSeed;
+pub use worth_query_execution::facade::domain_computation::WorthQueryConditionalApplicationRuntimeInstallation;
+pub use worth_query_execution::facade::domain_computation::WorthQueryConditionalRuntimeInstallationDenial;
+pub use worth_query_execution::facade::domain_computation::WorthQueryDecisionPlan;
+pub use worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation;
+pub use worth_query_execution::facade::domain_computation::WorthQueryInvariantEntityIdentity;
+pub use worth_query_execution::facade::domain_computation::WorthQueryInvariantMutationTarget;
+pub use worth_query_execution::facade::application_invariants::WorthQueryInvariantProjectionWork;
+pub use worth_query_execution::facade::domain_computation::WorthQueryObservedSource;
+pub use worth_query_execution::facade::domain_computation::WorthQueryOperationAuthorizationDenialKind;
+pub use worth_query_execution::facade::domain_computation::WorthQueryOperationAuthorizationRefusalKind;
+pub use worth_query_execution::facade::domain_computation::WorthQueryOperationProjectionDenialKind;
+pub use worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding;
+pub use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandAdvance;
+pub use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenial;
+pub use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenialKind;
+pub use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandRecoveryPosture;
+pub use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandSettlement;
+pub use worth_query_execution::facade::domain_computation::WorthQueryOutputSettlementPosture;
+pub use worth_query_execution::facade::domain_computation::WorthQueryPrimaryGraphInstallationDenial;
+pub use worth_query_execution::facade::domain_computation::WorthQueryPrincipalResolutionMode;
+pub use worth_query_execution::facade::domain_computation::WorthQueryProductQueryControls;
+pub use worth_query_testkit_execution_decl::domain_computation::primary_graph::output_lineage::ownership_oracle::fixture_values::positive_length::PositiveLength;
+pub use worth_query_testkit_execution_decl::domain_computation::primary_graph::output_lineage::ownership_oracle::length_binding::TopologyLengthBinding;
+pub use worth_query_declaration::facade::application_schema::ApplicationSchemaComposition;
+pub use worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase;
+pub use worth_query_execution::facade::application_contribution::WorthQueryApplicationConditionalBinding;
+pub use worth_query_execution::facade::application_contribution::WorthQueryApplicationConditionalPackageContract;
+pub use worth_query_execution::facade::application_contribution::WorthQueryApplicationConditionalProducerAccess;
+pub use worth_query_execution::facade::application_contribution::WorthQueryApplicationContribution;
+pub use worth_query_execution::facade::application_contribution::WorthQueryApplicationContributionContracts;
+pub use worth_query_execution::facade::application_contribution::WorthQueryApplicationContributionSetup;
+pub use worth_query_execution::facade::application_contribution::WorthQueryApplicationProducerBinding;
+pub use worth_query_execution::facade::application_contribution::WorthQueryApplicationProducerProvider;
+pub use worth_query_execution::facade::application_contribution::WorthQueryDecisionContextDependencies;
+pub use worth_query_execution::facade::application_contribution::WorthQueryOutputReadinessContractBuilder;
+pub use worth_query_execution::facade::application_contribution::WorthQueryProducerApplicability;
+pub use worth_query_execution::facade::application_contribution::WorthQueryProducerInputReuseContract;
+pub use worth_query_execution::facade::application_contribution::WorthQueryProducerInvariantRequirement;
+pub use worth_query_execution::facade::application_contribution::WorthQueryProducerLifecyclePosture;
+pub use worth_query_execution::facade::application_contribution::WorthQueryProducerOutputFamily;
+pub use worth_query_execution::facade::application_contribution::WorthQueryUndeclaredProducerDenial;
+pub use worth_query_installation::facade as runtime_domain;
+pub use worth_query_installation::worth_query_conditional_node as conditional_node;
+pub use worth_query_testkit_execution_decl::domain_computation::primary_graph::output_lineage::ownership_oracle::base_model::*;
+pub use worth_query_testkit_execution_decl::domain_computation::primary_graph::output_lineage::ownership_oracle::principal::*;
+pub use worth_query_testkit_execution_decl::domain_computation::primary_graph::output_lineage::ownership_oracle::output_contract::*;
+pub use worth_query_testkit_execution_decl::domain_computation::primary_graph::output_lineage::ownership_oracle::planar_topology::*;
+pub use worth_query_testkit_execution_decl::domain_computation::primary_graph::output_lineage::ownership_oracle::planar_islands::*;
+pub use worth_query_testkit_execution_decl::domain_computation::primary_graph::output_lineage::ownership_oracle::planar_read::*;
+pub use worth_query_testkit_execution_decl::domain_computation::primary_graph::output_lineage::ownership_oracle::region_output::*;
+pub use worth_query_testkit_execution_decl::domain_computation::primary_graph::output_lineage::ownership_oracle::output_producer::*;
+use worth_query_execution::domain_computation::primary_graph;
 use worth_query_execution::facade as runtime_api;
 use worth_query_execution::facade::domain_computation::CandidateWriter;
 use worth_query_execution::facade::domain_computation::DecisionReader;
@@ -80,11 +157,13 @@ use worth_query_execution::facade::domain_computation::WorthQueryApplicationRela
 use worth_query_execution::facade::domain_computation::WorthQueryConditionalApplicationRuntimeInstallation;
 use worth_query_execution::facade::domain_computation::WorthQueryConditionalRuntimeInstallationDenial;
 use worth_query_execution::facade::domain_computation::WorthQueryDecisionPlan;
+use worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation;
 use worth_query_execution::facade::domain_computation::WorthQueryInvariantEntityIdentity;
 use worth_query_execution::facade::domain_computation::WorthQueryInvariantMutationTarget;
 use worth_query_execution::facade::application_invariants::WorthQueryInvariantProjectionWork;
 use worth_query_execution::facade::domain_computation::WorthQueryObservedSource;
 use worth_query_execution::facade::domain_computation::WorthQueryOperationAuthorizationDenialKind;
+use worth_query_execution::facade::domain_computation::WorthQueryOperationAuthorizationRefusalKind;
 use worth_query_execution::facade::domain_computation::WorthQueryOperationProjectionDenialKind;
 use worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding;
 use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandAdvance;
@@ -126,7 +205,7 @@ use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::planar_read::*;
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::region_output::*;
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::output_producer::*;
-include!("../../../../../../../worth-query-certification/fixtures/consumer_entry/topology_entry/src/producer/resources.rs");
+include!("../../../../../../worth-query-certification/fixtures/consumer_entry/topology_entry/src/producer/resources.rs");
 pub fn with_genuine_native_observation<T>(
     inspect: impl FnOnce(
         &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,
@@ -138,9 +217,9 @@ pub fn with_genuine_native_observation<T>(
     let observation = settled
         .readiness_delivery()
         .unwrap()
-        .causal_observation_for_test()
+        .causal_observation()
         .unwrap();
-    let owner = (*runtime.bridge_for_test()).conditional();
+    let owner = runtime.runtime.bridge.conditional();
     inspect(&owner, observation)
 }
 

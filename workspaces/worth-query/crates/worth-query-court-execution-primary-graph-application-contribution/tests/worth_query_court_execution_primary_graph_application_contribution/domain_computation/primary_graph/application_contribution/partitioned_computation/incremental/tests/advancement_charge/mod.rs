@@ -5,7 +5,7 @@ use crate::domain_computation::primary_graph::application_contribution::partitio
 fn a_carried_stop_after_a_recomputed_slot_has_the_full_runs_bill() {
     let _observation = QueryObservation::install_on_this_thread();
     for width in [1, 2] {
-        let world = installed_authorization_world(true);
+        let world = installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let installed = installed(StatusRead::Gather(0), sum);
         *(*installed.owner_for_test()).steps.lock().unwrap() = Some([vec![1; 20], vec![1]]);
         let request = live_scope();
@@ -55,7 +55,10 @@ fn a_carried_stop_after_a_recomputed_slot_has_the_full_runs_bill() {
 #[test]
 fn a_public_nested_map_cost_cannot_be_retained_as_owner_steps() {
     let _observation = QueryObservation::install_on_this_thread();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let installed = installed(StatusRead::Gather(1), sum);
     let request = live_scope();
     let policy = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy(std::num::NonZeroUsize::MIN, None);
@@ -100,7 +103,10 @@ fn a_public_nested_map_cost_cannot_be_retained_as_owner_steps() {
 #[test]
 fn carrying_every_partition_has_the_full_bill_and_the_same_one_unit_short_stop() {
     let _observation = QueryObservation::install_on_this_thread();
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let installed = installed(StatusRead::Gather(1), sum);
     let request = live_scope();
     let policy = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::test_placement::test_policy(std::num::NonZeroUsize::MIN, None);
@@ -172,7 +178,7 @@ fn a_ceiling_inside_carried_checkpoint_steps_has_the_full_runs_exact_stop() {
             std::num::NonZeroUsize::new(width).unwrap(),
         ));
         for steps in [vec![1; 20], vec![3, 5, 7, 9]] {
-            let world = installed_authorization_world(true);
+            let world = installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
             let installed = installed(StatusRead::Gather(1), sum);
             // The even partition is carried, while the status-reading odd one
             // is gathered again. Each kernel must encounter the same local

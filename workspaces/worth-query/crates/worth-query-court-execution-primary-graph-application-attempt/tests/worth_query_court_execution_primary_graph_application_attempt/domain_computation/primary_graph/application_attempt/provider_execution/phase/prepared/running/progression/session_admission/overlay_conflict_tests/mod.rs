@@ -1,10 +1,11 @@
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::session_admission::admit_provider_session;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::registered::WorthQueryProviderAttemptRegistrationContext;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::commit_preparation::prepare_application_commit;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::start_managed_application_commit;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::WorthQueryApplicationCommitPreparation;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::WorthQueryApplicationCommitPreparationRequest;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::WorthQueryRunningApplicationCommit;
+use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::session_admission::admit_provider_session;
+use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::registered;
+use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression::registered::WorthQueryProviderAttemptRegistrationContext;
+use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::entry_custody::preparation::prepare_application_commit;
+use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::start_managed_application_commit;
+use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::WorthQueryApplicationCommitPreparation;
+use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::WorthQueryApplicationCommitPreparationRequest;
+use worth_query_execution::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::WorthQueryRunningApplicationCommit;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::preimage_evidence::retained_status_program;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::preimage_evidence::RetentionMutationBreadth;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::authenticated_principal;
@@ -15,9 +16,7 @@ use worth_query_testkit_execution_primary_graph_application_contribution::domain
 #[test]
 fn second_real_overlay_is_rejected_without_orphaning_the_first_overlay() {
     let world =
-        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(
-            true,
-        );
+        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
     world
         .application
         .with_host_advancement(|active_phase| {
@@ -48,10 +47,11 @@ fn second_real_overlay_is_rejected_without_orphaning_the_first_overlay() {
             );
             let prepared = prepare_application_commit(
                 &phase.borrowed_request_for_test(),
-                phase,
-                &world.application,
-                WorthQueryApplicationCommitPreparationRequest::new_for_test(
-                    program,
+                WorthQueryApplicationCommitPreparationRequest::new(
+                    world
+                        .application
+                        .validate_commit_program_in_advancement(phase, program)
+                        .unwrap_or_else(|outcome| panic!("fixture admission: {outcome:?}")),
                     idempotency(185, 186),
                     None,
                     None,
@@ -66,7 +66,7 @@ fn second_real_overlay_is_rejected_without_orphaning_the_first_overlay() {
             let admitted_session = admit_provider_session(
                 execution,
                 &mut running,
-                &(*world.application.primary_graph_authority_for_test()),
+                world.application.runtime.primary_graph_authority(),
                 attempt_basis.retained_product(),
                 mutation_run,
             )
@@ -76,8 +76,8 @@ fn second_real_overlay_is_rejected_without_orphaning_the_first_overlay() {
                     &mut authorization,
                     provider_attempt,
                     attempt_basis,
-                    WorthQueryProviderAttemptRegistrationContext::new_for_test(
-                        &(*world.application.primary_provider_for_test()),
+                    WorthQueryProviderAttemptRegistrationContext::new(
+                        &world.application.runtime.primary_provider,
                         &admission,
                         idempotency,
                         outcome_identity,

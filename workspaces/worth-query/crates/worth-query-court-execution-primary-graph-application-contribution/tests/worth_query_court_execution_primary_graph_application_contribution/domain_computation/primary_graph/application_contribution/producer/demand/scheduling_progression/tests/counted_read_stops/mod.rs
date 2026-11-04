@@ -5,8 +5,11 @@ use worth_query_execution::facade::domain_computation::WorthQueryProviderSession
 
 #[test]
 fn scheduling_progression_preserves_admission_stops_at_every_consult() {
-    let mut world = installed_authorization_world(true);
-    (*world.application.program_support_mut_for_test()) = Some(
+    let mut world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
+    world.application.program_support = Some(
         worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::program_roster::installed_program_support(
             world.application.installed_schema(),
         ),
@@ -22,7 +25,7 @@ fn scheduling_progression_preserves_admission_stops_at_every_consult() {
         .unwrap();
     let source = observed_account_source(&world);
     let (_, route) = installation();
-    (*world.application.output_producer_routes_mut_for_test()).insert(
+    world.application.runtime.output_producer_routes.insert(
         "scheduling-busy".to_owned(),
         worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::scheduling::WorthQueryInstalledOutputProducerRoute::new_for_test(route, None),
     );

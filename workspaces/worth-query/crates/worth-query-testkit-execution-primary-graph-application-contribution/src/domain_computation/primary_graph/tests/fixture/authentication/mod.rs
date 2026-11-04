@@ -23,6 +23,7 @@ pub fn authenticate_external<Schema: ApplicationSchema>(
         WorthQueryAuthenticationAdapterAdmission::new(
             WorthQueryAuthenticationAudience::new("bank").unwrap(),
             WorthQueryAuthenticationMethod::new("test-oidc").unwrap(),
+            scope.clock().clone(),
         ),
         CausalIdentityAdapter,
     )

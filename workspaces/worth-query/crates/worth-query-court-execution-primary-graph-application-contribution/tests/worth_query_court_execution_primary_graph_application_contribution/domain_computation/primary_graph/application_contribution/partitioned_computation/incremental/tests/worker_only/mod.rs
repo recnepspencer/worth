@@ -102,7 +102,7 @@ pub fn native_attempt<Owned: TestOwner>(
             let phase_custody = phase.test_host_request_for_test();
             let admission = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::projected_attempt::admit(world, &request, &phase);
             let execution = phase
-                .execution_for_for_test(&(*world.application.product_runtime_for_test()))
+                .execution_for(&world.application.runtime.product_runtime)
                 .unwrap();
             assert!(!execution.has_accounting_for_test());
             let allocation = execution.allocation_policy_for_test().unwrap();
@@ -223,7 +223,7 @@ fn worker_only_partition_run_retains_facts_reuses_and_observes_a_real_source_edi
     use worth_relational::facade::transactions::WorkerIntentBatch;
     let _observation = QueryObservation::install_on_this_thread();
     let world = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world_with_product_resources(
-        worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources()
+        worth_query_execution::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system())
             .with_execution_policy(policy()),
     );
     let base = installed(StatusRead::Gather(1), sum);
@@ -274,18 +274,22 @@ fn worker_only_partition_run_retains_facts_reuses_and_observes_a_real_source_edi
         })
         .unwrap();
     let field = AccountLabel::reference();
-    let locator = (*(*(*world.application.primary_provider_for_test()).graph_for_test())
-        .layout_for_test())
-    .field_locator_for_test(field.entity(), field.aspect(), field.field())
-    .unwrap()
-    .clone();
+    let locator = world
+        .application
+        .runtime
+        .primary_provider
+        .graph
+        .layout
+        .field_locator(field.entity(), field.aspect(), field.field())
+        .unwrap()
+        .clone();
     let label = "worker-only-updated";
     let request = live_scope();
     world
         .application
         .with_application_advancement(&request, |phase| {
             let execution = phase
-                .execution_for_for_test(&(*world.application.product_runtime_for_test()))
+                .execution_for(&world.application.runtime.product_runtime)
                 .unwrap();
             assert!(!execution.has_accounting_for_test());
             let execution = execution.execution_request().unwrap();

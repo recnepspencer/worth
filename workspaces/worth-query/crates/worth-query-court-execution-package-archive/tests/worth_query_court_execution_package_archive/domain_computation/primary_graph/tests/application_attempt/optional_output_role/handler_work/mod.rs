@@ -4,7 +4,7 @@ use worth_query_execution::facade::domain_computation::WorthQueryMutationHandler
 #[test]
 fn handler_projection_work_survives_candidate_denials_and_domain_refusal() {
     {
-        let world = installed_authorization_world(true);
+        let world = installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
 
         for plan in [
             OptionalOutputPlan::RequiredAndOptionalTwice,

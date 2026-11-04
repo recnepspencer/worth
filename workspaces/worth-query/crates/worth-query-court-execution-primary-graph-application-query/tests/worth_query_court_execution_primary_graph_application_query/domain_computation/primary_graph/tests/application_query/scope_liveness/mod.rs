@@ -12,7 +12,10 @@ use crate::domain_computation::primary_graph::tests::application_query::*;
 
 #[test]
 fn changed_identity_field_makes_resolved_scope_stale_before_admission() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world

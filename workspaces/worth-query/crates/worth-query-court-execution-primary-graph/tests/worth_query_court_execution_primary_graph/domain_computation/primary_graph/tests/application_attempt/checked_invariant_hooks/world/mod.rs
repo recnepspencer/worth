@@ -64,7 +64,7 @@ pub fn install(rule: AccountingRule) -> World {
         let mut bootstrap = authority.prepare_primary_graph_with_relational_runtime_and_invariants_for_test(
             &phase.bootstrap_for_test(), &runtime, &schema,
             worth_relational::facade::runtime::RelationalRuntimeApi::builder().build().expect("valid native runtime configuration"),
-            worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(), factories,
+            worth_query_execution::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()), factories,
         ).unwrap();
         bootstrap
             .bind_principal(

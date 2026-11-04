@@ -16,7 +16,10 @@ use worth_foundational::facade::AspectValue;
 
 #[test]
 fn unobserved_effect_keeps_coordinates_at_public_lowering_without_idempotency_residue() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let (principal, account, mut program, before) = world
         .application
@@ -35,10 +38,14 @@ fn unobserved_effect_keeps_coordinates_at_public_lowering_without_idempotency_re
         })
         .unwrap();
     let field = AccountLabel::reference();
-    let locator = (*(*(*world.application.primary_provider_for_test()).graph_for_test())
-        .layout_for_test())
-    .field_locator_for_test(field.entity(), field.aspect(), field.field())
-    .unwrap();
+    let locator = world
+        .application
+        .runtime
+        .primary_provider
+        .graph
+        .layout
+        .field_locator(field.entity(), field.aspect(), field.field())
+        .unwrap();
     // The actual installed operation permits Label, but this genuine completed
     // decision observed only Status. No public raw-effect door is introduced.
     (*program.effects_mut_for_test()).push(WorthQueryApplicationRealizedEffect::UpdateEntity {

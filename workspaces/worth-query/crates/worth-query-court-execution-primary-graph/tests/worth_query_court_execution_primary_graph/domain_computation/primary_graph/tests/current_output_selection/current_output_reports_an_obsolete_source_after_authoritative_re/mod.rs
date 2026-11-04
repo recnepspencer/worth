@@ -3,7 +3,10 @@ use crate::domain_computation::primary_graph::tests::current_output_selection::*
 
 #[test]
 fn current_output_reports_an_obsolete_source_after_authoritative_retirement() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let obsolete = world
         .application
         .with_host_advancement(|phase| {

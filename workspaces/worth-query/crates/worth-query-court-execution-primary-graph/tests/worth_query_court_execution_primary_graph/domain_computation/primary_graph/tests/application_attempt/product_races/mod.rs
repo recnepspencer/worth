@@ -11,7 +11,10 @@ fn unrelated_product_drift_preserves_the_prepared_attempt_and_changed_facts_stal
     let host_request = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application
@@ -48,7 +51,11 @@ fn unrelated_product_drift_preserves_the_prepared_attempt_and_changed_facts_stal
         })
         .expect("the fixture read owns its installed host call");
     let commit_count = || {
-        (*(*world.application.primary_provider_for_test()).graph_for_test())
+        world
+            .application
+            .runtime
+            .primary_provider
+            .graph
             .with_runtime(request_execution, |runtime| {
                 runtime.history().immutable_commit_count()
             })

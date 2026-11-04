@@ -11,7 +11,10 @@ use worth_query_execution::publication_boundary::workflow_advance::WorthQueryGua
 
 #[test]
 fn reserved_slot_naming_the_exact_binding_is_publication_pending() {
-    let world = installed_authorization_world(true);
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
     let request = live_scope();
     let principal = world
         .application
@@ -64,8 +67,11 @@ fn reserved_slot_naming_the_exact_binding_is_publication_pending() {
     let reservation = world
         .application
         .with_host_advancement(|phase| {
-            (*world.application.primary_provider_for_test())
-                .reserve_application_publication_recovery_for_test(
+            world
+                .application
+                .runtime
+                .primary_provider
+                .reserve_application_publication_recovery(
                     world
                         .selected_product(&(phase).test_host_request_for_test())
                         .product()

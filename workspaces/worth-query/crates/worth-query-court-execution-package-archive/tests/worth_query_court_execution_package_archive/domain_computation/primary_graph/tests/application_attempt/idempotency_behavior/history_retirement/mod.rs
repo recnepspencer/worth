@@ -7,7 +7,7 @@ use worth_runtime_world::facade::ProductBranchAncestorSelectionDenial;
 
 #[test]
 fn a_causal_replay_after_its_history_retires_answers_with_its_sealed_causality() {
-    let world = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::correction_source::install();
+    let world = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::correction_source::install(worth_execution::MonotonicClock::system());
     let source = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::correction_source::edit(&world, "retirement-source", "edited-label");
     let prepared = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::correction_source::prepare(&world, &source, "retirement-correction");
     let binding = prepared.binding;

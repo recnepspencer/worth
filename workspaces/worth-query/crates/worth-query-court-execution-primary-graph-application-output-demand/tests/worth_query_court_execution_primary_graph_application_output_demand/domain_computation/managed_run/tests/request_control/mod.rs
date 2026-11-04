@@ -5,7 +5,6 @@ use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_co
 use worth_query_execution::facade::domain_computation::WorthQueryInvariantExecutionDenialKind as Kind;
 use worth_query_execution::facade::domain_computation::WorthQueryInvariantReceipt;
 use std::time::Duration;
-use std::time::Instant;
 use worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_installation::facade::WorthQueryInvariantEnforcement;
@@ -15,8 +14,9 @@ fn cancelled_invariant_request_stops_before_provider_state_load() {
     let requirement = requirement("closed-loop", WorthQueryInvariantEnforcement::Blocking, 1);
     let source = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(60)),
+        Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
         source.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     let passed = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|phase| {
         let bootstrap = phase.bootstrap_for_test();

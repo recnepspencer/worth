@@ -127,7 +127,7 @@ pub fn install_world(
         let mut bootstrap = authority.prepare_primary_graph_with_relational_runtime_and_invariants_for_test(
             &phase.bootstrap_for_test(), &runtime, &schema,
             worth_relational::facade::runtime::RelationalRuntimeApi::builder().build().expect("valid native runtime configuration"),
-            worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(), factories,
+            worth_query_execution::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()), factories,
         ).unwrap();
         bootstrap
             .bind_principal(
@@ -169,7 +169,10 @@ impl World {
         self.application
             .with_host_advancement(|phase| {
                 let execution = phase.borrowed_request_for_test();
-                (*(*self.application.primary_provider_for_test()).graph_for_test())
+                self.application
+                    .runtime
+                    .primary_provider
+                    .graph
                     .with_runtime(&execution, |runtime| {
                         crate::published_checkpoint::capture(runtime, &execution)
                     })

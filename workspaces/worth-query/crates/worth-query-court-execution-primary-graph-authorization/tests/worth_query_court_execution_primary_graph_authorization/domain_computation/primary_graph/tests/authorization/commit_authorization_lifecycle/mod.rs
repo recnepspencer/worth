@@ -1,6 +1,5 @@
 use std::cell::Cell;
 use std::time::Duration;
-use std::time::Instant;
 use worth_query_execution::facade::domain_computation::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 use worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource;
@@ -21,8 +20,9 @@ fn commit_authorization_rechecks_cancellation_when_governed() {
         .script([time(100), time(100), time(100)]);
     let cancellation = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(60)),
+        Some(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
         cancellation.token(),
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     let principal = world
         .application
@@ -42,12 +42,13 @@ fn commit_authorization_rechecks_cancellation_when_governed() {
         })
         .expect("the fixture read owns its installed host call");
     let commit_authorization = admission
-        .take_authorization_dependencies_for_test(
-            (*world.application.authorization_for_test()).bridge_for_test(),
-        )
+        .take_authorization_dependencies(world.application.runtime.authorization.bridge())
         .unwrap();
-    let commit_lane = (*world.application.primary_provider_for_test())
-        .application_branch_commit_lane_for_test(
+    let commit_lane = world
+        .application
+        .runtime
+        .primary_provider
+        .application_branch_commit_lane(
             admission
                 .graph_work_for_test()
                 .mutation_product()
@@ -115,12 +116,13 @@ fn commit_basis_cannot_be_paired_with_a_different_admitted_operation() {
         })
         .expect("the fixture read owns its installed host call");
     let source_authorization = source
-        .take_authorization_dependencies_for_test(
-            (*world.application.authorization_for_test()).bridge_for_test(),
-        )
+        .take_authorization_dependencies(world.application.runtime.authorization.bridge())
         .unwrap();
-    let commit_lane = (*world.application.primary_provider_for_test())
-        .application_branch_commit_lane_for_test(
+    let commit_lane = world
+        .application
+        .runtime
+        .primary_provider
+        .application_branch_commit_lane(
             target
                 .graph_work_for_test()
                 .mutation_product()
@@ -175,12 +177,13 @@ fn commit_basis_cannot_be_revalidated_by_a_foreign_runtime() {
         })
         .expect("the fixture read owns its installed host call");
     let commit_authorization = admission
-        .take_authorization_dependencies_for_test(
-            (*source_world.application.authorization_for_test()).bridge_for_test(),
-        )
+        .take_authorization_dependencies(source_world.application.runtime.authorization.bridge())
         .unwrap();
-    let commit_lane = (*source_world.application.primary_provider_for_test())
-        .application_branch_commit_lane_for_test(
+    let commit_lane = source_world
+        .application
+        .runtime
+        .primary_provider
+        .application_branch_commit_lane(
             admission
                 .graph_work_for_test()
                 .mutation_product()
