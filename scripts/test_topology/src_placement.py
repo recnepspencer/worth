@@ -4,8 +4,17 @@ Testkit parts are grouped by strongly connected component (a testkit crate may d
 another only one way), then packed under the ceiling by area. Court parts are grouped by
 their family's product frontier (named Query products plus those of the testkits they
 read), then packed under the ceiling by whole module areas, descending only oversized ones.
+
+`SRC_PINS_DUMP=<dir>` writes the final placement (`courts.json`, `testkits.json`: scope path
+`a/b/c` -> crate, and `frontiers.json`). `SRC_PINS=<dir>` reads such a placement back: a scope
+keeps its pinned crate, so a later tree ports into an earlier plan's crates; a new scope joins
+the crate of its longest pinned prefix (a court only of its own frontier), and packs as usual
+only when none exists.
 """
 from collections import defaultdict
+import json
+import os
+from pathlib import Path
 
 from court_packing import area_suffix, first_fit_decreasing, whole_areas
 from court_partition import CEILING
@@ -13,6 +22,51 @@ from frontier_adapter import surface
 from rust_source import crate_uses, tokens
 
 STEM = 'worth-query'
+
+
+def pins(kind):
+    path = os.environ.get('SRC_PINS')
+    if not path:
+        return None
+    return {'modules': json.loads((Path(path) / f'{kind}.json').read_text(encoding='utf-8')),
+            'frontiers': json.loads((Path(path) / 'frontiers.json').read_text(encoding='utf-8'))}
+
+
+def dump(kind, crates, frontiers=None):
+    path = os.environ.get('SRC_PINS_DUMP')
+    if not path:
+        return
+    Path(path).mkdir(parents=True, exist_ok=True)
+    placed = {'/'.join(n): crate for crate, members in crates.items() for n in members}
+    (Path(path) / f'{kind}.json').write_text(json.dumps(placed, indent=1, sort_keys=True), encoding='utf-8')
+    if frontiers is not None:
+        (Path(path) / 'frontiers.json').write_text(json.dumps(frontiers, indent=1, sort_keys=True), encoding='utf-8')
+
+
+def pinned_crate(names, pinned):
+    """(crate, depth) of the longest pinned module prefix of `names`, or (None, 0)."""
+    for depth in range(len(names), 0, -1):
+        crate = pinned.get('/'.join(names[:depth]))
+        if crate:
+            return crate, depth
+    return None, 0
+
+
+def repin(default, unit_names, pinned, kind, near_fits):
+    """{crate: [names]} from `default` with each scope moved to its pinned crate when that crate
+    is of `kind`; an unpinned scope joins the crate `near_fits` allows that shares its longest
+    pinned prefix, else keeps its default crate."""
+    home = {n: crate for crate, members in default.items() for n in members}
+    result = defaultdict(list)
+    for names in unit_names:
+        crate, _ = pinned_crate(names, pinned)
+        if crate is None or not kind(crate):
+            near = [(sum(1 for a, b in zip(names, other) if a == b), c) for other, c in
+                    ((tuple(k.split('/')), c) for k, c in pinned.items()) if kind(c) and near_fits(c, names)]
+            best = max(near, default=(0, None))
+            crate = best[1] if best[0] > 0 else home[names]
+        result[crate].append(names)
+    return {crate: sorted(members) for crate, members in result.items()}
 
 
 def part_lines(model, names, disposition, part):
@@ -151,6 +205,14 @@ def place_testkits(model, kinds, products_of, frontier_of_products, ceiling=CEIL
         for piece in pieces:
             name = unique(testkit_name(need, piece, len(pieces) > 1), crates)
             crates[name] = sorted(n for unit in piece for n in unit['members'])
+    spec = pins('testkits')
+    if spec:
+        default = dict(crates)
+        units = sorted(n for members in default.values() for n in members)
+        regrouped = repin(default, units, spec['modules'], lambda crate: crate.startswith(STEM + '-testkit-'),
+                          lambda crate, names: True)
+        crates = dict(sorted(regrouped.items()))
+    dump('testkits', crates)
     return crates
 
 
@@ -208,6 +270,20 @@ def place_courts(model, kinds, frontier_of, ceiling=CEILING):
         for index, piece in enumerate(sorted(pieces, key=lambda p: min(u['owner_area'] for u in p))):
             name = base if index == 0 else unique(base + '-' + area_label(piece, base), courts)
             courts[name] = {'frontier': list(frontier), 'members': sorted(u['names'] for u in piece)}
+    spec = pins('courts')
+    if spec:
+        frontier_of_unit = {u['names']: list(f) for f, units in by_frontier.items() for u in units}
+        default = {name: court['members'] for name, court in courts.items()}
+
+        def fits(crate, names):
+            return spec['frontiers'].get(crate) == frontier_of_unit[names]
+
+        regrouped = repin(default, sorted(frontier_of_unit), spec['modules'],
+                          lambda crate: crate.startswith(STEM + '-court-'), fits)
+        courts = {crate: {'frontier': frontier_of_unit[members[0]], 'members': members}
+                  for crate, members in sorted(regrouped.items())}
+    dump('courts', {name: court['members'] for name, court in courts.items()},
+         {name: court['frontier'] for name, court in courts.items()})
     return courts
 
 
