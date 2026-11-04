@@ -27,3 +27,24 @@ impl RuntimeSymbolTable {
         result
     }
 }
+
+impl RuntimeSymbolState {
+    /// Skip replacement only when both identity and retained custody already agree.
+    pub(super) fn retains_configuration_text(
+        &self,
+        symbol: Symbol,
+        text: &StoredSymbolText,
+    ) -> bool {
+        let Some((prior, recorded)) = self.configuration.get_key_value(text.as_str()) else {
+            return false;
+        };
+        *recorded == symbol
+            && match (prior.is_managed(), text.is_managed()) {
+                (false, false) => true,
+                (true, true) => {
+                    !text.as_str().is_empty() && std::ptr::eq(prior.as_str(), text.as_str())
+                }
+                (false, true) | (true, false) => false,
+            }
+    }
+}

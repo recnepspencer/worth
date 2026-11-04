@@ -155,6 +155,9 @@ impl RuntimeSymbolTable {
                     .interner
                     .retained_text(*symbol)
                     .ok_or("admitted canonical dictionary lacks its symbol")?;
+                if state.retains_configuration_text(*symbol, text) {
+                    continue;
+                }
                 state.configuration.remove(text.as_str());
                 state.configuration.insert(text.clone(), *symbol);
             }
@@ -203,3 +206,7 @@ impl RuntimeSymbolTable {
 #[cfg(test)]
 #[path = "symbol_table/tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "symbol_table/publication_tests.rs"]
+mod publication_tests;
