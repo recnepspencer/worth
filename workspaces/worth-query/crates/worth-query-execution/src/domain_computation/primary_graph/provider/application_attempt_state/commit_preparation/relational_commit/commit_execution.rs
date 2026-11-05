@@ -113,12 +113,6 @@ pub(super) fn commit(
     } = consumed_output::verify(&execution, provider, &mut attempt, before.as_snapshot())?;
     let availability_fence =
         availability::prepare(&execution, provider, &attempt, before.as_snapshot())?;
-    let prepared_output_witness =
-        crate::domain_computation::primary_graph::output_lineage::PreparedNativeOutputWitness::prepare(
-            &attempt,
-            &provider.graph.layout,
-        )
-        .map_err(native_output_witness_stop)?;
     let candidate = required_origin::bind(
         candidate,
         &execution,
@@ -192,6 +186,14 @@ pub(super) fn commit(
         &candidate,
         prepared_group_publications.as_ref(),
     )?;
+    // Native admission has separated canonical roles from closure evidence.
+    // Prepare exactly those roles before publication seals their content proof.
+    let prepared_output_witness =
+        crate::domain_computation::primary_graph::output_lineage::PreparedNativeOutputWitness::prepare(
+            &attempt,
+            &provider.graph.layout,
+        )
+        .map_err(native_output_witness_stop)?;
     let prepared_touched_records =
         touched_records::PreparedTouchedRecords::prepare(&candidate, allocation_policy)?;
     let source_fact_rebase = provider.graph.with_runtime(&execution, |runtime| source_fact_rebase.prepare_candidate(&candidate, runtime, before.as_snapshot(),

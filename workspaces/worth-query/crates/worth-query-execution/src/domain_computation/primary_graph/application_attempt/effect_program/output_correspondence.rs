@@ -142,11 +142,15 @@ impl WorthQueryApplicationOutputCorrespondence {
             })
     }
 
-    /// Only completed Retire bindings whose actual delete effects were validated.
+    /// Entities retired by validated roles or admission-only closure evidence.
+    ///
+    /// O(roles + closure witnesses) time and O(1) additional space. Rebase still
+    /// requires this commit's changed record and exact native deletion version.
     pub fn retired_entity_ids(&self) -> impl Iterator<Item = EntityId> + '_ {
         self.storage
             .roles
             .iter()
+            .chain(self.storage.closure_evidence.iter())
             .map(|(_, binding)| binding)
             .filter_map(|binding| {
                 (binding.posture == WorthQueryApplicationOutputPosture::Retire)
