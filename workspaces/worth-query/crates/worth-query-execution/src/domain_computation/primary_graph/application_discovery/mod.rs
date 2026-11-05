@@ -31,13 +31,19 @@ pub struct WorthQueryApplicationDiscovery<'a, Schema> {
     schema: &'a WorthQueryInstalledApplicationSchema<Schema>,
 }
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub fn discovery(&self) -> WorthQueryApplicationDiscovery<'_, Schema> {
+pub trait ApplicationDiscoveryOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_discovery::host::ApplicationDiscoveryHost<
+    Schema,
+>
+{
+    fn discovery(&self) -> WorthQueryApplicationDiscovery<'_, Schema> {
         WorthQueryApplicationDiscovery {
             schema: self.installed_schema(),
         }
     }
 }
+
+impl<Schema: ApplicationSchema, HostRuntime: crate::domain_computation::primary_graph::application_discovery::host::ApplicationDiscoveryHost<Schema> + ?Sized> ApplicationDiscoveryOps<Schema> for HostRuntime {}
 
 impl<'a, Schema: ApplicationSchema> WorthQueryApplicationDiscovery<'a, Schema> {
     /// Entry input and scope contracts for the installed typed query requests.
@@ -130,3 +136,4 @@ const fn posture(installed: bool) -> WorthQueryApplicationCallablePosture {
         WorthQueryApplicationCallablePosture::Declared
     }
 }
+pub(crate) mod host;

@@ -393,7 +393,7 @@ def main(argv=None):
         Path(args.facade_file).write_text(
             f'//! The runtime\'s consumer methods over `{args.module}`; each only calls its subsystem.\n'
             'use worth_query_installation::facade::ApplicationSchema;\n\n'
-            f'impl<Schema: ApplicationSchema> super::{RUNTIME_NAME}<Schema> {{\n    ' +
+            f'impl<Schema: ApplicationSchema> super::super::{RUNTIME_NAME}<Schema> {{\n    ' +
             '\n\n    '.join(facades) + '\n}\n', encoding='utf-8', newline='\n')
     return 0
 

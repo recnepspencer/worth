@@ -26,6 +26,7 @@ mod certification_cost;
 mod conditional_cleanup;
 mod execution_memory;
 pub(crate) mod external_dispatch_attempt;
+mod facade;
 mod host;
 mod mutation_partition;
 mod teardown;
