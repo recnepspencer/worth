@@ -1,8 +1,10 @@
 //! Capability metadata preselection uses the same actual future Product session.
 use super::*;
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub(in crate::domain_computation) fn refresh_capability_authorization_for_prepared_read(
+pub(in crate::domain_computation) trait PreparedReadScopedOps<Schema: ApplicationSchema>:
+    crate::domain_computation::authorization::host::AuthorizationHost<Schema>
+{
+    fn refresh_capability_authorization_for_prepared_read(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         authorization: &mut WorthQueryRetainedCapabilityAuthorization,
@@ -16,4 +18,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             product,
         )
     }
+}
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::authorization::host::AuthorizationHost<Schema> + ?Sized,
+    > PreparedReadScopedOps<Schema> for HostRuntime
+{
 }

@@ -40,7 +40,7 @@ pub(in crate::domain_computation) fn admit_capability_access<
     Input,
 >(
 execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     product: &crate::basis::WorthQueryProductBranchLease,
     principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
     capability: &WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,
@@ -63,7 +63,7 @@ where
     Input: ApplicationCapabilityRequest<Schema, Capability> + 'static,
 {
     crate::domain_computation::authorization::admission::validate_admission_clock(
-        &runtime.runtime,
+        runtime.authorization_clock(),
         principal.clock(),
         request,
         capability.contract().operation(),
@@ -71,7 +71,7 @@ where
     admit_request(request, capability.contract().operation())?;
     let prepared = prepare_capability_admission(
         execution,
-        runtime,
+        runtime.application_runtime(),
         product,
         principal,
         capability,
@@ -96,7 +96,7 @@ pub fn admit_encoded_capability_access<
     Input,
 >(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     product: &crate::basis::WorthQueryProductBranchLease,
     principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
     capability: &WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,
@@ -114,7 +114,7 @@ where
     Input: ApplicationCapabilityRequest<Schema, Capability> + 'static,
 {
     crate::domain_computation::authorization::admission::validate_admission_clock(
-        &runtime.runtime,
+        runtime.authorization_clock(),
         principal.clock(),
         request,
         capability.contract().operation(),
@@ -122,7 +122,7 @@ where
     admit_request(request, capability.contract().operation())?;
     let mut prepared = prepare_capability_admission(
         execution,
-        runtime,
+        runtime.application_runtime(),
         product,
         principal,
         capability,
@@ -133,3 +133,6 @@ where
     prepared.workflow_actor = workflow_actor.cloned();
     complete_capability_admission(execution, prepared)
 }
+pub use preparation::BorrowedCapabilityOps;
+pub use preparation::OperationProgressionOps;
+pub(in crate::domain_computation) use preparation::OperationProgressionScopedOps;

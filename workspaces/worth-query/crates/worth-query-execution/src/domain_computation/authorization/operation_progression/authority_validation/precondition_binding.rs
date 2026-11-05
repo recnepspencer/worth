@@ -89,7 +89,7 @@ where
     let runtime = validated.runtime;
     let scope = validated.scope;
     let operation = validated.operation;
-    let graph = runtime.runtime.primary_graph().ok_or_else(|| {
+    let graph = runtime.primary_graph().ok_or_else(|| {
         WorthQueryOperationAuthorizationDenial::new(
             crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignRuntime),
             operation.operation(),
@@ -160,6 +160,9 @@ where
     })
 }
 
+pub use transition::BorrowedCapabilityOps;
+pub use transition::OperationProgressionOps;
+pub(in crate::domain_computation) use transition::OperationProgressionScopedOps;
 pub(in crate::domain_computation) use transition::{
     BrandTag, ReadCompletionAdmission, WorthQueryAdmittedOperation,
 };

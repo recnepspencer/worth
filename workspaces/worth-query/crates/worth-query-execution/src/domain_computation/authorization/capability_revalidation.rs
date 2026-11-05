@@ -31,11 +31,12 @@ enum WorthQueryCapabilityRefreshTime<'sample> {
     ReuseWhenTimelineMatches(&'sample super::WorthQueryRuntimeTimeSample),
 }
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub(in crate::domain_computation) trait CapabilityRevalidationScopedOps<Schema>:
+    crate::domain_computation::authorization::host::AuthorizationHost<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub(in crate::domain_computation) fn refresh_capability_authorization_for_graph_work(
+    fn refresh_capability_authorization_for_graph_work(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         authorization: &mut WorthQueryRetainedCapabilityAuthorization,
@@ -56,8 +57,23 @@ where
             product,
         )
     }
+}
 
-    pub(super) fn refresh_admitted_capability_authorization<Operation, Input, Scope>(
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::authorization::host::AuthorizationHost<Schema> + ?Sized,
+    > CapabilityRevalidationScopedOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
+}
+
+pub(super) trait CapabilityRevalidationParentOps<Schema>:
+    crate::domain_computation::authorization::host::AuthorizationHost<Schema>
+where
+    Schema: ApplicationSchema,
+{
+    fn refresh_admitted_capability_authorization<Operation, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: &mut super::WorthQueryAdmittedApplicationOperation<
@@ -130,7 +146,22 @@ where
         )?;
         Ok(true)
     }
+}
 
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::authorization::host::AuthorizationHost<Schema> + ?Sized,
+    > CapabilityRevalidationParentOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
+}
+
+trait CapabilityRevalidationOwnOps<Schema>:
+    crate::domain_computation::authorization::host::AuthorizationHost<Schema>
+where
+    Schema: ApplicationSchema,
+{
     fn refresh_capability_authorization(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -196,7 +227,7 @@ where
         super::capability_observation::WorthQueryObservedCapabilityDecision,
         WorthQueryOperationAuthorizationDenial,
     > {
-        let graph = self.runtime.primary_graph().ok_or_else(|| {
+        let graph = self.primary_graph().ok_or_else(|| {
             denial(
                 WorthQueryOperationAuthorizationDenialKind::Refused(
                     AuthorizationRefusal::ForeignRuntime,
@@ -217,30 +248,30 @@ where
             .with_runtime_mut(execution, |runtime| {
                 let snapshot = security.snapshot_handle();
 
-                self.runtime
-                    .validate_active_capability_currentness(
-                        execution,
+                active_currentness::validate_active_capability_currentness(
+                    self.authorization(),
+                    execution,
+                    runtime,
+                    snapshot,
+                    authorization,
+                    refresh,
+                )
+                .and_then(|()| {
+                    WorthQueryCapabilityRevalidationObservation::new(
+                        refresh.session,
                         runtime,
                         snapshot,
-                        authorization,
-                        refresh,
+                        self.authorization().bridge(),
+                        refresh.installed,
+                        authorization.request(),
+                        &refresh.sample,
                     )
-                    .and_then(|()| {
-                        WorthQueryCapabilityRevalidationObservation::new(
-                            refresh.session,
-                            runtime,
-                            snapshot,
-                            self.runtime.authorization.bridge(),
-                            refresh.installed,
-                            authorization.request(),
-                            &refresh.sample,
-                        )
-                        .observe_active_capability(
-                            execution,
-                            Some(authorization.grant()),
-                            Some(authorization.decision()),
-                        )
-                    })
+                    .observe_active_capability(
+                        execution,
+                        Some(authorization.grant()),
+                        Some(authorization.decision()),
+                    )
+                })
             })?;
         Ok(observed)
     }
@@ -315,7 +346,7 @@ where
         super::capability_observation::WorthQueryObservedCapabilityDecision,
         WorthQueryOperationAuthorizationDenial,
     > {
-        let graph = self.runtime.primary_graph().ok_or_else(|| {
+        let graph = self.primary_graph().ok_or_else(|| {
             denial(
                 WorthQueryOperationAuthorizationDenialKind::Refused(
                     AuthorizationRefusal::ForeignRuntime,
@@ -340,7 +371,7 @@ where
                     refresh.session,
                     runtime,
                     snapshot,
-                    self.runtime.authorization.bridge(),
+                    self.authorization().bridge(),
                     refresh.installed,
                     supporting.request(),
                     &refresh.sample,
@@ -354,3 +385,14 @@ where
             })
     }
 }
+
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::authorization::host::AuthorizationHost<Schema> + ?Sized,
+    > CapabilityRevalidationOwnOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
+}
+pub(in crate::domain_computation::authorization) use installed_basis::InstalledBasisScopedOps;
+pub(in crate::domain_computation) use prepared_read::PreparedReadScopedOps;

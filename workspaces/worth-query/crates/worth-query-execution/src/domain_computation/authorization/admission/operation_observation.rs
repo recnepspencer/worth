@@ -4,6 +4,7 @@ use super::{
     validation::denial, WorthQueryConventionalAuthorizationObservation,
     WorthQueryObservedConventionalOperation,
 };
+use crate::domain_computation::authorization::admission::requirement_observation::RequirementObservationParentOps;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::authorization::{
     WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
@@ -20,17 +21,12 @@ use worth_query_installation::facade::{
     WorthQueryInstalledApplicationOperationAuthorization,
 };
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub(in crate::domain_computation::authorization) trait OperationObservationScopedOps<Schema>:
+    crate::domain_computation::authorization::host::AuthorizationHost<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub(in crate::domain_computation::authorization) fn observe_operation_authorization<
-        Principal,
-        PrincipalIdentity,
-        Operation,
-        Input,
-        Scope,
-    >(
+    fn observe_operation_authorization<Principal, PrincipalIdentity, Operation, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
@@ -42,7 +38,22 @@ where
         self.observe_current_operation(execution, principal, scope_identity, operation, graph_work)?
             .retain_for(operation)
     }
+}
 
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::authorization::host::AuthorizationHost<Schema> + ?Sized,
+    > OperationObservationScopedOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
+}
+
+trait OperationObservationOwnOps<Schema>:
+    crate::domain_computation::authorization::host::AuthorizationHost<Schema>
+where
+    Schema: ApplicationSchema,
+{
     fn observe_current_operation<Principal, PrincipalIdentity, Operation, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -52,7 +63,7 @@ where
         graph_work: &crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
     ) -> Result<WorthQueryObservedConventionalOperation, WorthQueryOperationAuthorizationDenial>
     {
-        let graph = self.runtime.primary_graph().ok_or_else(|| {
+        let graph = self.primary_graph().ok_or_else(|| {
             denial(
                 WorthQueryOperationAuthorizationDenialKind::Refused(
                     AuthorizationRefusal::ForeignRuntime,
@@ -151,6 +162,15 @@ where
             decision_facts,
         })
     }
+}
+
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::authorization::host::AuthorizationHost<Schema> + ?Sized,
+    > OperationObservationOwnOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
 }
 
 impl WorthQueryObservedConventionalOperation {

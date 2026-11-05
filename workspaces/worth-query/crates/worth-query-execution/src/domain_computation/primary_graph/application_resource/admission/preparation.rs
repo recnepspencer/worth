@@ -1,5 +1,7 @@
 //! Join genuine issued principal/scope guards to the installed Resource leaf.
 use super::*;
+use crate::domain_computation::authorization::CapabilityRevalidationScopedOps;
+use crate::domain_computation::authorization::ResourceObservationScopedOps;
 use crate::domain_computation::{
     authorization::application_disclosure::{
         admit_application_resource_governance, compile_resource_disclosure_contract,

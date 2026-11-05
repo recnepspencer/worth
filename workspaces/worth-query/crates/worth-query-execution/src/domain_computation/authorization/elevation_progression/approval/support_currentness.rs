@@ -1,5 +1,6 @@
 //! Fresh observation of the exact governed support carried by a request receipt.
 
+use crate::domain_computation::authorization::InstalledBasisScopedOps;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest;
 use worth_query_installation::facade::ApplicationSchema;
@@ -16,7 +17,7 @@ use crate::domain_computation::primary_graph::{
 
 pub(super) fn refresh_exact_support<Schema, Capability, Operation, Input>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     requested: &mut WorthQueryRequestedElevation,
     access: &mut WorthQueryAdmittedApplicationCapabilityAccess<
         Schema,
@@ -39,7 +40,7 @@ where
 
 fn observe_current_support<Schema, Capability, Operation, Input>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     requested: &WorthQueryElevationRequestBinding,
     access: &WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
     installed: &WorthQueryInstalledCapabilityPlan,

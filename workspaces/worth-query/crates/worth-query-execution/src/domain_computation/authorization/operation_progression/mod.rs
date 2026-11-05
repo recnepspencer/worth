@@ -33,7 +33,7 @@ pub(in crate::domain_computation::authorization) fn progress_capability_operatio
     Input,
 >(
 execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     access: crate::domain_computation::authorization::WorthQueryAdmittedApplicationCapabilityAccess<
         Schema,
         Capability,
@@ -93,9 +93,7 @@ pub(in crate::domain_computation) fn progress_conventional_operation<
     Scope,
 >(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
-        Schema,
-    >,
+    runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     product: &crate::basis::WorthQueryProductBranchLease,
     principal: &crate::domain_computation::primary_graph::WorthQueryAuthenticatedPrincipal<
         Schema,
@@ -133,6 +131,9 @@ where
     authority_validation::transition_conventional_operation(execution, bound)
 }
 
+pub use authority_validation::BorrowedCapabilityOps;
+pub use authority_validation::OperationProgressionOps;
+pub(in crate::domain_computation) use authority_validation::OperationProgressionScopedOps;
 pub(in crate::domain_computation) use authority_validation::{
     BrandTag, ReadCompletionAdmission, WorthQueryAdmittedOperation,
 };

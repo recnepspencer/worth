@@ -7,6 +7,7 @@ use super::{
     WorthQueryCanonicalWorkEvidence, WorthQueryRequestScope,
     WorthQueryRetainedCapabilityAuthorization,
 };
+use crate::domain_computation::authorization::RetainedAuthorizationScopedOps;
 
 impl<Schema, Capability, Operation, Input>
     WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>
@@ -32,7 +33,7 @@ where
     pub(in crate::domain_computation) fn validate_workflow_read_authority(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     ) -> Result<(), crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial>
     where
         Schema: worth_query_installation::facade::ApplicationSchema,

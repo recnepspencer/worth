@@ -1,5 +1,6 @@
 //! Revalidation of the supporting capability carried by a commit basis.
 
+use crate::domain_computation::authorization::InstalledBasisScopedOps;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{
@@ -51,11 +52,12 @@ macro_rules! impl_support_revalidation {
 impl_support_revalidation!(WorthQueryCapabilitySupportCommitBasis);
 impl_support_revalidation!(WorthQueryRetainedCapabilitySupport);
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub(super) trait SupportingCapabilityParentOps<Schema>:
+    crate::domain_computation::authorization::host::AuthorizationHost<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub(super) fn readmit_capability_commit_support(
+    fn readmit_capability_commit_support(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         supporting: Option<&WorthQueryCapabilitySupportCommitBasis>,
@@ -65,7 +67,7 @@ where
         self.readmit_capability_support(execution, supporting, runtime, snapshot)
     }
 
-    pub(super) fn readmit_retained_capability_support(
+    fn readmit_retained_capability_support(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         supporting: Option<&WorthQueryRetainedCapabilitySupport>,
@@ -74,7 +76,22 @@ where
     ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
         self.readmit_capability_support(execution, supporting, runtime, snapshot)
     }
+}
 
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::authorization::host::AuthorizationHost<Schema> + ?Sized,
+    > SupportingCapabilityParentOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
+}
+
+trait SupportingCapabilityOwnOps<Schema>:
+    crate::domain_computation::authorization::host::AuthorizationHost<Schema>
+where
+    Schema: ApplicationSchema,
+{
     fn readmit_capability_support<Support>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -93,12 +110,7 @@ where
             != installed.capability_authority_identity().as_ref()
             || !supporting
                 .decision()
-                .remains_current_in(
-                    execution,
-                    runtime,
-                    snapshot,
-                    self.runtime.authorization.bridge(),
-                )
+                .remains_current_in(execution, runtime, snapshot, self.authorization().bridge())
                 .map_err(|cause| {
                     crate::domain_computation::authorization::denial::relational_read_denial(
                         cause,
@@ -114,7 +126,7 @@ where
                 session: supporting.decision().session_identity(),
                 relational: runtime,
                 snapshot,
-                bridge: self.runtime.authorization.bridge(),
+                bridge: self.authorization().bridge(),
                 installed,
                 request: supporting.request(),
                 sample: &sample,
@@ -128,4 +140,13 @@ where
         )
         .map(drop)
     }
+}
+
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::authorization::host::AuthorizationHost<Schema> + ?Sized,
+    > SupportingCapabilityOwnOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
 }

@@ -30,6 +30,7 @@ pub(crate) mod program_adoption;
 pub(crate) mod query;
 mod relational_change_delivery;
 mod security_basis;
+pub(in crate::domain_computation) use security_basis::WorthQueryProductObservationSource;
 mod transaction;
 
 pub(in crate::domain_computation) use security_basis::WorthQueryProductSecurityBasis;

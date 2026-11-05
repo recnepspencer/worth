@@ -23,7 +23,7 @@ pub(in crate::domain_computation::authorization::elevation_progression) fn bind_
     Input,
 >(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     capability_identity: [u8; 32],
     installed: &WorthQueryInstalledCapabilityPlan,
     access: &WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
@@ -44,8 +44,7 @@ where
         .as_ref()
         .ok_or_else(|| projection_denial(installed.contract().name()))?;
     let interval = runtime
-        .runtime
-        .authorization_clock
+        .authorization_clock()
         .sample_interval(elevation.temporal.timeline, proposed.duration())
         .map_err(|_| {
             denial(
@@ -68,7 +67,7 @@ where
         .ok_or_else(|| projection_denial(access.operation()))??;
     let lifecycle = &elevation.lifecycle;
     Ok(WorthQueryElevationRequestBinding {
-        runtime_authority: runtime.runtime.authority_identity(),
+        runtime_authority: runtime.authority_identity(),
         branch: access.graph_work_branch().clone(),
         capability_identity,
         capability_authority_identity: Arc::clone(installed.capability_authority_identity()),

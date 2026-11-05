@@ -27,12 +27,13 @@ pub(in crate::domain_computation) use binding::{
 pub(in crate::domain_computation::authorization) mod support;
 use support::authorize_target_support;
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub trait DelegationProgressionOps<Schema>:
+    crate::domain_computation::authorization::host::AuthorizationHost<Schema>
 where
     Schema: ApplicationSchema,
 {
     #[allow(clippy::too_many_arguments)]
-    pub fn authorize_capability_delegation<
+    fn authorize_capability_delegation<
         CommandCapability,
         TargetCapability,
         TargetOperation,
@@ -77,7 +78,7 @@ where
         Input: ApplicationCapabilityRequest<Schema, CommandCapability>
             + ApplicationCapabilityDelegationRequest<Schema, TargetCapability>,
     {
-        let execution = match phase.execution_request_for(&self.runtime.product_runtime) {
+        let execution = match phase.execution_request_for(self.product_runtime()) {
             Ok(execution) => execution,
             Err(_) => return Err(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody")),
         };
@@ -89,8 +90,23 @@ where
             preconditions,
         )
     }
+}
 
-    pub(in crate::domain_computation) fn authorize_capability_delegation_with_request<
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::authorization::host::AuthorizationHost<Schema> + ?Sized,
+    > DelegationProgressionOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
+}
+
+pub(in crate::domain_computation) trait DelegationProgressionScopedOps<Schema>:
+    crate::domain_computation::authorization::host::AuthorizationHost<Schema>
+where
+    Schema: ApplicationSchema,
+{
+    fn authorize_capability_delegation_with_request<
         CommandCapability,
         TargetCapability,
         TargetOperation,
@@ -147,15 +163,20 @@ where
                 )
             })?;
         let installed = self
-            .runtime
-            .authorization
+            .authorization()
             .capability_plan(target)
             .ok_or_else(|| stale(target.contract().name()))?;
         validate_activation_operation(installed, operation)?;
-        let observed = authorize_target_support(execution, self, target, &access, &proposed)?;
+        let observed = authorize_target_support(
+            execution,
+            self.application_runtime(),
+            target,
+            &access,
+            &proposed,
+        )?;
         let mut access = access;
         let prepared = observed.prepare_activation(
-            self,
+            self.application_runtime(),
             installed,
             &proposed,
             target,
@@ -164,7 +185,7 @@ where
         )?;
         let admitted = progress_capability_operation(
             execution,
-            self,
+            self.application_runtime(),
             access,
             operation,
             preconditions,
@@ -172,6 +193,15 @@ where
         )?;
         prepared.finish(admitted)
     }
+}
+
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::authorization::host::AuthorizationHost<Schema> + ?Sized,
+    > DelegationProgressionScopedOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
 }
 
 fn validate_activation_operation<Schema, Operation, Input>(
@@ -219,3 +249,5 @@ fn denial(
 ) -> WorthQueryOperationAuthorizationDenial {
     WorthQueryOperationAuthorizationDenial::new(kind, subject)
 }
+pub use replay::ReplayOps;
+pub(in crate::domain_computation) use replay::ReplayScopedOps;

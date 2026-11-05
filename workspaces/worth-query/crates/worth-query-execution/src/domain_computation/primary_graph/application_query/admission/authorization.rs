@@ -1,4 +1,5 @@
 use super::{denial::graph_work_denial, governed_access::governance_denial};
+use crate::domain_computation::authorization::CapabilityRevalidationScopedOps;
 use crate::domain_computation::authorization::WorthQueryRetainedAuthorizationDecisionFacts;
 use crate::domain_computation::primary_graph::{
     application_query::{

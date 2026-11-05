@@ -1,4 +1,5 @@
 use super::*;
+use crate::domain_computation::authorization::CapabilityRevalidationScopedOps;
 use crate::domain_computation::primary_graph::{
     WorthQueryOperationAuthorizationDenial, WorthQueryPrincipalResolutionMode,
 };

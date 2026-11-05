@@ -1,5 +1,6 @@
 //! Atomic elevation upper-bound and current-support observation.
 
+use crate::domain_computation::authorization::InstalledBasisScopedOps;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::sync::Arc;
 
@@ -124,7 +125,7 @@ where
                 execution,
                 self.relational,
                 self.snapshot,
-                self.runtime.runtime.authorization.bridge(),
+                self.runtime.authorization().bridge(),
             )
             .map_err(|cause| {
                 crate::domain_computation::authorization::denial::relational_read_denial(
@@ -152,8 +153,7 @@ where
     ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
         let owned = self
             .runtime
-            .runtime
-            .authorization
+            .authorization()
             .capability_plan_by_identity(&capability_identity)
             .ok_or_else(|| stale(installed.contract().name()))?;
         std::ptr::eq(owned, installed)

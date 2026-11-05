@@ -44,7 +44,7 @@ impl WorthQueryObservedDelegationSupport {
         Context,
     >(
         self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
         installed: &super::super::capability_registry::WorthQueryInstalledCapabilityPlan,
         proposed: &worth_query_declaration::facade::application_capability::ApplicationCapabilityDelegationRequestProjection<Schema, Scope, Context>,
         target: &WorthQueryInstalledApplicationCapability<
@@ -69,7 +69,7 @@ impl WorthQueryObservedDelegationSupport {
         Input: ApplicationCapabilityRequest<Schema, CommandCapability>,
     {
         let prepared = super::binding::bind_activation(
-            runtime,
+            runtime.application_runtime(),
             installed,
             proposed,
             self.resolved,
@@ -100,7 +100,7 @@ pub(super) fn authorize_target_support<
     Input,
 >(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     target_capability: &WorthQueryInstalledApplicationCapability<
         Schema,
         TargetCapability,

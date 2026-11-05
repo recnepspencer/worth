@@ -52,4 +52,7 @@ struct WorthQueryObservedConventionalOperation {
     decision_facts: Vec<WorthQueryAuthorizationDecisionFact>,
 }
 
+pub(in crate::domain_computation::authorization) use operation_observation::OperationObservationScopedOps;
+pub(in crate::domain_computation) use requirement_observation::RequirementObservationScopedOps;
+pub(in crate::domain_computation) use resource_observation::ResourceObservationScopedOps;
 pub(in crate::domain_computation::authorization) use validation::validate_admission_clock;

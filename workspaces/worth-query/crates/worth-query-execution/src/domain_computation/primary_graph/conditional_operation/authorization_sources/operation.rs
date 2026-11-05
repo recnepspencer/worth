@@ -1,6 +1,7 @@
 //! Authorization sources a conditional operation uses to admit its operation
 //! each time a due wake re-enters it.
 
+use crate::domain_computation::authorization::OperationProgressionScopedOps;
 use crate::domain_computation::authorization::WorthQueryAdmittedApplicationOperation;
 use crate::domain_computation::primary_graph::{
     WorthQueryAuthenticatedPrincipal, WorthQueryOperationAuthorizationDenial,

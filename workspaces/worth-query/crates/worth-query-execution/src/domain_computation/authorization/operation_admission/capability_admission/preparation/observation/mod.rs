@@ -89,3 +89,6 @@ where
 {
     currentness::observe_and_admit(execution, prepared)
 }
+pub use admitted_access::BorrowedCapabilityOps;
+pub use admitted_access::OperationProgressionOps;
+pub(in crate::domain_computation) use admitted_access::OperationProgressionScopedOps;

@@ -179,7 +179,7 @@ def rewrite_body(item, schema, local, core_fields, top_fields, needs, receiver='
 
 
 RUNTIME_TYPE = re.compile(r"&\s*('\w+\s+)?(?:(?:crate|super|self)(?:::\w+)*::)?" + RUNTIME_NAME +
-                          r"\s*<\s*(\w+)\s*>")
+                          r"\s*<\s*(\w+)\s*,?\s*>")
 
 
 def rewrite_parameters(text, host_path, local, core_fields, top_fields, needs, skip):
@@ -322,7 +322,7 @@ def rewrite_holders(text, host_path, core_fields, top_fields, needs):
     for m in re.finditer(r"fn\s+(\w+)\s*(<[^(]*>)?\s*\(\s*&\s*self\s*\)\s*->\s*" + RUNTIME_TYPE.pattern, text):
         holders.add(m.group(1))
         start = m.start(0) + m.group(0).index('->') + 2
-        edits.append((start, m.end(0), f" &{m.group(4) or ''}dyn {host_path}<{m.group(5)}>"))
+        edits.append((start, m.end(0), f" &{m.group(3) or ''}dyn {host_path}<{m.group(4)}>"))
     for a, b, r in sorted(edits, reverse=True):
         text = text[:a] + r + text[b:]
     if not holders:

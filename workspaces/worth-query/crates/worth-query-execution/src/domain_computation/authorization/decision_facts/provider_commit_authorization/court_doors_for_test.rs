@@ -13,7 +13,7 @@ impl WorthQueryProviderCommitAuthorization {
     >(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        application: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        application: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
         admission: &'admission crate::domain_computation::authorization::WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         serialization: &'serialization crate::domain_computation::primary_graph::WorthQueryApplicationBranchCommitCoordination<'_>,
     ) -> Result<

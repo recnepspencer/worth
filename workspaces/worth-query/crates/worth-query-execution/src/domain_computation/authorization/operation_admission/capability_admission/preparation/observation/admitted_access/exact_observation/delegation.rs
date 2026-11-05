@@ -1,5 +1,6 @@
 //! Atomic delegation resolution and exact parent-support observation.
 
+use crate::domain_computation::authorization::InstalledBasisScopedOps;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::sync::Arc;
 
@@ -93,8 +94,7 @@ where
     ) -> Result<WorthQueryDelegationResolvedRequest, WorthQueryOperationAuthorizationDenial> {
         let installed = self
             .runtime
-            .runtime
-            .authorization
+            .authorization()
             .capability_plan(target_capability)
             .ok_or_else(|| stale(target_capability.contract().name()))?;
         let target = self.resolve_request(execution, proposed.target())?;
@@ -135,8 +135,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<crate::domain_computation::authorization::delegation_progression::support::WorthQueryObservedDelegationSupport, WorthQueryOperationAuthorizationDenial>{
         let installed = self
             .runtime
-            .runtime
-            .authorization
+            .authorization()
             .capability_plan(target_capability)
             .ok_or_else(|| stale(target_capability.contract().name()))?;
         let sample = self.runtime.sample_capability_time(installed)?;

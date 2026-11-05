@@ -22,10 +22,10 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphApplicationRuntime,
 };
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    /// A denied fresh delegation may inspect one exact prior commit. A missing
-    /// or drifted record never leaves this method as executable authority.
-    pub fn replay_capability_delegation_after_fresh_denial<
+pub trait ReplayOps<Schema: ApplicationSchema>:
+    crate::domain_computation::authorization::host::AuthorizationHost<Schema>
+{
+    fn replay_capability_delegation_after_fresh_denial<
         CommandCapability,
         TargetCapability,
         TargetOperation,
@@ -67,7 +67,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             + Sync
             + 'static,
     {
-        let execution = match phase.execution_request_for(&self.runtime.product_runtime) {
+        let execution = match phase.execution_request_for(self.product_runtime()) {
             Ok(execution) => execution,
             Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody"))),
         };
@@ -80,8 +80,19 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             idempotency,
         )
     }
+}
 
-    pub(in crate::domain_computation) fn replay_capability_delegation_after_fresh_denial_with_request<
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::authorization::host::AuthorizationHost<Schema> + ?Sized,
+    > ReplayOps<Schema> for HostRuntime
+{
+}
+
+pub(in crate::domain_computation) trait ReplayScopedOps<Schema: ApplicationSchema>:
+    crate::domain_computation::authorization::host::AuthorizationHost<Schema>
+{
+    fn replay_capability_delegation_after_fresh_denial_with_request<
         CommandCapability,
         TargetCapability,
         TargetOperation,
@@ -123,7 +134,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             + Sync
             + 'static,
     {
-        let Some(installed) = self.runtime.authorization.capability_plan(target) else {
+        let Some(installed) = self.authorization().capability_plan(target) else {
             return Ok(None);
         };
         if super::validate_activation_operation(installed, operation).is_err() {
@@ -132,7 +143,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let Ok(proposed) = access.capability_input().delegation_request() else {
             return Ok(None);
         };
-        let resolved = match access.with_exact_observation(execution, self, |observation| {
+        let resolved = match access.with_exact_observation(execution, self.authorization_host(), |observation| {
             observation.resolve_delegation_replay_target(execution, target, &proposed)
         }) {
             Some(Ok(resolved)) => resolved,
@@ -147,13 +158,18 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             None => return Ok(None),
         };
         let Ok(prepared) = super::binding::bind_activation(
-            self, installed, &proposed, resolved, target, operation,
+            self.application_runtime(),
+            installed,
+            &proposed,
+            resolved,
+            target,
+            operation,
         ) else {
             return Ok(None);
         };
         let admission = match progress_capability_operation(
             execution,
-            self,
+            self.application_runtime(),
             access,
             operation,
             preconditions,
@@ -173,6 +189,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             return Ok(None);
         };
         let resolution = self
+            .application_runtime()
             .resolve_admitted_application_idempotency_with_request(
                 execution,
                 &admission,
@@ -187,4 +204,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             | WorthQueryApplicationIdempotencyResolution::Unseen => None,
         })
     }
+}
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::authorization::host::AuthorizationHost<Schema> + ?Sized,
+    > ReplayScopedOps<Schema> for HostRuntime
+{
 }

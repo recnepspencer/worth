@@ -1,6 +1,7 @@
 //! Resource actions observe their own installed requirement on the issued root.
 use super::validation::denial;
 use super::*;
+use crate::domain_computation::authorization::admission::requirement_observation::RequirementObservationParentOps;
 use crate::domain_computation::authorization::{
     WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
     WorthQueryOperationAuthorizationRefusalKind,
@@ -18,8 +19,10 @@ use worth_query_declaration::facade::{
 };
 use worth_query_installation::facade::WorthQueryInstalledApplicationResource;
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub(in crate::domain_computation) fn observe_resource_authorization<Binding>(
+pub(in crate::domain_computation) trait ResourceObservationScopedOps<Schema: ApplicationSchema>:
+    crate::domain_computation::authorization::host::AuthorizationHost<Schema>
+{
+    fn observe_resource_authorization<Binding>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         session_identity: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
@@ -75,4 +78,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             },
         )
     }
+}
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::authorization::host::AuthorizationHost<Schema> + ?Sized,
+    > ResourceObservationScopedOps<Schema> for HostRuntime
+{
 }

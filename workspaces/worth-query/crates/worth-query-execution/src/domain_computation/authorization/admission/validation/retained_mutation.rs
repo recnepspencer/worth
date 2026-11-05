@@ -26,7 +26,7 @@ pub(in crate::domain_computation::authorization) fn validate_static_authority_re
     PrincipalIdentity,
     Scope,
 >(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
     scope: &WorthQueryApplicationEntityIdentity<Schema, Scope>,
     current: &WorthQueryCurrentRetainedMutationBinding<'_, Schema, Binding>,
@@ -47,10 +47,7 @@ where
 
     validate_static_authority_prefix(runtime, principal, scope, operation)
         .map_err(Stop::Authorization)?;
-    if !current.belongs_to(
-        runtime.runtime.installed_packages(),
-        runtime.installed_schema(),
-    ) {
+    if !current.belongs_to(runtime.installed_packages(), runtime.installed_schema()) {
         return Err(Stop::Authorization(denial(
             WorthQueryOperationAuthorizationDenialKind::Refused(
                 AuthorizationRefusal::StaleInstalledOperation,

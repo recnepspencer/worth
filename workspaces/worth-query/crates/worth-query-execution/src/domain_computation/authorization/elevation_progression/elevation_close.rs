@@ -72,11 +72,12 @@ impl WorthQueryElevationCloseAuthorizationDenial {
     }
 }
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub trait ElevationCloseOps<Schema>:
+    crate::domain_computation::authorization::host::AuthorizationHost<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub fn authorize_elevation_close<Capability, Operation, Input>(
+    fn authorize_elevation_close<Capability, Operation, Input>(
         &self,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         approved: WorthQueryApprovedElevation,
@@ -101,7 +102,7 @@ where
         Input: ApplicationCapabilityRequest<Schema, Capability>,
         Input: 'static,
     {
-        let execution = match phase.execution_request_for(&self.runtime.product_runtime) {
+        let execution = match phase.execution_request_for(self.product_runtime()) {
             Ok(execution) => execution,
             Err(_) => return Err(close_denial(approved, crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody"))),
         };
@@ -113,12 +114,23 @@ where
             preconditions,
         )
     }
+}
 
-    pub(in crate::domain_computation) fn authorize_elevation_close_with_request<
-        Capability,
-        Operation,
-        Input,
-    >(
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::authorization::host::AuthorizationHost<Schema> + ?Sized,
+    > ElevationCloseOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
+}
+
+pub(in crate::domain_computation) trait ElevationCloseScopedOps<Schema>:
+    crate::domain_computation::authorization::host::AuthorizationHost<Schema>
+where
+    Schema: ApplicationSchema,
+{
+    fn authorize_elevation_close_with_request<Capability, Operation, Input>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         approved: WorthQueryApprovedElevation,
@@ -143,13 +155,13 @@ where
         Input: ApplicationCapabilityRequest<Schema, Capability>,
         Input: 'static,
     {
-        let draft = match bind_close(self, &approved, &access, operation) {
+        let draft = match bind_close(self.authorization_host(), &approved, &access, operation) {
             Ok(draft) => draft,
             Err(denial) => return Err(close_denial(approved, denial)),
         };
         let admission = match progress_capability_operation(
             execution,
-            self,
+            self.application_runtime(),
             access,
             operation,
             preconditions,
@@ -164,8 +176,17 @@ where
     }
 }
 
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::authorization::host::AuthorizationHost<Schema> + ?Sized,
+    > ElevationCloseScopedOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
+}
+
 fn bind_close<Schema, Capability, Operation, Input>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     approved: &WorthQueryApprovedElevation,
     access: &WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
     operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
@@ -177,13 +198,13 @@ where
     Input: 'static,
 {
     let (capability_identity, installed) = installed_lifecycle_owner(
-        runtime,
+        runtime.application_runtime(),
         access.installed_capability_identity(),
         operation,
         WorthQueryElevationLifecycleOperationRole::Revoke,
     )?;
     if !approved.belongs_to_lifecycle(
-        runtime.runtime.authority_identity(),
+        runtime.authority_identity(),
         access.graph_work_branch(),
         capability_identity,
         installed.capability_authority_identity().as_ref(),
@@ -225,7 +246,7 @@ where
 }
 
 fn derive_closure<Schema>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     installed: &WorthQueryInstalledCapabilityPlan,
     approved: &WorthQueryApprovedElevation,
 ) -> Result<
@@ -237,8 +258,7 @@ where
 {
     let lifecycle = installed.elevation().as_ref().unwrap();
     let sample = runtime
-        .runtime
-        .authorization_clock
+        .authorization_clock()
         .sample(lifecycle.temporal.timeline)
         .map_err(|_| {
             denial(

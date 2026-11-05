@@ -29,7 +29,8 @@ pub(in crate::domain_computation::authorization) struct WorthQueryExactCapabilit
     'observation,
     Schema,
 > {
-    runtime: &'observation WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime:
+        &'observation dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     relational: &'observation worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &'observation worth_relational::facade::snapshots::SnapshotHandle,
     resolution:
@@ -49,7 +50,7 @@ pub(in crate::domain_computation::authorization) struct WorthQueryExactCapabilit
 pub(super) fn with_exact_observation<Schema, Capability, Operation, Input, Output>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     access: &WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     observe: impl FnOnce(&WorthQueryExactCapabilityObservation<'_, Schema>) -> Output,
 ) -> Option<Output>
 where
@@ -59,16 +60,15 @@ where
         Capability,
     >,
 {
-    let graph = runtime.runtime.primary_graph()?;
-    if runtime.runtime.authority_identity() != access.runtime_authority
-        || runtime.installed_schema.binding_identity() != access.binding_identity
+    let graph = runtime.primary_graph()?;
+    if runtime.authority_identity() != access.runtime_authority
+        || runtime.installed_schema().binding_identity() != access.binding_identity
         || graph.binding_identity() != &access.binding_identity
     {
         return None;
     }
     let installed = runtime
-        .runtime
-        .authorization
+        .authorization()
         .capability_plan_by_identity(&access.authorization.installed_capability_identity())?;
     if installed.capability_authority_identity().as_ref()
         != access.authorization.capability_authority_identity()
@@ -108,8 +108,7 @@ where
     > {
         let owned = self
             .runtime
-            .runtime
-            .authorization
+            .authorization()
             .capability_plan_by_identity(&request.capability_identity())
             .ok_or_else(|| denial(installed.contract().name()))?;
         if !std::ptr::eq(owned, installed) {
@@ -135,7 +134,7 @@ where
         resolve_capability_request(
             execution,
             &truth,
-            &self.runtime.installed_schema,
+            &self.runtime.installed_schema(),
             projection,
         )
     }
@@ -146,7 +145,12 @@ where
         selector: &ErasedApplicationCapabilityEntitySelector,
     ) -> Result<WorthQueryResolvedEntity, WorthQueryOperationAuthorizationDenial> {
         let truth = self.resolution_truth(selector.field())?;
-        resolve_erased_selector(execution, &truth, &self.runtime.installed_schema, selector)
+        resolve_erased_selector(
+            execution,
+            &truth,
+            &self.runtime.installed_schema(),
+            selector,
+        )
     }
 
     fn resolve_lifecycle_field(
@@ -199,7 +203,7 @@ impl<Schema> WorthQueryExactCapabilityObservationContext<'_, Schema> {
     pub(in crate::domain_computation::authorization) fn bridge(
         &self,
     ) -> &worth_runtime_bridge::facade::BridgeAuthorizationRuntime {
-        self.observation.runtime.runtime.authorization.bridge()
+        self.observation.runtime.authorization().bridge()
     }
     pub(in crate::domain_computation::authorization) const fn installed(&self) -> &crate::domain_computation::authorization::capability_registry::WorthQueryInstalledCapabilityPlan{
         self.installed

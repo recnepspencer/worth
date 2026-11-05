@@ -128,9 +128,7 @@ pub(super) fn bind_activation<
     Scope,
     Context,
 >(
-    runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
-        Schema,
-    >,
+    runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     installed: &WorthQueryInstalledCapabilityPlan,
     proposed: &ApplicationCapabilityDelegationRequestProjection<Schema, Scope, Context>,
     resolved: WorthQueryDelegationResolvedRequest,

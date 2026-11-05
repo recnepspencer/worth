@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::AuthorizationRevalidationScopedOps;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_installation::facade::ApplicationSchema;
 

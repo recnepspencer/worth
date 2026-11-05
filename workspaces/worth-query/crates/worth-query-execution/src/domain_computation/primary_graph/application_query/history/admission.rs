@@ -1,5 +1,6 @@
 //! A second genuine governance decision on the existing SubjectRead session.
 
+use crate::domain_computation::authorization::CapabilityRevalidationScopedOps;
 use worth_query_declaration::facade::{
     application_query::{
         ApplicationHistoryMetadataFacet, ApplicationHistoryMetadataRef,

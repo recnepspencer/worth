@@ -2,6 +2,7 @@
 
 use crate::domain_computation::authorization::graph_work_session::transition_capability_to_operation_graph_work;
 use crate::domain_computation::authorization::operation_progression::WorthQueryCapabilityOperationProgression;
+use crate::domain_computation::authorization::CapabilityRevalidationScopedOps;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::authorization::{
     WorthQueryAdmittedApplicationCapabilityAccess, WorthQueryAdmittedApplicationOperation,
@@ -41,11 +42,12 @@ struct RevalidatedOperationAuthority {
     graph_work: crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
 }
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub trait OperationProgressionOps<Schema>:
+    crate::domain_computation::authorization::host::AuthorizationHost<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub fn authorize_capability_operation<Capability, Operation, Input>(
+    fn authorize_capability_operation<Capability, Operation, Input>(
         &self,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         access: WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
@@ -68,7 +70,7 @@ where
         Operation: ApplicationOperationMarkerIdentity<Schema>,
         Input: ApplicationCapabilityRequest<Schema, Capability>,
     {
-        let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
+        let phase_request = match phase.execution_request_for(self.product_runtime()) {
             Ok(request) => request,
             Err(_) => return Err(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody")),
         };
@@ -80,12 +82,23 @@ where
             preconditions,
         )
     }
+}
 
-    pub(in crate::domain_computation) fn authorize_capability_operation_with_request<
-        Capability,
-        Operation,
-        Input,
-    >(
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::authorization::host::AuthorizationHost<Schema> + ?Sized,
+    > OperationProgressionOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
+}
+
+pub(in crate::domain_computation) trait OperationProgressionScopedOps<Schema>:
+    crate::domain_computation::authorization::host::AuthorizationHost<Schema>
+where
+    Schema: ApplicationSchema,
+{
+    fn authorize_capability_operation_with_request<Capability, Operation, Input>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         access: WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
@@ -111,7 +124,7 @@ where
         Input: ApplicationCapabilityRequest<Schema, Capability>,
     {
         crate::domain_computation::authorization::operation_progression::progress_capability_operation(execution,
-            self,
+            self.application_runtime(),
             access,
             operation,
             preconditions,
@@ -120,13 +133,22 @@ where
     }
 }
 
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::authorization::host::AuthorizationHost<Schema> + ?Sized,
+    > OperationProgressionScopedOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
+}
+
 pub(in crate::domain_computation::authorization) fn validate_capability_operation_authority<
     Schema,
     Capability,
     Operation,
     Input,
 >(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     access: &WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
     operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
     progression: WorthQueryCapabilityOperationProgression,
@@ -146,7 +168,7 @@ pub(in crate::domain_computation::authorization) fn bind_capability_operation_pr
     Operation,
     Input,
 >(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     access: &WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
     operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
     preconditions: impl std::borrow::Borrow<
@@ -171,7 +193,7 @@ pub(in crate::domain_computation::authorization) fn transition_capability_operat
     Input,
 >(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     access: WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
     operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
     preconditions: WorthQueryBoundMutationPreconditions,
@@ -193,7 +215,7 @@ where
         .resource_binding_identity();
     let resource_entity_id = access.resource_entity_id();
     let operation_scope_binding = WorthQueryOperationScopeBinding::mint(
-        runtime.runtime.authority_identity(),
+        runtime.authority_identity(),
         operation.binding_identity(),
         operation.authority_identity(),
         access.principal_entity_id,
@@ -239,14 +261,14 @@ where
         WorthQueryCanonicalWorkEvidence::zero(),
     );
     let tag = BrandTag::new(
-        runtime.runtime.authority_identity(),
+        runtime.authority_identity(),
         operation.authority_identity_bytes(),
         operation.definition_identity_bytes(),
         operation.operation_type_id(),
         operation.input_type_id(),
     );
     let core = WorthQueryAdmittedOperation {
-        runtime_authority: runtime.runtime.authority_identity(),
+        runtime_authority: runtime.authority_identity(),
         binding_identity: operation.binding_identity().clone(),
         operation: operation.operation().to_string(),
         operation_authority_identity: operation.authority_identity().into(),
@@ -281,7 +303,7 @@ where
 
 fn revalidate_operation_authorization<Schema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     mut authorization: crate::domain_computation::authorization::WorthQueryRetainedCapabilityAuthorization,
     mut graph_work: crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
     subject: &str,
@@ -346,3 +368,4 @@ fn denial(
 ) -> WorthQueryOperationAuthorizationDenial {
     WorthQueryOperationAuthorizationDenial::new(kind, subject)
 }
+pub use borrowed_capability::BorrowedCapabilityOps;

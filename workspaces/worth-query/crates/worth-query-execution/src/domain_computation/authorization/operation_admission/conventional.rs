@@ -1,5 +1,6 @@
 //! Conventional-operation admission phases.
 
+use crate::domain_computation::authorization::OperationObservationScopedOps;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::sync::Arc;
 
@@ -34,7 +35,7 @@ struct ConventionalAdmissionPreparation<
     Input,
     Scope,
 > {
-    runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &'a dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     principal: &'a WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
     scope: &'a WorthQueryApplicationEntityIdentity<Schema, Scope>,
     operation: &'a WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
@@ -258,7 +259,7 @@ fn construct_admitted_operation<Schema, Principal, PrincipalIdentity, Operation,
         WorthQueryCanonicalWorkEvidence::zero(),
         WorthQueryCanonicalWorkEvidence::zero(),
     );
-    let runtime_authority = preparation.runtime.runtime.authority_identity();
+    let runtime_authority = preparation.runtime.authority_identity();
     let tag = BrandTag::new(
         runtime_authority,
         preparation.operation.authority_identity_bytes(),

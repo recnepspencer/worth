@@ -102,7 +102,7 @@ pub(super) struct PreparedCapabilityAdmission<
 > where
     Input: ApplicationCapabilityRequest<Schema, Capability>,
 {
-    runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &'a dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     principal: &'a WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
     capability: &'a WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,
     approved: Option<&'a WorthQueryApprovedElevation>,
@@ -138,7 +138,9 @@ impl<'a, Schema, Principal, PrincipalIdentity, Capability, Operation, Input>
 where
     Input: ApplicationCapabilityRequest<Schema, Capability>,
 {
-    const fn runtime(&self) -> &'a WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    const fn runtime(
+        &self,
+    ) -> &'a dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema> {
         self.runtime
     }
 
@@ -195,7 +197,7 @@ pub(super) fn prepare_capability_admission<
     Input,
 >(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &'a dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     product: &crate::basis::WorthQueryProductBranchLease,
     principal: &'a WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
     capability: &'a WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,
@@ -273,3 +275,6 @@ fn denial(
 ) -> WorthQueryOperationAuthorizationDenial {
     WorthQueryOperationAuthorizationDenial::new(kind, subject)
 }
+pub use observation::BorrowedCapabilityOps;
+pub use observation::OperationProgressionOps;
+pub(in crate::domain_computation) use observation::OperationProgressionScopedOps;

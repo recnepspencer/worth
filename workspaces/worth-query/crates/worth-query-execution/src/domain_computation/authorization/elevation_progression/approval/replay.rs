@@ -4,13 +4,12 @@ use crate::domain_computation::authorization::{
     WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
 };
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub trait ApprovalReplayOps<Schema>:
+    crate::domain_computation::authorization::host::AuthorizationHost<Schema>
 where
     Schema: ApplicationSchema,
 {
-    /// Only returns an exact committed replay. A fresh approval cannot leave
-    /// this path as an admitted operation when its original support is stale.
-    pub fn replay_elevation_approval_after_fresh_denial<Capability, Operation, Input>(
+    fn replay_elevation_approval_after_fresh_denial<Capability, Operation, Input>(
         &self,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         requested: WorthQueryRequestedElevation,
@@ -33,7 +32,7 @@ where
         Operation: ApplicationOperationMarkerIdentity<Schema>,
         Input: ApplicationCapabilityRequest<Schema, Capability> + Clone + Send + Sync + 'static,
     {
-        let execution = match phase.execution_request_for(&self.runtime.product_runtime) {
+        let execution = match phase.execution_request_for(self.product_runtime()) {
             Ok(execution) => execution,
             Err(_) => {
                 return Err((
@@ -60,12 +59,23 @@ where
             idempotency,
         )
     }
+}
 
-    pub(in crate::domain_computation) fn replay_elevation_approval_after_fresh_denial_with_request<
-        Capability,
-        Operation,
-        Input,
-    >(
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::authorization::host::AuthorizationHost<Schema> + ?Sized,
+    > ApprovalReplayOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
+}
+
+pub(in crate::domain_computation) trait ApprovalReplayScopedOps<Schema>:
+    crate::domain_computation::authorization::host::AuthorizationHost<Schema>
+where
+    Schema: ApplicationSchema,
+{
+    fn replay_elevation_approval_after_fresh_denial_with_request<Capability, Operation, Input>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         requested: WorthQueryRequestedElevation,
@@ -88,7 +98,7 @@ where
         Operation: ApplicationOperationMarkerIdentity<Schema>,
         Input: ApplicationCapabilityRequest<Schema, Capability> + Clone + Send + Sync + 'static,
     {
-        let draft = match bind_approval(execution, self, &requested, &access, operation) {
+        let draft = match bind_approval(execution, self.application_runtime(), &requested, &access, operation) {
             Ok(draft) => draft,
             Err(denial) => match denial.kind() {
                 crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Stopped(_) => {
@@ -106,7 +116,7 @@ where
         };
         let admission = match progress_capability_operation(
             execution,
-            self,
+            self.application_runtime(),
             access,
             operation,
             preconditions,
@@ -130,11 +140,13 @@ where
         let mut admission = admission
             .bind_elevation_approval(draft.bind(requested))
             .map_err(|(_, binding)| (None, binding.into_requested()))?;
-        match self.resolve_admitted_elevation_approval_replay_with_request(
-            execution,
-            &mut admission,
-            idempotency,
-        ) {
+        match self
+            .application_runtime()
+            .resolve_admitted_elevation_approval_replay_with_request(
+                execution,
+                &mut admission,
+                idempotency,
+            ) {
             Ok(Some(outcome)) => Ok(outcome),
             Ok(None) => Err((
                 None,
@@ -146,4 +158,13 @@ where
             Err((denial, requested)) => Err((Some(denial), requested)),
         }
     }
+}
+
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::authorization::host::AuthorizationHost<Schema> + ?Sized,
+    > ApprovalReplayScopedOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
 }

@@ -160,7 +160,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     pub(in crate::domain_computation) fn admit_product_security_basis(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        product: &impl WorthQueryProductObservationSource,
+        product: &(impl WorthQueryProductObservationSource + ?Sized),
     ) -> Result<WorthQueryProductSecurityBasis<'static>, WorthQueryProductBranchAdmissionDenial>
     {
         self.admit_product_security_basis_with_query_basis(
@@ -176,7 +176,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     >(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        product: &impl WorthQueryProductObservationSource,
+        product: &(impl WorthQueryProductObservationSource + ?Sized),
         query_basis: &'basis WorthQueryApplicationQueryBasisCustody,
     ) -> Result<WorthQueryProductSecurityBasis<'basis>, WorthQueryProductBranchAdmissionDenial>
     {
@@ -196,7 +196,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     >(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        product: &impl WorthQueryProductObservationSource,
+        product: &(impl WorthQueryProductObservationSource + ?Sized),
         query_basis: &'basis WorthQueryApplicationQueryBasisCustody,
         prepared: &PreparedSelectedReadIndexes,
     ) -> Result<WorthQueryProductSecurityBasis<'basis>, WorthQueryProductBranchAdmissionDenial>
@@ -214,7 +214,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     pub(in crate::domain_computation) fn admit_capability_read_security_basis(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        product: &impl WorthQueryProductObservationSource,
+        product: &(impl WorthQueryProductObservationSource + ?Sized),
         prepared: &PreparedSelectedReadIndexes,
     ) -> Result<WorthQueryProductSecurityBasis<'static>, WorthQueryProductBranchAdmissionDenial>
     {
@@ -229,7 +229,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     fn admit_product_security_basis_with_query_basis<'basis>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        product: &impl WorthQueryProductObservationSource,
+        product: &(impl WorthQueryProductObservationSource + ?Sized),
         query_basis: Option<&'basis WorthQueryApplicationQueryBasisCustody>,
         index_currency: SecurityIndexCurrency<'_>,
     ) -> Result<WorthQueryProductSecurityBasis<'basis>, WorthQueryProductBranchAdmissionDenial>

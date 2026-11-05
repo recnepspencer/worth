@@ -19,7 +19,7 @@ pub(in crate::domain_computation) fn prepare_pending_disclosure<
     Input,
     E,
 >(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     binding: &ApplicationSchemaBindingIdentity,
     principal: EntityId,
     scope: EntityId,
@@ -45,7 +45,7 @@ where
 }
 
 fn prepare_with_capture<Schema, Scope, Capability, Operation, Input, E, Capture>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     binding: &ApplicationSchemaBindingIdentity,
     principal: EntityId,
     scope: EntityId,
@@ -72,7 +72,7 @@ where
 {
     // Each caller first validates the capability's original request. Preserve
     // the existing order: affinity, receiving request, then retained projection.
-    if capability.runtime_authority() != runtime.runtime.authority_identity()
+    if capability.runtime_authority() != runtime.authority_identity()
         || capability.binding_identity() != binding
         || capability.principal_entity_id() != principal
         || capability.resource_entity_id() != scope

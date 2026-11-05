@@ -115,7 +115,7 @@ fn capture_current_principal<Schema, Principal, Identity, Capability, Operation,
 where
     Input: ApplicationCapabilityRequest<Schema, Capability>,
 {
-    let graph = prepared.runtime().runtime.primary_graph().ok_or_else(|| {
+    let graph = prepared.runtime().primary_graph().ok_or_else(|| {
         denial::authorization_denial(
             WorthQueryOperationAuthorizationDenialKind::Refused(
                 AuthorizationRefusal::ForeignRuntime,
@@ -163,7 +163,6 @@ where
     let handle = prepared.graph_work().mutation_handle().unwrap().clone();
     let resolution = prepared
         .runtime()
-        .runtime
         .primary_graph()
         .unwrap()
         .retain_entity_resolution_context();
@@ -179,7 +178,7 @@ where
         let resolved = resolve_capability_request(
             execution,
             &truth,
-            &prepared.runtime().installed_schema,
+            &prepared.runtime().installed_schema(),
             prepared.projection(),
         )?;
         let revalidation = WorthQueryRetainedCapabilityRequest::capture(
@@ -192,7 +191,7 @@ where
     })?;
     if let Some(context) = &prepared.workflow_actor {
         if !context.matches_request(
-            prepared.runtime().runtime.authority_identity().as_u64(),
+            prepared.runtime().authority_identity().as_u64(),
             prepared
                 .graph_work()
                 .mutation_product()
@@ -220,7 +219,7 @@ where
                     execution,
                     &handle,
                     &snapshot,
-                    prepared.runtime().runtime.primary_graph().unwrap().layout(),
+                    prepared.runtime().primary_graph().unwrap().layout(),
                     resolved.resource_entity_id(),
                     requirement,
                     &prepared.request_scope,
@@ -236,7 +235,7 @@ where
                 session: prepared.graph_work().identity(),
                 relational,
                 snapshot: &snapshot,
-                bridge: prepared.runtime().runtime.authorization.bridge(),
+                bridge: prepared.runtime().authorization().bridge(),
                 installed: prepared.installed(),
                 request: &revalidation,
                 sample: prepared.sample(),

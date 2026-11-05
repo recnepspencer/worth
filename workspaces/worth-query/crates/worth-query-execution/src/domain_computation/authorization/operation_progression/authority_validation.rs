@@ -46,7 +46,7 @@ pub(in crate::domain_computation::authorization::operation_progression) struct V
     Input,
     Scope,
 > {
-    runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &'a dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     product: &'a crate::basis::WorthQueryProductBranchLease,
     principal: &'a WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
     scope: &'a WorthQueryApplicationEntityIdentity<Schema, Scope>,
@@ -63,7 +63,7 @@ pub(super) fn validate_conventional_operation<
     Input,
     Scope,
 >(
-    runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &'a dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     product: &'a crate::basis::WorthQueryProductBranchLease,
     principal: &'a WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
     scope: &'a WorthQueryApplicationEntityIdentity<Schema, Scope>,
@@ -85,7 +85,7 @@ where
     Schema: ApplicationSchema,
 {
     crate::domain_computation::authorization::admission::validate_admission_clock(
-        &runtime.runtime,
+        runtime.authorization_clock(),
         principal.clock(),
         request,
         operation.operation(),
@@ -122,13 +122,13 @@ pub(in crate::domain_computation::authorization::operation_progression) struct V
 > where
     Input: ApplicationCapabilityRequest<Schema, Capability>,
 {
-    runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &'a dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     access: WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
     operation: &'a WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
 }
 
 pub(super) fn validate_capability_operation<'a, Schema, Capability, Operation, Input>(
-    runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &'a dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     access: WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
     operation: &'a WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
     progression: WorthQueryCapabilityOperationProgression,
@@ -149,6 +149,9 @@ where
     })
 }
 
+pub use precondition_binding::BorrowedCapabilityOps;
+pub use precondition_binding::OperationProgressionOps;
+pub(in crate::domain_computation) use precondition_binding::OperationProgressionScopedOps;
 pub(in crate::domain_computation) use precondition_binding::{
     BrandTag, ReadCompletionAdmission, WorthQueryAdmittedOperation,
 };

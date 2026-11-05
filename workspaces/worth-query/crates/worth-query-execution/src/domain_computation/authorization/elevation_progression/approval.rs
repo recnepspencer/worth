@@ -80,11 +80,12 @@ impl WorthQueryElevationApprovalAuthorizationDenial {
     }
 }
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub trait ApprovalOps<Schema>:
+    crate::domain_computation::authorization::host::AuthorizationHost<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub fn authorize_elevation_approval<Capability, Operation, Input>(
+    fn authorize_elevation_approval<Capability, Operation, Input>(
         &self,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         requested: WorthQueryRequestedElevation,
@@ -109,7 +110,7 @@ where
         Input: ApplicationCapabilityRequest<Schema, Capability>,
         Input: 'static,
     {
-        let execution = match phase.execution_request_for(&self.runtime.product_runtime) {
+        let execution = match phase.execution_request_for(self.product_runtime()) {
             Ok(execution) => execution,
             Err(_) => return Err(approval_denial(requested, crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody"))),
         };
@@ -121,12 +122,23 @@ where
             preconditions,
         )
     }
+}
 
-    pub(in crate::domain_computation) fn authorize_elevation_approval_with_request<
-        Capability,
-        Operation,
-        Input,
-    >(
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::authorization::host::AuthorizationHost<Schema> + ?Sized,
+    > ApprovalOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
+}
+
+pub(in crate::domain_computation) trait ApprovalScopedOps<Schema>:
+    crate::domain_computation::authorization::host::AuthorizationHost<Schema>
+where
+    Schema: ApplicationSchema,
+{
+    fn authorize_elevation_approval_with_request<Capability, Operation, Input>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         mut requested: WorthQueryRequestedElevation,
@@ -156,15 +168,25 @@ where
         Input: ApplicationCapabilityRequest<Schema, Capability>,
         Input: 'static,
     {
-        let draft = match bind_approval(execution, self, &requested, &access, operation) {
+        let draft = match bind_approval(
+            execution,
+            self.application_runtime(),
+            &requested,
+            &access,
+            operation,
+        ) {
             Ok(draft) => draft,
             Err(denial) => return Err(approval_denial(requested, denial)),
         };
-        let support_sample =
-            match refresh_exact_support(execution, self, &mut requested, &mut access) {
-                Ok(sample) => sample,
-                Err(denial) => return Err(approval_denial(requested, denial)),
-            };
+        let support_sample = match refresh_exact_support(
+            execution,
+            self.application_runtime(),
+            &mut requested,
+            &mut access,
+        ) {
+            Ok(sample) => sample,
+            Err(denial) => return Err(approval_denial(requested, denial)),
+        };
         if let Err(denial) =
             validate_approval_time(requested.binding(), &support_sample, operation.operation())
         {
@@ -172,7 +194,7 @@ where
         }
         let admission = match progress_capability_operation(
             execution,
-            self,
+            self.application_runtime(),
             access,
             operation,
             preconditions,
@@ -187,9 +209,18 @@ where
     }
 }
 
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::authorization::host::AuthorizationHost<Schema> + ?Sized,
+    > ApprovalScopedOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
+}
+
 fn bind_approval<Schema, Capability, Operation, Input>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     requested: &WorthQueryRequestedElevation,
     access: &WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
     operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
@@ -240,7 +271,7 @@ where
 
 fn resolve_approval_entities<Schema, Capability, Operation, Input>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     access: &WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
     installed: &WorthQueryInstalledCapabilityPlan,
     requested: &super::WorthQueryElevationRequestBinding,
@@ -277,7 +308,7 @@ where
 }
 
 fn validate_receipt_authority<Schema, Capability, Operation, Input>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     capability_identity: [u8; 32],
     installed: &WorthQueryInstalledCapabilityPlan,
     requested: &WorthQueryRequestedElevation,
@@ -288,7 +319,7 @@ where
     Input: ApplicationCapabilityRequest<Schema, Capability>,
 {
     let binding = requested.binding();
-    if binding.runtime_authority() != &runtime.runtime.authority_identity()
+    if binding.runtime_authority() != &runtime.authority_identity()
         || binding.branch() != access.graph_work_branch()
         || requested.commit_receipt().terminal().branch() != binding.branch()
         || binding.capability_identity() != capability_identity
@@ -346,3 +377,5 @@ fn denial(
 ) -> WorthQueryOperationAuthorizationDenial {
     WorthQueryOperationAuthorizationDenial::new(kind, subject)
 }
+pub use replay::ApprovalReplayOps;
+pub(in crate::domain_computation) use replay::ApprovalReplayScopedOps;

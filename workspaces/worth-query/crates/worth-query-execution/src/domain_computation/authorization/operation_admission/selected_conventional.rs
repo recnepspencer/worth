@@ -71,7 +71,7 @@ pub(in crate::domain_computation) enum SelectedConventionalAdmissionStop {
 #[allow(clippy::too_many_arguments)]
 fn authorize_mutation_products<Schema, Binding, Scope>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     products: SelectedMutationProducts<'_, '_, Schema>,
     current: &WorthQueryCurrentRetainedMutationBinding<'_, Schema, Binding>,
     prepared: &WorthQueryPreparedApplicationOperationGraphWork,
@@ -111,7 +111,7 @@ where
     }
     let operation = current.operation();
     crate::domain_computation::authorization::admission::validate_admission_clock(
-        &runtime.runtime,
+        runtime.authorization_clock(),
         principal.principal().clock(),
         request,
         operation.operation(),
@@ -209,14 +209,14 @@ where
     // handing authority to the executor.
 
     let tag = BrandTag::new(
-        runtime.runtime.authority_identity(),
+        runtime.authority_identity(),
         operation.authority_identity_bytes(),
         operation.definition_identity_bytes(),
         operation.operation_type_id(),
         operation.input_type_id(),
     );
     let core = WorthQueryAdmittedOperation {
-        runtime_authority: runtime.runtime.authority_identity(),
+        runtime_authority: runtime.authority_identity(),
         binding_identity: operation.binding_identity().clone(),
         operation: operation.operation().to_owned(),
         operation_authority_identity: Arc::from(operation.authority_identity()),
@@ -225,7 +225,7 @@ where
         admission_identity,
         resource_binding_identity,
         operation_scope_binding: WorthQueryOperationScopeBinding::mint(
-            runtime.runtime.authority_identity(),
+            runtime.authority_identity(),
             operation.binding_identity(),
             operation.authority_identity(),
             principal.principal().principal_entity_id(),

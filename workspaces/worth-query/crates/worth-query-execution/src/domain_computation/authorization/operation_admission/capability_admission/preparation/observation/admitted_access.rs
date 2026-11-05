@@ -221,7 +221,7 @@ where
             prepared.governed_input_work,
         ));
     WorthQueryAdmittedApplicationCapabilityAccess {
-        runtime_authority: prepared.runtime.runtime.authority_identity(),
+        runtime_authority: prepared.runtime.authority_identity(),
         binding_identity: prepared.capability.binding_identity().clone(),
         capability: prepared.capability.contract().name().into(),
         capability_type: prepared.capability.contract().capability_type().into(),
@@ -248,7 +248,7 @@ where
 {
     pub(in crate::domain_computation::authorization) fn validate_operation_authority(
         &self,
-        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
         operation: &worth_query_installation::facade::WorthQueryInstalledApplicationOperation<
             Schema,
             Operation,
@@ -261,7 +261,7 @@ where
         Operation: ApplicationOperationMarkerIdentity<Schema>,
     {
         operation_progression::validate_capability_operation_authority(
-            runtime,
+            runtime.application_runtime(),
             self,
             operation,
             progression,
@@ -270,7 +270,7 @@ where
 
     pub(in crate::domain_computation::authorization) fn bind_operation_preconditions(
         &self,
-        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
         operation: &worth_query_installation::facade::WorthQueryInstalledApplicationOperation<
             Schema,
             Operation,
@@ -291,7 +291,7 @@ where
         Schema: ApplicationSchema,
     {
         operation_progression::bind_capability_operation_preconditions(
-            runtime,
+            runtime.application_runtime(),
             self,
             operation,
             preconditions,
@@ -301,7 +301,7 @@ where
     pub(in crate::domain_computation::authorization) fn transition_operation(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
         operation: &worth_query_installation::facade::WorthQueryInstalledApplicationOperation<
             Schema,
             Operation,
@@ -322,7 +322,7 @@ where
     {
         operation_progression::transition_capability_operation(
             execution,
-            runtime,
+            runtime.application_runtime(),
             self,
             operation,
             preconditions,
@@ -350,7 +350,7 @@ where
     pub(in crate::domain_computation::authorization) fn with_exact_observation<Output>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
         observe: impl FnOnce(
             &exact_observation::WorthQueryExactCapabilityObservation<'_, Schema>,
         ) -> Output,
@@ -358,7 +358,12 @@ where
     where
         Schema: ApplicationSchema,
     {
-        exact_observation::with_exact_observation(execution, self, runtime, observe)
+        exact_observation::with_exact_observation(
+            execution,
+            self,
+            runtime.application_runtime(),
+            observe,
+        )
     }
 
     pub(in crate::domain_computation::authorization) fn retain_observed_support(
@@ -385,3 +390,6 @@ where
         self.resolved.resource_entity_name()
     }
 }
+pub use operation_progression::BorrowedCapabilityOps;
+pub use operation_progression::OperationProgressionOps;
+pub(in crate::domain_computation) use operation_progression::OperationProgressionScopedOps;

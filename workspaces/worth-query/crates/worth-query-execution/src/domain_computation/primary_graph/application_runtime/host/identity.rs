@@ -29,4 +29,7 @@ impl<Schema: ApplicationSchema> WorthQueryRuntimeIdentityHost<Schema>
     ) -> Option<&crate::domain_computation::primary_graph::WorthQueryPrimaryGraph> {
         self.runtime.primary_graph()
     }
+    fn application_runtime(&self) -> &WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+        self
+    }
 }

@@ -66,11 +66,12 @@ impl WorthQueryMandatoryReviewAuthorizationDenial {
     }
 }
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub trait MandatoryReviewOps<Schema>:
+    crate::domain_computation::authorization::host::AuthorizationHost<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub fn authorize_mandatory_review<Capability, Operation, Input>(
+    fn authorize_mandatory_review<Capability, Operation, Input>(
         &self,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         mandatory: WorthQueryMandatoryReview,
@@ -95,7 +96,7 @@ where
         Input: ApplicationCapabilityRequest<Schema, Capability>,
         Input: 'static,
     {
-        let execution = match phase.execution_request_for(&self.runtime.product_runtime) {
+        let execution = match phase.execution_request_for(self.product_runtime()) {
             Ok(execution) => execution,
             Err(_) => return Err(review_denial(mandatory, crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody"))),
         };
@@ -107,12 +108,23 @@ where
             preconditions,
         )
     }
+}
 
-    pub(in crate::domain_computation) fn authorize_mandatory_review_with_request<
-        Capability,
-        Operation,
-        Input,
-    >(
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::authorization::host::AuthorizationHost<Schema> + ?Sized,
+    > MandatoryReviewOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
+}
+
+pub(in crate::domain_computation) trait MandatoryReviewScopedOps<Schema>:
+    crate::domain_computation::authorization::host::AuthorizationHost<Schema>
+where
+    Schema: ApplicationSchema,
+{
+    fn authorize_mandatory_review_with_request<Capability, Operation, Input>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         mandatory: WorthQueryMandatoryReview,
@@ -137,13 +149,13 @@ where
         Input: ApplicationCapabilityRequest<Schema, Capability>,
         Input: 'static,
     {
-        let draft = match bind_review(self, &mandatory, &access, operation) {
+        let draft = match bind_review(self.application_runtime(), &mandatory, &access, operation) {
             Ok(draft) => draft,
             Err(denial) => return Err(review_denial(mandatory, denial)),
         };
         let admission = match progress_capability_operation(
             execution,
-            self,
+            self.application_runtime(),
             access,
             operation,
             preconditions,
@@ -158,8 +170,17 @@ where
     }
 }
 
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::authorization::host::AuthorizationHost<Schema> + ?Sized,
+    > MandatoryReviewScopedOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
+}
+
 fn bind_review<Schema, Capability, Operation, Input>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     mandatory: &WorthQueryMandatoryReview,
     access: &WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
     operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
@@ -177,7 +198,7 @@ where
         WorthQueryElevationLifecycleOperationRole::CompleteReview,
     )?;
     if !mandatory.belongs_to_lifecycle(
-        runtime.runtime.authority_identity(),
+        runtime.authority_identity(),
         access.graph_work_branch(),
         capability_identity,
         installed.capability_authority_identity().as_ref(),
@@ -195,8 +216,7 @@ where
     }
     let lifecycle = installed.elevation().as_ref().unwrap();
     let sample = runtime
-        .runtime
-        .authorization_clock
+        .authorization_clock()
         .sample(lifecycle.temporal.timeline)
         .map_err(|_| {
             denial(

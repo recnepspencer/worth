@@ -1,5 +1,6 @@
 //! Fixed metadata policy is selected before the original target is sized or copied.
 use super::*;
+use crate::domain_computation::authorization::PreparedReadScopedOps;
 use crate::domain_computation::{
     authorization::application_disclosure::{
         compile_diagnostic_disclosure_contract, compile_inspection_disclosure_contract,

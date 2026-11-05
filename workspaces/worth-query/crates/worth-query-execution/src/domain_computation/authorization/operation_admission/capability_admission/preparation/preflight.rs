@@ -38,7 +38,7 @@ pub(super) fn validate_static_authority<
     Operation,
     Input,
 >(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
     capability: &WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,
 ) -> Result<(), WorthQueryOperationAuthorizationDenial>
@@ -62,7 +62,7 @@ where
             principal.binding(),
         ));
     }
-    if principal.runtime_authority() != runtime.runtime.authority_identity() {
+    if principal.runtime_authority() != runtime.authority_identity() {
         return Err(denial(
             WorthQueryOperationAuthorizationDenialKind::Refused(
                 AuthorizationRefusal::ForeignRuntime,
@@ -71,7 +71,7 @@ where
         ));
     }
     if principal.binding_identity() != capability.binding_identity()
-        || runtime.installed_schema.binding_identity() != *capability.binding_identity()
+        || runtime.installed_schema().binding_identity() != *capability.binding_identity()
     {
         return Err(denial(
             WorthQueryOperationAuthorizationDenialKind::Refused(
@@ -81,7 +81,7 @@ where
         ));
     }
     runtime
-        .installed_schema
+        .installed_schema()
         .validate_installed_capability(capability)
         .map_err(|rejection| {
             denial(
@@ -94,30 +94,24 @@ where
 }
 
 pub(super) fn admit_installed_plan<'a, Schema, Capability, Operation, Input>(
-    runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &'a dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     capability: &WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,
     approved: Option<&WorthQueryApprovedElevation>,
 ) -> Result<&'a WorthQueryInstalledCapabilityPlan, WorthQueryOperationAuthorizationDenial> {
     let installed = runtime
-        .runtime
-        .authorization
+        .authorization()
         .capability_plan(capability)
         .ok_or_else(|| policy_not_installed(capability))?;
     validate_approved_applicability(installed, capability, approved)?;
     let rules = installed.rules().iter().map(|rule| rule.bridge());
-    if !runtime
-        .runtime
-        .authorization
-        .bridge()
-        .matches_installed_policy(
-            installed.correspondence(),
-            &bridge_authorization_binding_identity(capability.binding_identity()),
-            installed.contract().name(),
-            &installed.request().resource_entity,
-            installed.contract().operation(),
-            rules,
-        )
-    {
+    if !runtime.authorization().bridge().matches_installed_policy(
+        installed.correspondence(),
+        &bridge_authorization_binding_identity(capability.binding_identity()),
+        installed.contract().name(),
+        &installed.request().resource_entity,
+        installed.contract().operation(),
+        rules,
+    ) {
         return Err(policy_not_installed(capability));
     }
     Ok(installed)
@@ -210,13 +204,12 @@ where
 }
 
 pub(super) fn sample_trusted_time<Schema, Capability, Operation, Input>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     capability: &WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,
     installed: &WorthQueryInstalledCapabilityPlan,
 ) -> Result<WorthQueryRuntimeTimeSample, WorthQueryOperationAuthorizationDenial> {
     runtime
-        .runtime
-        .authorization_clock
+        .authorization_clock()
         .sample(installed.request().timeline)
         .map_err(|_| {
             denial(
@@ -229,7 +222,7 @@ pub(super) fn sample_trusted_time<Schema, Capability, Operation, Input>(
 }
 
 pub(super) fn resolve_installed_operation<Schema, Capability, Operation, Input>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     capability: &WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,
 ) -> Result<
     WorthQueryInstalledApplicationOperationGraphAuthority<Schema, Operation, Input>,
@@ -248,7 +241,7 @@ where
     Input: 'static,
 {
     runtime
-        .installed_schema
+        .installed_schema()
         .installed_operation_for_capability(capability)
         .map_err(|_| {
             denial(
@@ -275,7 +268,7 @@ pub(super) fn mint_operation_admission<Schema, Capability, Operation, Input>(
 
 pub(super) fn start_graph_work<Schema, Principal, PrincipalIdentity, Capability, Operation, Input>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     product: crate::basis::WorthQueryProductBranchLease,
     principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
     capability: &WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,

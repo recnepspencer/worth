@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorkflowApprovalScopedOps;
 #[path = "operation/actor_origin.rs"]
 mod actor_origin;
 #[path = "operation/approval_denial.rs"]

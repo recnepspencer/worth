@@ -8,7 +8,7 @@ pub(in crate::domain_computation) fn authorize_current_control_mutation_on_selec
     Scope,
 >(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     mutation: &SharedSelectedProductOperation<'_, Schema>,
     control: &SharedSelectedProductOperation<'_, Schema>,
     current: &WorthQueryCurrentRetainedMutationBinding<'_, Schema, Binding>,
@@ -36,8 +36,8 @@ where
     use SelectedConventionalAdmissionStop as Stop;
     // Compare actual issued selections and complete entity identity, including
     // its generation. Matching payload or a reusable numeric slot is insufficient.
-    if !std::ptr::eq(control.selected().application(), runtime)
-        || !std::ptr::eq(mutation.selected().application(), runtime)
+    if !std::ptr::addr_eq(control.selected().application(), runtime)
+        || !std::ptr::addr_eq(mutation.selected().application(), runtime)
         || !std::ptr::eq(mutation_scope.selected(), mutation.selected())
         || !mutation_scope.request().same_request(request)
         || control_scope.scope().entity_id() != mutation_scope.scope().entity_id()
@@ -47,7 +47,7 @@ where
     }
     authorize_mutation_products(
         execution,
-        runtime,
+        runtime.application_runtime(),
         SelectedMutationProducts {
             mutation,
             control: Some(control),

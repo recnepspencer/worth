@@ -1,5 +1,6 @@
 //! Commit-snapshot readmission of an approval from its durable, descriptive basis.
 
+use crate::domain_computation::authorization::InstalledBasisScopedOps;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -14,11 +15,12 @@ use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationOperation, WorthQueryPrimaryGraphApplicationRuntime,
 };
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub trait WorkflowApprovalOps<Schema>:
+    crate::domain_computation::authorization::host::AuthorizationHost<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub fn readmit_workflow_approval_authority<Operation, Input, Scope>(
+    fn readmit_workflow_approval_authority<Operation, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         authority: &WorthQueryWorkflowApprovalAuthorityBasis,
@@ -35,8 +37,23 @@ where
             admission.graph_work_session_identity(),
         )
     }
+}
 
-    pub(in crate::domain_computation) fn readmit_workflow_approval_authority_on_product(
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::authorization::host::AuthorizationHost<Schema> + ?Sized,
+    > WorkflowApprovalOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
+}
+
+pub(in crate::domain_computation) trait WorkflowApprovalScopedOps<Schema>:
+    crate::domain_computation::authorization::host::AuthorizationHost<Schema>
+where
+    Schema: ApplicationSchema,
+{
+    fn readmit_workflow_approval_authority_on_product(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         authority: &WorthQueryWorkflowApprovalAuthorityBasis,
@@ -72,7 +89,7 @@ where
                     "workflow approval authorization",
                 )
             })?;
-        let graph = self.runtime.primary_graph().ok_or_else(foreign_runtime)?;
+        let graph = self.primary_graph().ok_or_else(foreign_runtime)?;
         graph.integration_handle().with_runtime_mut(execution, |runtime| {
             let snapshot = security.snapshot_handle();
             if !authority
@@ -86,7 +103,7 @@ where
                     session,
                     relational: runtime,
                     snapshot,
-                    bridge: self.runtime.authorization.bridge(),
+                    bridge: self.authorization().bridge(),
                     installed,
                     request: authority.request(),
                     sample: &sample,
@@ -126,7 +143,7 @@ where
                         session,
                         relational: runtime,
                         snapshot,
-                        bridge: self.runtime.authorization.bridge(),
+                        bridge: self.authorization().bridge(),
                         installed,
                         request: support.request(),
                         sample: &sample,
@@ -155,6 +172,15 @@ where
             Ok(())
         })
     }
+}
+
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::authorization::host::AuthorizationHost<Schema> + ?Sized,
+    > WorkflowApprovalScopedOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
 }
 
 fn support_matches_primary(

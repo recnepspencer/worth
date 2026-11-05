@@ -28,13 +28,13 @@ pub(in crate::domain_computation::authorization) fn operation_scope_binding<
     Input,
     Scope,
 >(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
     scope: &WorthQueryApplicationEntityIdentity<Schema, Scope>,
     operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
 ) -> WorthQueryOperationScopeBinding {
     WorthQueryOperationScopeBinding::mint(
-        runtime.runtime.authority_identity(),
+        runtime.authority_identity(),
         operation.binding_identity(),
         operation.authority_identity(),
         principal.principal_entity_id(),
@@ -50,7 +50,7 @@ pub(in crate::domain_computation::authorization) fn validate_static_authority<
     Input,
     Scope,
 >(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
     scope: &WorthQueryApplicationEntityIdentity<Schema, Scope>,
     operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
@@ -60,7 +60,6 @@ where
 {
     validate_static_authority_prefix(runtime, principal, scope, operation)?;
     runtime
-        .runtime
         .installed_packages()
         .validate_application_operation(operation)
         .map_err(|_| {
@@ -74,7 +73,7 @@ where
 }
 
 fn validate_static_authority_prefix<Schema, Principal, PrincipalIdentity, Operation, Input, Scope>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
     scope: &WorthQueryApplicationEntityIdentity<Schema, Scope>,
     operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
@@ -83,8 +82,7 @@ where
     Schema: ApplicationSchema,
 {
     if !runtime
-        .runtime
-        .authorization_clock
+        .authorization_clock()
         .admission_clock
         .same_clock(principal.clock())
     {
@@ -103,7 +101,7 @@ where
             principal.binding(),
         ));
     }
-    let authority = runtime.runtime.authority_identity();
+    let authority = runtime.authority_identity();
     if principal.runtime_authority() != authority || scope.runtime_authority() != authority {
         return Err(denial(
             WorthQueryOperationAuthorizationDenialKind::Refused(
@@ -114,7 +112,7 @@ where
     }
     if principal.binding_identity() != operation.binding_identity()
         || scope.binding_identity() != operation.binding_identity()
-        || runtime.installed_schema.binding_identity() != *operation.binding_identity()
+        || runtime.installed_schema().binding_identity() != *operation.binding_identity()
     {
         return Err(denial(
             WorthQueryOperationAuthorizationDenialKind::Refused(
@@ -186,16 +184,12 @@ pub(super) fn denial(
 
 /// Clock custody is checked before any validity decision or graph work.
 pub(in crate::domain_computation::authorization) fn validate_admission_clock(
-    runtime: &crate::domain_computation::primary_graph::WorthQueryApplicationRuntimeCore,
+    runtime_clock: &crate::domain_computation::authorization::WorthQueryRuntimeClock,
     principal: &worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock,
     request: &WorthQueryRequestScope,
     subject: &str,
 ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
-    if runtime
-        .authorization_clock
-        .admission_clock
-        .same_clock(principal)
-        && principal.same_clock(request.clock())
+    if runtime_clock.admission_clock.same_clock(principal) && principal.same_clock(request.clock())
     {
         Ok(())
     } else {

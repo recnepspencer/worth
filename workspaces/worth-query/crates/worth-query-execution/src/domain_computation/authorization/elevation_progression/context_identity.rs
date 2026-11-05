@@ -31,7 +31,7 @@ where
 
 pub(super) fn resolve_elevation_identity<Schema, Capability, Operation, Input>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     access: &WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
     capability_identity: [u8; 32],
     installed: &WorthQueryInstalledCapabilityPlan,
@@ -55,7 +55,7 @@ where
 
 pub(super) fn resolve_review_identity<Schema, Capability, Operation, Input>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     access: &WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
     capability_identity: [u8; 32],
     installed: &WorthQueryInstalledCapabilityPlan,

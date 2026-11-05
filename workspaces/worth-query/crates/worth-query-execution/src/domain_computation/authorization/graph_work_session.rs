@@ -27,7 +27,7 @@ pub(in crate::domain_computation) use selected::{
 
 pub(super) fn start_operation_graph_work<Schema, Operation, Input>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     product: crate::basis::WorthQueryProductBranchLease,
     operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
     resource_binding_identity: &str,
@@ -37,7 +37,7 @@ pub(super) fn start_operation_graph_work<Schema, Operation, Input>(
 where
     Schema: ApplicationSchema,
 {
-    let graph = runtime.runtime.primary_graph().ok_or_else(|| {
+    let graph = runtime.primary_graph().ok_or_else(|| {
         denial(
             WorthQueryOperationAuthorizationDenialKind::Refused(
                 AuthorizationRefusal::ForeignRuntime,
@@ -69,7 +69,7 @@ where
     .map_err(|cause| graph_work_denial_with_cause(operation.operation(), cause))?;
     WorthQueryManagedGraphWorkSession::start_mutation(
         plan,
-        runtime.runtime.authority_identity(),
+        runtime.authority_identity(),
         operation.binding_identity(),
         &obligation_identity,
         operation.authority_identity(),
@@ -83,7 +83,7 @@ where
 
 pub(super) fn start_capability_graph_work<Schema, Operation, Input>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     product: crate::basis::WorthQueryProductBranchLease,
     operation: &WorthQueryInstalledApplicationOperationGraphAuthority<Schema, Operation, Input>,
     principal: EntityId,
@@ -92,7 +92,7 @@ pub(super) fn start_capability_graph_work<Schema, Operation, Input>(
 where
     Schema: ApplicationSchema,
 {
-    let graph = runtime.runtime.primary_graph().ok_or_else(|| {
+    let graph = runtime.primary_graph().ok_or_else(|| {
         denial(
             WorthQueryOperationAuthorizationDenialKind::Refused(
                 AuthorizationRefusal::ForeignRuntime,
@@ -118,7 +118,7 @@ where
         .map_err(|cause| graph_work_denial_with_cause(operation.operation(), cause))?;
     WorthQueryManagedGraphWorkSession::start_mutation(
         plan,
-        runtime.runtime.authority_identity(),
+        runtime.authority_identity(),
         operation.binding_identity(),
         &obligation_identity,
         operation.authority_identity(),
@@ -132,7 +132,7 @@ where
 
 pub(super) fn transition_capability_to_operation_graph_work<Schema, Operation, Input>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
     resource_binding_identity: &str,
     resource: EntityId,

@@ -83,6 +83,7 @@ pub(crate) mod output_binding_identity;
 pub(crate) mod output_family_identity;
 pub(crate) mod output_reuse;
 mod principal_currentness_capture;
+pub(in crate::domain_computation) use principal_currentness_capture::host::PrincipalCurrentnessCaptureHost;
 mod principal_key;
 pub(in crate::domain_computation) use principal_currentness_capture::capture_principal_currentness_admitted;
 pub(in crate::domain_computation) use principal_currentness_capture::PrincipalCurrentnessCaptureStop;

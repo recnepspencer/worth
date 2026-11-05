@@ -116,6 +116,37 @@ fn authorization_denial(
 
 pub(in crate::domain_computation) use capability_observation::CancelGrantSelectionGuardForTest;
 
+pub(in crate::domain_computation::authorization) use admission::OperationObservationScopedOps;
+pub(in crate::domain_computation) use admission::RequirementObservationScopedOps;
+pub(in crate::domain_computation) use admission::ResourceObservationScopedOps;
+pub(in crate::domain_computation::authorization) use authorization_revalidation::AuthorizationAuthorizationRevalidationScopedOps;
+pub(in crate::domain_computation) use authorization_revalidation::AuthorizationRevalidationScopedOps;
+pub(in crate::domain_computation) use authorization_revalidation::RetainedAuthorizationScopedOps;
+pub use authorization_revalidation::WorkflowApprovalOps;
+pub(in crate::domain_computation) use authorization_revalidation::WorkflowApprovalScopedOps;
+pub(in crate::domain_computation) use capability_revalidation::CapabilityRevalidationScopedOps;
+pub(in crate::domain_computation::authorization) use capability_revalidation::InstalledBasisScopedOps;
+pub(in crate::domain_computation) use capability_revalidation::PreparedReadScopedOps;
+pub use capability_revocation_progression::CapabilityRevocationProgressionOps;
+pub(in crate::domain_computation) use capability_revocation_progression::CapabilityRevocationProgressionScopedOps;
+pub use delegation_progression::DelegationProgressionOps;
+pub(in crate::domain_computation) use delegation_progression::DelegationProgressionScopedOps;
+pub use delegation_progression::ReplayOps;
+pub(in crate::domain_computation) use delegation_progression::ReplayScopedOps;
+pub use elevation_progression::ApprovalOps;
+pub use elevation_progression::ApprovalReplayOps;
+pub(in crate::domain_computation) use elevation_progression::ApprovalReplayScopedOps;
+pub(in crate::domain_computation) use elevation_progression::ApprovalScopedOps;
+pub use elevation_progression::ElevationCloseOps;
+pub(in crate::domain_computation) use elevation_progression::ElevationCloseScopedOps;
+pub use elevation_progression::MandatoryReviewOps;
+pub(in crate::domain_computation) use elevation_progression::MandatoryReviewScopedOps;
+pub use elevation_progression::RequestOps;
+pub(in crate::domain_computation) use elevation_progression::RequestScopedOps;
+pub use operation_progression::BorrowedCapabilityOps;
+pub use operation_progression::OperationProgressionOps;
+pub(in crate::domain_computation) use operation_progression::OperationProgressionScopedOps;
 pub(in crate::domain_computation) use operation_progression::{
     BrandTag, ReadCompletionAdmission, WorthQueryAdmittedOperation,
 };
+pub(crate) mod host;

@@ -26,11 +26,12 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationR
 
 use super::request_binding::bind_request;
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub trait RequestOps<Schema>:
+    crate::domain_computation::authorization::host::AuthorizationHost<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub fn authorize_elevation_request<Capability, Operation, Input>(
+    fn authorize_elevation_request<Capability, Operation, Input>(
         &self,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         access: WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
@@ -55,18 +56,29 @@ where
             + ApplicationCapabilityElevationRequest<Schema, Operation>
             + 'static,
     {
-        let execution = match phase.execution_request_for(&self.runtime.product_runtime) {
+        let execution = match phase.execution_request_for(self.product_runtime()) {
             Ok(execution) => execution,
             Err(_) => return Err(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody")),
         };
         self.authorize_elevation_request_with_request(&execution, access, operation, preconditions)
     }
+}
 
-    pub(in crate::domain_computation) fn authorize_elevation_request_with_request<
-        Capability,
-        Operation,
-        Input,
-    >(
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::authorization::host::AuthorizationHost<Schema> + ?Sized,
+    > RequestOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
+}
+
+pub(in crate::domain_computation) trait RequestScopedOps<Schema>:
+    crate::domain_computation::authorization::host::AuthorizationHost<Schema>
+where
+    Schema: ApplicationSchema,
+{
+    fn authorize_elevation_request_with_request<Capability, Operation, Input>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         mut access: WorthQueryAdmittedApplicationCapabilityAccess<
@@ -108,11 +120,11 @@ where
                 )
             })?;
         let (capability_identity, installed) =
-            installed_request_lifecycle(self, &access, operation)?;
+            installed_request_lifecycle(self.authorization_host(), &access, operation)?;
         validate_request_projection::<Schema, Operation, Input>(installed, &proposed)?;
         let binding = bind_request(
             execution,
-            self,
+            self.authorization_host(),
             capability_identity,
             installed,
             &access,
@@ -130,7 +142,7 @@ where
             })?;
         progress_capability_operation(
             execution,
-            self,
+            self.application_runtime(),
             access,
             operation,
             preconditions,
@@ -140,8 +152,19 @@ where
     }
 }
 
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::authorization::host::AuthorizationHost<Schema> + ?Sized,
+    > RequestScopedOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
+}
+
 fn installed_request_lifecycle<'runtime, Schema, Capability, Operation, Input>(
-    runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &'runtime dyn crate::domain_computation::authorization::host::AuthorizationHost<
+        Schema,
+    >,
     access: &WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
     operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
 ) -> Result<
@@ -154,8 +177,7 @@ where
     Input: ApplicationCapabilityRequest<Schema, Capability>,
 {
     let Some((capability, command_capability, role)) = runtime
-        .runtime
-        .authorization
+        .authorization()
         .elevation_lifecycle_operation::<Schema, Operation>(
             operation.operation(),
             operation.input_type(),
@@ -180,8 +202,7 @@ where
         ));
     }
     let installed = runtime
-        .runtime
-        .authorization
+        .authorization()
         .capability_plan_by_identity(&capability)
         .filter(|plan| plan.elevation().is_some())
         .ok_or_else(|| stale_operation(operation.operation()))?;

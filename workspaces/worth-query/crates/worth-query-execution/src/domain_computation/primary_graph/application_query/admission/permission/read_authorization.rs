@@ -1,5 +1,6 @@
 //! Observe READ on the genuine issued source root, independently of payload policy.
 use super::*;
+use crate::domain_computation::authorization::RequirementObservationScopedOps;
 use crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess;
 
 type ReadAuthorization = (

@@ -278,3 +278,6 @@ mod request_read_stops_tests;
 
 #[path = "operation_admission/forgery_doors.rs"]
 mod forgery_doors;
+pub use capability_admission::BorrowedCapabilityOps;
+pub use capability_admission::OperationProgressionOps;
+pub(in crate::domain_computation) use capability_admission::OperationProgressionScopedOps;

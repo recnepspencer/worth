@@ -4,7 +4,7 @@ use super::*;
 #[allow(clippy::too_many_arguments)]
 pub(in crate::domain_computation) fn authorize_public_mutation_on_selected<Schema, Binding, Scope>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     shared: &SharedSelectedProductOperation<'_, Schema>,
     current: &WorthQueryCurrentRetainedMutationBinding<'_, Schema, Binding>,
     prepared: &WorthQueryPreparedApplicationOperationGraphWork,

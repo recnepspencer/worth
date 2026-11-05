@@ -17,7 +17,7 @@ use crate::domain_computation::primary_graph::{
 };
 
 pub(super) fn bind_progression_preconditions<Schema, Capability, Operation, Input>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     access: &WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
     operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
     preconditions: impl std::borrow::Borrow<
@@ -32,7 +32,7 @@ where
     Schema: ApplicationSchema,
     Input: ApplicationCapabilityRequest<Schema, Capability>,
 {
-    let graph = runtime.runtime.primary_graph().ok_or_else(|| {
+    let graph = runtime.primary_graph().ok_or_else(|| {
         denial(
             WorthQueryOperationAuthorizationDenialKind::Refused(
                 AuthorizationRefusal::ForeignRuntime,

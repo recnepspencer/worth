@@ -1,5 +1,7 @@
 //! Exact readmission of retained conventional and capability authorization.
 
+use crate::domain_computation::authorization::authorization_revalidation::supporting_capability::SupportingCapabilityParentOps;
+use crate::domain_computation::authorization::InstalledBasisScopedOps;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::currentness::{
@@ -16,11 +18,12 @@ use crate::domain_computation::authorization::{
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub(super) trait RetainedAuthorizationParentOps<Schema>:
+    crate::domain_computation::authorization::host::AuthorizationHost<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub(super) fn validate_admitted_authorization<Operation, Input, Scope>(
+    fn validate_admitted_authorization<Operation, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: &crate::domain_computation::authorization::WorthQueryAdmittedApplicationOperation<
@@ -56,7 +59,22 @@ where
             ),
         }
     }
+}
 
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::authorization::host::AuthorizationHost<Schema> + ?Sized,
+    > RetainedAuthorizationParentOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
+}
+
+trait RetainedAuthorizationOwnOps<Schema>:
+    crate::domain_computation::authorization::host::AuthorizationHost<Schema>
+where
+    Schema: ApplicationSchema,
+{
     fn validate_retained_conventional(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -71,7 +89,7 @@ where
                     "retained conventional authorization",
                 )
             })?;
-        let graph = self.runtime.primary_graph().ok_or_else(foreign_runtime)?;
+        let graph = self.primary_graph().ok_or_else(foreign_runtime)?;
         graph
             .integration_handle()
             .with_runtime_mut(execution, |runtime| {
@@ -82,7 +100,7 @@ where
                     authorization,
                     runtime,
                     snapshot,
-                    self.runtime.authorization.bridge(),
+                    self.authorization().bridge(),
                 )
             })
     }
@@ -105,50 +123,6 @@ where
         self.validate_capability_at_security(
             execution,
             capability,
-            installed,
-            &sample,
-            security.snapshot_handle(),
-        )
-    }
-
-    /// Revalidate actual read access without entering the broad graph-read currency route.
-    pub(in crate::domain_computation) fn validate_capability_read_access<
-        Capability,
-        Operation,
-        Input,
-    >(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        access: &crate::domain_computation::authorization::WorthQueryAdmittedApplicationCapabilityAccess<Schema,Capability,Operation,Input>,
-    ) -> Result<(), WorthQueryOperationAuthorizationDenial>
-    where
-        Input:
-            worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest<
-                Schema,
-                Capability,
-            >,
-    {
-        let authorization = access.read_authorization();
-        if access.runtime_authority() != self.runtime.authority_identity()
-            || access.binding_identity() != &self.installed_schema.binding_identity()
-            || !authorization.belongs_to_session(access.graph_work_session_identity())
-        {
-            return Err(inconsistent_authorization());
-        }
-        let product = access
-            .read_product()
-            .ok_or_else(inconsistent_authorization)?;
-        let prepared = crate::domain_computation::primary_graph::selected_read_indexes::PreparedSelectedReadIndexes::for_capability(access)
-            .ok_or_else(inconsistent_authorization)?;
-        let (installed, sample) = self.prepare_capability_read_validation(authorization)?;
-        let security = self
-            .admit_capability_read_security_basis(execution, product, &prepared)
-            .map_err(|cause| {
-                super::super::denial::product_security_basis_denial(cause, "workflow read security")
-            })?;
-        self.validate_capability_at_security(
-            execution,
-            authorization,
             installed,
             &sample,
             security.snapshot_handle(),
@@ -183,7 +157,7 @@ where
         sample: &super::super::WorthQueryRuntimeTimeSample,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
-        let graph = self.runtime.primary_graph().ok_or_else(foreign_runtime)?;
+        let graph = self.primary_graph().ok_or_else(foreign_runtime)?;
         graph
             .integration_handle()
             .with_runtime_mut(execution, |runtime| {
@@ -219,12 +193,7 @@ where
         }
         if !capability
             .decision()
-            .remains_current_in(
-                execution,
-                runtime,
-                snapshot,
-                self.runtime.authorization.bridge(),
-            )
+            .remains_current_in(execution, runtime, snapshot, self.authorization().bridge())
             .map_err(|cause| {
                 crate::domain_computation::authorization::denial::relational_read_denial(
                     cause,
@@ -238,7 +207,7 @@ where
             session: capability.decision().session_identity(),
             relational: runtime,
             snapshot,
-            bridge: self.runtime.authorization.bridge(),
+            bridge: self.authorization().bridge(),
             installed,
             request: capability.request(),
             sample,
@@ -250,4 +219,67 @@ where
         )
         .map(drop)
     }
+}
+
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::authorization::host::AuthorizationHost<Schema> + ?Sized,
+    > RetainedAuthorizationOwnOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
+}
+
+pub(in crate::domain_computation) trait RetainedAuthorizationScopedOps<Schema>:
+    crate::domain_computation::authorization::host::AuthorizationHost<Schema>
+where
+    Schema: ApplicationSchema,
+{
+    fn validate_capability_read_access<Capability, Operation, Input>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        access: &crate::domain_computation::authorization::WorthQueryAdmittedApplicationCapabilityAccess<Schema,Capability,Operation,Input>,
+    ) -> Result<(), WorthQueryOperationAuthorizationDenial>
+    where
+        Input:
+            worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest<
+                Schema,
+                Capability,
+            >,
+    {
+        let authorization = access.read_authorization();
+        if access.runtime_authority() != self.authority_identity()
+            || access.binding_identity() != &self.installed_schema().binding_identity()
+            || !authorization.belongs_to_session(access.graph_work_session_identity())
+        {
+            return Err(inconsistent_authorization());
+        }
+        let product = access
+            .read_product()
+            .ok_or_else(inconsistent_authorization)?;
+        let prepared = crate::domain_computation::primary_graph::selected_read_indexes::PreparedSelectedReadIndexes::for_capability(access)
+            .ok_or_else(inconsistent_authorization)?;
+        let (installed, sample) = self.prepare_capability_read_validation(authorization)?;
+        let security = self
+            .admit_capability_read_security_basis(execution, product, &prepared)
+            .map_err(|cause| {
+                super::super::denial::product_security_basis_denial(cause, "workflow read security")
+            })?;
+        self.validate_capability_at_security(
+            execution,
+            authorization,
+            installed,
+            &sample,
+            security.snapshot_handle(),
+        )
+    }
+}
+
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::authorization::host::AuthorizationHost<Schema> + ?Sized,
+    > RetainedAuthorizationScopedOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
 }

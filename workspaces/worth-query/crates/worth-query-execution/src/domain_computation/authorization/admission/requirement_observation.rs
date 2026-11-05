@@ -15,11 +15,12 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationR
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_relational::facade::authorization::RelationalAuthorizationObservationPlan;
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub(in crate::domain_computation) trait RequirementObservationScopedOps<Schema>:
+    crate::domain_computation::authorization::host::AuthorizationHost<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub(in crate::domain_computation) fn observe_query_authorization_requirement<
+    fn observe_query_authorization_requirement<
         Principal,
         PrincipalIdentity,
         Scope,
@@ -62,8 +63,23 @@ where
             },
         )
     }
+}
 
-    pub(super) fn observe_authorization_requirements<Principal, PrincipalIdentity, Scope>(
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::authorization::host::AuthorizationHost<Schema> + ?Sized,
+    > RequirementObservationScopedOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
+}
+
+pub(super) trait RequirementObservationParentOps<Schema>:
+    crate::domain_computation::authorization::host::AuthorizationHost<Schema>
+where
+    Schema: ApplicationSchema,
+{
+    fn observe_authorization_requirements<Principal, PrincipalIdentity, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         observation: WorthQueryConventionalAuthorizationObservation<
@@ -75,8 +91,17 @@ where
         >,
     ) -> Result<Vec<WorthQueryAuthorizationDecisionFact>, WorthQueryOperationAuthorizationDenial>
     {
-        observation.validate_all(execution, self)
+        observation.validate_all(execution, self.authorization_host())
     }
+}
+
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::authorization::host::AuthorizationHost<Schema> + ?Sized,
+    > RequirementObservationParentOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
 }
 
 impl<Schema, Principal, PrincipalIdentity, Scope>
@@ -87,7 +112,7 @@ where
     fn validate_all(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     ) -> Result<Vec<WorthQueryAuthorizationDecisionFact>, WorthQueryOperationAuthorizationDenial>
     {
         let mut admitted = Vec::with_capacity(self.requirements.len());
@@ -100,11 +125,11 @@ where
     fn observe_one(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
         requirement: &worth_query_installation::facade::WorthQueryInstalledAbilityRequirement,
     ) -> Result<WorthQueryAuthorizationDecisionFact, WorthQueryOperationAuthorizationDenial> {
         self.validate_scope(requirement)?;
-        let installed = runtime.runtime.authorization.policy(requirement)?;
+        let installed = runtime.authorization().policy(requirement)?;
         self.validate_installation(runtime, installed, requirement)?;
         let evidence = self.observe_relational(execution, installed, requirement)?;
         let dependency_identity = *evidence.observation_identity().bytes();
@@ -115,8 +140,7 @@ where
             requirement.policy(),
         )?;
         let bridge = runtime
-            .runtime
-            .authorization
+            .authorization()
             .bridge()
             .evaluate(bridge_observation)
             .map_err(|_| {
@@ -128,7 +152,7 @@ where
                 )
             })?;
         validate_decision(
-            runtime.runtime.authorization.bridge(),
+            runtime.authorization().bridge(),
             &evidence,
             &bridge,
             dependency_identity,
@@ -162,7 +186,7 @@ where
 
     fn validate_installation(
         &self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
         installed: &WorthQueryInstalledAuthorizationPolicy,
         requirement: &worth_query_installation::facade::WorthQueryInstalledAbilityRequirement,
     ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
@@ -174,11 +198,7 @@ where
                 requirement.scope_entity(),
             ));
         }
-        let matches = runtime
-            .runtime
-            .authorization
-            .bridge()
-            .matches_installed_policy(
+        let matches = runtime.authorization().bridge().matches_installed_policy(
             installed.correspondence(),
             &crate::domain_computation::authorization::bridge_authorization_binding_identity(
                 self.binding_identity,

@@ -51,6 +51,9 @@ where
     access.transition_operation(execution, runtime, operation, preconditions)
 }
 
+pub use admitted_operation::BorrowedCapabilityOps;
+pub use admitted_operation::OperationProgressionOps;
+pub(in crate::domain_computation) use admitted_operation::OperationProgressionScopedOps;
 pub(in crate::domain_computation) use admitted_operation::{
     BrandTag, ReadCompletionAdmission, WorthQueryAdmittedOperation,
 };

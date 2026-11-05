@@ -11,7 +11,7 @@ use worth_relational::facade::indexes::DerivedIndexBuildRequest;
 
 pub(super) fn prepare<Schema: ApplicationSchema, Scope, Context>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     session: &WorthQueryManagedGraphWorkSession,
     projection: &ApplicationCapabilityRequestProjection<Schema, Scope, Context>,
     operation: &str,
@@ -26,7 +26,6 @@ pub(super) fn prepare<Schema: ApplicationSchema, Scope, Context>(
         )
     };
     let graph = application
-        .runtime
         .primary_graph()
         .ok_or_else(|| denied("capability selector graph".into()))?;
     let product = session

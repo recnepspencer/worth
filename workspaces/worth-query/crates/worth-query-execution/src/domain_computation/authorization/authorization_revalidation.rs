@@ -1,3 +1,7 @@
+use crate::domain_computation::authorization::authorization_revalidation::retained_authorization::RetainedAuthorizationParentOps;
+use crate::domain_computation::authorization::authorization_revalidation::supporting_capability::SupportingCapabilityParentOps;
+use crate::domain_computation::authorization::capability_revalidation::CapabilityRevalidationParentOps;
+use crate::domain_computation::authorization::InstalledBasisScopedOps;
 mod currentness;
 mod observation;
 mod retained_authorization;
@@ -31,7 +35,8 @@ struct RevalidationObservationAxes<'observation> {
     sample: &'observation super::WorthQueryRuntimeTimeSample,
 }
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+trait AuthorizationRevalidationOwnOps<Schema>:
+    crate::domain_computation::authorization::host::AuthorizationHost<Schema>
 where
     Schema: ApplicationSchema,
 {
@@ -59,7 +64,7 @@ where
         if authorization.capability_authorization().is_some() {
             return Err(inconsistent_authorization());
         }
-        let graph = self.runtime.primary_graph().ok_or_else(foreign_runtime)?;
+        let graph = self.primary_graph().ok_or_else(foreign_runtime)?;
         graph
             .integration_handle()
             .with_runtime_mut(execution, |runtime| {
@@ -70,18 +75,152 @@ where
                     authorization,
                     runtime,
                     snapshot,
-                    self.runtime.authorization.bridge(),
+                    self.authorization().bridge(),
                 )
             })
     }
 
-    pub(in crate::domain_computation) fn authorize_retained_idempotency<
-        'serialization,
-        'admission,
-        Operation,
-        Input,
-        Scope,
-    >(
+    fn readmit_commit_basis(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        basis: &WorthQueryCommitAuthorizationBasis,
+        product: &crate::basis::WorthQueryProductBranchLease,
+        security_product: &crate::basis::WorthQueryProductObservationLease,
+    ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
+        match basis {
+            WorthQueryCommitAuthorizationBasis::Observed {
+                authorization: observed,
+                ..
+            } => self.readmit_observed_commit_basis(execution, observed, security_product),
+            WorthQueryCommitAuthorizationBasis::Capability {
+                authorization: capability,
+                ..
+            } => self.readmit_capability_commit_basis(execution, capability, product),
+        }
+    }
+
+    fn readmit_observed_commit_basis(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        observed: &WorthQueryObservedCommitBasis,
+        product: &crate::basis::WorthQueryProductObservationLease,
+    ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
+        let security = self
+            .admit_product_security_basis(execution, product)
+            .map_err(|denial| {
+                super::denial::product_security_basis_denial(
+                    denial,
+                    "observed commit authorization",
+                )
+            })?;
+        let graph = self.primary_graph().ok_or_else(foreign_runtime)?;
+        graph
+            .integration_handle()
+            .with_runtime_mut(execution, |runtime| {
+                let snapshot = security.snapshot_handle();
+
+                validate_observed_currentness(
+                    execution,
+                    observed,
+                    runtime,
+                    snapshot,
+                    self.authorization().bridge(),
+                )
+            })
+    }
+
+    fn readmit_capability_commit_basis(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        capability: &WorthQueryCapabilityCommitBasis,
+        product: &crate::basis::WorthQueryProductBranchLease,
+    ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
+        let installed = self.installed_capability_plan(capability.request())?;
+        if capability.capability_authority_identity()
+            != installed.capability_authority_identity().as_ref()
+        {
+            return Err(stale_authorization());
+        }
+        let sample = self.sample_capability_time(installed)?;
+        let security = self
+            .admit_product_security_basis(execution, product)
+            .map_err(|denial| {
+                super::denial::product_security_basis_denial(
+                    denial,
+                    "capability commit authorization",
+                )
+            })?;
+        let graph = self.primary_graph().ok_or_else(foreign_runtime)?;
+        graph
+            .integration_handle()
+            .with_runtime_mut(execution, |runtime| {
+                let snapshot = security.snapshot_handle();
+                let principal_current = capability
+                    .principal()
+                    .remains_current_in(execution, runtime, snapshot)
+                    .map_err(|kind| {
+                        WorthQueryOperationAuthorizationDenial::new(kind, "principal currentness")
+                    })?;
+                let decision_current = capability
+                    .decision()
+                    .remains_current_in(execution, runtime, snapshot, self.authorization().bridge())
+                    .map_err(|cause| {
+                        crate::domain_computation::authorization::denial::relational_read_denial(
+                            cause,
+                            "authorization currentness",
+                        )
+                    })?;
+                let result = if !principal_current {
+                    Err(stale_principal())
+                } else if !decision_current {
+                    Err(stale_authorization())
+                } else {
+                    WorthQueryAuthorizationRevalidationObservation::from_axes(
+                        RevalidationObservationAxes {
+                            session: capability.decision().session_identity(),
+                            relational: runtime,
+                            snapshot,
+                            bridge: self.authorization().bridge(),
+                            installed,
+                            request: capability.request(),
+                            sample: &sample,
+                        },
+                    )
+                    .observe_active_capability(
+                        execution,
+                        Some(capability.grant()),
+                        Some(capability.decision()),
+                    )
+                    .map(drop)
+                };
+
+                result.and_then(|()| {
+                    self.readmit_capability_commit_support(
+                        execution,
+                        capability.supporting(),
+                        runtime,
+                        snapshot,
+                    )
+                })
+            })
+    }
+}
+
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::authorization::host::AuthorizationHost<Schema> + ?Sized,
+    > AuthorizationRevalidationOwnOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
+}
+
+pub(in crate::domain_computation) trait AuthorizationRevalidationScopedOps<Schema>:
+    crate::domain_computation::authorization::host::AuthorizationHost<Schema>
+where
+    Schema: ApplicationSchema,
+{
+    fn authorize_retained_idempotency<'serialization, 'admission, Operation, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: &'admission mut WorthQueryAdmittedApplicationOperation<
@@ -119,13 +258,7 @@ where
         ))
     }
 
-    pub(in crate::domain_computation) fn authorize_idempotency_inspection<
-        'serialization,
-        'admission,
-        Operation,
-        Input,
-        Scope,
-    >(
+    fn authorize_idempotency_inspection<'serialization, 'admission, Operation, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: &'admission WorthQueryAdmittedApplicationOperation<
@@ -160,14 +293,24 @@ where
             admission,
         ))
     }
+}
 
-    pub(in crate::domain_computation::authorization) fn authorize_application_commit<
-        'serialization,
-        'admission,
-        Operation,
-        Input,
-        Scope,
-    >(
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::authorization::host::AuthorizationHost<Schema> + ?Sized,
+    > AuthorizationRevalidationScopedOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
+}
+
+pub(in crate::domain_computation::authorization) trait AuthorizationAuthorizationRevalidationScopedOps<
+    Schema,
+>:
+    crate::domain_computation::authorization::host::AuthorizationHost<Schema> where
+    Schema: ApplicationSchema,
+{
+    fn authorize_application_commit<'serialization, 'admission, Operation, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: &'admission WorthQueryAdmittedApplicationOperation<
@@ -189,7 +332,7 @@ where
         >,
         WorthQueryOperationAuthorizationDenial,
     > {
-        if self.runtime.authority_identity() != admission.runtime_authority() {
+        if self.authority_identity() != admission.runtime_authority() {
             return Err(foreign_runtime());
         }
         if basis.admission_identity() != admission.admission_identity()
@@ -219,134 +362,16 @@ where
             admission,
         ))
     }
-
-    fn readmit_commit_basis(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        basis: &WorthQueryCommitAuthorizationBasis,
-        product: &crate::basis::WorthQueryProductBranchLease,
-        security_product: &crate::basis::WorthQueryProductObservationLease,
-    ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
-        match basis {
-            WorthQueryCommitAuthorizationBasis::Observed {
-                authorization: observed,
-                ..
-            } => self.readmit_observed_commit_basis(execution, observed, security_product),
-            WorthQueryCommitAuthorizationBasis::Capability {
-                authorization: capability,
-                ..
-            } => self.readmit_capability_commit_basis(execution, capability, product),
-        }
-    }
-
-    fn readmit_observed_commit_basis(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        observed: &WorthQueryObservedCommitBasis,
-        product: &crate::basis::WorthQueryProductObservationLease,
-    ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
-        let security = self
-            .admit_product_security_basis(execution, product)
-            .map_err(|denial| {
-                super::denial::product_security_basis_denial(
-                    denial,
-                    "observed commit authorization",
-                )
-            })?;
-        let graph = self.runtime.primary_graph().ok_or_else(foreign_runtime)?;
-        graph
-            .integration_handle()
-            .with_runtime_mut(execution, |runtime| {
-                let snapshot = security.snapshot_handle();
-
-                validate_observed_currentness(
-                    execution,
-                    observed,
-                    runtime,
-                    snapshot,
-                    self.runtime.authorization.bridge(),
-                )
-            })
-    }
-
-    fn readmit_capability_commit_basis(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        capability: &WorthQueryCapabilityCommitBasis,
-        product: &crate::basis::WorthQueryProductBranchLease,
-    ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
-        let installed = self.installed_capability_plan(capability.request())?;
-        if capability.capability_authority_identity()
-            != installed.capability_authority_identity().as_ref()
-        {
-            return Err(stale_authorization());
-        }
-        let sample = self.sample_capability_time(installed)?;
-        let security = self
-            .admit_product_security_basis(execution, product)
-            .map_err(|denial| {
-                super::denial::product_security_basis_denial(
-                    denial,
-                    "capability commit authorization",
-                )
-            })?;
-        let graph = self.runtime.primary_graph().ok_or_else(foreign_runtime)?;
-        graph
-            .integration_handle()
-            .with_runtime_mut(execution, |runtime| {
-                let snapshot = security.snapshot_handle();
-                let principal_current = capability
-                    .principal()
-                    .remains_current_in(execution, runtime, snapshot)
-                    .map_err(|kind| {
-                        WorthQueryOperationAuthorizationDenial::new(kind, "principal currentness")
-                    })?;
-                let decision_current = capability
-                    .decision()
-                    .remains_current_in(
-                        execution,
-                        runtime,
-                        snapshot,
-                        self.runtime.authorization.bridge(),
-                    )
-                    .map_err(|cause| {
-                        crate::domain_computation::authorization::denial::relational_read_denial(
-                            cause,
-                            "authorization currentness",
-                        )
-                    })?;
-                let result = if !principal_current {
-                    Err(stale_principal())
-                } else if !decision_current {
-                    Err(stale_authorization())
-                } else {
-                    WorthQueryAuthorizationRevalidationObservation::from_axes(
-                        RevalidationObservationAxes {
-                            session: capability.decision().session_identity(),
-                            relational: runtime,
-                            snapshot,
-                            bridge: self.runtime.authorization.bridge(),
-                            installed,
-                            request: capability.request(),
-                            sample: &sample,
-                        },
-                    )
-                    .observe_active_capability(
-                        execution,
-                        Some(capability.grant()),
-                        Some(capability.decision()),
-                    )
-                    .map(drop)
-                };
-
-                result.and_then(|()| {
-                    self.readmit_capability_commit_support(
-                        execution,
-                        capability.supporting(),
-                        runtime,
-                        snapshot,
-                    )
-                })
-            })
-    }
 }
+
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::authorization::host::AuthorizationHost<Schema> + ?Sized,
+    > AuthorizationAuthorizationRevalidationScopedOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
+}
+pub(in crate::domain_computation) use retained_authorization::RetainedAuthorizationScopedOps;
+pub use workflow_approval::WorkflowApprovalOps;
+pub(in crate::domain_computation) use workflow_approval::WorkflowApprovalScopedOps;

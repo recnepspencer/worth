@@ -27,7 +27,7 @@ pub(in crate::domain_computation) enum SelectedOperationGraphWorkStop {
 
 #[allow(clippy::too_many_arguments)]
 pub(in crate::domain_computation) fn start_selected_operation_graph_work_admitted<Schema, Binding>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     shared: &SharedSelectedProductOperation<'_, Schema>,
     control: Option<crate::basis::WorthQueryProductObservationLease>,
     current: &WorthQueryCurrentRetainedMutationBinding<'_, Schema, Binding>,
@@ -41,13 +41,10 @@ where
     Schema: ApplicationSchema,
     Binding: ApplicationMutationBinding<Schema>,
 {
-    if !std::ptr::eq(shared.selected().application(), runtime) {
+    if !std::ptr::addr_eq(shared.selected().application(), runtime) {
         return Err(SelectedOperationGraphWorkStop::ForeignSelectedRuntime);
     }
-    if !current.belongs_to(
-        runtime.runtime.installed_packages(),
-        runtime.installed_schema(),
-    ) {
+    if !current.belongs_to(runtime.installed_packages(), runtime.installed_schema()) {
         return Err(SelectedOperationGraphWorkStop::ForeignInstalledIssuer);
     }
     // Wrapper plumbing below reads the issued operation, actual provider
@@ -68,7 +65,7 @@ where
     check_request(request)?;
     let session = WorthQueryManagedGraphWorkSession::start_mutation_with_control(
         plan,
-        runtime.runtime.authority_identity(),
+        runtime.authority_identity(),
         operation.binding_identity(),
         operation.graph_obligations().identity(),
         operation.authority_identity(),

@@ -78,11 +78,12 @@ impl WorthQueryCapabilityRevocationBinding {
     }
 }
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub trait CapabilityRevocationProgressionOps<Schema>:
+    crate::domain_computation::authorization::host::AuthorizationHost<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub fn authorize_capability_revocation<Capability, Operation, Input>(
+    fn authorize_capability_revocation<Capability, Operation, Input>(
         &self,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         access: WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
@@ -110,7 +111,7 @@ where
         Input: ApplicationCapabilityRequest<Schema, Capability>
             + ApplicationCapabilityRevocationRequest<Schema, Capability>,
     {
-        let execution = match phase.execution_request_for(&self.runtime.product_runtime) {
+        let execution = match phase.execution_request_for(self.product_runtime()) {
             Ok(execution) => execution,
             Err(_) => return Err(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody")),
         };
@@ -122,12 +123,23 @@ where
             preconditions,
         )
     }
+}
 
-    pub(in crate::domain_computation) fn authorize_capability_revocation_with_request<
-        Capability,
-        Operation,
-        Input,
-    >(
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::authorization::host::AuthorizationHost<Schema> + ?Sized,
+    > CapabilityRevocationProgressionOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
+}
+
+pub(in crate::domain_computation) trait CapabilityRevocationProgressionScopedOps<Schema>:
+    crate::domain_computation::authorization::host::AuthorizationHost<Schema>
+where
+    Schema: ApplicationSchema,
+{
+    fn authorize_capability_revocation_with_request<Capability, Operation, Input>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         access: WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
@@ -160,8 +172,7 @@ where
             .capability_revocation_target()
             .map_err(|denial| rejected(denial.subject()))?;
         let installed = self
-            .runtime
-            .authorization
+            .authorization()
             .capability_plan(capability)
             .ok_or_else(|| rejected(capability.contract().name()))?;
         let revocation = installed
@@ -201,7 +212,7 @@ where
         let resource = access.resource_entity_id();
         let admitted = progress_capability_operation(
             execution,
-            self,
+            self.application_runtime(),
             access,
             operation,
             preconditions,
@@ -224,6 +235,15 @@ where
             work,
         )
     }
+}
+
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::authorization::host::AuthorizationHost<Schema> + ?Sized,
+    > CapabilityRevocationProgressionScopedOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
 }
 
 fn validate_operation<Operation, Input>(

@@ -17,4 +17,9 @@ pub trait WorthQueryRuntimeIdentityHost<Schema> {
     fn primary_graph(
         &self,
     ) -> Option<&crate::domain_computation::primary_graph::WorthQueryPrimaryGraph>;
+    /// Temporary bridge while the modules above still take the concrete runtime; removed when
+    /// the last of them takes its own host.
+    fn application_runtime(
+        &self,
+    ) -> &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>;
 }

@@ -13,7 +13,9 @@ use super::super::{
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 pub(super) fn installed_lifecycle_owner<'runtime, Schema, Operation, Input>(
-    runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &'runtime dyn crate::domain_computation::authorization::host::AuthorizationHost<
+        Schema,
+    >,
     command_capability_identity: [u8; 32],
     operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
     expected_role: WorthQueryElevationLifecycleOperationRole,
@@ -26,8 +28,7 @@ where
     Operation: ApplicationOperationMarkerIdentity<Schema>,
 {
     let Some((capability, command_capability, role)) = runtime
-        .runtime
-        .authorization
+        .authorization()
         .elevation_lifecycle_operation::<Schema, Operation>(
             operation.operation(),
             operation.input_type(),
@@ -40,8 +41,7 @@ where
         return Err(role_mismatch(operation.operation()));
     }
     let installed = runtime
-        .runtime
-        .authorization
+        .authorization()
         .capability_plan_by_identity(&capability)
         .filter(|plan| plan.elevation().is_some())
         .ok_or_else(|| stale_operation(operation.operation()))?;

@@ -11,9 +11,7 @@ use super::{
 use crate::domain_computation::authorization::capability_binding_lowering::field_locator;
 
 pub(super) fn collect_activation_material<Schema, Scope, Context>(
-    runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
-        Schema,
-    >,
+    runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     installed: &WorthQueryInstalledCapabilityPlan,
     proposed: &ApplicationCapabilityDelegationRequestProjection<Schema, Scope, Context>,
     resolved: &WorthQueryDelegationResolvedRequest,
@@ -44,9 +42,7 @@ where
 }
 
 fn validate_field_bindings<Schema, Scope, Context>(
-    runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
-        Schema,
-    >,
+    runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,
     installed: &WorthQueryInstalledCapabilityPlan,
     proposed: &ApplicationCapabilityDelegationRequestProjection<Schema, Scope, Context>,
     activation: &crate::domain_computation::authorization::capability_registry::WorthQueryCapabilityDelegationActivationBindings,
@@ -55,7 +51,6 @@ where
     Schema: worth_query_installation::facade::ApplicationSchema,
 {
     let graph = runtime
-        .runtime
         .primary_graph()
         .ok_or_else(|| delegation_denial(installed))?;
     let layout = graph.layout();

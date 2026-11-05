@@ -27,7 +27,7 @@ where
     };
     let capability = prepared.capability();
     if !approved.belongs_to_lifecycle(
-        prepared.runtime().runtime.authority_identity(),
+        prepared.runtime().authority_identity(),
         prepared.graph_work().branch().relational(),
         *capability.identity().bytes(),
         prepared.installed().capability_authority_identity(),
@@ -65,7 +65,7 @@ where
                 execution,
                 relational,
                 snapshot,
-                prepared.runtime().runtime.authorization.bridge(),
+                prepared.runtime().authorization().bridge(),
             )
             .map_err(|cause| {
                 crate::domain_computation::authorization::denial::relational_read_denial(
@@ -115,7 +115,7 @@ where
         )
     })?;
     let admitted = approved.admits_active_use(
-        prepared.runtime().runtime.authority_identity(),
+        prepared.runtime().authority_identity(),
         prepared.graph_work().branch().relational(),
         *prepared.capability().identity().bytes(),
         prepared.installed().capability_authority_identity(),

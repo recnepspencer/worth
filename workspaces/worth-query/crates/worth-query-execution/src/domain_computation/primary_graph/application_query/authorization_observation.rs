@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::RequirementObservationScopedOps;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_query_installation::facade::{
     WorthQueryInstalledApplicationQuery, WorthQueryInstalledApplicationQueryAuthorization,
