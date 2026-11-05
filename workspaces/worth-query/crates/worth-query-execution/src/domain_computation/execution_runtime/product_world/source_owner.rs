@@ -84,19 +84,14 @@ impl WorthQueryRelationalSourceOwner {
         let read_acquisitions = Arc::new(std::sync::atomic::AtomicU64::new(0));
         let bridge_lock_observations = {
             let count = Arc::clone(&read_acquisitions);
-            let query_count = Arc::clone(&read_acquisitions);
-            Arc::new(Mutex::new(vec![
-                runtime
-                    .observe_locks_for_test(move || {
-                        query_count.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                    })
-                    .expect("the actual Query handle admits its passive observer"),
-                source
-                    .observe_runtime_locks_for_test(move || {
-                        count.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                    })
-                    .expect("the new source admits its first passive observer"),
-            ]))
+            // Home attachment shares Bridge's handle, so this listener also
+            // observes Query acquisitions. Ordinary handles are immutable and
+            // acquire no runtime mutex. Register once per actual handle slot.
+            Arc::new(Mutex::new(vec![source
+                .observe_runtime_locks_for_test(move || {
+                    count.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                })
+                .expect("the new source admits its first passive observer")]))
         };
         Ok(Self {
             runtime,
