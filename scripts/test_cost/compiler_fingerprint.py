@@ -71,14 +71,23 @@ def resolve(event, candidates, declaration):
         # packages; that requires another Cargo observation.
         if len({row['package'] for row in rows}) != 1:
             raise FingerprintRefusal('dependency name spans multiple Cargo packages')
-        features = sorted(json.loads(node['features']))
+        try:
+            features = json.loads(node['features'])
+            if not isinstance(features, list) or any(not isinstance(value, str) for value in features):
+                raise ValueError('Cargo features must be a string list')
+        except (KeyError, TypeError, ValueError) as error:
+            raise FingerprintRefusal('Cargo fingerprint features are unavailable') from error
+        features = sorted(features)
         rows = {row['identity']: row for row in rows if row['features'] == features}
         if len(rows) == 1:
             return next(iter(rows))
         if not rows or set(rows) <= active:
             raise FingerprintRefusal('Cargo dependency observations do not distinguish units')
         alternatives = dict(rows)
-        observed_dependencies = {name: value for _, name, _, value in node['deps']}
+        try:
+            observed_dependencies = {name: value for _, name, _, value in node['deps']}
+        except (KeyError, TypeError, ValueError) as error:
+            raise FingerprintRefusal('Cargo fingerprint dependencies are unavailable') from error
         names = {crate_name(units[key]) for row in alternatives.values()
                  for key in row['dependency_units'] if key in units}
         for name in sorted(names):
