@@ -231,6 +231,128 @@ def rewrite_parameters(text, host_path, local, core_fields, top_fields, needs, s
     return text, len([1 for e in edits])
 
 
+def flatten_use(tree, base=''):
+    """`a::{b::{C, D}, E as F}` -> [('a::b::C', None), ('a::b::D', None), ('a::E', 'F')]."""
+    tree = tree.strip()
+    depth, brace = 0, None
+    for i, ch in enumerate(tree):
+        if ch == '{' and depth == 0:
+            brace = i
+            break
+        depth += ch in '<'
+        depth -= ch in '>'
+    if brace is None:
+        alias = None
+        if ' as ' in tree:
+            tree, alias = [x.strip() for x in tree.split(' as ', 1)]
+        path = (base + tree).rstrip(':')
+        if path.endswith('::self'):
+            path = path[:-len('::self')]
+        return [(path, alias)]
+    head = base + tree[:brace]
+    inner = tree[brace + 1:tree.rindex('}')]
+    parts, depth, cur = [], 0, ''
+    for ch in inner:
+        if ch == '{':
+            depth += 1
+        elif ch == '}':
+            depth -= 1
+        if ch == ',' and depth == 0:
+            parts.append(cur)
+            cur = ''
+        else:
+            cur += ch
+    parts.append(cur)
+    out = []
+    for part in parts:
+        if part.strip():
+            out.extend(flatten_use(part, head))
+    return out
+
+
+def file_uses(source, names, file_module):
+    """The file's top-level `use` items, written from `crate::` so another module can hold them."""
+    text = source.read_text(encoding='utf-8')
+    module = file_module.get(source, names)
+    found = []
+    for attributes, vis, keyword, _name, start, end in scope_items(text):
+        if keyword != 'use' or vis:
+            continue
+        item = ' '.join(text[start:end].split())
+        body = item[len('use '):].rstrip(';')
+        if body.startswith('super::') or body.startswith('self::') or body.startswith('{'):
+            base = list(module)
+            while body.startswith('super::'):
+                base.pop()
+                body = body[len('super::'):]
+            if body.startswith('self::'):
+                body = body[len('self::'):]
+            body = '::'.join(['crate'] + base) + '::' + body
+        for path, alias in flatten_use(body):
+            found.append((path, alias))
+    return found
+
+
+def facade_imports(uses):
+    bound, lines = {'ApplicationSchema'}, []
+    for path, alias in uses:
+        name = alias or path.rsplit('::', 1)[-1]
+        if name == '*':
+            line = f'use {path};'
+        elif name in bound:
+            continue
+        else:
+            bound.add(name)
+            line = f'use {path} as {alias};' if alias else f'use {path};'
+        if line not in lines:
+            lines.append(line)
+    return ''.join(line + '\n' for line in lines)
+
+
+def rewrite_holders(text, host_path, core_fields, top_fields, needs):
+    """Struct fields and accessor returns typed `&Runtime<S>` become `&dyn Host<S>`; uses through
+    them (`.f.runtime.g`, `.f().installed_schema`) become host calls."""
+    holders = set()
+    edits = []
+    for m in re.finditer(r"(?m)^(\s*(?:pub(?:\([^)]*\))?\s+)?)(\w+)\s*:\s*" + RUNTIME_TYPE.pattern + r"\s*,", text):
+        holders.add(m.group(2))
+        a = text.index(':', m.start(2)) + 1
+        b = m.end() - 1
+        edits.append((a, b, f" &{m.group(3) or ''}dyn {host_path}<{m.group(4)}>"))
+    for m in re.finditer(r"fn\s+(\w+)\s*(<[^(]*>)?\s*\(\s*&\s*self\s*\)\s*->\s*" + RUNTIME_TYPE.pattern, text):
+        holders.add(m.group(1))
+        start = m.start(0) + m.group(0).index('->') + 2
+        edits.append((start, m.end(0), f" &{m.group(4) or ''}dyn {host_path}<{m.group(5)}>"))
+    for a, b, r in sorted(edits, reverse=True):
+        text = text[:a] + r + text[b:]
+    if not holders:
+        return text, holders
+    stream = tokens(text)
+    edits = []
+    for k, t in enumerate(stream):
+        if t.value != '.' or k + 1 >= len(stream) or stream[k + 1].value not in holders:
+            continue
+        j = k + 2
+        if j + 1 < len(stream) and stream[j].value == '(' and stream[j + 1].value == ')':
+            j += 2
+        if j + 2 < len(stream) and stream[j].value == '.' and stream[j + 1].value == 'runtime' \
+                and stream[j + 2].value == '.' and j + 3 < len(stream) and stream[j + 3].kind == 'ident':
+            sub = stream[j + 3].value
+            if is_call(stream, j + 4):
+                needs['core_methods'].add(sub)
+                edits.append((stream[j + 1].start, stream[j + 3].start, ''))
+            elif sub in core_fields:
+                needs['core_fields'].add(sub)
+                edits.append((stream[j + 1].start, stream[j + 3].end, sub + '()'))
+        elif j + 1 < len(stream) and stream[j].value == '.' and stream[j + 1].value in top_fields \
+                and not is_call(stream, j + 2):
+            needs['top_fields'].add(stream[j + 1].value)
+            edits.append((stream[j + 1].end, stream[j + 1].end, '()'))
+    for a, b, r in sorted(edits, reverse=True):
+        text = text[:a] + r + text[b:]
+    return text, holders
+
+
 def drop_visibility(item):
     return re.sub(r'(?m)^(\s*)pub(?:\s*\([^)]*\))?\s+(?=(?:const\s+|async\s+|unsafe\s+)*fn\b)', r'\1', item, count=1)
 
@@ -247,7 +369,8 @@ def facade_args(signature):
     """The forwarded argument list, or None when a parameter is not a plain binding."""
     stream = tokens(signature)
     matching = pairs(stream)
-    open_paren = next(k for k, t in enumerate(stream) if t.value == '(')
+    fn_at = next(k for k, t in enumerate(stream) if t.value == 'fn' and t.kind == 'ident')
+    open_paren = next(k for k, t in enumerate(stream) if k > fn_at and t.value == '(')
     inner = signature[stream[open_paren].end:stream[matching[open_paren]].start]
     depth, parts, cur = 0, [], ''
     for ch in inner:
@@ -291,6 +414,12 @@ def main(argv=None):
     key = lookup(model, RUNTIME, (RUNTIME_NAME,))[1]
     prefix = tuple(args.module.split('::'))
     blocks = [] if args.params_only else runtime_blocks(model, key, prefix)
+    file_module = {}
+    for names, node in model.index.items():
+        if getattr(node, 'offset', 0) == 0 and node.source is not None:
+            src = Path(node.source)
+            if src not in file_module or len(names) > len(file_module[src]):
+                file_module[src] = names
     lib_dir = Path(args.lib).resolve().parent
     runtime_text = (lib_dir / 'domain_computation/primary_graph/application_runtime.rs').read_text()
     core_text = (lib_dir / 'domain_computation/primary_graph/application_runtime_core.rs').read_text()
@@ -301,6 +430,7 @@ def main(argv=None):
              'hand': []}
     file_edits = defaultdict(list)
     facades, traits = [], []
+    facade_uses = []
     used_names = defaultdict(set)
     module_names = set()
     reexports = []
@@ -328,9 +458,9 @@ def main(argv=None):
             module_names.add(name)
             used_names[source].add(name)
             if vis.startswith('pub(in ') or vis in ('pub', 'pub(crate)'):
-                file_module = block['names']
-                if file_module != prefix:
-                    reexports.append((vis, '::'.join(('crate',) + file_module) + '::' + name))
+                owner = block['names']
+                if owner != prefix:
+                    reexports.append((vis, '::'.join(('crate',) + owner) + '::' + name))
             bodies = []
             for m in methods:
                 if re.search(r'\bconst\s+fn\b', m['item']):
@@ -340,6 +470,7 @@ def main(argv=None):
                 bodies.append(item.strip('\n'))
                 public = vis == 'pub' and not m['name'].endswith('_for_test')
                 if public and args.facade_file:
+                    facade_uses.extend(file_uses(source, block['names'], file_module))
                     sig = m['item'][:m['item'].index('{')] if '{' in m['item'] else m['item']
                     fargs = facade_args(sig)
                     if fargs is None:
@@ -350,6 +481,8 @@ def main(argv=None):
                                    m['name'] + '(self' + ''.join(', ' + a for a in fargs) + ')\n    }')
             trait_vis = (vis + ' ') if vis else ''
             where = (' ' + block['where']) if block['where'] else ''
+            if source in file_module and len(block['names']) < len(file_module[source]):
+                needs['hand'].append(f'{source}: module path {block["names"]} vs file {file_module[source]}')
             texts.append(f"{trait_vis}trait {name}<{bound}>: {args.host_path}<{schema}>{where} {{\n" +
                          '\n\n'.join(bodies) + '\n}\n\n' +
                          f"impl<{bound}, HostRuntime: {args.host_path}<{schema}> + ?Sized> {name}<{schema}>"
@@ -377,22 +510,35 @@ def main(argv=None):
         if args.params_only:
             text, _n = rewrite_parameters(text, args.host_path, local, core_fields, top_fields, needs,
                                           [(a, b) for a, b, _r in edits])
+            text, _h = rewrite_holders(text, args.host_path, core_fields, top_fields, needs)
         for a, b, r in sorted(edits, reverse=True):
             text = text[:a] + r + text[b:]
         tokens(text)
         pairs(tokens(text))
         path.write_text(text, encoding='utf-8', newline='\n')
     if reexports:
-        root_node = model.index[prefix]
-        root_file = Path(root_node.source)
-        text = root_file.read_text(encoding='utf-8').rstrip('\n') + '\n'
+        additions = defaultdict(list)
         for vis, path in reexports:
-            text += f'{vis} use {path};\n'
-        root_file.write_text(text, encoding='utf-8', newline='\n')
+            segments = path.split('::')[1:]
+            name, owner = segments[-1], tuple(segments[:-1])
+            for depth in range(len(owner) - 1, len(prefix) - 1, -1):
+                ancestor, child = owner[:depth], owner[depth]
+                node = model.index[ancestor]
+                if node.declaration is not None and node.declaration.body:
+                    needs['hand'].append(f're-export of {name} through inline module {ancestor}')
+                    break
+                additions[Path(node.source)].append(f'{vis} use {child}::{name};')
+        for target, lines in additions.items():
+            text = target.read_text(encoding='utf-8').rstrip('\n') + '\n'
+            for line in lines:
+                if line not in text:
+                    text += line + '\n'
+            target.write_text(text, encoding='utf-8', newline='\n')
     if facades and args.facade_file:
         Path(args.facade_file).write_text(
             f'//! The runtime\'s consumer methods over `{args.module}`; each only calls its subsystem.\n'
-            'use worth_query_installation::facade::ApplicationSchema;\n\n'
+            'use worth_query_installation::facade::ApplicationSchema;\n' +
+            facade_imports(facade_uses) + '\n'
             f'impl<Schema: ApplicationSchema> super::super::{RUNTIME_NAME}<Schema> {{\n    ' +
             '\n\n    '.join(facades) + '\n}\n', encoding='utf-8', newline='\n')
     return 0
