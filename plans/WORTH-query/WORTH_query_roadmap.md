@@ -6221,6 +6221,27 @@ capability tests remain owned by their capability; there is no separate blanket
 certification milestone after this group. Physical and durable integration
 remains in the Store roadmap.
 
+## Milestone 11: Runtime Persistent Naming Over Entities, Relations And Aggregates
+
+Not scheduled. This puts generic persistent naming and lineage in the runtime
+so applications stop rebuilding it. Applications declare meaning: name schemes,
+group continuity rules and correspondence intents. The runtime mints names,
+writes many-to-many lineage for entities, relations and groups, and resolves
+held names to current generational IDs or typed refusals. This holds through
+edits, undo, history, reorder, rebuilds, branches and Store reopen. It
+supersedes 9.14's binding of domain-written names; Relational mints, Query
+lowers declarations. Scope and decisions are in
+[milestone-11.md](milestone-11.md); no implementation is claimed.
+
+| Phase | Outcome |
+|---|---|
+| 11.1 | Runtime-minted name schemes for entity, relation and group kinds. |
+| 11.2 | Validated many-to-many correspondence intents and lineage events. |
+| 11.3 | Aggregate identity re-keyed to anchor names, keeper chosen by declared continuity. |
+| 11.4 | Unprivileged, local held-name resolution; supersedes the 9.14 trace binding. |
+| 11.5 | Names through undo, redo, checkout and branch merge. |
+| 11.6 | Durable names through Store Milestone 7 and fresh installations. |
+
 ## Per-Milestone Format
 
 Existing 9.x phase identities and accepted guarantees remain historical. New
@@ -6383,6 +6404,7 @@ answer is "store-gated" or "shared with another subsystem."
 | Historical evaluation contracts | Milestone 5.4 with completion in Milestone 6 | Historical materialization-path metadata, compatibility/admission artifacts | Historical reads stay explicit about how truth was materialized and whether the request was honestly admissible | capability-owned historical/diff parity + diagnostics suites |
 | Lineage traversal queries | Milestone 7 | Lineage traversal descriptors, lineage-basis metadata | Lineage results stay typed and explainable | capability-owned lineage/correspondence parity |
 | Correspondence queries | Milestones 5.4 and 7 | Lineage-backed and structural-fingerprint-backed correspondence descriptors, ambiguity/rejection metadata | Ambiguous correspondence stays explicit and advisory correspondence never silently becomes continuity | capability-owned lineage/correspondence parity |
+| Persistent naming over entities, relations and aggregates | Milestone 11; durable completion with Store Milestone 7 | Installed name schemes, group continuity rules, correspondence intents, many-to-many lineage events, held-name resolution outcomes | Held names survive edits, splits, merges, undo/redo, checkout, rebuild, branch merge and reopen, or refuse typed with candidates; no handler-written names | Milestone 11 phase matrices + fixture and proprietary CAD adoption journey |
 | Inspector-pattern detail with live aspect projection | Milestones 5 and 8 | Inspector/detail view-shape metadata, aspect-focused live patch artifacts | Inspector live projection proves narrow invalidation | capability-owned live equivalence + view-shape cross-feature suites |
 | View shapes: table/detail | Milestone 8 | View-shape descriptors, delivery/live-patch metadata | View shape affects planning and live semantics, not only typing | capability-owned web/detail workflow suites |
 | View shapes: kanban/grouped | Milestone 8 | Grouped view metadata, group-splice patch artifacts | Group membership changes preserve view semantics | capability-owned view-shape cross-feature suites |
