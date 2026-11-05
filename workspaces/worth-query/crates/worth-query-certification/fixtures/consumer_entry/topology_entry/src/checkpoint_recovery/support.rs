@@ -133,12 +133,22 @@ where
     >,
     Program::Outputs: application_installation::WorthQueryApplicationProgramRoots<CheckpointSchema>,
 {
-    let expectation = match checkpoint {
-        Some(_) => "the checkpoint restores",
-        None => "the checkpoint source installs",
-    };
-    try_install_program_with_limits::<Program>(checkpoint, profile, limits, seed)
-        .expect(expectation)
+    match checkpoint {
+        Some(checkpoint) => {
+            worth_query_host::facade::application_contribution::with_bootstrap_advancement(
+                execution_policy::POPULATION_BOOTSTRAP_POLICY,
+                |phase| {
+                    installation::install_checkpoint_in_bootstrap::<Program>(
+                        &phase, checkpoint, profile, limits,
+                    )
+                },
+            )
+            .expect("the reconstructed population owns its original opening request")
+            .expect("the checkpoint restores")
+        }
+        None => try_install_program_with_limits::<Program>(None, profile, limits, seed)
+            .expect("the checkpoint source installs"),
+    }
 }
 
 /// Installs or restores, returning the denial when the installation is refused.

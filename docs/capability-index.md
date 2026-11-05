@@ -806,6 +806,14 @@ and supply the clock after the callback. Setup spends the supplied request; the 
 its declared runtime request policy. Default installation entries still open setup
 from that policy. See [installation funding](build-an-application.md#4-install-the-application-graph).
 
+For ordinary checkpoint restoration under a separately funded opening request,
+pass that same bootstrap phase first to
+`host::application_installation::in_memory_rostered_program_from_checkpoint_in_advancement`,
+then the validated program, roster, declaration, configuration, build identity,
+World limits and checkpoint. The checkpoint is the sole model source; no seed or
+transition callback is accepted. The installed World keeps its declared runtime
+request policy. Default checkpoint restore still opens from that policy.
+
 For installation and checkpoint-transition work inside an already admitted original
 execution request, use `host::application_contribution::with_bootstrap_advancement_from_request`.
 Its bootstrap phase borrows the same cancellation/deadline and cumulative native work.

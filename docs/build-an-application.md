@@ -2550,6 +2550,15 @@ cannot make a zero-work runtime query succeed. Default `in_memory_program` and
 The public-entry funding, cancellation and memory regressions live in
 `topology_entry/src/checkpoint_recovery/support/bootstrap_funding.rs`.
 
+Ordinary checkpoint restore has the same original-request option:
+`host::application_installation::in_memory_rostered_program_from_checkpoint_in_advancement`
+takes that bootstrap phase first, followed by the validated program, roster,
+declaration, configuration, build identity, unchanged World limits and checkpoint.
+It reconstructs through the ordinary restore core and accepts no seed or transition
+callback. Use a separately funded opening request for a large recovered population;
+its allowance does not increase later World business calls. Default ordinary
+checkpoint restoration continues to open from the World request policy.
+
 When installation belongs to an already admitted execution attempt, borrow its
 `ExecutionRequest` through `host::application_contribution::with_bootstrap_advancement_from_request`
 and pass the resulting phase to

@@ -71,6 +71,35 @@ where
     )
 }
 
+/// Successful reconstruction borrows its own opening phase, preserving World limits.
+pub(super) fn install_checkpoint_in_bootstrap<Program>(
+    phase: &worth_query_host::facade::application_contribution::WorthQueryBootstrapAdvancementPhase<
+        '_,
+    >,
+    checkpoint: application_installation::WorthQueryApplicationCheckpoint,
+    profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
+    limits: WorthQueryInMemoryApplicationLimits,
+) -> Result<
+    application_installation::WorthQueryProgramApplicationRuntime<CheckpointSchema, Program>,
+    Box<application_installation::WorthQueryInMemoryApplicationDenial>,
+>
+where
+    Program: ApplicationProgramDefinition<CheckpointSchema>,
+    Program::Contributions: WorthQueryApplicationContributionTuple<
+        CheckpointSchema,
+        Configuration = (TopologyConfiguration,),
+    >,
+    Program::Outputs: application_installation::WorthQueryApplicationProgramRoots<CheckpointSchema>,
+{
+    install_configured_source::<Program>(
+        InstallSource::CheckpointInBootstrap(phase, checkpoint),
+        profile,
+        limits,
+        |_| {},
+        configuration(Arc::new(AtomicBool::new(false)), None),
+    )
+}
+
 /// The same installer accepts the contribution's actual observer configuration.
 pub(super) fn install_configured<Program>(
     checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
@@ -151,6 +180,7 @@ pub(in crate::checkpoint_recovery) fn install_on_clock(
 enum InstallSource<'borrow, 'phase> {
     Fresh(authentication::WorthQueryAdmissionClock),
     Checkpoint(application_installation::WorthQueryApplicationCheckpoint),
+    CheckpointInBootstrap(&'borrow worth_query_host::facade::application_contribution::WorthQueryBootstrapAdvancementPhase<'phase>, application_installation::WorthQueryApplicationCheckpoint),
     Bootstrap(&'borrow worth_query_host::facade::application_contribution::WorthQueryBootstrapAdvancementPhase<'phase>),
 }
 
@@ -184,6 +214,18 @@ where
         Ok(())
     };
     match source {
+        InstallSource::CheckpointInBootstrap(phase, checkpoint) => {
+            application_installation::in_memory_rostered_program_from_checkpoint_in_advancement(
+                phase,
+                program,
+                application_installation::WorthQueryApplicationProgramRoster::new(),
+                declaration,
+                configuration,
+                ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
+                limits.with_output_demand_resources(profile),
+                checkpoint,
+            )
+        }
         InstallSource::Checkpoint(checkpoint) => {
             application_installation::in_memory_program_from_checkpoint(
                 program,
