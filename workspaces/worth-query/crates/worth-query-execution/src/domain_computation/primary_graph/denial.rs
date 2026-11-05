@@ -364,20 +364,6 @@ impl WorthQueryPrimaryGraphInstallationDenial {
     }
 }
 
-impl From<super::application_contribution::WorthQueryOutputReadinessContractDenial>
-    for WorthQueryPrimaryGraphInstallationDenial
-{
-    fn from(
-        cause: super::application_contribution::WorthQueryOutputReadinessContractDenial,
-    ) -> Self {
-        Self {
-            kind: WorthQueryPrimaryGraphInstallationDenialKind::ReadinessContractRejected,
-            subject: cause.to_string(),
-            cause: Some(Box::new(InstallationDenialCause::Readiness(cause))),
-        }
-    }
-}
-
 impl std::fmt::Display for WorthQueryPrimaryGraphInstallationDenial {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
@@ -390,13 +376,4 @@ impl std::fmt::Display for WorthQueryPrimaryGraphInstallationDenial {
 
 impl std::error::Error for WorthQueryPrimaryGraphInstallationDenial {}
 
-impl From<worth_relational::facade::runtime::RelationalRuntimeConstructionDenial>
-    for WorthQueryPrimaryGraphInstallationDenial
-{
-    fn from(cause: worth_relational::facade::runtime::RelationalRuntimeConstructionDenial) -> Self {
-        Self::new(
-            WorthQueryPrimaryGraphInstallationDenialKind::RelationalSchemaRejected,
-            cause.to_string(),
-        )
-    }
-}
+mod installation_conversion;

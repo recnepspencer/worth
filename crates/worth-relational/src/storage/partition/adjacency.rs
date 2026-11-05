@@ -7,6 +7,7 @@ mod carrier;
 #[cfg(test)]
 mod carrier_tests;
 mod ids;
+mod kind_memberships;
 mod request;
 pub(crate) use ids::AdjacencyIds;
 pub(crate) type HistoricalKindCustody = crate::storage::substrate::StorageAllocation<
@@ -32,22 +33,6 @@ pub(crate) struct AdjacencyEntries {
 }
 
 impl AdjacencySet {
-    /// Borrow canonical kind incidences without constructing checkpoint Vecs.
-    pub(crate) fn kind_memberships(
-        &self,
-        basis: super::AdjacencyKindBasis,
-    ) -> impl Iterator<Item = (KindId, RelationId)> + '_ {
-        let entries = self.entries();
-        let selected = match basis {
-            super::AdjacencyKindBasis::Current => &entries.current_by_kind,
-            super::AdjacencyKindBasis::Historical => &entries.historical_by_kind,
-        };
-        selected
-            .iter()
-            .flat_map(|map| map.iter())
-            .flat_map(|(&kind, ids)| ids.keys().map(move |&id| (kind, id)))
-    }
-
     pub(crate) fn index_historical_kind_for_request(
         &mut self,
         kind: KindId,
@@ -287,56 +272,6 @@ impl AdjacencySet {
                 .as_ref()
                 .and_then(|kinds| kinds.get(&kind_id)),
         )
-    }
-
-    /// Borrow memberships one at a time; the receiver owns admission per item.
-    pub(crate) fn visit_kind_memberships(
-        &self,
-        basis: super::AdjacencyKindBasis,
-        visit: &mut dyn FnMut(
-            KindId,
-            Option<RelationId>,
-        ) -> Result<
-            (),
-            crate::storage::data::RelationalStorageUnavailableCause,
-        >,
-    ) -> Result<(), crate::storage::data::RelationalStorageUnavailableCause> {
-        let entries = self.entries();
-        let selected = if matches!(basis, super::AdjacencyKindBasis::Historical) {
-            &entries.historical_by_kind
-        } else {
-            &entries.current_by_kind
-        };
-        if let Some(kinds) = selected {
-            for (&kind, ids) in kinds {
-                visit(kind, None)?;
-                for &relation in ids.keys() {
-                    visit(kind, Some(relation))?;
-                }
-            }
-        }
-        Ok(())
-    }
-
-    pub(crate) fn checkpoint_kind_memberships(
-        &self,
-        basis: super::AdjacencyKindBasis,
-    ) -> Vec<(KindId, Vec<RelationId>)> {
-        let entries = self.entries();
-        let selected = if matches!(basis, super::AdjacencyKindBasis::Historical) {
-            &entries.historical_by_kind
-        } else {
-            &entries.current_by_kind
-        };
-        selected
-            .as_ref()
-            .map(|kinds| {
-                kinds
-                    .iter()
-                    .map(|(&kind, ids)| (kind, ids.keys().copied().collect()))
-                    .collect()
-            })
-            .unwrap_or_default()
     }
 
     pub(crate) fn historical_kind_ids(&self, kind_id: KindId) -> AdjacencyIds<'_> {
