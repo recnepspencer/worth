@@ -1,0 +1,330 @@
+{
+  "head": "03eb43385ce5cd29739a1ff5c4597bf7770aa973",
+  "files": [
+    {
+      "status": " M",
+      "path": "crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/checkpoint_admission.rs",
+      "sha256": "59f5b09b960f253ac667130855aed5a78b61d9b6f586fc56862e760bec94ea7d"
+    },
+    {
+      "status": " M",
+      "path": "crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/checkpoint_admission/operational.rs",
+      "sha256": "a64a3cf964b419e87111c3efa7768ed198709615c46c5708103f35a862eeff90"
+    },
+    {
+      "status": " M",
+      "path": "crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/cold_indexes.rs",
+      "sha256": "4c39950f9d25140670681eccbde593f0ede46a5212da362c8f47553505b18a1e"
+    },
+    {
+      "status": " M",
+      "path": "crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/initial_tail.rs",
+      "sha256": "afb7fb12fc6c92d0eeee35daa99600ee6d28c853778a50ebcd28844d56e10a7d"
+    },
+    {
+      "status": " M",
+      "path": "crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/mod.rs",
+      "sha256": "c6ed31f26b0d3437d319bfeed918e62d5e0485c0115f012542973caadfa67917"
+    },
+    {
+      "status": " M",
+      "path": "crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/plan_retry.rs",
+      "sha256": "08a3cdf7d76a01ac4cd7a28efaaac6466310cbeaa40619cd19689ffd92694ebb"
+    },
+    {
+      "status": " M",
+      "path": "crates/worth-relational/src/branch/mod.rs",
+      "sha256": "4ef6f44e25af61e972df7866ed30bf3840a0556cb30a0d90f29be8d3d69fabee"
+    },
+    {
+      "status": " M",
+      "path": "crates/worth-relational/src/durability/authority/checkpoint_complete.rs",
+      "sha256": "19b62109f7b90f813f05673b210c711f273e3e8f6be25bc6a1a75708a62e9fdc"
+    },
+    {
+      "status": " M",
+      "path": "crates/worth-relational/src/durability/authority/checkpoint_complete/admission_projection.rs",
+      "sha256": "c375ad1bd5c4e0ae5ec67479a1b5a136be3519c49fe86c5a2b39bb18ca4afe6d"
+    },
+    {
+      "status": " M",
+      "path": "crates/worth-relational/src/durability/authority/checkpoint_complete/admission_projection/root_directory.rs",
+      "sha256": "b104ed85cbfaf39bdfb7854edbfa67bd4cf82df4807814b2d9465ab319cec4f5"
+    },
+    {
+      "status": " M",
+      "path": "crates/worth-relational/src/durability/authority/checkpoint_complete/branches.rs",
+      "sha256": "2484fe4b46684289da1fef8bbab248d6394a2655f0a5b1dcc9a5413a80cf4af5"
+    },
+    {
+      "status": " D",
+      "path": "crates/worth-relational/src/durability/authority/checkpoint_complete/branches/axes.rs",
+      "sha256": null
+    },
+    {
+      "status": " M",
+      "path": "crates/worth-relational/src/durability/authority/checkpoint_complete/canonical.rs",
+      "sha256": "376edfcfc57845633a1bf5495455dd9e9148553d480ba8806932a1b6bf5ce077"
+    },
+    {
+      "status": " M",
+      "path": "crates/worth-relational/src/durability/authority/checkpoint_complete/capture.rs",
+      "sha256": "7ce7e09e8754f241c58afb9f75c09dcfdb0b88131ad3eed6dc28e57151301158"
+    },
+    {
+      "status": " M",
+      "path": "crates/worth-relational/src/durability/authority/checkpoint_complete/metadata/lineage.rs",
+      "sha256": "ad38f179424e218d3262578bcdccc9299c1b33bc1431fded1d18bf7278be0a8a"
+    },
+    {
+      "status": " M",
+      "path": "crates/worth-relational/src/durability/authority/checkpoint_complete/metadata/members.rs",
+      "sha256": "15892549fce93a4e293d41a2c3ee7c27608f8b752ff93df9aff2e7504e21d81b"
+    },
+    {
+      "status": " M",
+      "path": "crates/worth-relational/src/durability/authority/checkpoint_complete/metadata/members/lineage_pages.rs",
+      "sha256": "393be618776190c24aeec7ea459c6fb6d047e91d2e9d5de67ff4cd79d334e6a8"
+    },
+    {
+      "status": " M",
+      "path": "crates/worth-relational/src/durability/authority/checkpoint_complete/metadata/tests.rs",
+      "sha256": "5e46607d68ea0b9b8d4eeae2044a820042d6a62bfabec5e1db6ae300c9c45b0d"
+    },
+    {
+      "status": " M",
+      "path": "crates/worth-relational/src/durability/authority/checkpoint_complete/original_image.rs",
+      "sha256": "40376ad59e8a33ba17dee20d160ace1925bd844fb21a39fbf30c4e495e9b4e61"
+    },
+    {
+      "status": " M",
+      "path": "crates/worth-relational/src/durability/authority/checkpoint_complete/prepare.rs",
+      "sha256": "34278f2048d027cab470b73798d552f4714e5d306d1d1a6c35354a6f71dbbd47"
+    },
+    {
+      "status": " D",
+      "path": "crates/worth-relational/src/durability/authority/checkpoint_complete/records.rs",
+      "sha256": null
+    },
+    {
+      "status": " D",
+      "path": "crates/worth-relational/src/durability/authority/checkpoint_complete/records/lineage.rs",
+      "sha256": null
+    },
+    {
+      "status": " M",
+      "path": "crates/worth-relational/src/durability/authority/checkpoint_complete/regions.rs",
+      "sha256": "20fa33b3837455d09879e0fe070a34377a0b63f948de14db3af478902c470f45"
+    },
+    {
+      "status": " M",
+      "path": "crates/worth-relational/src/durability/authority/checkpoint_complete/regions/emission.rs",
+      "sha256": "0915db013e7f4594b22246a3509ebba81088459584eb1c3ae33c3a0ff1f5ad47"
+    },
+    {
+      "status": " M",
+      "path": "crates/worth-relational/src/durability/authority/checkpoint_complete/regions/grouping.rs",
+      "sha256": "4974ea76bbfacf72353a219377c0078c86eea7dabc2c37b98115e7c3602f9620"
+    },
+    {
+      "status": " M",
+      "path": "crates/worth-relational/src/durability/authority/checkpoint_complete/roots.rs",
+      "sha256": "f56a09dcb2e571fa82ee83589457aaa050b7f16146a49f2a00a2886b37b0d7f6"
+    },
+    {
+      "status": " M",
+      "path": "crates/worth-relational/src/durability/authority/checkpoint_complete/schemas.rs",
+      "sha256": "9984c59aea02b2a6a0875cf176ee212c3f73d7f2030cc850ef31970879ed02ee"
+    },
+    {
+      "status": " M",
+      "path": "crates/worth-relational/src/durability/authority/checkpoint_complete/source.rs",
+      "sha256": "52e3dc48c5729ff36a46d7fd3448dd0b94b09f6f2a58250c42b9a0c6768bf456"
+    },
+    {
+      "status": " M",
+      "path": "crates/worth-relational/src/durability/authority/checkpoint_complete/verified_originals.rs",
+      "sha256": "954ff9f7a5d3c79face5c58e561b6114afb3aecd2206311c8eafe58df86d6465"
+    },
+    {
+      "status": " M",
+      "path": "crates/worth-relational/src/durability/authority/runtime_rebuild/original_inputs.rs",
+      "sha256": "9b129b4966cd778a3040eaeafba9a5b94c374a0e4f0b5c5dea88fd575651da32"
+    },
+    {
+      "status": " M",
+      "path": "crates/worth-relational/src/durability/checkpoint_admission/artifact.rs",
+      "sha256": "f2c2351407297dec31a37f45eff5a349f2e66791f131823ed5a8601f1b4fdbb0"
+    },
+    {
+      "status": " M",
+      "path": "crates/worth-relational/src/durability/checkpoint_admission/custody.rs",
+      "sha256": "a35e58e4acb72e534cf22b37781180cce35391c0136c814ab5fdfe5ae525d41b"
+    },
+    {
+      "status": " M",
+      "path": "crates/worth-relational/src/durability/checkpoint_admission/mod.rs",
+      "sha256": "5095f58e72d4a3b543ba48e34b47fca6d017125dc7062b71bf549981422c4006"
+    },
+    {
+      "status": " M",
+      "path": "crates/worth-relational/src/durability/data/checkpoint_lineage_event_pages.rs",
+      "sha256": "e7ba4ae754b0b3fceb3c3d62f2c48782efeafe71c3253bcb82ed60f2e118e4ac"
+    },
+    {
+      "status": " M",
+      "path": "crates/worth-relational/src/durability/medium/binding/checkpoint_selection.rs",
+      "sha256": "e1443b9c3888e73378264a4250da4ec14b1eec580100f961aa7e078c9abb5a76"
+    },
+    {
+      "status": " M",
+      "path": "crates/worth-relational/src/durability/source_initial_inputs/source_admission.rs",
+      "sha256": "63778b04d9b8f2d6b8ee245f77fa67d23c7c9f6b420034f67daed25ca33623e7"
+    },
+    {
+      "status": " M",
+      "path": "crates/worth-relational/src/runtime/state/subsystems/durability/checkpoint_selection.rs",
+      "sha256": "be64d937af2dece64563fb2bd12028a173462d2392efdbb34561298da8a0f98e"
+    },
+    {
+      "status": " M",
+      "path": "crates/worth-testkit-relational/src/initial_input_source.rs",
+      "sha256": "73cb4994a9aa4ebdead406c00f75424c3c70d0deaf89653930e1bf10fbe6d200"
+    },
+    {
+      "status": " M",
+      "path": "tools/boundary-check/config/certification-construction-callers.txt",
+      "sha256": "5e319d449a4bf9af88c3875a880928b30067d4f42aef23c37c13ff8ffbc02661"
+    },
+    {
+      "status": " M",
+      "path": "tools/boundary-check/src/seal_rules/factory_ownership.rs",
+      "sha256": "18572f9933029bec9e8ebf9e4120d11f893db4f1206b49a806deedbeae5e516e"
+    },
+    {
+      "status": " M",
+      "path": "workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/application_home/reopening.rs",
+      "sha256": "41c961f7b7381ca65d3b483d2811e6bd322c320ae3638068b5b6fa41180cfd8f"
+    },
+    {
+      "status": " M",
+      "path": "workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/application_home/reopening/checkpoint_funding.rs",
+      "sha256": "de9a35a6681c681b2482f00006f2905040d432a933f397536c2a7e94cf950851"
+    },
+    {
+      "status": " M",
+      "path": "workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/application_home/reopening/checkpoint_restart.rs",
+      "sha256": "2a29b0f134182333f8be91eca2435de77d59b5396352bdb99cdfd6516dbcc171"
+    },
+    {
+      "status": " M",
+      "path": "workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/application_home/reopening/checkpoint_restart/writer.rs",
+      "sha256": "197100c2e0b972ec70c53243438aebea92b13d022f1eac0fc1a69541cc4f8aab"
+    },
+    {
+      "status": " M",
+      "path": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/progression/validated/execution_preparation.rs",
+      "sha256": "1123d493f49839aa1e56d729a45bcda2eace132bc64d72d22fa4b37a56da2f85"
+    },
+    {
+      "status": " M",
+      "path": "workspaces/worth-query/crates/worth-query-host/src/application_home/maintenance.rs",
+      "sha256": "f48fb0567e90ec8410c6ea83c84d2030cb65da102d5c1843aa6ae584f330d090"
+    },
+    {
+      "status": " M",
+      "path": "workspaces/worth-query/crates/worth-query-host/src/application_home/maintenance/resources.rs",
+      "sha256": "f15be36ad64a0f8ccbc515d2d93e1fd863af391e507c8a99605e6deeed3a7ed3"
+    },
+    {
+      "status": " M",
+      "path": "workspaces/worth-query/crates/worth-query-host/src/application_home/mod.rs",
+      "sha256": "e8e8d949575eafd0499e33f749d7e346079d71a9d050c93c346ac41d6d03a0a8"
+    },
+    {
+      "status": " M",
+      "path": "workspaces/worth-query/crates/worth-query-host/src/facade.rs",
+      "sha256": "9c2cdc35e49e0cf17c03aa2a907b78266a13582506412c9d663a6db10c15dff5"
+    },
+    {
+      "status": " M",
+      "path": "workspaces/worth-store/crates/worth-store-application/src/checkpoint/mod.rs",
+      "sha256": "7bfbaa3d167071e676d826f71bdd45cbc2b3dcb0b75f272e5f0310a9daafabca"
+    },
+    {
+      "status": " M",
+      "path": "workspaces/worth-store/crates/worth-store-application/src/checkpoint/operation.rs",
+      "sha256": "837bf481a77c8376dc69ec5de6be129a5aa182fd5bc58ddb6b95f41539a433a6"
+    },
+    {
+      "status": " M",
+      "path": "workspaces/worth-store/crates/worth-store-application/src/checkpoint/owner.rs",
+      "sha256": "4d970f97170ccb0ec80ae45193742f3f58043a783d792a1cb6ffce39600297f0"
+    },
+    {
+      "status": " M",
+      "path": "workspaces/worth-store/crates/worth-store-application/src/checkpoint/publication.rs",
+      "sha256": "0c9155679043a22305be1c170b1523255c6b0870838b1c361875af14e67d17c7"
+    },
+    {
+      "status": " M",
+      "path": "workspaces/worth-store/crates/worth-store-application/src/facade.rs",
+      "sha256": "e828f235758c65ac0869d06df1a69d94f8b0895f231e3bca504c3a25fafc76ec"
+    },
+    {
+      "status": " M",
+      "path": "workspaces/worth-store/crates/worth-store-application/src/world_section/close/checkpoint.rs",
+      "sha256": "917fa99fc4ee60a712e2e7925327364c772c531b3a465c07bdbc79221e82eb28"
+    },
+    {
+      "status": "??",
+      "path": "crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/checkpoint_admission/capture_cost.rs",
+      "sha256": "a08f4cd99b4114b4bf7012145b2ffcefab33166f83591143fc7ca1687c91bc9e"
+    },
+    {
+      "status": "??",
+      "path": "crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/checkpoint_admission/cost.rs",
+      "sha256": "e1fa72c991352d598f2eb2e457f5fa9bbff4abb4a293de07ce6b4966d065dccd"
+    },
+    {
+      "status": "??",
+      "path": "crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/checkpoint_admission/cost/",
+      "sha256": null
+    },
+    {
+      "status": "??",
+      "path": "crates/worth-relational/src/branch/checkpoint_visibility.rs",
+      "sha256": "95e5bc6a375d3182f504e4a09ded31f4f74c2dad4c65ff04d45e5b06f3c05960"
+    },
+    {
+      "status": "??",
+      "path": "crates/worth-relational/src/durability/authority/checkpoint_complete/covered_prefix.rs",
+      "sha256": "c2c02ce28f0e8ab23773e6dc100d0a85d128d2ce3a7a53a1690d4f626c0a0886"
+    },
+    {
+      "status": "??",
+      "path": "crates/worth-relational/src/durability/authority/checkpoint_complete/destination_members.rs",
+      "sha256": "3ae200dabfaecb292d2fa73cf3e128a75b38718c6fcab38c9ca5ff70c7805e2b"
+    },
+    {
+      "status": "??",
+      "path": "crates/worth-relational/src/durability/authority/checkpoint_complete/regions/covered.rs",
+      "sha256": "2b1fbd31e8dd7905b50eec3c7f79e43754d0b01ddfed496bb8123d1c8611ca35"
+    },
+    {
+      "status": "??",
+      "path": "crates/worth-relational/src/durability/checkpoint_admission/capture_base.rs",
+      "sha256": "65ff9eeaf77208e3d5654f81d4389f4b29caf92e45e9c4d01fa830a2dd7aa9ce"
+    },
+    {
+      "status": "??",
+      "path": "workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/application_home/reopening/checkpoint_state.rs",
+      "sha256": "e26fe3b468ef6d6b837396e6b0b931d97697922804d3b4e423bc31f9aa8a1d8b"
+    },
+    {
+      "status": "??",
+      "path": "workspaces/worth-store/crates/worth-store-application/src/checkpoint/maintenance.rs",
+      "sha256": "057d4d5adabb46e510d1b9e49dd0e29a40553484d40d9ef96658eab7bcf89f9d"
+    }
+  ]
+}

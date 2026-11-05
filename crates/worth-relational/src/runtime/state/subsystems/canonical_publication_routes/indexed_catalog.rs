@@ -7,20 +7,46 @@ use crate::identity::data::VersionId;
 use crate::publication::patch::data::PatchStreamPosition;
 use std::sync::{atomic::Ordering, Arc};
 
+#[derive(Default)]
+pub(super) struct IndexedPublicationCatalog {
+    entries: std::collections::BTreeMap<CommitId, Arc<crate::history::RelationalCommitArtifact>>,
+    pub(super) head: Option<crate::history::RetainedCanonicalIndex>,
+}
+impl std::ops::Deref for IndexedPublicationCatalog {
+    type Target =
+        std::collections::BTreeMap<CommitId, Arc<crate::history::RelationalCommitArtifact>>;
+    fn deref(&self) -> &Self::Target {
+        &self.entries
+    }
+}
+
 impl RelationalCanonicalPublicationRoutes {
     pub(crate) fn install_checkpoint_catalog(
         &self,
         entries: Vec<Arc<crate::history::RelationalCommitArtifact>>,
     ) {
+        let head = entries
+            .iter()
+            .filter_map(|artifact| {
+                artifact
+                    .envelope_residency()
+                    .source_placement()
+                    .map(|(entry, _)| entry)
+            })
+            .max_by_key(|entry| entry.position);
+        if let Some(head) = &head {
+            self.performed_stream.advance_position_floor(head.position);
+        }
         *self
             .checkpoint_catalog
             .write()
-            .unwrap_or_else(|error| error.into_inner()) = Arc::new(
-            entries
+            .unwrap_or_else(|error| error.into_inner()) = Arc::new(IndexedPublicationCatalog {
+            head,
+            entries: entries
                 .into_iter()
                 .map(|artifact| (artifact.commit_id(), artifact))
                 .collect(),
-        );
+        });
     }
     pub(crate) fn performed_envelope_residency(
         &self,

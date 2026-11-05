@@ -189,19 +189,47 @@ impl RelationalRuntime {
 
     /// Resolve a settled commit identity that no longer has a pending record.
     ///
-    /// Success is the same terminal receipt the executor produced; anything
-    /// else is a typed unavailability rather than a silent second effect.
+    /// Return the original receipt from settled performed custody or the actual
+    /// recovery-admitted checkpoint catalog. This does not promote recovered
+    /// meaning to a live performed effect or execute derived work again.
     pub(crate) fn settled_receipt_without_record(
         &self,
         commit_id: CommitId,
     ) -> Result<RelationalCommitReceipt, PublicationSettlementRepairError> {
+        if self.history.publication_requires_settlement(commit_id) {
+            return Err(PublicationSettlementRepairError::RecoveryUnavailable { commit_id });
+        }
+        if let Some(artifact) = self.history.commit_artifact(commit_id) {
+            let cell = artifact.envelope_residency();
+            if let Some((entry, source)) = cell.source_placement()
+                && let Some(admitted) = self
+                    .durability
+                    .checkpoint_selection()
+                    .admitted_commit(&entry)
+                    .map_err(|_| PublicationSettlementRepairError::RecoveryUnavailable {
+                        commit_id,
+                    })?
+            {
+                if !self
+                    .durability
+                    .checkpoint_selection()
+                    .matches_admitted_source(&admitted, &source)
+                    || !matches!(
+                        self.history.associated_effect_settlement(&entry, &cell),
+                        Some(crate::durability::authority::RelationalAssociatedEffectSettlement::CheckpointReadmitted)
+                    )
+                {
+                    return Err(PublicationSettlementRepairError::RecoveryUnavailable {
+                        commit_id,
+                    });
+                }
+                return Ok(admitted.index().commit.clone());
+            }
+        }
         let positioned = self
             .history
             .positioned_canonical_commit(commit_id)
             .ok_or(PublicationSettlementRepairError::RecoveryUnavailable { commit_id })?;
-        if self.history.publication_requires_settlement(commit_id) {
-            return Err(PublicationSettlementRepairError::RecoveryUnavailable { commit_id });
-        }
         Ok(positioned.envelope().commit.clone())
     }
 }

@@ -1,0 +1,14 @@
+command: cargo run --manifest-path tools/agent-context/Cargo.toml -- generate
+HEAD: 852154d4c4bfeca63b61654a3eec125341139cb5
+git_status_short_empty: false
+start_utc: 2026-11-04T20:25:43.374344+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+    Finished `dev` profile [optimized + debuginfo] target(s) in 0.04s
+     Running `tools\agent-context\target\debug\agent-context.exe generate`
+agent-context: generated 6 crate contexts
+
+end_utc: 2026-11-04T20:25:43.588417+00:00
+exit_code: 0
+tests_passed: 0
+tests_failed: 0
+tests_ignored: 0

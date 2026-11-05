@@ -209,7 +209,8 @@ fn failed_checkpoint_cannot_acknowledge_catalog_before_a_later_actual_journal_co
     let directory = tempfile::tempdir().unwrap();
     let request = crate::workload::serial_request();
     let execution = &ExecutionRequest::serial(&request);
-    let home = crate::durable_run::open(directory.path(), execution).unwrap();
+    let fixture = super::coupled_home::workload(directory.path(), true, execution);
+    let home = fixture.home;
     let runtime = home.relational().runtime();
     let seed = crate::workload::commit(
         runtime,

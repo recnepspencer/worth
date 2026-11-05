@@ -11,13 +11,31 @@ pub(crate) fn decode_checkpoint(
     execution: &ExecutionRequest<'_, '_>,
     bytes: &[u8],
 ) -> Result<DecodedNativeCheckpoint, RelationalRecoveryStop> {
-    decode_checkpoint_from_source(execution, bytes, None)
+    decode(execution, bytes, None, None)
+}
+
+pub(crate) fn decode_checkpoint_with_image(
+    execution: &ExecutionRequest<'_, '_>,
+    bytes: &[u8],
+    external: Arc<dyn RelationalDurableColdSource>,
+    image: crate::durability::checkpoint_admission::RelationalCheckpointAdmissionArtifact,
+) -> Result<DecodedNativeCheckpoint, RelationalRecoveryStop> {
+    decode(execution, bytes, Some(external), Some(image))
 }
 
 pub(crate) fn decode_checkpoint_from_source(
     execution: &ExecutionRequest<'_, '_>,
     bytes: &[u8],
     external: Option<Arc<dyn RelationalDurableColdSource>>,
+) -> Result<DecodedNativeCheckpoint, RelationalRecoveryStop> {
+    decode(execution, bytes, external, None)
+}
+
+fn decode(
+    execution: &ExecutionRequest<'_, '_>,
+    bytes: &[u8],
+    external: Option<Arc<dyn RelationalDurableColdSource>>,
+    image: Option<crate::durability::checkpoint_admission::RelationalCheckpointAdmissionArtifact>,
 ) -> Result<DecodedNativeCheckpoint, RelationalRecoveryStop> {
     execution
         .check_live()
@@ -105,10 +123,10 @@ pub(crate) fn decode_checkpoint_from_source(
         }
     };
     drop(_member_memory); // The borrowed wire member table has now been consumed.
-    let checkpoint = if inline {
+    let checkpoint = if inline && image.is_none() {
         super::expanded_checkpoint::expand(execution, manifest, source, facts.history_members)?
     } else {
-        super::cold_checkpoint::readmit(execution, manifest, source, facts)?
+        super::cold_checkpoint::readmit(execution, manifest, source, facts, image)?
     };
     Ok(DecodedNativeCheckpoint { checkpoint })
 }

@@ -325,10 +325,16 @@ impl RelationalCommitArtifact {
 
     pub(crate) fn links_root(&self, root: &Arc<crate::branch::RelationalBranchRoot>) -> bool {
         root.descriptor() == Some(&self.roots)
-            && self
-                .envelope
-                .get()
-                .is_some_and(|envelope| root.links_envelope(&envelope))
+            && match root.commit_evidence() {
+                Some(crate::branch::RelationalRootCommitEvidence::Original(_)) => self
+                    .envelope
+                    .get()
+                    .is_some_and(|envelope| root.links_envelope(&envelope)),
+                Some(crate::branch::RelationalRootCommitEvidence::Checkpoint(commit)) => {
+                    commit.links_artifact(self)
+                }
+                None => false,
+            }
     }
 
     pub(crate) fn commit_id(&self) -> CommitId {

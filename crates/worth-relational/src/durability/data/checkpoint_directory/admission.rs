@@ -74,6 +74,8 @@ impl CheckpointDirectoryAdmission {
             .take()
             .expect("admission owns the same original draft");
         Ok(RelationalCheckpointDirectory {
+            admission_owner: Default::default(),
+            admission_image: None,
             source_schemas: Default::default(),
             manifest: draft.manifest,
             source: draft.source,

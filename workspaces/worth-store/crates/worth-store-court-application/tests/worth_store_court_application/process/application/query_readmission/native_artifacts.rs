@@ -22,6 +22,7 @@ mod administration;
 mod home_close;
 mod idempotency;
 mod operations;
+mod original_image;
 mod selected;
 mod stops;
 use operations::{balance, fresh_closed, set};

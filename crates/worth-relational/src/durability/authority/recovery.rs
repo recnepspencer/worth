@@ -171,6 +171,9 @@ fn rebuild_admitted_recovery_or_emit(
             Err(RelationalRecoveryStop::Durability(error))
         }
         Err(RelationalRecoveryStop::Request(cause)) => Err(RelationalRecoveryStop::Request(cause)),
+        Err(RelationalRecoveryStop::AdmissionImage(cause)) => {
+            Err(RelationalRecoveryStop::AdmissionImage(cause))
+        }
         Err(RelationalRecoveryStop::Allocation(cause)) => {
             Err(RelationalRecoveryStop::Allocation(cause))
         }

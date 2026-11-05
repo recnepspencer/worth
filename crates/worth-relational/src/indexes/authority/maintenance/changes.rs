@@ -15,27 +15,35 @@ impl ChangedRecords {
     pub(super) fn patch(
         root: &crate::branch::RelationalBranchRoot,
         work: &mut MaintenanceWork,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Self, Denial> {
-        let patches = &root
-            .canonical_envelope()
-            .ok_or(Denial::CommitMismatch)?
-            .patch
-            .authoritative_record_patches;
-        work.charge(patches.len())?;
-        work.note_patch_records(patches.len());
+        let semantic = match root.commit_evidence().ok_or(Denial::CommitMismatch)? {
+            crate::branch::RelationalRootCommitEvidence::Original(envelope) => {
+                envelope.semantic_result_arc()
+            }
+            crate::branch::RelationalRootCommitEvidence::Checkpoint(commit) => {
+                commit
+                    .effect_data(execution)
+                    .map_err(|cause| super::basis::image_stop(cause, Denial::CommitMismatch))?
+                    .semantic
+            }
+        };
+        let records = semantic.changed_records();
+        work.charge(records.len())?;
+        work.note_patch_records(records.len());
         let mut changed = Self {
             entities: BTreeSet::new(),
             relations: BTreeSet::new(),
         };
-        for patch in patches {
-            match patch.target {
+        for record in records {
+            match record {
                 RecordRef::Entity(id) => {
                     work.ordered::<EntityId, ()>(changed.entities.len(), 1, 0)?;
-                    changed.entities.insert(id);
+                    changed.entities.insert(*id);
                 }
                 RecordRef::Relation(id) => {
                     work.ordered::<RelationId, ()>(changed.relations.len(), 1, 0)?;
-                    changed.relations.insert(id);
+                    changed.relations.insert(*id);
                 }
             }
         }

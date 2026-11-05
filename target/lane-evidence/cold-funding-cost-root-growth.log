@@ -1,0 +1,93 @@
+command: python target/lane-evidence/owned_native_funding_finish_probe.py cold-funding-cost-root-growth test(selected_state_recapture_work_does_not_follow_discarded_covered_update_bytes) 1
+HEAD: 852154d4c4bfeca63b61654a3eec125341139cb5
+git_status_short_empty: false
+start_utc: 2026-11-04T20:30:19.540798+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+prebuild: cargo metadata --offline --format-version 1 --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\Cargo.toml"
+prebuild: cargo test --message-format=json --no-run --package worth-court-relational-certification --test worth_court_relational_certification --profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\Cargo.toml" --unit-graph -Z unstable-options
+prebuild: cargo nextest list --cargo-message-format=json --package worth-court-relational-certification --test worth_court_relational_certification --cargo-profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\Cargo.toml" --list-type binaries-only --message-format json
+   Compiling typenum v1.20.1
+   Compiling memchr v2.8.3
+   Compiling cfg-if v1.0.5
+   Compiling windows-link v0.2.1
+   Compiling itoa v1.0.18
+   Compiling cpufeatures v0.2.17
+   Compiling smallvec v1.16.3
+   Compiling rand_core v0.6.4
+   Compiling worth-proof v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-proof)
+   Compiling either v1.19.0
+   Compiling scopeguard v1.2.0
+   Compiling hashbrown v0.17.1
+   Compiling crossbeam-utils v0.8.23
+   Compiling serde_core v1.0.229
+   Compiling libc v0.2.190
+   Compiling zmij v1.0.23
+   Compiling equivalent v1.0.3
+   Compiling hashbrown v0.14.5
+   Compiling once_cell v1.21.4
+   Compiling allocator-api2 v0.2.21
+   Compiling num-traits v0.2.19
+   Compiling arc-swap v1.9.2
+   Compiling generic-array v0.14.7
+   Compiling bitmaps v2.1.0
+   Compiling object v0.39.1
+   Compiling windows-sys v0.61.2
+   Compiling parking_lot_core v0.9.12
+   Compiling rand_xoshiro v0.6.0
+   Compiling lock_api v0.4.14
+   Compiling crossbeam-epoch v0.9.21
+   Compiling crossbeam-queue v0.3.14
+   Compiling rmp v0.8.15
+   Compiling serde v1.0.229
+   Compiling indexmap v2.14.2
+   Compiling serde_json v1.0.154
+   Compiling crypto-common v0.1.7
+   Compiling block-buffer v0.10.4
+   Compiling sized-chunks v0.6.5
+   Compiling ar_archive_writer v0.5.3
+   Compiling dashmap v6.2.1
+   Compiling crossbeam-deque v0.8.8
+   Compiling rmp-serde v1.3.1
+   Compiling digest v0.10.7
+   Compiling im v15.1.0
+   Compiling psm v0.1.32
+   Compiling rayon-core v1.13.0
+   Compiling sha2 v0.10.9
+   Compiling rayon v1.12.0
+   Compiling stacker v0.1.25
+   Compiling serde_stacker v0.1.14
+   Compiling worth-foundational v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-foundational)
+   Compiling worth-execution v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-execution)
+   Compiling worth-relational v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-relational)
+   Compiling worth-testkit-relational v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-testkit-relational)
+   Compiling worth-court-relational-certification v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-court-relational-certification)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 3m 42s
+prebuild: cargo nextest list --cargo-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\root\cold-funding-cost-root-growth\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\root\cold-funding-cost-root-growth\build\binaries.json" --message-format json --ignore-default-filter -E test(selected_state_recapture_work_does_not_follow_discarded_covered_update_bytes)
+prebuild: cargo nextest run --cargo-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\root\cold-funding-cost-root-growth\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\root\cold-funding-cost-root-growth\build\binaries.json" --profile ci --config-file "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\root\d12-retained-image-and-sparse-courts\nextest.toml" --ignore-default-filter --no-fail-fast --no-tests=fail --message-format libtest-json -E test(selected_state_recapture_work_does_not_follow_discarded_covered_update_bytes)
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-root-cold-funding-cost-root-growth-build-cargo-metadat-852154d4c4bf-202611042030209557020000-3611fd1ed748.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-root-cold-funding-cost-root-growth-build-binaries-buil-852154d4c4bf-202611042030218339970000-8effcbdb76f4.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-root-cold-funding-cost-root-growth-build-binaries-buil-852154d4c4bf-202611042030226630290000-db77d03b828a.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-root-cold-funding-cost-root-growth-build-request-selec-852154d4c4bf-202611042034073149230000-4aa8032fc3bf.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-root-cold-funding-cost-root-growth-run-selection.log-852154d4c4bf-202611042034081819200000-872503b586a8.log
+info: experimental features enabled: wrapper-scripts
+────────────
+ Nextest run ID 7a57ee63-28de-41ac-8daf-adb45aac0472 with nextest profile: ci
+    Starting 1 test across 1 binary (190 tests skipped)
+{"type":"suite","event":"started","test_count":2}
+{"type":"test","event":"started","name":"worth-court-relational-certification::worth_court_relational_certification$cost::relational::relational_certification::scale_invariant_admission::large_runtime_keeps_global_enforcement_and_filters_graph_planning"}
+{"type":"suite","event":"ok","passed":0,"failed":0,"ignored":1,"measured":0,"filtered_out":189,"exec_time":0}
+        PASS [   1.825s] (1/1) worth-court-relational-certification::worth_court_relational_certification cost::relational::source_initial_inputs::checkpoint_admission::selected_state_recapture_work_does_not_follow_discarded_covered_update_bytes
+{"type":"suite","event":"started","test_count":2}
+{"type":"test","event":"started","name":"worth-court-relational-certification::worth_court_relational_certification$cost::relational::source_initial_inputs::checkpoint_admission::selected_state_recapture_work_does_not_follow_discarded_covered_update_bytes"}
+{"type":"test","event":"ok","name":"worth-court-relational-certification::worth_court_relational_certification$cost::relational::source_initial_inputs::checkpoint_admission::selected_state_recapture_work_does_not_follow_discarded_covered_update_bytes","exec_time":1.8245441}
+{"type":"suite","event":"ok","passed":1,"failed":0,"ignored":1,"measured":0,"filtered_out":189,"exec_time":1.8245441}
+────────────
+     Summary [   1.828s] 1 test run: 1 passed, 190 skipped
+
+EVIDENCE_TEST_COUNTS: 1,0,0
+
+end_utc: 2026-11-04T20:34:10.327935+00:00
+exit_code: 0
+tests_passed: 1
+tests_failed: 0
+tests_ignored: 0

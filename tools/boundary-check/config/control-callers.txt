@@ -520,7 +520,7 @@ workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/cr
 workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/native_components/checkpoint.rs
 workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/native_components/member_scope.rs
 workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-testkit-application-oracle/src/home_opening.rs
-workspaces/worth-store/crates/worth-store-relational/ workspaces/worth-store/crates/worth-store-application/src/home_controls_for_test.rs
+workspaces/worth-store/crates/worth-store-relational/ workspaces/worth-store/crates/worth-store-application/src/world_section/readmission/controls_for_test.rs
 workspaces/worth-store/crates/worth-store-relational/ workspaces/worth-store/crates/worth-store-application/src/open/mod.rs
 # Actual receiver-owned read observation through the unshared Home attachment.
 workspaces/worth-store/crates/worth-store-relational/ workspaces/worth-store/crates/worth-store-application/src/relational_preparation/attachment.rs
@@ -613,3 +613,4 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/application_home/recovered_custody/disposition.rs
 crates/worth-runtime-world/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/host_oracle/recovered_custody/child.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/host_oracle/recovered_custody/child.rs
+workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/native_components/admission_refusals.rs

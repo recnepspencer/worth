@@ -6,6 +6,7 @@ use crate::transactions::data::{
     RelationalInvariantCheckMeaning, RelationalInvariantDecisionMeaning,
 };
 pub(in super::super) use admission::prepare_canonical_readmission;
+pub(super) use admission::prepare_semantic_readmission;
 use touched::{touched_entities, touched_partitions, touched_relations};
 
 pub(super) fn execution(

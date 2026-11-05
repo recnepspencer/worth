@@ -10,6 +10,7 @@ pub(super) fn native(cause: Native) -> Denial {
         Native::Recovery(RelationalRecoveryStop::Allocation(cause)) => allocation(cause),
         Native::OwnerUnavailable
         | Native::Recovery(RelationalRecoveryStop::Durability(_))
+        | Native::Recovery(RelationalRecoveryStop::AdmissionImage(_))
         | Native::AssociatedMemory { .. }
         | Native::MissingDiscovery { .. }
         | Native::ForeignRuntime
@@ -31,6 +32,7 @@ pub(super) fn component(
         Component::Basis(_)
         | Component::Frame(_)
         | Component::Source(RelationalRecoveryStop::Durability(_))
+        | Component::Source(RelationalRecoveryStop::AdmissionImage(_))
         | Component::MissingPerformedCommit { .. }
         | Component::CanonicalMismatch { .. }
         | Component::PayloadEncoding { .. } => Denial::Unavailable,
@@ -73,6 +75,7 @@ fn world_source(cause: worth_runtime_world::facade::WorldReadmissionDenial) -> D
         }
         Source::NativeFreshSource(RelationalRecoveryStop::Allocation(cause)) => allocation(cause),
         Source::NativeFreshSource(RelationalRecoveryStop::Durability(_))
+        | Source::NativeFreshSource(RelationalRecoveryStop::AdmissionImage(_))
         | Source::JournalSourceMismatch
         | Source::OccurrenceEvidenceMismatch
         | Source::HistoryAdmission(_)

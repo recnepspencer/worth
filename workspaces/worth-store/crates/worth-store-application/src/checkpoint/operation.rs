@@ -38,6 +38,21 @@ impl std::fmt::Debug for ApplicationHomeCheckpointOperation {
     }
 }
 impl ApplicationHomeCheckpointOperation {
+    /// Admit this Home's automatic allowance before Host service begins.
+    /// The same worker also serves close without a Query-specific registration.
+    pub fn install_home_checkpoint_maintenance(&self) -> Result<(), Denial> {
+        self.owner.maintenance.install(self.limits)
+    }
+    pub fn checkpoint_maintenance_is_active(&self) -> bool {
+        self.owner.maintenance.is_active()
+    }
+    /// Automatic upkeep never borrows the threshold-crossing caller's request.
+    pub fn automatic_checkpoint_maintenance(&self) -> Result<Option<Summary>, Denial> {
+        self.owner.maintenance.advance(self, self.limits)
+    }
+    pub(crate) fn checkpoint_for_close(&self) -> Result<Summary, Denial> {
+        self.owner.maintenance.capture(self, self.limits)
+    }
     pub(crate) fn retire_for_home(
         self,
         owner: &Arc<ServingPhysicalRuntime>,
@@ -91,7 +106,7 @@ impl ApplicationHomeCheckpointOperation {
             &self.owner,
             Some(&self.world),
             request,
-            || self.native.prepare(request),
+            |home, through, digest| self.native.prepare_home(home, through, digest, request),
             None,
             None,
             None,
@@ -109,7 +124,7 @@ impl ApplicationHomeCheckpointOperation {
             &self.owner,
             Some(&self.world),
             request,
-            || self.native.prepare(request),
+            |home, through, digest| self.native.prepare_home(home, through, digest, request),
             None,
             Some(observer.as_ref()),
             None,

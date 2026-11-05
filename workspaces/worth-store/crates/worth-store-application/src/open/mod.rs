@@ -98,6 +98,7 @@ pub fn admit_home(
             .map_err(ApplicationHomeOpenRefusal::Checkpoint)?;
         let native_source = native_source::prepare(
             &recovered.serving,
+            prepared_descriptor.home_identity(),
             recovered.origin,
             &selected_source,
             selected.as_ref(),

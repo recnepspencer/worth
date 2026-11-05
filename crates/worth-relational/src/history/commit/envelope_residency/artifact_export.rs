@@ -182,6 +182,7 @@ fn export_stop(stop: Stop) -> Denial {
             None => Denial::Readmission(Stop::Durability(error)),
         },
         Stop::Request(cause) => Denial::Readmission(Stop::Request(cause)),
+        Stop::AdmissionImage(cause) => Denial::Readmission(Stop::AdmissionImage(cause)),
         Stop::Allocation(cause) => Denial::Readmission(Stop::Allocation(cause)),
     }
 }

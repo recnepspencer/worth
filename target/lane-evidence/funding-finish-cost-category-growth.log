@@ -1,0 +1,39 @@
+command: python target/lane-evidence/owned_native_funding_finish_probe.py funding-finish-cost-category-growth test(checkpoint_admission::cost::covered_history_growth::selected_state_recapture_work_does_not_follow_discarded_covered_update_bytes) 1
+HEAD: 03eb43385ce5cd29739a1ff5c4597bf7770aa973
+git_status_short_empty: false
+start_utc: 2026-11-04T18:56:17.651276+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+prebuild: cargo metadata --offline --format-version 1 --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\Cargo.toml"
+prebuild: cargo test --message-format=json --no-run --package worth-court-relational-certification --test worth_court_relational_certification --profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\Cargo.toml" --unit-graph -Z unstable-options
+prebuild: cargo nextest list --cargo-message-format=json --package worth-court-relational-certification --test worth_court_relational_certification --cargo-profile dev --manifest-path "C:\programming\worth worktees\worktrees\m3-p3-reopen\Cargo.toml" --list-type binaries-only --message-format json
+   Compiling worth-court-relational-certification v0.1.0 (C:\programming\worth worktees\worktrees\m3-p3-reopen\crates\worth-court-relational-certification)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 50.64s
+prebuild: cargo nextest list --cargo-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\root\funding-finish-cost-category-growth\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\root\funding-finish-cost-category-growth\build\binaries.json" --message-format json --ignore-default-filter -E test(checkpoint_admission::cost::covered_history_growth::selected_state_recapture_work_does_not_follow_discarded_covered_update_bytes)
+prebuild: cargo nextest run --cargo-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\root\funding-finish-cost-category-growth\build\cargo-metadata.json" --binaries-metadata "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\root\funding-finish-cost-category-growth\build\binaries.json" --profile ci --config-file "C:\programming\worth worktees\worktrees\m3-p3-reopen\target\test-cost\root\d12-retained-image-and-sparse-courts\nextest.toml" --ignore-default-filter --no-fail-fast --no-tests=fail --message-format libtest-json -E test(checkpoint_admission::cost::covered_history_growth::selected_state_recapture_work_does_not_follow_discarded_covered_update_bytes)
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-root-funding-finish-cost-category-growth-build-cargo-m-03eb43385ce5-202611041856209245890000-17c09eef3bbd.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-root-funding-finish-cost-category-growth-build-binarie-03eb43385ce5-202611041856315502000000-55b8e27ba456.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-root-funding-finish-cost-category-growth-build-binarie-03eb43385ce5-202611041856428065100000-f621fd8015a5.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-root-funding-finish-cost-category-growth-build-request-03eb43385ce5-202611041857513201010000-3e5c29304815.log
+FULL_OWNED_LOG_PATH: C:\programming\worth worktees\worktrees\m3-p3-reopen\target\lane-evidence\test-cost-root-funding-finish-cost-category-growth-run-selection-03eb43385ce5-202611041857588730960000-c0b2e7878742.log
+info: experimental features enabled: wrapper-scripts
+────────────
+ Nextest run ID 6e293dba-37eb-4225-b24e-81c4381e7a42 with nextest profile: ci
+    Starting 1 test across 1 binary (190 tests skipped)
+{"type":"suite","event":"started","test_count":2}
+{"type":"test","event":"started","name":"worth-court-relational-certification::worth_court_relational_certification$cost::relational::relational_certification::scale_invariant_admission::large_runtime_keeps_global_enforcement_and_filters_graph_planning"}
+{"type":"suite","event":"ok","passed":0,"failed":0,"ignored":1,"measured":0,"filtered_out":189,"exec_time":0}
+        PASS [   3.619s] (1/1) worth-court-relational-certification::worth_court_relational_certification relational::durable_publication::source_initial_inputs::checkpoint_admission::cost::covered_history_growth::selected_state_recapture_work_does_not_follow_discarded_covered_update_bytes
+{"type":"suite","event":"started","test_count":2}
+{"type":"test","event":"started","name":"worth-court-relational-certification::worth_court_relational_certification$relational::durable_publication::source_initial_inputs::checkpoint_admission::cost::covered_history_growth::selected_state_recapture_work_does_not_follow_discarded_covered_update_bytes"}
+{"type":"test","event":"ok","name":"worth-court-relational-certification::worth_court_relational_certification$relational::durable_publication::source_initial_inputs::checkpoint_admission::cost::covered_history_growth::selected_state_recapture_work_does_not_follow_discarded_covered_update_bytes","exec_time":3.6193803}
+{"type":"suite","event":"ok","passed":1,"failed":0,"ignored":1,"measured":0,"filtered_out":189,"exec_time":3.6193803}
+────────────
+     Summary [   3.621s] 1 test run: 1 passed, 190 skipped
+
+EVIDENCE_TEST_COUNTS: 1,0,0
+
+end_utc: 2026-11-04T18:58:04.064001+00:00
+exit_code: 0
+tests_passed: 1
+tests_failed: 0
+tests_ignored: 0

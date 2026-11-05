@@ -18,6 +18,7 @@ use worth_store::physical_runtime::{
 
 pub(super) fn prepare(
     serving: &Arc<ServingPhysicalRuntime>,
+    home: worth_foundational::facade::HomeIdentity,
     origin: RecoveryStorePresence,
     source: &SelectedHomeSource,
     selected: Option<&SelectedHomeManifest>,
@@ -76,6 +77,22 @@ pub(super) fn prepare(
         ),
     };
     let preparation = preparation.map_err(Denial::Relational)?;
+    if let Some(selected) = selected {
+        let image = preparation.admission_image().ok_or_else(|| admission_denial(
+            worth_relational::facade::durability::RelationalCheckpointAdmissionRefusal::MissingArtifact,
+        ))?;
+        let companion = preparation.world_admission_companion().ok_or_else(|| admission_denial(
+            worth_relational::facade::durability::RelationalCheckpointAdmissionRefusal::MissingArtifact,
+        ))?;
+        worth_runtime_world::facade::WorldCheckpointSubject::validate_home_admission_companion(
+            image,
+            companion,
+            selected.world(),
+            home,
+            request,
+        )
+        .map_err(admission_denial)?;
+    }
     let covered = preparation.coverage();
     let canonical_name = OrderedJournalName::new(RELATIONAL_CANONICAL_COMMITS)
         .expect("closed Native canonical journal");
@@ -139,6 +156,14 @@ pub(super) fn prepare(
         )
         .map(RelationalHomeOpeningInput::Existing)
         .map_err(Denial::Relational)
+}
+
+fn admission_denial(
+    cause: worth_relational::facade::durability::RelationalCheckpointAdmissionRefusal,
+) -> Denial {
+    Denial::Relational(
+        worth_store_relational::RelationalSectionReadmissionDenial::AdmissionImage(cause),
+    )
 }
 
 fn tail(

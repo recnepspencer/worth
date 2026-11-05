@@ -3313,3 +3313,126 @@ owner/authority decision; Complete reopen is not certified.
 Evidence: host-original-serving-reopen-controls-direct-unset.log4/1/0, unchanged
 case automatic_checkpoints_bound_host_reopen_journal_reads_with_headroom;
 independent historical-occurrence and canonical-commitment read-only reviews.
+
+### Checkpoint admission image: producer implementation in progress
+
+Grant11 selects a new Native admission image rather than lazy World history.
+The approved design is committed at2d33c53b37 in
+target/lane-evidence/d12-checkpoint-admission-image-design.md. The producer
+captures original semantic result, predecessor/successor, association,
+receipt/position/digest/root, schema, visibility, created records and required
+output meaning only after the existing protected-original verification and
+root fold succeed. A private concrete owner keeps that same prefix, fold,
+schema carriers and protected checkpoint through its named worth-proof phase.
+The escaping immutable projection allocations retain their original-request
+funding. Encoding, bounded copying, row scans and role hashing charge that
+invoking request; a stop preserves its concrete classification.
+
+WRTHCAI1/version1 is a new declared Native DATA frame. Each role has its own
+domain-separated commitment covering protocol, cut, row coordinate, role,
+length and exact projected bytes. A separate directory commitment covers the
+closed role order and keys. Decoding framing/integrity alone never admits a
+Native root or a performed publication. Source selection and receiver binding
+remain required. The predecessor and every retained/Empty component header
+encode logical branch/reference/target coordinates using foundational
+NativeCheckpointBranchObservation/Reference/Target, which implement the sealed
+DurableIdentity marker. The new image contains no runtime-qualified reference,
+runtime instance slot or root allocation identity. Fork provenance remains a
+reference observation, without an invented source truth version.
+Required-output origin basis and codec-retirement source descriptors use that
+same logical component projection; their other original meaning is preserved.
+
+This producer step does not change the selected Home package yet. No existing
+development Home stops opening at this step. The planned WSRCAI01 package will
+require the image for every selected checkpoint and refuse predecessor
+WSRCSRC1/WSRCKPT1 packages using the unsupported-version vocabulary. Native
+root/publication constructor cutover, that protected Store package, the World
+registry companion and D13 capture-issued interim origin remain unfinished.
+Never-selected Homes retain genuine initial-input-plus-Journal recovery.
+
+Requirement map for the producer's public courts:
+
+| Requirement | Named observation |
+|---|---|
+| D12 independently authenticated projected meanings | original_checkpoint_capture_seals_each_projected_role_independently mutates each of the eight roles and the root directory separately |
+| D17 actual encoding/copy/scan work | The same court observes charged work covering those operations in addition to the declared hash work |
+| D17 durable identity representation | checkpoint_image_records_logical_reference_coordinates_across_runtime_instances compares original public coordinates, rejects runtime/root identity fields and compares independently allocated histories |
+| D17 required-output source identity | checkpoint_image_records_original_required_output_membership_with_logical_basis exercises a genuine installed publisher; value-only codec_retirement_projection_keeps_meaning_and_omits_runtime_identity_slots checks the retirement projection without constructing runtime authority |
+| D12 original source and cut binding | checkpoint_image_sealing_refuses_a_different_original_source_or_cut |
+| D17 typed stop and version preflight | checkpoint_image_framing_refuses_unknown_versions_and_stopped_requests |
+
+These producer observations do not certify image admission, D13 restoration or
+the unchanged bounded-tail filesystem limit. Their lane evidence and remaining
+qualification are tracked separately; Complete reopen is not yet certified.
+
+
+### Operational checkpoint admission cutover
+
+The selected Home Relational section is now the declared admission package
+WSRCAI01/u32-LE1 (`worth.store.relational.admission-section`). Manifest2 still
+has exactly its existing Native and World sections. The package contains exact
+CompleteSource, WRTHCAI1 admission image, and WRWMREG1 World companion children.
+Its fixed header carries the common Home/original-source/Native/World cut,
+lengths and separate child digests. Existing canonical5, transition2, CHK18,
+CompleteSource1 and World1 grammars are unchanged.
+
+The Home assembler first freezes the genuine World capture, then captures
+Native's verified originals under the same request, seals their common cut,
+and frames both actual captures into the one Home attempt. Store Relational's
+runtime-owned CapturedHomeRelationalSection retains the actual image,
+Complete capture and member-selection custody without a serialized predecessor.
+Its consuming binding emits the one final package and returns the existing
+PreparedCompleteRelationalSection. Package binding accepts no replacement Native
+image. Ordinary standalone staging retains its distinct single framing path.
+Selection and interrupted ACK retain that SAME attempt,
+subject, package backing and funding. World owns the companion's explicit
+DurableOwnerJournal posture; Home bytes grant no memory-registry movement.
+Interim capture-proof registry restoration remains the separate D13 work.
+
+Preflight receives the original verified Home reader membership and exact
+Native span from the private manifest owner. It verifies full backing length
+and hash, then children and cuts, Home identity and the coupled World image
+before descriptor publication or tail bodies. A selected checkpoint cannot
+replay covered frames as a substitute for an admission image. Never-selected
+Homes continue original-input-plus-Journal recovery.
+
+Development Homes with a selected WSRCSRC1/v1 or WSRCKPT1 section stop opening.
+These formats return PredecessorFormat with foundational Retired posture;
+missing children return MissingArtifact, and future versions refuse through
+UnsupportedVersion. There is no migration, default, reinterpretation or legacy
+selected reader. Ordinary staging of an unbound Complete is not Home selection.
+
+Native roots carry exhaustive Original/Checkpoint evidence. Readmitted image
+rows never become positioned original frames. Original export and CDC still
+read and verify their source frames. Immutable image provenance may be shared
+by a genuine runtime fork; each receiver owns its own actual directory edge,
+and existing basis/subject runtime-affinity fences remain in force. Closing or
+replacing one receiver's selection cannot consume another receiver's edge.
+Root, region, kind-directory, dictionary and cached-row owners retain their
+original request funding. Source retirement uses the existing explicit handoffs.
+
+Requirement trace (qualification status is recorded in lane evidence):
+
+| Requirement | Public court |
+|---|---|
+| D12 actual roots, publication bases, creations, second selection, fork affinity, original demand | checkpoint_image_restores_publication_bases_and_creations_without_canonical_body_reads |
+| D12/D17 budget/cancellation and retained funding | checkpoint_image_recovery_respects_memory_and_cancellation_and_releases_its_retained_budget |
+| D12 selected missing-image cutoff | selected_checkpoint_without_admission_image_refuses_before_canonical_body_reads |
+| D12 cold derived-index continuation | cold_complete_recapture_preserves_original_index_generations_and_live_tail |
+| D12 image-root cold and incremental index maintenance, real values and original predecessor | checkpoint_image_roots_build_cold_and_incremental_indexes_without_canonical_body_reads |
+| D12 historical image basis, exact retained root/pin, finite cold allowance and zero canonical bodies | checkpoint_image_retained_commit_reconstruction_uses_its_own_root_without_canonical_body_reads |
+| D17 sparse registry physical traversal paid before cold reconstruction or publication | sparse_retained_registry_refuses_unpaid_physical_scan_before_cold_reconstruction |
+| D17 exact registry snapshot cardinality and paid bucket shape | registry_snapshot_rejects_cardinality_changes_and_unpaid_bucket_growth |
+| D12 actual selected package predecessors, future version, missing, foreign and damaged image | selected_home_admission_refuses_predecessors_missing_foreign_and_damaged_images |
+| D12 original binding/World/basis and receipt-only readmission without positioned-frame fabrication | selected_home_image_preserves_original_binding_fields_and_world_publication |
+| D12 original inputs and another Complete | complete_source_recovery_restores_original_inputs_for_another_complete_capture |
+| D12 zero-write chronology | birth_checkpoint_reopens_with_archived_empty_installation_tail_at_zero_commits |
+| D12 filesystem bounded tail | automatic_checkpoints_bound_host_reopen_journal_reads_with_headroom |
+| D12 interrupted ACK and zero Native member reads | selected_checkpoint_survives_observer_drop_online_history_and_mutation_before_ack_recovery |
+
+This section declares the cutover contract. Filesystem qualification and the
+final landing gate remain pending until their named lanes and independent
+review establish them; source implementation alone certifies none. The
+coordinator withdrew the accepted-output carrier from this Phase3 landing:
+directory Homes are Relational-only. Accepted-output reuse, restoration and
+regeneration belong to Phase6; no Query application carrier was added here.

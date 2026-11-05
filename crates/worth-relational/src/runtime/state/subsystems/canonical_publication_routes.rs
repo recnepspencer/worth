@@ -55,9 +55,7 @@ pub(crate) use position_admission::{
 pub(crate) use source_retirement::RelationalPerformedSourceWalk;
 
 pub(crate) struct RelationalCanonicalPublicationRoutes {
-    checkpoint_catalog: RwLock<
-        Arc<std::collections::BTreeMap<CommitId, Arc<crate::history::RelationalCommitArtifact>>>,
-    >,
+    checkpoint_catalog: RwLock<Arc<indexed_catalog::IndexedPublicationCatalog>>,
     by_commit: DashMap<CommitId, Arc<CanonicalPublicationRoute>>,
     by_version: DashMap<VersionId, Arc<CanonicalPublicationRoute>>,
     performed_stream: PerformedPublicationStream,

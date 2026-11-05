@@ -12,6 +12,11 @@ use crate::durability::medium::{RelationalDurableColdSource, RelationalDurableMe
 /// An admitted directory intrinsically retains its complete semantic basis.
 #[derive(Debug)]
 pub(crate) struct RelationalCheckpointDirectory {
+    pub(crate) admission_owner: std::sync::OnceLock<
+        std::sync::Weak<crate::durability::checkpoint_admission::AdmissionCustody>,
+    >,
+    pub(crate) admission_image:
+        Option<crate::durability::checkpoint_admission::RelationalCheckpointAdmissionArtifact>,
     pub(crate) source_schemas: std::sync::OnceLock<
         Arc<
             crate::durability::source_initial_inputs::schema_catalog::ReadmittedSourceSchemaCatalog,
@@ -55,6 +60,9 @@ impl PartialEq for RelationalCheckpointDirectory {
 impl Eq for RelationalCheckpointDirectory {}
 
 impl RelationalCheckpointDirectory {
+    pub(crate) fn member_basis(&self) -> RelationalDurableMemberCustody {
+        self._basis.clone()
+    }
     /// Attempt-local schema binding shares the original immutable custody;
     /// its distinct retirement storage is prepaid by this same request.
     pub(crate) fn with_source_schemas(
@@ -67,6 +75,8 @@ impl RelationalCheckpointDirectory {
         let retirement = PreparedCheckpointDirectoryRetirement::prepare(request)
             .map_err(admission::opening_stop)?;
         Ok(Arc::new(Self {
+            admission_owner: Default::default(),
+            admission_image: self.admission_image.clone(),
             source_schemas: std::sync::OnceLock::from(schemas),
             manifest: self.manifest.clone(),
             source: self.source.clone(),

@@ -55,6 +55,9 @@ pub(super) fn run(case: Case, path: std::path::PathBuf) -> ! {
         Case::BoundedTail => 37,
     };
     for offset in 0..additional {
+        // Each mutation is a distinct authenticated request. Checkpoint work
+        // from earlier requests must not consume a later request's deadline.
+        let (_, live) = scope();
         value += 1;
         assert!(matches!(
             set(home.runtime(), &live, 0x435100 + offset, value).unwrap(),
@@ -63,6 +66,7 @@ pub(super) fn run(case: Case, path: std::path::PathBuf) -> ! {
     }
     assert_eq!(initialized.load(Ordering::SeqCst), 1);
     assert_eq!(contacts.load(Ordering::SeqCst), 1 + additional as usize);
+    let (_, live) = scope();
     assert_eq!(balance(home.runtime(), &live), value);
     // An ordinary Query read resumes pending Home maintenance. Park the second
     // interruption after that read so the original unacked attempt reaches kill.
@@ -94,7 +98,10 @@ pub(super) fn run(case: Case, path: std::path::PathBuf) -> ! {
             assert!(!pending.acknowledgement_complete);
         }
         Case::BoundedTail => {
-            assert!(!observed.due && observed.pending.is_none());
+            assert!(
+                !observed.due && observed.pending.is_none(),
+                "automatic maintenance: {observed:?}",
+            );
             assert!(
                 observed.journals[0].covered > first_covered,
                 "automatic maintenance must select a later image"

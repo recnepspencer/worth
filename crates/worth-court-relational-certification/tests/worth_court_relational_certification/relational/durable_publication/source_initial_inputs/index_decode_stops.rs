@@ -122,12 +122,7 @@ fn recovered_indexes(
         .read_initial_inputs_owned(&source, request, 1 << 30)
         .unwrap();
     let input = RelationalDurableRecoverySource::from_home_original_bytes(
-        Some(
-            RelationalDurableCheckpointSource::from_complete_artifact(
-                image.source_artifact().clone(),
-            )
-            .unwrap(),
-        ),
+        Some(home_image_checkpoint(&image, image.source_artifact().clone(), request).unwrap()),
         initial,
         ExecutionRequestArrayBuilder::allocate(*request, 0)
             .unwrap()

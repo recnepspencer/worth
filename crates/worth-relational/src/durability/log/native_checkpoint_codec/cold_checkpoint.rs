@@ -10,23 +10,27 @@ pub(super) fn readmit(
     manifest: RelationalCheckpointManifest,
     source: Arc<dyn RelationalDurableColdSource>,
     facts: ManifestDirectoryFacts,
+    image: Option<crate::durability::checkpoint_admission::RelationalCheckpointAdmissionArtifact>,
 ) -> Result<DurableCheckpoint, RelationalRecoveryStop> {
-    let directory = Arc::new(
-        PreparedCheckpointDirectory {
-            manifest: manifest.clone(),
-            source,
-            history_members: facts.history_members,
-        }
-        .readmit(execution)?,
-    );
+    if let Some(image) = &image {
+        image
+            .require_manifest(&manifest, execution)
+            .map_err(RelationalRecoveryStop::AdmissionImage)?;
+    }
+    let mut directory = PreparedCheckpointDirectory {
+        manifest: manifest.clone(),
+        source,
+        history_members: facts.history_members,
+    }
+    .readmit(execution)?;
+    directory.admission_image = image;
+    let directory = Arc::new(directory);
     let heads = facts.heads;
     let mut envelopes = Vec::new();
     let mut symbols = crate::symbols::data::StringInterner::default();
-    for entry in manifest
-        .commits
-        .iter()
-        .filter(|entry| heads.contains(&entry.commit.commit_id))
-    {
+    for entry in manifest.commits.iter().filter(|entry| {
+        directory.admission_image.is_none() && heads.contains(&entry.commit.commit_id)
+    }) {
         let commit = crate::history::RelationalCommitEnvelopeResidency::readmit_selected(
             entry,
             &directory,

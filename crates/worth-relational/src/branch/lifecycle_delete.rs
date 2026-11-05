@@ -153,8 +153,8 @@ impl crate::runtime::RelationalRuntime {
             .selected_root()
             .ok_or(denied(RelationalBranchDeleteDenial::OwnerFailure))?;
         let previous_head_version = selected_root
-            .canonical_envelope()
-            .map(|envelope| envelope.commit.version_id);
+            .commit_receipt()
+            .map(|receipt| receipt.version_id);
         let head_retirement = self
             .history
             .reserve_branch_head_retirement(

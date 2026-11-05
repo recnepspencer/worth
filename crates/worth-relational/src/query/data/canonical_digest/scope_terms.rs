@@ -30,6 +30,10 @@ pub(super) fn encode_query_plan_context_id(bytes: &mut Vec<u8>, context_id: &Que
             encode_u64(bytes, commit_id.0);
         }
         QueryPlanEvidenceBasis::GenesisRuntimeBootstrap => bytes.push(1),
+        QueryPlanEvidenceBasis::CheckpointAdmissionImage { commit_id } => {
+            bytes.push(2);
+            encode_u64(bytes, commit_id.0);
+        }
     }
 }
 

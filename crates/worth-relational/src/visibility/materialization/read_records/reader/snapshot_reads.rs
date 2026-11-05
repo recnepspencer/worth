@@ -238,12 +238,19 @@ pub(super) fn query_schema_context_for_root(
     crate::schema::data::DescriptorSemanticsVersion,
     QueryPlanEvidenceBasis,
 ) {
-    let evidence_basis = root.canonical_envelope().map_or(
-        QueryPlanEvidenceBasis::GenesisRuntimeBootstrap,
-        |envelope| QueryPlanEvidenceBasis::CanonicalCommitEnvelope {
-            commit_id: envelope.commit.commit_id,
-        },
-    );
+    let evidence_basis = match root.commit_evidence() {
+        None => QueryPlanEvidenceBasis::GenesisRuntimeBootstrap,
+        Some(crate::branch::RelationalRootCommitEvidence::Original(envelope)) => {
+            QueryPlanEvidenceBasis::CanonicalCommitEnvelope {
+                commit_id: envelope.commit.commit_id,
+            }
+        }
+        Some(crate::branch::RelationalRootCommitEvidence::Checkpoint(commit)) => {
+            QueryPlanEvidenceBasis::CheckpointAdmissionImage {
+                commit_id: commit.index().commit.commit_id,
+            }
+        }
+    };
     (
         root.schema_authority().schema_version(),
         root.schema_authority().descriptor_semantics_version(),

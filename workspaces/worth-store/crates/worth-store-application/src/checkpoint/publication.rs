@@ -7,6 +7,7 @@ use worth_store::physical_runtime::{
 
 #[derive(Debug)]
 pub enum ApplicationHomeCheckpointDenial {
+    Maintenance(super::ApplicationHomeCheckpointMaintenanceDenial),
     /// Pre-effect unavailable: no Native section, capture, or checkpoint task
     /// ever existed for this failed construction.
     NativeSectionNeverAttached,

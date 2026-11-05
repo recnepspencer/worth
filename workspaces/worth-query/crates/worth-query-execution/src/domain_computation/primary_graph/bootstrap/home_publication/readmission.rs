@@ -68,16 +68,66 @@ pub(in crate::domain_computation::primary_graph) fn readmit<Schema: ApplicationS
         })
 }
 
+pub(in crate::domain_computation::primary_graph) enum RecoveredBootstrapPublication {
+    Incomplete,
+    Completed,
+}
+
+pub(in crate::domain_computation::primary_graph) fn inspect_native_completion<
+    Schema: ApplicationSchema,
+>(
+    native: &RelationalRuntime,
+    layout: &super::super::super::schema_layout::WorthQueryPrimaryGraphLayout,
+    installed: &WorthQueryInstalledApplicationSchema<Schema>,
+    execution: &ExecutionRequest<'_, '_>,
+) -> Result<RecoveredBootstrapPublication, Denial> {
+    let (_, basis) = native
+        .observe_branch(&native.main_branch_identity())
+        .map_err(|cause| denial(format!("Home completion Native basis denied: {cause:?}")))?;
+    let view = native
+        .read_truth()
+        .project_observation(&basis.observation())
+        .map_err(|cause| denial(format!("Home completion Native view denied: {cause:?}")))?;
+    match decode_optional_selected_row(&view, layout, execution)? {
+        None => Ok(RecoveredBootstrapPublication::Incomplete),
+        Some(completion) => {
+            if completion.binding
+                != codec::BootstrapInstallationBinding::from_installed(
+                    &installed.binding_identity(),
+                )
+            {
+                return Err(denial(
+                    "Home completion binding is foreign: installed package/schema mismatch",
+                ));
+            }
+            admit_receipts(native, &basis, completion.terminal, completion.created)?;
+            Ok(RecoveredBootstrapPublication::Completed)
+        }
+    }
+}
+
 fn decode_selected_row(
     view: &VisibilityProjectionView,
     graph_layout: &super::super::super::schema_layout::WorthQueryPrimaryGraphLayout,
     execution: &ExecutionRequest<'_, '_>,
 ) -> Result<DecodedCompletion, Denial> {
+    decode_optional_selected_row(view, graph_layout, execution)?
+        .ok_or_else(|| denial("Home root must contain exactly one bootstrap completion record"))
+}
+
+fn decode_optional_selected_row(
+    view: &VisibilityProjectionView,
+    graph_layout: &super::super::super::schema_layout::WorthQueryPrimaryGraphLayout,
+    execution: &ExecutionRequest<'_, '_>,
+) -> Result<Option<DecodedCompletion>, Denial> {
     let layout = &graph_layout.bootstrap_publication;
     let rows = view
         .bounded_entities_of_kind(execution, layout.kind, usize::MAX)
         .map_err(super::super::request_read_denial::read)?
         .map_err(|_| denial("Home completion scan exceeded its bound"))?;
+    if rows.records().is_empty() {
+        return Ok(None);
+    }
     let [row] = rows.records() else {
         return Err(denial(
             "Home root must contain exactly one bootstrap completion record",
@@ -108,12 +158,12 @@ fn decode_selected_row(
     let counts = [count(3)?, count(4)?, count(5)?, count(6)?, count(7)?];
     let terminal = CommitId(numeric_field(fields, &layout.fields[2])?);
     let binding = codec::decode(binding, execution)?;
-    Ok(DecodedCompletion {
+    Ok(Some(DecodedCompletion {
         binding,
         terminal,
         created: row.created_at_version,
         counts,
-    })
+    }))
 }
 
 fn required_field<'a>(

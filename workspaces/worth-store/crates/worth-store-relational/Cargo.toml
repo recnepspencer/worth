@@ -18,9 +18,9 @@ worth-relational = { path = "../../../../crates/worth-relational" }
 worth-store-physical-format.workspace = true
 worth-store-physical-integrity.workspace = true
 worth-store.workspace = true
+sha2 = "0.10"
 [dev-dependencies]
 worth-store-testkit-store = { path = "../worth-store-testkit-store" }
-"sha2" = "0.10"
 "tempfile" = "3"
 
 

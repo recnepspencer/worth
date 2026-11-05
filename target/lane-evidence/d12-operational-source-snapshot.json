@@ -1,0 +1,761 @@
+{
+  "base": "15730e6b767f21e8a2d2982849cf9ed2876d16cf",
+  "dirty": true,
+  "files": [
+    {
+      "path": "Cargo.lock",
+      "git_blob": "280c9c20db43eab9758bf2bb5feffe723ea677c0",
+      "raw_sha256": "b4a3b5ef8c137844cd0dbed120146f76803d2172be7ba2b05456c7c2d4ef813b"
+    },
+    {
+      "path": "crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/checkpoint_admission.rs",
+      "git_blob": "57099aa2ae0a758062154a8bb558a60f597b9dd5",
+      "raw_sha256": "ff3a86f18143fbf9522c6ffadf8024110271d0ef5c76f42791a19b3fef47adc9"
+    },
+    {
+      "path": "crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/checkpoint_admission/indexes.rs",
+      "git_blob": "3bef60dac0939cea0b6b19551dae43f733e2eded",
+      "raw_sha256": "49246d67a2439d745074971bd81cacadb9c4ede2589b92ba9877d984262995b4"
+    },
+    {
+      "path": "crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/checkpoint_admission/operational.rs",
+      "git_blob": "7baeb8e3240aeb57a434377e0bc35eede60f49e7",
+      "raw_sha256": "7a31a586a4682cb614e3734be2be3d6873e5852c3d501cb82e9c56376ca9af89"
+    },
+    {
+      "path": "crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/checkpoint_admission/region_memory.rs",
+      "git_blob": "906a571627e269715fb2fec6a45c7c25fc21e4e2",
+      "raw_sha256": "5cdb1178bb4dd28939b08b4377f040a4f779747206f36adce79d2aebcd05a30f"
+    },
+    {
+      "path": "crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/checkpoint_admission/retained_indexes.rs",
+      "git_blob": "f91fb822e509ebbbde3f91c0ac8c9ca16bcf0678",
+      "raw_sha256": "a877a2fdf8cade40f55f5c3c1ecc0d4d6515d486fe917609fb861be14f5cb64b"
+    },
+    {
+      "path": "crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/checkpoint_admission/selection_refusals.rs",
+      "git_blob": "a3012da19c90e608d2a19a99ee5fbc1a6eb5691b",
+      "raw_sha256": "c3642c1fdf59996245ef607a1b91266d98113ab0cd3cc1e89678835b54b64543"
+    },
+    {
+      "path": "crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/cold_indexes.rs",
+      "git_blob": "490d5d456ef57b12a6dc66cd4fb37dc8f4ee013f",
+      "raw_sha256": "df9bfe53616de0c69c9858865f9d6d53ae351f7805a19ca21517cc9d59a460c5"
+    },
+    {
+      "path": "crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/index_decode_stops.rs",
+      "git_blob": "edcd8d53802101eb31f1d1b55edb515756c642b8",
+      "raw_sha256": "3e1c0f13e10bd438e43c6509323ca75ceb31f7ad32e14006b8441c637983a595"
+    },
+    {
+      "path": "crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/initial_tail.rs",
+      "git_blob": "926f1d0446a715d953d28103b4f4f9e5e3d183bb",
+      "raw_sha256": "1c82776182969e65f33f273a63c05013cd208f28818938184fa2a52393777231"
+    },
+    {
+      "path": "crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/mod.rs",
+      "git_blob": "37ac7cdc1825ef15c756ca1a8a1394eef02b24bd",
+      "raw_sha256": "fae2fb6baa1eab19942d86556c08daff51968c967968b7ed75a3a51a1b3b12a4"
+    },
+    {
+      "path": "crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/plan_retry.rs",
+      "git_blob": "c3dcea3ed85cb41824321c9640c69347331e915e",
+      "raw_sha256": "8b0182713a7b876375e68248e1e89c0908b86671d20ccbe8b34583844b7aa11f"
+    },
+    {
+      "path": "crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/source_initial_inputs/wire.rs",
+      "git_blob": "5df20a2b539b09f236d410ca3804779c4272a4a9",
+      "raw_sha256": "daa90215853c4a734b7a224a935e9ff8ce7275e6243572ae7dcb4b190e617b9f"
+    },
+    {
+      "path": "crates/worth-relational/src/authority/commit/phases/schema_continuity.rs",
+      "git_blob": "6da44dd02e121a22192c29c2e412aff643adef2f",
+      "raw_sha256": "d1412fc9139b421ba2dd8a9bef2751bf2fb69bfeeef817247d8c3b789ba35660"
+    },
+    {
+      "path": "crates/worth-relational/src/authority/commit/phases/schema_continuity/prior.rs",
+      "git_blob": "07023b1940055ce30e09197879c6de2006c6bbc0",
+      "raw_sha256": "e152ea623a061e55edc5636e6643cc28f50116c2a6c0dc2b170b203807e435e0"
+    },
+    {
+      "path": "crates/worth-relational/src/authority/commit/phases/schema_continuity_diagnostics/mod.rs",
+      "git_blob": "906acb0417a32c22fb75c763ccbbd780776f7542",
+      "raw_sha256": "1b2a97df6e5b98387e47ece17ac70b5ff6f87c7713cdb93f83f919caa7b0db4a"
+    },
+    {
+      "path": "crates/worth-relational/src/authority/commit/pipeline/candidate_preparation.rs",
+      "git_blob": "299969a84df78684248401c13bea8433658a742a",
+      "raw_sha256": "334287806bfdee824ccdb6cf167e3953316c2153331059167a5222666df850d9"
+    },
+    {
+      "path": "crates/worth-relational/src/branch/basis.rs",
+      "git_blob": "53be6fb55d6e12bd7520fe9342a00fc303de0562",
+      "raw_sha256": "a83c55e4024c8d4640abc1704c27e43a1f577eeec2ca86634b94885d171b7804"
+    },
+    {
+      "path": "crates/worth-relational/src/branch/basis_registry.rs",
+      "git_blob": "b58755068579de4c8dbc23c0e02a0dc14d7b892c",
+      "raw_sha256": "2634f7fd50e36724ef25f212e51475b677a353866d5c06f86869458b8ad8b4e0"
+    },
+    {
+      "path": "crates/worth-relational/src/branch/basis_registry/snapshot_shape.rs",
+      "git_blob": "e42dd618180acf4b981d97c897d1f89b19d07be1",
+      "raw_sha256": "0626380b468a9d345eae7fce6d0914a116658954e9cc25c6b7aa535d5b5adc5a"
+    },
+    {
+      "path": "crates/worth-relational/src/branch/fork_target_preparation.rs",
+      "git_blob": "237b61d7e2fa8913b042c4aab261567d7f3d5480",
+      "raw_sha256": "bcbd07d79d6548570f38329440d4cbdbaf232fbd751809d41d0fef7357354eb5"
+    },
+    {
+      "path": "crates/worth-relational/src/branch/lifecycle_delete.rs",
+      "git_blob": "3430f43c7c0c26be6ed668f46dbdba46fff84926",
+      "raw_sha256": "01036e2c0f08834c278250c73fe846b6b196be9c596218f4a81913d90b653844"
+    },
+    {
+      "path": "crates/worth-relational/src/branch/mod.rs",
+      "git_blob": "d514dec4e8e1bc442abbde95ea4d60e82c7c5a73",
+      "raw_sha256": "dbc026e929e4adae3f3c3c2a6c099f3da4209d411ec4dba4614026bccbc8d947"
+    },
+    {
+      "path": "crates/worth-relational/src/branch/recorded_basis/export.rs",
+      "git_blob": "58a30992b8569a83eb8294f7b941f18ac8bd6556",
+      "raw_sha256": "f990cc50d55bf3d9a89bb651d23f6b85951572816e9df7062f569f7bbbaa2e96"
+    },
+    {
+      "path": "crates/worth-relational/src/branch/reference_root_access.rs",
+      "git_blob": "8ba3b8481c8e821b9fada6bc888de5955f6653f8",
+      "raw_sha256": "8d30bc6f67c297482ab22ff93c5dd6558c78790971ef40a00d8b056bffbe538e"
+    },
+    {
+      "path": "crates/worth-relational/src/branch/root.rs",
+      "git_blob": "85b0b3c66dbf960ace0e3ff939c63e61b1e21fe8",
+      "raw_sha256": "302614ecb2aae274262d45c710fa3acf61206be4c77ca0bd2c6189caf480546f"
+    },
+    {
+      "path": "crates/worth-relational/src/branch/root_capture_preparation.rs",
+      "git_blob": "b3911f97088bf9b58e489b610fb6416aeac694e8",
+      "raw_sha256": "a8d74d094a35b8cf80093726d2c9fa7a641384670eda001ce2f7d8fef560c6aa"
+    },
+    {
+      "path": "crates/worth-relational/src/branch/root_commit_evidence.rs",
+      "git_blob": "c69199beefc242e49fa2d6826f7b2bfb67c7b491",
+      "raw_sha256": "341db8d1ac420d6c2c8db94c5b956c9e2b2842d1fbcf22af6ca31dfbfb572c71"
+    },
+    {
+      "path": "crates/worth-relational/src/branch/root_physical_linkage_tests.rs",
+      "git_blob": "98d5c743c29c4954e56b246ef10d650c6c000638",
+      "raw_sha256": "fa255c1452f2961c1de0716163b7a1cada037c1f01fe3af790d987cbe50e0843"
+    },
+    {
+      "path": "crates/worth-relational/src/branch/root_readmission.rs",
+      "git_blob": "a4e2b818bc60697b44a60ab9c16a0a3aea3a171a",
+      "raw_sha256": "98a19cbb61811003db6052a5aa8f094f049187412717c23eee51231dcaee4e7e"
+    },
+    {
+      "path": "crates/worth-relational/src/branch/root_readmission/checkpoint.rs",
+      "git_blob": "67426c38a308d224e9914811d1bf9912f00068fc",
+      "raw_sha256": "0b06cd4ac81b43e9441f270dece4bbf27697b64ab0098319dd0b0909a957db97"
+    },
+    {
+      "path": "crates/worth-relational/src/branch/root_readmission/request.rs",
+      "git_blob": "9385a3f24b8bc0a9e0afb81fda5a741fd729b5a3",
+      "raw_sha256": "72f0700e946cb521c30ef6ec661dea284c5a5895ab3ff302b6ac9f712a285956"
+    },
+    {
+      "path": "crates/worth-relational/src/branch/root_region.rs",
+      "git_blob": "a43dfabb0ddc47c19b551910481b7af1ca5b78f4",
+      "raw_sha256": "91a76db22235378069d7fcc7fa8889e6472e367a4bca87c418d1f694b1e77730"
+    },
+    {
+      "path": "crates/worth-relational/src/branch/root_visibility.rs",
+      "git_blob": "397ece32c616248f68f8876920576838631c416d",
+      "raw_sha256": "3924d39d4b2ac7415c959689c078dba2dcd02b5ca64a5be589628a095285ad12"
+    },
+    {
+      "path": "crates/worth-relational/src/durability/access/medium_recovery_plan.rs",
+      "git_blob": "82d3466410738e9596e84e97e8b1fc6045be4d15",
+      "raw_sha256": "6d6204c64e5fbc8e600af95b0d47566c5bb1ae23abd45202ba1cfec94865f849"
+    },
+    {
+      "path": "crates/worth-relational/src/durability/authority/associated_effects.rs",
+      "git_blob": "e5550484cd29b7d20469a6b136615a89f4c4b590",
+      "raw_sha256": "4f0bcc6a33cc600aff8b1c9f2a157162e3e5fc4822ab6e851cdba621dff9cd66"
+    },
+    {
+      "path": "crates/worth-relational/src/durability/authority/associated_effects/created_row.rs",
+      "git_blob": "4fe454f850860fc08b79404b34eb1c7c35b3bdd2",
+      "raw_sha256": "41171bda628eba86bd8be5b408ece552714e384c8e48b3f5ef1b074f6b3ada52"
+    },
+    {
+      "path": "crates/worth-relational/src/durability/authority/associated_effects/memory_original.rs",
+      "git_blob": "59115900c7f6255bb8d20d37bc5d6d0afafbff3a",
+      "raw_sha256": "6a9696d8012006f48a91985326cf0c55ebfc6290686a604b9cf377bbd7c6f985"
+    },
+    {
+      "path": "crates/worth-relational/src/durability/authority/associated_effects/readmission.rs",
+      "git_blob": "c43c73747607321d8d50e1439f20e368fe3f1b66",
+      "raw_sha256": "d5bc910b57994f11712ccc6585ec29d3ece6ae56448c2a0276abbbb925a9f85e"
+    },
+    {
+      "path": "crates/worth-relational/src/durability/authority/checkpoint_complete.rs",
+      "git_blob": "9a865cae8acf3f4806cf8ba1b63f3668a92bbaf8",
+      "raw_sha256": "881fa22b4d0f183c68b7fe54c2a829b949b6e1e54b6e87c8aa567f8268f95628"
+    },
+    {
+      "path": "crates/worth-relational/src/durability/authority/checkpoint_complete/admission_projection.rs",
+      "git_blob": "85d9d16c596a47008bffc510fd8ca8a1c427d464",
+      "raw_sha256": "a373993f3da1cfb22a0fa73385580743f9514bf7ee766e53374fb9d4306aea60"
+    },
+    {
+      "path": "crates/worth-relational/src/durability/authority/checkpoint_complete/admission_projection/reference.rs",
+      "git_blob": "5b354808d060dd2a7c92683d64f8066716562537",
+      "raw_sha256": "51cecb5c4ca8198f56a1917314fceac826d36ab795d7771baaebff48cba90791"
+    },
+    {
+      "path": "crates/worth-relational/src/durability/authority/checkpoint_complete/admission_projection/root_directory.rs",
+      "git_blob": "4fd3dc70e56b559bf0a55efe136c4c18843912db",
+      "raw_sha256": "70a2af400c85562ab82c7f5cf162f52a7486f5a17770e326f8b62d7aa030ed6a"
+    },
+    {
+      "path": "crates/worth-relational/src/durability/authority/checkpoint_complete/branches/axes.rs",
+      "git_blob": "0a327ca0036382071a5333d940a06b559106ecfe",
+      "raw_sha256": "232c8a20ef6e056cafa7bcb96eef5c35dd2ef5bbbf0b0c4337e62cfc6ffdcaf8"
+    },
+    {
+      "path": "crates/worth-relational/src/durability/authority/checkpoint_complete/regions/grouping.rs",
+      "git_blob": "2c0cc7c2e2e7a0a24ac85fe1eb127cd0384e9734",
+      "raw_sha256": "00858365fdbd5aa1f07c22b0f7cfa5a99b828168a2641c9e63f32ff7a3e26f3a"
+    },
+    {
+      "path": "crates/worth-relational/src/durability/authority/checkpoint_complete/source.rs",
+      "git_blob": "5b02bdec1656e4a697e0965f518430a4a0d5ee6c",
+      "raw_sha256": "8b19530b4c4df8a1c0737e912d121e32e03ee2b034611e7937520617ce0050ab"
+    },
+    {
+      "path": "crates/worth-relational/src/durability/authority/recorded_component_readmission.rs",
+      "git_blob": "27a6898b05cd87d8916bc2d7e45f1c90779fdc5c",
+      "raw_sha256": "8afa3874625ff191d23124d350a84598efcdbdbe8f6f43e22c6fcdb84ab7c1a3"
+    },
+    {
+      "path": "crates/worth-relational/src/durability/authority/recovered_publication.rs",
+      "git_blob": "fb9978518280610b6d5aecfa6ef895f388c45de9",
+      "raw_sha256": "82248e6c471685e66ae4752996b2525b7a95e3891044e2ccf4b8e8a61699b8d1"
+    },
+    {
+      "path": "crates/worth-relational/src/durability/authority/recovered_publication/admission.rs",
+      "git_blob": "6ef67246528716c54487d367a398d31379f7c589",
+      "raw_sha256": "123b6e73507ad4d136168d3a06ccc7576d6a8b9103766662986f4075218fdca7"
+    },
+    {
+      "path": "crates/worth-relational/src/durability/authority/recovered_publication/subject.rs",
+      "git_blob": "b7bfd048ab16603489811a0111c2d474d4379086",
+      "raw_sha256": "5f8563fe8f72c31889c60836e3510c3906c3163843be0fff08d1828c753371d2"
+    },
+    {
+      "path": "crates/worth-relational/src/durability/authority/recovered_publication/successor.rs",
+      "git_blob": "d95aa69f7c564886970faea4b3f878513894846c",
+      "raw_sha256": "a4552aa3023c3070ea433545b58640d31669ac6542509965618f13e34bc873ae"
+    },
+    {
+      "path": "crates/worth-relational/src/durability/authority/runtime_rebuild/checkpoint_restore/cold_directory.rs",
+      "git_blob": "8d3105e4e4ad87af45c63985b738b9e03a7fbb35",
+      "raw_sha256": "15a9b14f03d5a8016ae9c2e236a9715ac151da15b75a04edf6ba43ba7e9695a6"
+    },
+    {
+      "path": "crates/worth-relational/src/durability/authority/runtime_rebuild/original_inputs.rs",
+      "git_blob": "c1fcad233b57773664557a23437d92e362fc67a7",
+      "raw_sha256": "0e53c1e9d7caf93cac56af24498acfd1eb176e1514862e8f92c3cb1c27518499"
+    },
+    {
+      "path": "crates/worth-relational/src/durability/authority/runtime_rebuild/root_inventory/checkpoint_images.rs",
+      "git_blob": "7a0b7cac18717b33a9132ae5df7ac947bef4007a",
+      "raw_sha256": "1ec942177cd023f8e25e764663264056c99ee99061609d78250912dc000b6133"
+    },
+    {
+      "path": "crates/worth-relational/src/durability/canonical_commit_artifact.rs",
+      "git_blob": "840d8998b2be663885c42aa89163658a96c4bce9",
+      "raw_sha256": "6e878dd7c121b15c35d36b39c3f3d9131a9ac59e3da3f21f6f9489488c5031a0"
+    },
+    {
+      "path": "crates/worth-relational/src/durability/canonical_commit_artifact/decoded_quote.rs",
+      "git_blob": "435e09dbe805a88fd871e800f792c8692971f047",
+      "raw_sha256": "bb6fd00ca6208c67678b0fa2504653fe23fe8e7903fa1a25aa91c106de30ea51"
+    },
+    {
+      "path": "crates/worth-relational/src/durability/canonical_commit_artifact/decoded_quote/checkpoint_effect.rs",
+      "git_blob": "8aab2c027f543d390b61c6bafc1c0a24e5ad503e",
+      "raw_sha256": "2ae51302b3186755e4f7de86a90310b96552564a0e52985500bbe9780fd323b0"
+    },
+    {
+      "path": "crates/worth-relational/src/durability/canonical_commit_artifact/decoded_quote/patch.rs",
+      "git_blob": "4931a71b9a20ce96701a0d3827eab91e83c0e2fa",
+      "raw_sha256": "1602df33fc0631b16cdfe956c2800cf09b325ef64e4a2f288e4a5af095d43c15"
+    },
+    {
+      "path": "crates/worth-relational/src/durability/canonical_commit_artifact/decoded_quote/validation.rs",
+      "git_blob": "6c15425895b57c00cd7fda85adeaa999ac46677c",
+      "raw_sha256": "c5e09488ae3301542b57669b47aa5b7771e09f5352302fa4879ec07b68d344bd"
+    },
+    {
+      "path": "crates/worth-relational/src/durability/canonical_commit_artifact/decoded_quote/validation/admission.rs",
+      "git_blob": "1cbaa30389189aa537bc366741d43dbb5a596b9f",
+      "raw_sha256": "285f14232940bd944353e12a0c95825de3376655a7f340873dc33aaca8d35df3"
+    },
+    {
+      "path": "crates/worth-relational/src/durability/checkpoint_admission/admitted_commit.rs",
+      "git_blob": "39756c291431654893e201e227610136e7e6473d",
+      "raw_sha256": "ba2a109f532ecfafecb3b0737a0427f2f234bae6ad5f7ced904b4cfa3b6ffd48"
+    },
+    {
+      "path": "crates/worth-relational/src/durability/checkpoint_admission/admitted_commit/index_predecessor.rs",
+      "git_blob": "72604b7afdfda6e0b4c0d8928627f8555cbf3d23",
+      "raw_sha256": "01a067b37f5f6e47b6649c1f8d2d72e2a0c465422c550fe17e6438b0f1a28a68"
+    },
+    {
+      "path": "crates/worth-relational/src/durability/checkpoint_admission/artifact.rs",
+      "git_blob": "39c12905784d39ecb4e46d24466d2cfd7dfbd26b",
+      "raw_sha256": "56e68da878e9b6155fc0921dcf63c07b1dcc35d35b449d776f8287f771364673"
+    },
+    {
+      "path": "crates/worth-relational/src/durability/checkpoint_admission/custody.rs",
+      "git_blob": "6b08aaab8253fa90409b5bbdbee7942d82f089e9",
+      "raw_sha256": "77799b300aa0904219948c53ee480168e9f2d5b54e01ea8adb92fab09f1efa93"
+    },
+    {
+      "path": "crates/worth-relational/src/durability/checkpoint_admission/mod.rs",
+      "git_blob": "59303d95720977b01c48df9b713094645723b29e",
+      "raw_sha256": "f1439e9684f51a3e1d3e3d3e58b91aacf13368bc4cc99e41862171c19103dfd8"
+    },
+    {
+      "path": "crates/worth-relational/src/durability/checkpoint_admission/root_positions.rs",
+      "git_blob": "d5489e22ced1ec6f9398582f2e2034cd3a5befe9",
+      "raw_sha256": "5f8b7cc7765cbfc3963ed91044c0fe01df5d3b66a5c533f0b5c060f3d2ed61d9"
+    },
+    {
+      "path": "crates/worth-relational/src/durability/checkpoint_admission/wire/emission.rs",
+      "git_blob": "694874c9605cdbca7d006206fa08a8bc8a4aeab2",
+      "raw_sha256": "11b939b9cbba389c71d075f84df5077c70a96eae713af627f4ad2f277ff82274"
+    },
+    {
+      "path": "crates/worth-relational/src/durability/checkpoints/region_directory.rs",
+      "git_blob": "d8cc297c570d42e2ab6fa4d64e93e51631b3f69d",
+      "raw_sha256": "528d8cae604ce63588c4751745902d8b73846eae2ffe2fba3f7bc837170922c7"
+    },
+    {
+      "path": "crates/worth-relational/src/durability/data/checkpoint_directory.rs",
+      "git_blob": "20add206e58fca796b9ca657e9a6ffb21a0479b0",
+      "raw_sha256": "e73a19dda4844a926b80593bf7dcf9300f231361b270ad230a68edad68e4769d"
+    },
+    {
+      "path": "crates/worth-relational/src/durability/data/checkpoint_directory/admission.rs",
+      "git_blob": "03ff830ff1cb4de03dc85eeb72f1a6eafad8e789",
+      "raw_sha256": "64ce2473595af3b1f909b081192e75c229523ffe65b5dacba548f701895af8c1"
+    },
+    {
+      "path": "crates/worth-relational/src/durability/data/checkpoint_directory/retirement.rs",
+      "git_blob": "c9e2339d7873f0cdbdb63fbf4ac6cfda56796af2",
+      "raw_sha256": "a25f00d09e4925120456f5031100017c59c67a970a384f0e0003434c5cf091f0"
+    },
+    {
+      "path": "crates/worth-relational/src/durability/log/native_checkpoint_codec.rs",
+      "git_blob": "0d78674bde0fa56ac8336679280bf678823beedf",
+      "raw_sha256": "b1b2e0a12ed0dd3ca455910b2e0d25b3947632d6aabc4488e560dfea6f0625bd"
+    },
+    {
+      "path": "crates/worth-relational/src/durability/log/native_checkpoint_codec/checkpoint_decoding.rs",
+      "git_blob": "b620d5414d5062b957c318bf7b9dd0cae38cfc62",
+      "raw_sha256": "fcdb2951c625d0c7bb43db845c8811e321071aa00520e33b94226645aa25c654"
+    },
+    {
+      "path": "crates/worth-relational/src/durability/log/native_checkpoint_codec/cold_checkpoint.rs",
+      "git_blob": "e887a776e94e1b41f43d87550d90cbdefd7a8920",
+      "raw_sha256": "80ea3b9054514e95233f1a05e91c73569a505ba4922e800c954d2e9cbc8d38cb"
+    },
+    {
+      "path": "crates/worth-relational/src/durability/log/native_checkpoint_codec/expanded_checkpoint.rs",
+      "git_blob": "329ee65e40060bd5c16f58e92b1d962410a620ec",
+      "raw_sha256": "b60f14186ecd0562a6eec9ec4f09c2f3d0a2e5e65026c6519ca674ff75fb3b88"
+    },
+    {
+      "path": "crates/worth-relational/src/durability/medium/recovery_source.rs",
+      "git_blob": "a60f587ea66b73458ed95387c0f22f31613c2956",
+      "raw_sha256": "ed439e173762a43eff44aa500d58e647ed8bc8f6b45c75b233485c5fcca117fe"
+    },
+    {
+      "path": "crates/worth-relational/src/durability/medium/recovery_source/home_preflight.rs",
+      "git_blob": "bcea1544e6a884be2b860168a9a5bc2b44ebedde",
+      "raw_sha256": "e1fd4f7604d6c8d8e641ed455184b071e5b782b862462db2ae3264bcc34a84e6"
+    },
+    {
+      "path": "crates/worth-relational/src/history/access/commit_surfaces.rs",
+      "git_blob": "186a912759e1ada22e2c279c186a7fd5841e063f",
+      "raw_sha256": "88b28caee541274ba9ae29951497063267c644ef6e85489240559cbae87cd697"
+    },
+    {
+      "path": "crates/worth-relational/src/history/commit/artifact.rs",
+      "git_blob": "8377b42eda29e0a4d0b473745083515e139172ae",
+      "raw_sha256": "6784dd4dfd2d0fc13073dcb023a5fde85dab4eae4c4cfdae536679bc83796e8e"
+    },
+    {
+      "path": "crates/worth-relational/src/history/retention/index_liveness.rs",
+      "git_blob": "db3419299eb011e2f2b677e8f1604e9c8980b12a",
+      "raw_sha256": "fa1ecb5a11cfab5c3b320714fb5c8c7777b37940ff74c56332a6146dfcf91255"
+    },
+    {
+      "path": "crates/worth-relational/src/history/retention/owner/index_roots.rs",
+      "git_blob": "43b041048204113fcc1e69eaf5975f1eb6586579",
+      "raw_sha256": "cd62cf3db422aabb9e0ff179971e4860f35a19f5c3079d004656841e31975bdb"
+    },
+    {
+      "path": "crates/worth-relational/src/history/retention/root_locators.rs",
+      "git_blob": "86b197818e2d405552bb16f184ac2fc410183358",
+      "raw_sha256": "907cac49c15c4f0ccca2dfc0d8c7ab657e6230b3df8b64edf073d396cdc0717c"
+    },
+    {
+      "path": "crates/worth-relational/src/indexes/authority/maintenance/basis.rs",
+      "git_blob": "b0f6175444d4b762030e07b0e9bb4f544c392d4a",
+      "raw_sha256": "af8ada3bc67d2e053f497a0c941e55a6075b8a01db37b6d8867d3da55092324d"
+    },
+    {
+      "path": "crates/worth-relational/src/indexes/authority/maintenance/changes.rs",
+      "git_blob": "4dcb1474b8e210a7bb9d8dc55a9b555e144c3cba",
+      "raw_sha256": "95341ef80fe4be524771aee85b8a811312e576e44cd65157fdfdeda033e674c4"
+    },
+    {
+      "path": "crates/worth-relational/src/indexes/authority/maintenance/mod.rs",
+      "git_blob": "a82d580476980ba8ae06eefda42eed7b4e24ac7f",
+      "raw_sha256": "22d0b00cb3cc038fe56df79ec60150bdacfa7751e7532965f39e663ca6b9ead5"
+    },
+    {
+      "path": "crates/worth-relational/src/indexes/authority/maintenance/refresh_preparation.rs",
+      "git_blob": "5d992cf6a5bad0662b8bbeb8b524c6889ae4d1eb",
+      "raw_sha256": "098c029aa6deeb4e5daf099e0616d83a2e4b4ebe46c4b28a1d58baf8e34533c1"
+    },
+    {
+      "path": "crates/worth-relational/src/indexes/authority/maintenance/retained_projection.rs",
+      "git_blob": "a92001372dc325883e5d1aae4259c4a478321892",
+      "raw_sha256": "60600c6bc32f999963d65f7fef6f7f065a7d80f7b5c29a264609b4529a71b5fc"
+    },
+    {
+      "path": "crates/worth-relational/src/mvcc/observation.rs",
+      "git_blob": "0bb5ec8742c646a9774b53ea8a6289d44c97d8ec",
+      "raw_sha256": "901e267d73731e9e882de2a292aabc386c9d51290ef570c17bc8d7391bda3ee3"
+    },
+    {
+      "path": "crates/worth-relational/src/publication/authority/pending_settlement.rs",
+      "git_blob": "cc6479f480115a06d40fed6022fe13c693578484",
+      "raw_sha256": "4e346c4e07f2a7f911e979eb2ea68ccf7de93e73fb6cd20433b5c8283a80c628"
+    },
+    {
+      "path": "crates/worth-relational/src/query/data/canonical_digest/scope_terms.rs",
+      "git_blob": "fbb697a206bfbeeca7deff53aa7d442449c663fa",
+      "raw_sha256": "62e301861b9c2b1126a23a74f60b02b6778b448c7660945a17bb803d3ed807b4"
+    },
+    {
+      "path": "crates/worth-relational/src/query/data/planned_packets.rs",
+      "git_blob": "27b76ab3d6fbaa4dbbff5112193fcc99d3a36e12",
+      "raw_sha256": "f1708c425e9f3e49d2d018ff527c5f62e000b0ad5289403bca3a80654e8dc97f"
+    },
+    {
+      "path": "crates/worth-relational/src/runtime/state/runtime_state/preparation_runtime.rs",
+      "git_blob": "bf89609cfe0cc42521be8d49752220ba5bf143b7",
+      "raw_sha256": "84c0a27d921bb93091b2b0264e59c1041fccfdadc13a7a324e62be6e7b1702eb"
+    },
+    {
+      "path": "crates/worth-relational/src/runtime/state/subsystems/canonical_publication_routes.rs",
+      "git_blob": "a4945b1212576be3d97baf2df938de7851f56952",
+      "raw_sha256": "8253e8dd5045461e11cfd2ac3b3422facc5d7b2c13629d1f712c2f0e62b9654a"
+    },
+    {
+      "path": "crates/worth-relational/src/runtime/state/subsystems/canonical_publication_routes/checkpoint_admission.rs",
+      "git_blob": "3721a236ef782bd59ee80f2c03113bd9d45ed5f0",
+      "raw_sha256": "d93d754e715ad272fb9761f35121bfa3cbdcd48a91664d98f50db584b14c6f15"
+    },
+    {
+      "path": "crates/worth-relational/src/runtime/state/subsystems/canonical_publication_routes/indexed_catalog.rs",
+      "git_blob": "0bbc0d4e8b9603e962cea29f189c72f43e59daca",
+      "raw_sha256": "259548eae1c32e5c9f2a30367f71080313d40388339fac72936345ff1fa87028"
+    },
+    {
+      "path": "crates/worth-relational/src/runtime/state/subsystems/canonical_publication_routes/performed_stream.rs",
+      "git_blob": "db2e5825c74edff4884838f9bbe1d06947443f85",
+      "raw_sha256": "7b85832a988009d9e63b45c32f54061236e68a4032f5d0a6a315beda2c512a7a"
+    },
+    {
+      "path": "crates/worth-relational/src/runtime/state/subsystems/durability/checkpoint_selection.rs",
+      "git_blob": "8f6a2bcf17eb6f285107af9b8258ac9bd59be65c",
+      "raw_sha256": "8690b99aba32acd842e0d3bf41ccdf60e88f195bbfe1e90740c728e4af73c2df"
+    },
+    {
+      "path": "crates/worth-relational/src/runtime/state/subsystems/durability/checkpoint_selection/source_retirement.rs",
+      "git_blob": "c297ca5457c0f4afc892bec4ac523a0bc2f9b819",
+      "raw_sha256": "06cee49e98be192d38cdf73d9347e6792b57ffad8e3272148ddd00be099fb982"
+    },
+    {
+      "path": "crates/worth-relational/src/runtime/state/subsystems/history_catalog_recovery.rs",
+      "git_blob": "f6f9509fc0c6f4c23e94a993feb227e168a40132",
+      "raw_sha256": "7c9be064a433e737642d6c26597b1ff25cae6cdfda26f5ed8946ebf2e2e9337e"
+    },
+    {
+      "path": "crates/worth-relational/src/runtime/state/subsystems/history_catalog_recovery/checkpoint_root.rs",
+      "git_blob": "721f24e673b9c692340bad63b25318405a770599",
+      "raw_sha256": "2de07a625526c2b25c4c5cb6b297e80f203211cd27637e01c821a62bb9b53ede"
+    },
+    {
+      "path": "crates/worth-relational/src/runtime/state/subsystems/history_head_versions.rs",
+      "git_blob": "37c891dd125b3aed356616da950f62cee2016fc9",
+      "raw_sha256": "00e2b8ef6835d3644d707550e09d1eaf1eedb2a87af07d01f86b251544060861"
+    },
+    {
+      "path": "crates/worth-relational/src/runtime/state/subsystems/history_recovery.rs",
+      "git_blob": "9702b23ab1e535a7ac493116a5a2ce3ca96710d6",
+      "raw_sha256": "6d26ff27b487ea997a9ffd18f31bcebec79c7e4de4b1aa0456d16f6da8951a76"
+    },
+    {
+      "path": "crates/worth-relational/src/runtime/state/subsystems/history_retention.rs",
+      "git_blob": "79f51f75317302f7dfb2e4fb99c2f249a8565973",
+      "raw_sha256": "b8020fc7f8206f4ab221a41c73b5038f9326a816ce1df60d99dd17dec2ae863d"
+    },
+    {
+      "path": "crates/worth-relational/src/runtime/state/subsystems/history_root_capture.rs",
+      "git_blob": "0ef48716018f7e7aba082a67036d86155bd241d7",
+      "raw_sha256": "736274e68f61f37ac2ed49465f28a54cc27d6249a86804517dfad53c5f70b000"
+    },
+    {
+      "path": "crates/worth-relational/src/runtime/state/subsystems/services/symbol_residency.rs",
+      "git_blob": "d485169eb20fcb3786f3b721beec9df871979eb6",
+      "raw_sha256": "3f82aa010ded3d948e14b6c531e7f21d74eb08ff64bc1e7808f3a2c3da024481"
+    },
+    {
+      "path": "crates/worth-relational/src/runtime/state/subsystems/services/symbol_residency/selected_directory.rs",
+      "git_blob": "f27bbb9cbe194d6494a1531af636e471f7d63bef",
+      "raw_sha256": "4de9c3d7ccb8338b894f817a0841742398fa2f675a0b3498504dd0afebb3e7a5"
+    },
+    {
+      "path": "crates/worth-relational/src/runtime/state/subsystems/services/symbol_table.rs",
+      "git_blob": "9188cedb88128a350be4cb358f3c7a3e5ad5c8bd",
+      "raw_sha256": "c79e6c8e359791b8e7b228e4e5b4a69e52ad42f334872989eaf288151f7c314a"
+    },
+    {
+      "path": "crates/worth-relational/src/runtime/state/subsystems/services/symbol_table/selected_directory.rs",
+      "git_blob": "bfbb25b311902f356987c73e4ae788bc9505690c",
+      "raw_sha256": "79714d90391b65896fde4ae8b250a3bbe746f6494f294442cb4f5cd20c547646"
+    },
+    {
+      "path": "crates/worth-relational/src/storage/residency/cell.rs",
+      "git_blob": "c37611c638272428cc7897b6f7bfec667efe9c5f",
+      "raw_sha256": "ca812a75ea9ec7a8ac8ded2e913301f0313d58db329b280e354b827429160d98"
+    },
+    {
+      "path": "crates/worth-relational/src/storage/residency/cell/selected_readmission.rs",
+      "git_blob": "ebd348900582ea82463c8203a54f1753d5cfecf9",
+      "raw_sha256": "312573125e9d850ba7c814d38c5468dfab2e6810e6ece382617c837f60d1d50e"
+    },
+    {
+      "path": "crates/worth-relational/src/storage/residency/kind_authority.rs",
+      "git_blob": "d7536d5ce5d0a1b87df9fee84431e4f02e0f4e25",
+      "raw_sha256": "57de37fc8725f0b67a62d8b67a3d831de6f7895488eedf5843158e8f009241ed"
+    },
+    {
+      "path": "crates/worth-relational/src/visibility/materialization/read_records/reader/snapshot_reads.rs",
+      "git_blob": "3072254fc7df374c61ab2d88378a99ae5a5f334b",
+      "raw_sha256": "428e797952f823a0f5acef8d674d6711d67f87c117599e38de629053da3ec8cd"
+    },
+    {
+      "path": "crates/worth-runtime-world/src/durability/checkpoint/home_admission.rs",
+      "git_blob": "dea03a505e47ea219f0c2daf889e1e852fad3756",
+      "raw_sha256": "821fd22056811d9e9b179ca52b5db7172be4f36af43b5b05b671f1900ad87472"
+    },
+    {
+      "path": "crates/worth-runtime-world/src/durability/checkpoint/mod.rs",
+      "git_blob": "c035b3e6dbd11ebba26c6b7d890babad29e28ce2",
+      "raw_sha256": "e74fd8ce09ff12fc12e94795fccafa00270141fa8b13eac16d3aef5e2c50eb93"
+    },
+    {
+      "path": "crates/worth-testkit-relational/src/initial_input_source.rs",
+      "git_blob": "d96d8bbbad4d1bb168c0a394d281c91fd82637b1",
+      "raw_sha256": "7956e1a2c7a9dd593a1cfeead9339f996614999f50dbb072fe3ed1392bb7a567"
+    },
+    {
+      "path": "tools/boundary-check/config/certification-construction-callers.txt",
+      "git_blob": "628535b43550d2ce837a760774629280c894e8ab",
+      "raw_sha256": "a4c505e827431397f42068a7a80469b8261fc747660946bd2f396519901605bb"
+    },
+    {
+      "path": "tools/boundary-check/config/control-callers.txt",
+      "git_blob": "cf465aa5b6b4b06a505e754b6ac9cd9c2503d7a7",
+      "raw_sha256": "d1f189cc042f2a144d55ff49d0fabd7b57abe79f8836cca9543bbff1e9ee7dac"
+    },
+    {
+      "path": "workspaces/worth-query-bank-world/Cargo.lock",
+      "git_blob": "725aafce177e30285276af55170ed2b9f0343161",
+      "raw_sha256": "8bfc1fab9714a644420edd611005160af938021b46aa5e0ba159a57f9dc27ca0"
+    },
+    {
+      "path": "workspaces/worth-query/Cargo.lock",
+      "git_blob": "881ec241b75415b1f8fc1afdfea55da428082b67",
+      "raw_sha256": "6abcf860e09e1fb7617fedfcd15a118e6a27f30b18874ce749b32ed64c2315b4"
+    },
+    {
+      "path": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.lock",
+      "git_blob": "04f5a874f34fa7913e0844f18f678d8ebdcc0951",
+      "raw_sha256": "bd6fbeb96407718373e6778ef7a3da3c7047268f6d020aafb1b3631c2585923a"
+    },
+    {
+      "path": "workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/application_home/reopening/checkpoint_restart/writer.rs",
+      "git_blob": "8330acb305f84c66bfab923f3ee79961fb37fc51",
+      "raw_sha256": "c8f104fdceaff8d6a8c7f4a4233226578145e63d6d5f4d5a997829a13f157b61"
+    },
+    {
+      "path": "workspaces/worth-query/crates/worth-query-testkit-host/src/host/application_home.rs",
+      "git_blob": "338c0a0c8c7bc49f38f835e4e49d70c493597634",
+      "raw_sha256": "e15372299aff1bb90e3e4c09ccf0366097a04b79f029392860ae1adba62384f7"
+    },
+    {
+      "path": "workspaces/worth-query/crates/worth-query-testkit-host/src/host/application_home/checkpoint_resources.rs",
+      "git_blob": "9cb790449e09f3ffccaf2d5c0ddc25800eff2366",
+      "raw_sha256": "a51cf9293ff73543785a3606ff970aae329e5db585d1906688ec37cce4edd7f5"
+    },
+    {
+      "path": "workspaces/worth-query/crates/worth-query-testkit-host/src/host/application_runtime_surface.rs",
+      "git_blob": "4e1550db179583b82dc0c42c3d61e7e210800ea9",
+      "raw_sha256": "8d6e9f513a293c28035c2de8b231a02df1b636f90d194aeeb4ff2e30f4c92edb"
+    },
+    {
+      "path": "workspaces/worth-store/crates/worth-store-application/src/checkpoint/journey.rs",
+      "git_blob": "b08739ffd17b5baa6ac0a67752b037b6d20a16cd",
+      "raw_sha256": "41f0c37e68bb9926536d02ac44d2f3e41903d2c891b3aceb97c6a0d8b99cf5ab"
+    },
+    {
+      "path": "workspaces/worth-store/crates/worth-store-application/src/checkpoint/operation.rs",
+      "git_blob": "c268f14a32cabc4b644d7b4a347cea38d9c37336",
+      "raw_sha256": "913a1dedcb3d725272560f460333aa5586d711cac98aa068cdcd64bc18e1c711"
+    },
+    {
+      "path": "workspaces/worth-store/crates/worth-store-application/src/checkpoint/operation/controls_for_test.rs",
+      "git_blob": "6a6f122fa7f4cd1716eaadad3d830e0bb30fb676",
+      "raw_sha256": "dc7643fb60a4a0a78d2893743498be36bd7205751ca3fbd8ed22ebfc6eaf1f1a"
+    },
+    {
+      "path": "workspaces/worth-store/crates/worth-store-application/src/checkpoint/preparation.rs",
+      "git_blob": "a48b864970f8fe6b567b180156e8f8ba74f3b4f1",
+      "raw_sha256": "3bdddaefe62b63a981fd08944bf9421c6fcaf66e5dac6fbd0c9db3615f354225"
+    },
+    {
+      "path": "workspaces/worth-store/crates/worth-store-application/src/descriptor/mod.rs",
+      "git_blob": "17bf7c83815d3d03338c09e2f0173bb22ae41e1d",
+      "raw_sha256": "f206ce21c590ff8a525fa834b652befa972b9936855907be070e374f15aeefd9"
+    },
+    {
+      "path": "workspaces/worth-store/crates/worth-store-application/src/home_controls_for_test.rs",
+      "git_blob": "fdd1871c7256d4aa315e46a3dcb1702d852aafbf",
+      "raw_sha256": "efaf29b5b5ae305b6287d1677789311a20471270abdf008fc282cd533e4ca6f3"
+    },
+    {
+      "path": "workspaces/worth-store/crates/worth-store-application/src/open/mod.rs",
+      "git_blob": "a3301951365e16e449b139c0231bc991cf9a357b",
+      "raw_sha256": "9282764adbdf3d8d4673e05debc1e0c68bc522689abed3edc99c2e5eb6f00df5"
+    },
+    {
+      "path": "workspaces/worth-store/crates/worth-store-application/src/open/native_source.rs",
+      "git_blob": "0ae94526dbfd3f01f281da94f7a1ed71fd947878",
+      "raw_sha256": "20d9ea887413aa7839b5be42726d0c0b7afc778b49757b991fe37ff0bc5909df"
+    },
+    {
+      "path": "workspaces/worth-store/crates/worth-store-application/src/world_section/readmission/controls_for_test.rs",
+      "git_blob": "58911f9726017a150b0dcfff8cdeb81a81939382",
+      "raw_sha256": "fb44a6300dedbe2e513677737149774eaaa0ab1a49be22015537a8bfb7fe3c48"
+    },
+    {
+      "path": "workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/native_components/admission_refusals.rs",
+      "git_blob": "6d2cb85ea9da4a6c80a8edfdf9b2e27fa3215127",
+      "raw_sha256": "deed4de78a11774fcdb8c992353bfd670b5ab287d60ec3bf675c05651529ab9a"
+    },
+    {
+      "path": "workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/native_components/mod.rs",
+      "git_blob": "d264785b7f9525b1b3dd11ec2328d8ca891c30bd",
+      "raw_sha256": "70875f8ffcb0910160c7ebcb3712b863d40e442c78e1edd0e223aea0aec92e1d"
+    },
+    {
+      "path": "workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/native_artifacts.rs",
+      "git_blob": "141844cc67c7a5c1751d5fde6b82ed8a264c2dd0",
+      "raw_sha256": "fb8d2ad2f8026e901c10329aa4c3f908707a0da3184d8d4947782b3058f5afe0"
+    },
+    {
+      "path": "workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/native_artifacts/original_image.rs",
+      "git_blob": "b2abdca353efdccd4620368cd8df300e8234a40c",
+      "raw_sha256": "f3505424473ea22aec6baeccfb4121351d89e44ff4659dada0861339cd2cbd43"
+    },
+    {
+      "path": "workspaces/worth-store/crates/worth-store-relational/Cargo.toml",
+      "git_blob": "897ca3479fc2e1346d85a24be624742dfee1fe19",
+      "raw_sha256": "bf080f7638b0c1a296fc1d2b1ca5aea27c722f61447f57e2f85b4679c017001c"
+    },
+    {
+      "path": "workspaces/worth-store/crates/worth-store-relational/src/facade.rs",
+      "git_blob": "80fd097714fa2bd476d6639b2e2dbfb40f3979c4",
+      "raw_sha256": "3b2445c0e19c2cac5a96d56680e1654c237ed64068aaf9ee23a23a5cecf418ce"
+    },
+    {
+      "path": "workspaces/worth-store/crates/worth-store-relational/src/section/admission_section.rs",
+      "git_blob": "ef5e008f67677c2a91b8f49b537def13c585e1bb",
+      "raw_sha256": "30f4674aaf8fbacac2283d22000f75c4e3fac277333e7071e6cc7792d76da2c0"
+    },
+    {
+      "path": "workspaces/worth-store/crates/worth-store-relational/src/section/checkpoint.rs",
+      "git_blob": "ce4fb206a1864fce3293371d60c471fbaf1b84ad",
+      "raw_sha256": "5c750d6bad2044745333a41b6bfa5959959a936945eb244f0df730cf8dea41ce"
+    },
+    {
+      "path": "workspaces/worth-store/crates/worth-store-relational/src/section/checkpoint/complete.rs",
+      "git_blob": "efc3c29c9e55f37e76319ce9c493386a41561272",
+      "raw_sha256": "a18477d27282ba2ddc8f856a1fe0ff4ad322d92d797abbfe6c8925cd0ef2abdd"
+    },
+    {
+      "path": "workspaces/worth-store/crates/worth-store-relational/src/section/checkpoint/home_capture.rs",
+      "git_blob": "f2400f6fa0d5507cb105b5bb44b98f8bc00782ac",
+      "raw_sha256": "41b1f1d9b0744cd4b93312dc30c6693f729e689051ef9e625e104728e0e4dac6"
+    },
+    {
+      "path": "workspaces/worth-store/crates/worth-store-relational/src/section/checkpoint/publication.rs",
+      "git_blob": "8db39c2df79a02ba33d3d9a0bd521f667f93c8de",
+      "raw_sha256": "661435234ef64ff221eb98d1760e2b3f8dbe12477ea86debffc1a75735406a21"
+    },
+    {
+      "path": "workspaces/worth-store/crates/worth-store-relational/src/section/checkpoint/selection_custody.rs",
+      "git_blob": "b7fd024a3d2eefe8f969864774ab3e60d38f9368",
+      "raw_sha256": "b764bb36af901316f366932675946f470d5185a3e5261c8f213e7b8938ffe6d0"
+    },
+    {
+      "path": "workspaces/worth-store/crates/worth-store-relational/src/section/complete_codec.rs",
+      "git_blob": "68d1824089a9d3cef629f3a2226ccfca3a41b470",
+      "raw_sha256": "5a67da6a00398e36b606be5215350226a86f17bb3b0c3366535ff8d998707322"
+    },
+    {
+      "path": "workspaces/worth-store/crates/worth-store-relational/src/section/component_controls_for_test.rs",
+      "git_blob": "e63e531aad7811b90d0d1833f9944b2bad841ca2",
+      "raw_sha256": "76526e5671fde92a74c11ca4ea29a79c0be131ee5b3620020044bf38213cbe13"
+    },
+    {
+      "path": "workspaces/worth-store/crates/worth-store-relational/src/section/mod.rs",
+      "git_blob": "a7c81a1338d6e671382d33ba7e645d56c7c86259",
+      "raw_sha256": "aed768278c9f0d08864c10ed5e45f83a09b7d3c394ae3c8155a19a8748238742"
+    },
+    {
+      "path": "workspaces/worth-store/crates/worth-store-relational/src/section/readmission.rs",
+      "git_blob": "93d18b1dfd85a5a2560f1e71280ce7536318ff0a",
+      "raw_sha256": "add839c2afacbcb0c63477ceee7751fadc00684a5a84e4f2458d185d0d6f2f71"
+    },
+    {
+      "path": "workspaces/worth-store/crates/worth-store-relational/src/section/source_preparation.rs",
+      "git_blob": "4c71c59b71330452c0c457303d391401bca0de61",
+      "raw_sha256": "d6d10c23d9d9216acf632462154f43654acde7ccf186694ef9079b2c747a5efd"
+    },
+    {
+      "path": "workspaces/worth-ui/Cargo.lock",
+      "git_blob": "aef19aa6adbe01e7dc4929c78d261fe6097778be",
+      "raw_sha256": "5147d808b1724b72ca6739e8041161325fbc722c2b0c20df012053639a3e53f6"
+    }
+  ]
+}

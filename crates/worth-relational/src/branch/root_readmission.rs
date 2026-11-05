@@ -12,6 +12,8 @@ use super::{
     RelationalCommittedBranchRoot, RelationalRootCorrectnessIndex,
 };
 
+#[path = "root_readmission/checkpoint.rs"]
+mod checkpoint;
 #[path = "root_readmission/request.rs"]
 mod request;
 #[path = "root_readmission/required_text.rs"]
@@ -63,7 +65,9 @@ impl RelationalBranchRoot {
 
     pub(crate) fn readmit_region_directory(
         issuer: &RelationalBranchRootIdentityIssuer,
-        directory: Vec<super::super::root_checkpoint::RelationalRootRegionCheckpoint>,
+        directory: worth_execution::ExecutionArray<
+            super::super::root_checkpoint::RelationalRootRegionCheckpoint,
+        >,
         envelope: Arc<CanonicalCommitEnvelope>,
         descriptor: RelationalBranchRootDescriptor,
         schema_authority: Arc<super::RelationalBranchRootSchemaAuthority>,
@@ -72,7 +76,7 @@ impl RelationalBranchRoot {
         let mut regions = BTreeMap::new();
         let mut entity_slot_count = 0_usize;
         let mut relation_slot_count = 0_usize;
-        for region in directory {
+        for region in directory.iter().cloned() {
             entity_slot_count = entity_slot_count
                 .checked_add(region.entity_slots)
                 .ok_or(RelationalBranchRootCaptureDenial::SlotCountOverflow)?;
@@ -162,7 +166,7 @@ impl RelationalBranchRoot {
             schema_authority,
             committed: Some(RelationalCommittedBranchRoot {
                 descriptor,
-                canonical_envelope: envelope,
+                evidence: super::RelationalRootCommitEvidence::Original(envelope),
                 axes,
                 publication_cost,
             }),
@@ -181,14 +185,16 @@ impl RelationalBranchRoot {
             .committed
             .clone()
             .ok_or(RelationalBranchRootCaptureDenial::CanonicalEnvelopeMismatch)?;
-        if committed.canonical_envelope.commit != envelope.commit {
+        if committed.evidence.original().is_none()
+            || committed.evidence.receipt() != &envelope.commit
+        {
             return Err(RelationalBranchRootCaptureDenial::CanonicalEnvelopeMismatch);
         }
         validate_schema_root(&envelope, &committed.descriptor)?;
         require_schema_authority(&self.schema_authority, &envelope, &committed.descriptor)?;
         self.require_current_content_binding(&committed, symbols)?;
         require_visibility_commitment(&committed, &envelope)?;
-        committed.canonical_envelope = envelope;
+        committed.evidence = super::RelationalRootCommitEvidence::Original(envelope);
         Ok(self.with_committed(committed))
     }
 
@@ -203,7 +209,8 @@ impl RelationalBranchRoot {
             .committed
             .clone()
             .ok_or(RelationalBranchRootCaptureDenial::CanonicalEnvelopeMismatch)?;
-        if committed.canonical_envelope.commit != source.commit {
+        if committed.evidence.original().is_none() || committed.evidence.receipt() != &source.commit
+        {
             return Err(RelationalBranchRootCaptureDenial::CanonicalEnvelopeMismatch);
         }
         validate_schema_root(source.envelope(), &committed.descriptor)?;
@@ -219,7 +226,8 @@ impl RelationalBranchRoot {
             committed.axes.schema_root,
             committed.axes.correctness_index,
         );
-        committed.canonical_envelope = source.canonical_arc().clone();
+        committed.evidence =
+            super::RelationalRootCommitEvidence::Original(source.canonical_arc().clone());
         Ok(self.with_committed(committed))
     }
 
@@ -234,12 +242,14 @@ impl RelationalBranchRoot {
             .committed
             .clone()
             .ok_or(RelationalBranchRootCaptureDenial::CanonicalEnvelopeMismatch)?;
-        validate_schema_root(&committed.canonical_envelope, &descriptor)?;
-        require_schema_authority(
-            &self.schema_authority,
-            &committed.canonical_envelope,
-            &descriptor,
-        )?;
+        if !committed.evidence.matches_schema(&self.schema_authority)
+            || descriptor.schema_root() != &self.schema_authority.authority_digest()
+        {
+            return Err(RelationalBranchRootCaptureDenial::SchemaRootMismatch {
+                descriptor_root: *descriptor.schema_root(),
+                canonical_root: self.schema_authority.authority_digest(),
+            });
+        }
         self.require_current_content_binding(&committed, symbols)?;
         let (reconstructed_root, reconstructed_accumulator) =
             axes::storage_root_from_authoritative_regions(&self.regions, symbols)?;
@@ -268,8 +278,23 @@ impl RelationalBranchRoot {
                 reconstructed_root,
             });
         }
-        require_descriptor_content(&committed.descriptor, reconstructed_root)
-            .and_then(|()| require_visibility_commitment(committed, &committed.canonical_envelope))
+        require_descriptor_content(&committed.descriptor, reconstructed_root)?;
+        match &committed.evidence {
+            super::RelationalRootCommitEvidence::Original(envelope) => {
+                require_visibility_commitment(committed, envelope)
+            }
+            super::RelationalRootCommitEvidence::Checkpoint(commit) => {
+                if committed.axes.visibility != commit.visibility() {
+                    return Err(
+                        RelationalBranchRootCaptureDenial::VisibilityCommitmentMismatch {
+                            committed: committed.axes.visibility.digest(),
+                            reconstructed: commit.visibility().digest(),
+                        },
+                    );
+                }
+                Ok(())
+            }
+        }
     }
 
     fn with_committed(&self, committed: RelationalCommittedBranchRoot) -> Arc<Self> {
@@ -281,10 +306,16 @@ impl RelationalBranchRoot {
             entity_slot_count: self.entity_slot_count,
             relation_slot_count: self.relation_slot_count,
             content_accumulator: self.content_accumulator,
-            output_publication_positions:
-                crate::history::data::RequiredOutputPublicationPositions::unresolved_at(
-                    committed.canonical_envelope.commit.commit_id,
-                ),
+            output_publication_positions: match &committed.evidence {
+                super::RelationalRootCommitEvidence::Original(envelope) => {
+                    crate::history::data::RequiredOutputPublicationPositions::unresolved_at(
+                        envelope.commit.commit_id,
+                    )
+                }
+                super::RelationalRootCommitEvidence::Checkpoint(_) => {
+                    self.output_publication_positions.clone()
+                }
+            },
             schema_authority: Arc::clone(&self.schema_authority),
             committed: Some(committed),
             _memory: None,

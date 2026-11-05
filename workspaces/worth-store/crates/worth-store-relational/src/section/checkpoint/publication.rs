@@ -1,19 +1,29 @@
 //! One framing and selection owner shared by ordinary and genuine Complete captures.
+use super::selection_custody::SectionSelectionCustody;
 use super::*;
 
 pub(super) struct SectionPublication {
     initial_predecessor: Option<Option<[u8; 32]>>,
-    source: std::sync::Arc<crate::cold_source::StoreColdSource>,
-    retained: crate::cold_source::RetainedMemberPublication,
+    pub(super) custody: SectionSelectionCustody,
     bytes: Vec<u8>,
-    pub(super) selection:
-        Option<std::sync::Arc<dyn super::super::RelationalCheckpointSelectionSource>>,
-    replacement: std::sync::Mutex<crate::cold_source::selected_replacement::SelectedReplacement>,
     // Framed data and all original custody are destroyed before their bill.
     _memory: Option<ExecutionMemoryReservation>,
 }
 
 impl SectionPublication {
+    pub(super) fn from_custody(
+        custody: SectionSelectionCustody,
+        initial_predecessor: Option<Option<[u8; 32]>>,
+        bytes: Vec<u8>,
+        memory: Option<ExecutionMemoryReservation>,
+    ) -> Self {
+        Self {
+            initial_predecessor,
+            custody,
+            bytes,
+            _memory: memory,
+        }
+    }
     pub(super) fn prepare(
         source: &std::sync::Arc<crate::cold_source::StoreColdSource>,
         checkpoint: &RelationalNativeCheckpoint,
@@ -76,21 +86,13 @@ impl SectionPublication {
             .map_err(Denial::Execution)?;
         let bytes =
             copied.map_err(|stop| Denial::Execution(WorkCeilingDenial::Stopped(stop)))??;
-        let retained = source
-            .protect_member_selection_for_request(
-                checkpoint.members().iter().map(|member| member.locator()),
-                execution,
-            )
-            .map_err(Denial::ReadProtection)?;
-        Ok(Self {
+        let custody = SectionSelectionCustody::prepare(source, checkpoint, execution)?;
+        Ok(Self::from_custody(
+            custody,
             initial_predecessor,
-            source: source.clone(),
-            retained,
             bytes,
-            selection: None,
-            replacement: Default::default(),
-            _memory: memory,
-        })
+            memory,
+        ))
     }
 
     pub(super) fn validate_publication(
@@ -98,7 +100,7 @@ impl SectionPublication {
         checkpoint: &RelationalNativeCheckpoint,
     ) -> Result<(), RelationalSectionCheckpointDenial> {
         use worth_relational::facade::durability::RelationalCheckpointAcknowledgementDenial as Denial;
-        if self.selection.is_none() {
+        if self.custody.selection.is_none() {
             return Err(RelationalSectionCheckpointDenial::PublicationAdmission(
                 Denial::CaptureNotBound,
             ));
@@ -114,7 +116,7 @@ impl SectionPublication {
         }
         checkpoint
             .validate_publication_source(
-                &(self.source.clone()
+                &(self.custody.source.clone()
                     as std::sync::Arc<
                         dyn worth_relational::facade::durability::RelationalDurableColdSource,
                     >),
@@ -168,11 +170,11 @@ impl SectionPublication {
         ),
         RelationalSectionCheckpointDenial,
     > {
-        members::prepare(checkpoint, &self.retained, previous, execution)
+        members::prepare(checkpoint, &self.custody.retained, previous, execution)
     }
     pub(super) fn selection_protection(&self) -> RelationalCheckpointSelectionProtection {
         RelationalCheckpointSelectionProtection {
-            _retained: self.retained.clone(),
+            _retained: self.custody.retained.clone(),
         }
     }
     /// Resolve only through this section's already attached Home source.
@@ -186,7 +188,7 @@ impl SectionPublication {
         use worth_relational::facade::durability::RelationalCheckpointAcknowledgementDenial as Ack;
         let refused = || RelationalSectionCheckpointDenial::Acknowledgement(Ack::SelectionNotKnown);
         let subject = checkpoint.publication_subject().ok_or_else(refused)?;
-        let selection = self.selection.as_ref().ok_or_else(refused)?;
+        let selection = self.custody.selection.as_ref().ok_or_else(refused)?;
         let expected = selection
             .selected_version(subject)
             .map_err(RelationalSectionCheckpointDenial::ReadProtection)?
@@ -195,14 +197,14 @@ impl SectionPublication {
             RelationalSectionCheckpointDenial::Acknowledgement(Ack::Stopped(stop))
         })?;
         {
-            let mut replacement = self.replacement.try_lock().map_err(|_| {
+            let mut replacement = self.custody.replacement.try_lock().map_err(|_| {
                 RelationalSectionCheckpointDenial::MemberSelection(
                     crate::RelationalStoreMemberSelectionDenial::Busy,
                 )
             })?;
             replacement
                 .advance(
-                    &self.source,
+                    &self.custody.source,
                     expected,
                     subject.required_members(),
                     execution,

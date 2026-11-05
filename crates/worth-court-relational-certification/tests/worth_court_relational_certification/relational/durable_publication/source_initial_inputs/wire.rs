@@ -74,7 +74,13 @@ fn require_rewrite_refusal(rewrite: impl FnOnce(&mut serde_json::Value, &serde_j
         RelationalCompleteSourceArtifact::from_untrusted_region(changed, 0..length, &request)
             .unwrap();
     assert!(matches!(
-        home_input(&medium, artifact, &request),
-        Err(RelationalInitialInputsRefusal::Malformed)
+        home_image_checkpoint(&complete, artifact, &request),
+        Err(RelationalInitialInputsRefusal::Native(
+            RelationalRecoveryStop::AdmissionImage(
+                RelationalCheckpointAdmissionRefusal::BindingMismatch(
+                    CheckpointAdmissionBindingMismatch::Source
+                )
+            )
+        ))
     ));
 }

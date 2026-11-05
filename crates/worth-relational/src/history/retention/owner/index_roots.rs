@@ -33,10 +33,10 @@ impl RelationalBranchRetentionOwner {
             if !retired {
                 continue;
             }
-            let Some(envelope) = root.canonical_envelope() else {
+            let Some(receipt) = root.commit_receipt() else {
                 continue;
             };
-            let version = envelope.commit.version_id;
+            let version = receipt.version_id;
             let schema = root.schema_authority().schema_version();
             let id = root.id();
             let liveness = bindings

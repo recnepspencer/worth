@@ -44,7 +44,11 @@ impl ObservedRelationalMemoryCommit {
         super::created_row::read_created_entity(
             execution,
             self.semantic.semantic(),
-            self.positioned.envelope(),
+            &self
+                .positioned
+                .envelope()
+                .patch
+                .authoritative_record_patches,
             entity,
         )
     }

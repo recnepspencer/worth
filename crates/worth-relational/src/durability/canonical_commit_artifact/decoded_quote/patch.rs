@@ -30,7 +30,7 @@ pub(super) fn quote(
     })?;
     Ok(bytes)
 }
-fn record(
+pub(super) fn record(
     value: BorrowedPayload<'_>,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<OwnerAllocation, Refusal> {

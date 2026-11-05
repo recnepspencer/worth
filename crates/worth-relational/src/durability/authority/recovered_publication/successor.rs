@@ -48,7 +48,7 @@ impl RecoveredRelationalRuntimeAuthority {
             .ok_or(Refusal::MissingRecoveredImage)?;
         let mut selected: Option<Recorded> = None;
         for descriptor in observations {
-            if descriptor.branch_id() != &effect.source_envelope().branch_context
+            if descriptor.branch_id() != effect.branch()
                 || descriptor.posture() != RelationalBranchBasisPosture::Live
             {
                 continue;

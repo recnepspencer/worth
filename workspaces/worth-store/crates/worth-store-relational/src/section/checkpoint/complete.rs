@@ -13,8 +13,8 @@ use worth_store::physical_runtime::{AnchoredRecordMember, AnchoredRecordMemberLo
 /// A genuine Native Complete capture and its SAME Store framing/selection owner.
 /// Ordinary prepared sections cannot construct or become this result.
 pub struct PreparedCompleteRelationalSection {
-    complete: CompleteRelationalNativeCheckpoint,
-    publication: SectionPublication,
+    pub(super) complete: CompleteRelationalNativeCheckpoint,
+    pub(super) publication: SectionPublication,
 }
 
 /// Preparation access to the original Section; idle clones retain no service,
@@ -50,6 +50,25 @@ impl RelationalSectionCompleteCheckpointPreparation {
         &self,
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<PreparedCompleteRelationalSection, Denial> {
+        let (complete, source, selection) = self.capture_native(execution)?;
+        let mut publication = SectionPublication::prepare_complete(&source, &complete, execution)?;
+        publication.custody.selection = Some(selection);
+        Ok(PreparedCompleteRelationalSection {
+            complete,
+            publication,
+        })
+    }
+    pub(super) fn capture_native(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<
+        (
+            CompleteRelationalNativeCheckpoint,
+            std::sync::Arc<crate::cold_source::StoreColdSource>,
+            std::sync::Arc<dyn super::super::RelationalCheckpointSelectionSource>,
+        ),
+        Denial,
+    > {
         execution.consult().map_err(Denial::Execution)?;
         // Keep both original Store owners through the Native operation and
         // framing. Neither an upgraded runtime nor its services are retained here.
@@ -68,16 +87,13 @@ impl RelationalSectionCompleteCheckpointPreparation {
                 },
             )
             .map_err(Denial::Capture)?;
-        let mut publication = SectionPublication::prepare_complete(&source, &complete, execution)?;
-        publication.selection = Some(selection);
-        Ok(PreparedCompleteRelationalSection {
-            complete,
-            publication,
-        })
+        Ok((complete, source, selection))
     }
 }
 
 impl PreparedCompleteRelationalSection {
+    pub const HOME_ADMISSION_PROTOCOL: worth_foundational::facade::BoundaryProtocolIdentity =
+        super::super::admission_section::PROTOCOL;
     pub fn validate_publication(&self) -> Result<(), Denial> {
         self.publication
             .validate_publication(self.complete.checkpoint())

@@ -1,6 +1,15 @@
 //! Immutable vocabulary exchanged by durable owner ports.
 
+mod checkpoint_admission;
+mod native_checkpoint_reference;
+pub use native_checkpoint_reference::{
+    NativeCheckpointBranchObservation, NativeCheckpointBranchReference,
+    NativeCheckpointBranchTarget,
+};
 mod home_binding;
+pub use checkpoint_admission::{
+    CheckpointAdmissionCut, CheckpointAdmissionScope, CheckpointProductBindingIdentity,
+};
 mod world_identity;
 mod world_journal;
 pub use world_identity::*;

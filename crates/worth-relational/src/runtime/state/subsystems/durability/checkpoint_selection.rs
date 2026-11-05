@@ -13,6 +13,8 @@ pub(crate) struct RelationalCheckpointManifestSelection {
 }
 #[derive(Debug, Clone)]
 struct CheckpointSelectionState {
+    admission: Option<crate::durability::checkpoint_admission::CheckpointAdmissionBinding>,
+    admission_loan: bool,
     directory: Option<NativeCheckpointDirectoryEdge>,
     acknowledged_index_definition_frontier: u64,
     initial_inputs:
@@ -21,6 +23,8 @@ struct CheckpointSelectionState {
 impl Default for CheckpointSelectionState {
     fn default() -> Self {
         Self {
+            admission: None,
+            admission_loan: false,
             directory: None,
             acknowledged_index_definition_frontier: 1,
             initial_inputs: None,
@@ -37,6 +41,52 @@ pub(crate) struct RelationalCheckpointManifestPublication {
 }
 
 impl RelationalCheckpointManifestSelection {
+    pub(crate) fn install_admission_owner(
+        &self,
+        owner: worth_proof::RelationalReadmitted<
+            crate::durability::checkpoint_admission::CheckpointAdmissionBinding,
+        >,
+    ) -> Result<(), crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal>
+    {
+        owner.consume(|owner| {
+            let mut state = self.selected.lock().unwrap_or_else(|cause| cause.into_inner());
+            if state.admission.is_some() {
+                return Err(crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal::OwnerUnavailable);
+            }
+            state.admission = Some(owner);
+            Ok(())
+        })
+    }
+    pub(crate) fn admitted_commit(
+        &self,
+        entry: &crate::history::RelationalCommitIndexEntry,
+    ) -> Result<
+        Option<crate::durability::checkpoint_admission::CheckpointAdmittedCommit>,
+        crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal,
+    > {
+        let owner = self
+            .selected
+            .lock()
+            .unwrap_or_else(|cause| cause.into_inner())
+            .admission
+            .clone();
+        match owner {
+            Some(owner) => owner.commit(entry),
+            None => Ok(None),
+        }
+    }
+    pub(crate) fn matches_admitted_source(
+        &self,
+        commit: &crate::durability::checkpoint_admission::CheckpointAdmittedCommit,
+        source: &Arc<dyn RelationalDurableColdSource>,
+    ) -> bool {
+        self.selected
+            .lock()
+            .unwrap_or_else(|cause| cause.into_inner())
+            .admission
+            .as_ref()
+            .is_some_and(|binding| binding.matches_source(commit, source))
+    }
     pub(crate) fn snapshot(&self) -> Option<Arc<RelationalCheckpointDirectory>> {
         self.selected
             .lock()

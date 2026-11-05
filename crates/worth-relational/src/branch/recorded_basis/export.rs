@@ -45,6 +45,35 @@ impl RelationalRuntime {
                     .map(|artifact| artifact.envelope_residency())
                     .or_else(|| self.history.performed_envelope_residency(commit_id))
                     .ok_or(Refusal::MissingPerformedCommit { commit_id })?;
+                if let Some(crate::branch::RelationalRootCommitEvidence::Checkpoint(commit)) =
+                    basis.inner.root.commit_evidence()
+                {
+                    let entry = commit.index();
+                    let (actual, source) = cell
+                        .source_placement()
+                        .ok_or(Refusal::CanonicalMismatch { commit_id })?;
+                    if !self
+                        .durability
+                        .checkpoint_selection()
+                        .matches_admitted_source(commit, &source)
+                        || actual.as_ref() != entry
+                        || entry.commit.commit_id != commit_id
+                        || entry.commit.version_id.0 != target.version_id()
+                        || basis.inner.root.descriptor() != Some(target.roots())
+                    {
+                        return Err(Refusal::CanonicalMismatch { commit_id });
+                    }
+                    return RecordedRelationalComponentReference::copy_original(
+                        execution,
+                        basis.descriptor(),
+                        Some(copying::CanonicalDescription {
+                            receipt: &entry.commit,
+                            position: entry.position,
+                            artifact_digest: entry.payload_digest,
+                            roots: &entry.root,
+                        }),
+                    );
+                }
                 let positioned = if cell.source_placement().is_some() {
                     cell.readmit_original_positioned(execution)
                 } else {

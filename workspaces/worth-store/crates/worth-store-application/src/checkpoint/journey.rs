@@ -12,8 +12,12 @@ pub(crate) fn checkpoint(
     owner: &HomeCheckpointOwner,
     world: Option<&worth_runtime_world::facade::WorldCheckpointPort>,
     execution: &ExecutionRequest<'_, '_>,
-    capture: impl FnOnce() -> Result<
-        worth_store_relational::PreparedCompleteRelationalSection,
+    capture: impl FnOnce(
+        worth_foundational::facade::HomeIdentity,
+        [u64; 3],
+        [u8; 32],
+    ) -> Result<
+        worth_store_relational::CapturedHomeRelationalSection,
         worth_store_relational::RelationalSectionCheckpointDenial,
     >,
     observer: Option<&super::step_custody::StepObserver<'_>>,

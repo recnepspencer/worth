@@ -364,8 +364,9 @@ pub use crate::application_home::{
     WorthQueryApplicationHome, WorthQueryApplicationHomeCheckpoint,
     WorthQueryApplicationHomeCheckpointDenial, WorthQueryApplicationHomeCheckpointInspection,
     WorthQueryApplicationHomeCheckpointJournalObservation,
-    WorthQueryApplicationHomeCheckpointLimits, WorthQueryApplicationHomeCloseRefused,
-    WorthQueryApplicationHomeClosed, WorthQueryApplicationHomeLocation,
-    WorthQueryApplicationHomeOpenRefused, WorthQueryApplicationHomeOpeningCloseRefused,
-    WorthQueryApplicationHomeOpeningClosed, WorthQueryApplicationHomeRequest,
+    WorthQueryApplicationHomeCheckpointLimits, WorthQueryApplicationHomeCloseOutcome,
+    WorthQueryApplicationHomeCloseRefused, WorthQueryApplicationHomeClosed,
+    WorthQueryApplicationHomeLocation, WorthQueryApplicationHomeOpenRefused,
+    WorthQueryApplicationHomeOpeningCloseRefused, WorthQueryApplicationHomeOpeningClosed,
+    WorthQueryApplicationHomeRequest,
 };

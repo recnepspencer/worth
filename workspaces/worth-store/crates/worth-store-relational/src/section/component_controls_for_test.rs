@@ -10,6 +10,23 @@ use worth_relational::facade::{
 use worth_store::physical_runtime::{AdmittedRecordPlacementPolicy, ServingPhysicalRuntime};
 
 impl RelationalStoreSection {
+    pub fn prepare_captured_complete_checkpoint_for_test(
+        &self,
+        checkpoint: worth_relational::facade::durability::CompleteRelationalNativeCheckpoint,
+        home: worth_foundational::facade::HomeIdentity,
+        world_through: [u64; 3],
+        world_digest: [u8; 32],
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<super::CapturedHomeRelationalSection, RelationalSectionCheckpointDenial> {
+        self.capture_complete_home_checkpoint(
+            checkpoint,
+            home,
+            world_through,
+            world_digest,
+            execution,
+        )
+    }
+
     pub fn attach_with_read_observer_for_test(
         definition: RelationalRuntimeDefinition,
         serving: Arc<ServingPhysicalRuntime>,

@@ -70,9 +70,9 @@ impl RelationalForkPort {
         let source_head_version = match shared_commit_id {
             Some(commit_id) => Some(
                 source_root
-                    .canonical_envelope()
-                    .filter(|envelope| envelope.commit.commit_id == commit_id)
-                    .map(|envelope| envelope.commit.version_id)
+                    .commit_receipt()
+                    .filter(|receipt| receipt.commit_id == commit_id)
+                    .map(|receipt| receipt.version_id)
                     .ok_or(RelationalForkDenial::MissingArtifact)?,
             ),
             None => None,

@@ -3,8 +3,8 @@
 pub use crate::checkpoint::{
     ApplicationHomeCheckpoint, ApplicationHomeCheckpointDenial,
     ApplicationHomeCheckpointInspection, ApplicationHomeCheckpointJournalObservation,
-    ApplicationHomeCheckpointLimits, ApplicationHomeCheckpointOperation,
-    ApplicationHomeCheckpointRecovery, HomeManifestDenial,
+    ApplicationHomeCheckpointLimits, ApplicationHomeCheckpointMaintenanceDenial,
+    ApplicationHomeCheckpointOperation, ApplicationHomeCheckpointRecovery, HomeManifestDenial,
     RetiredApplicationHomeCheckpointOperation, HOME_CHECKPOINT_PROTOCOL, HOME_CHECKPOINT_VERSION,
 };
 pub use crate::close::{

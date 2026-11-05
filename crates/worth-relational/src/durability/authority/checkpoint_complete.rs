@@ -1,5 +1,7 @@
 //! Original-source reconstruction is DATA processing under one admitted operation.
+pub(in crate::durability) mod admission_projection;
 mod branches;
+pub use admission_projection::CapturedRelationalCheckpointAdmissionImage;
 mod canonical;
 mod capture;
 mod contracts;
@@ -13,6 +15,7 @@ mod roots;
 mod schemas;
 mod source;
 mod symbols;
+mod verified_originals;
 use crate::durability::data::{
     RelationalNativeCheckpoint, RelationalNativeCheckpointCaptureDenial as Denial,
 };
@@ -24,8 +27,12 @@ pub struct CompleteRelationalNativeCheckpoint {
     checkpoint: RelationalNativeCheckpoint,
     initial_predecessor: Option<[u8; 32]>,
     source_artifact: crate::durability::source_initial_inputs::RelationalCompleteSourceArtifact,
+    admission_image: CapturedRelationalCheckpointAdmissionImage,
 }
 impl CompleteRelationalNativeCheckpoint {
+    pub fn admission_image(&self) -> &CapturedRelationalCheckpointAdmissionImage {
+        &self.admission_image
+    }
     /// The recorded predecessor of this producer's accepted initialization.
     pub fn initial_predecessor(&self) -> Option<[u8; 32]> {
         self.initial_predecessor
