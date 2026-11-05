@@ -66,7 +66,10 @@ pub(super) const FACTORIES: &[&str] = &[
 
 pub(super) fn ownership(name: &str) -> (&'static str, &'static str) {
     if name == "install_home_checkpoint_maintenance" {
-        ("application-home-checkpoint-maintenance", "workspaces/worth-store/crates/worth-store-application/")
+        (
+            "application-home-checkpoint-maintenance",
+            "workspaces/worth-store/crates/worth-store-application/",
+        )
     } else if name == "begin_fresh_home_initialization" {
         ("native-fresh-initialization", "crates/worth-relational/")
     } else if name == "prepare_fresh_home_schema_installation" {
