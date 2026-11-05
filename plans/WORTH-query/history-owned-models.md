@@ -648,3 +648,40 @@ cross-document participants for the next inverse as well. Full publication
 coverage still gates admission. Add a real producer succession that retires its
 old member and creates a replacement before navigation: selecting the older
 transferred source must restore the old ID and retire the replacement.
+
+## D1178 immutable currentness evidence: boundary and next slice
+
+The adversarial case is an unchanged selected producer whose source and output
+slots receive fresh Native revisions during selection. Comparing its original
+facts directly rejects a healthy version; rewriting those facts or running its
+producer would erase the original evidence. Conversely, accepting equal values
+across an arbitrary ABA or allowing later changed fields through is unsound.
+
+Boundary review: the Native canonical OwnedGraphSelection names its exact
+selected basis and full-generation restored members. The committed restoration
+root supplies the fresh baseline. Native's existing exact projection reads own
+field/aspect revision semantics and storage denials. Query's original RecordedOutput,
+source facts, performed origin, upstream evidence and sealed witness remain
+immutable; the existing full verifier continues to judge them and the installed
+build. No descriptive history step, copied value or caller-supplied member list
+may substitute for that canonical selection. External entities continue through
+ordinary current reads. A field changed after restoration cannot use the bridge,
+even if its value later returns to the selected value.
+
+Implement the Native read-evidence prerequisite first, under the exact projection
+owner. Admit only two genuine observations whose committed graph-selection
+artifact names that exact selected basis. Retain the original roots and artifact,
+with bounded request work and funded backing. For a canonical restored member,
+compare the final field/aspect revision to the fresh restoration baseline before
+comparing the original expected revision to the selected basis. Unrestored
+members cannot enter that comparison. This read evidence grants no mutation,
+producer settlement or authorization. Use request_stage checkpoints throughout.
+
+Court genuine source changes and selection, original immutable field/aspect
+stamps, later relevant and unrelated field changes, ABA, an outside entity,
+wrong selected basis, ordinary non-selection commit, foreign runtime, bounded
+requests, and worker-only execution. Mutate the membership, baseline and exact
+selected-basis checks. Then integrate this evidence at the existing Query full
+verifier together with exact selected Product lineage transport; that subsequent
+cutover must preserve the branch/source fence for every ordinary verification
+and prove two-family zero-contact undo/redo before claiming #57.

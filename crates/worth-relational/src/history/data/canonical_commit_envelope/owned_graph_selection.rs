@@ -70,6 +70,12 @@ impl CanonicalOwnedGraphSelection {
             .iter()
             .map(|entity| (entity.id, entity.kind))
     }
+    pub(crate) fn selected_entity_kind(&self, id: EntityId) -> Option<KindId> {
+        self.selected_entities
+            .binary_search_by_key(&id, |entity| entity.id)
+            .ok()
+            .map(|index| self.selected_entities[index].kind)
+    }
     pub(crate) fn selected_relations(&self) -> &[StructuralRelationRecord] {
         &self.selected_relations
     }
