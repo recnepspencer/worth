@@ -1,6 +1,6 @@
 //! The ordinary Source scan is the independent inclusive-box membership oracle.
 use super::super::super::authentication;
-use super::super::{host, prefix};
+use super::super::host;
 use super::{
     coordinates::{Binding, Coordinates},
     provider::{BoxIndex, Calls},

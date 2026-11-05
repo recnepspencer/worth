@@ -29,7 +29,7 @@ pub(super) fn declare(
     let schema = schema
         .unit(field::FixtureLength::reference())
         .field(Item::reference(), field::ItemBounds::reference())
-        .application_query(query::source_definition(false))
+        .application_query(query::source_definition())
         .application_query_binding::<query::SourceBinding>()
         .application_query(query::public_definition())
         .application_query_binding::<query::PublicBinding>()

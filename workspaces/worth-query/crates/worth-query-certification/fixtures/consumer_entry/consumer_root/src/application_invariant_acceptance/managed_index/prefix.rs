@@ -2,7 +2,8 @@
 use super::{query, schema::Catalog};
 use crate::application_invariant_acceptance::managed_index::structure_fault;
 use crate::application_invariant_acceptance::managed_index::{
-    prefix_cost_stages, prefix_observation::Calls,
+    prefix_cost_stages,
+    prefix_observation::{Calls, OBSERVED_COORDINATES},
 };
 use std::sync::{atomic::Ordering, Arc};
 use worth_query_consumer_values::{

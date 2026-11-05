@@ -1,6 +1,6 @@
 //! Fresh capability/READ proofs precede every root lookup or callback.
 use super::super::super::authentication;
-use super::super::{host, prefix};
+use super::super::host;
 use super::{
     access,
     coordinates::Coordinates,

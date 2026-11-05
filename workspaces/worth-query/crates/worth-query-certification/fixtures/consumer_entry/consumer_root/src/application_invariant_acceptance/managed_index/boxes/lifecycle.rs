@@ -1,5 +1,5 @@
 //! BVH-specific stopped construction and physical backing ownership.
-use super::super::{host, lifecycle, prefix};
+use super::super::{host, lifecycle};
 use super::{geometry, query, BoxIndex, Calls, Coordinates};
 use crate::application_invariant_acceptance::authentication;
 use crate::application_invariant_acceptance::managed_index::prefix_observation;

@@ -1,10 +1,10 @@
 use super::super::super::{
-    host,
-    prefix::{self, Node, PrefixIndex, Provider, Stop},
+    prefix::{Node, PrefixIndex, Provider, Stop},
     query,
     schema::Catalog,
 };
 use worth_query_consumer_values::PrefixIndexDenial;
+use worth_query_decl::facade::application_query::ApplicationManagedIndexBinding;
 use worth_query_host::facade::primary_graph::*;
 
 /// A genuine incompatible executable version for the installation boundary twin.

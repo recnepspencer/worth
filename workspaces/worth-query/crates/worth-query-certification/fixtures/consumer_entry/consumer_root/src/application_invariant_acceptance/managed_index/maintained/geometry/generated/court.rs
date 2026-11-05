@@ -1,9 +1,7 @@
 //! Actual generated endpoints cross logical Source judgment and physical cutover.
 use super::super::super::super::super::authentication;
 use super::super::super::super::lifecycle;
-use super::super::super::{
-    bounds::Coordinates, host, prefix, rule as prefix_rule, schema::Catalog,
-};
+use super::super::super::{bounds::Coordinates, host, rule as prefix_rule, schema::Catalog};
 use super::super::{authoring, provider, query, rule, schema::*, Configuration};
 use super::{operation, producer, program, request as action, source};
 use crate::application_invariant_acceptance::managed_index::prefix_observation;

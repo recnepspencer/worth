@@ -4,7 +4,7 @@ use std::sync::{
     Mutex,
 };
 use worth_query_host::facade::primary_graph::WorthQueryManagedIndexSourceSlot;
-const OBSERVED_COORDINATES: usize = 8;
+pub(crate) const OBSERVED_COORDINATES: usize = 8;
 #[derive(Default)]
 pub struct Calls {
     #[cfg(test)]

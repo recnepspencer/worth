@@ -1,7 +1,7 @@
 //! Refuse remains fixed through construction, warm use, eviction and public refill.
 use super::super::super::authentication;
 use super::super::lifecycle;
-use super::{directory, host, mutation, prefix, query, rule};
+use super::{host, mutation, prefix, query, rule};
 use crate::application_invariant_acceptance::managed_index::directory_edit;
 use crate::application_invariant_acceptance::managed_index::prefix_observation;
 use stats_alloc::Region;
@@ -175,6 +175,7 @@ fn journey() {
         .unwrap()
         .iter()
         .any(|record| record
+            .source
             .after
             .iter()
             .filter(|row| row.name == "taken")

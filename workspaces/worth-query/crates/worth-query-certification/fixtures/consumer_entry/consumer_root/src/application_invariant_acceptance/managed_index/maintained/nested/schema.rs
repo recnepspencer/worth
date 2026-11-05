@@ -43,7 +43,7 @@ pub(super) fn declare(
         .relation(Children::reference(), Item::reference(), Item::reference())
         .principal_binding(CatalogPrincipal::reference());
     authoring::declare(mutation::declare(schema))
-        .application_query(query::source_definition(false))
+        .application_query(query::source_definition())
         .application_query_binding::<query::SourceBinding>()
         .application_query(query::prefix_definition())
         .application_query_binding::<query::PrefixBinding>()

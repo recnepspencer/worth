@@ -64,7 +64,7 @@ pub(super) fn declare(
     paths::declare(history::declare(plain::declare(authoring::declare(
         mutation::declare(schema),
     ))))
-    .application_query(query::source_definition(false))
+    .application_query(query::source_definition())
     .application_query_binding::<query::SourceBinding>()
     .application_query(query::prefix_definition())
     .application_query_binding::<query::PrefixBinding>()

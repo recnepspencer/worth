@@ -1,5 +1,5 @@
 //! Real managed Source epochs cross ordinary producer reuse and fresh delivery.
-use super::super::super::{authoring::Edit, host, prefix, query, rule, schema::Catalog};
+use super::super::super::{authoring::Edit, host, query, rule, schema::Catalog};
 use super::{producer, program};
 use crate::application_invariant_acceptance::managed_index::prefix_observation;
 use crate::application_invariant_acceptance::{authentication, managed_index::lifecycle};

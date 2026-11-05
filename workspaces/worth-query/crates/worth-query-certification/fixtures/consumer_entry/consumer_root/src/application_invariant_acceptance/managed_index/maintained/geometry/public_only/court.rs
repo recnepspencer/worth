@@ -1,6 +1,6 @@
 //! Genuine public maintenance without a rule referencing this index.
 use super::super::super::super::super::authentication;
-use super::super::super::{host, prefix, rule as prefix_rule};
+use super::super::super::{host, rule as prefix_rule};
 use super::super::{
     authoring::Edit,
     court::{commit, expected, setup, values},

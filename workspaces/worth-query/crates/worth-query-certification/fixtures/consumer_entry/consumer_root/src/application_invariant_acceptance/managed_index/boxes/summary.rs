@@ -1,6 +1,6 @@
 //! A genuine Source-complete BVH with false leaf summaries cannot become Ready.
 use super::super::super::authentication;
-use super::super::{host, lifecycle, prefix};
+use super::super::{host, lifecycle};
 use super::*;
 use crate::application_invariant_acceptance::managed_index::prefix_observation;
 use std::sync::{atomic::Ordering, Arc};
