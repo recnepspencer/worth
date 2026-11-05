@@ -33,3 +33,11 @@ The 59 prior non-config source hashes are byte-identical; only the exact constru
 The older funding-controls-native.log is a failed13-case packet (10/3/0), NOT an all-green lane. Its nine existing Native cases plus shared-provider custody passed; final top-cost-controls supersedes its three failed byte/peer cases. The existing growth and Native cold recapture/index/retry proofs are named successes in that raw log. Historical calibration failures and all earlier gates remain recorded in funding-final-lanes.md; no failed log is rewritten.
 
 No new final-source instrumentation or exhaustive qualification was run this turn. The older head41/covered0 sample16,234,730 versus16,240,012 predates the final contract-walk precharge and is not represented as a new final-source measurement.
+
+## Clean committed source identity
+
+|Log|HEAD|Exit|P/F/I|Meaning|
+|---|---|---:|---|---|
+|funding-landing-commit-identity.log|bd8d5b6af58d540deba439ebbbb82e6a297c258d|0|0/0/0|git status short was empty; all61 reviewer hashes and committed source blobs match; trailer verified|
+
+The final documentation-only commit records this funding SHA, progress, source provenance and review resolution. It changes no qualified source bytes and causes no lane rerun.

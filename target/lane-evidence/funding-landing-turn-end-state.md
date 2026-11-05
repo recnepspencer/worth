@@ -1,6 +1,6 @@
 # Funding turn-end state
 
-APPROVED FUNDING CANDIDATE: fresh independent review APPROVE. Parent HEAD `5a49620b1d2c6efe405d7ff97870243b21d87fc0`; implementation commit follows this reviewed frozen state; its identity is recorded in funding-landing-commit-identity.json.
+FUNDING LANDED `bd8d5b6af58d540deba439ebbbb82e6a297c258d`. Fresh independent review APPROVE. Qualification parent `5a49620b1d`; frozen61 is verified against the committed source tree by funding-landing-commit-identity.json and its clean-HEAD lane. All funding source and generated telemetry are committed; no WIP or parked work remains.
 
 All prior work is preserved on codex/m3-p3-reopen; nothing is parked. No integration merge, branch switch, push or deletion. Current full source/config identity: funding-landing-source-state.json (61 paths). Root/store/runtime evidence: funding-landing-lanes.md, with historical attempts in funding-final-lanes.md. The requested two-byte controls, provider custody and peer history are qualified through genuine external court paths; ceilings and 8/65536 payload contrast are unchanged.
 
@@ -74,3 +74,5 @@ Existing entries are byte-for-byte preserved apart from Git newline normalizatio
 Final independent review APPROVE, with no blocking finding. Numbered assessments1-7 and the accepted rule3/BC9002 follow-ups are resolved in funding-landing-review-resolution.md. Source stays frozen61 through commit.
 
 Commit hygiene: git diff --cached --check initially flagged a necessary blank context marker inside the newly added proposal patch artifact. That artifact now uses the equivalent zero-context unified diff of the same reviewed source change, avoiding trailing context whitespace; no Rust or raw lane output changed.
+
+Committed source proof: funding-landing-commit-identity.log runs at the clean funding HEAD above, exit0/counts0/0/0. All61 raw file hashes still match the reviewer snapshot, and all61 Git blobs match after only Git newline normalization. The final evidence-only commit changes no product source, policy, test or configuration.
