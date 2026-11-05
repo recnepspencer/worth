@@ -224,7 +224,7 @@ pub(super) type NestedHost = WorthQueryProgramApplicationRuntime<
     super::nested::composition::Program,
 >;
 pub(super) fn install_nested(
-    provider: Arc<super::nested::prefix_observation::Calls>,
+    provider: Arc<prefix_observation::Calls>,
     records: Arc<super::nested::rule::Calls>,
 ) -> NestedHost {
     use super::nested::{
@@ -249,7 +249,7 @@ pub(super) type EventHost = WorthQueryProgramApplicationRuntime<
     super::events::composition::Program,
 >;
 pub(super) fn install_events(
-    provider: Arc<super::events::prefix_observation::Calls>,
+    provider: Arc<prefix_observation::Calls>,
     records: Arc<super::events::rule::Calls>,
 ) -> EventHost {
     use super::events::{

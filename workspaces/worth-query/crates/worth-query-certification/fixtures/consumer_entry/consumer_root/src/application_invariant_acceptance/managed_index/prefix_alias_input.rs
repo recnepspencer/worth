@@ -4,3 +4,8 @@ pub struct FindPrefixAlias {
     pub directory: String,
     pub prefix: String,
 }
+impl FindPrefixAlias {
+    pub fn scope(input: Self) -> String {
+        input.directory
+    }
+}

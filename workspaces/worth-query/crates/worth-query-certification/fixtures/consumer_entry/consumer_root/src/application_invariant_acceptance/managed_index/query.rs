@@ -234,5 +234,5 @@ worth_query_query_binding!(pub PrefixAliasBinding for FindPrefixAlias, schema Ca
     result ResultBinding, principal CatalogPrincipal, mapping ExternalMapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
     scope Directory, DirectoryFacts, DirectoryIdentity, String, ReadOnly, NoApplicationUnit,
-    field DirectoryIdentity::reference(), value |input: FindPrefixAlias| input.directory, limits results 16
+    field DirectoryIdentity::reference(), value FindPrefixAlias::scope, limits results 16
 );
