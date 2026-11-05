@@ -86,7 +86,7 @@ worth_query_declaration::worth_query_application_schema!(schema Missing {
 });
 impl Fixture for Missing {}
 
-pub fn installed() -> domain::WorthQueryInstalledApplicationSchema<Actual> {
+fn installed() -> domain::WorthQueryInstalledApplicationSchema<Actual> {
     let declaration = Actual::declaration().unwrap();
     let package = domain::WorthQueryPortableDomainPackage::new(
         domain::WorthQueryPortableDomainIdentity::new(Actual::OWNER, Actual::MAJOR, Actual::MINOR),

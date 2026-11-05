@@ -28,7 +28,7 @@ fn no_position_policy_preserves_funded_history_and_original_reader_currentness()
         worth_runtime_world::facade::RuntimeWorldBudgets::without_policy_limits(),
         clock,
         resources,
-        *execution.policy_for_test(),
+        policy,
     );
     let configured = match execution.authority_into_for_test() {
         Some(authority) => configured.with_execution_authority(authority),

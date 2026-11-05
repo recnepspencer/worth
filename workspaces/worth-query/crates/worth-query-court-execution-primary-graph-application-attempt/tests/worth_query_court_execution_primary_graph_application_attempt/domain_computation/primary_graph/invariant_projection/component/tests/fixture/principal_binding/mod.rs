@@ -12,7 +12,7 @@ worth_query_field!(PrincipalKey for Schema, Principal, PrincipalData: u64 => U64
 pub struct MappingTarget;
 pub struct IdentityBinding;
 
-pub fn target() -> ApplicationRelationRef<Schema, MappingTarget, Mapping, Principal> {
+fn target() -> ApplicationRelationRef<Schema, MappingTarget, Mapping, Principal> {
     ApplicationRelationRef::from_schema_identifiers(
         "MappingTarget",
         "Mapping",
@@ -20,7 +20,7 @@ pub fn target() -> ApplicationRelationRef<Schema, MappingTarget, Mapping, Princi
         ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
     )
 }
-pub fn reference() -> ApplicationPrincipalBindingRef<
+fn reference() -> ApplicationPrincipalBindingRef<
     Schema,
     IdentityBinding,
     Mapping,
