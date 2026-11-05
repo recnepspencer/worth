@@ -124,7 +124,7 @@ where
                 cause,
             ))
         })?;
-    let output_source_memory = if output_profile.is_some() {
+    let output_source_memory = if output_profile.is_some() || installed.definition().parts().model_domain == worth_query_declaration::facade::application_history::ApplicationHistoryModelDomain::OwnedModelGraph {
         reserve_arc::<crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation>(&execution)
             .map_err(|cause| Denial::Document(super::super::WorthQueryDocumentHistoryDenial::Recording(cause)))?
     } else {

@@ -1,3 +1,4 @@
+mod native_route;
 mod observation_reader;
 
 pub(crate) mod retained_candidates;

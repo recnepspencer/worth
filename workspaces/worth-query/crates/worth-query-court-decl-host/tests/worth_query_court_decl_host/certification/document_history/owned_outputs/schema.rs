@@ -104,8 +104,8 @@ fn declare(
     let schema = query::declare(member_delete::declare(member_edit::declare(edit::declare(
         navigation::declare(schema),
     ))));
-    downstream::declare(upstream::declare(restricted::declare(child::declare(
-        second::declare(first::declare(permission::declare(schema))),
+    restricted_owned::declare(downstream::declare(upstream::declare(restricted::declare(
+        child::declare(second::declare(first::declare(permission::declare(schema)))),
     ))))
     .application_history(
         ApplicationHistoryDefinition::<Schema, History>::for_binding(

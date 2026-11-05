@@ -89,6 +89,19 @@ impl<'runtime, S: ApplicationSchema> WorthQueryDocumentHistoryNavigation<'runtim
                 }
             }
             progress.retry_prior_cleanup(phase)?;
+            if progress.ownership.is_some()
+                && progress.output_profile.is_none()
+                && matches!(
+                    progress.phase,
+                    NavigationPhase::AwaitingOutputs { .. }
+                        | NavigationPhase::Selecting { _outputs: None, .. }
+                )
+                && !progress.accept_verified_restoration(phase)?
+            {
+                return Err(Denial::RequiresSemanticCorrection(
+                    WorthQueryHistoryNavigationEligibilityDenial::RequiredOutputs,
+                ));
+            }
             if matches!(progress.phase, NavigationPhase::Selecting { .. }) {
                 if let Some(pause) = &progress.selection_pause {
                     pause.pause();

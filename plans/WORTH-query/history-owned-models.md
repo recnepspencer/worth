@@ -1084,3 +1084,44 @@ failed families, retain all final-endpoint checks, and join recording. Public
 courts must distinguish the healthy path from source disclosure, rather than
 merely counting producers. No issue READY until those paths and final workspace
 qualification are complete.
+
+
+### Direct restored-route verification checkpoint
+
+Master `0173a4da61` (root closure retirement carriage) is merged as `370cbc4b19`.
+The fallback collection is committed at `39b71f4cfd`; the direct-verification
+continuation is qualified separately. Its canonical route lookup uses Native's
+exact selected family/scope/partition/version and the existing metered lineage
+reader. The output-currentness owner checks the installed producer edition,
+actual current ownership pairing, source facts, witness and upstreams. The
+navigation phase owner can progress the untouched committed restoration directly
+to Selecting; it issues no synthetic root or settlement. A later adoption retry
+repeats that verification. ScopeEntityRecord keeps its previous path.
+
+All 26 public owned-output courts pass in direct-owned-3.log. Healthy selection
+with or without configured fallback roots projects zero producer sources and
+contacts zero producers, in serial and worker-only requests. A source-scope-owned
+restricted family remains healthy even when C denies its producer-source READ;
+verification does not attempt source admission or borrow D grants. The separate
+D1207 fallback refusal continues to require that permission at C. Expected-route
+coverage courts now select a genuinely stale step, because an omitted healthy
+family can be verified directly without an SDK root.
+
+Three compiled mutants fail their intended courts and restore SHA256 exactly:
+reopen healthy original roots; skip direct currentness (observed stale 10/1001
+instead of 20/1002); skip the non-restored-root guard (missing regenerated output
+for the restored-only independent source). The pristine whole history and static
+checks run after the mutations. This is not issue completion.
+
+Remaining D1119 boundary: when only one independent leaf family needs fallback,
+the current forest still opens every configured tree. Next, retain original trees
+only for actual fallback, and let Native/currentness verify skipped healthy leaf
+routes again at the single receipt-derived final endpoint. The complete fallback
+trees retain their discovery dependencies and original disposal owners; no
+settlement is invented for a skipped root. A registered non-leaf or non-restored
+root conservatively keeps its original tree. The public mixed fixture must show
+one stale family regenerated with no healthy source projection, and the later-
+upstream invalidation court must still prevent stale adoption. Then add the real
+changed-build/cold-reopen journey, owner-recorded fallback reasons, multi-tree
+recording, codec-retired selection, remaining issue courts and #56, followed by
+full root/Query comparison to clean current master.

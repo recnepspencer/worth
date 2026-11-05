@@ -60,9 +60,12 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             )
             .map_err(Denial::Value)?
             .bind_admission(admission);
-        let (_cell, progress) =
+        let (_cell, mut progress) =
             navigation.registered_progress(phase, self, admission, meaning, Some(profile))?;
         let key = progress.meaning.canonical_key();
+        if progress.accept_verified_restoration(phase)? {
+            return Ok(HistoryOutputLookup::Pending { key });
+        }
         let source_phase = match &progress.phase {
             NavigationPhase::AwaitingOutputs { .. } => HistoryOutputLookupPhase::AwaitingOutputs,
             NavigationPhase::Selecting { .. } => HistoryOutputLookupPhase::Selecting,

@@ -49,7 +49,10 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
             super::super::WorthQueryDocumentHistoryDenial::ForeignModel,
         ));
     }
-    if source.root_posture.is_some() && outputs.is_none() {
+    if source.root_posture.is_some()
+        && outputs.is_none()
+        && definition.model_domain == ApplicationHistoryModelDomain::ScopeEntityRecord
+    {
         return Err(correction(Eligibility::RequiredOutputs));
     }
     if installed.has_external_operation() {
@@ -237,14 +240,6 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
                     transaction,
                     graph,
                 )?;
-                if outputs.is_none()
-                    && prepared
-                        .1
-                        .as_ref()
-                        .is_some_and(|custody| !custody.routes.is_empty())
-                {
-                    return Err(correction(Eligibility::RequiredOutputs));
-                }
                 drop(prepared);
                 return Ok(());
             }

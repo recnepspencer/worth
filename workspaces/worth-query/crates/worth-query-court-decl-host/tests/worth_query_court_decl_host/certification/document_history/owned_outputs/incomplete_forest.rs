@@ -7,7 +7,7 @@ fn incomplete(host: &world::Host, fixed: bool) {
     let request = host.request(&principal, &scope);
     let courts::Edited {
         document,
-        before,
+        after,
         selection,
         ..
     } = courts::edited(host, &request, false);
@@ -27,7 +27,15 @@ fn incomplete(host: &world::Host, fixed: bool) {
                     .unwrap_or_else(|(_, cause)| panic!("{cause:?}"))
             })
             .unwrap();
-        require_refusal(host, document, &request, before, selection, model, contacts);
+        require_refusal(
+            host,
+            document,
+            &request,
+            after,
+            selection,
+            model,
+            contacts + 1,
+        );
     } else {
         let document = host
             .with_host_advancement(|phase| {
@@ -42,7 +50,15 @@ fn incomplete(host: &world::Host, fixed: bool) {
                     .unwrap_or_else(|(_, cause)| panic!("{cause:?}"))
             })
             .unwrap();
-        require_refusal(host, document, &request, before, selection, model, contacts);
+        require_refusal(
+            host,
+            document,
+            &request,
+            after,
+            selection,
+            model,
+            contacts + 1,
+        );
     }
 }
 
@@ -89,40 +105,4 @@ fn a_fixed_tree_cannot_hide_another_native_owned_family() {
 fn worker_only_forest_cannot_omit_a_native_owned_family() {
     let _observation = WorthQueryExecutionObservation::install_on_this_thread();
     incomplete(&world::install_worker_only(), false);
-}
-
-#[test]
-fn an_owned_publication_selection_requires_a_verification_driver_before_fork() {
-    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
-    let host = world::install();
-    let scope = request_scope();
-    let principal = authenticate_operator(host.installed_schema(), &scope);
-    let request = host.request(&principal, &scope);
-    let courts::Edited {
-        document,
-        before,
-        selection,
-        ..
-    } = courts::edited(&host, &request, false);
-    let contacts = host.producer_contacts_on_this_thread_for_test();
-    let denial =
-        courts::checkout(&document, &request, before, selection.clone(), 0xf057_04).unwrap_err();
-    assert!(
-        matches!(
-            denial,
-            (
-                "prepare",
-                WorthQueryHistoryNavigationAdvanceDenial::Navigation(
-                    WorthQueryHistoryNavigationDenial::RequiresSemanticCorrection(
-                        WorthQueryHistoryNavigationEligibilityDenial::RequiredOutputs
-                    )
-                )
-            )
-        ),
-        "{denial:?}"
-    );
-    assert_eq!(document.selection(&request).unwrap(), selection);
-    assert_eq!(host.producer_contacts_on_this_thread_for_test(), contacts);
-    host.with_host_advancement(|phase| document.close(&phase).unwrap())
-        .unwrap();
 }

@@ -107,12 +107,12 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
                 );
         }
         let exact = crate::basis::WorthQueryProductObservationLease::new(observation);
-        if self.output_profile.is_some() {
+        if self.output_profile.is_some() || self.ownership.is_some() {
             self.output_source = Some(crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation::from_product_with_memory(
                 self.application, exact.retained_clone(), self.output_source_memory.take(),
             ));
         }
-        self.phase = if self.output_profile.is_some() {
+        self.phase = if self.output_profile.is_some() || self.ownership.is_some() {
             NavigationPhase::AwaitingOutputs {
                 candidate,
                 exact,

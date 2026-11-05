@@ -17,7 +17,13 @@ impl ApplicationFeature<Schema> for Derived {
                     RestrictedInput,
                     ApplicationFeatureInputList<
                         UpstreamInput,
-                        ApplicationFeatureInputList<DownstreamInput, ApplicationFeatureInputLeaf>,
+                        ApplicationFeatureInputList<
+                            DownstreamInput,
+                            ApplicationFeatureInputList<
+                                RestrictedOwnedInput,
+                                ApplicationFeatureInputLeaf,
+                            >,
+                        >,
                     >,
                 >,
             >,
@@ -112,6 +118,15 @@ root!(
     downstream,
     "owned-outputs.start-downstream"
 );
+root!(
+    RestrictedOwnedInput,
+    "restricted-owned-input",
+    StartRestrictedOwned,
+    RestrictedOwnedConnection,
+    RestrictedOwnedTree,
+    restricted_owned,
+    "owned-outputs.start-restricted-owned"
+);
 pub struct Program;
 impl ApplicationProgramDefinition<Schema> for Program {
     type Contributions = (Contribution,);
@@ -119,7 +134,13 @@ impl ApplicationProgramDefinition<Schema> for Program {
         FirstTree,
         (
             SecondTree,
-            (ChildTree, (RestrictedTree, (UpstreamTree, DownstreamTree))),
+            (
+                ChildTree,
+                (
+                    RestrictedTree,
+                    (UpstreamTree, (DownstreamTree, RestrictedOwnedTree)),
+                ),
+            ),
         ),
     )>;
     type Rules = ApplicationRuleLeaf;
@@ -149,6 +170,8 @@ impl ApplicationProgramDefinition<Schema> for Program {
                 .conditional_operation::<upstream::preserve::Operation>()
                 .conditional_operation::<downstream::initial::Operation>()
                 .conditional_operation::<downstream::preserve::Operation>()
+                .conditional_operation::<restricted_owned::initial::Operation>()
+                .conditional_operation::<restricted_owned::preserve::Operation>()
                 .finish(),
         ]
     }

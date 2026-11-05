@@ -160,7 +160,7 @@ family!(
     ModelFacts,
     ModelKey,
     ModelValue,
-    model,
+    producer_model,
     "first",
     "owned-outputs.first.initial",
     "owned-outputs.first.preserve",
@@ -182,7 +182,7 @@ family!(
     ModelFacts,
     ModelKey,
     ModelValue,
-    model,
+    producer_model,
     "second",
     "owned-outputs.second.initial",
     "owned-outputs.second.preserve",
@@ -285,5 +285,28 @@ family!(
     ChildValue,
     ChildOf,
     DownstreamTree,
+    |value: u64| value * 100
+);
+
+family!(
+    restricted_owned,
+    SourceScopeCascade,
+    source,
+    Member,
+    MemberFacts,
+    MemberKey,
+    MemberValue,
+    member,
+    "restricted-owned",
+    "owned-outputs.restricted-owned.initial",
+    "owned-outputs.restricted-owned.preserve",
+    RestrictedOwnedInitial,
+    RestrictedOwnedPreserve,
+    ChildOutput,
+    ChildFacts,
+    ChildKey,
+    ChildValue,
+    ChildOf,
+    RestrictedOwnedTree,
     |value: u64| value * 100
 );

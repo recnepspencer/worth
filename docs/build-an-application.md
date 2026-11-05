@@ -2224,9 +2224,11 @@ output trees with `with_output_trees::<Program, FirstRoot>(..)` followed by
 program continuation and disposal custody. One navigation qualifies the complete
 collection at the endpoint derived from all original publication movements; a
 later fallback cannot leave an earlier family stale. Native supplies the selected
-publication routes independently of the configured collection. This path remains
-under qualification: direct verification without opening healthy original roots
-and multi-tree edit recording are still being completed. See the
+publication routes independently of the configured collection. Healthy restored snapshots verify every Native route through the existing
+currentness owner before opening any original root or disclosing a producer
+source. They need no fallback driver. An actual fallback still freshly admits
+its source at C. Mixed healthy/stale tree progression and multi-tree edit recording
+remain under qualification. See the
 [owned-model plan](../plans/WORTH-query/history-owned-models.md).
 
 To record an isolated edit, consume the attached document with

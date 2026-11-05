@@ -78,6 +78,7 @@ pub struct DeclaredProducerBinding
 }
 
 mod history_group;
+mod implementation;
 pub(crate) mod operation_binding_uniqueness;
 pub(crate) mod output_family_inventory;
 mod pending;

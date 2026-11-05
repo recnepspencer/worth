@@ -48,6 +48,7 @@ pub fn declare(schema: ApplicationSchemaDeclarationBuilder<Schema>) -> Applicati
 }
 impl WorthQueryApplicationProjection<Schema, Query> for Row {
     fn project(row: &WorthQueryApplicationProjectionRow<'_, Schema, Query>) -> Result<Self, WorthQueryApplicationProjectionDenial> {
+        super::super::source_projection::record($query);
         Ok(Self { native_id: row.entity_id(), key: row.field(key())?, value: row.field(value())? })
     }
 }
@@ -99,6 +100,19 @@ scalar_read!(
     "owned-outputs.model-binding.v1",
     "owned-outputs.model-input.v1",
     "Model",
+    public
+);
+scalar_read!(
+    producer_model,
+    Model,
+    ModelFacts,
+    ModelKey,
+    ModelValue,
+    "Model",
+    "owned-outputs.producer-model-read.v1",
+    "owned-outputs.producer-model-binding.v1",
+    "owned-outputs.producer-model-input.v1",
+    "ProducerModel",
     public
 );
 scalar_read!(
@@ -171,6 +185,7 @@ pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
     let schema = model::declare(schema);
+    let schema = producer_model::declare(schema);
     let schema = member::declare(schema);
     let schema = first_output::declare(schema);
     let schema = second_output::declare(schema);

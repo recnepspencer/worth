@@ -11,6 +11,7 @@ mod output_coverage;
 mod output_custody;
 mod output_lookup;
 mod output_profile;
+mod restored_verification;
 pub(in crate::domain_computation::primary_graph) use output_lookup::{
     HistoryOutputLookup, HistoryOutputLookupPhase,
 };
@@ -104,6 +105,10 @@ pub enum WorthQueryHistoryNavigationDenial {
     /// The selected step retains no exact lineage row for a producer route
     /// Native restores, or its lookup stopped.
     OutputLineage(worth_relational::facade::mvcc::CompanionPreflightStop),
+    RestoredOutputRead(worth_relational::facade::runtime::RelationalHistoricalSelectionReadDenial),
+    RestoredOutputCurrentness(
+        crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial,
+    ),
     SelectorSnapshot(worth_relational::facade::snapshots::RelationalSnapshotAdmissionDenial),
     SelectorMaintenance(worth_relational::facade::indexes::DerivedIndexMaintenanceDenial),
     Publication(worth_runtime_world::facade::NoEffectCompositePublication),
