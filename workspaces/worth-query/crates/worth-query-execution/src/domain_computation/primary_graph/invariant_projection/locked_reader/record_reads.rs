@@ -39,7 +39,6 @@ where
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
-        let execution = self.execution;
         if !self.work_budget.can_afford(3) {
             return Err(WorthQueryEntityResolutionDenial::new(
                 WorthQueryEntityResolutionDenialKind::Stopped(NativeReadStop::WorkExhausted),
@@ -54,6 +53,31 @@ where
                 field.field(),
             )
         })?;
+        self.resolve_encoded_entity(
+            &worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus::new(
+                field.entity(),
+                field.aspect(),
+                field.field(),
+            ),
+            value,
+        )
+    }
+
+    pub(in crate::domain_computation::primary_graph::invariant_projection) fn resolve_encoded_entity<
+        Entity,
+    >(
+        &mut self,
+        field: &worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus,
+        value: worth_foundational::facade::AspectValue,
+    ) -> Result<WorthQueryInvariantEntityIdentity<Schema, Entity>, WorthQueryEntityResolutionDenial>
+    {
+        let execution = self.execution;
+        if !self.work_budget.can_afford(3) {
+            return Err(WorthQueryEntityResolutionDenial::new(
+                WorthQueryEntityResolutionDenialKind::Stopped(NativeReadStop::WorkExhausted),
+                field.field(),
+            ));
+        }
         let truth = self.entity_resolution.at_snapshot(
             self.runtime,
             self.snapshot,

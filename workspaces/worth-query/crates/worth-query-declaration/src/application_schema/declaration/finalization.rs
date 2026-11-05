@@ -28,6 +28,9 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
         validate_operation_contract_cardinality(&self.members)?;
         self.members.sort();
         self.member_provenance.normalize();
+        self.member_provenance
+            .fragments
+            .validate(self.member_provenance.field_bindings())?;
         if self.member_provenance.has_conflicting_field_binding()
             || !self.member_provenance.field_bindings_match(&self.members)
         {

@@ -51,6 +51,14 @@ Use these entry points to find an API and its worked use.
 
 ## Task index
 
+Declare application graph membership with the type-owned
+[native schema fragment API](native-schema-fragments.md): entities list aspects
+and outgoing relations, fragments list entities and nested fragments, and one
+binding set supplies reusable records. Arrays and nested records become the
+existing flat scalar fields. Typed record field handles serve operation bodies,
+requirements and authorization predicates without a second field declaration.
+
+
 Choose [native representations](native-representations.md) before a durable
 value binding: flat scalar fields, named entities and actual typed relations.
 The [candidate-only one-of pattern](native-representations.md#one-class-one-optional-aspect)

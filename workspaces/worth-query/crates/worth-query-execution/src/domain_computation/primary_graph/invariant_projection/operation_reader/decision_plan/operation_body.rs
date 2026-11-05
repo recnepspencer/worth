@@ -136,7 +136,9 @@ impl<Schema: ApplicationSchema, Operation>
         Ok(identity)
     }
 
-    pub(super) fn tracked_body_locator<Entity>(
+    pub(in crate::domain_computation::primary_graph::invariant_projection::operation_reader) fn tracked_body_locator<
+        Entity,
+    >(
         &mut self,
         identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
         field: &ApplicationFieldBindingLocus,

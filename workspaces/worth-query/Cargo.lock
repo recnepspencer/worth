@@ -952,6 +952,7 @@ dependencies = [
  "worth-query-declaration",
  "worth-query-installation",
  "worth-query-package-archive",
+ "worth-query-testkit-decl",
  "worth-relational",
  "worth-runtime-bridge",
  "worth-runtime-world",
@@ -988,6 +989,7 @@ dependencies = [
  "worth-foundational",
  "worth-proof",
  "worth-query-declaration",
+ "worth-query-testkit-decl",
  "zeroize",
 ]
 

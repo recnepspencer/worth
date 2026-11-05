@@ -174,6 +174,37 @@ impl<Schema, Current> ApplicationAuthorizationPathBuilder<Schema, Current> {
         }
     }
 
+    /// Selects the predicate's binding from the same record used by storage.
+    pub fn where_record_equal<A, T>(
+        mut self,
+        field: super::fragment::RecordField<Current, A, T>,
+        value: T,
+    ) -> Result<Self, super::fragment::FieldEncodeRefusal> {
+        if !field.equality_queryable() {
+            return Err(super::fragment::FieldEncodeRefusal::new(
+                format!(
+                    "{}.{}.{}",
+                    field.locus().entity(),
+                    field.locus().aspect(),
+                    field.locus().field()
+                ),
+                super::ApplicationValueEncodeDenial::CodecRejected {
+                    binding_identity: field.recipe().binding_identity().clone(),
+                    reason: "field does not support equality",
+                },
+            ));
+        }
+        let value = field.encode(&value)?;
+        self.predicates.push(ApplicationAuthorizationPredicate {
+            traversal_ordinal: self.traversals.len(),
+            entity: field.locus().entity().to_owned(),
+            aspect: field.locus().aspect().to_owned(),
+            field: field.locus().field().to_owned(),
+            value,
+        });
+        Ok(self)
+    }
+
     pub fn where_equal<Aspect, Field, Value, Write, Unit>(
         mut self,
         field: ApplicationFieldRef<

@@ -92,7 +92,7 @@ impl<Schema, Operation, Input, Scope>
         )
     }
 
-    fn create_entity_named_at<Entity>(
+    pub(super) fn create_entity_named_at<Entity>(
         &mut self,
         entity_name: &str,
         key: String,

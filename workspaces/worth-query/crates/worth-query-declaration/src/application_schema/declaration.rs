@@ -22,10 +22,10 @@ mod fields;
 mod finalization;
 
 pub trait ApplicationSchema: Sized + 'static {
-    const OWNER: &'static str;
+    const OWNER: &'static str = "WORTH.application";
     const NAME: &'static str;
-    const MAJOR: u32;
-    const MINOR: u32;
+    const MAJOR: u32 = 1;
+    const MINOR: u32 = 0;
 
     fn declaration(
     ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial>;

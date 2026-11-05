@@ -49,9 +49,15 @@ mod entity_resolution;
 mod entity_resolution_denial;
 mod exact_basis_access;
 mod expression;
+mod fragment_view;
 mod freshness;
 mod granular_invalidation;
 mod handler;
+#[doc(hidden)]
+pub use fragment_view::Readable as FragmentReadable;
+pub use fragment_view::{
+    CandidateEntity, FragmentDenial, ObservedEntity, ObservedTarget, Reading, View, Writing,
+};
 pub(in crate::domain_computation) use handler::DecisionContextUse;
 mod index_currency;
 pub(in crate::domain_computation) mod index_maintenance_budget;

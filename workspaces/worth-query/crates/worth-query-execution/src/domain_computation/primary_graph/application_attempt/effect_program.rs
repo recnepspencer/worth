@@ -10,6 +10,7 @@ mod entity_selection;
 mod field_observation;
 #[cfg(test)]
 mod forgery;
+mod fragment;
 mod installed_reentry;
 mod model;
 mod operation_body;

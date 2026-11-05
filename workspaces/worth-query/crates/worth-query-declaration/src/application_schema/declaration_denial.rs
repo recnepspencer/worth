@@ -2,6 +2,21 @@ use super::ApplicationOperationDependencyLocus;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ApplicationSchemaDeclarationDenial {
+    DuplicateFragmentMember {
+        path: String,
+    },
+    FragmentIdentityCollision {
+        identity: u64,
+        first: String,
+        second: String,
+    },
+    InvalidRecord {
+        path: String,
+    },
+    InvalidRecordRevision,
+    InvalidRecordField {
+        field: super::ApplicationFieldBindingLocus,
+    },
     InvalidIdentifier,
     InvalidCanonicalOrdering,
     DuplicateMember,

@@ -1,4 +1,9 @@
 //! Primary Graph application contracts.
+#[doc(hidden)]
+pub use crate::domain_computation::primary_graph::FragmentReadable;
+pub use crate::domain_computation::primary_graph::{
+    CandidateEntity, FragmentDenial, ObservedEntity, ObservedTarget, Reading, View, Writing,
+};
 mod managed_index;
 pub use crate::domain_computation::primary_graph::application_attempt::WorthQuerySignedCreationPreparationDenial;
 pub use crate::domain_computation::primary_graph::application_resource::{

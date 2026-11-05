@@ -50,6 +50,7 @@ mod external_effect_correlation_family;
 mod external_effect_protocol;
 mod field_presence;
 mod field_reference;
+pub mod fragment;
 mod graph_member;
 pub use graph_member::{ApplicationGraphMemberMeaning, ApplicationGraphMemberSelector};
 mod history_member_closure;

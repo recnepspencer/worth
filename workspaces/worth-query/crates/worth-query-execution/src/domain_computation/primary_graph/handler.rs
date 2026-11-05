@@ -1,5 +1,6 @@
 mod candidate;
 mod conditional_definition;
+mod fragment;
 pub(in crate::domain_computation::primary_graph) use conditional_definition::ConditionalDefinitionAdmission;
 mod decision_reads;
 mod invariant;

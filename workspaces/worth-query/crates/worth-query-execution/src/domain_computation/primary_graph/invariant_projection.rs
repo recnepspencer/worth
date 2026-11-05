@@ -14,6 +14,7 @@ pub(in crate::domain_computation::primary_graph) mod consumed_output;
 mod entity_resident;
 #[path = "invariant_projection/field_projection.rs"]
 mod field_projection;
+mod fragment_identity;
 mod identity_encoding;
 mod pending_output_read;
 pub(in crate::domain_computation::primary_graph) use pending_output_read::RequestedOutputRead;

@@ -35,6 +35,42 @@ impl<Schema, Operation> ApplicationOperationBodyRequirementOperands<Schema, Oper
     ) -> Vec<Operand> {
         self.operands
     }
+    /// Uses the value binding already selected from a fragment's record.
+    pub fn record_field<E, A, T>(
+        self,
+        name: &str,
+        field: crate::application_schema::fragment::RecordField<E, A, T>,
+    ) -> Result<Self, Denial> {
+        if field.recipe().unit().is_some() {
+            return Err(Denial::UnsupportedScalar);
+        }
+        self.push_record(name, field, false)
+    }
+    pub fn record_presence<E, A, T>(
+        self,
+        name: &str,
+        field: crate::application_schema::fragment::RecordField<E, A, T>,
+    ) -> Result<Self, Denial> {
+        self.push_record(name, field, true)
+    }
+    fn push_record<E, A, T>(
+        self,
+        name: &str,
+        field: crate::application_schema::fragment::RecordField<E, A, T>,
+        presence_only: bool,
+    ) -> Result<Self, Denial> {
+        self.push(
+            name,
+            Source::Field {
+                field: field.locus().clone(),
+                binding: field.recipe().binding_identity().clone(),
+                scalar_family: field.recipe().scalar_family(),
+                presence: crate::application_schema::ApplicationFieldPresence::Required,
+                presence_only,
+            },
+        )
+    }
+
     /// Reads a scalar value with its exact optionality. Unit-bearing values
     /// need a quantity binding rather than silently becoming unitless scalars.
     pub fn field<Entity, Aspect, Field, Value, Write, Equality>(
