@@ -10,6 +10,7 @@
 
 #![deny(private_interfaces)]
 
+use crate::domain_computation::primary_graph::application_attempt::external_dispatch_attempt::ExternalDispatchAttemptScopedOps;
 use crate::domain_computation::primary_graph::application_inbound::CustodyScopedOps;
 use crate::domain_computation::primary_graph::application_inbound::RecoverScopedOps;
 use crate::domain_computation::primary_graph::application_inbound::ResumeScopedOps;

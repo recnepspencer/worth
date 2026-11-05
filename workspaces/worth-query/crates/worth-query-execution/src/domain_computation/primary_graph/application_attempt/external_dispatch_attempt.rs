@@ -3,10 +3,10 @@
 use crate::domain_computation::primary_graph::application_inbound::CustodyScopedOps;
 use std::sync::Arc;
 
-use super::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::application_aftermath::external_effect::WorthQueryAdmittedExternalDispatchAttempt;
 use crate::domain_computation::application_aftermath::external_effect::WorthQueryTerminalEffectRefusal;
 use crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxRecord;
+use crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxObservation;
 
 /// Why this application runtime could not admit a physical dispatch attempt.
@@ -50,20 +50,20 @@ impl WorthQueryExternalDispatchAttemptOrdinal {
     }
 }
 
-impl<Schema: worth_query_installation::facade::ApplicationSchema>
-    WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub(in crate::domain_computation::primary_graph) trait ExternalDispatchAttemptScopedOps<
+    Schema: worth_query_installation::facade::ApplicationSchema,
+>:
+    crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>
 {
-    pub(in crate::domain_computation::primary_graph) fn admit_external_dispatch_attempt(
+    fn admit_external_dispatch_attempt(
         &self,
         committed: WorthQueryCommittedDispatchOutboxObservation,
     ) -> Result<WorthQueryAdmittedExternalDispatchAttempt, WorthQueryExternalDispatchAdmissionDenial>
     {
-        self.runtime
-            .primary_provider
+        self.primary_provider()
             .observe_external_dispatch_admission();
         let relational_runtime = self
-            .runtime
-            .product_runtime
+            .product_runtime()
             .source
             .authoritative_source_profile()
             .runtime_instance_id();
@@ -74,7 +74,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
             .committed_product_publication()
             .product_branch()
             .owner_identity()
-            != self.runtime.product_runtime.owner.owner_identity()
+            != self.product_runtime().owner.owner_identity()
         {
             return Err(WorthQueryExternalDispatchAdmissionDenial::ForeignProductWorld);
         }
@@ -99,7 +99,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
         self.refuse_completed_external_effect(committed.record())?;
         let ordinal = WorthQueryExternalDispatchAttemptOrdinal::mint(
             {
-                let update_counter = &self.runtime.next_external_dispatch_attempt;
+                let update_counter = self.next_external_dispatch_attempt();
                 let mut current = update_counter.load(std::sync::atomic::Ordering::Acquire);
                 loop {
                     let Some(updated_value) = current.checked_add(1) else {
@@ -120,26 +120,18 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
         );
         Ok(WorthQueryAdmittedExternalDispatchAttempt::seal(
             committed,
-            self.runtime.authority_identity(),
+            self.authority_identity(),
             ordinal,
-            Arc::clone(&self.runtime.authorization_clock),
+            Arc::clone(self.authorization_clock()),
         ))
     }
 
-    /// Ask the one terminal effect owner before any physical attempt.
-    ///
-    /// Once World has performed the terminal transition, no new physical
-    /// attempt may be admitted for this original effect. An attempt admitted
-    /// before that transition may already be on the wire; the installed rail
-    /// idempotency contract resolves that race. The committed outbox row may
-    /// already be released, so this reads only the terminal owner.
-    pub(in crate::domain_computation::primary_graph) fn refuse_completed_external_effect(
+    fn refuse_completed_external_effect(
         &self,
         record: &WorthQueryDispatchOutboxRecord,
     ) -> Result<(), WorthQueryTerminalEffectRefusal> {
         if self
-            .runtime
-            .inbound
+            .inbound()
             .custody()
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
@@ -152,8 +144,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
             return Ok(());
         }
         match self
-            .runtime
-            .primary_provider
+            .primary_provider()
             .lookup_completed_inbound(record.correlation())
         {
             Ok(Some(_)) => Err(WorthQueryTerminalEffectRefusal::AlreadyCompleted),
@@ -163,4 +154,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
     }
 }
 
+impl<Schema: worth_query_installation::facade::ApplicationSchema, HostRuntime: crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema> + ?Sized> ExternalDispatchAttemptScopedOps<Schema> for HostRuntime {}
+
 mod court_doors_for_test;
+pub use court_doors_for_test::ExternalDispatchAttemptDoorsOps;

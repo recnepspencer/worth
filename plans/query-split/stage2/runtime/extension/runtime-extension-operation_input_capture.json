@@ -1,0 +1,27 @@
+{
+ "module": "domain_computation::primary_graph::product_operation::operation_input_capture",
+ "blocks": 1,
+ "methods": 1,
+ "traits": [
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/operation_input_capture.rs",
+   "trait": "OperationInputCaptureOps",
+   "visibility": "pub",
+   "methods": [
+    "capture_operation_input_in_advancement"
+   ]
+  }
+ ],
+ "facades": 0,
+ "host": {
+  "core_fields": [
+   "product_runtime"
+  ],
+  "top_fields": [],
+  "core_methods": [],
+  "foreign": [],
+  "hand": [
+   "facade arguments of capture_operation_input_in_advancement"
+  ]
+ }
+}

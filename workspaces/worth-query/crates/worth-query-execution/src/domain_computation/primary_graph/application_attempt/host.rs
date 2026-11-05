@@ -8,6 +8,9 @@ pub trait ApplicationAttemptHost<Schema>:
         Schema,
     > + crate::domain_computation::primary_graph::provider::host::ProviderHost<Schema>
     + crate::domain_computation::primary_graph::handler::host::HandlerHost<Schema>
+    + crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<
+        Schema,
+    >
 {
     /// This host as the trait object `application_attempt` is handed.
     fn application_attempt_host(&self) -> &dyn ApplicationAttemptHost<Schema>;
@@ -27,4 +30,6 @@ pub trait ApplicationAttemptHost<Schema>:
         &self,
     ) -> &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority;
     fn signing_owners(&self) -> &std::sync::Mutex<std::collections::BTreeMap<worth_query_declaration::facade::application_program::ApplicationProgramRevision, worth_query_admission::facade::authentication_event::WorthQueryAuthenticationEventSigningOwner<Schema>>>;
+    fn next_application_mutation_partition(&self) -> &std::sync::atomic::AtomicU32;
+    fn next_external_dispatch_attempt(&self) -> &std::sync::atomic::AtomicU64;
 }

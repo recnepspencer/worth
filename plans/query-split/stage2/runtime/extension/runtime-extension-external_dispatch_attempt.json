@@ -1,0 +1,42 @@
+{
+ "module": "domain_computation::primary_graph::application_attempt::external_dispatch_attempt",
+ "blocks": 2,
+ "methods": 3,
+ "traits": [
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/external_dispatch_attempt.rs",
+   "trait": "ExternalDispatchAttemptScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph)",
+   "methods": [
+    "admit_external_dispatch_attempt",
+    "refuse_completed_external_effect"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/external_dispatch_attempt/court_doors_for_test.rs",
+   "trait": "ExternalDispatchAttemptDoorsOps",
+   "visibility": "pub",
+   "methods": [
+    "admit_external_dispatch_attempt_for_test"
+   ]
+  }
+ ],
+ "facades": 0,
+ "host": {
+  "core_fields": [
+   "authorization_clock",
+   "inbound",
+   "next_external_dispatch_attempt",
+   "primary_provider",
+   "product_runtime"
+  ],
+  "top_fields": [],
+  "core_methods": [
+   "authority_identity"
+  ],
+  "foreign": [
+   "has_retained_installed_transport_completion"
+  ],
+  "hand": []
+ }
+}

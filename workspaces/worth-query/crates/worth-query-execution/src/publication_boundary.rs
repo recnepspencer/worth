@@ -211,7 +211,7 @@ pub mod discovery_currentness {
 }
 
 pub mod operation_input_capture {
-    pub use crate::domain_computation::primary_graph::WorthQueryOperationInputCaptureDenial;
+    pub use crate::domain_computation::primary_graph::product_operation::operation_input_capture::WorthQueryOperationInputCaptureDenial;
 }
 
 /// Native descriptive principal pin; no actor id or grant extraction.

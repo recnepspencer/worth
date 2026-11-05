@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_attempt::mutation_partition::MutationPartitionScopedOps;
 use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 use worth_query_installation::facade::ApplicationSchema;
 

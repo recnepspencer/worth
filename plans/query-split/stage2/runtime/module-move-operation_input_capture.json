@@ -1,0 +1,10 @@
+{
+ "move": "domain_computation::primary_graph::application_runtime::operation_input_capture -> domain_computation::primary_graph::product_operation::operation_input_capture",
+ "files": 1,
+ "edited_files": 6,
+ "widenings": [],
+ "removed_reexports": [
+  "domain_computation::primary_graph::application_runtime::WorthQueryOperationInputCaptureDenial"
+ ],
+ "problems": []
+}

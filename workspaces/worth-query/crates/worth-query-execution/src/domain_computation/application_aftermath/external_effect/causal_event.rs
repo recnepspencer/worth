@@ -10,8 +10,8 @@ use super::identity_derivation::{
     attempt_identity, emission_identity, observation_identity, provider_commit_identity,
 };
 use super::{ExternalEffectPostureKind, WorthQueryDispatchOutboxRecord};
+use crate::domain_computation::primary_graph::application_attempt::external_dispatch_attempt::WorthQueryExternalDispatchAttemptOrdinal;
 use crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxObservation;
-use crate::domain_computation::primary_graph::WorthQueryExternalDispatchAttemptOrdinal;
 use crate::domain_computation::runtime_time::WorthQueryRuntimeClock;
 
 /// Read-only projection of one causal stage. Only the typed transitions in this module can seal it.

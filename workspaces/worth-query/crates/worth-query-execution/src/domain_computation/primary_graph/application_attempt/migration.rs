@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_attempt::mutation_partition::MutationPartitionScopedOps;
 use worth_runtime_world::facade::ProductBranchObservation;
 
 use super::effect_program::WorthQueryApplicationRealizedEffect;

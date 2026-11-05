@@ -5,7 +5,7 @@ pub use crate::domain_computation::primary_graph::tests::inbound_admission::fixt
 pub use crate::domain_computation::primary_graph::tests::inbound_admission::verifier::signed_envelope;
 pub use crate::domain_computation::primary_graph::tests::inbound_admission::verifier::signed_envelope_for_second_key_epoch;
 pub use worth_query_execution::facade::domain_computation::WorthQueryInboundVerificationDenial;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_runtime::external_dispatch_attempt::WorthQueryExternalDispatchAdmissionDenial;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::external_dispatch_attempt::WorthQueryExternalDispatchAdmissionDenial;
 pub use worth_query_execution::facade::domain_computation::WorthQueryInboundAdmissionDenial as Denial;
 pub use worth_query_execution::facade::domain_computation::WorthQueryInboundReceiptPosture as Posture;
 

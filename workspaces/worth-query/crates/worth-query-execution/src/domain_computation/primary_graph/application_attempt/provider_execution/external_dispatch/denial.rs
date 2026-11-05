@@ -7,7 +7,7 @@
 use crate::domain_computation::application_aftermath::{
     WorthQueryRecoveryHandleDenial, WorthQueryRecoveryHandleDenialKind,
 };
-use crate::domain_computation::primary_graph::application_runtime::WorthQueryExternalDispatchAdmissionDenial;
+use crate::domain_computation::primary_graph::application_attempt::external_dispatch_attempt::WorthQueryExternalDispatchAdmissionDenial;
 use crate::domain_computation::primary_graph::provider::WorthQueryOutstandingInFlightDenial;
 use crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxReadDenial;
 

@@ -8,7 +8,7 @@ use worth_query_execution::court_doors_for_test::domain_computation::primary_gra
 use worth_query_execution::facade::domain_computation::WorthQueryExternalDispatchAttemptDenial as Attempt;
 use worth_query_execution::facade::domain_computation::WorthQueryExternalDispatchPreparationDenial as Preparation;
 use worth_query_execution::facade::domain_computation::WorthQueryExternalRedispatchDenial as Redispatch;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_runtime::external_dispatch_attempt::WorthQueryExternalDispatchAdmissionDenial as Admission;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::external_dispatch_attempt::WorthQueryExternalDispatchAdmissionDenial as Admission;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::outstanding_dispatch::in_flight::WorthQueryOutstandingInFlightDenial as InFlight;
 use worth_query_execution::facade::domain_computation::WorthQueryCommittedDispatchOutboxReadDenial as Read;
 

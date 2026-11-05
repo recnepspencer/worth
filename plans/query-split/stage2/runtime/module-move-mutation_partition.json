@@ -1,0 +1,14 @@
+{
+ "move": "domain_computation::primary_graph::application_runtime::mutation_partition -> domain_computation::primary_graph::application_attempt::mutation_partition",
+ "files": 1,
+ "edited_files": 3,
+ "widenings": [
+  {
+   "item": "mod domain_computation::primary_graph::application_attempt::mutation_partition",
+   "from": "private",
+   "to": "pub(in crate::domain_computation::primary_graph)"
+  }
+ ],
+ "removed_reexports": [],
+ "problems": []
+}

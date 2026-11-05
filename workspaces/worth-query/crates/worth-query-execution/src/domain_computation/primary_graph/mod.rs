@@ -185,7 +185,7 @@ pub(in crate::domain_computation) use application_branch::primary_relational_bra
 pub(in crate::domain_computation) use application_branch::primary_truth_branch_identity;
 pub(crate) use application_query::WorthQueryApplicationQueryControls;
 pub(in crate::domain_computation) use crate::domain_computation::application_aftermath::external_effect::WorthQueryAdmittedExternalDispatchAttempt;
-pub(in crate::domain_computation) use application_runtime::WorthQueryExternalDispatchAttemptOrdinal;
+pub(in crate::domain_computation) use crate::domain_computation::primary_graph::application_attempt::external_dispatch_attempt::WorthQueryExternalDispatchAttemptOrdinal;
 pub(in crate::domain_computation) use crate::domain_computation::primary_graph::application_inbound::inbound_publication::WorthQueryPerformedInboundCompletion;
 pub(in crate::domain_computation) use crate::domain_computation::primary_graph::application_inbound::inbound_publication::WorthQueryUnpublishedInboundCompletion;
 pub(in crate::domain_computation::primary_graph) use crate::domain_computation::primary_graph::application_inbound::inbound_publication::InstalledTransportCompletion;
@@ -214,7 +214,7 @@ pub(in crate::domain_computation) use application_contribution::observe_discarde
 
 pub use observations::principal_target_reads_on_this_thread_for_test;
 
-pub use application_runtime::WorthQueryOperationInputCaptureDenial;
+pub use crate::domain_computation::primary_graph::product_operation::operation_input_capture::WorthQueryOperationInputCaptureDenial;
 pub(in crate::domain_computation) mod selected_read_indexes;
 
 pub(crate) mod admitted_capture;

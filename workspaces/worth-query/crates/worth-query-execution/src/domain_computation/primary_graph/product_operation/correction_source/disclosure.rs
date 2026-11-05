@@ -47,7 +47,7 @@ pub enum WorthQueryCorrectionDerivationDenial {
     SourceOutput(super::material::WorthQueryCorrectionOutputProjectionDenial),
     SemanticMaterialUnavailable,
     MissingTargetParent,
-    InputCapture(crate::domain_computation::primary_graph::WorthQueryOperationInputCaptureDenial),
+    InputCapture(crate::domain_computation::primary_graph::product_operation::operation_input_capture::WorthQueryOperationInputCaptureDenial),
     CommandKey(worth_query_declaration::facade::application_schema::ApplicationValueEncodeDenial),
     SourceDiverged,
     RestoredSupport(super::WorthQueryCorrectionRestoredSupportDenial),

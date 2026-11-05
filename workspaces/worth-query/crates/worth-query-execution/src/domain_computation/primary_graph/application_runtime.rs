@@ -25,10 +25,8 @@ mod certification_controls;
 mod certification_cost;
 mod conditional_cleanup;
 mod execution_memory;
-pub(crate) mod external_dispatch_attempt;
 mod facade;
 mod host;
-mod mutation_partition;
 mod teardown;
 pub use certification_cost::{
     WorthQueryCertificationApplicationWork, WorthQueryCertificationCostObservation,
@@ -48,10 +46,6 @@ pub(in crate::domain_computation::primary_graph) use operation_control::WorthQue
 pub use storage_retention::{
     WorthQueryStorageRetentionDenial, WorthQueryStorageRetentionProgress,
     WorthQueryStorageRetentionStop,
-};
-
-pub(in crate::domain_computation) use external_dispatch_attempt::{
-    WorthQueryExternalDispatchAdmissionDenial, WorthQueryExternalDispatchAttemptOrdinal,
 };
 
 /// Purpose-scoped application runtime published from one typed primary graph.
@@ -305,9 +299,6 @@ impl WorthQueryApplicationLiveDeliveryCloseReceipt {
 }
 
 mod candidate_input_observation;
-
-mod operation_input_capture;
-pub use operation_input_capture::WorthQueryOperationInputCaptureDenial;
 
 pub(in crate::domain_computation::primary_graph) use operation_control::{
     WorthQuerySourcePublicationHeadForTest, WorthQuerySourcePublicationImageForTest,

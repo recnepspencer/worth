@@ -1,0 +1,25 @@
+{
+ "module": "domain_computation::primary_graph::application_attempt::mutation_partition",
+ "blocks": 1,
+ "methods": 1,
+ "traits": [
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/mutation_partition.rs",
+   "trait": "MutationPartitionScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph)",
+   "methods": [
+    "issue_application_mutation_partition"
+   ]
+  }
+ ],
+ "facades": 0,
+ "host": {
+  "core_fields": [
+   "next_application_mutation_partition"
+  ],
+  "top_fields": [],
+  "core_methods": [],
+  "foreign": [],
+  "hand": []
+ }
+}

@@ -275,4 +275,6 @@ pub(in crate::domain_computation::primary_graph) use workflow_instance_program::
 pub(in crate::domain_computation::primary_graph) use workflow_instance_program::WorkflowInstanceProgramPublicationScopedOps;
 pub(in crate::domain_computation::primary_graph) use workflow_proposal_program::WorkflowProposalProgramPublicationScopedOps;
 pub(in crate::domain_computation::primary_graph) use workflow_transition_program::CommitScopedOps;
+pub(crate) mod external_dispatch_attempt;
 pub(crate) mod host;
+mod mutation_partition;

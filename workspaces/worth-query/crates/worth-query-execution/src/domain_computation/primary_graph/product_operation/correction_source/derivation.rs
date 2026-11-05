@@ -3,6 +3,7 @@ use super::disclosure::{
     disclose_correction_source, WorthQueryCorrectionDerivationDenial as Denial,
 };
 use super::*;
+use crate::domain_computation::primary_graph::product_operation::operation_input_capture::OperationInputCaptureOps;
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
 };

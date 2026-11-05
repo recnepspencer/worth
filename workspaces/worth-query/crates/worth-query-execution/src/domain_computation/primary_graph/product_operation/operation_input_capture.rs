@@ -1,5 +1,5 @@
 //! Initiating capture owns one admitted typed payload through its LAST shared input owner.
-use super::WorthQueryPrimaryGraphApplicationRuntime;
+use crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::publication_boundary::WorthQueryProgramPublicationAccess;
 use worth_execution::{ExecutionAllocationDenial, ExecutionArray, ExecutionArrayBuilder};
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
@@ -51,10 +51,10 @@ impl<Value: 'static> NativeImmutableInput<Value> for FrozenInput<Value> {
         &self.payload.elements()[0]
     }
 }
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    /// Borrows original meaning until one checked payload and its identity are sealed.
-    /// Charges only native typed payload, not nested user Clone heaps or Arc metadata.
-    pub fn capture_operation_input_in_advancement<InputBinding>(
+pub trait OperationInputCaptureOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>
+{
+    fn capture_operation_input_in_advancement<InputBinding>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         _: &WorthQueryProgramPublicationAccess,
@@ -67,7 +67,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     {
         use WorthQueryOperationInputCaptureDenial as Denial;
         let execution = phase
-            .checked_execution_request_for(&self.runtime.product_runtime)
+            .checked_execution_request_for(self.product_runtime())
             .map_err(Denial::Execution)?;
         let control = RequestAllocationControl::new(request, execution.allocation_policy());
         let mut payload =
@@ -78,4 +78,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         control.policy().check_live().map_err(Denial::Allocation)?;
         Ok(encoded)
     }
+}
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<
+                Schema,
+            > + ?Sized,
+    > OperationInputCaptureOps<Schema> for HostRuntime
+{
 }

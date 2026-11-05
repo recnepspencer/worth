@@ -38,4 +38,10 @@ impl<Schema: ApplicationSchema> ApplicationAttemptHost<Schema>
     fn signing_owners(&self) -> &std::sync::Mutex<std::collections::BTreeMap<worth_query_declaration::facade::application_program::ApplicationProgramRevision, worth_query_admission::facade::authentication_event::WorthQueryAuthenticationEventSigningOwner<Schema>>>{
         &self.signing_owners
     }
+    fn next_application_mutation_partition(&self) -> &std::sync::atomic::AtomicU32 {
+        &self.runtime.next_application_mutation_partition
+    }
+    fn next_external_dispatch_attempt(&self) -> &std::sync::atomic::AtomicU64 {
+        &self.runtime.next_external_dispatch_attempt
+    }
 }

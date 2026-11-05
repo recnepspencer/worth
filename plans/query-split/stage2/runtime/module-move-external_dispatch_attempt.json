@@ -1,0 +1,11 @@
+{
+ "move": "domain_computation::primary_graph::application_runtime::external_dispatch_attempt -> domain_computation::primary_graph::application_attempt::external_dispatch_attempt",
+ "files": 2,
+ "edited_files": 9,
+ "widenings": [],
+ "removed_reexports": [
+  "domain_computation::primary_graph::application_runtime::WorthQueryExternalDispatchAdmissionDenial",
+  "domain_computation::primary_graph::application_runtime::WorthQueryExternalDispatchAttemptOrdinal"
+ ],
+ "problems": []
+}
