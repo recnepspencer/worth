@@ -65,8 +65,6 @@ pub mod program_occurrence;
 pub mod provider;
 #[path = "publication_request_denial/mod.rs"]
 pub mod publication_request_denial;
-#[path = "request_execution/mod.rs"]
-pub mod request_execution;
 #[path = "resolution_denial/mod.rs"]
 pub mod resolution_denial;
 #[path = "root/mod.rs"]

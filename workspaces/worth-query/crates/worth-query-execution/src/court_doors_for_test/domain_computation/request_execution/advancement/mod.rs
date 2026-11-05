@@ -1,4 +1,4 @@
-//! Doors under `domain_computation::primary_graph::request_execution::advancement`.
+//! Doors under `domain_computation::request_execution::advancement`.
 #[path = "opening_custody/mod.rs"]
 pub mod opening_custody;
 #[path = "runner/mod.rs"]

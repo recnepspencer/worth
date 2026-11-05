@@ -19,6 +19,8 @@ pub mod operation_binding;
 pub mod primary_graph;
 #[path = "provider_session/mod.rs"]
 pub mod provider_session;
+#[path = "request_execution/mod.rs"]
+pub mod request_execution;
 #[path = "runtime_time/mod.rs"]
 pub mod runtime_time;
 pub use crate::domain_computation::WorthQueryConverged;
