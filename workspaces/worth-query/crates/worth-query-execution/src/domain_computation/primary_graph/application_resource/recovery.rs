@@ -11,7 +11,7 @@ use crate::domain_computation::{
 use worth_query_installation::facade::ApplicationSchema;
 
 pub(super) fn require_authority<Schema: ApplicationSchema>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_resource::host::ApplicationResourceHost<Schema>,
     handle: &WorthQueryRecoveryHandle,
     authority: &WorthQueryRecoveryInspectAuthority,
     access: &OriginalResourceAccess,
@@ -20,11 +20,11 @@ pub(super) fn require_authority<Schema: ApplicationSchema>(
     authority
         .ensure_for(handle)
         .map_err(ResourceCause::Recovery)?;
-    if handle.runtime_authority() != runtime.runtime.authority_identity() {
+    if handle.runtime_authority() != runtime.authority_identity() {
         return Err(ResourceCause::RecoveryAffinity(Affinity::Runtime));
     }
     if handle.binding().principal_scope().binding_identity()
-        != &runtime.installed_schema.binding_identity()
+        != &runtime.installed_schema().binding_identity()
     {
         return Err(ResourceCause::RecoveryAffinity(Affinity::Schema));
     }
@@ -40,7 +40,7 @@ pub(super) fn require_authority<Schema: ApplicationSchema>(
 }
 
 pub(super) fn require_unresolved<Schema: ApplicationSchema>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_resource::host::ApplicationResourceHost<Schema>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     handle: &WorthQueryRecoveryHandle,
     authority: &WorthQueryRecoveryInspectAuthority,
@@ -60,8 +60,6 @@ pub(super) fn require_unresolved<Schema: ApplicationSchema>(
     // The retained exact-commit read proves original record/correlation/commit
     // provenance only. It does not establish current effect status.
     let original = runtime
-        .runtime
-        .primary_provider
         .committed_dispatch_outbox_for_binding(execution, handle.binding())
         .map_err(ResourceCause::EffectOutbox)?;
     drop(original);

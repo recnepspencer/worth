@@ -15,7 +15,7 @@ use worth_query_declaration::facade::{
 };
 
 pub(super) fn start<Schema, Binding>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_resource::host::ApplicationResourceHost<Schema>,
     execution: &ExecutionRequest<'_, '_>,
     installed: &InstalledResourceBinding<Schema, Binding>,
     row: &mut ResourceRowLease,
@@ -38,10 +38,9 @@ where
     let reading = installed.clock.observe().map_err(ResourceCause::Clock)?;
     execution.consult().map_err(ResourceCause::Request)?;
     let clock = runtime
-        .runtime
-        .product_runtime
+        .product_runtime()
         .advance_owned_async_source_clock(
-            &runtime.runtime.bridge.conditional(),
+            &runtime.bridge().conditional(),
             &slot.declaration,
             &row.occurrence().business_product,
             reading.nanoseconds,
@@ -50,10 +49,9 @@ where
     row.occurrence_mut().lifecycle = ResourceLifecycle::Reserved { clock: Some(clock) };
     execution.consult().map_err(ResourceCause::Request)?;
     let owner = runtime
-        .runtime
-        .product_runtime
+        .product_runtime()
         .admit_managed_owned_async_request(
-            &runtime.runtime.bridge.conditional(),
+            &runtime.bridge().conditional(),
             &slot.declaration,
             &row.occurrence().business_product,
         )

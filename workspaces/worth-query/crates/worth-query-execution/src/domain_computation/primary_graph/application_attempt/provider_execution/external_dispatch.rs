@@ -19,6 +19,7 @@ use std::sync::Arc;
 use worth_query_installation::facade::{ApplicationSchema, InstalledAftermathRecoveryContract};
 
 use super::super::WorthQueryApplicationCommitOutcome;
+use crate::domain_computation::application_aftermath::external_effect::WorthQueryTerminalEffectRefusal;
 use crate::domain_computation::application_aftermath::{
     dispatch_external_effect, require_fresh_effect_authority, WorthQueryExternalEffectDispatch,
     WorthQueryExternalEffectTransport, WorthQueryPerformedExternalRedispatch,
@@ -27,7 +28,6 @@ use crate::domain_computation::application_aftermath::{
 use crate::domain_computation::authorization::{
     WorthQueryAdmissionLapse, WorthQueryAdmittedApplicationOperation,
 };
-use crate::domain_computation::primary_graph::application_runtime::WorthQueryTerminalEffectRefusal;
 use crate::domain_computation::primary_graph::{
     InstalledTransportCompletion, InstalledTransportResumeOutcome,
     WorthQueryPrimaryGraphApplicationRuntime,

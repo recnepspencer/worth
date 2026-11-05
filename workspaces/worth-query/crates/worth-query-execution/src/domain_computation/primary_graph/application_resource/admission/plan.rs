@@ -43,7 +43,7 @@ impl ChargedBytes for CapturedPlan {
 }
 
 pub(super) fn admit<Schema: ApplicationSchema, Binding: ApplicationResourceBinding<Schema>>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_resource::host::ApplicationResourceHost<Schema>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     resource: &WorthQueryInstalledApplicationResource<Schema, Binding>,
     purpose: WorthQueryResourceAccessPurpose,
@@ -55,10 +55,7 @@ pub(super) fn admit<Schema: ApplicationSchema, Binding: ApplicationResourceBindi
     ),
     ResourceAdmissionDenial,
 > {
-    let support = runtime
-        .runtime
-        .primary_provider
-        .application_resource_support_ref();
+    let support = runtime.graph_work_resource_support_ref();
     let (capture, memory) =
         run_stage(execution, 0, |context, mut memory| {
             let mut admit =

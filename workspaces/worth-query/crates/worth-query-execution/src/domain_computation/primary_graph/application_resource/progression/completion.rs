@@ -12,7 +12,7 @@ pub(super) enum Received {
 }
 
 pub(super) fn receive<Schema, Binding>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_resource::host::ApplicationResourceHost<Schema>,
     execution: &ExecutionRequest<'_, '_>,
     installed: &InstalledResourceBinding<Schema, Binding>,
     row: &mut ResourceRowLease,
@@ -61,8 +61,7 @@ where
     };
     if matches!(candidate.queue, ResourceCandidateQueue::Unadmitted) {
         let admitted = runtime
-            .runtime
-            .bridge
+            .bridge()
             .conditional()
             .enqueue_managed_owned_async_queue(owner, 1)
             .map_err(ResourceCause::Managed)?;
@@ -129,8 +128,7 @@ where
             let issued = witness.effects_indeterminate_issuer().certify(bytes);
             candidate.admission = Some(
                 runtime
-                    .runtime
-                    .bridge
+                    .bridge()
                     .conditional()
                     .admit_owned_async_effects_indeterminate(issued)
                     .map_err(ResourceCause::Completion)?,
@@ -142,8 +140,7 @@ where
             .expect("actual indeterminate admission retained");
         if admission.report().denied_completion().is_some() {
             runtime
-                .runtime
-                .bridge
+                .bridge()
                 .conditional()
                 .release_process_local_completion_denial(owner, admission)
                 .map_err(ResourceCause::Managed)?;
@@ -184,14 +181,12 @@ where
             u64::try_from(candidate.frame.length()).map_err(|_| ResourceCause::Unavailable)?,
         );
         let validated = runtime
-            .runtime
-            .bridge
+            .bridge()
             .conditional()
             .validate_owned_async_completion_envelope(witness, raw)
             .map_err(ResourceCause::Completion)?;
         let admitted = runtime
-            .runtime
-            .bridge
+            .bridge()
             .conditional()
             .admit_owned_async_completion(witness, &validated)
             .map_err(ResourceCause::Completion)?;
@@ -203,8 +198,7 @@ where
         .expect("actual Native admission retained before handoff");
     if admission.report().denied_completion().is_some() {
         runtime
-            .runtime
-            .bridge
+            .bridge()
             .conditional()
             .release_process_local_completion_denial(owner, admission)
             .map_err(ResourceCause::Managed)?;
@@ -216,8 +210,7 @@ where
     }
     execution.consult().map_err(ResourceCause::Request)?;
     let committed = runtime
-        .runtime
-        .bridge
+        .bridge()
         .conditional()
         .commit_owned_async_completion(witness, admission)
         .map_err(ResourceCause::Completion)?;

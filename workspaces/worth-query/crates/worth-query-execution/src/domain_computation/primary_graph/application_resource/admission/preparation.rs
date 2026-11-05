@@ -34,7 +34,7 @@ pub(in crate::domain_computation::primary_graph::application_resource) fn prepar
     Schema,
     Binding,
 >(
-    runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &'a dyn crate::domain_computation::primary_graph::application_resource::host::ApplicationResourceHost<Schema>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     resource: &WorthQueryInstalledApplicationResource<Schema, Binding>,
     prepared: &worth_query_admission::facade::graph_obligation::WorthQueryPreparedResourceReadGraphWork,
@@ -81,7 +81,6 @@ where
             .map_err(|_| ResourceAdmissionDenial::MissingPrincipalBinding)?;
     let (plan, admission) = plan::admit(runtime, execution, resource, purpose, prepared)?;
     let graph = runtime
-        .runtime
         .primary_graph()
         .ok_or(ResourceAdmissionDenial::MissingGraph)?;
     let basis = selected.application_basis().identity().clone();
@@ -92,7 +91,7 @@ where
         resource,
         purpose,
         plan,
-        runtime.runtime.authority_identity(),
+        runtime.authority_identity(),
         principal.principal().principal_entity_id(),
         WorthQueryGraphWorkAccessContextAffinity::entity(scope.scope().entity_id()),
         &basis,

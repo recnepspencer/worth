@@ -4,6 +4,7 @@ use std::sync::Arc;
 
 use super::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::application_aftermath::external_effect::WorthQueryAdmittedExternalDispatchAttempt;
+use crate::domain_computation::application_aftermath::external_effect::WorthQueryTerminalEffectRefusal;
 use crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxRecord;
 use crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxObservation;
 
@@ -18,13 +19,6 @@ pub enum WorthQueryExternalDispatchAdmissionDenial {
     CompletedTransportRetained,
     TerminalIndexUnavailable,
     AttemptIdentityExhausted,
-}
-
-/// The one terminal effect owner refused a new physical attempt.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) enum WorthQueryTerminalEffectRefusal {
-    AlreadyCompleted,
-    TerminalIndexUnavailable,
 }
 
 impl From<WorthQueryTerminalEffectRefusal> for WorthQueryExternalDispatchAdmissionDenial {

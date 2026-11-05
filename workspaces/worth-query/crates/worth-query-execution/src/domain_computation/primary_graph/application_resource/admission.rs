@@ -45,7 +45,7 @@ pub(super) enum ResourceAdmissionDenial {
 /// The issued typed scope stays borrowed through the final currentness check.
 /// No request, permission or native cleanup capability is put into a receipt.
 pub(super) struct ResourceActionRead<'a, Schema, Scope> {
-    runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &'a dyn crate::domain_computation::primary_graph::application_resource::host::ApplicationResourceHost<Schema>,
     scope: &'a WorthQueryApplicationEntityIdentity<Schema, Scope>,
     request: &'a WorthQueryRequestScope,
     principal: worth_relational::facade::identity::EntityId,

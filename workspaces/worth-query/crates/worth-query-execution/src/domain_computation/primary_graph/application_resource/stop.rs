@@ -56,7 +56,7 @@ pub(super) enum ResourceCause {
     RecoveryHandoffRequired,
     Recovery(crate::domain_computation::application_aftermath::WorthQueryRecoveryHandleDenial),
     RecoveryAffinity(ResourceRecoveryAffinity),
-    EffectTerminal(crate::domain_computation::primary_graph::application_runtime::WorthQueryTerminalEffectRefusal),
+    EffectTerminal(crate::domain_computation::application_aftermath::external_effect::WorthQueryTerminalEffectRefusal),
     EffectOutbox(crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxReadDenial),
 }
 
@@ -198,7 +198,7 @@ impl WorthQueryResourceActionDenial {
     /// The actual current terminal/outcome owner's refusal, separate from a
     /// retained original outbox observation or provider timeout.
     pub fn effect_admission_denial(&self) -> Option<WorthQueryResourceEffectRefusal> {
-        use crate::domain_computation::primary_graph::application_runtime::WorthQueryTerminalEffectRefusal as Cause;
+        use crate::domain_computation::application_aftermath::external_effect::WorthQueryTerminalEffectRefusal as Cause;
         match &self.cause {
             ResourceCause::EffectTerminal(Cause::AlreadyCompleted) => {
                 Some(WorthQueryResourceEffectRefusal::AlreadyCompleted)

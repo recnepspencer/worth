@@ -30,7 +30,7 @@ use worth_relational::facade::identity::EntityId;
 
 /// Fresh authenticated actions on the runtime's installed Resource family.
 pub struct WorthQueryApplicationResourcesRequest<'application, 'principal, 'request, Schema> {
-    runtime: &'application WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &'application dyn crate::domain_computation::primary_graph::application_resource::host::ApplicationResourceHost<Schema>,
     external: &'principal WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request: &'request WorthQueryRequestScope,
     branch: crate::basis::WorthQueryProductBranch,
@@ -38,17 +38,19 @@ pub struct WorthQueryApplicationResourcesRequest<'application, 'principal, 'requ
 
 type AccessScope<Schema, Binding> = <<<Binding as ApplicationResourceBinding<Schema>>::Access as ApplicationQueryBinding<Schema>>::ScopeBinding as ApplicationQueryScopeBinding<Schema>>::Scope;
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    /// Enters the actual installed Resource action family. The selected branch
-    /// is used only by Start; retained actions freshly select their original branch.
-    pub fn application_resources<'a, 'p, 'r>(
+pub trait RequestOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_resource::host::ApplicationResourceHost<
+    Schema,
+>
+{
+    fn application_resources<'a, 'p, 'r>(
         &'a self,
         external: &'p WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &'r WorthQueryRequestScope,
         branch: crate::basis::WorthQueryProductBranch,
     ) -> WorthQueryApplicationResourcesRequest<'a, 'p, 'r, Schema> {
         WorthQueryApplicationResourcesRequest {
-            runtime: self,
+            runtime: self.application_resource_host(),
             external,
             request,
             branch,
@@ -56,12 +58,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     }
 }
 
+impl<Schema: ApplicationSchema, HostRuntime: crate::domain_computation::primary_graph::application_resource::host::ApplicationResourceHost<Schema> + ?Sized> RequestOps<Schema> for HostRuntime {}
+
 impl<Schema: ApplicationSchema> WorthQueryApplicationResourcesRequest<'_, '_, '_, Schema> {
     fn installed<Binding: ApplicationResourceBinding<Schema>>(
         &self,
     ) -> Result<Arc<InstalledResourceBinding<Schema, Binding>>, ResourceCause> {
         self.runtime
-            .installed_resources
+            .installed_resources()
             .binding::<Binding>()
             .ok_or(ResourceCause::Unavailable)
     }

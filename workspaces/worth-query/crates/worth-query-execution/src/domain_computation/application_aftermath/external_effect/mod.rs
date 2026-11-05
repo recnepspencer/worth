@@ -13,7 +13,9 @@ pub(crate) mod inbound;
 mod observation;
 pub(crate) mod outbox;
 mod posture;
+pub(crate) mod terminal_refusal;
 mod transport;
+pub(in crate::domain_computation) use terminal_refusal::WorthQueryTerminalEffectRefusal;
 
 pub use causal_event::ExternalEffectPosture;
 pub(in crate::domain_computation) use causal_event::WorthQueryAdmittedExternalDispatchAttempt;

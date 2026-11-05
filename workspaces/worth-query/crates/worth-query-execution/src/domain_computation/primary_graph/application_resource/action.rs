@@ -20,7 +20,7 @@ use worth_query_installation::facade::WorthQueryResourceAccessPurpose;
 use worth_relational::facade::identity::EntityId;
 
 pub(super) fn with_existing<Schema, Binding, T, R>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_resource::host::ApplicationResourceHost<Schema>,
     execution: &ExecutionRequest<'_, '_>,
     external: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request: &WorthQueryRequestScope,

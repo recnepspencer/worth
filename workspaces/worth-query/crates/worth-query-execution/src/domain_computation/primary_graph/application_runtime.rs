@@ -73,7 +73,6 @@ pub use storage_retention::{
 
 pub(in crate::domain_computation) use external_dispatch_attempt::{
     WorthQueryExternalDispatchAdmissionDenial, WorthQueryExternalDispatchAttemptOrdinal,
-    WorthQueryTerminalEffectRefusal,
 };
 
 /// Purpose-scoped application runtime published from one typed primary graph.

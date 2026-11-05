@@ -128,7 +128,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationResourcesRequest<'_, '_, '_
                 .map_err(ResourceCause::Scope)?;
             let parameters = capture_parameters::<Schema, Binding::Access>(
                 execution,
-                self.runtime,
+                self.runtime.application_runtime(),
                 std::mem::size_of::<OriginalResourceAccess>() + 2 * std::mem::size_of::<usize>(),
                 || Ok(Binding::parameters(input)),
             )

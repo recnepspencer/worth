@@ -29,7 +29,7 @@ where
 }
 
 fn ensure_provider<Schema, Binding>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_resource::host::ApplicationResourceHost<Schema>,
     execution: &ExecutionRequest<'_, '_>,
     installed: &InstalledResourceBinding<Schema, Binding>,
     row: &mut ResourceRowLease,
@@ -102,7 +102,7 @@ where
 }
 
 pub(in crate::domain_computation::primary_graph::application_resource) fn advance<Schema, Binding>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_resource::host::ApplicationResourceHost<Schema>,
     execution: &ExecutionRequest<'_, '_>,
     installed: &InstalledResourceBinding<Schema, Binding>,
     row: &mut ResourceRowLease,
@@ -138,10 +138,9 @@ where
     let reading = installed.clock.observe().map_err(ResourceCause::Clock)?;
     execution.consult().map_err(ResourceCause::Request)?;
     let clock = runtime
-        .runtime
-        .product_runtime
+        .product_runtime()
         .advance_owned_async_source_clock(
-            &runtime.runtime.bridge.conditional(),
+            &runtime.bridge().conditional(),
             &installed.storage.nodes[index].declaration,
             selected,
             reading.nanoseconds,
@@ -183,16 +182,14 @@ where
     };
     if owner.wake_cleanup_pending() {
         runtime
-            .runtime
-            .bridge
+            .bridge()
             .conditional()
             .finish_managed_owned_async_wake_cleanup(owner)
             .map_err(ResourceCause::Managed)?;
     }
     if occurrence.timeout.is_none() && occurrence.retry.is_none() {
         let timeout = runtime
-            .runtime
-            .bridge
+            .bridge()
             .conditional()
             .advance_managed_owned_async_request_to_timeout(owner, reading.nanoseconds)
             .map_err(ResourceCause::Managed)?;
@@ -213,8 +210,7 @@ where
             .as_ref()
             .ok_or(ResourceCause::Unavailable)?;
         let scheduled = runtime
-            .runtime
-            .bridge
+            .bridge()
             .conditional()
             .schedule_managed_owned_async_retry(owner, timeout)
             .map_err(ResourceCause::Managed)?;
@@ -222,8 +218,7 @@ where
     }
     let before = owner.request_handle();
     let result = runtime
-        .runtime
-        .bridge
+        .bridge()
         .conditional()
         .advance_managed_owned_async_retry(
             owner,
@@ -245,7 +240,7 @@ pub(in crate::domain_computation::primary_graph::application_resource) fn revali
     Schema,
     Binding,
 >(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_resource::host::ApplicationResourceHost<Schema>,
     execution: &ExecutionRequest<'_, '_>,
     installed: &InstalledResourceBinding<Schema, Binding>,
     row: &mut ResourceRowLease,
@@ -266,13 +261,8 @@ where
     };
     let before = owner.request_handle();
     let result = runtime
-        .runtime
-        .product_runtime
-        .revalidate_custodied_owned_async_request(
-            &runtime.runtime.bridge.conditional(),
-            owner,
-            selected,
-        );
+        .product_runtime()
+        .revalidate_custodied_owned_async_request(&runtime.bridge().conditional(), owner, selected);
     if owner.request_handle() != before {
         occurrence.retry = None;
         occurrence.timeout = None;

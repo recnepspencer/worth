@@ -9,17 +9,17 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationResourcesRequest<'_, '_, '_
         body: impl FnOnce(&worth_execution::ExecutionRequest<'_, '_>) -> Result<T, ResourceCause>,
     ) -> Result<T, ResourceCause> {
         let mut completed = None;
-        let handoff = self
-            .runtime
-            .with_application_advancement(self.request, |phase| {
-                completed = Some(
-                    match phase.checked_execution_request_for(&self.runtime.runtime.product_runtime)
-                    {
-                        Ok(execution) => body(&execution),
-                        Err(cause) => Err(ResourceCause::Advancement(cause)),
-                    },
-                );
-            });
+        let handoff =
+            self.runtime
+                .product_runtime()
+                .with_request_advancement(self.request, |phase| {
+                    completed = Some(
+                        match phase.checked_execution_request_for(self.runtime.product_runtime()) {
+                            Ok(execution) => body(&execution),
+                            Err(cause) => Err(ResourceCause::Advancement(cause)),
+                        },
+                    );
+                });
         match (handoff, completed) {
             (Ok(()), Some(result)) => result,
             (Err(WorthQueryAdvancementDenial::NestedStopped), Some(Err(cause))) => Err(cause),

@@ -49,7 +49,6 @@ impl<Schema: ApplicationSchema, Scope> ResourceActionRead<'_, Schema, Scope> {
             .map_err(ResourceAdmissionDenial::Security)?;
         let graph = self
             .runtime
-            .runtime
             .primary_graph()
             .ok_or(ResourceAdmissionDenial::MissingGraph)?;
         let resolution = graph.retain_entity_resolution_context();
@@ -62,7 +61,7 @@ impl<Schema: ApplicationSchema, Scope> ResourceActionRead<'_, Schema, Scope> {
                         execution,
                         relational,
                         snapshot,
-                        self.runtime.runtime.authorization.bridge(),
+                        self.runtime.authorization().bridge(),
                     )
                     .map_err(|kind| {
                         ResourceAdmissionDenial::Authorization(
@@ -75,7 +74,7 @@ impl<Schema: ApplicationSchema, Scope> ResourceActionRead<'_, Schema, Scope> {
                             execution,
                             relational,
                             snapshot,
-                            self.runtime.runtime.authorization.bridge(),
+                            self.runtime.authorization().bridge(),
                         )
                         .map_err(|kind| {
                             ResourceAdmissionDenial::DisclosureAuthorization(

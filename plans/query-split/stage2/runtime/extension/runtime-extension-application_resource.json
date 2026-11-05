@@ -1,0 +1,23 @@
+{
+ "module": "domain_computation::primary_graph::application_resource",
+ "blocks": 1,
+ "methods": 1,
+ "traits": [
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_resource/request.rs",
+   "trait": "RequestOps",
+   "visibility": "pub",
+   "methods": [
+    "application_resources"
+   ]
+  }
+ ],
+ "facades": 1,
+ "host": {
+  "core_fields": [],
+  "top_fields": [],
+  "core_methods": [],
+  "foreign": [],
+  "hand": []
+ }
+}

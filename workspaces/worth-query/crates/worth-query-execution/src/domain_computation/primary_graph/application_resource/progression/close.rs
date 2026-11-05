@@ -6,7 +6,7 @@ use super::super::{
 use super::*;
 
 pub(in crate::domain_computation::primary_graph::application_resource) fn drain_candidate<Schema>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_resource::host::ApplicationResourceHost<Schema>,
     row: &mut ResourceRowLease,
 ) -> Result<(), ResourceCause>
 where
@@ -23,8 +23,7 @@ where
             return Err(ResourceCause::Unavailable);
         };
         runtime
-            .runtime
-            .bridge
+            .bridge()
             .conditional()
             .release_process_local_completion_denial(owner, admission)
             .map_err(ResourceCause::Managed)?;
@@ -34,8 +33,7 @@ where
             return Err(ResourceCause::Unavailable);
         };
         let drained = runtime
-            .runtime
-            .bridge
+            .bridge()
             .conditional()
             .dequeue_managed_owned_async_queue(owner, 1)
             .map_err(ResourceCause::Managed)?;
@@ -86,7 +84,7 @@ where
 }
 
 pub(in crate::domain_computation::primary_graph::application_resource) fn finish_native<Schema>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_resource::host::ApplicationResourceHost<Schema>,
     row: &mut ResourceRowLease,
 ) -> Result<(), ResourceCause>
 where
@@ -98,8 +96,7 @@ where
     };
     if owner.wake_cleanup_pending() {
         runtime
-            .runtime
-            .bridge
+            .bridge()
             .conditional()
             .finish_managed_owned_async_wake_cleanup(owner)
             .map_err(ResourceCause::Managed)?;
@@ -108,16 +105,14 @@ where
         && !completion.timeout_cleanup_complete()
     {
         runtime
-            .runtime
-            .bridge
+            .bridge()
             .conditional()
             .finish_owned_async_completion_timeout_cleanup(completion)
             .map_err(ResourceCause::Completion)?;
     }
     if owner.has_pending_retry() {
         runtime
-            .runtime
-            .bridge
+            .bridge()
             .conditional()
             .abort_process_local_owned_async_retry(owner)
             .map_err(ResourceCause::Managed)?;
@@ -125,8 +120,7 @@ where
     occurrence.retry = None;
     if completion.is_none() {
         runtime
-            .runtime
-            .bridge
+            .bridge()
             .conditional()
             .cancel_managed_owned_async_request(owner)
             .map_err(ResourceCause::Managed)?;
@@ -141,8 +135,7 @@ where
         unreachable!()
     };
     match runtime
-        .runtime
-        .bridge
+        .bridge()
         .conditional()
         .release_process_local_managed_request(owner, completion)
     {
@@ -158,7 +151,7 @@ where
 }
 
 pub(in crate::domain_computation::primary_graph::application_resource) fn close<Schema, Binding>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_resource::host::ApplicationResourceHost<Schema>,
     execution: &ExecutionRequest<'_, '_>,
     installed: &InstalledResourceBinding<Schema, Binding>,
     row: &mut ResourceRowLease,

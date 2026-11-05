@@ -29,3 +29,5 @@ pub use provider::{
     WorthQueryResourceProviderAttempt, WorthQueryResourceProviderFailure,
     WorthQueryResourceVerificationFailure, WorthQueryResourceVerifiedFrame,
 };
+pub use request::RequestOps;
+pub(crate) mod host;
