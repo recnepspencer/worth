@@ -1,7 +1,8 @@
 # Document history over declared owned models
 
 Governing increment to milestone 9.18.2, public issues #53–#57.
-Ownership ruling: D1113, 2026-11-03. First batch order: #55, #54, #57.
+Ownership ruling: D1113, 2026-11-03. D1159 integration order: #55, #53,
+#57 under D1119, then #56. The implemented #54 checkpoint is retained.
 
 ## Boundary review
 
@@ -232,27 +233,26 @@ unchanged kind identities. It constructs no runtime root or admitted basis.
 Preserve all eight test names (seven courts and one unit), and repeat mutation
 probes against these final placements before qualification.
 
-## #57 boundary findings (implementation not started)
+## #57 boundary findings (D1119 supersedes the settlement plan)
 
-The existing SDK mode owns one typed demand, one immutable profile and a registry
-of original tree slots. Native navigation carries one profile, one original
-output source and one qualified tree into selection. Eligibility compares every
-relevant installed action with that same profile. Relaxing that comparison alone
-would falsely admit incomplete restoration.
+Each producer family's records belong to the owned closure. Graph navigation
+restores the selected versions, original source observations and output witnesses
+atomically with authored state; it does not rerun producers to reconstruct them.
+Every family must then be qualified through the existing required-set currentness
+owner at the same final endpoint, including the restored Native current ownership
+roster. Verification checks existence, producing build, source facts and witnesses.
+A failed verification may run only the affected original producer, with its
+reason visible on the owner. Keep its source, root and disposal custody only for
+that fallback. There is no per-tree re-settlement design or second producer engine.
 
-A multi-tree implementation must preserve each original root/source/settlement
-and disposal owner, while selecting only one endpoint containing the complete
-forest. Each tree needs fresh source READ and NAV correspondence on every call.
-Earlier tree settlements must be requalified at the final common endpoint using
-the existing required-set currentness owner; the endpoint of the last tree alone
-cannot prove the others. Original source provenance must remain distinct from
-that final qualification. There must be no second producer engine or synthetic
-settlement.
+The count court uses at least two families. Undo and redo under unchanged builds
+must contact no producers. Changing one producing build must contact exactly
+that producer. Reintroducing regeneration and omitting one family's verification
+must each fail the courts. These counts prove the fast path, not a public cost
+contract. Existing ScopeEntityRecord behavior remains unchanged.
 
-Source-intent capture and output-profile binding currently require the exact
-model scope. Feature-scoped sources need #55's complete owned-entity proof,
-including canonical publication custody. Owned-graph navigation remains contained
-until #53. #57 has no implementation or readiness claim in this checkpoint.
+D1117 remains the complete foreign-edge policy. Product links are pinned;
+implement no additional foreign incoming edge machinery.
 
 ## D1117 relation boundary and implementation slice
 
@@ -341,3 +341,56 @@ all source snapshots were restored before the positive checks.
 These are preparation and refusal proofs. They do not qualify applied checkout,
 canonical graph mutation, complete publication custody or atomic restoration.
 Those still require protected cascade owners. No READY handoff is permitted yet.
+
+
+## D1159 landing boundary review and D1174 storage requirement
+
+Merged public master fb0870356f39e1e991adf6ca0d47987a8e558a7e with merge
+commit 005f98df3a. This releases the earlier cascade-path exclusion and supersedes
+the historical landing waits above. The execution test split is retained. Constraint courts use the
+new testkit and existing receiver-owned door; the receiver now derives the
+history operation scope from the genuinely resolved entity. Exact caller changes
+come from scripts/test_topology/src_court_doors.py callers, not hand edits.
+
+The landed current-publication roster is the sole current custody reader. Its
+one-hop selection and independent position presence must supply #55
+membership/exclusivity and #53 closure selection. Typed retired-closure evidence
+stays separate from published roles and grants no current entity or producer
+custody. Current facts are not reconstructed from canonical history. Navigation reaching owned publications
+requires storage registered through facade::schema::register_current_publication_storage;
+absence must preserve typed CurrentOwnershipStorageMissing. CHK18 remains current;
+no Native format increment is authorized here. D1149/#59's accepted coherent
+checkpoint residual remains outside this lane.
+
+Adversarial constraint: adding a declared link must not give a source-owned
+publication member a second model owner, including when the publication itself
+is first installed in that candidate. A current-head-only check is insufficient
+for that prospective fact. Snapshot invariants precede publication installation
+and Native current-ownership completion in authority/commit/pipeline/execution.rs
+and publication_execution/preparation.rs. The publication owner must carry the
+actual candidate's custody to exclusivity, with ordinary invariant receipts and
+failure types intact. Do not create a second prospective ownership ledger.
+
+D1119 point 3 exposes a separate, precise restoration owner gap:
+
+- mvcc/publication/application_publication/restored_producer_prior.rs readmits
+  only authored-retirement restoration, then resolves the prior through the
+  actual retirement's old-to-new entity mapping.
+- history/data/canonical_commit_envelope/required_output_origin/authored_restoration.rs
+  requires an actual authored-source retirement and newly resolved creations.
+  It cannot mean arbitrary selection of an older live publication at its original
+  full-generation identities.
+
+The required owner change is a genuine Native historical owned-publication
+selection handoff: fresh commit provenance, retained producer/source observations
+and witnesses, current roster and independent position facts restored together,
+and later Preserve/currentness recognizing the original producer antecedent.
+It must be composed by the ordinary graph candidate/publication path. It cannot
+be emulated by a synthetic retirement, copied metadata or producer regeneration.
+D1119 explicitly requires reporting this exact cascade owner rather than working
+around it. No #55/#53/#57/#56 completion claim is made at this merge checkpoint.
+
+After that handoff is available, the implementation order remains #55 custody
+and one-owner courts, #53 atomic restoration, #57 all-family verification and
+zero-contact courts, then #56 correction steps. Every issue gets focused courts,
+mutation evidence, and its own report section before a READY TO MERGE handoff.

@@ -53,7 +53,9 @@ uses a recorded NAV grant and a real child-scoped edit. This checkpoint prepares
 the declared structural selection, then returns the explicit
 `RequiresCascadeCustody` refusal before creating a candidate. Atomic graph
 publication, source-scope publication restoration and the applied checkout
-courts await the cascade batch. Graph navigation is not ready for adoption.
+courts await the Native historical-publication selection handoff described in
+the owned-model plan. The cascade batch is merged; graph navigation remains
+unavailable for adoption.
 `ScopeEntityRecord` navigation cannot include ownership declarations, and
 entity-only context refresh still refuses them. Corrections sharing the tree
 follow #56.
@@ -64,3 +66,13 @@ use archive version 4 carrying the exact relation names and endpoints. The graph
 domain has its own canonical meaning even before any members are owned. Decoded declarations
 carry meaning only; installation and each current request still establish their
 own correspondence and authority.
+
+
+Owned graph navigation must restore producer outputs and their recorded source
+observations and witnesses with authored state. Every producer family is then
+verified by the existing required-set currentness owner at one final endpoint.
+Only failed verification can run the affected producer; navigation does not
+regenerate healthy outputs. The Native current ownership roster restores and
+undergoes currentness checks with those outputs. Native installations must
+register current publication storage; reaching owned publications without it
+refuses CurrentOwnershipStorageMissing and never falls back to history.
