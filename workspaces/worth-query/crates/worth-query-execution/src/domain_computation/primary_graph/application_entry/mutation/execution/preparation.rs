@@ -1,14 +1,15 @@
 //! Owner-only mutation preparation; all lent read capability ends here.
 use super::super::DecisionReader;
 use super::*;
+use crate::domain_computation::primary_graph::application_entry::mutation::OperationHandler;
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+pub(in crate::domain_computation::primary_graph) trait PreparationScopedOps<
+    Schema: ApplicationSchema,
+>:
+    crate::domain_computation::primary_graph::application_entry::host::ApplicationEntryHost<Schema>
+{
     #[allow(clippy::too_many_arguments)]
-    pub(in crate::domain_computation::primary_graph) fn prepare_mutation_handler_plan<
-        'advance: 'authority,
-        'authority,
-        Binding,
-    >(
+    fn prepare_mutation_handler_plan<'advance: 'authority, 'authority, Binding>(
         &self,
         phase: &'advance WorthQueryAdvancementPhase<'advance>,
         identities: &ApplicationMutationIdentities<'_, Schema, Binding>,
@@ -43,11 +44,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub(in crate::domain_computation::primary_graph) fn prepare_mutation_handler_plan_with_source_access<
-        'advance: 'authority,
-        'authority,
-        Binding,
-    >(
+    fn prepare_mutation_handler_plan_with_source_access<'advance: 'authority, 'authority, Binding>(
         &self,
         phase: &'advance WorthQueryAdvancementPhase<'advance>,
         identities: &ApplicationMutationIdentities<'_, Schema, Binding>,
@@ -76,7 +73,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     where
         Binding: ApplicationMutationBinding<Schema>,
     {
-        let execution = match phase.execution_for(&self.runtime.product_runtime) {
+        let execution = match phase.execution_for(self.product_runtime()) {
             Ok(execution) => execution,
             Err(cause) => {
                 return Err(WorthQueryMutationHandlerExecutionReport::new(
@@ -88,9 +85,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             }
         };
         if let Err(denial) = admission.validate_mutation_entry(
-            self.runtime.authority_identity(),
-            &self.installed_schema.binding_identity(),
-            &self.runtime.installed_operations,
+            self.authority_identity(),
+            &self.installed_schema().binding_identity(),
+            self.installed_operations(),
         ) {
             return Err(WorthQueryMutationHandlerExecutionReport::new(
                 Err(denial),
@@ -106,7 +103,10 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 WorthQueryMutationHandlerWork::NotStarted,
             ));
         }
-        let handler = match self.mutation_handler_for_attempt::<Binding>() {
+        let handler = match self
+            .application_runtime()
+            .mutation_handler_for_attempt::<Binding>()
+        {
             Ok(installed) => installed,
             Err(denial) => {
                 return Err(WorthQueryMutationHandlerExecutionReport::new(
@@ -118,7 +118,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         // The handler is found but never called unless the brand was minted
         // for this installed binding's operation and input types.
         if let Err(denial) = admission.validate_installed_mutation_binding(
-            self.installed_schema
+            self.installed_schema()
                 .installed_mutation_binding_descriptor(Binding::IDENTITY),
         ) {
             return Err(WorthQueryMutationHandlerExecutionReport::new(
@@ -139,7 +139,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         );
         let interruption = std::cell::Cell::new(None);
         let mut handler_contacted = false;
-        let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
+        let phase_request = match phase.execution_request_for(self.product_runtime()) {
             Ok(request) => request,
             Err(cause) => {
                 return Err(WorthQueryMutationHandlerExecutionReport::new(
@@ -150,14 +150,17 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 ))
             }
         };
-        if let Err(denial) = self.validate_projected_source_facts(&phase_request, &admission) {
+        if let Err(denial) = self
+            .application_runtime()
+            .validate_projected_source_facts(&phase_request, &admission)
+        {
             return Err(WorthQueryMutationHandlerExecutionReport::new(
                 Err(MutationHandlerExecutionDenial::Attempt(denial)),
                 WorthQueryMutationHandlerWork::NotStarted,
             ));
         }
         let projected = {
-            self.mutation_projection
+            self.application_runtime().mutation_projection
                 .project_admitted_operation_with_source_access(
                     &phase_request,
                     &admission,
@@ -172,7 +175,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                             &context_use,
                             &interruption,
                             crate::domain_computation::primary_graph::handler::ConditionalDefinitionAdmission::new(
-                                self, admission.graph_work().mutation_product(),
+                                self.application_runtime(), admission.graph_work().mutation_product(),
                             ),
                         );
                         on_contact();
@@ -268,4 +271,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             },
         ))
     }
+}
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_entry::host::ApplicationEntryHost<
+                Schema,
+            > + ?Sized,
+    > PreparationScopedOps<Schema> for HostRuntime
+{
 }

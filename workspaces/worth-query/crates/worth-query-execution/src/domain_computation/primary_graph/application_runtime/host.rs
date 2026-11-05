@@ -1,6 +1,7 @@
 //! The runtime implements every module's host trait here: it composes the subsystems.
 mod application_checkpoint;
 mod application_discovery;
+mod application_entry;
 mod application_resource;
 mod authorization;
 mod identity;

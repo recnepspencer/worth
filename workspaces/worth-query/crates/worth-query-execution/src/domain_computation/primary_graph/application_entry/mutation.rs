@@ -103,3 +103,6 @@ where
         candidate: &mut CandidateWriter<'_, Schema, Binding>,
     ) -> HandlerResult<Binding::Result, Binding::Denial>;
 }
+pub use execution::DecisionQueryOps;
+pub use execution::ExecutionOps;
+pub(in crate::domain_computation::primary_graph) use execution::PreparationScopedOps;

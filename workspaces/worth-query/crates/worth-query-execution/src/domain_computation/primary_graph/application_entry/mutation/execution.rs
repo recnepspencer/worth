@@ -71,21 +71,12 @@ impl std::fmt::Display for MutationHandlerExecutionDenial {
 
 impl std::error::Error for MutationHandlerExecutionDenial {}
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub trait ExecutionOps<Schema>:
+    crate::domain_computation::primary_graph::application_entry::host::ApplicationEntryHost<Schema>
 where
     Schema: ApplicationSchema,
 {
-    /// Runs the installed handler for one admitted request and builds its candidate.
-    ///
-    /// `identities` hold the request's key and input together with the identities
-    /// encoded from exactly those two values, so the handler decides on the very
-    /// input whose identity the candidate program records; no other input can be
-    /// paired with them. The handler reads the key, input and identities from its
-    /// `DecisionReader`, and the commit checks the recorded input identity against
-    /// the idempotency binding. A capability admission also fixes the identity of
-    /// the input it governed, and a request whose input encodes to another
-    /// identity is refused with `InputNotAdmitted` before any read.
-    pub fn execute_mutation_handler<Binding>(
+    fn execute_mutation_handler<Binding>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         identities: &ApplicationMutationIdentities<'_, Schema, Binding>,
@@ -114,9 +105,7 @@ where
         .into_outcome()
     }
 
-    /// Runs the installed handler once, retaining actual decision projection
-    /// work on success, refusal and interruption. Entry denials report NotStarted.
-    pub fn execute_mutation_handler_report<Binding>(
+    fn execute_mutation_handler_report<Binding>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         identities: &ApplicationMutationIdentities<'_, Schema, Binding>,
@@ -145,7 +134,7 @@ where
         )
     }
 
-    pub fn execute_mutation_handler_report_observing_contact<Binding>(
+    fn execute_mutation_handler_report_observing_contact<Binding>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         identities: &ApplicationMutationIdentities<'_, Schema, Binding>,
@@ -173,8 +162,21 @@ where
             on_contact,
             allocation_policy,
         ) {
-            Ok(prepared) => prepared.run(self, identities),
+            Ok(prepared) => prepared.run(self.application_entry_host(), identities),
             Err(report) => report,
         }
     }
 }
+
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::primary_graph::application_entry::host::ApplicationEntryHost<
+                Schema,
+            > + ?Sized,
+    > ExecutionOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
+}
+pub use decision_query::DecisionQueryOps;
+pub(in crate::domain_computation::primary_graph) use preparation::PreparationScopedOps;

@@ -1,5 +1,6 @@
 //! Prepare a producer once and retain owner completion until canonical apply.
 use super::*;
+use crate::domain_computation::primary_graph::application_entry::PreparationScopedOps;
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome;
 #[allow(clippy::too_many_arguments)]
 pub(in crate::domain_computation::primary_graph::application_contribution::producer::execution) fn prepare_authorized<

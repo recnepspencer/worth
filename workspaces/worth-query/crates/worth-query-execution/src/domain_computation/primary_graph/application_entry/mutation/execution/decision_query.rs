@@ -32,11 +32,10 @@ pub(in crate::domain_computation::primary_graph) fn native_decision_cause<'a>(
     }
 }
 
-impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
-    /// Runs an authenticated handler with its declared Parent reads on the
-    /// product selected by this admission and the admission's original request.
-    /// Every Parent and Source still perform their own current READ checks.
-    pub fn execute_mutation_handler_report_with_query_reads<B: ApplicationMutationBinding<S>>(
+pub trait DecisionQueryOps<S: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_entry::host::ApplicationEntryHost<S>
+{
+    fn execute_mutation_handler_report_with_query_reads<B: ApplicationMutationBinding<S>>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         identities: &ApplicationMutationIdentities<'_, S, B>,
@@ -61,7 +60,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         };
         // Ownership is refused before the branch, so neither path does work
         // for a foreign core; the phase check keeps preparation's order.
-        let execution = match phase.execution_request_for(&self.runtime.product_runtime) {
+        let execution = match phase.execution_request_for(self.product_runtime()) {
             Ok(execution) => execution,
             Err(cause) => {
                 return refused(MutationHandlerExecutionDenial::ForeignAdvancementPhase(
@@ -70,9 +69,9 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             }
         };
         if let Err(denial) = admission.validate_mutation_entry(
-            self.runtime.authority_identity(),
-            &self.installed_schema.binding_identity(),
-            &self.runtime.installed_operations,
+            self.authority_identity(),
+            &self.installed_schema().binding_identity(),
+            self.installed_operations(),
         ) {
             return refused(denial);
         }
@@ -91,7 +90,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         }
         // A forged tag type is refused before the shared basis is prepared.
         if let Err(denial) = admission.validate_installed_mutation_binding(
-            self.installed_schema
+            self.installed_schema()
                 .installed_mutation_binding_descriptor(B::IDENTITY),
         ) {
             return refused(denial);
@@ -104,7 +103,12 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             Err(cause) => return refused(cause),
         };
         let request = admission.publication_request().clone();
-        let access = SourceQueryReaderAccess::ordinary(self, &shared, principal, &request);
+        let access = SourceQueryReaderAccess::ordinary(
+            self.application_runtime(),
+            &shared,
+            principal,
+            &request,
+        );
         match self.prepare_mutation_handler_plan_with_source_access::<B>(
             phase,
             identities,
@@ -114,10 +118,24 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             || {},
             allocation,
         ) {
-            Ok(prepared) => prepared.run(self, identities),
+            Ok(prepared) => prepared.run(self.application_entry_host(), identities),
             Err(report) => report,
         }
     }
+}
+
+impl<
+        S: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_entry::host::ApplicationEntryHost<
+                S,
+            > + ?Sized,
+    > DecisionQueryOps<S> for HostRuntime
+{
+}
+
+trait DecisionQueryOwnOps<S: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_entry::host::ApplicationEntryHost<S>
+{
     fn prepare_decision_query_basis(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -132,7 +150,8 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         work.mutation_lease()
             .ok_or(DecisionQueryPreparationStop::MissingProduct)
             .and_then(|lease| {
-                self.on_mutation_product(execution, lease)
+                self.application_runtime()
+                    .on_mutation_product(execution, lease)
                     .map_err(DecisionQueryPreparationStop::Product)
             })
             .and_then(|selected| {
@@ -144,6 +163,15 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                 MutationHandlerExecutionDenial::Handler(HandlerExecutionDenial::new(cause))
             })
     }
+}
+
+impl<
+        S: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_entry::host::ApplicationEntryHost<
+                S,
+            > + ?Sized,
+    > DecisionQueryOwnOps<S> for HostRuntime
+{
 }
 
 #[cfg(test)]

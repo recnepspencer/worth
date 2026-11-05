@@ -1,0 +1,62 @@
+{
+ "module": "domain_computation::primary_graph::application_entry",
+ "blocks": 3,
+ "methods": 7,
+ "traits": [
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_entry/mutation/execution.rs",
+   "trait": "ExecutionOps",
+   "visibility": "pub",
+   "methods": [
+    "execute_mutation_handler",
+    "execute_mutation_handler_report",
+    "execute_mutation_handler_report_observing_contact"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_entry/mutation/execution/decision_query.rs",
+   "trait": "DecisionQueryOps",
+   "visibility": "pub",
+   "methods": [
+    "execute_mutation_handler_report_with_query_reads"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_entry/mutation/execution/decision_query.rs",
+   "trait": "DecisionQueryOwnOps",
+   "visibility": "private",
+   "methods": [
+    "prepare_decision_query_basis"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_entry/mutation/execution/preparation.rs",
+   "trait": "PreparationScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph)",
+   "methods": [
+    "prepare_mutation_handler_plan",
+    "prepare_mutation_handler_plan_with_source_access"
+   ]
+  }
+ ],
+ "facades": 4,
+ "host": {
+  "core_fields": [
+   "installed_operations",
+   "product_runtime"
+  ],
+  "top_fields": [
+   "installed_schema",
+   "mutation_projection"
+  ],
+  "core_methods": [
+   "authority_identity"
+  ],
+  "foreign": [
+   "mutation_handler_for_attempt",
+   "on_mutation_product",
+   "validate_projected_source_facts"
+  ],
+  "hand": []
+ }
+}

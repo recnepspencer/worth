@@ -477,8 +477,8 @@ def main(argv=None):
                         needs['hand'].append(f'facade arguments of {m["name"]}')
                         continue
                     path = '::'.join(('crate',) + prefix) + '::' + name
-                    facades.append(sig.rstrip() + ' {\n        <Self as ' + path + f'<{schema}>>::' +
-                                   m['name'] + '(self' + ''.join(', ' + a for a in fargs) + ')\n    }')
+                    facades.append((schema, sig.rstrip() + ' {\n        <Self as ' + path + f'<{schema}>>::' +
+                                   m['name'] + '(self' + ''.join(', ' + a for a in fargs) + ')\n    }'))
             trait_vis = (vis + ' ') if vis else ''
             where = (' ' + block['where']) if block['where'] else ''
             if source in file_module and len(block['names']) < len(file_module[source]):
@@ -539,8 +539,9 @@ def main(argv=None):
             f'//! The runtime\'s consumer methods over `{args.module}`; each only calls its subsystem.\n'
             'use worth_query_installation::facade::ApplicationSchema;\n' +
             facade_imports(facade_uses) + '\n'
-            f'impl<Schema: ApplicationSchema> super::super::{RUNTIME_NAME}<Schema> {{\n    ' +
-            '\n\n    '.join(facades) + '\n}\n', encoding='utf-8', newline='\n')
+            ''.join(f'impl<{p}: ApplicationSchema> super::super::{RUNTIME_NAME}<{p}> {{\n    ' +
+                    '\n\n    '.join(t for q, t in facades if q == p) + '\n}\n\n'
+                    for p in sorted({q for q, _t in facades})), encoding='utf-8', newline='\n')
     return 0
 
 

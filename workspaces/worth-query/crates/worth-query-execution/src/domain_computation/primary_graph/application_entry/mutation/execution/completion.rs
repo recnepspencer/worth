@@ -70,11 +70,16 @@ where
 
     pub(super) fn run(
         self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_entry::host::ApplicationEntryHost<Schema>,
         identities: &ApplicationMutationIdentities<'_, Schema, Binding>,
     ) -> Report<Schema, Binding> {
         let decision = self.plan.run(self.execution);
-        (self.complete)(runtime, identities, decision, self.projection)
+        (self.complete)(
+            runtime.application_runtime(),
+            identities,
+            decision,
+            self.projection,
+        )
     }
 
     pub(in crate::domain_computation::primary_graph) fn into_parts(
@@ -124,13 +129,13 @@ where
 {
     pub(in crate::domain_computation::primary_graph) fn finish(
         self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_entry::host::ApplicationEntryHost<Schema>,
         identities: &ApplicationMutationIdentities<'_, Schema, Binding>,
         slots: Vec<crate::domain_computation::primary_graph::application_contribution::computation::prepared_request::ComputedSlot>,
         execution: &QueryRequestExecution<'_>,
     ) -> Report<Schema, Binding> {
         (self.complete)(
-            runtime,
+            runtime.application_runtime(),
             identities,
             self.decision.finish(slots, execution),
             self.projection,
