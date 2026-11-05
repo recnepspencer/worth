@@ -1,0 +1,2369 @@
+{
+ "type": "domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation",
+ "impl_blocks": 56,
+ "impl_blocks_by_module": {
+  "application_attempt": 7,
+  "application_query": 7,
+  "application_output_demand": 6,
+  "product_operation::correction_source": 6,
+  "application_discovery": 5,
+  "entity_resolution": 5,
+  "product_operation::program_adoption": 4,
+  "product_operation::query": 4,
+  "resolution": 3,
+  "product_operation::context": 2,
+  "conditional_operation": 1,
+  "product_operation::branches": 1,
+  "product_operation::conditional_definition": 1,
+  "product_operation::generated_materialization": 1,
+  "product_operation::operation": 1,
+  "product_operation::relational_change_delivery": 1,
+  "product_operation::shared_query_basis": 1
+ },
+ "methods": 132,
+ "fields": {
+  "application": {
+   "owner": "product_operation::context",
+   "modules": {
+    "product_operation::context": 3
+   },
+   "methods": 3
+  },
+  "application.on_product()": {
+   "owner": null,
+   "modules": {
+    "product_operation::context": 1
+   },
+   "methods": 1
+  },
+  "application_basis": {
+   "owner": "product_operation::context",
+   "modules": {
+    "product_operation::context": 3
+   },
+   "methods": 3
+  },
+  "producer": {
+   "owner": "product_operation::context",
+   "modules": {
+    "product_operation::context": 3
+   },
+   "methods": 3
+  },
+  "product": {
+   "owner": "product_operation::context",
+   "modules": {
+    "product_operation::context": 4
+   },
+   "methods": 4
+  },
+  "selected_program": {
+   "owner": null,
+   "modules": {
+    "product_operation::context": 1
+   },
+   "methods": 1
+  },
+  "selection_origin": {
+   "owner": "product_operation::context",
+   "modules": {
+    "product_operation::context": 2
+   },
+   "methods": 2
+  }
+ },
+ "clusters": [
+  {
+   "module": "product_operation::context",
+   "fields": [
+    "application",
+    "application_basis",
+    "producer",
+    "product",
+    "selection_origin"
+   ],
+   "methods": [
+    "application",
+    "application_basis",
+    "application_basis_mut",
+    "into_parts",
+    "original_settled_producer",
+    "product",
+    "retain_selection",
+    "selection_origin",
+    "with_original_settled_producer"
+   ],
+   "accesses": 15
+  }
+ ],
+ "cross_subsystem_calls": [],
+ "foreign_field_uses": [],
+ "method_list": [
+  {
+   "name": "prepare_workflow_captured_input",
+   "module": "application_attempt",
+   "source_module": "domain_computation::primary_graph::application_attempt::workflow::captured_input",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow/captured_input.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 113,
+   "fields": {},
+   "calls": [
+    "application",
+    "application_basis",
+    "describe_workflow_source",
+    "product"
+   ],
+   "field_calls": [],
+   "line": 124,
+   "subsystem": null
+  },
+  {
+   "name": "bind_workflow_definition_contract",
+   "module": "application_attempt",
+   "source_module": "domain_computation::primary_graph::application_attempt::workflow::definition::preparation",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow/definition/preparation.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 24,
+   "fields": {},
+   "calls": [
+    "application",
+    "inspect_selected_program",
+    "product"
+   ],
+   "field_calls": [],
+   "line": 94,
+   "subsystem": null
+  },
+  {
+   "name": "prepare_workflow_publication",
+   "module": "application_attempt",
+   "source_module": "domain_computation::primary_graph::application_attempt::workflow::definition::preparation",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow/definition/preparation.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 67,
+   "fields": {},
+   "calls": [
+    "application",
+    "bind_workflow_definition_contract"
+   ],
+   "field_calls": [],
+   "line": 119,
+   "subsystem": null
+  },
+  {
+   "name": "prepare_workflow_definition_retirement",
+   "module": "application_attempt",
+   "source_module": "domain_computation::primary_graph::application_attempt::workflow::definition::retirement",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow/definition/retirement.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 76,
+   "fields": {},
+   "calls": [
+    "application",
+    "inspect_selected_program",
+    "product"
+   ],
+   "field_calls": [],
+   "line": 26,
+   "subsystem": null
+  },
+  {
+   "name": "prepare_workflow_instance_start",
+   "module": "application_attempt",
+   "source_module": "domain_computation::primary_graph::application_attempt::workflow_instance_program::preparation",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_instance_program/preparation.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 32,
+   "fields": {},
+   "calls": [
+    "application",
+    "begin_instance_read_set"
+   ],
+   "field_calls": [],
+   "line": 64,
+   "subsystem": null
+  },
+  {
+   "name": "prepare_workflow_instance_migration",
+   "module": "application_attempt",
+   "source_module": "domain_computation::primary_graph::application_attempt::workflow_instance_program::preparation",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_instance_program/preparation.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 39,
+   "fields": {},
+   "calls": [
+    "application",
+    "begin_instance_read_set"
+   ],
+   "field_calls": [],
+   "line": 97,
+   "subsystem": null
+  },
+  {
+   "name": "prepare_workflow_instance_cancellation",
+   "module": "application_attempt",
+   "source_module": "domain_computation::primary_graph::application_attempt::workflow_instance_program::preparation",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_instance_program/preparation.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 31,
+   "fields": {},
+   "calls": [
+    "begin_instance_read_set"
+   ],
+   "field_calls": [],
+   "line": 137,
+   "subsystem": null
+  },
+  {
+   "name": "begin_instance_read_set",
+   "module": "application_attempt",
+   "source_module": "domain_computation::primary_graph::application_attempt::workflow_instance_program::preparation",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_instance_program/preparation.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 74,
+   "fields": {},
+   "calls": [
+    "application",
+    "inspect_selected_program",
+    "product"
+   ],
+   "field_calls": [],
+   "line": 169,
+   "subsystem": null
+  },
+  {
+   "name": "prepare_workflow_proposal",
+   "module": "application_attempt",
+   "source_module": "domain_computation::primary_graph::application_attempt::workflow_proposal_program::preparation",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_proposal_program/preparation.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 88,
+   "fields": {},
+   "calls": [
+    "application",
+    "inspect_selected_program",
+    "product"
+   ],
+   "field_calls": [],
+   "line": 51,
+   "subsystem": null
+  },
+  {
+   "name": "prepare_workflow_advance",
+   "module": "application_attempt",
+   "source_module": "domain_computation::primary_graph::application_attempt::workflow_transition_program::preparation",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_transition_program/preparation.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 29,
+   "fields": {},
+   "calls": [
+    "prepare_workflow_transition"
+   ],
+   "field_calls": [],
+   "line": 86,
+   "subsystem": null
+  },
+  {
+   "name": "prepare_workflow_navigate_back",
+   "module": "application_attempt",
+   "source_module": "domain_computation::primary_graph::application_attempt::workflow_transition_program::preparation",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_transition_program/preparation.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 29,
+   "fields": {},
+   "calls": [
+    "prepare_workflow_transition"
+   ],
+   "field_calls": [],
+   "line": 116,
+   "subsystem": null
+  },
+  {
+   "name": "prepare_workflow_collect_assessment",
+   "module": "application_attempt",
+   "source_module": "domain_computation::primary_graph::application_attempt::workflow_transition_program::preparation",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_transition_program/preparation.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 30,
+   "fields": {},
+   "calls": [
+    "prepare_workflow_transition"
+   ],
+   "field_calls": [],
+   "line": 146,
+   "subsystem": null
+  },
+  {
+   "name": "prepare_workflow_transition",
+   "module": "application_attempt",
+   "source_module": "domain_computation::primary_graph::application_attempt::workflow_transition_program::preparation",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_transition_program/preparation.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 30,
+   "fields": {},
+   "calls": [
+    "application",
+    "prepare_transition_observation"
+   ],
+   "field_calls": [],
+   "line": 177,
+   "subsystem": null
+  },
+  {
+   "name": "prepare_workflow_approval",
+   "module": "application_attempt",
+   "source_module": "domain_computation::primary_graph::application_attempt::workflow_transition_program::preparation",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_transition_program/preparation.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 92,
+   "fields": {},
+   "calls": [
+    "application",
+    "inspect_selected_program",
+    "product"
+   ],
+   "field_calls": [],
+   "line": 208,
+   "subsystem": null
+  },
+  {
+   "name": "prepare_transition_observation",
+   "module": "application_attempt",
+   "source_module": "domain_computation::primary_graph::application_attempt::workflow_transition_program::preparation::observation",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_transition_program/preparation/observation.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 74,
+   "fields": {},
+   "calls": [
+    "application",
+    "inspect_selected_program",
+    "product"
+   ],
+   "field_calls": [],
+   "line": 8,
+   "subsystem": null
+  },
+  {
+   "name": "prepare_local_workflow_transition",
+   "module": "application_attempt",
+   "source_module": "domain_computation::primary_graph::application_attempt::workflow_transition_program::preparation::observation",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_transition_program/preparation/observation.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 23,
+   "fields": {},
+   "calls": [
+    "application",
+    "prepare_transition_observation"
+   ],
+   "field_calls": [],
+   "line": 82,
+   "subsystem": null
+  },
+  {
+   "name": "discover_workflow_definition",
+   "module": "application_discovery",
+   "source_module": "domain_computation::primary_graph::application_discovery::workflow::definition",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_discovery/workflow/definition.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 102,
+   "fields": {},
+   "calls": [
+    "application",
+    "product"
+   ],
+   "field_calls": [],
+   "line": 42,
+   "subsystem": null
+  },
+  {
+   "name": "read_workflow_instances",
+   "module": "application_discovery",
+   "source_module": "domain_computation::primary_graph::application_discovery::workflow::enumeration",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_discovery/workflow/enumeration.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 175,
+   "fields": {},
+   "calls": [
+    "application",
+    "product"
+   ],
+   "field_calls": [],
+   "line": 76,
+   "subsystem": null
+  },
+  {
+   "name": "read_workflow_history",
+   "module": "application_discovery",
+   "source_module": "domain_computation::primary_graph::application_discovery::workflow::history_page",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_discovery/workflow/history_page.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 173,
+   "fields": {},
+   "calls": [
+    "application"
+   ],
+   "field_calls": [],
+   "line": 21,
+   "subsystem": null
+  },
+  {
+   "name": "read_original_workflow",
+   "module": "application_discovery",
+   "source_module": "domain_computation::primary_graph::application_discovery::workflow::read",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_discovery/workflow/read.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 96,
+   "fields": {},
+   "calls": [
+    "application",
+    "product"
+   ],
+   "field_calls": [],
+   "line": 23,
+   "subsystem": null
+  },
+  {
+   "name": "subscribe_workflow_history",
+   "module": "application_discovery",
+   "source_module": "domain_computation::primary_graph::application_discovery::workflow::subscription",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_discovery/workflow/subscription.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 48,
+   "fields": {},
+   "calls": [
+    "admit_history_interest",
+    "application"
+   ],
+   "field_calls": [],
+   "line": 47,
+   "subsystem": null
+  },
+  {
+   "name": "poll_workflow_history",
+   "module": "application_discovery",
+   "source_module": "domain_computation::primary_graph::application_discovery::workflow::subscription",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_discovery/workflow/subscription.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 87,
+   "fields": {},
+   "calls": [
+    "admit_history_interest",
+    "application",
+    "product"
+   ],
+   "field_calls": [],
+   "line": 96,
+   "subsystem": null
+  },
+  {
+   "name": "admit_history_interest",
+   "module": "application_discovery",
+   "source_module": "domain_computation::primary_graph::application_discovery::workflow::subscription",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_discovery/workflow/subscription.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 28,
+   "fields": {},
+   "calls": [
+    "application"
+   ],
+   "field_calls": [],
+   "line": 183,
+   "subsystem": null
+  },
+  {
+   "name": "qualify_completed_required_outputs",
+   "module": "application_output_demand",
+   "source_module": "domain_computation::primary_graph::application_output_demand::completed_outputs",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_output_demand/completed_outputs.rs",
+   "trait": null,
+   "receiver": "self",
+   "lines": 45,
+   "fields": {},
+   "calls": [
+    "application",
+    "product",
+    "qualify_completed_output_set"
+   ],
+   "field_calls": [],
+   "line": 75,
+   "subsystem": null
+  },
+  {
+   "name": "qualify_completed_read_outputs",
+   "module": "application_output_demand",
+   "source_module": "domain_computation::primary_graph::application_output_demand::completed_read",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_output_demand/completed_read.rs",
+   "trait": null,
+   "receiver": "self",
+   "lines": 35,
+   "fields": {},
+   "calls": [
+    "application",
+    "product",
+    "qualify_completed_output_set"
+   ],
+   "field_calls": [],
+   "line": 51,
+   "subsystem": null
+  },
+  {
+   "name": "qualify_completed_output_set",
+   "module": "application_output_demand",
+   "source_module": "domain_computation::primary_graph::application_output_demand::completed_set",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_output_demand/completed_set.rs",
+   "trait": null,
+   "receiver": "self",
+   "lines": 44,
+   "fields": {},
+   "calls": [
+    "application",
+    "require_current_output_settlements",
+    "require_current_required_set",
+    "retain_application_read"
+   ],
+   "field_calls": [],
+   "line": 21,
+   "subsystem": null
+  },
+  {
+   "name": "require_current_output_settlements",
+   "module": "application_output_demand",
+   "source_module": "domain_computation::primary_graph::application_output_demand::currentness",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_output_demand/currentness.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 22,
+   "fields": {},
+   "calls": [
+    "application",
+    "require_current_settlements_in"
+   ],
+   "field_calls": [],
+   "line": 24,
+   "subsystem": null
+  },
+  {
+   "name": "require_current_output_receipts",
+   "module": "application_output_demand",
+   "source_module": "domain_computation::primary_graph::application_output_demand::currentness",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_output_demand/currentness.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 52,
+   "fields": {},
+   "calls": [
+    "application",
+    "product",
+    "require_current_read"
+   ],
+   "field_calls": [],
+   "line": 50,
+   "subsystem": null
+  },
+  {
+   "name": "require_current_read",
+   "module": "application_output_demand",
+   "source_module": "domain_computation::primary_graph::application_output_demand::currentness",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_output_demand/currentness.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 16,
+   "fields": {},
+   "calls": [
+    "application_basis",
+    "require_current_read_in"
+   ],
+   "field_calls": [],
+   "line": 106,
+   "subsystem": null
+  },
+  {
+   "name": "require_current_read_in",
+   "module": "application_output_demand",
+   "source_module": "domain_computation::primary_graph::application_output_demand::currentness",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_output_demand/currentness.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 69,
+   "fields": {},
+   "calls": [
+    "application",
+    "application_basis",
+    "product",
+    "require_current_consumed"
+   ],
+   "field_calls": [],
+   "line": 123,
+   "subsystem": null
+  },
+  {
+   "name": "require_current_consumed",
+   "module": "application_output_demand",
+   "source_module": "domain_computation::primary_graph::application_output_demand::currentness::consumed",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_output_demand/currentness/consumed.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 45,
+   "fields": {},
+   "calls": [
+    "application",
+    "application_basis"
+   ],
+   "field_calls": [],
+   "line": 9,
+   "subsystem": null
+  },
+  {
+   "name": "require_current_settlements_in",
+   "module": "application_output_demand",
+   "source_module": "domain_computation::primary_graph::application_output_demand::currentness::settlements",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_output_demand/currentness/settlements.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 20,
+   "fields": {},
+   "calls": [
+    "application_basis",
+    "require_current_settlements_in_extent"
+   ],
+   "field_calls": [],
+   "line": 3,
+   "subsystem": null
+  },
+  {
+   "name": "require_current_settlements_in_extent",
+   "module": "application_output_demand",
+   "source_module": "domain_computation::primary_graph::application_output_demand::currentness::settlements",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_output_demand/currentness/settlements.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 71,
+   "fields": {},
+   "calls": [
+    "application",
+    "product",
+    "require_current_read_in"
+   ],
+   "field_calls": [],
+   "line": 24,
+   "subsystem": null
+  },
+  {
+   "name": "open_application_query_live",
+   "module": "application_query",
+   "source_module": "domain_computation::primary_graph::application_query::live::lease::open",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/live/lease/open.rs",
+   "trait": null,
+   "receiver": "self",
+   "lines": 65,
+   "fields": {},
+   "calls": [
+    "into_parts",
+    "original_settled_producer"
+   ],
+   "field_calls": [],
+   "line": 58,
+   "subsystem": null
+  },
+  {
+   "name": "open_governed_application_query_live",
+   "module": "application_query",
+   "source_module": "domain_computation::primary_graph::application_query::live::lease::open",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/live/lease/open.rs",
+   "trait": null,
+   "receiver": "self",
+   "lines": 107,
+   "fields": {},
+   "calls": [
+    "into_parts",
+    "original_settled_producer"
+   ],
+   "field_calls": [],
+   "line": 124,
+   "subsystem": null
+  },
+  {
+   "name": "retain_query_dependencies",
+   "module": "application_query",
+   "source_module": "domain_computation::primary_graph::application_query::observed_source::retained_dependencies",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/observed_source/retained_dependencies.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 57,
+   "fields": {},
+   "calls": [
+    "application",
+    "retain_original_dependencies",
+    "validate_dependency"
+   ],
+   "field_calls": [],
+   "line": 89,
+   "subsystem": null
+  },
+  {
+   "name": "combine_query_dependencies",
+   "module": "application_query",
+   "source_module": "domain_computation::primary_graph::application_query::observed_source::retained_dependencies",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/observed_source/retained_dependencies.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 33,
+   "fields": {},
+   "calls": [
+    "application",
+    "validate_dependency"
+   ],
+   "field_calls": [],
+   "line": 149,
+   "subsystem": null
+  },
+  {
+   "name": "validate_dependency",
+   "module": "application_query",
+   "source_module": "domain_computation::primary_graph::application_query::observed_source::retained_dependencies",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/observed_source/retained_dependencies.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 31,
+   "fields": {},
+   "calls": [
+    "application",
+    "application_basis",
+    "product"
+   ],
+   "field_calls": [],
+   "line": 183,
+   "subsystem": null
+  },
+  {
+   "name": "require_current_required_set",
+   "module": "application_query",
+   "source_module": "domain_computation::primary_graph::application_query::observed_source::retained_dependencies::comparison",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/observed_source/retained_dependencies/comparison.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 38,
+   "fields": {},
+   "calls": [
+    "application",
+    "application_basis",
+    "require_current_dependency_in",
+    "require_current_settlements_in_extent"
+   ],
+   "field_calls": [],
+   "line": 15,
+   "subsystem": null
+  },
+  {
+   "name": "require_current_dependency_in",
+   "module": "application_query",
+   "source_module": "domain_computation::primary_graph::application_query::observed_source::retained_dependencies::comparison",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/observed_source/retained_dependencies/comparison.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 67,
+   "fields": {},
+   "calls": [
+    "application",
+    "application_basis",
+    "validate_dependency"
+   ],
+   "field_calls": [],
+   "line": 55,
+   "subsystem": null
+  },
+  {
+   "name": "retain_original_dependencies",
+   "module": "application_query",
+   "source_module": "domain_computation::primary_graph::application_query::observed_source::retained_dependencies::coverage",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/observed_source/retained_dependencies/coverage.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 60,
+   "fields": {},
+   "calls": [
+    "application",
+    "application_basis"
+   ],
+   "field_calls": [],
+   "line": 54,
+   "subsystem": null
+  },
+  {
+   "name": "describe_workflow_source",
+   "module": "application_query",
+   "source_module": "domain_computation::primary_graph::application_query::observed_source::workflow_capture",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/observed_source/workflow_capture.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 63,
+   "fields": {},
+   "calls": [
+    "application",
+    "application_basis",
+    "product"
+   ],
+   "field_calls": [],
+   "line": 19,
+   "subsystem": null
+  },
+  {
+   "name": "inspect_application_readiness",
+   "module": "application_query",
+   "source_module": "domain_computation::primary_graph::application_query::readiness",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/readiness.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 20,
+   "fields": {},
+   "calls": [
+    "application",
+    "application_basis"
+   ],
+   "field_calls": [],
+   "line": 32,
+   "subsystem": null
+  },
+  {
+   "name": "retain_application_read",
+   "module": "application_query",
+   "source_module": "domain_computation::primary_graph::application_query::retained_read",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/retained_read.rs",
+   "trait": null,
+   "receiver": "self",
+   "lines": 16,
+   "fields": {},
+   "calls": [
+    "into_parts",
+    "original_settled_producer"
+   ],
+   "field_calls": [],
+   "line": 145,
+   "subsystem": null
+  },
+  {
+   "name": "conditional_clock",
+   "module": "conditional_operation",
+   "source_module": "domain_computation::primary_graph::conditional_operation::clock_observation::product_admission",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/conditional_operation/clock_observation/product_admission.rs",
+   "trait": null,
+   "receiver": "self",
+   "lines": 46,
+   "fields": {},
+   "calls": [
+    "application"
+   ],
+   "field_calls": [],
+   "line": 15,
+   "subsystem": null
+  },
+  {
+   "name": "resolve_encoded_entity_admitted",
+   "module": "entity_resolution",
+   "source_module": "domain_computation::primary_graph::entity_resolution::admitted_scope",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/entity_resolution/admitted_scope.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 13,
+   "fields": {},
+   "calls": [
+    "resolve_encoded_entity_admitted_with_native_access"
+   ],
+   "field_calls": [],
+   "line": 25,
+   "subsystem": null
+  },
+  {
+   "name": "resolve_encoded_entity_admitted_with_native_access",
+   "module": "entity_resolution",
+   "source_module": "domain_computation::primary_graph::entity_resolution::admitted_scope",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/entity_resolution/admitted_scope.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 113,
+   "fields": {},
+   "calls": [
+    "application",
+    "application_basis",
+    "product"
+   ],
+   "field_calls": [],
+   "line": 39,
+   "subsystem": null
+  },
+  {
+   "name": "resolve_entity",
+   "module": "entity_resolution",
+   "source_module": "domain_computation::primary_graph::entity_resolution::product",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/entity_resolution/product.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 32,
+   "fields": {},
+   "calls": [
+    "application",
+    "resolve_entity_with_request"
+   ],
+   "field_calls": [],
+   "line": 26,
+   "subsystem": null
+  },
+  {
+   "name": "resolve_entity_with_request",
+   "module": "entity_resolution",
+   "source_module": "domain_computation::primary_graph::entity_resolution::product",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/entity_resolution/product.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 48,
+   "fields": {},
+   "calls": [
+    "resolve_encoded_entity"
+   ],
+   "field_calls": [],
+   "line": 59,
+   "subsystem": null
+  },
+  {
+   "name": "resolve_encoded_entity",
+   "module": "entity_resolution",
+   "source_module": "domain_computation::primary_graph::entity_resolution::product",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/entity_resolution/product.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 48,
+   "fields": {},
+   "calls": [
+    "application",
+    "application_basis",
+    "product"
+   ],
+   "field_calls": [],
+   "line": 110,
+   "subsystem": null
+  },
+  {
+   "name": "resolve_entity_admitted_with_native_access",
+   "module": "entity_resolution",
+   "source_module": "domain_computation::primary_graph::entity_resolution::product::admitted_mutation",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/entity_resolution/product/admitted_mutation.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 79,
+   "fields": {},
+   "calls": [
+    "application",
+    "resolve_encoded_entity_admitted_with_native_access"
+   ],
+   "field_calls": [],
+   "line": 7,
+   "subsystem": null
+  },
+  {
+   "name": "resolve_mutation_scope_issued",
+   "module": "entity_resolution",
+   "source_module": "domain_computation::primary_graph::entity_resolution::product::issued_scope",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/entity_resolution/product/issued_scope.rs",
+   "trait": null,
+   "receiver": "self",
+   "lines": 34,
+   "fields": {},
+   "calls": [
+    "resolve_query_scope_issued_with_native_access"
+   ],
+   "field_calls": [],
+   "line": 45,
+   "subsystem": null
+  },
+  {
+   "name": "resolve_query_scope_issued_with_native_access",
+   "module": "entity_resolution",
+   "source_module": "domain_computation::primary_graph::entity_resolution::product::issued_scope",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/entity_resolution/product/issued_scope.rs",
+   "trait": null,
+   "receiver": "self",
+   "lines": 43,
+   "fields": {},
+   "calls": [
+    "resolve_entity_admitted_with_native_access"
+   ],
+   "field_calls": [],
+   "line": 80,
+   "subsystem": null
+  },
+  {
+   "name": "resolve_retained_query_scope_issued",
+   "module": "entity_resolution",
+   "source_module": "domain_computation::primary_graph::entity_resolution::product::issued_scope",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/entity_resolution/product/issued_scope.rs",
+   "trait": null,
+   "receiver": "self",
+   "lines": 35,
+   "fields": {},
+   "calls": [
+    "resolve_retained_query_scope_issued_with_native_access"
+   ],
+   "field_calls": [],
+   "line": 124,
+   "subsystem": null
+  },
+  {
+   "name": "resolve_retained_query_scope_issued_with_native_access",
+   "module": "entity_resolution",
+   "source_module": "domain_computation::primary_graph::entity_resolution::product::issued_scope",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/entity_resolution/product/issued_scope.rs",
+   "trait": null,
+   "receiver": "self",
+   "lines": 43,
+   "fields": {},
+   "calls": [
+    "resolve_retained_query_scope_with_native_access"
+   ],
+   "field_calls": [],
+   "line": 160,
+   "subsystem": null
+  },
+  {
+   "name": "resolve_retained_query_scope",
+   "module": "entity_resolution",
+   "source_module": "domain_computation::primary_graph::entity_resolution::product::retained_scope",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/entity_resolution/product/retained_scope.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 31,
+   "fields": {},
+   "calls": [
+    "resolve_retained_query_scope_with_native_access"
+   ],
+   "field_calls": [],
+   "line": 5,
+   "subsystem": null
+  },
+  {
+   "name": "resolve_retained_query_scope_with_native_access",
+   "module": "entity_resolution",
+   "source_module": "domain_computation::primary_graph::entity_resolution::product::retained_scope",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/entity_resolution/product/retained_scope.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 90,
+   "fields": {},
+   "calls": [
+    "application",
+    "resolve_encoded_entity_admitted_with_native_access"
+   ],
+   "field_calls": [],
+   "line": 37,
+   "subsystem": null
+  },
+  {
+   "name": "describe_basis",
+   "module": "product_operation::branches",
+   "source_module": "domain_computation::primary_graph::product_operation::branches::expected_basis",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/branches/expected_basis.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 3,
+   "fields": {},
+   "calls": [
+    "product"
+   ],
+   "field_calls": [],
+   "line": 89,
+   "subsystem": null
+  },
+  {
+   "name": "admit_application_conditional_definition",
+   "module": "product_operation::conditional_definition",
+   "source_module": "domain_computation::primary_graph::product_operation::conditional_definition",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/conditional_definition.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 15,
+   "fields": {},
+   "calls": [
+    "application",
+    "product"
+   ],
+   "field_calls": [],
+   "line": 108,
+   "subsystem": null
+  },
+  {
+   "name": "publish_conditional_definition",
+   "module": "product_operation::conditional_definition",
+   "source_module": "domain_computation::primary_graph::product_operation::conditional_definition",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/conditional_definition.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 41,
+   "fields": {},
+   "calls": [
+    "application",
+    "product"
+   ],
+   "field_calls": [],
+   "line": 124,
+   "subsystem": null
+  },
+  {
+   "name": "inspect_selected_program",
+   "module": "product_operation::context",
+   "source_module": "domain_computation::primary_graph::product_operation::context",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/context.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 11,
+   "fields": {
+    "selected_program": [
+     "read"
+    ]
+   },
+   "calls": [],
+   "field_calls": [],
+   "line": 257,
+   "subsystem": null
+  },
+  {
+   "name": "selection_origin",
+   "module": "product_operation::context",
+   "source_module": "domain_computation::primary_graph::product_operation::context",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/context.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 5,
+   "fields": {
+    "selection_origin": [
+     "read"
+    ]
+   },
+   "calls": [],
+   "field_calls": [],
+   "line": 269,
+   "subsystem": "product_operation::context"
+  },
+  {
+   "name": "product",
+   "module": "product_operation::context",
+   "source_module": "domain_computation::primary_graph::product_operation::context",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/context.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 3,
+   "fields": {
+    "product": [
+     "read"
+    ]
+   },
+   "calls": [],
+   "field_calls": [],
+   "line": 275,
+   "subsystem": "product_operation::context"
+  },
+  {
+   "name": "application",
+   "module": "product_operation::context",
+   "source_module": "domain_computation::primary_graph::product_operation::context",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/context.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 3,
+   "fields": {
+    "application": [
+     "read"
+    ]
+   },
+   "calls": [],
+   "field_calls": [],
+   "line": 279,
+   "subsystem": "product_operation::context"
+  },
+  {
+   "name": "application_basis",
+   "module": "product_operation::context",
+   "source_module": "domain_computation::primary_graph::product_operation::context",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/context.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 5,
+   "fields": {
+    "application_basis": [
+     "read"
+    ]
+   },
+   "calls": [],
+   "field_calls": [],
+   "line": 283,
+   "subsystem": "product_operation::context"
+  },
+  {
+   "name": "original_settled_producer",
+   "module": "product_operation::context",
+   "source_module": "domain_computation::primary_graph::product_operation::context",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/context.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 9,
+   "fields": {
+    "producer": [
+     "read"
+    ]
+   },
+   "calls": [],
+   "field_calls": [],
+   "line": 289,
+   "subsystem": "product_operation::context"
+  },
+  {
+   "name": "application_basis_mut",
+   "module": "product_operation::context",
+   "source_module": "domain_computation::primary_graph::product_operation::context",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/context.rs",
+   "trait": null,
+   "receiver": "&mut self",
+   "lines": 6,
+   "fields": {
+    "application_basis": [
+     "mut_borrow"
+    ]
+   },
+   "calls": [],
+   "field_calls": [],
+   "line": 299,
+   "subsystem": "product_operation::context"
+  },
+  {
+   "name": "into_parts",
+   "module": "product_operation::context",
+   "source_module": "domain_computation::primary_graph::product_operation::context",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/context.rs",
+   "trait": null,
+   "receiver": "self",
+   "lines": 9,
+   "fields": {
+    "application": [
+     "read"
+    ],
+    "application_basis": [
+     "read"
+    ],
+    "product": [
+     "read"
+    ]
+   },
+   "calls": [],
+   "field_calls": [],
+   "line": 306,
+   "subsystem": "product_operation::context"
+  },
+  {
+   "name": "with_original_settled_producer",
+   "module": "product_operation::context",
+   "source_module": "domain_computation::primary_graph::product_operation::context",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/context.rs",
+   "trait": null,
+   "receiver": "self",
+   "lines": 12,
+   "fields": {
+    "application": [
+     "read"
+    ],
+    "producer": [
+     "write"
+    ],
+    "product": [
+     "read"
+    ]
+   },
+   "calls": [],
+   "field_calls": [],
+   "line": 318,
+   "subsystem": "product_operation::context"
+  },
+  {
+   "name": "retain_selection",
+   "module": "product_operation::context",
+   "source_module": "domain_computation::primary_graph::product_operation::context",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/context.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 11,
+   "fields": {
+    "application.on_product()": [
+     "read"
+    ],
+    "producer": [
+     "read"
+    ],
+    "product": [
+     "read"
+    ],
+    "selection_origin": [
+     "read"
+    ]
+   },
+   "calls": [],
+   "field_calls": [
+    "application.on_product"
+   ],
+   "line": 331,
+   "subsystem": "product_operation::context"
+  },
+  {
+   "name": "select_correction_input",
+   "module": "product_operation::correction_source",
+   "source_module": "domain_computation::primary_graph::product_operation::correction_source",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/correction_source.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 23,
+   "fields": {},
+   "calls": [],
+   "field_calls": [],
+   "line": 77,
+   "subsystem": null
+  },
+  {
+   "name": "inspect_correction_source",
+   "module": "product_operation::correction_source",
+   "source_module": "domain_computation::primary_graph::product_operation::correction_source",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/correction_source.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 20,
+   "fields": {},
+   "calls": [],
+   "field_calls": [],
+   "line": 101,
+   "subsystem": null
+  },
+  {
+   "name": "derive_correction_inverse",
+   "module": "product_operation::correction_source",
+   "source_module": "domain_computation::primary_graph::product_operation::correction_source",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/correction_source.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 35,
+   "fields": {},
+   "calls": [],
+   "field_calls": [],
+   "line": 122,
+   "subsystem": null
+  },
+  {
+   "name": "select_correction_source",
+   "module": "product_operation::correction_source",
+   "source_module": "domain_computation::primary_graph::product_operation::correction_source",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/correction_source.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 39,
+   "fields": {},
+   "calls": [
+    "application",
+    "select_retained_occurrence"
+   ],
+   "field_calls": [],
+   "line": 158,
+   "subsystem": null
+  },
+  {
+   "name": "select_recorded_correction_source",
+   "module": "product_operation::correction_source",
+   "source_module": "domain_computation::primary_graph::product_operation::correction_source",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/correction_source.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 21,
+   "fields": {},
+   "calls": [
+    "select_correction_source_coordinates"
+   ],
+   "field_calls": [],
+   "line": 199,
+   "subsystem": null
+  },
+  {
+   "name": "select_correction_source_coordinates",
+   "module": "product_operation::correction_source",
+   "source_module": "domain_computation::primary_graph::product_operation::correction_source",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/correction_source.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 35,
+   "fields": {},
+   "calls": [
+    "application",
+    "select_retained_occurrence"
+   ],
+   "field_calls": [],
+   "line": 222,
+   "subsystem": null
+  },
+  {
+   "name": "select_retained_occurrence",
+   "module": "product_operation::correction_source",
+   "source_module": "domain_computation::primary_graph::product_operation::correction_source",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/correction_source.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 57,
+   "fields": {},
+   "calls": [
+    "application",
+    "product"
+   ],
+   "field_calls": [],
+   "line": 258,
+   "subsystem": null
+  },
+  {
+   "name": "correction_alternatives",
+   "module": "product_operation::correction_source",
+   "source_module": "domain_computation::primary_graph::product_operation::correction_source::alternatives",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/correction_source/alternatives.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 87,
+   "fields": {},
+   "calls": [
+    "application",
+    "product",
+    "select_recorded_correction_source"
+   ],
+   "field_calls": [],
+   "line": 119,
+   "subsystem": null
+  },
+  {
+   "name": "select_correction_alternative",
+   "module": "product_operation::correction_source",
+   "source_module": "domain_computation::primary_graph::product_operation::correction_source::alternatives",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/correction_source/alternatives.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 77,
+   "fields": {},
+   "calls": [
+    "application",
+    "product",
+    "select_alternative_ancestry",
+    "select_recorded_correction_source"
+   ],
+   "field_calls": [],
+   "line": 208,
+   "subsystem": null
+  },
+  {
+   "name": "select_alternative_ancestry",
+   "module": "product_operation::correction_source",
+   "source_module": "domain_computation::primary_graph::product_operation::correction_source::alternatives",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/correction_source/alternatives.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 23,
+   "fields": {},
+   "calls": [
+    "application",
+    "product"
+   ],
+   "field_calls": [],
+   "line": 286,
+   "subsystem": null
+  },
+  {
+   "name": "select_correction_alternative_coordinates",
+   "module": "product_operation::correction_source",
+   "source_module": "domain_computation::primary_graph::product_operation::correction_source::alternatives::selection",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/correction_source/alternatives/selection.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 57,
+   "fields": {},
+   "calls": [
+    "application",
+    "product",
+    "select_correction_alternative",
+    "select_correction_source_coordinates"
+   ],
+   "field_calls": [],
+   "line": 21,
+   "subsystem": null
+  },
+  {
+   "name": "correction_command_key",
+   "module": "product_operation::correction_source",
+   "source_module": "domain_computation::primary_graph::product_operation::correction_source::key",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/correction_source/key.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 12,
+   "fields": {},
+   "calls": [
+    "action_command_key"
+   ],
+   "field_calls": [],
+   "line": 25,
+   "subsystem": null
+  },
+  {
+   "name": "reapplication_command_key",
+   "module": "product_operation::correction_source",
+   "source_module": "domain_computation::primary_graph::product_operation::correction_source::key",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/correction_source/key.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 10,
+   "fields": {},
+   "calls": [
+    "action_command_key"
+   ],
+   "field_calls": [],
+   "line": 37,
+   "subsystem": null
+  },
+  {
+   "name": "action_command_key",
+   "module": "product_operation::correction_source",
+   "source_module": "domain_computation::primary_graph::product_operation::correction_source::key",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/correction_source/key.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 33,
+   "fields": {},
+   "calls": [
+    "application",
+    "resolve_authenticated_principal"
+   ],
+   "field_calls": [],
+   "line": 47,
+   "subsystem": null
+  },
+  {
+   "name": "select_reapplication_input",
+   "module": "product_operation::correction_source",
+   "source_module": "domain_computation::primary_graph::product_operation::correction_source::reapplication",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/correction_source/reapplication.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 25,
+   "fields": {},
+   "calls": [],
+   "field_calls": [],
+   "line": 116,
+   "subsystem": null
+  },
+  {
+   "name": "derive_correction_reapplication",
+   "module": "product_operation::correction_source",
+   "source_module": "domain_computation::primary_graph::product_operation::correction_source::reapplication",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/correction_source/reapplication.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 39,
+   "fields": {},
+   "calls": [],
+   "field_calls": [],
+   "line": 142,
+   "subsystem": null
+  },
+  {
+   "name": "derive_required_output_reapplication",
+   "module": "product_operation::correction_source",
+   "source_module": "domain_computation::primary_graph::product_operation::correction_source::required_output",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/correction_source/required_output.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 47,
+   "fields": {},
+   "calls": [],
+   "field_calls": [],
+   "line": 11,
+   "subsystem": null
+  },
+  {
+   "name": "derive_required_output_correction",
+   "module": "product_operation::correction_source",
+   "source_module": "domain_computation::primary_graph::product_operation::correction_source::required_output",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/correction_source/required_output.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 36,
+   "fields": {},
+   "calls": [],
+   "field_calls": [],
+   "line": 60,
+   "subsystem": null
+  },
+  {
+   "name": "suspend_current_generated_output",
+   "module": "product_operation::generated_materialization",
+   "source_module": "domain_computation::primary_graph::product_operation::generated_materialization::suspend",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/generated_materialization/suspend.rs",
+   "trait": null,
+   "receiver": "self",
+   "lines": 26,
+   "fields": {},
+   "calls": [
+    "application",
+    "suspend_observed_generated_output"
+   ],
+   "field_calls": [],
+   "line": 42,
+   "subsystem": null
+  },
+  {
+   "name": "suspend_observed_generated_output",
+   "module": "product_operation::generated_materialization",
+   "source_module": "domain_computation::primary_graph::product_operation::generated_materialization::suspend",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/generated_materialization/suspend.rs",
+   "trait": null,
+   "receiver": "self",
+   "lines": 32,
+   "fields": {},
+   "calls": [
+    "suspend_qualified_generated_output"
+   ],
+   "field_calls": [],
+   "line": 69,
+   "subsystem": null
+  },
+  {
+   "name": "suspend_qualified_generated_output",
+   "module": "product_operation::generated_materialization",
+   "source_module": "domain_computation::primary_graph::product_operation::generated_materialization::suspend",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/generated_materialization/suspend.rs",
+   "trait": null,
+   "receiver": "self",
+   "lines": 212,
+   "fields": {},
+   "calls": [
+    "into_parts"
+   ],
+   "field_calls": [],
+   "line": 102,
+   "subsystem": null
+  },
+  {
+   "name": "authorize_operation",
+   "module": "product_operation::operation",
+   "source_module": "domain_computation::primary_graph::product_operation::operation",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/operation.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 21,
+   "fields": {},
+   "calls": [
+    "authorize_borrowed_operation"
+   ],
+   "field_calls": [],
+   "line": 24,
+   "subsystem": null
+  },
+  {
+   "name": "authorize_borrowed_operation",
+   "module": "product_operation::operation",
+   "source_module": "domain_computation::primary_graph::product_operation::operation",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/operation.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 23,
+   "fields": {},
+   "calls": [
+    "application",
+    "authorize_operation_with_request"
+   ],
+   "field_calls": [],
+   "line": 46,
+   "subsystem": null
+  },
+  {
+   "name": "authorize_operation_with_request",
+   "module": "product_operation::operation",
+   "source_module": "domain_computation::primary_graph::product_operation::operation",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/operation.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 43,
+   "fields": {},
+   "calls": [
+    "application",
+    "product"
+   ],
+   "field_calls": [],
+   "line": 70,
+   "subsystem": null
+  },
+  {
+   "name": "admit_capability_access",
+   "module": "product_operation::operation",
+   "source_module": "domain_computation::primary_graph::product_operation::operation",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/operation.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 25,
+   "fields": {},
+   "calls": [
+    "admit_capability_access_with_request",
+    "application"
+   ],
+   "field_calls": [],
+   "line": 114,
+   "subsystem": null
+  },
+  {
+   "name": "admit_capability_access_with_request",
+   "module": "product_operation::operation",
+   "source_module": "domain_computation::primary_graph::product_operation::operation",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/operation.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 32,
+   "fields": {},
+   "calls": [
+    "application",
+    "product"
+   ],
+   "field_calls": [],
+   "line": 140,
+   "subsystem": null
+  },
+  {
+   "name": "admit_encoded_capability_access",
+   "module": "product_operation::operation",
+   "source_module": "domain_computation::primary_graph::product_operation::operation",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/operation.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 36,
+   "fields": {},
+   "calls": [
+    "admit_encoded_capability_access_with_request",
+    "application"
+   ],
+   "field_calls": [],
+   "line": 177,
+   "subsystem": null
+  },
+  {
+   "name": "admit_encoded_capability_access_with_request",
+   "module": "product_operation::operation",
+   "source_module": "domain_computation::primary_graph::product_operation::operation",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/operation.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 35,
+   "fields": {},
+   "calls": [
+    "application",
+    "product"
+   ],
+   "field_calls": [],
+   "line": 214,
+   "subsystem": null
+  },
+  {
+   "name": "admit_approved_elevation_access",
+   "module": "product_operation::operation",
+   "source_module": "domain_computation::primary_graph::product_operation::operation",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/operation.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 34,
+   "fields": {},
+   "calls": [
+    "admit_approved_elevation_access_with_request",
+    "application"
+   ],
+   "field_calls": [],
+   "line": 250,
+   "subsystem": null
+  },
+  {
+   "name": "admit_approved_elevation_access_with_request",
+   "module": "product_operation::operation",
+   "source_module": "domain_computation::primary_graph::product_operation::operation",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/operation.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 39,
+   "fields": {},
+   "calls": [
+    "application",
+    "product"
+   ],
+   "field_calls": [],
+   "line": 285,
+   "subsystem": null
+  },
+  {
+   "name": "authorize_program_adoption",
+   "module": "product_operation::program_adoption",
+   "source_module": "domain_computation::primary_graph::product_operation::program_adoption::authorization",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/program_adoption/authorization.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 16,
+   "fields": {},
+   "calls": [
+    "with_program_adoption"
+   ],
+   "field_calls": [],
+   "line": 180,
+   "subsystem": null
+  },
+  {
+   "name": "with_program_adoption",
+   "module": "product_operation::program_adoption",
+   "source_module": "domain_computation::primary_graph::product_operation::program_adoption::authorization",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/program_adoption/authorization.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 29,
+   "fields": {},
+   "calls": [
+    "application",
+    "inspect_selected_program"
+   ],
+   "field_calls": [],
+   "line": 198,
+   "subsystem": null
+  },
+  {
+   "name": "recover_branch_adoption_authorized_in_advancement",
+   "module": "product_operation::program_adoption",
+   "source_module": "domain_computation::primary_graph::product_operation::program_adoption::custody::recovery",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/program_adoption/custody/recovery.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 41,
+   "fields": {},
+   "calls": [
+    "application",
+    "with_program_adoption"
+   ],
+   "field_calls": [],
+   "line": 153,
+   "subsystem": null
+  },
+  {
+   "name": "recover_branch_adoption",
+   "module": "product_operation::program_adoption",
+   "source_module": "domain_computation::primary_graph::product_operation::program_adoption::custody::recovery",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/program_adoption/custody/recovery.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 26,
+   "fields": {},
+   "calls": [
+    "application",
+    "recover_branch_adoption_authorized_in_advancement"
+   ],
+   "field_calls": [],
+   "line": 195,
+   "subsystem": null
+  },
+  {
+   "name": "recover_branch_adoption_in_advancement",
+   "module": "product_operation::program_adoption",
+   "source_module": "domain_computation::primary_graph::product_operation::program_adoption::custody::recovery::readmission",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/program_adoption/custody/recovery/readmission.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 190,
+   "fields": {},
+   "calls": [
+    "application",
+    "product"
+   ],
+   "field_calls": [],
+   "line": 10,
+   "subsystem": null
+  },
+  {
+   "name": "branch_adoption_requirements",
+   "module": "product_operation::program_adoption",
+   "source_module": "domain_computation::primary_graph::product_operation::program_adoption::scope::single_branch",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/program_adoption/scope/single_branch.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 7,
+   "fields": {},
+   "calls": [],
+   "field_calls": [],
+   "line": 16,
+   "subsystem": null
+  },
+  {
+   "name": "prepare_branch_adoption",
+   "module": "product_operation::program_adoption",
+   "source_module": "domain_computation::primary_graph::product_operation::program_adoption::scope::single_branch",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/program_adoption/scope/single_branch.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 23,
+   "fields": {},
+   "calls": [
+    "application",
+    "prepare_branch_adoption_in_advancement"
+   ],
+   "field_calls": [],
+   "line": 26,
+   "subsystem": null
+  },
+  {
+   "name": "prepare_branch_adoption_with_migration",
+   "module": "product_operation::program_adoption",
+   "source_module": "domain_computation::primary_graph::product_operation::program_adoption::scope::single_branch",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/program_adoption/scope/single_branch.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 24,
+   "fields": {},
+   "calls": [
+    "application",
+    "prepare_branch_adoption_in_advancement"
+   ],
+   "field_calls": [],
+   "line": 50,
+   "subsystem": null
+  },
+  {
+   "name": "prepare_branch_adoption_with_choices",
+   "module": "product_operation::program_adoption",
+   "source_module": "domain_computation::primary_graph::product_operation::program_adoption::scope::single_branch",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/program_adoption/scope/single_branch.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 25,
+   "fields": {},
+   "calls": [
+    "application",
+    "prepare_branch_adoption_in_advancement"
+   ],
+   "field_calls": [],
+   "line": 88,
+   "subsystem": null
+  },
+  {
+   "name": "prepare_branch_adoption_in_advancement",
+   "module": "product_operation::program_adoption",
+   "source_module": "domain_computation::primary_graph::product_operation::program_adoption::scope::single_branch",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/program_adoption/scope/single_branch.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 39,
+   "fields": {},
+   "calls": [
+    "application",
+    "with_program_adoption"
+   ],
+   "field_calls": [],
+   "line": 114,
+   "subsystem": null
+  },
+  {
+   "name": "admit_application_query",
+   "module": "product_operation::query",
+   "source_module": "domain_computation::primary_graph::product_operation::query",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/query.rs",
+   "trait": null,
+   "receiver": "self",
+   "lines": 63,
+   "fields": {},
+   "calls": [
+    "application",
+    "into_parts",
+    "original_settled_producer",
+    "selection_origin"
+   ],
+   "field_calls": [],
+   "line": 40,
+   "subsystem": null
+  },
+  {
+   "name": "admit_retained_application_query",
+   "module": "product_operation::query",
+   "source_module": "domain_computation::primary_graph::product_operation::query",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/query.rs",
+   "trait": null,
+   "receiver": "self",
+   "lines": 50,
+   "fields": {},
+   "calls": [
+    "application",
+    "retained_query_controls"
+   ],
+   "field_calls": [],
+   "line": 107,
+   "subsystem": null
+  },
+  {
+   "name": "admit_application_query_continuation",
+   "module": "product_operation::query",
+   "source_module": "domain_computation::primary_graph::product_operation::query",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/query.rs",
+   "trait": null,
+   "receiver": "self",
+   "lines": 61,
+   "fields": {},
+   "calls": [
+    "application",
+    "into_parts",
+    "original_settled_producer"
+   ],
+   "field_calls": [],
+   "line": 158,
+   "subsystem": null
+  },
+  {
+   "name": "admit_governed_application_query",
+   "module": "product_operation::query",
+   "source_module": "domain_computation::primary_graph::product_operation::query",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/query.rs",
+   "trait": null,
+   "receiver": "self",
+   "lines": 77,
+   "fields": {},
+   "calls": [
+    "application",
+    "into_parts",
+    "original_settled_producer",
+    "selection_origin"
+   ],
+   "field_calls": [],
+   "line": 220,
+   "subsystem": null
+  },
+  {
+   "name": "admit_governed_application_query_continuation",
+   "module": "product_operation::query",
+   "source_module": "domain_computation::primary_graph::product_operation::query",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/query.rs",
+   "trait": null,
+   "receiver": "self",
+   "lines": 75,
+   "fields": {},
+   "calls": [
+    "application",
+    "into_parts",
+    "original_settled_producer"
+   ],
+   "field_calls": [],
+   "line": 298,
+   "subsystem": null
+  },
+  {
+   "name": "admit_retained_application_query_from_selection",
+   "module": "product_operation::query",
+   "source_module": "domain_computation::primary_graph::product_operation::query::batch",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/query/batch.rs",
+   "trait": null,
+   "receiver": "self",
+   "lines": 98,
+   "fields": {},
+   "calls": [
+    "application",
+    "product"
+   ],
+   "field_calls": [],
+   "line": 21,
+   "subsystem": null
+  },
+  {
+   "name": "admit_document_preview_application_query",
+   "module": "product_operation::query",
+   "source_module": "domain_computation::primary_graph::product_operation::query::preview",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/query/preview.rs",
+   "trait": null,
+   "receiver": "self",
+   "lines": 21,
+   "fields": {},
+   "calls": [
+    "application",
+    "document_preview_controls"
+   ],
+   "field_calls": [],
+   "line": 10,
+   "subsystem": null
+  },
+  {
+   "name": "admit_document_preview_governed_application_query",
+   "module": "product_operation::query",
+   "source_module": "domain_computation::primary_graph::product_operation::query::preview",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/query/preview.rs",
+   "trait": null,
+   "receiver": "self",
+   "lines": 27,
+   "fields": {},
+   "calls": [
+    "application",
+    "document_preview_controls"
+   ],
+   "field_calls": [],
+   "line": 32,
+   "subsystem": null
+  },
+  {
+   "name": "document_preview_controls",
+   "module": "product_operation::query",
+   "source_module": "domain_computation::primary_graph::product_operation::query::preview",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/query/preview.rs",
+   "trait": null,
+   "receiver": "self",
+   "lines": 40,
+   "fields": {},
+   "calls": [
+    "application",
+    "product"
+   ],
+   "field_calls": [],
+   "line": 60,
+   "subsystem": null
+  },
+  {
+   "name": "retained_query_controls",
+   "module": "product_operation::query",
+   "source_module": "domain_computation::primary_graph::product_operation::query::retained",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/query/retained.rs",
+   "trait": null,
+   "receiver": "self",
+   "lines": 40,
+   "fields": {},
+   "calls": [
+    "application",
+    "into_parts",
+    "product"
+   ],
+   "field_calls": [],
+   "line": 16,
+   "subsystem": null
+  },
+  {
+   "name": "admit_retained_governed_application_query",
+   "module": "product_operation::query",
+   "source_module": "domain_computation::primary_graph::product_operation::query::retained",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/query/retained.rs",
+   "trait": null,
+   "receiver": "self",
+   "lines": 65,
+   "fields": {},
+   "calls": [
+    "application",
+    "retained_query_controls"
+   ],
+   "field_calls": [],
+   "line": 57,
+   "subsystem": null
+  },
+  {
+   "name": "deliver_relational_change_to_conditional",
+   "module": "product_operation::relational_change_delivery",
+   "source_module": "domain_computation::primary_graph::product_operation::relational_change_delivery",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/relational_change_delivery.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 96,
+   "fields": {},
+   "calls": [
+    "application",
+    "product"
+   ],
+   "field_calls": [],
+   "line": 16,
+   "subsystem": null
+  },
+  {
+   "name": "prepare_shared_query_basis",
+   "module": "product_operation::shared_query_basis",
+   "source_module": "domain_computation::primary_graph::product_operation::shared_query_basis",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/shared_query_basis.rs",
+   "trait": null,
+   "receiver": "self",
+   "lines": 9,
+   "fields": {},
+   "calls": [
+    "application_basis_mut"
+   ],
+   "field_calls": [],
+   "line": 21,
+   "subsystem": null
+  },
+  {
+   "name": "resolve_authenticated_principal",
+   "module": "resolution",
+   "source_module": "domain_computation::primary_graph::resolution::selected_product",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/resolution/selected_product.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 46,
+   "fields": {},
+   "calls": [
+    "application",
+    "resolve_authenticated_principal_with_request"
+   ],
+   "field_calls": [],
+   "line": 13,
+   "subsystem": null
+  },
+  {
+   "name": "resolve_authenticated_principal_with_request",
+   "module": "resolution",
+   "source_module": "domain_computation::primary_graph::resolution::selected_product",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/resolution/selected_product.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 97,
+   "fields": {},
+   "calls": [
+    "application",
+    "application_basis",
+    "product"
+   ],
+   "field_calls": [],
+   "line": 60,
+   "subsystem": null
+  },
+  {
+   "name": "validate_authenticated_principal",
+   "module": "resolution",
+   "source_module": "domain_computation::primary_graph::resolution::selected_product",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/resolution/selected_product.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 18,
+   "fields": {},
+   "calls": [
+    "application",
+    "validate_authenticated_principal_with_request"
+   ],
+   "field_calls": [],
+   "line": 158,
+   "subsystem": null
+  },
+  {
+   "name": "validate_authenticated_principal_with_request",
+   "module": "resolution",
+   "source_module": "domain_computation::primary_graph::resolution::selected_product",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/resolution/selected_product.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 60,
+   "fields": {},
+   "calls": [
+    "application",
+    "application_basis",
+    "product"
+   ],
+   "field_calls": [],
+   "line": 177,
+   "subsystem": null
+  },
+  {
+   "name": "resolve_authenticated_principal_issued",
+   "module": "resolution",
+   "source_module": "domain_computation::primary_graph::resolution::selected_product::admitted",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/resolution/selected_product/admitted.rs",
+   "trait": null,
+   "receiver": "self",
+   "lines": 38,
+   "fields": {},
+   "calls": [
+    "resolve_authenticated_principal_issued_with_native_access"
+   ],
+   "field_calls": [],
+   "line": 21,
+   "subsystem": null
+  },
+  {
+   "name": "resolve_authenticated_principal_issued_with_native_access",
+   "module": "resolution",
+   "source_module": "domain_computation::primary_graph::resolution::selected_product::admitted",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/resolution/selected_product/admitted.rs",
+   "trait": null,
+   "receiver": "self",
+   "lines": 54,
+   "fields": {},
+   "calls": [
+    "resolve_authenticated_principal_admitted_with_native_access"
+   ],
+   "field_calls": [],
+   "line": 60,
+   "subsystem": null
+  },
+  {
+   "name": "resolve_authenticated_principal_admitted",
+   "module": "resolution",
+   "source_module": "domain_computation::primary_graph::resolution::selected_product::admitted",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/resolution/selected_product/admitted.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 37,
+   "fields": {},
+   "calls": [
+    "resolve_authenticated_principal_admitted_with_validation"
+   ],
+   "field_calls": [],
+   "line": 115,
+   "subsystem": null
+  },
+  {
+   "name": "resolve_authenticated_principal_admitted_with_validation",
+   "module": "resolution",
+   "source_module": "domain_computation::primary_graph::resolution::selected_product::admitted",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/resolution/selected_product/admitted.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 31,
+   "fields": {},
+   "calls": [
+    "resolve_authenticated_principal_admitted_with_native_access"
+   ],
+   "field_calls": [],
+   "line": 153,
+   "subsystem": null
+  },
+  {
+   "name": "resolve_authenticated_principal_admitted_with_native_access",
+   "module": "resolution",
+   "source_module": "domain_computation::primary_graph::resolution::selected_product::admitted::native",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/resolution/selected_product/admitted/native.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 137,
+   "fields": {},
+   "calls": [
+    "application",
+    "application_basis",
+    "product"
+   ],
+   "field_calls": [],
+   "line": 7,
+   "subsystem": null
+  }
+ ]
+}

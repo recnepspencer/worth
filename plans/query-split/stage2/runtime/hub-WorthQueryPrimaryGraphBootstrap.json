@@ -1,0 +1,1035 @@
+{
+ "type": "domain_computation::primary_graph::bootstrap::WorthQueryPrimaryGraphBootstrap",
+ "impl_blocks": 12,
+ "impl_blocks_by_module": {
+  "application_runtime": 1,
+  "bootstrap": 1,
+  "bootstrap::advancement_publication": 1,
+  "bootstrap::checkpoint": 1,
+  "bootstrap::managed_source_initialization": 1,
+  "bootstrap::publication_target": 1,
+  "bootstrap::seed_batches": 1,
+  "bootstrap::truth_partition": 1,
+  "bootstrap::unique_seed_values": 1,
+  "handler": 1,
+  "invariant_projection": 1,
+  "typed_bootstrap": 1
+ },
+ "methods": 25,
+ "fields": {
+  "committed_entity_count": {
+   "owner": "bootstrap::advancement_publication",
+   "modules": {
+    "bootstrap::advancement_publication": 1,
+    "bootstrap::seed_batches": 1
+   },
+   "methods": 2
+  },
+  "committed_principal_count": {
+   "owner": "bootstrap::advancement_publication",
+   "modules": {
+    "bootstrap::advancement_publication": 1,
+    "bootstrap::seed_batches": 1
+   },
+   "methods": 2
+  },
+  "committed_relation_count": {
+   "owner": "bootstrap::advancement_publication",
+   "modules": {
+    "bootstrap::advancement_publication": 1,
+    "bootstrap::seed_batches": 1
+   },
+   "methods": 2
+  },
+  "entity_keys": {
+   "owner": "bootstrap",
+   "modules": {
+    "bootstrap": 1,
+    "typed_bootstrap": 1
+   },
+   "methods": 2
+  },
+  "entity_rows": {
+   "owner": "bootstrap::seed_batches",
+   "modules": {
+    "bootstrap::seed_batches": 2,
+    "bootstrap::advancement_publication": 1,
+    "typed_bootstrap": 1
+   },
+   "methods": 4
+  },
+  "expected_invariant_inventory_digest": {
+   "owner": null,
+   "modules": {
+    "bootstrap::publication_target": 1
+   },
+   "methods": 1
+  },
+  "external_identities": {
+   "owner": null,
+   "modules": {
+    "bootstrap": 1
+   },
+   "methods": 1
+  },
+  "graph": {
+   "owner": null,
+   "modules": {
+    "typed_bootstrap": 2,
+    "bootstrap": 1,
+    "bootstrap::advancement_publication": 1,
+    "bootstrap::managed_source_initialization": 1,
+    "bootstrap::publication_target": 1,
+    "bootstrap::seed_batches": 1,
+    "bootstrap::truth_partition": 1,
+    "bootstrap::unique_seed_values": 1,
+    "handler": 1,
+    "invariant_projection": 1
+   },
+   "methods": 11
+  },
+  "installed_operations": {
+   "owner": null,
+   "modules": {
+    "invariant_projection": 1
+   },
+   "methods": 1
+  },
+  "installed_packages": {
+   "owner": null,
+   "modules": {
+    "bootstrap": 1
+   },
+   "methods": 1
+  },
+  "invariant_installation_receipt": {
+   "owner": null,
+   "modules": {
+    "bootstrap::publication_target": 1
+   },
+   "methods": 1
+  },
+  "last_seed_commit_id": {
+   "owner": "bootstrap::advancement_publication",
+   "modules": {
+    "bootstrap::advancement_publication": 1,
+    "bootstrap::seed_batches": 1
+   },
+   "methods": 2
+  },
+  "mutation_handlers": {
+   "owner": null,
+   "modules": {
+    "handler": 1
+   },
+   "methods": 1
+  },
+  "pending_entity_keys": {
+   "owner": "typed_bootstrap",
+   "modules": {
+    "typed_bootstrap": 2,
+    "bootstrap": 1,
+    "bootstrap::seed_batches": 1
+   },
+   "methods": 4
+  },
+  "pending_source_initialization": {
+   "owner": "bootstrap::managed_source_initialization",
+   "modules": {
+    "bootstrap::managed_source_initialization": 2
+   },
+   "methods": 2
+  },
+  "principal_identities": {
+   "owner": null,
+   "modules": {
+    "bootstrap": 1
+   },
+   "methods": 1
+  },
+  "principal_keys": {
+   "owner": null,
+   "modules": {
+    "bootstrap": 1
+   },
+   "methods": 1
+  },
+  "program_activation": {
+   "owner": null,
+   "modules": {
+    "invariant_projection": 1
+   },
+   "methods": 1
+  },
+  "program_activation_seed": {
+   "owner": "bootstrap::advancement_publication",
+   "modules": {
+    "bootstrap::advancement_publication": 1,
+    "bootstrap::seed_batches": 1
+   },
+   "methods": 2
+  },
+  "recovered_checkpoint_restore_work": {
+   "owner": null,
+   "modules": {
+    "bootstrap": 1
+   },
+   "methods": 1
+  },
+  "recovered_publication": {
+   "owner": "bootstrap::advancement_publication",
+   "modules": {
+    "bootstrap::advancement_publication": 1,
+    "bootstrap::managed_source_initialization": 1
+   },
+   "methods": 2
+  },
+  "recovered_relational_authority": {
+   "owner": null,
+   "modules": {
+    "bootstrap": 1,
+    "bootstrap::checkpoint": 1,
+    "bootstrap::unique_seed_values": 1
+   },
+   "methods": 3
+  },
+  "relation_keys": {
+   "owner": null,
+   "modules": {
+    "typed_bootstrap": 1
+   },
+   "methods": 1
+  },
+  "relation_rows": {
+   "owner": "bootstrap::seed_batches",
+   "modules": {
+    "bootstrap::seed_batches": 2,
+    "bootstrap::advancement_publication": 1,
+    "typed_bootstrap": 1
+   },
+   "methods": 4
+  },
+  "resource_support": {
+   "owner": "bootstrap",
+   "modules": {
+    "bootstrap": 1,
+    "bootstrap::advancement_publication": 1
+   },
+   "methods": 2
+  },
+  "rows": {
+   "owner": "bootstrap::seed_batches",
+   "modules": {
+    "bootstrap::seed_batches": 2,
+    "bootstrap": 1,
+    "bootstrap::advancement_publication": 1
+   },
+   "methods": 4
+  },
+  "runtime_authority": {
+   "owner": "bootstrap::publication_target",
+   "modules": {
+    "bootstrap::publication_target": 1,
+    "invariant_projection": 1
+   },
+   "methods": 2
+  },
+  "seed_batch_failed": {
+   "owner": null,
+   "modules": {
+    "bootstrap::advancement_publication": 1,
+    "bootstrap::managed_source_initialization": 1,
+    "bootstrap::seed_batches": 1
+   },
+   "methods": 3
+  },
+  "source_initializer": {
+   "owner": "bootstrap::managed_source_initialization",
+   "modules": {
+    "bootstrap::managed_source_initialization": 2
+   },
+   "methods": 2
+  },
+  "unique_seed_values": {
+   "owner": null,
+   "modules": {
+    "bootstrap::unique_seed_values": 1
+   },
+   "methods": 1
+  },
+  "value_bindings": {
+   "owner": null,
+   "modules": {
+    "invariant_projection": 1
+   },
+   "methods": 1
+  }
+ },
+ "clusters": [
+  {
+   "module": "bootstrap::advancement_publication",
+   "fields": [
+    "committed_entity_count",
+    "committed_principal_count",
+    "committed_relation_count",
+    "last_seed_commit_id",
+    "program_activation_seed",
+    "recovered_publication"
+   ],
+   "methods": [
+    "commit_seed_batch_once",
+    "publish_with_resource_support"
+   ],
+   "accesses": 11
+  },
+  {
+   "module": "bootstrap::managed_source_initialization",
+   "fields": [
+    "pending_source_initialization",
+    "source_initializer"
+   ],
+   "methods": [
+    "initialize_managed_index",
+    "take_source_initialization"
+   ],
+   "accesses": 4
+  },
+  {
+   "module": "bootstrap",
+   "fields": [
+    "entity_keys",
+    "resource_support"
+   ],
+   "methods": [
+    "admit_principal_row",
+    "bind_entity",
+    "resource_support_ref"
+   ],
+   "accesses": 3
+  },
+  {
+   "module": "bootstrap::seed_batches",
+   "fields": [
+    "entity_rows",
+    "relation_rows",
+    "rows"
+   ],
+   "methods": [
+    "commit_seed_batch"
+   ],
+   "accesses": 3
+  },
+  {
+   "module": "bootstrap::publication_target",
+   "fields": [
+    "runtime_authority"
+   ],
+   "methods": [
+    "retain_invariant_projection_authority",
+    "validate_publication_target"
+   ],
+   "accesses": 2
+  },
+  {
+   "module": "typed_bootstrap",
+   "fields": [
+    "pending_entity_keys"
+   ],
+   "methods": [
+    "bind_relation"
+   ],
+   "accesses": 1
+  }
+ ],
+ "cross_subsystem_calls": [
+  {
+   "from": "bootstrap::advancement_publication",
+   "to": "bootstrap::managed_source_initialization",
+   "method": "take_source_initialization",
+   "sites": 1
+  },
+  {
+   "from": "bootstrap::advancement_publication",
+   "to": "bootstrap::publication_target",
+   "method": "validate_publication_target",
+   "sites": 1
+  },
+  {
+   "from": "bootstrap::seed_batches",
+   "to": "bootstrap::advancement_publication",
+   "method": "commit_seed_batch_once",
+   "sites": 1
+  },
+  {
+   "from": "bootstrap::seed_batches",
+   "to": "bootstrap::managed_source_initialization",
+   "method": "take_source_initialization",
+   "sites": 1
+  }
+ ],
+ "foreign_field_uses": [
+  {
+   "subsystem": "bootstrap",
+   "field_owner": "typed_bootstrap",
+   "field": "pending_entity_keys",
+   "methods": 2
+  },
+  {
+   "subsystem": "bootstrap::advancement_publication",
+   "field_owner": "bootstrap::seed_batches",
+   "field": "entity_rows",
+   "methods": 2
+  },
+  {
+   "subsystem": "bootstrap::advancement_publication",
+   "field_owner": "bootstrap::seed_batches",
+   "field": "relation_rows",
+   "methods": 2
+  },
+  {
+   "subsystem": "bootstrap::advancement_publication",
+   "field_owner": "bootstrap::seed_batches",
+   "field": "rows",
+   "methods": 2
+  },
+  {
+   "subsystem": "bootstrap",
+   "field_owner": "bootstrap::seed_batches",
+   "field": "entity_rows",
+   "methods": 1
+  },
+  {
+   "subsystem": "bootstrap",
+   "field_owner": "bootstrap::seed_batches",
+   "field": "rows",
+   "methods": 1
+  },
+  {
+   "subsystem": "bootstrap::advancement_publication",
+   "field_owner": "bootstrap",
+   "field": "resource_support",
+   "methods": 1
+  },
+  {
+   "subsystem": "bootstrap::advancement_publication",
+   "field_owner": "typed_bootstrap",
+   "field": "pending_entity_keys",
+   "methods": 1
+  },
+  {
+   "subsystem": "bootstrap::managed_source_initialization",
+   "field_owner": "bootstrap::advancement_publication",
+   "field": "recovered_publication",
+   "methods": 1
+  },
+  {
+   "subsystem": "typed_bootstrap",
+   "field_owner": "bootstrap::seed_batches",
+   "field": "relation_rows",
+   "methods": 1
+  }
+ ],
+ "method_list": [
+  {
+   "name": "publish_application_runtime",
+   "module": "application_runtime",
+   "source_module": "domain_computation::primary_graph::application_runtime::publication_entry",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_runtime/publication_entry.rs",
+   "trait": null,
+   "receiver": "self",
+   "lines": 27,
+   "fields": {},
+   "calls": [],
+   "field_calls": [],
+   "line": 35,
+   "subsystem": null
+  },
+  {
+   "name": "conditional_application_runtime_installation",
+   "module": "application_runtime",
+   "source_module": "domain_computation::primary_graph::application_runtime::publication_entry",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_runtime/publication_entry.rs",
+   "trait": null,
+   "receiver": "self",
+   "lines": 26,
+   "fields": {},
+   "calls": [],
+   "field_calls": [],
+   "line": 67,
+   "subsystem": null
+  },
+  {
+   "name": "conditional_application_runtime_installation_with_authorization_time_source",
+   "module": "application_runtime",
+   "source_module": "domain_computation::primary_graph::application_runtime::publication_entry",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_runtime/publication_entry.rs",
+   "trait": null,
+   "receiver": "self",
+   "lines": 27,
+   "fields": {},
+   "calls": [],
+   "field_calls": [],
+   "line": 96,
+   "subsystem": null
+  },
+  {
+   "name": "publish_application_runtime_with_authorization_time_source",
+   "module": "application_runtime",
+   "source_module": "domain_computation::primary_graph::application_runtime::publication_entry",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_runtime/publication_entry.rs",
+   "trait": null,
+   "receiver": "self",
+   "lines": 24,
+   "fields": {},
+   "calls": [
+    "publish_application_runtime_with_ports"
+   ],
+   "field_calls": [],
+   "line": 129,
+   "subsystem": null
+  },
+  {
+   "name": "publish_application_runtime_with_ports",
+   "module": "application_runtime",
+   "source_module": "domain_computation::primary_graph::application_runtime::publication_entry",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_runtime/publication_entry.rs",
+   "trait": null,
+   "receiver": "self",
+   "lines": 28,
+   "fields": {},
+   "calls": [],
+   "field_calls": [],
+   "line": 154,
+   "subsystem": null
+  },
+  {
+   "name": "resource_support_ref",
+   "module": "bootstrap",
+   "source_module": "domain_computation::primary_graph::bootstrap",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/bootstrap.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 5,
+   "fields": {
+    "resource_support": [
+     "read"
+    ]
+   },
+   "calls": [],
+   "field_calls": [],
+   "line": 111,
+   "subsystem": "bootstrap"
+  },
+  {
+   "name": "take_recovered_relational_authority",
+   "module": "bootstrap",
+   "source_module": "domain_computation::primary_graph::bootstrap",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/bootstrap.rs",
+   "trait": null,
+   "receiver": "&mut self",
+   "lines": 5,
+   "fields": {
+    "recovered_relational_authority": [
+     "mutate"
+    ]
+   },
+   "calls": [],
+   "field_calls": [],
+   "line": 116,
+   "subsystem": null
+  },
+  {
+   "name": "recovered_checkpoint_restore_work",
+   "module": "bootstrap",
+   "source_module": "domain_computation::primary_graph::bootstrap",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/bootstrap.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 5,
+   "fields": {
+    "recovered_checkpoint_restore_work": [
+     "read"
+    ]
+   },
+   "calls": [],
+   "field_calls": [],
+   "line": 122,
+   "subsystem": null
+  },
+  {
+   "name": "bind_principal",
+   "module": "bootstrap",
+   "source_module": "domain_computation::primary_graph::bootstrap",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/bootstrap.rs",
+   "trait": null,
+   "receiver": "&mut self",
+   "lines": 64,
+   "fields": {
+    "graph": [
+     "read"
+    ],
+    "installed_packages": [
+     "read"
+    ]
+   },
+   "calls": [
+    "admit_principal_row"
+   ],
+   "field_calls": [],
+   "line": 128,
+   "subsystem": null
+  },
+  {
+   "name": "admit_principal_row",
+   "module": "bootstrap",
+   "source_module": "domain_computation::primary_graph::bootstrap",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/bootstrap.rs",
+   "trait": null,
+   "receiver": "&mut self",
+   "lines": 38,
+   "fields": {
+    "entity_keys": [
+     "mutate",
+     "read"
+    ],
+    "external_identities": [
+     "mutate",
+     "read"
+    ],
+    "pending_entity_keys": [
+     "mutate"
+    ],
+    "principal_identities": [
+     "mutate",
+     "read"
+    ],
+    "principal_keys": [
+     "mutate",
+     "read"
+    ],
+    "rows": [
+     "mutate"
+    ]
+   },
+   "calls": [
+    "admit_principal_unique_values"
+   ],
+   "field_calls": [],
+   "line": 193,
+   "subsystem": "bootstrap"
+  },
+  {
+   "name": "publish",
+   "module": "bootstrap",
+   "source_module": "domain_computation::primary_graph::bootstrap",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/bootstrap.rs",
+   "trait": null,
+   "receiver": "self",
+   "lines": 11,
+   "fields": {},
+   "calls": [
+    "publish_with_resource_support"
+   ],
+   "field_calls": [],
+   "line": 232,
+   "subsystem": null
+  },
+  {
+   "name": "publish_with_resource_support",
+   "module": "bootstrap::advancement_publication",
+   "source_module": "domain_computation::primary_graph::bootstrap::advancement_publication",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/bootstrap/advancement_publication.rs",
+   "trait": null,
+   "receiver": "self",
+   "lines": 98,
+   "fields": {
+    "committed_entity_count": [
+     "read"
+    ],
+    "committed_principal_count": [
+     "read"
+    ],
+    "committed_relation_count": [
+     "read"
+    ],
+    "entity_rows": [
+     "read"
+    ],
+    "graph": [
+     "read"
+    ],
+    "last_seed_commit_id": [
+     "read"
+    ],
+    "program_activation_seed": [
+     "read"
+    ],
+    "recovered_publication": [
+     "read"
+    ],
+    "relation_rows": [
+     "read"
+    ],
+    "resource_support": [
+     "read"
+    ],
+    "rows": [
+     "read"
+    ],
+    "seed_batch_failed": [
+     "read"
+    ]
+   },
+   "calls": [
+    "take_source_initialization",
+    "validate_publication_target"
+   ],
+   "field_calls": [],
+   "line": 5,
+   "subsystem": "bootstrap::advancement_publication"
+  },
+  {
+   "name": "has_pending_codec_transition",
+   "module": "bootstrap::checkpoint",
+   "source_module": "domain_computation::primary_graph::bootstrap::checkpoint",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/bootstrap/checkpoint.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 7,
+   "fields": {
+    "recovered_relational_authority": [
+     "read"
+    ]
+   },
+   "calls": [],
+   "field_calls": [],
+   "line": 20,
+   "subsystem": null
+  },
+  {
+   "name": "initialize_managed_index",
+   "module": "bootstrap::managed_source_initialization",
+   "source_module": "domain_computation::primary_graph::bootstrap::managed_source_initialization",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/bootstrap/managed_source_initialization.rs",
+   "trait": null,
+   "receiver": "&mut self",
+   "lines": 33,
+   "fields": {
+    "graph": [
+     "read"
+    ],
+    "pending_source_initialization": [
+     "read",
+     "write"
+    ],
+    "recovered_publication": [
+     "read"
+    ],
+    "seed_batch_failed": [
+     "read"
+    ],
+    "source_initializer": [
+     "read"
+    ]
+   },
+   "calls": [],
+   "field_calls": [],
+   "line": 24,
+   "subsystem": "bootstrap::managed_source_initialization"
+  },
+  {
+   "name": "take_source_initialization",
+   "module": "bootstrap::managed_source_initialization",
+   "source_module": "domain_computation::primary_graph::bootstrap::managed_source_initialization",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/bootstrap/managed_source_initialization.rs",
+   "trait": null,
+   "receiver": "&mut self",
+   "lines": 8,
+   "fields": {
+    "pending_source_initialization": [
+     "mutate"
+    ],
+    "source_initializer": [
+     "read"
+    ]
+   },
+   "calls": [],
+   "field_calls": [],
+   "line": 57,
+   "subsystem": "bootstrap::managed_source_initialization"
+  },
+  {
+   "name": "validate_publication_target",
+   "module": "bootstrap::publication_target",
+   "source_module": "domain_computation::primary_graph::bootstrap::publication_target",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/bootstrap/publication_target.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 57,
+   "fields": {
+    "expected_invariant_inventory_digest": [
+     "read"
+    ],
+    "graph": [
+     "read"
+    ],
+    "invariant_installation_receipt": [
+     "read"
+    ],
+    "runtime_authority": [
+     "read"
+    ]
+   },
+   "calls": [],
+   "field_calls": [],
+   "line": 8,
+   "subsystem": "bootstrap::publication_target"
+  },
+  {
+   "name": "commit_seed_batch",
+   "module": "bootstrap::seed_batches",
+   "source_module": "domain_computation::primary_graph::bootstrap::seed_batches",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/bootstrap/seed_batches.rs",
+   "trait": null,
+   "receiver": "&mut self",
+   "lines": 29,
+   "fields": {
+    "entity_rows": [
+     "read"
+    ],
+    "relation_rows": [
+     "read"
+    ],
+    "rows": [
+     "read"
+    ],
+    "seed_batch_failed": [
+     "read",
+     "write"
+    ]
+   },
+   "calls": [
+    "commit_seed_batch_once",
+    "take_source_initialization"
+   ],
+   "field_calls": [],
+   "line": 14,
+   "subsystem": "bootstrap::seed_batches"
+  },
+  {
+   "name": "commit_seed_batch_once",
+   "module": "bootstrap::seed_batches",
+   "source_module": "domain_computation::primary_graph::bootstrap::seed_batches",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/bootstrap/seed_batches.rs",
+   "trait": null,
+   "receiver": "&mut self",
+   "lines": 29,
+   "fields": {
+    "committed_entity_count": [
+     "write"
+    ],
+    "committed_principal_count": [
+     "read",
+     "write"
+    ],
+    "committed_relation_count": [
+     "write"
+    ],
+    "entity_rows": [
+     "mut_borrow",
+     "read"
+    ],
+    "graph": [
+     "read"
+    ],
+    "last_seed_commit_id": [
+     "write"
+    ],
+    "pending_entity_keys": [
+     "mutate"
+    ],
+    "program_activation_seed": [
+     "mutate"
+    ],
+    "relation_rows": [
+     "mut_borrow",
+     "read"
+    ],
+    "rows": [
+     "mut_borrow",
+     "read"
+    ]
+   },
+   "calls": [],
+   "field_calls": [],
+   "line": 44,
+   "subsystem": "bootstrap::advancement_publication"
+  },
+  {
+   "name": "semantic_truth_partition",
+   "module": "bootstrap::truth_partition",
+   "source_module": "domain_computation::primary_graph::bootstrap::truth_partition",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/bootstrap/truth_partition.rs",
+   "trait": null,
+   "receiver": "self",
+   "lines": 7,
+   "fields": {
+    "graph": [
+     "read"
+    ]
+   },
+   "calls": [],
+   "field_calls": [],
+   "line": 6,
+   "subsystem": null
+  },
+  {
+   "name": "admit_unique_seed_values",
+   "module": "bootstrap::unique_seed_values",
+   "source_module": "domain_computation::primary_graph::bootstrap::unique_seed_values",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/bootstrap/unique_seed_values.rs",
+   "trait": null,
+   "receiver": "&mut self",
+   "lines": 30,
+   "fields": {
+    "graph": [
+     "read"
+    ],
+    "recovered_relational_authority": [
+     "read"
+    ],
+    "unique_seed_values": [
+     "mutate",
+     "read"
+    ]
+   },
+   "calls": [],
+   "field_calls": [],
+   "line": 36,
+   "subsystem": null
+  },
+  {
+   "name": "admit_principal_unique_values",
+   "module": "bootstrap::unique_seed_values",
+   "source_module": "domain_computation::primary_graph::bootstrap::unique_seed_values",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/bootstrap/unique_seed_values.rs",
+   "trait": null,
+   "receiver": "&mut self",
+   "lines": 25,
+   "fields": {},
+   "calls": [
+    "admit_unique_seed_values"
+   ],
+   "field_calls": [],
+   "line": 69,
+   "subsystem": null
+  },
+  {
+   "name": "install_handler",
+   "module": "handler",
+   "source_module": "domain_computation::primary_graph::handler::registry",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/handler/registry.rs",
+   "trait": null,
+   "receiver": "&mut self",
+   "lines": 12,
+   "fields": {
+    "graph": [
+     "read"
+    ],
+    "mutation_handlers": [
+     "read"
+    ]
+   },
+   "calls": [],
+   "field_calls": [],
+   "line": 76,
+   "subsystem": null
+  },
+  {
+   "name": "retain_invariant_projection_authority",
+   "module": "invariant_projection",
+   "source_module": "domain_computation::primary_graph::invariant_projection::retention",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/invariant_projection/retention.rs",
+   "trait": null,
+   "receiver": "&self",
+   "lines": 17,
+   "fields": {
+    "graph": [
+     "read"
+    ],
+    "installed_operations": [
+     "read"
+    ],
+    "program_activation": [
+     "read"
+    ],
+    "runtime_authority": [
+     "read"
+    ],
+    "value_bindings": [
+     "read"
+    ]
+   },
+   "calls": [],
+   "field_calls": [],
+   "line": 8,
+   "subsystem": "bootstrap::publication_target"
+  },
+  {
+   "name": "bind_entity",
+   "module": "typed_bootstrap",
+   "source_module": "domain_computation::primary_graph::typed_bootstrap",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/typed_bootstrap.rs",
+   "trait": null,
+   "receiver": "&mut self",
+   "lines": 42,
+   "fields": {
+    "entity_keys": [
+     "mutate"
+    ],
+    "entity_rows": [
+     "mutate"
+    ],
+    "graph": [
+     "read"
+    ],
+    "pending_entity_keys": [
+     "mutate"
+    ]
+   },
+   "calls": [
+    "admit_unique_seed_values"
+   ],
+   "field_calls": [],
+   "line": 140,
+   "subsystem": "bootstrap"
+  },
+  {
+   "name": "bind_relation",
+   "module": "typed_bootstrap",
+   "source_module": "domain_computation::primary_graph::typed_bootstrap",
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/typed_bootstrap.rs",
+   "trait": null,
+   "receiver": "&mut self",
+   "lines": 38,
+   "fields": {
+    "graph": [
+     "read"
+    ],
+    "pending_entity_keys": [
+     "read"
+    ],
+    "relation_keys": [
+     "mutate"
+    ],
+    "relation_rows": [
+     "mutate"
+    ]
+   },
+   "calls": [],
+   "field_calls": [],
+   "line": 183,
+   "subsystem": "typed_bootstrap"
+  }
+ ]
+}
