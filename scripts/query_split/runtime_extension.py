@@ -144,6 +144,10 @@ def rewrite_body(item, schema, local, core_fields, top_fields, needs, receiver='
                 elif sub in core_fields:
                     needs['core_fields'].add(sub)
                     edits.append((stream[k + 2].start, stream[k + 4].end, sub + '()'))
+                    whole = not (k + 5 < len(stream) and stream[k + 5].value in ('.', '['))
+                    if whole and k >= 1 and stream[k - 1].value == '&' and \
+                            not (k >= 2 and stream[k - 2].value == '&'):
+                        edits.append((stream[k - 1].start, stream[k - 1].end, ''))
                 else:
                     needs['hand'].append(f'self.runtime.{sub}')
             else:
@@ -156,6 +160,9 @@ def rewrite_body(item, schema, local, core_fields, top_fields, needs, receiver='
         if name in top_fields:
             needs['top_fields'].add(name)
             edits.append((name_tok.start, name_tok.end, name + '()'))
+            whole = not (k + 3 < len(stream) and stream[k + 3].value in ('.', '['))
+            if whole and k >= 1 and stream[k - 1].value == '&' and not (k >= 2 and stream[k - 2].value == '&'):
+                edits.append((stream[k - 1].start, stream[k - 1].end, ''))
         else:
             needs['hand'].append(f'self.{name}')
     for k, t in enumerate(stream):
@@ -295,6 +302,8 @@ def main(argv=None):
     file_edits = defaultdict(list)
     facades, traits = [], []
     used_names = defaultdict(set)
+    module_names = set()
+    reexports = []
     for block in blocks:
         source = Path(block['node'].source)
         generic_decl = block['generics'] or '<Schema>'
@@ -314,9 +323,14 @@ def main(argv=None):
                          (source.parent.name if source.stem == 'mod' else source.parent.name + '_doors'))
             tag = '' if vis == 'pub' else {'': 'Own', 'pub(super)': 'Parent'}.get(vis, 'Scoped')
             name = stem + tag + 'Ops'
-            while name in used_names[source]:
-                name += 'X'
+            while name in module_names:
+                name = camel(source.parent.name) + name
+            module_names.add(name)
             used_names[source].add(name)
+            if vis.startswith('pub(in ') or vis in ('pub', 'pub(crate)'):
+                file_module = block['names']
+                if file_module != prefix:
+                    reexports.append((vis, '::'.join(('crate',) + file_module) + '::' + name))
             bodies = []
             for m in methods:
                 if re.search(r'\bconst\s+fn\b', m['item']):
@@ -368,6 +382,13 @@ def main(argv=None):
         tokens(text)
         pairs(tokens(text))
         path.write_text(text, encoding='utf-8', newline='\n')
+    if reexports:
+        root_node = model.index[prefix]
+        root_file = Path(root_node.source)
+        text = root_file.read_text(encoding='utf-8').rstrip('\n') + '\n'
+        for vis, path in reexports:
+            text += f'{vis} use {path};\n'
+        root_file.write_text(text, encoding='utf-8', newline='\n')
     if facades and args.facade_file:
         Path(args.facade_file).write_text(
             f'//! The runtime\'s consumer methods over `{args.module}`; each only calls its subsystem.\n'

@@ -1,6 +1,7 @@
 use super::{admission_denial, map_index_currency_denial, WorthQueryApplicationQueryBasisCustody};
 use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 use crate::basis::WorthQueryProductObservationLease;
+use crate::domain_computation::primary_graph::product_activation::InspectionScopedOps;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryAdmissionDenialKind,
     WorthQueryPrimaryGraphApplicationRuntime,

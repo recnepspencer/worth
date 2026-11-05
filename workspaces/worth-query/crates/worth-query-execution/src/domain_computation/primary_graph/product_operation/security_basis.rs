@@ -1,5 +1,6 @@
 use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 use crate::basis::{WorthQueryProductBranchAdmissionDenial, WorthQueryProductBranchLease};
+use crate::domain_computation::primary_graph::product_activation::InspectionScopedOps;
 use crate::domain_computation::primary_graph::selected_read_indexes::PreparedSelectedReadIndexes;
 use crate::domain_computation::primary_graph::{
     application_query::{

@@ -1,0 +1,37 @@
+{
+ "module": "domain_computation::primary_graph::product_activation",
+ "blocks": 2,
+ "methods": 3,
+ "traits": [
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_activation/inspection.rs",
+   "trait": "InspectionScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph)",
+   "methods": [
+    "retain_selected_program_interpretation",
+    "bind_selected_program_interpretation"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_activation/publication.rs",
+   "trait": "PublicationScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph)",
+   "methods": [
+    "publish_product_conditional_definition"
+   ]
+  }
+ ],
+ "facades": 0,
+ "host": {
+  "core_fields": [
+   "bridge",
+   "product_runtime"
+  ],
+  "top_fields": [],
+  "core_methods": [],
+  "foreign": [
+   "installed_program_support"
+  ],
+  "hand": []
+ }
+}

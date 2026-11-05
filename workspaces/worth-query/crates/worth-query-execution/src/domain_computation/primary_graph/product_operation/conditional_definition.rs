@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::product_activation::PublicationScopedOps;
 use std::sync::Arc;
 
 mod admission;

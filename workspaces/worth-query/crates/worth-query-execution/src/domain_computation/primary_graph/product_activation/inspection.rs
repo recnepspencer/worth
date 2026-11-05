@@ -52,7 +52,7 @@ pub(in crate::domain_computation::primary_graph) fn inspect_selected_program<
     Schema: ApplicationSchema,
 >(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::product_activation::host::ProductActivationHost<Schema>,
     basis: &AdmittedRelationalBranchBasis,
 ) -> Result<WorthQuerySelectedProgramInspection, WorthQuerySelectedProgramInspectionDenial> {
     let support = application
@@ -62,7 +62,7 @@ pub(in crate::domain_computation::primary_graph) fn inspect_selected_program<
         .activation()
         .published()
         .ok_or(WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnavailable)?;
-    let graph = &application.runtime.primary_provider.graph;
+    let graph = application.provider_graph();
     let layout = graph.layout.program_activation().clone();
     let locator = &layout.program_revision_locator;
     // The activation record is read on the selected branch's own root: a
@@ -110,8 +110,12 @@ pub(in crate::domain_computation::primary_graph) fn inspect_selected_program<
     })
 }
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub(in crate::domain_computation::primary_graph) fn retain_selected_program_interpretation(
+pub(in crate::domain_computation::primary_graph) trait InspectionScopedOps<
+    Schema: ApplicationSchema,
+>:
+    crate::domain_computation::primary_graph::product_activation::host::ProductActivationHost<Schema>
+{
+    fn retain_selected_program_interpretation(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         basis: &AdmittedRelationalBranchBasis,
@@ -119,7 +123,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         WorthQueryRetainedSelectedProgramInspection,
         crate::basis::WorthQueryProductBranchAdmissionDenial,
     > {
-        let inspection = inspect_selected_program(execution, self, basis);
+        let inspection = inspect_selected_program(execution, self.product_activation_host(), basis);
         if let Err(WorthQuerySelectedProgramInspectionDenial::ReadExecution(stop)) = &inspection {
             return Err(crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(*stop));
         }
@@ -140,7 +144,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         })
     }
 
-    pub(in crate::domain_computation::primary_graph) fn bind_selected_program_interpretation(
+    fn bind_selected_program_interpretation(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         relational: &AdmittedRelationalBranchBasis,
@@ -171,6 +175,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Ok(selected)
     }
 }
+
+impl<Schema: ApplicationSchema, HostRuntime: crate::domain_computation::primary_graph::product_activation::host::ProductActivationHost<Schema> + ?Sized> InspectionScopedOps<Schema> for HostRuntime {}
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryRetainedSelectedProgramInspection
 {
