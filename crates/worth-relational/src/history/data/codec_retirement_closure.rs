@@ -293,13 +293,15 @@ pub(super) fn charge(
     context: &mut worth_execution::MapKernelContext<'_, '_>,
     work: usize,
 ) -> Result<(), CodecRetirementClosureStop> {
-    context
-        .checkpoint(u64::try_from(work).map_err(|_| {
+    crate::execution::request_stage::checkpoint(
+        context,
+        u64::try_from(work).map_err(|_| {
             CodecRetirementClosureStop::Request(
                 crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow,
             )
-        })?)
-        .map_err(request)
+        })?,
+    )
+    .map_err(request)
 }
 
 pub(super) fn request(

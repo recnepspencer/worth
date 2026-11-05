@@ -1,5 +1,6 @@
 //! Candidate-qualified native reads have no snapshot or Current observation door.
 use super::*;
+use crate::execution::request_stage::checkpoint;
 mod changes;
 use crate::{
     branch::AdmittedRelationalBranchBasis,
@@ -96,9 +97,7 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
                             .slot_count()
                             .saturating_add(p.relation_arena().slot_count())
                     });
-                    context
-                        .checkpoint(slots.saturating_add(1) as u64)
-                        .map_err(request_stop)?;
+                    checkpoint(context, slots.saturating_add(1) as u64).map_err(request_stop)?;
                 }
                 let binding = symbols.binding();
                 let root = runtime

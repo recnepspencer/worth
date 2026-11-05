@@ -1,5 +1,6 @@
 //! Admit and apply one authenticated surviving writer's own successor commands.
 use super::*;
+use crate::execution::request_stage::checkpoint;
 use crate::{
     authority::commit::phases::prepare::prepare_authoritative_working_state_scope_for_base,
     publication::data::AuthoredRetirementRefusal as Cause,
@@ -27,9 +28,11 @@ pub(super) fn require_unseen_route(
         let RequiredOutputPublication::Preserve { meaning: prior, .. } = &part.publication else {
             unreachable!("only an admitted Preserve enters a coupled participant")
         };
-        context
-            .checkpoint((meaning.family.len() + prior.family.len() + 65) as u64)
-            .map_err(custody::execution_stop)?;
+        checkpoint(
+            context,
+            (meaning.family.len() + prior.family.len() + 65) as u64,
+        )
+        .map_err(custody::execution_stop)?;
         if prior.same_route(meaning) {
             return Err(reject(Cause::RepeatedCoupledOwner, meaning.source_scope));
         }
@@ -68,11 +71,11 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             .run_native_with_checkpoint(|context| {
                 let mut expected = None;
                 for owner in &self.binding.owners.owners {
-                    context
-                        .checkpoint(
-                            (meaning.family.len() + owner.origin.meaning.family.len() + 65) as u64,
-                        )
-                        .map_err(custody::execution_stop)?;
+                    checkpoint(
+                        context,
+                        (meaning.family.len() + owner.origin.meaning.family.len() + 65) as u64,
+                    )
+                    .map_err(custody::execution_stop)?;
                     if owner.origin.meaning.same_route(meaning) {
                         expected = Some(owner);
                     }

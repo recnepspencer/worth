@@ -30,6 +30,19 @@ impl<S: Scenario> WorthQueryApplicationOutputRole for Cell<S> {
 }
 pub struct Role<S>(PhantomData<fn() -> S>);
 impl<S: Scenario> ApplicationMutationOutputContract<S> for Outputs {
+    const ROLE_FAMILIES: &'static [ApplicationMutationOutputRoleFamilyDescriptor] = if matches!(
+        S::MODE,
+        69
+    ) {
+        &[<sheet_boundary::InitialNodes<S> as WorthQueryApplicationDeclaredOutputRoleFamily>::DESCRIPTOR]
+    } else if S::MODE == 70 {
+        &[
+            <sheet_boundary::InitialNodes<S> as WorthQueryApplicationDeclaredOutputRoleFamily>::DESCRIPTOR,
+            <sheet_boundary::split_walk::InitialFork<S> as WorthQueryApplicationDeclaredOutputRoleFamily>::DESCRIPTOR,
+        ]
+    } else {
+        &[]
+    };
     const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] = &[
         <Role<S> as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR,
         <Cell<S> as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR,
@@ -271,6 +284,7 @@ impl<S: Scenario> OperationHandler<S, Binding<S>> for Provider {
                     .initialize_content(&cell, content::field(), &39)
                     .expect("valid installed word content");
             }
+            <S::Boundary as sheet_boundary::Profile>::initial(writer, &source)?;
             writer.create_output::<Cell<S>>(&cell)
         })();
         match build {

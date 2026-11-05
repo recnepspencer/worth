@@ -1,5 +1,6 @@
 //! A participant's admission never transfers another writer's record custody.
 use super::*;
+use crate::execution::request_stage::checkpoint;
 use crate::{
     history::data::{source_scope_closure, CanonicalRequiredOutputOrigin},
     mvcc::RequiredOutputRolePosture as Posture,
@@ -17,7 +18,7 @@ pub(super) fn require(
         let mut roots = Vec::new();
         if let Some(writer) = writer {
             for member in &writer.members {
-                context.checkpoint(plan.merged_intents.len() as u64).map_err(stop)?;
+                checkpoint(context, plan.merged_intents.len() as u64).map_err(stop)?;
                 if member.posture != Posture::Retire && plan.merged_intents.iter().any(|intent| {
                     matches!(intent, MutationIntent::Entity(EntityMutationIntent::Delete(spec)) if spec.entity_id == member.id)
                 }) {
@@ -37,7 +38,7 @@ pub(super) fn require(
         let mut deferred_edges = std::collections::BTreeSet::new();
         for publication in &custody.current {
             let origin = &publication.origin;
-            context.checkpoint((origin.relations.len() + closure.len() + custody.retirements.len() + 1) as u64).map_err(stop)?;
+            checkpoint(context, (origin.relations.len() + closure.len() + custody.retirements.len() + 1) as u64).map_err(stop)?;
             let covered = writer.is_some_and(|writer| writer.meaning.same_route(&origin.meaning))
                 || closure.iter().any(|p| p.origin.same_publication(origin))
                 || (writer.is_none() && custody.retirements.iter().any(|p| p.origin.same_publication(origin)));
@@ -46,7 +47,7 @@ pub(super) fn require(
             }
         }
         for intent in &plan.merged_intents {
-            context.checkpoint(1).map_err(stop)?;
+            checkpoint(context, 1).map_err(stop)?;
             let target = match intent {
                 MutationIntent::Entity(EntityMutationIntent::Delete(spec)) => RecordRef::Entity(spec.entity_id),
                 MutationIntent::Entity(EntityMutationIntent::Replace(spec)) => RecordRef::Entity(spec.entity_id),
@@ -56,7 +57,7 @@ pub(super) fn require(
             };
             for publication in &custody.current {
                 let origin = &publication.origin;
-                context.checkpoint((origin.members.len() + origin.relations.len() + closure.len() + custody.retirements.len() + 1) as u64).map_err(stop)?;
+                checkpoint(context, (origin.members.len() + origin.relations.len() + closure.len() + custody.retirements.len() + 1) as u64).map_err(stop)?;
                 if !origin.source_scope_owned || origin.members.iter().all(|m| m.posture == Posture::Retire) {
                     continue;
                 }

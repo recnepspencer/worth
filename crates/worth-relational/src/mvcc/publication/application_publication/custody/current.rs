@@ -1,5 +1,6 @@
 //! Current custody is readmitted from Native's durable roster, without history.
 use super::*;
+use crate::execution::request_stage::checkpoint;
 use crate::publication::data::{AuthoredRetirementRefusal as Cause, PublicationError};
 use crate::storage::overlay::CurrentPartitionAccess;
 use crate::transactions::data::{EntityReference, RecordRef, TransactionCommitError};
@@ -32,7 +33,7 @@ pub(super) fn readmit(
         .ok_or_else(|| refuse(meaning.source_scope))?;
     let result = execution
         .run_native_with_checkpoint(|context| {
-            crate::execution::request_stage::checkpoint(
+            checkpoint(
                 context,
                 (producer.len()
                     + origin.producer.len()
@@ -66,7 +67,7 @@ pub(super) fn readmit(
                 return Err(refuse(meaning.source_scope));
             }
             for (index, role) in roles.iter().enumerate() {
-                crate::execution::request_stage::checkpoint(
+                checkpoint(
                     context,
                     (index + origin.members.len() + role.role.len() + role.entity_name.len() + 1)
                         as u64,

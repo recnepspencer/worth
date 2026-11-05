@@ -1,4 +1,5 @@
 //! Register exact checkpoint candidates without asserting current output truth.
+use crate::domain_computation::primary_graph::admitted_capture::checkpoint;
 
 use super::*;
 use crate::equality_type_id::EqualityTypeId as TypeId;
@@ -22,7 +23,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             if let Some(execution) = execution {
                 execution
                     .run_native_with_checkpoint(|context| {
-                        context.checkpoint((output_bindings.len() as u64).saturating_add(1))
+                        checkpoint(context, (output_bindings.len() as u64).saturating_add(1))
                     })
                     .map_err(|cause| {
                         worth_relational::facade::mvcc::CompanionPreflightStop::Execution(

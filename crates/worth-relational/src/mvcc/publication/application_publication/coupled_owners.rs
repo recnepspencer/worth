@@ -1,5 +1,6 @@
 //! Native custody for the surviving writers that consume an authored retirement.
 use super::*;
+use crate::execution::request_stage::checkpoint;
 use crate::{
     branch::AdmittedRelationalBranchBasis,
     history::data::{CommitId, SelectedAuthoredRetirement},
@@ -70,11 +71,11 @@ impl RelationalAuthoredCoupledOwners {
             .run_native_with_checkpoint(|context| {
                 for (publications, retiring) in [(&self.owners, false), (&self.retirements, true)] {
                     for owner in publications {
-                        context
-                            .checkpoint(
-                                (family.len() + owner.origin.meaning.family.len() + 65) as u64,
-                            )
-                            .map_err(custody::execution_stop)?;
+                        checkpoint(
+                            context,
+                            (family.len() + owner.origin.meaning.family.len() + 65) as u64,
+                        )
+                        .map_err(custody::execution_stop)?;
                         let meaning = &owner.origin.meaning;
                         if meaning.family == family
                             && meaning.source_scope == source

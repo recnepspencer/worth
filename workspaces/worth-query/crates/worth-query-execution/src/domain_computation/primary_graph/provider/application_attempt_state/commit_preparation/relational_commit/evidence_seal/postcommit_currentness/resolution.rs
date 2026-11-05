@@ -91,6 +91,7 @@ impl PreparedFactRebase {
                 snapshot,
                 fact,
                 predecessor,
+                retired,
             ) {
                 Ok(Some(observed)) => return Ok(Ok(Self::Replace(observed))),
                 Ok(None) => {}

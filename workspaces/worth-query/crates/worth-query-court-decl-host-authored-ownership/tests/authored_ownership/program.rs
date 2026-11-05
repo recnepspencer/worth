@@ -83,6 +83,18 @@ pub(super) fn entry_spec<S: Scenario>() -> ApplicationFeatureSpec {
         spec.native_action::<relation_splice::inspection::Binding<S>>()
             .finish_action()
             .finish()
+    } else if matches!(S::MODE, 68 | 69 | 70) {
+        let spec = if S::MODE == 70 {
+            spec.native_action::<foreign_aggregate::BirthBinding<S>>()
+                .finish_action()
+                .native_action::<sheet_boundary::split_walk::ExtendBinding<S>>()
+                .finish_action()
+        } else {
+            spec
+        };
+        spec.action::<parameter_inverse::Binding<S>, super::cold_owned_revision::Delivery>()
+            .finish_action()
+            .finish()
     } else if S::MODE == 48 {
         spec.native_action::<parameter_inverse::Binding<S>>()
             .finish_action()

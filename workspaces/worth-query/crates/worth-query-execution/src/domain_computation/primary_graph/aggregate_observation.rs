@@ -69,10 +69,11 @@ impl AggregateObservation {
             _allocation: query.allocation.cloned(),
         }))
     }
-    pub(in crate::domain_computation::primary_graph) fn refresh_at(
+    pub(in crate::domain_computation::primary_graph) fn refresh_at_member(
         &self,
         pin: &RelationalPinnedRead,
         execution: &ExecutionRequest<'_, '_>,
+        member: EntityId,
     ) -> Result<Arc<Self>, PinnedAggregateReadDenial> {
         Self::read(
             pin,
@@ -82,7 +83,7 @@ impl AggregateObservation {
                 subject: self.key.subject(),
                 entity_kind: self.key.entity_kind(),
                 selection: self.key.selection,
-                member: self.key.member(),
+                member,
                 maximum_work: None,
                 control: None,
             },

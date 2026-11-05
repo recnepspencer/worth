@@ -1,6 +1,7 @@
 //! Ordinary mutation retirement under current Native custody.
 use super::*;
 use crate::authority::commit::pipeline::{consult_stage, CommitStage};
+use crate::execution::request_stage::checkpoint;
 use crate::{
     branch::AdmittedRelationalBranchBasis, runtime::RelationalRuntime,
     transactions::data::EntityReference,
@@ -94,7 +95,7 @@ impl RelationalRuntime {
         };
         let selected = execution
             .run_native_with_checkpoint(|context| {
-                context.checkpoint(roles.len() as u64).map_err(|stop| {
+                checkpoint(context, roles.len() as u64).map_err(|stop| {
                     crate::history::data::CodecRetirementClosureStop::Request(stop.into())
                 })?;
                 let removed = roles

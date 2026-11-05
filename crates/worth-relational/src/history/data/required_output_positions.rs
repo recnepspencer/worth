@@ -2,6 +2,7 @@
 //! This derived selection image grants no ownership without native/proof custody.
 pub(crate) mod presence;
 use super::CommitId;
+use crate::execution::request_stage::checkpoint;
 use crate::identity::data::EntityId;
 use crate::mvcc::RequiredOutputPublicationMeaning as Meaning;
 use crate::transactions::data::TransactionCommitError;
@@ -101,7 +102,7 @@ fn insert(
         let bytes = (std::mem::size_of::<PublicationRoute>()
             + 2 * std::mem::size_of::<usize>()
             + meaning.family.len()) as u64;
-        crate::execution::request_stage::checkpoint(context, bytes).map_err(request)?;
+        checkpoint(context, bytes).map_err(request)?;
         let funding = reserve(lease, bytes)?;
         let route = Arc::new(PublicationRoute {
             family: meaning.family.clone(),
@@ -164,7 +165,7 @@ fn compare(
     meaning: &Meaning,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<Ordering, TransactionCommitError> {
-    crate::execution::request_stage::checkpoint(
+    checkpoint(
         context,
         (route.family.len() + meaning.family.len() + 64) as u64,
     )
@@ -188,7 +189,7 @@ fn node(
     lease: Lease<'_, '_>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<Arc<PositionNode>, TransactionCommitError> {
-    crate::execution::request_stage::checkpoint(context, 6).map_err(request)?;
+    checkpoint(context, 6).map_err(request)?;
     let bytes = (std::mem::size_of::<PositionNode>() + 2 * std::mem::size_of::<usize>()) as u64;
     let funding = reserve(lease, bytes)?;
     let height = height(&left)

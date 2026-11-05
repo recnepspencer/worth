@@ -1,5 +1,6 @@
 //! Retain only the actual applied entity delta, never record payloads.
 use super::*;
+use crate::execution::request_stage::checkpoint;
 use crate::{identity::data::EntityId, transactions::data::RecordRef};
 use worth_execution::ExecutionMemoryReservation;
 
@@ -20,9 +21,7 @@ pub(super) fn capture(
 ) -> Result<Arc<AppliedReadChanges>, TransactionCommitError> {
     let result = execution
         .run_native_with_checkpoint(|context| {
-            context
-                .checkpoint(records.len() as u64)
-                .map_err(request_stop)?;
+            checkpoint(context, records.len() as u64).map_err(request_stop)?;
             let count = records
                 .iter()
                 .filter(|r| matches!(r, RecordRef::Entity(_)))
@@ -55,9 +54,7 @@ pub(super) fn capture(
             }));
             let comparisons =
                 count.saturating_mul((usize::BITS - count.max(1).leading_zeros()) as usize);
-            context
-                .checkpoint(comparisons as u64)
-                .map_err(request_stop)?;
+            checkpoint(context, comparisons as u64).map_err(request_stop)?;
             entities.sort_unstable();
             entities.dedup();
             Ok(Arc::new(AppliedReadChanges {

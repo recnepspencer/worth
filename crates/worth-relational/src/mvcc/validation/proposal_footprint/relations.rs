@@ -1,5 +1,6 @@
 //! Relation lifecycle material comes from the validated actor's real applied draft.
 use super::ValidatedRelationalProposal;
+use crate::execution::request_stage::checkpoint;
 use crate::{
     identity::data::{EntityId, KindId, RelationId},
     storage::overlay::CurrentPartitionAccess,
@@ -111,24 +112,24 @@ impl ValidatedRelationalProposal {
             if let Some(restoration) = restoration {
                 for (original, target) in restoration.entities.iter().take(anchors) {
                     let created = &self.proposed_mutation.outcome.created_entities;
-                    context.checkpoint(created.resolve_work_bound(target).ok_or_else(|| stop(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow))?).map_err(stop)?;
+                    checkpoint(context, created.resolve_work_bound(target).ok_or_else(|| stop(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow))?).map_err(stop)?;
                     let actual = created.resolve(target).ok_or_else(|| crate::mvcc::origin_denial("authored inverse anchor has no actual allocation"))?;
                     restored_entities.push((*original, actual));
                 }
             }
             for fragment in fragments {
-                context.checkpoint(1).map_err(stop)?;
+                checkpoint(context, 1).map_err(stop)?;
                 let RecordRef::Relation(relation) = fragment.target else { continue; };
                 if let Some(admission) = &self.required_output_publication
                     && let crate::mvcc::RequiredOutputPublication::CoupledAuthored { group } = &admission.publication
                 {
-                    context.checkpoint(group.authored_records.len() as u64).map_err(stop)?;
+                    checkpoint(context, group.authored_records.len() as u64).map_err(stop)?;
                     if !group.authored_records.contains(&fragment.target) { continue; }
                 }
                 let before_partition = self.prepared.selected_branch_state.get_current_partition(relation.partition_id);
                 let before_row = before_partition.as_ref().and_then(|partition| partition.relation_arena().get(&relation));
                 let kind = before_row.as_ref().and_then(|row| row.kind_id()).or_else(|| fragment.relation_birth.as_ref().map(|birth| birth.kind));
-                context.checkpoint(kinds.len() as u64).map_err(stop)?;
+                checkpoint(context, kinds.len() as u64).map_err(stop)?;
                 let Some(kind) = kind.filter(|kind| kinds.contains(kind)) else { continue; };
                 let before = before_row.filter(|row| row.is_live()).and_then(|row| row.extra().endpoints.as_ref().map(|ends| (ends.source, ends.target)));
                 let after_partition = self.proposed_mutation.state.get_current_partition(relation.partition_id);
@@ -137,7 +138,7 @@ impl ValidatedRelationalProposal {
                 let after = if matches!(fragment.structural_change, crate::publication::patch::data::RecordStructuralChange::Deleted | crate::publication::patch::data::RecordStructuralChange::RetainedForAudit) { None } else { after };
                 if before == after { continue; }
                 // Several fragments can describe one record. Retain its original and final truth once.
-                context.checkpoint(relations.len() as u64).map_err(stop)?;
+                checkpoint(context, relations.len() as u64).map_err(stop)?;
                 if !relations.iter().any(|old: &ValidatedRelationMutation| old.relation == relation) {
                     relations.push(ValidatedRelationMutation { relation, kind, audit_retained: matches!(fragment.structural_change, crate::publication::patch::data::RecordStructuralChange::RetainedForAudit), before, after });
                 }

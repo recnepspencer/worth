@@ -3,6 +3,7 @@ use super::*;
 use crate::domain_computation::application_aftermath::{
     WorthQueryRelationPreImageDenial as Kind, WorthQueryRelationPreImageFailure as Failure,
 };
+use crate::domain_computation::primary_graph::admitted_capture::checkpoint;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout;
 use crate::domain_computation::{
     WorthQueryProviderSessionDenialKind, WorthQueryProviderSessionFailure as Denial,
@@ -79,11 +80,9 @@ impl WorthQueryPreparedCorrectionSource {
                 let remap = |id,
                              context: &mut worth_execution::MapKernelContext<'_, '_>|
                  -> Result<EntityId, Denial> {
-                    context
-                        .checkpoint(inverse.restored_entities().len() as u64)
-                        .map_err(|cause| {
-                            request_stop(worth_execution::WorkCeilingDenial::Stopped(cause))
-                        })?;
+                    checkpoint(context, inverse.restored_entities().len() as u64).map_err(
+                        |cause| request_stop(worth_execution::WorkCeilingDenial::Stopped(cause)),
+                    )?;
                     Ok(inverse
                         .restored_entities()
                         .iter()
@@ -98,7 +97,7 @@ impl WorthQueryPreparedCorrectionSource {
                     };
                     let mut matched = false;
                     for transition in actual {
-                        context.checkpoint(1).map_err(|cause| {
+                        checkpoint(context, 1).map_err(|cause| {
                             request_stop(worth_execution::WorkCeilingDenial::Stopped(cause))
                         })?;
                         if transition.relation() == mutation.relation()
@@ -122,7 +121,7 @@ impl WorthQueryPreparedCorrectionSource {
                     }
                     let mut matched = false;
                     for row in original {
-                        context.checkpoint(1).map_err(|cause| {
+                        checkpoint(context, 1).map_err(|cause| {
                             request_stop(worth_execution::WorkCeilingDenial::Stopped(cause))
                         })?;
                         let mutation = row.mutation();
@@ -150,7 +149,7 @@ impl WorthQueryPreparedCorrectionSource {
                     let expected = (remap(from, context)?, remap(to, context)?);
                     let mut matched = None;
                     for (index, transition) in actual.iter().enumerate() {
-                        context.checkpoint(1).map_err(|cause| {
+                        checkpoint(context, 1).map_err(|cause| {
                             request_stop(worth_execution::WorkCeilingDenial::Stopped(cause))
                         })?;
                         if !used[index]
@@ -179,11 +178,9 @@ impl WorthQueryPreparedCorrectionSource {
                     .iter()
                     .filter(|row| row.mutation().before().is_some())
                     .count();
-                context
-                    .checkpoint((actual.len() + original.len()) as u64)
-                    .map_err(|cause| {
-                        request_stop(worth_execution::WorkCeilingDenial::Stopped(cause))
-                    })?;
+                checkpoint(context, (actual.len() + original.len()) as u64).map_err(|cause| {
+                    request_stop(worth_execution::WorkCeilingDenial::Stopped(cause))
+                })?;
                 if supplied > expected {
                     let subject = actual
                         .iter()
