@@ -22,7 +22,6 @@ use super::super::{
     WorthQueryAdmittedApplicationCapabilityAccess, WorthQueryAdmittedApplicationOperation,
     WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
 };
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 use super::request_binding::bind_request;
 

@@ -56,7 +56,6 @@ pub(in crate::domain_computation) use application_commit_authorization::WorthQue
 pub(super) use bridge_binding::bridge_authorization_binding_identity;
 pub(in crate::domain_computation) use capability_decision_fact::WorthQueryCapabilityCommitBasis;
 pub(in crate::domain_computation) use capability_decision_fact::WorthQueryRetainedCapabilityAuthorization;
-pub(in crate::domain_computation) use capability_elevation_projection::validate_elevation_projection;
 pub use capability_registry::WorthQueryCapabilityPlanCompilationEvidence;
 pub(in crate::domain_computation) use capability_revocation_progression::WorthQueryCapabilityRevocationBinding;
 pub(in crate::domain_computation) use decision_facts::WorthQueryAuthorizationDecisionFact;
@@ -114,7 +113,6 @@ fn authorization_denial(
     )
 }
 
-pub(in crate::domain_computation) use capability_observation::CancelGrantSelectionGuardForTest;
 
 pub(in crate::domain_computation::authorization) use admission::OperationObservationScopedOps;
 pub(in crate::domain_computation) use admission::RequirementObservationScopedOps;
@@ -128,21 +126,15 @@ pub(in crate::domain_computation) use capability_revalidation::CapabilityRevalid
 pub(in crate::domain_computation::authorization) use capability_revalidation::InstalledBasisScopedOps;
 pub(in crate::domain_computation) use capability_revalidation::PreparedReadScopedOps;
 pub use capability_revocation_progression::CapabilityRevocationProgressionOps;
-pub(in crate::domain_computation) use capability_revocation_progression::CapabilityRevocationProgressionScopedOps;
 pub use delegation_progression::DelegationProgressionOps;
-pub(in crate::domain_computation) use delegation_progression::DelegationProgressionScopedOps;
 pub use delegation_progression::ReplayOps;
-pub(in crate::domain_computation) use delegation_progression::ReplayScopedOps;
 pub use elevation_progression::ApprovalOps;
 pub use elevation_progression::ApprovalReplayOps;
-pub(in crate::domain_computation) use elevation_progression::ApprovalReplayScopedOps;
-pub(in crate::domain_computation) use elevation_progression::ApprovalScopedOps;
 pub use elevation_progression::ElevationCloseOps;
 pub(in crate::domain_computation) use elevation_progression::ElevationCloseScopedOps;
 pub use elevation_progression::MandatoryReviewOps;
 pub(in crate::domain_computation) use elevation_progression::MandatoryReviewScopedOps;
 pub use elevation_progression::RequestOps;
-pub(in crate::domain_computation) use elevation_progression::RequestScopedOps;
 pub use operation_progression::BorrowedCapabilityOps;
 pub use operation_progression::OperationProgressionOps;
 pub(in crate::domain_computation) use operation_progression::OperationProgressionScopedOps;

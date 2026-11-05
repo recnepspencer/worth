@@ -3,7 +3,6 @@ use super::*;
 use crate::domain_computation::authorization::{
     BrandTag, WorthQueryAdmittedOperation, WorthQueryOperationAuthorizationDenial,
 };
-use crate::domain_computation::primary_graph::WorthQueryApplicationRuntimeCore;
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 use {
     crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial,

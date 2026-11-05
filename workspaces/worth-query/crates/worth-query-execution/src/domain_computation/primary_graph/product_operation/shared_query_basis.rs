@@ -2,7 +2,6 @@
 use super::WorthQuerySelectedProductOperation;
 use crate::basis::WorthQueryProductObservationLease;
 use crate::domain_computation::primary_graph::application_query::resource_lifecycle::WorthQueryApplicationBasisLease;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 pub struct SharedSelectedProductOperation<'runtime, Schema> {

@@ -46,7 +46,6 @@ use super::WorthQueryAdmittedApplicationQueryPlan;
 use super::WorthQueryApplicationProjection;
 use super::WorthQueryApplicationQueryAccessReceipt;
 use crate::domain_computation::primary_graph::WorthQueryAuthenticatedPrincipal;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use outcome::finalize_one_shot;
 
 /// The complete result of a one-shot query read: projected rows, the observed

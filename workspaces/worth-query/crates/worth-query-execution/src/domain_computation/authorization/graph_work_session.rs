@@ -12,7 +12,7 @@ use worth_relational::facade::identity::EntityId;
 
 use crate::domain_computation::primary_graph::{
     application_resource_request, WorthQueryApplicationSnapshotLease,
-    WorthQueryApplicationSnapshotLeaseDenial, WorthQueryPrimaryGraphApplicationRuntime,
+    WorthQueryApplicationSnapshotLeaseDenial,
 };
 use crate::domain_computation::provider_session::{
     WorthQueryGraphWorkAccessContextAffinity, WorthQueryManagedGraphWorkSession,

@@ -5,7 +5,7 @@ use super::{
 };
 use crate::domain_computation::{
     authorization::application_disclosure::WorthQueryPendingApplicationQueryGovernance,
-    primary_graph::{WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrincipalResolutionMode},
+    primary_graph::WorthQueryPrincipalResolutionMode,
 };
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;

@@ -12,12 +12,9 @@ use super::{
 };
 use crate::domain_computation::{
     authorization::WorthQueryAdmittedApplicationCapabilityAccess,
-    primary_graph::{
-        application_query::{
+    primary_graph::application_query::{
             admission::prepare_governed_access, WorthQueryApplicationQueryAccessContext,
         },
-        WorthQueryPrimaryGraphApplicationRuntime,
-    },
 };
 
 /// A capture can only consume the SubjectRead plan whose session admitted both decisions.

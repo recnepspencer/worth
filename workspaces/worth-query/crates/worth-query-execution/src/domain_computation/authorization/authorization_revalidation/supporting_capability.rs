@@ -11,7 +11,6 @@ use crate::domain_computation::authorization::{
     WorthQueryCapabilitySupportCommitBasis, WorthQueryOperationAuthorizationDenial,
     WorthQueryRetainedCapabilityRequest, WorthQueryRetainedCapabilitySupport,
 };
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 trait CapabilitySupportRevalidation {
     fn decision(

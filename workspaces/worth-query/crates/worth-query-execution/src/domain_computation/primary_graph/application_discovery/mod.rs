@@ -2,7 +2,6 @@
 //! truth. Workflow discovery may build a basis's derived index generation.
 mod description;
 mod workflow;
-use super::WorthQueryPrimaryGraphApplicationRuntime;
 pub use description::{
     WorthQueryApplicationCallablePosture, WorthQueryApplicationFieldDescription,
     WorthQueryApplicationMutationDescription, WorthQueryApplicationQueryDescription,

@@ -7,7 +7,6 @@ use super::{
     ConditionalClockLease, ErasedClockObservationOutcome, WorthQueryConditionalTruthBasis,
     WorthQueryInstalledConditionalOperation,
 };
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 /// Retained ownership of one installed operation. The lease is immutable and
 /// lookup never needs to acquire the operation's execution mutex.

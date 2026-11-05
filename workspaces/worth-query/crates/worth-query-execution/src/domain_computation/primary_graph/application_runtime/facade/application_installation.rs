@@ -1,5 +1,4 @@
 //! The runtime's consumer methods over `domain_computation::primary_graph::application_installation`; each only calls its subsystem.
-use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 use worth_query_installation::facade::ApplicationSchema;
 impl<Schema: ApplicationSchema> super::super::WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub fn selected_program_owner(

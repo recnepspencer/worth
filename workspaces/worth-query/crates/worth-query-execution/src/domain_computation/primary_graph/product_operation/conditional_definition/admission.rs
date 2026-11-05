@@ -1,9 +1,7 @@
 //! One definition successor issuer for selected entries and admitted handlers.
 use super::*;
 use crate::basis::WorthQueryProductBranchLease;
-use crate::domain_computation::primary_graph::{
-    conditional_operation::QueryTemporalPredicateProvider, WorthQueryPrimaryGraphApplicationRuntime,
-};
+use crate::domain_computation::primary_graph::conditional_operation::QueryTemporalPredicateProvider;
 
 pub(in crate::domain_computation::primary_graph) trait AdmissionScopedOps<Schema: ApplicationSchema>:
     crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>

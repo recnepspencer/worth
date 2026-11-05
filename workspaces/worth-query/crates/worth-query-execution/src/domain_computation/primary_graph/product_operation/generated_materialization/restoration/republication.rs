@@ -11,7 +11,7 @@ use crate::domain_computation::primary_graph::{
         invalidation::{register_republished, FullVerificationReason},
         PreparedNativeOutputWitness,
     },
-    WorthQueryApplicationOutputCorrespondence, WorthQueryPrimaryGraphApplicationRuntime,
+    WorthQueryApplicationOutputCorrespondence,
 };
 
 pub(super) trait RepublicationParentOps<Schema: ApplicationSchema>:

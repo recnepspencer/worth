@@ -5,7 +5,6 @@ use worth_query_admission::facade::authenticated_principal::WorthQueryRequestSco
 use {
     crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl,
     crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial,
-    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime,
     crate::domain_computation::request_execution::WorthQueryAdvancementPhase,
 };
 

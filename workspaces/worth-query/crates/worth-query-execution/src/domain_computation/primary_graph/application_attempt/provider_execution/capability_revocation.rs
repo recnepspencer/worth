@@ -7,7 +7,6 @@ use super::super::{
     WorthQueryApplicationCommitOutcome, WorthQueryApplicationIdempotencyBinding,
     WorthQueryCapabilityRevocationProgram,
 };
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 pub trait CapabilityRevocationOps<Schema>:
     crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>

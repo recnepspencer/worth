@@ -5,7 +5,6 @@ use worth_relational::facade::identity::EntityId;
 
 use super::super::capability_registry::WorthQueryInstalledCapabilityPlan;
 use super::super::WorthQueryAdmittedApplicationCapabilityAccess;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 pub(super) fn selected_elevation_entity<Schema, Capability, Operation, Input>(
     access: &WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,

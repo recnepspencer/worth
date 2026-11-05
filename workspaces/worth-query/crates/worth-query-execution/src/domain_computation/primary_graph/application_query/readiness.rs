@@ -7,7 +7,6 @@ use super::{
     WorthQueryApplicationQueryAdmissionDenialKind,
 };
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 /// Descriptive readiness of one installed primary-graph application runtime.
 ///

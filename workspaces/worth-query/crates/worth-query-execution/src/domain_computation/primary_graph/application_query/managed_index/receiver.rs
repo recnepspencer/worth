@@ -24,7 +24,6 @@ use {
     crate::domain_computation::primary_graph::application_query::WorthQueryApplicationOneShotResult,
     crate::domain_computation::primary_graph::application_query::WorthQueryApplicationProjection,
     crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation,
-    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime,
     crate::domain_computation::request_execution::WorthQueryAdvancementPhase,
 };
 

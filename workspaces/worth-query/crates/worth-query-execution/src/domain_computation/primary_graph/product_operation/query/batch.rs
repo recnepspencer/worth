@@ -1,7 +1,6 @@
 use super::*;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::primary_graph::application_query::AdmissionScopedOps as _;
-use crate::domain_computation::primary_graph::product_operation::AdmissionScopedOps;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationQueryBatchAdmission, WorthQueryApplicationQueryBatchResourceDenial,
 };

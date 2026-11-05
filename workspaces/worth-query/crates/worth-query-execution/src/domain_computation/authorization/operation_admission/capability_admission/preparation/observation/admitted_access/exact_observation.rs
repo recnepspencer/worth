@@ -16,7 +16,7 @@ use crate::domain_computation::authorization::{
     WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
 };
 use crate::domain_computation::primary_graph::{
-    WorthQueryEntityResolutionTruth, WorthQueryPrimaryGraphApplicationRuntime,
+    WorthQueryEntityResolutionTruth,
     WorthQueryPrincipalResolutionMode, WorthQueryResolvedEntity,
 };
 use crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity;

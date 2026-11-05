@@ -2,7 +2,6 @@
 mod context_inventory;
 mod encoding;
 
-use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};

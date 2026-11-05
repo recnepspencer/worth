@@ -9,7 +9,6 @@ use worth_query_installation::facade::{
 };
 
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationEntityIdentity, WorthQueryAuthenticatedPrincipal,
 };

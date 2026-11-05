@@ -16,7 +16,6 @@ use {
     crate::domain_computation::primary_graph::application_query::CompletedMetadataRead,
     crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation,
     crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
-    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime,
     crate::domain_computation::request_execution::WorthQueryAdvancementPhase,
 };
 

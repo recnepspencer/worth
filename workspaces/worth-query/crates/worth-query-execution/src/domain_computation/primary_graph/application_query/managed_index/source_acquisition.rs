@@ -5,7 +5,6 @@ use super::{
     source_image::{SourceBinding, SourceImage},
 };
 use crate::domain_computation::primary_graph::application_query::AdmissionScopedOps as _;
-use crate::domain_computation::primary_graph::product_operation::AdmissionScopedOps;
 use crate::domain_computation::{
     primary_graph::{
         application_query::{
@@ -13,8 +12,7 @@ use crate::domain_computation::{
             WorthQueryApplicationQueryAccessContext, WorthQueryApplicationQueryControls,
             WorthQueryObservedScopeSelector,
         },
-        source_facts::SourceFactsAllocation,
-        WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrincipalResolutionMode,
+        source_facts::SourceFactsAllocation, WorthQueryPrincipalResolutionMode,
         WorthQuerySelectedProductOperation,
     },
     provider_session::WorthQueryManagedGraphWorkSession,

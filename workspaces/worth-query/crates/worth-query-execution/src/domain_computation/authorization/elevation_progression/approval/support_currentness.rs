@@ -11,9 +11,7 @@ use super::super::super::{
     WorthQueryOperationAuthorizationDenialKind, WorthQueryRuntimeTimeSample,
 };
 use super::super::WorthQueryElevationRequestBinding;
-use crate::domain_computation::primary_graph::{
-    WorthQueryPrimaryGraphApplicationRuntime, WorthQueryRequestedElevation,
-};
+use crate::domain_computation::primary_graph::WorthQueryRequestedElevation;
 
 pub(super) fn refresh_exact_support<Schema, Capability, Operation, Input>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

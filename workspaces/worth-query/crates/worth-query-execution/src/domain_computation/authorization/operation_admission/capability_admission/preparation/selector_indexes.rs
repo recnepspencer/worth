@@ -3,7 +3,6 @@ use crate::domain_computation::authorization::{
     WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
     WorthQueryOperationAuthorizationRefusalKind,
 };
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession;
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityRequestProjection;
 use worth_query_installation::facade::ApplicationSchema;

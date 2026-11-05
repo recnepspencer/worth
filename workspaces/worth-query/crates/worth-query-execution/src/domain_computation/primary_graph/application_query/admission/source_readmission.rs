@@ -12,7 +12,6 @@ use super::super::WorthQueryApplicationQueryAdmissionDenialKind;
 use super::super::WorthQueryApplicationQueryControls;
 use super::super::WorthQueryObservedSource;
 
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 /// The original selector and parameters have passed fresh installed-query,
 /// principal, scope, request and parent-meter admission. The selected basis

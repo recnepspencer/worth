@@ -7,7 +7,7 @@ use crate::domain_computation::primary_graph::{
         read_execution::WorthQueryApplicationReadExecutionDenial,
         WorthQueryAdmittedApplicationQueryPlan, WorthQueryApplicationAuthorizationWorkEvidence,
     },
-    WorthQueryInstalledEntityResolutionContext, WorthQueryPrimaryGraphApplicationRuntime,
+    WorthQueryInstalledEntityResolutionContext,
     WorthQueryPrincipalResolutionMode,
 };
 use worth_query_declaration::facade::application_schema::ApplicationSchema;

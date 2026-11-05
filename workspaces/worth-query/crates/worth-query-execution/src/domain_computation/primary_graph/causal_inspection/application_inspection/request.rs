@@ -24,7 +24,6 @@ use super::{
     stop::{InspectionCause, WorthQueryApplicationInspectionDenial},
     WorthQueryObservedApplicationInspection,
 };
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 pub use rich::WorthQueryMaterializedInspectionRequest;
 use std::marker::PhantomData;
 use worth_execution::{ExecutionAllocationPolicy, ExecutionMemoryReservation, ExecutionRequest};

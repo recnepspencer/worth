@@ -9,9 +9,7 @@ use crate::domain_computation::authorization::{
     WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
     WorthQueryOperationScopeBinding,
 };
-use crate::domain_computation::primary_graph::{
-    WorthQueryBoundMutationPreconditions, WorthQueryPrimaryGraphApplicationRuntime,
-};
+use crate::domain_computation::primary_graph::WorthQueryBoundMutationPreconditions;
 use worth_query_declaration::facade::{
     application_capability::ApplicationCapabilityRequest,
     application_schema::{ApplicationOperationMarkerIdentity, TypedMutationPreconditions},

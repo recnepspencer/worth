@@ -73,7 +73,6 @@ pub(crate) mod session_commit;
 mod session_lifecycle;
 mod terminal_dispatch_release;
 pub(crate) mod unpublished_idempotency;
-pub(in crate::domain_computation::primary_graph) use unpublished_idempotency::unwind_recovery_inspection_count;
 pub(in crate::domain_computation) use unpublished_idempotency::WorthQueryUnpublishedIdempotencyDisposition;
 pub(in crate::domain_computation::primary_graph) use unpublished_idempotency::WorthQueryUnpublishedIdempotencyReservation;
 
@@ -305,8 +304,6 @@ impl WorthQueryPrimaryGraphProvider {
 
 pub(super) struct WorthQueryPrimaryLogicalGraph;
 
-pub(in crate::domain_computation::primary_graph) use inbound_completion::completion_preparation_denial;
-pub(in crate::domain_computation::primary_graph) use inbound_completion::completion_validation_denial;
 
 pub(in crate::domain_computation::primary_graph) use application_attempt_state::PreparedRebaseDenial;
 pub(in crate::domain_computation::primary_graph) use application_attempt_state::PreparedSourceFactRebase;
@@ -318,8 +315,6 @@ mod court_doors_for_test;
 pub use committed_dispatch_outbox::CommittedDispatchOutboxOps;
 pub(in crate::domain_computation) use committed_dispatch_outbox::CommittedDispatchOutboxScopedOps;
 pub(in crate::domain_computation::primary_graph) use committed_dispatch_outbox::ProviderCommittedDispatchOutboxScopedOps;
-pub use history_retirement::HistoryRetirementOps;
 pub use managed_application_recovery::ManagedApplicationRecoveryOps;
 pub(in crate::domain_computation::primary_graph) use managed_application_recovery::ProducerScopedOps;
-pub use recovered_program_source_delivery::RecoveredProgramSourceDeliveryOps;
 pub(crate) mod host;

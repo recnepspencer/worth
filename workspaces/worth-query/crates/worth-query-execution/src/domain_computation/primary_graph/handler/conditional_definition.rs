@@ -6,7 +6,7 @@ use crate::domain_computation::primary_graph::{
     application_contribution::WorthQueryApplicationConditionalBinding, HandlerExecutionDenial,
     WorthQueryAdmittedApplicationConditionalDefinition, WorthQueryApplicationAttemptDenial,
     WorthQueryApplicationConditionalDefinitionAdmissionDenial as AdmissionDenial,
-    WorthQueryConditionalClockHandle, WorthQueryPrimaryGraphApplicationRuntime,
+    WorthQueryConditionalClockHandle,
 };
 use std::sync::Arc;
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;

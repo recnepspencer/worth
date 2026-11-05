@@ -1,9 +1,6 @@
 use crate::basis::WorthQueryProductBranchAdmissionDenial;
 use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
-use crate::domain_computation::primary_graph::{
-    application_query::resource_lifecycle::WorthQueryApplicationBasisLease,
-    WorthQueryPrimaryGraphApplicationRuntime,
-};
+use crate::domain_computation::primary_graph::application_query::resource_lifecycle::WorthQueryApplicationBasisLease;
 use worth_runtime_world::facade::ProductBranchObservation;
 
 pub(in crate::domain_computation::primary_graph) trait ApplicationBasisScopedOps<Schema>:

@@ -11,7 +11,6 @@ use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDe
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::primary_graph::WorthQueryApplicationQueryAccessContext;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_relational::facade::authorization::RelationalAuthorizationObservationPlan;
 

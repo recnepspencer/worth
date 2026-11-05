@@ -2,7 +2,6 @@
 pub(super) mod installation;
 pub(crate) mod native;
 use super::output_equivalence_contract::InstalledProducerOutputEquivalence;
-pub(super) use native::dependency_matches_output;
 use std::sync::Arc;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 use worth_relational::facade::{

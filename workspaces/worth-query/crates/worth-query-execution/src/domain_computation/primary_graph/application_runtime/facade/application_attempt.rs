@@ -1,37 +1,18 @@
 //! The runtime's consumer methods over `domain_computation::primary_graph::application_attempt`; each only calls its subsystem.
-use crate::domain_computation::application_aftermath::dispatch_external_effect;
-use crate::domain_computation::application_aftermath::external_effect::WorthQueryTerminalEffectRefusal;
-use crate::domain_computation::application_aftermath::require_fresh_effect_authority;
 use crate::domain_computation::application_aftermath::ApplicationCommitCausality;
 use crate::domain_computation::application_aftermath::WorthQueryAdmittedIdempotencyRead;
-use crate::domain_computation::application_aftermath::WorthQueryExternalEffectDispatch;
 use crate::domain_computation::application_aftermath::WorthQueryExternalEffectTransport;
 use crate::domain_computation::application_aftermath::WorthQueryPerformedExternalRedispatch;
 use crate::domain_computation::application_aftermath::WorthQueryRecoveryEffectAuthority;
 use crate::domain_computation::application_aftermath::WorthQueryRecoveryHandle;
-use crate::domain_computation::authorization::AuthorizationRevalidationScopedOps;
-use crate::domain_computation::authorization::WorthQueryAdmissionLapse;
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
-use crate::domain_computation::primary_graph::application_attempt::approved_outcome;
-use crate::domain_computation::primary_graph::application_attempt::closed_outcome;
-use crate::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationFactKey;
-use crate::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact;
-use crate::domain_computation::primary_graph::application_attempt::read_scope::WorthQueryApplicationReadScope;
-use crate::domain_computation::primary_graph::application_attempt::reviewed_outcome;
-use crate::domain_computation::primary_graph::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLease;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial;
-use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenialKind;
-use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitAuthorityBinding;
-use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenial;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcome;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitReceipt;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationEffectProgram;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding;
-use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyResolution;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyResolutionDenial;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApprovedElevation;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryCapabilityRevocationProgram;
-use crate::domain_computation::primary_graph::application_attempt::WorthQueryCommittedReceiptProjection;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryDelegationActivationProgram;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryElevationApprovalOutcome;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryElevationCloseOutcome;
@@ -47,34 +28,13 @@ use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryElevationRequestOutcome, WorthQueryElevationRequestProgram,
     WorthQueryMandatoryReviewProgram, WorthQueryProjectedApplicationMutation,
 };
-use crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload;
 use crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation;
 use crate::domain_computation::primary_graph::program_occurrence::WorthQueryPresentedProgram;
-#[allow(private_interfaces)]
-use crate::domain_computation::primary_graph::provider::ProviderCommittedDispatchOutboxScopedOps;
-use crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolution;
-use crate::domain_computation::primary_graph::InstalledTransportCompletion;
-use crate::domain_computation::primary_graph::InstalledTransportResumeOutcome;
 use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation;
-use crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity;
 use crate::domain_computation::primary_graph::WorthQueryApplicationOperationInvariantProjectionSnapshot;
-use crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation;
-use crate::domain_computation::primary_graph::WorthQueryInstalledEntityResolutionContext;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
-use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode;
 use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
-use std::collections::BTreeMap;
-use std::marker::PhantomData;
 use std::sync::Arc;
-use worth_query_installation::facade::ApplicationFieldRef;
-use worth_query_installation::facade::ApplicationFieldUnit;
-use worth_query_installation::facade::ApplicationScalarValueBinding;
 use worth_query_installation::facade::ApplicationSchema;
-use worth_query_installation::facade::DeclaredApplicationFieldValue;
-use worth_query_installation::facade::EqualityPredicate;
-use worth_query_installation::facade::InstalledAftermathRecoveryContract;
-use worth_query_installation::facade::OperationReads;
-use worth_query_installation::facade::WritePosture;
 impl<Schema: ApplicationSchema> super::super::WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub fn resolve_admitted_elevation_approval_replay<Operation, Input, Scope>(
         &self,

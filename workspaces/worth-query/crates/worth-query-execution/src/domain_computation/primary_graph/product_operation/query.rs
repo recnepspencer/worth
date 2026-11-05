@@ -1,6 +1,5 @@
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::primary_graph::application_query::AdmissionScopedOps as _;
-use crate::domain_computation::primary_graph::product_operation::AdmissionScopedOps;
 use std::num::NonZeroUsize;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest;

@@ -1,12 +1,10 @@
 //! What the output-demand subsystem needs from the runtime that composes it.
 
 use crate::basis::WorthQueryProductBranchAdmissionDenial;
-use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
 use crate::domain_computation::primary_graph::application_query::WorthQueryApplicationReadObservation;
 use crate::domain_computation::primary_graph::product_operation::{
     WorthQueryProductEntry, WorthQuerySelectedProductOperation,
 };
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle;
 
 /// The runtime's identity, its graph handle, and the product selections output demands read.
 pub trait OutputDemandHost<Schema>:

@@ -7,7 +7,6 @@ use super::super::{
 };
 use super::WorthQueryApplicationBatchResult;
 use crate::basis::WorthQueryProductBranchLease;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use worth_execution::{ExecutionRequest, ExecutionResourceLease, MapKernelContext};
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;

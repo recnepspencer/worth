@@ -12,7 +12,6 @@ use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 use crate::domain_computation::primary_graph::SharedSelectedProductOperation;
 use crate::domain_computation::primary_graph::WorthQueryApplicationSnapshotLease;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::provider_session::WorthQueryGraphWorkAccessContextAffinity;
 use crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession;
 

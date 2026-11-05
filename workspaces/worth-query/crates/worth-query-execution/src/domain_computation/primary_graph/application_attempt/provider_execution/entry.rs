@@ -13,7 +13,6 @@ use super::program_occurrence_gate::{
 };
 use crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation;
 use crate::domain_computation::primary_graph::program_occurrence::WorthQueryPresentedProgram;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 pub(in crate::domain_computation) trait EntryScopedOps<Schema>:
     crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>

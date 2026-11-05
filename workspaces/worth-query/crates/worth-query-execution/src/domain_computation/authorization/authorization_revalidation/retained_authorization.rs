@@ -16,7 +16,6 @@ use crate::domain_computation::authorization::{
     WorthQueryOperationAuthorizationDenial, WorthQueryRetainedAuthorizationDecisionFacts,
     WorthQueryRetainedCapabilityAuthorization,
 };
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 pub(super) trait RetainedAuthorizationParentOps<Schema>:
     crate::domain_computation::authorization::host::AuthorizationHost<Schema>

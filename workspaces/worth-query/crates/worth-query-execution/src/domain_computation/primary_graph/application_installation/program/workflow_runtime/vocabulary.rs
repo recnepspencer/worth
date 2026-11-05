@@ -15,9 +15,7 @@ use worth_query_declaration::facade::{
 use worth_query_installation::facade::WorthQueryInstalledApplicationWorkflowSpec;
 
 use super::WorthQueryWorkflowApplicationRuntime;
-use crate::domain_computation::primary_graph::{
-    WorthQueryPrimaryGraphApplicationRuntime, WorthQuerySelectedProductOperation,
-};
+use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
 
 /// The workflow vocabularies one request prepares against.
 pub struct WorthQueryWorkflowVocabulary<'vocabulary, Schema, Spec>

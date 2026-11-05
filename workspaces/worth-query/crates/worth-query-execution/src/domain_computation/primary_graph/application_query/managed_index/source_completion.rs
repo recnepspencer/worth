@@ -14,7 +14,6 @@ use crate::domain_computation::primary_graph::{
     },
     source_facts::SourceFactsAllocation,
     value_decode::ValueDecodeState,
-    WorthQueryPrimaryGraphApplicationRuntime,
 };
 use std::sync::Arc;
 use worth_query_declaration::facade::{

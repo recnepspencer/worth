@@ -21,7 +21,6 @@ mod scope;
 
 pub use custody::RecoveryOps;
 pub use custody::ReleaseOps;
-pub(in crate::domain_computation::primary_graph::product_operation::program_adoption) use custody::ReleaseScopedOps;
 pub use custody::{
     WorthQueryBranchAdoptionRecovery, WorthQueryBranchAdoptionRecoveryDenial,
     WorthQueryBranchAdoptionRecoveryFailure, WorthQueryBranchAdoptionRecoveryOutcome,

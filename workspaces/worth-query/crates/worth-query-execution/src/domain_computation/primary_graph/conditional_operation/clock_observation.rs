@@ -4,7 +4,6 @@ use worth_query_installation::facade::{ApplicationSchema, WorthQueryClockCoordin
 
 use super::installation::WorthQueryConditionalClockHandle;
 use super::lifecycle::WorthQueryConditionalOperationCell;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 pub(crate) mod erased;
 mod product_admission;

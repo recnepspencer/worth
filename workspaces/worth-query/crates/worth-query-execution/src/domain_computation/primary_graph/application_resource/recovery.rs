@@ -6,7 +6,6 @@ use super::{
 use crate::domain_computation::{
     application_aftermath::{WorthQueryRecoveryHandle, WorthQueryRecoveryInspectAuthority},
     authorization::WorthQueryOperationScopeEntityBinding,
-    primary_graph::WorthQueryPrimaryGraphApplicationRuntime,
 };
 use worth_query_installation::facade::ApplicationSchema;
 

@@ -21,9 +21,7 @@ use crate::domain_computation::primary_graph::application_attempt::{
     snapshot_lease::WorthQueryApplicationSnapshotLease,
 };
 use crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolution;
-use crate::domain_computation::primary_graph::{
-    WorthQueryAdmittedApplicationOperation, WorthQueryPrimaryGraphApplicationRuntime,
-};
+use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation;
 
 pub(crate) mod entry_custody;
 pub(in crate::domain_computation::primary_graph) use entry_custody::{

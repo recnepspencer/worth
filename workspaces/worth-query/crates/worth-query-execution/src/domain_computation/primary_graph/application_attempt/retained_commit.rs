@@ -7,9 +7,7 @@ use super::{
     WorthQueryApplicationCommitOutcome, WorthQueryApplicationCommitReceipt,
     WorthQueryApplicationEffectProgram, WorthQueryApplicationIdempotencyBinding,
 };
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationReadObservation, WorthQueryPrimaryGraphApplicationRuntime,
-};
+use crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation;
 
 /// The fresh performed carrier exists only for a publication that reserved it.
 /// An idempotent replay remains descriptive and cannot create a new lease.

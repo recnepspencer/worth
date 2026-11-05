@@ -1,9 +1,6 @@
 //! One actual capability-to-disclosure handoff for issued application scopes.
 use super::WorthQueryPendingApplicationQueryGovernance;
-use crate::domain_computation::{
-    authorization::WorthQueryAdmittedApplicationCapabilityAccess,
-    primary_graph::WorthQueryPrimaryGraphApplicationRuntime,
-};
+use crate::domain_computation::authorization::WorthQueryAdmittedApplicationCapabilityAccess;
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest;
 use worth_query_installation::facade::{ApplicationSchema, ApplicationSchemaBindingIdentity};
 use worth_relational::facade::identity::EntityId;

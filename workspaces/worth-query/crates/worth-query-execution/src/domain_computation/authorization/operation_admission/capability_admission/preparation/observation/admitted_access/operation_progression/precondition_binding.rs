@@ -13,7 +13,6 @@ use crate::domain_computation::authorization::{
 };
 use crate::domain_computation::primary_graph::{
     bind_mutation_preconditions, WorthQueryBoundMutationPreconditions,
-    WorthQueryPrimaryGraphApplicationRuntime,
 };
 
 pub(super) fn bind_progression_preconditions<Schema, Capability, Operation, Input>(

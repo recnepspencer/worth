@@ -7,7 +7,6 @@ pub(in crate::domain_computation::primary_graph::application_attempt) use transi
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::*;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 pub(in crate::domain_computation::primary_graph) trait CommitScopedOps<Schema>:
     crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>

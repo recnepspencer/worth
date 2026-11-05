@@ -24,7 +24,6 @@ use super::{
     WorthQueryAdmittedApplicationCapabilityAccess, WorthQueryAdmittedApplicationOperation,
     WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
 };
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 pub(in crate::domain_computation) struct WorthQueryCapabilityRevocationBinding {
     proposal_identity: [u8; 32],

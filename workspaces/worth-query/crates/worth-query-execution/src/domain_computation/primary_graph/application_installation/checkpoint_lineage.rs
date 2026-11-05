@@ -1,8 +1,7 @@
 //! Restore tracked output lineage at the checkpoint boundary, before any demand.
 use super::super::{
     application_checkpoint::decode_checkpoint_computation,
-    application_query::WorthQueryCheckpointSourceIdentity, output_lineage::RecordedSourceIdentity,
-    WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrimaryGraphInstallationDenial,
+    application_query::WorthQueryCheckpointSourceIdentity, output_lineage::RecordedSourceIdentity, WorthQueryPrimaryGraphInstallationDenial,
 };
 use worth_query_installation::facade::ApplicationSchema;
 

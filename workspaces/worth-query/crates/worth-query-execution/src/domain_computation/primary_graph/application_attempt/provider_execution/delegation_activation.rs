@@ -7,7 +7,6 @@ use super::super::{
     WorthQueryApplicationCommitOutcome, WorthQueryApplicationIdempotencyBinding,
     WorthQueryDelegationActivationProgram,
 };
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 pub trait DelegationActivationOps<Schema>:
     crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>

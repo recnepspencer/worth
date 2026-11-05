@@ -5,7 +5,6 @@ use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 use super::super::WorthQueryAdmittedApplicationQueryPlan;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 pub(in crate::domain_computation::primary_graph::application_query) enum SelectedAuthorizationCurrentnessStop
 {

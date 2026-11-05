@@ -7,7 +7,7 @@ use crate::domain_computation::primary_graph::application_attempt::IdempotencyRe
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitDenial, WorthQueryApplicationIdempotencyBinding,
     WorthQueryApplicationIdempotencyResolution, WorthQueryApplicationIdempotencyResolutionDenial,
-    WorthQueryApplicationUncommitted, WorthQueryPrimaryGraphApplicationRuntime,
+    WorthQueryApplicationUncommitted,
 };
 use worth_query_installation::facade::ApplicationSchema;
 

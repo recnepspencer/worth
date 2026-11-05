@@ -29,7 +29,6 @@ use crate::domain_computation::primary_graph::{
     },
     live_delivery::WorthQueryLiveCauseQueue,
     WorthQueryApplicationEntityIdentity, WorthQueryAuthenticatedPrincipal,
-    WorthQueryPrimaryGraphApplicationRuntime,
 };
 
 struct WorthQueryApplicationLiveOpenRequest<

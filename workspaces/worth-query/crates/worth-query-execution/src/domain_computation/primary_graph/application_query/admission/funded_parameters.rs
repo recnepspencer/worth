@@ -5,7 +5,6 @@ use crate::domain_computation::primary_graph::application_contribution::executio
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationAttemptDenial as Denial, WorthQueryApplicationAttemptDenialKind as Kind,
-    WorthQueryPrimaryGraphApplicationRuntime,
 };
 use stage::{checkpoint, run_stage};
 use std::sync::Arc;

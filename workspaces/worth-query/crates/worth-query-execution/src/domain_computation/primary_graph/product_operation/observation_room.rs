@@ -14,7 +14,6 @@ use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusa
 use worth_query_installation::facade::ApplicationSchema;
 
 use crate::basis::WorthQueryProductBranchAdmissionDenial as Denial;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 pub(in crate::domain_computation::primary_graph) trait ObservationRoomScopedOps<
     Schema: ApplicationSchema,

@@ -23,7 +23,7 @@ use super::{WorthQueryProgramApplicationRuntime, WorthQueryWorkflowApplicationRu
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitOutcome,
     WorthQueryApplicationEffectProgram, WorthQueryApplicationIdempotencyBinding,
-    WorthQueryApplicationRetainedCommitOutcome, WorthQueryPrimaryGraphApplicationRuntime,
+    WorthQueryApplicationRetainedCommitOutcome,
 };
 
 mod occurrence_commit;

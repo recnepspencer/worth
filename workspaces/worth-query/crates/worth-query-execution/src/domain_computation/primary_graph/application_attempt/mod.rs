@@ -41,8 +41,6 @@ mod mandatory_review_replay;
 pub(crate) mod migration;
 pub(crate) mod observation;
 pub(in crate::domain_computation::primary_graph) use observation::observe_aspect_presence;
-pub(in crate::domain_computation::primary_graph) use observation::take_native_field_contacts;
-pub(in crate::domain_computation::primary_graph) use observation::ReadRendezvous;
 pub(in crate::domain_computation::primary_graph) use observation::{
     observe_aspect_absence, observe_field, observe_field_observation_borrowed_admitted,
     observe_field_value_borrowed, observe_field_value_borrowed_admitted,
@@ -64,7 +62,6 @@ mod signed_selection;
 mod signing_lifecycle;
 pub(in crate::domain_computation::primary_graph) use read_set::request_liveness::check_request_live;
 pub(in crate::domain_computation) use read_set::CompletedHandlerFactBoundary;
-pub(in crate::domain_computation::primary_graph) use read_set::ComputationFactReaders;
 pub(in crate::domain_computation::primary_graph) use read_set::FactRoutes;
 pub(in crate::domain_computation::primary_graph) use read_set::{
     observe_admitted_fact, CheckedCallShape, CompletedDecisionReuseProof,
@@ -81,7 +78,6 @@ pub(crate) mod snapshot_lease;
 pub(crate) mod workflow_deadline;
 mod workflow_definition_program;
 pub(crate) mod workflow_instance_observation;
-pub(in crate::domain_computation::primary_graph) use workflow_instance_observation::decode_field_revision_fact;
 pub(in crate::domain_computation::primary_graph) use workflow_instance_observation::WorkflowStepAllowance;
 pub(crate) mod workflow;
 pub(crate) mod workflow_instance_program;
@@ -242,7 +238,6 @@ pub use elevation_approval_replay::ElevationApprovalReplayOps;
 pub(in crate::domain_computation) use elevation_approval_replay::ElevationApprovalReplayScopedOps;
 pub use elevation_close_replay::ElevationCloseReplayOps;
 pub(in crate::domain_computation::primary_graph) use idempotency_resolution::ApplicationAttemptIdempotencyResolutionScopedOps;
-pub use idempotency_resolution::ExternalSettlementCourtDoorsForTestOps;
 pub(in crate::domain_computation::primary_graph) use idempotency_resolution::ExternalSettlementScopedOps;
 pub use idempotency_resolution::IdempotencyResolutionOps;
 pub(in crate::domain_computation) use idempotency_resolution::IdempotencyResolutionScopedOps;
@@ -260,13 +255,9 @@ pub(in crate::domain_computation::primary_graph) use provider_execution::Elevati
 pub(in crate::domain_computation::primary_graph) use provider_execution::ElevationRefusalScopedOps;
 pub use provider_execution::ElevationRequestOps;
 pub(in crate::domain_computation::primary_graph) use provider_execution::ElevationRequestScopedOps;
-pub use provider_execution::EntryCustodyDoorsOps;
-pub use provider_execution::EntryCustodyEntryCustodyDoorsOps;
 pub(in crate::domain_computation) use provider_execution::EntryCustodyScopedOps;
 pub(in crate::domain_computation) use provider_execution::EntryScopedOps;
-pub use provider_execution::ExternalDispatchDoorsOps;
 pub use provider_execution::ExternalDispatchOps;
-pub use provider_execution::InstalledReadmissionDoorsOps;
 pub(in crate::domain_computation::primary_graph) use provider_execution::InstalledReadmissionScopedOps;
 pub use provider_execution::MandatoryReviewOps;
 pub(in crate::domain_computation::primary_graph) use provider_execution::MandatoryReviewScopedOps;

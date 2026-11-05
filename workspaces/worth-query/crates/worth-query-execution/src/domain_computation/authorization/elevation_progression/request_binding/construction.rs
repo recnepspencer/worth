@@ -14,7 +14,6 @@ use super::super::super::{
 };
 use super::super::request::{denial, projection_denial};
 use super::WorthQueryElevationRequestBinding;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 pub(in crate::domain_computation::authorization::elevation_progression) fn bind_request<
     Schema,

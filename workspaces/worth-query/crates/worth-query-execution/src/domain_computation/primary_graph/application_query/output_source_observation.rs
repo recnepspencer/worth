@@ -1,7 +1,7 @@
 //! Governed source read inside the original producer reader and native borrow.
 use super::*;
 use crate::domain_computation::primary_graph::{
-    SharedSelectedProductOperation, WorthQueryPrimaryGraphApplicationRuntime,
+    SharedSelectedProductOperation,
     WorthQueryPrincipalResolutionMode,
 };
 use std::num::NonZeroUsize;

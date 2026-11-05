@@ -43,7 +43,6 @@ use crate::domain_computation::{
         },
         live_delivery::{WorthQueryLiveCauseFillPosture, WorthQueryLiveCauseQueue},
         WorthQueryApplicationEntityIdentity, WorthQueryAuthenticatedPrincipal,
-        WorthQueryPrimaryGraphApplicationRuntime,
     },
 };
 

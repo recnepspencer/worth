@@ -12,7 +12,6 @@ use crate::domain_computation::authorization::operation_progression::WorthQueryC
 use crate::domain_computation::authorization::{
     WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
 };
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 pub(super) fn validate_progression_authority<Schema, Capability, Operation, Input>(
     runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,

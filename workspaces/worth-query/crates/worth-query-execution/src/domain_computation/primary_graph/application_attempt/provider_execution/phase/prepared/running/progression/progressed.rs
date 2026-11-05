@@ -9,7 +9,6 @@ use crate::domain_computation::primary_graph::application_attempt::provider_exec
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcome;
 use crate::domain_computation::primary_graph::application_attempt::provider_execution::WorthQueryProviderProgressionOutcome;
 use super::WorthQueryProgressedApplicationCommit;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::WorthQueryManagedRunTerminalKind;
 
 pub fn finish_application_commit<Schema>(

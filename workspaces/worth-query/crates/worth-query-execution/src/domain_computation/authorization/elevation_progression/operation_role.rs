@@ -10,7 +10,6 @@ use super::super::capability_registry::{
 use super::super::{
     WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
 };
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 pub(super) fn installed_lifecycle_owner<'runtime, Schema, Operation, Input>(
     runtime: &'runtime dyn crate::domain_computation::authorization::host::AuthorizationHost<

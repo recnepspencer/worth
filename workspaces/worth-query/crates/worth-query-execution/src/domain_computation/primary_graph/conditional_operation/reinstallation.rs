@@ -9,7 +9,6 @@ use super::{
     WorthQueryConditionalRuntimeInstallationDenial,
     WorthQueryConditionalRuntimeInstallationDenialKind,
 };
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 /// Receipt from rebuilding a runtime's conditional state for the same
 /// installation.

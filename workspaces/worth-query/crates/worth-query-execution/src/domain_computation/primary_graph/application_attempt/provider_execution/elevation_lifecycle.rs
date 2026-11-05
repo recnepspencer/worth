@@ -9,7 +9,6 @@ use super::super::{
     WorthQueryElevationRequestOutcome, WorthQueryElevationRequestProgram,
     WorthQueryMandatoryReviewOutcome, WorthQueryMandatoryReviewProgram,
 };
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 mod elevation_approval;
 mod elevation_close;

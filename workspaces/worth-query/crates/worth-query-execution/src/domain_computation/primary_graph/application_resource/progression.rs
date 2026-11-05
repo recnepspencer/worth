@@ -6,7 +6,6 @@ use super::{
     installation::InstalledResourceBinding, occurrence::ResourceLifecycle, stop::ResourceCause,
     storage::ResourceRowLease,
 };
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 pub(super) use advance::{advance, revalidate};
 use worth_execution::ExecutionRequest;
 use worth_query_declaration::facade::{

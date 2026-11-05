@@ -183,7 +183,6 @@ pub(in crate::domain_computation) use provider::WorthQueryPrimaryGraphApplicatio
 pub(in crate::domain_computation) use provider::WorthQueryUnpublishedIdempotencyDisposition;
 pub(in crate::domain_computation) use application_branch::primary_relational_branch_id;
 pub(in crate::domain_computation) use application_branch::primary_truth_branch_identity;
-pub(crate) use application_query::WorthQueryApplicationHistoricalRead;
 pub(crate) use application_query::WorthQueryApplicationQueryControls;
 pub(in crate::domain_computation) use crate::domain_computation::application_aftermath::external_effect::WorthQueryAdmittedExternalDispatchAttempt;
 pub(in crate::domain_computation) use application_runtime::WorthQueryExternalDispatchAttemptOrdinal;
@@ -213,7 +212,6 @@ pub(in crate::domain_computation) use application_contribution::SealedComputatio
 
 pub(in crate::domain_computation) use application_contribution::observe_discarded;
 
-pub use crate::domain_computation::execution_runtime::product_world::installed_source_reads_on_this_thread_for_test;
 
 pub use observations::principal_target_reads_on_this_thread_for_test;
 

@@ -8,7 +8,6 @@ use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 use crate::basis::WorthQueryProductBranchAdmissionDenial;
 use crate::basis::WorthQueryProductObservationLease;
 
-use super::super::WorthQueryPrimaryGraphApplicationRuntime;
 use super::super::WorthQuerySelectedProductOperation;
 
 /// Owner-retained authority for reading one exact World product occurrence.

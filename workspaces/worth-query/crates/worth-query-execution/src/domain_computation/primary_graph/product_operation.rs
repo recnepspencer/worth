@@ -60,8 +60,6 @@ pub use conditional_definition::{
     WorthQueryConditionalDefinitionPublicationOutcome,
     WorthQueryPerformedConditionalDefinitionPublication,
 };
-pub use context::ContextContextDoorsOps;
-pub use context::ContextDoorsOps;
 pub use context::ContextOps;
 pub(crate) use context::ContextScopedOps;
 pub(in crate::domain_computation::primary_graph) use context::ProductOperationContextScopedOps;
@@ -70,7 +68,6 @@ pub use document_history::ConstraintOps;
 pub use generated_materialization::AdvancementOps;
 pub use generated_materialization::ReconstructionOps;
 pub use generated_materialization::RecoveryAdvancementOps;
-pub use generated_materialization::RepublicationDoorsOps;
 pub use generated_materialization::RestorationOps;
 pub use generated_materialization::{
     WorthQueryCompletedGeneratedOutputReconstruction, WorthQueryGeneratedEntity,
@@ -125,8 +122,6 @@ pub use query::WorthQueryProductQueryControls;
 pub use query::WorthQueryRetainedBatchQueryAdmissionDenial;
 pub(in crate::domain_computation::primary_graph) use security_basis::MatchingHeadScopedOps;
 pub(in crate::domain_computation::primary_graph) use security_basis::ProductOperationSecurityBasisScopedOps;
-pub(in crate::domain_computation) use security_basis::SecurityBasisScopedOps;
-pub use shared_query_basis::SharedQueryBasisDoorsOps;
 pub(in crate::domain_computation::primary_graph) use shared_query_basis::SharedQueryBasisScopedOps;
 pub use transaction::{
     WorthQueryAdmittedChange, WorthQueryAppliedProductTransaction, WorthQueryProductTransaction,

@@ -55,9 +55,7 @@ pub(in crate::domain_computation) use provisional_attempt::check_invariant_reque
 /// Borrowed request view supplied by Query to an admitted provider invocation.
 pub use worth_execution::ExecutionRequest;
 
-pub(in crate::domain_computation) use graph_obligation::pin_panic;
 
-pub(in crate::domain_computation) use graph_obligation::pin_control;
 
 pub use graph_obligation::{
     WorthQueryInspectionReadTerminalDenial, WorthQueryManagedGraphReadDenial,

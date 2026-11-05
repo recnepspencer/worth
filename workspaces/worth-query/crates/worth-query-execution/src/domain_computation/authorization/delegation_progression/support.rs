@@ -14,7 +14,6 @@ use super::super::{
     WorthQueryAdmittedApplicationCapabilityAccess, WorthQueryOperationAuthorizationDenial,
     WorthQueryOperationAuthorizationDenialKind, WorthQueryRetainedCapabilitySupport,
 };
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 pub(in crate::domain_computation::authorization) struct WorthQueryObservedDelegationSupport {
     resolved: WorthQueryDelegationResolvedRequest,

@@ -21,7 +21,6 @@ use crate::domain_computation::primary_graph::application_query::{
     WorthQueryApplicationProjection, WorthQueryApplicationQueryAccessReceipt,
 };
 use crate::domain_computation::primary_graph::value_decode::ValueDecodeState;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 struct WorthQueryContinuationIdentity {
     runtime_authority: u64,

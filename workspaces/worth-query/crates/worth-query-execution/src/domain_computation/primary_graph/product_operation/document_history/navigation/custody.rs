@@ -6,7 +6,6 @@ use crate::{
         execution_runtime::product_world::WorthQueryPreparedProductPublication,
         primary_graph::{
             WorthQueryApplicationIdempotencyBinding, WorthQueryExpectedProductBranch,
-            WorthQueryPrimaryGraphApplicationRuntime,
         },
         WorthQueryProductUnpublishedRecovery,
     },

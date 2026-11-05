@@ -22,7 +22,6 @@ use super::operation_role::installed_lifecycle_owner;
 use super::transition_contract::{review_decision_reads, review_program_targets};
 use crate::domain_computation::primary_graph::{
     WorthQueryElevationClosureKind, WorthQueryMandatoryReview,
-    WorthQueryPrimaryGraphApplicationRuntime,
 };
 
 mod binding;

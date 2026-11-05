@@ -31,7 +31,6 @@ use crate::domain_computation::authorization::{
 };
 use crate::domain_computation::primary_graph::{
     InstalledTransportCompletion, InstalledTransportResumeOutcome,
-    WorthQueryPrimaryGraphApplicationRuntime,
 };
 pub use denial::{
     WorthQueryExternalDispatchAttemptDenial, WorthQueryExternalDispatchPreparationDenial,

@@ -25,7 +25,6 @@ use super::operation_role::installed_lifecycle_owner;
 use super::transition_contract::{close_decision_reads, close_program_targets};
 use crate::domain_computation::primary_graph::{
     WorthQueryApprovedElevation, WorthQueryElevationClosureKind,
-    WorthQueryPrimaryGraphApplicationRuntime,
 };
 
 mod binding;

@@ -17,7 +17,6 @@ use crate::domain_computation::primary_graph::application_query::{
     },
     WorthQueryApplicationAuthorizationWorkEvidence,
 };
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use worth_execution::MapKernelContext;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryAuthorization;

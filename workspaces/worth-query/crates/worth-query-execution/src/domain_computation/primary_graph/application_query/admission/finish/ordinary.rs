@@ -9,7 +9,6 @@ use super::super::super::{
     WorthQueryApplicationQueryAccessContext, WorthQueryApplicationQueryAdmissionDenial,
     WorthQueryApplicationQueryControls,
 };
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 pub(in crate::domain_computation::primary_graph) trait OrdinaryScopedOps<Schema: ApplicationSchema>:
     crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>

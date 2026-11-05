@@ -10,7 +10,6 @@ use super::super::super::{
     WorthQueryApplicationUncommitted,
 };
 use super::PublishedWorkflowDefinitionRef;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 /// Opaque, live retirement program for one exact published definition.
 ///

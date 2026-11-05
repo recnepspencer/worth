@@ -11,7 +11,6 @@ use super::super::{
     WorthQueryApplicationQueryAccessContext, WorthQueryApplicationQueryAdmissionDenial,
     WorthQueryApplicationQueryAdmissionDenialKind,
 };
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 pub(in crate::domain_computation::primary_graph::application_query) fn prepare_governed_access<
     Schema,

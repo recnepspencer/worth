@@ -11,8 +11,7 @@ use super::{
     WorthQueryCapturedApplicationHistorySubjects as Subjects,
 };
 use crate::domain_computation::{
-    primary_graph::{
-        application_query::{
+    primary_graph::application_query::{
             authorized_read::{
                 execute_authorized_read_with_access, refresh_governed_authorization,
                 WorthQueryAuthorizedApplicationReadDenial,
@@ -22,8 +21,6 @@ use crate::domain_computation::{
                 validate_one_shot_plan,
             },
         },
-        WorthQueryPrimaryGraphApplicationRuntime,
-    },
     provider_session::{WorthQueryObservedGraphReadWork, WorthQuerySessionGraphReadProof},
 };
 

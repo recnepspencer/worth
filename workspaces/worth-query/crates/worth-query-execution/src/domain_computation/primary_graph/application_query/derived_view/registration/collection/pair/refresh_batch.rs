@@ -8,7 +8,6 @@ use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use super::{
     WorthQueryAdmittedApplicationQueryPlan, WorthQueryApplicationProjection,
     WorthQueryManagedDerivedValue, WorthQueryManagedDerivedView, WorthQueryManagedDerivedViewKey,
-    WorthQueryPrimaryGraphApplicationRuntime,
 };
 use crate::basis::WorthQueryProductBranchLease;
 use crate::domain_computation::primary_graph::application_query::{

@@ -3,7 +3,7 @@ use super::ProviderExecutionDenial as Denial;
 use crate::domain_computation::{
     primary_graph::{
         application_query::one_shot::outcome::material::MaterialCompletion,
-        source_facts::SourceFactsAllocation, WorthQueryPrimaryGraphApplicationRuntime,
+        source_facts::SourceFactsAllocation,
     },
     provider_session::{
         WorthQueryCompletedSourceRead, WorthQueryManagedGraphWorkSession,

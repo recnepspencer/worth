@@ -6,9 +6,7 @@ use worth_query_installation::facade::{
 
 use super::WorthQueryApplicationQueryAccessContext;
 use crate::domain_computation::authorization::WorthQueryAuthorizationDecisionFact;
-use crate::domain_computation::primary_graph::{
-    WorthQueryOperationAuthorizationDenial, WorthQueryPrimaryGraphApplicationRuntime,
-};
+use crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial;
 
 pub(in crate::domain_computation::primary_graph::application_query) trait AuthorizationObservationScopedOps<
     Schema,

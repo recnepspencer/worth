@@ -22,7 +22,6 @@ use {
     crate::domain_computation::primary_graph::WorthQueryApplicationEffectProgram,
     crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact,
     crate::domain_computation::primary_graph::WorthQueryCompleteApplicationReadSet,
-    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime,
     crate::domain_computation::primary_graph::WorthQueryProjectedApplicationMutation,
 };
 

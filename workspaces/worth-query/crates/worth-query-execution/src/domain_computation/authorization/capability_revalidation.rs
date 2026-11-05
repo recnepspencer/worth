@@ -14,7 +14,6 @@ use super::{
     WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
     WorthQueryRetainedCapabilityAuthorization,
 };
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 mod observation;
 pub(in crate::domain_computation::authorization) use observation::WorthQueryCapabilityRevalidationObservation;

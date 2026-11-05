@@ -7,9 +7,7 @@ use super::{
     WorthQueryApplicationIdempotencyResolutionDenial, WorthQueryApprovedElevation,
     WorthQueryElevationCloseOutcome,
 };
-use crate::domain_computation::primary_graph::{
-    WorthQueryAdmittedApplicationOperation, WorthQueryPrimaryGraphApplicationRuntime,
-};
+use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation;
 
 pub trait ElevationCloseReplayOps<Schema: ApplicationSchema>:
     crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>

@@ -3,10 +3,7 @@ use super::super::super::{
     scope_identity::read_scope_identity,
 };
 use super::super::validation::{open_denial, open_read_denial};
-use crate::domain_computation::primary_graph::{
-    application_query::authorized_read::{execute_authorized_read, refresh_governed_authorization},
-    WorthQueryPrimaryGraphApplicationRuntime,
-};
+use crate::domain_computation::primary_graph::application_query::authorized_read::{execute_authorized_read, refresh_governed_authorization};
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 pub(super) struct WorthQueryApplicationLiveInitialRead {
     pub(super) governance: crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationQueryGovernance,

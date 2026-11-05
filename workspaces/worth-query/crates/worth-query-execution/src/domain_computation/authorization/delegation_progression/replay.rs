@@ -20,7 +20,6 @@ use super::super::{
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitOutcome, WorthQueryApplicationIdempotencyBinding,
     WorthQueryApplicationIdempotencyResolution, WorthQueryApplicationIdempotencyResolutionDenial,
-    WorthQueryPrimaryGraphApplicationRuntime,
 };
 
 pub trait ReplayOps<Schema: ApplicationSchema>:

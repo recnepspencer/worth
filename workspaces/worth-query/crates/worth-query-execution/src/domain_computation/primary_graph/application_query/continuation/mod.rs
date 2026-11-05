@@ -28,7 +28,6 @@ use super::{
     WorthQueryAdmittedApplicationQueryPlan, WorthQueryApplicationProjection,
     WorthQueryApplicationQueryAccessReceipt,
 };
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use outcome::finalize_continuation_page;
 
 /// One page of a paged query read: the rows, the continuation for the next

@@ -1,9 +1,7 @@
 //! Exact canonical owner settlement for a guarded workflow operation.
 
 use crate::domain_computation::primary_graph::provider::WorthQueryInboundTerminalIndexDenial as Denial;
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationCommitReceipt, WorthQueryPrimaryGraphApplicationRuntime,
-};
+use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
 
 pub(in crate::domain_computation::primary_graph) trait ExternalSettlementScopedOps<
     Schema: worth_query_installation::facade::ApplicationSchema,

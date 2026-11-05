@@ -12,7 +12,6 @@ use super::super::{
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationEntityIdentity, WorthQueryAuthenticatedPrincipal,
-    WorthQueryPrimaryGraphApplicationRuntime,
 };
 
 mod retained_mutation;

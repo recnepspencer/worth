@@ -1,10 +1,7 @@
 //! Admission refusals recover lifecycle facts from unconsumed candidates.
 use super::super::*;
 use worth_query_installation::facade::ApplicationSchema;
-use {
-    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime,
-    crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
-};
+use crate::domain_computation::request_execution::WorthQueryAdvancementDenial;
 
 pub(in crate::domain_computation::primary_graph) trait ElevationRefusalScopedOps<
     Schema: ApplicationSchema,

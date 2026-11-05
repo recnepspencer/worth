@@ -9,7 +9,6 @@ use worth_query_declaration::facade::application_schema::{
 use worth_runtime_world::facade::ProductBranchObservation;
 
 use crate::domain_computation::primary_graph::application_entry::mutation::WorthQueryCompletedMutationCandidate;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 /// What a sealed program migration does: the operation that authored it and how
 /// many effects it carries.

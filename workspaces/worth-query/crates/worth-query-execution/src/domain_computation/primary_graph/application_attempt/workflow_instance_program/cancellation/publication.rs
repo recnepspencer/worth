@@ -10,7 +10,6 @@ use super::super::super::{
     WorthQueryApplicationUncommitted,
 };
 use super::super::PublishedWorkflowInstanceRef;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 #[must_use = "prepared workflow instance cancellation owns a live application attempt"]
 pub struct PreparedWorkflowInstanceCancellation<Schema, Operation, Input, Scope> {

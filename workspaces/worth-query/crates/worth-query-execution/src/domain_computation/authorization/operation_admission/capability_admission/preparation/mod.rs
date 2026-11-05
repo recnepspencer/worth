@@ -20,7 +20,6 @@ use crate::domain_computation::authorization::{
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryApprovedElevation, WorthQueryAuthenticatedPrincipal,
-    WorthQueryPrimaryGraphApplicationRuntime,
 };
 use crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession;
 

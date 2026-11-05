@@ -8,7 +8,6 @@ use worth_query_installation::facade::WorthQueryCurrentRetainedMutationBinding;
 
 use crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity;
 use crate::domain_computation::primary_graph::WorthQueryAuthenticatedPrincipal;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 use super::denial;
 use super::validate_static_authority_prefix;

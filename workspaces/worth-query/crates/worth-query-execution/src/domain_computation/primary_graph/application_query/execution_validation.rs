@@ -5,9 +5,7 @@ use worth_query_admission::facade::authenticated_principal::{
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 
 use super::{WorthQueryAdmittedApplicationQueryControls, WorthQueryAdmittedApplicationQueryPlan};
-use crate::domain_computation::primary_graph::{
-    WorthQueryAuthenticatedPrincipal, WorthQueryPrimaryGraphApplicationRuntime,
-};
+use crate::domain_computation::primary_graph::WorthQueryAuthenticatedPrincipal;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(super) enum WorthQueryApplicationQueryExecutionValidationDenial {

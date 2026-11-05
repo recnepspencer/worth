@@ -5,7 +5,6 @@ use super::{
     failure, RecoveryState, SuspensionRetry, WorthQueryGeneratedOutputSuspensionRecoveryFailure,
     WorthQueryGeneratedOutputSuspensionRecoveryStage,
 };
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::WorthQueryProductUnpublishedRecovery;
 
 pub(super) struct PublishedSuspensionSettlement {

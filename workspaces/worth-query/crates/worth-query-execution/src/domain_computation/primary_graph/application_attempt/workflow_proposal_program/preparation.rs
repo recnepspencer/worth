@@ -14,8 +14,7 @@ use super::{PreparedWorkflowProposal, WorkflowProposalOutcome};
 use crate::domain_computation::primary_graph::{
     PublishedWorkflowInstanceRef, WorthQueryAdmittedApplicationOperation,
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationIdempotencyBinding,
-    WorthQueryApplicationIdempotencyResolutionDenial, WorthQueryOperationProjectionDenial,
-    WorthQueryPrimaryGraphApplicationRuntime, WorthQuerySelectedProductOperation,
+    WorthQueryApplicationIdempotencyResolutionDenial, WorthQueryOperationProjectionDenial, WorthQuerySelectedProductOperation,
 };
 
 /// Why a workflow proposal could not bind to the branch's program: the installed spec

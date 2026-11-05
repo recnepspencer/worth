@@ -7,7 +7,6 @@ use crate::domain_computation::{
             selection::ManagedSelectionLease,
         },
         source_facts::SourceFactsAllocation,
-        WorthQueryPrimaryGraphApplicationRuntime,
     },
     provider_session::WorthQueryManagedGraphWorkSession,
 };

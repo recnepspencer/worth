@@ -175,19 +175,15 @@ pub use resource_lifecycle::{
     WorthQueryApplicationBasisReleaseReceipt, WorthQueryApplicationBasisSelectionIdentity,
 };
 pub use retained_read::WorthQueryApplicationReadObservation;
-pub(in crate::domain_computation::primary_graph) use runtime_support::primary_graph_support_inventory;
 
 pub use one_shot::{WorthQueryDependentPairReadContext, WorthQueryDerivedPairReadPlans};
 
-pub(in crate::domain_computation::primary_graph) use read_execution::dispatch_witness::{
-    DispatchWitness, Interrupt as DispatchInterrupt, InterruptionPoint,
-};
+pub(in crate::domain_computation::primary_graph) use read_execution::dispatch_witness::DispatchWitness;
 
 pub use observed_source::retained_dependencies::{
     WorthQueryRequiredSetCurrentnessDenial, WorthQueryRetainedQueryDependencies,
 };
 
-pub(in crate::domain_computation::primary_graph) use read_execution::component_native_acquisitions_on_this_thread_for_test;
 
 pub(in crate::domain_computation::primary_graph) use projection::retained_projection::materialize_original_projection;
 pub use projection::retained_projection::{
@@ -196,10 +192,8 @@ pub use projection::retained_projection::{
     WorthQueryMaterializedQueryRow, WorthQueryProjectionMaterializationRefusal,
 };
 
-pub use admission::AccessDoorsOps;
 pub(in crate::domain_computation::primary_graph::application_query) use admission::AccessObservationScopedOps;
 pub(in crate::domain_computation::primary_graph) use admission::AccessScopedOps;
-pub use admission::AdmissionDoorsOps;
 pub(in crate::domain_computation::primary_graph) use admission::AdmissionScopedOps;
 pub(in crate::domain_computation::primary_graph) use admission::CorrectionDisclosureScopedOps;
 pub(in crate::domain_computation::primary_graph) use admission::FreshScopedOps;
@@ -211,28 +205,19 @@ pub(in crate::domain_computation::primary_graph) use admission::ReadmittedScoped
 pub(in crate::domain_computation::primary_graph::application_query) use admission::SourceParametersScopedOps;
 pub(in crate::domain_computation::primary_graph) use admission::SourceReadmissionScopedOps;
 pub use admission::WorkLimitOps;
-pub use admission_preparation::AdmissionPreparationDoorsOps;
 pub(in crate::domain_computation::primary_graph::application_query) use admission_preparation::FreshSourceScopedOps;
 pub(in crate::domain_computation::primary_graph::application_query) use authorization_observation::AuthorizationObservationScopedOps;
-pub use basis::HistoricalDoorsOps;
-pub(crate) use basis::HistoricalScopedOps;
 pub use batch::PlanningOps;
 pub use continuation::ContinuationOps;
 pub use continuation::ReadmissionOps;
 pub use derived_view::CollectionOps;
 pub use derived_view::PairOps;
-pub use derived_view::ReconcileOps;
-pub use derived_view::ReconstructDependentOps;
-pub use derived_view::ReconstructLazyOps;
-pub use derived_view::ReconstructParallelOps;
-pub use derived_view::RefreshBatchOps;
 pub use derived_view::RegistrationOps;
 pub use document_history::ContextOps;
 pub use document_history::DocumentHistoryOps;
 pub use document_history::MetadataOps;
 pub use document_history::NavigationOps;
 pub use document_history::OperationOps;
-pub use document_history::OutputIntentOps;
 pub(in crate::domain_computation::primary_graph) use document_history::OutputReadScopedOps;
 pub use document_history::OutputsOps;
 pub use document_history::PagingOps;
@@ -248,22 +233,17 @@ pub use managed_index::LifecycleOps;
 pub use managed_index::NextOps;
 pub use managed_index::OpenOps;
 pub use managed_index::ReceiverOps;
-pub use observed_source::PreparedExpectationDoorsOps;
 pub use observed_source::PreparedExpectationOps;
 pub(in crate::domain_computation::primary_graph) use observed_source::PreparedExpectationScopedOps;
 pub(in crate::domain_computation::primary_graph::application_query) use one_shot::AdmittedScopedOps;
 pub use one_shot::BatchOps;
 pub(in crate::domain_computation) use one_shot::BatchScopedOps;
-pub use one_shot::CorrectionDisclosureDoorsOps;
 pub use one_shot::HistoryCaptureOps;
-pub(in crate::domain_computation) use one_shot::HistoryCaptureScopedOps;
 pub(in crate::domain_computation::primary_graph::application_query) use one_shot::OneShotBatchScopedOps;
 pub(in crate::domain_computation::primary_graph) use one_shot::OneShotCorrectionDisclosureScopedOps;
-pub use one_shot::OneShotDoorsOps;
 pub use one_shot::OneShotOps;
 pub(in crate::domain_computation) use one_shot::OneShotScopedOps;
 pub(in crate::domain_computation::primary_graph) use projection::ProjectionContentComparisonFault;
 pub use readiness::ReadinessOps;
 pub use retained_read::RetainedReadOps;
-pub(in crate::domain_computation) use retained_read::RetainedReadScopedOps;
 pub(crate) mod host;

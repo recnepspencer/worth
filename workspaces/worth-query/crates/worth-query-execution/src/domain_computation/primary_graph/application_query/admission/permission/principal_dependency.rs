@@ -8,7 +8,6 @@ use crate::domain_computation::primary_graph::application_query::WorthQueryAppli
 use crate::domain_computation::primary_graph::capture_principal_currentness_admitted;
 use crate::domain_computation::primary_graph::PrincipalCurrentnessCaptureStop;
 use crate::domain_computation::primary_graph::WorthQueryAuthenticatedPrincipal;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity;
 
 pub(super) fn capture<Schema, Principal, PrincipalIdentity>(

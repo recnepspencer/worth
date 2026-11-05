@@ -1,15 +1,9 @@
 //! The runtime's consumer methods over `domain_computation::primary_graph::application_entry`; each only calls its subsystem.
-use crate::domain_computation::primary_graph::application_entry::mutation::HandlerExecutionDenial;
 use crate::domain_computation::primary_graph::application_entry::mutation::HandlerResult;
 use crate::domain_computation::primary_graph::application_entry::mutation::WorthQueryCompletedMutationCandidate;
 use crate::domain_computation::primary_graph::application_entry::mutation::WorthQueryMutationHandlerExecutionReport;
-use crate::domain_computation::primary_graph::application_entry::mutation::WorthQueryMutationHandlerWork;
-use crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess;
 use crate::domain_computation::primary_graph::MutationHandlerExecutionDenial;
 use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation;
-use crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial;
-use crate::domain_computation::primary_graph::WorthQueryOperationProjectionDenial;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;

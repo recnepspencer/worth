@@ -18,7 +18,7 @@ use worth_relational::facade::{
 
 use super::WorthQuerySuspendedGeneratedOutput;
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationProducerBinding, WorthQueryPrimaryGraphApplicationRuntime,
+    WorthQueryApplicationProducerBinding,
     WorthQueryPrimaryGraphLayout,
 };
 

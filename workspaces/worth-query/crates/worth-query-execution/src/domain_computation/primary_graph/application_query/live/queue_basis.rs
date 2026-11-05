@@ -3,13 +3,10 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use super::outcome::{
     WorthQueryApplicationLiveOpenDenial, WorthQueryApplicationLiveOpenDenialKind,
 };
-use crate::domain_computation::{
-    managed_run::{
+use crate::domain_computation::managed_run::{
         admit_live_lower_execution_basis, WorthQueryManagedLowerExecutionBasis,
         WorthQueryManagedTruthReadRequest,
-    },
-    primary_graph::WorthQueryPrimaryGraphApplicationRuntime,
-};
+    };
 
 static NEXT_APPLICATION_QUERY_LIVE_LEASE: AtomicU64 = AtomicU64::new(1);
 

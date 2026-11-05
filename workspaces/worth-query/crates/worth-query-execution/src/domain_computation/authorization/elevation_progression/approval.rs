@@ -28,7 +28,7 @@ use super::operation_role::installed_lifecycle_owner;
 use super::transition_contract::{approval_program_targets, lifecycle_decision_reads};
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationIdempotencyResolutionDenial,
-    WorthQueryElevationApprovalOutcome, WorthQueryPrimaryGraphApplicationRuntime,
+    WorthQueryElevationApprovalOutcome,
     WorthQueryRequestedElevation,
 };
 

@@ -13,7 +13,6 @@ use super::super::{
 };
 use crate::domain_computation::primary_graph::application_attempt::workflow::proposal::derive_workflow_proposal_context_identity;
 use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 #[must_use = "prepared workflow proposal owns a live application attempt"]
 pub struct PreparedWorkflowProposal<Schema, Operation, Input, Scope> {

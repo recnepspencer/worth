@@ -15,7 +15,6 @@ use super::{
     WorthQueryApplicationHistoryDenial as Denial, WorthQueryApplicationHistoryPage as Page,
     WorthQueryApplicationHistoryPageLimits as Limits,
 };
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 pub(super) struct HistoryTransition {
     pub(super) page: Page,

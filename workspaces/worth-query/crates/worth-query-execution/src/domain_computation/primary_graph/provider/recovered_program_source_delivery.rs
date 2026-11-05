@@ -2,7 +2,6 @@
 use std::sync::{Arc, Mutex, OnceLock};
 
 use crate::domain_computation::primary_graph::application_installation::WorthQueryRecoveredProgramOutputSource;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use worth_query_installation::facade::ApplicationSchema;
 
 #[derive(Default)]

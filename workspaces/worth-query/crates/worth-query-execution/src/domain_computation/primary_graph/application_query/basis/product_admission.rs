@@ -5,7 +5,6 @@ use crate::domain_computation::primary_graph::product_activation::InspectionScop
 use crate::domain_computation::primary_graph::product_operation::ApplicationBasisScopedOps;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryAdmissionDenialKind,
-    WorthQueryPrimaryGraphApplicationRuntime,
 };
 
 pub(super) fn admit<Schema>(

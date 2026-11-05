@@ -11,7 +11,6 @@ use super::super::{
     WorthQueryApplicationQueryAdmissionDenialKind, WorthQueryApplicationQueryControls,
 };
 use super::denial::denial;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 pub(in crate::domain_computation::primary_graph::application_query) trait LiveReadmissionScopedOps<
     Schema,

@@ -10,7 +10,6 @@ use super::{
 use crate::basis::WorthQueryProductBranch;
 use crate::domain_computation::primary_graph::{
     WorthQueryBranchSetAdoptionProgress, WorthQueryOrderedProgramAdoptionCoverage,
-    WorthQueryPrimaryGraphApplicationRuntime,
 };
 
 /// A stopped non-atomic adoption whose old prepared suffix has been released.
