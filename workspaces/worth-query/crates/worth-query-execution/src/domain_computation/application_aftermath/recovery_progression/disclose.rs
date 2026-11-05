@@ -41,14 +41,12 @@ impl WorthQueryRecoveryDisclosureAdmission {
     }
 }
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub trait DiscloseOps<Schema>:
+    crate::domain_computation::application_aftermath::host::ApplicationAftermathHost<Schema>
 where
     Schema: ApplicationSchema,
 {
-    /// Mint disclosure admission from a live capability access on this runtime.
-    ///
-    /// Absence of this proof is how inspect denies — there is no boolean to set.
-    pub fn admit_recovery_inspection_disclosure<Capability, Operation, Input>(
+    fn admit_recovery_inspection_disclosure<Capability, Operation, Input>(
         &self,
         access: &WorthQueryAdmittedApplicationCapabilityAccess<
             Schema,
@@ -60,15 +58,25 @@ where
     where
         Input: ApplicationCapabilityRequest<Schema, Capability>,
     {
-        if access.runtime_authority() != self.runtime.authority_identity()
-            || access.binding_identity() != &self.installed_schema.binding_identity()
+        if access.runtime_authority() != self.authority_identity()
+            || access.binding_identity() != &self.installed_schema().binding_identity()
         {
             return Err(WorthQueryRecoveryHandleDenial::new(
                 WorthQueryRecoveryHandleDenialKind::DisclosureAdmissionRequired,
             ));
         }
         Ok(WorthQueryRecoveryDisclosureAdmission::mint(
-            self.runtime.authority_identity(),
+            self.authority_identity(),
         ))
     }
+}
+
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::application_aftermath::host::ApplicationAftermathHost<Schema>
+            + ?Sized,
+    > DiscloseOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
 }

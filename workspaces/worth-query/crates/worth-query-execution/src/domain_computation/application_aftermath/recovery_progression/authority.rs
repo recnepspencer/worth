@@ -134,61 +134,70 @@ pub fn require_inspect_disclosure(
     authority.ensure_for(handle)
 }
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub trait AuthorityOps<Schema>:
+    crate::domain_computation::application_aftermath::host::ApplicationAftermathHost<Schema>
 where
     Schema: ApplicationSchema,
 {
-    /// Re-read current truth and mint effect authority owned by this runtime.
-    pub fn admit_recovery_effect_authority<Operation, Input, Scope>(
+    fn admit_recovery_effect_authority<Operation, Input, Scope>(
         &self,
         handle: &WorthQueryRecoveryHandle,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     ) -> Result<WorthQueryRecoveryEffectAuthority, WorthQueryRecoveryHandleDenial> {
         handle.ensure_live()?;
-        let owner = self.runtime.authority_identity();
+        let owner = self.authority_identity();
         ensure_same_runtime(owner, handle.runtime_authority())?;
         ensure_same_runtime(owner, admission.runtime_authority())?;
-        deny_if_expired(handle, &self.runtime.authorization_clock)?;
+        deny_if_expired(handle, self.authorization_clock())?;
         admission
             .validate_installed_entry(
                 owner,
-                &self.installed_schema.binding_identity(),
-                self.runtime.installed_operations(),
+                &self.installed_schema().binding_identity(),
+                self.installed_operations(),
             )
             .map_err(admission_authorization_denial)?;
         super::binding_axis::check_binding_axes(handle.binding(), admission)?;
         Ok(WorthQueryRecoveryEffectAuthority::mint(
-            self.runtime.authority_identity(),
+            self.authority_identity(),
             handle.authority_identity(),
         ))
     }
 
-    /// Re-read current truth and mint disclosure-backed inspection authority.
-    pub fn admit_recovery_inspect_authority<Operation, Input, Scope>(
+    fn admit_recovery_inspect_authority<Operation, Input, Scope>(
         &self,
         handle: &WorthQueryRecoveryHandle,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         disclosure: &WorthQueryRecoveryDisclosureAdmission,
     ) -> Result<WorthQueryRecoveryInspectAuthority, WorthQueryRecoveryHandleDenial> {
         handle.ensure_live()?;
-        let owner = self.runtime.authority_identity();
+        let owner = self.authority_identity();
         disclosure.ensure_for_runtime(owner)?;
         ensure_same_runtime(owner, handle.runtime_authority())?;
         ensure_same_runtime(owner, admission.runtime_authority())?;
-        deny_if_expired(handle, &self.runtime.authorization_clock)?;
+        deny_if_expired(handle, self.authorization_clock())?;
         admission
             .validate_installed_entry(
                 owner,
-                &self.installed_schema.binding_identity(),
-                self.runtime.installed_operations(),
+                &self.installed_schema().binding_identity(),
+                self.installed_operations(),
             )
             .map_err(admission_authorization_denial)?;
         super::binding_axis::check_binding_axes(handle.binding(), admission)?;
         Ok(WorthQueryRecoveryInspectAuthority::mint(
-            self.runtime.authority_identity(),
+            self.authority_identity(),
             handle.authority_identity(),
         ))
     }
+}
+
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::application_aftermath::host::ApplicationAftermathHost<Schema>
+            + ?Sized,
+    > AuthorityOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
 }
 
 fn ensure_authority_owns_handle(

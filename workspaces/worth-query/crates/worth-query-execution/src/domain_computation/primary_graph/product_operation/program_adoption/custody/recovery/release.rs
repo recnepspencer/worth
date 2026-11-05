@@ -1,5 +1,6 @@
 //! Releasing the World custody held by an unpublished branch adoption.
 use crate::domain_computation::execution_runtime::product_world::OwnerCleanupRetirements;
+use crate::domain_computation::product_publication::DiscoveryScopedOps;
 
 use worth_query_installation::facade::ApplicationSchema;
 

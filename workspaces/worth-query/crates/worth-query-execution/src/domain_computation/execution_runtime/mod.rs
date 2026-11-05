@@ -1,3 +1,4 @@
+mod application_identity;
 mod application_query_resources;
 mod branch_coordination_resources;
 mod installation_authority;
@@ -7,6 +8,7 @@ mod runtime_identity;
 mod runtime_root;
 pub(in crate::domain_computation) mod source_invalidation;
 
+pub(in crate::domain_computation) use application_identity::WorthQueryApplicationIdentityHost;
 pub use application_query_resources::WorthQueryApplicationQueryResourceProfile;
 pub use branch_coordination_resources::WorthQueryBranchCoordinationResourceProfile;
 pub use installation_authority::WorthQueryExecutionInstallationAuthority;

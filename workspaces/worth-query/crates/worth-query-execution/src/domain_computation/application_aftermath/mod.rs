@@ -79,3 +79,8 @@ pub use retained_preimage::{
 
 #[cfg(test)]
 mod retained_preimage_tests;
+pub use recovery_handle::MintOps;
+pub use recovery_progression::AuthorityOps;
+pub use recovery_progression::DiscloseOps;
+pub use recovery_progression::ExpiryOps;
+pub(crate) mod host;

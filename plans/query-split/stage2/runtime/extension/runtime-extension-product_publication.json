@@ -1,0 +1,69 @@
+{
+ "module": "domain_computation::product_publication",
+ "blocks": 2,
+ "methods": 9,
+ "traits": [
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/product_publication/discovery.rs",
+   "trait": "DiscoveryOps",
+   "visibility": "pub",
+   "methods": [
+    "product_publication_recovery_page",
+    "readmit_product_publication_recovery",
+    "release_product_publication_recovery",
+    "release_product_publication_recovery_in_advancement"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/product_publication/discovery.rs",
+   "trait": "DiscoveryScopedOps",
+   "visibility": "pub(crate)",
+   "methods": [
+    "release_product_recovery_in_request"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/product_publication/discovery.rs",
+   "trait": "DiscoveryOwnOps",
+   "visibility": "private",
+   "methods": [
+    "prepare_product_publication_recovery_release"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/product_publication/owner_close.rs",
+   "trait": "OwnerCloseOps",
+   "visibility": "pub",
+   "methods": [
+    "close_owned_product_publication_recovery"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/product_publication/owner_close.rs",
+   "trait": "OwnerCloseScopedOps",
+   "visibility": "pub(in crate::domain_computation)",
+   "methods": [
+    "close_product_publication_recovery_in_advancement"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/product_publication/owner_close.rs",
+   "trait": "OwnerCloseOwnOps",
+   "visibility": "private",
+   "methods": [
+    "settle_recovery_in_advancement"
+   ]
+  }
+ ],
+ "facades": 5,
+ "host": {
+  "core_fields": [
+   "primary_provider",
+   "product_runtime"
+  ],
+  "top_fields": [],
+  "core_methods": [],
+  "foreign": [],
+  "hand": []
+ }
+}

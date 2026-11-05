@@ -2,11 +2,13 @@
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationSchema};
 
 use super::super::WorthQueryPrimaryGraphApplicationRuntime;
-use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
+use crate::domain_computation::execution_runtime::{
+    WorthQueryApplicationIdentityHost, WorthQueryRuntimeAuthorityIdentity,
+};
 use crate::domain_computation::primary_graph::runtime_host::WorthQueryRuntimeIdentityHost;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle;
 
-impl<Schema: ApplicationSchema> WorthQueryRuntimeIdentityHost<Schema>
+impl<Schema: ApplicationSchema> WorthQueryApplicationIdentityHost<Schema>
     for WorthQueryPrimaryGraphApplicationRuntime<Schema>
 {
     fn installed_schema(&self) -> &WorthQueryInstalledApplicationSchema<Schema> {
@@ -21,6 +23,21 @@ impl<Schema: ApplicationSchema> WorthQueryRuntimeIdentityHost<Schema>
     {
         &self.runtime.product_runtime
     }
+    fn installed_operations(
+        &self,
+    ) -> &std::sync::Arc<worth_query_installation::facade::InstalledOperationCatalog> {
+        &self.runtime.installed_operations
+    }
+    fn authorization_clock(
+        &self,
+    ) -> &std::sync::Arc<crate::domain_computation::runtime_time::WorthQueryRuntimeClock> {
+        &self.runtime.authorization_clock
+    }
+}
+
+impl<Schema: ApplicationSchema> WorthQueryRuntimeIdentityHost<Schema>
+    for WorthQueryPrimaryGraphApplicationRuntime<Schema>
+{
     fn provider_graph(&self) -> &WorthQueryPrimaryGraphIntegrationHandle {
         &self.runtime.primary_provider.graph
     }
@@ -34,10 +51,5 @@ impl<Schema: ApplicationSchema> WorthQueryRuntimeIdentityHost<Schema>
     }
     fn bridge(&self) -> &crate::domain_computation::primary_graph::managed_bridge::WorthQueryInstalledApplicationBridge{
         &self.runtime.bridge
-    }
-    fn installed_operations(
-        &self,
-    ) -> &std::sync::Arc<worth_query_installation::facade::InstalledOperationCatalog> {
-        &self.runtime.installed_operations
     }
 }

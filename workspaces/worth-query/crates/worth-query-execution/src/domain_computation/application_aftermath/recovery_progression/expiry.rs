@@ -136,16 +136,26 @@ pub(super) fn deny_if_expired(
     }
 }
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub trait ExpiryOps<Schema>:
+    crate::domain_computation::application_aftermath::host::ApplicationAftermathHost<Schema>
 where
     Schema: ApplicationSchema,
 {
-    /// Record an expiry decision from this runtime's clock.
-    pub fn evaluate_recovery_expiry(
+    fn evaluate_recovery_expiry(
         &self,
         handle: &WorthQueryRecoveryHandle,
     ) -> Result<WorthQueryRecoveryExpiryEvaluation, WorthQueryRecoveryHandleDenial> {
         handle.ensure_live()?;
-        evaluate_expiry(handle, &self.runtime.authorization_clock)
+        evaluate_expiry(handle, self.authorization_clock())
     }
+}
+
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::application_aftermath::host::ApplicationAftermathHost<Schema>
+            + ?Sized,
+    > ExpiryOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
 }

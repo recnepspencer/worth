@@ -29,7 +29,7 @@ impl<S: ApplicationSchema + 'static, F: WorthQueryProducerOutputFamily<S>>
             return Err(WorthQueryOutputReadCloseDenial::ForeignDemand);
         }
         if let Some(denial) = self.terminal_caller_denial.as_mut() {
-            denial.close_read_cleanup(phase, runtime.application_runtime())?;
+            denial.close_read_cleanup(phase, runtime.product_publication_host())?;
         }
         if let Some(crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputCheckpoint::PublicationPending { owner, .. }) =
             self.unpublished_selected_checkpoint.as_mut()

@@ -1,5 +1,6 @@
 //! Release all pending read/publication pins before closing any managed head.
 use super::*;
+use crate::domain_computation::product_publication::OwnerCloseScopedOps;
 use worth_query_installation::facade::ApplicationSchema;
 use {
     crate::domain_computation::primary_graph::WorthQueryApplicationProductBranchCleanupFailure,

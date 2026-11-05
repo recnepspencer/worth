@@ -19,7 +19,6 @@ pub trait AuthorizationHost<Schema>:
     /// This host as the trait object `authorization` is handed.
     fn authorization_host(&self) -> &dyn AuthorizationHost<Schema>;
     fn authorization(&self) -> &Arc<WorthQueryInstalledAuthorizationRegistry>;
-    fn authorization_clock(&self) -> &Arc<WorthQueryRuntimeClock>;
     fn installed_packages(
         &self,
     ) -> &worth_query_installation::facade::WorthQueryInstalledPackageIndex;

@@ -5,6 +5,7 @@ use crate::domain_computation::execution_runtime::product_world::publication_den
     WorthQueryProductPublicationOutcome as PublicationOutcome,
 };
 use crate::domain_computation::execution_runtime::product_world::OwnerCleanupRetirements;
+use crate::domain_computation::product_publication::DiscoveryScopedOps;
 use crate::domain_computation::request_execution::advancement_denial;
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     pub(in crate::domain_computation::primary_graph::product_operation::program_adoption) fn recover_branch_adoption_in_advancement<

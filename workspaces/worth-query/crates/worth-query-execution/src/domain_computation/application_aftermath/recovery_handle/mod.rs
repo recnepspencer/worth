@@ -12,4 +12,5 @@ pub(crate) use handle::RelinquishOnDenial;
 pub use handle::WorthQueryRecoveryHandle;
 pub use identity::WorthQueryOpaqueRecoveryWireIdentity;
 pub(crate) use identity::WorthQueryRecoveryHandleAuthorityIdentity;
+pub use mint::MintOps;
 pub use mint::WorthQueryRecoveryClaimStatus;

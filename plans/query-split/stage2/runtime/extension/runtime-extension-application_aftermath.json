@@ -1,0 +1,57 @@
+{
+ "module": "domain_computation::application_aftermath",
+ "blocks": 4,
+ "methods": 6,
+ "traits": [
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/application_aftermath/recovery_handle/mint.rs",
+   "trait": "MintOps",
+   "visibility": "pub",
+   "methods": [
+    "mint_recovery_handle",
+    "recovery_claim_status"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/application_aftermath/recovery_progression/authority.rs",
+   "trait": "AuthorityOps",
+   "visibility": "pub",
+   "methods": [
+    "admit_recovery_effect_authority",
+    "admit_recovery_inspect_authority"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/application_aftermath/recovery_progression/disclose.rs",
+   "trait": "DiscloseOps",
+   "visibility": "pub",
+   "methods": [
+    "admit_recovery_inspection_disclosure"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/application_aftermath/recovery_progression/expiry.rs",
+   "trait": "ExpiryOps",
+   "visibility": "pub",
+   "methods": [
+    "evaluate_recovery_expiry"
+   ]
+  }
+ ],
+ "facades": 6,
+ "host": {
+  "core_fields": [
+   "authorization_clock",
+   "recovery_handles"
+  ],
+  "top_fields": [
+   "installed_schema"
+  ],
+  "core_methods": [
+   "authority_identity",
+   "installed_operations"
+  ],
+  "foreign": [],
+  "hand": []
+ }
+}

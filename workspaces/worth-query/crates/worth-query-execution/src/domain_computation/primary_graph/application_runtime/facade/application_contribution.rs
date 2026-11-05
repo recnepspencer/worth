@@ -1,19 +1,19 @@
 //! The runtime's consumer methods over `domain_computation::primary_graph::application_contribution`; each only calls its subsystem.
+use crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits;
+use crate::domain_computation::primary_graph::application_contribution::producer::demand::WorthQueryAdmittedOutputDemand;
+use crate::domain_computation::primary_graph::application_contribution::producer::demand::WorthQueryOutputDemandAdvance;
+use crate::domain_computation::primary_graph::application_contribution::producer::demand::*;
+use crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerOutputFamily;
+use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 use crate::domain_computation::primary_graph::application_query::WorthQueryApplicationOutputDemandSource;
 use crate::domain_computation::primary_graph::application_query::WorthQueryApplicationReadObservation;
-use crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerOutputFamily;
-use worth_query_installation::facade::ApplicationSchema;
+use crate::domain_computation::primary_graph::WorthQueryObservedSource;
 use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
-use crate::domain_computation::primary_graph::application_contribution::producer::demand::WorthQueryAdmittedOutputDemand;
-use crate::domain_computation::primary_graph::application_contribution::producer::demand::WorthQueryOutputDemandAdvance;
-use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
-use crate::domain_computation::primary_graph::WorthQueryObservedSource;
-use crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits;
 use worth_query_declaration::facade::application_program::ApplicationProgramIdentity;
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
-use crate::domain_computation::primary_graph::application_contribution::producer::demand::*;
+use worth_query_installation::facade::ApplicationSchema;
 impl<Schema: ApplicationSchema> super::super::WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub fn advance_output_demand<Family>(
         &self,

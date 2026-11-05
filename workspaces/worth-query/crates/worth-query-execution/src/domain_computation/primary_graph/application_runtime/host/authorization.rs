@@ -22,9 +22,6 @@ impl<Schema: ApplicationSchema> AuthorizationHost<Schema>
     fn authorization(&self) -> &Arc<WorthQueryInstalledAuthorizationRegistry> {
         &self.runtime.authorization
     }
-    fn authorization_clock(&self) -> &Arc<WorthQueryRuntimeClock> {
-        &self.runtime.authorization_clock
-    }
     fn installed_packages(
         &self,
     ) -> &worth_query_installation::facade::WorthQueryInstalledPackageIndex {

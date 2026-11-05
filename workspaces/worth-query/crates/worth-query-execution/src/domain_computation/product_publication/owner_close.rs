@@ -5,17 +5,18 @@ use super::{
     WorthQueryProductUnpublishedRecoveryReleaseFailure as Failure,
 };
 use crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanupReceipt;
+use crate::domain_computation::product_publication::DiscoveryOps;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_world::facade::RuntimeWorldRecoveryDenial;
 use {
     crate::domain_computation::primary_graph::application_contribution::execution_denial,
-    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime,
     crate::domain_computation::request_execution::WorthQueryAdvancementPhase,
 };
 
-impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
-    /// Dispose this exact original partial without new business admission.
-    pub fn close_owned_product_publication_recovery(
+pub trait OwnerCloseOps<S: ApplicationSchema>:
+    crate::domain_computation::product_publication::host::ProductPublicationHost<S>
+{
+    fn close_owned_product_publication_recovery(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         _access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
@@ -23,9 +24,19 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     ) -> Result<WorthQueryProductBranchOwnerCleanupReceipt, Failure> {
         self.close_product_publication_recovery_in_advancement(phase, recovery)
     }
+}
 
-    /// Close original custody without adopting the failed publication or repeating effects.
-    pub(in crate::domain_computation) fn close_product_publication_recovery_in_advancement(
+impl<
+        S: ApplicationSchema,
+        HostRuntime: crate::domain_computation::product_publication::host::ProductPublicationHost<S> + ?Sized,
+    > OwnerCloseOps<S> for HostRuntime
+{
+}
+
+pub(in crate::domain_computation) trait OwnerCloseScopedOps<S: ApplicationSchema>:
+    crate::domain_computation::product_publication::host::ProductPublicationHost<S>
+{
+    fn close_product_publication_recovery_in_advancement(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         recovery: Recovery,
@@ -45,13 +56,24 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         // native release can prove settlement and cleanup eligibility now.
         self.release_product_publication_recovery_in_advancement(phase, recovery, 0)
     }
+}
 
+impl<
+        S: ApplicationSchema,
+        HostRuntime: crate::domain_computation::product_publication::host::ProductPublicationHost<S> + ?Sized,
+    > OwnerCloseScopedOps<S> for HostRuntime
+{
+}
+
+trait OwnerCloseOwnOps<S: ApplicationSchema>:
+    crate::domain_computation::product_publication::host::ProductPublicationHost<S>
+{
     fn settle_recovery_in_advancement(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         recovery: Recovery,
     ) -> Result<Recovery, Failure> {
-        let execution = match phase.checked_execution_request_for(&self.runtime.product_runtime) {
+        let execution = match phase.checked_execution_request_for(self.product_runtime()) {
             Ok(execution) => execution,
             Err(denial) => return Err(recovery_failure(recovery, Denial::Execution(denial))),
         };
@@ -80,9 +102,16 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     }
 }
 
+impl<
+        S: ApplicationSchema,
+        HostRuntime: crate::domain_computation::product_publication::host::ProductPublicationHost<S> + ?Sized,
+    > OwnerCloseOwnOps<S> for HostRuntime
+{
+}
+
 impl<S: ApplicationSchema>
     crate::domain_computation::primary_graph::application_output_demand::denial::recovery_release::WorthQueryProductRecoveryClose
-    for WorthQueryPrimaryGraphApplicationRuntime<S>
+    for dyn crate::domain_computation::product_publication::host::ProductPublicationHost<S> + '_
 {
     fn close_recovery_in_advancement(
         &self,

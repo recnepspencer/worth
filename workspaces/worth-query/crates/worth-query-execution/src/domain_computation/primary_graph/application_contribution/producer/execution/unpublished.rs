@@ -1,6 +1,7 @@
 //! The original producer request survives an unpublished World result.
 use super::*;
 use crate::domain_computation::primary_graph::application_installation::WorthQueryRecoveredProgramOutputSource;
+use crate::domain_computation::product_publication::OwnerCloseScopedOps;
 use crate::domain_computation::{
     WorthQueryProductUnpublishedApplication, WorthQueryProductUnpublishedRecovery,
     WorthQueryProductUnpublishedRecoveryReleaseFailure,

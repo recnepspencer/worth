@@ -32,44 +32,25 @@ pub enum WorthQueryRecoveryClaimStatus {
     ForceTerminated,
 }
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub trait MintOps<Schema>:
+    crate::domain_computation::application_aftermath::host::ApplicationAftermathHost<Schema>
 where
     Schema: ApplicationSchema,
 {
-    /// Mint a recovery handle bound to this runtime's registry and clock.
-    ///
-    /// A commit receipt is public and a process may publish several application
-    /// runtimes over one relational source, so the receipt is the one input a
-    /// caller chooses here. It must therefore be *ours*: the receipt carries the
-    /// Query runtime authority that admitted its operation, derived at commit
-    /// from the admitted operation and not caller-supplied. Without this
-    /// comparison a second runtime could mint a handle for a commit it never
-    /// made — and, because `register_once` claims commits per registry, both
-    /// runtimes would hold a live handle for the same commit (R8.28).
-    pub fn mint_recovery_handle(
+    fn mint_recovery_handle(
         &self,
         receipt: &WorthQueryApplicationCommitReceipt,
     ) -> Result<WorthQueryRecoveryHandle, WorthQueryRecoveryHandleDenial> {
-        ensure_receipt_belongs_to_runtime(
-            self.runtime.authority_identity(),
-            receipt.runtime_authority(),
-        )?;
-        mint_recovery_handle_in_registry(receipt, Arc::clone(&self.runtime.recovery_handles))
+        ensure_receipt_belongs_to_runtime(self.authority_identity(), receipt.runtime_authority())?;
+        mint_recovery_handle_in_registry(receipt, Arc::clone(self.recovery_handles()))
     }
 
-    /// Read the exact commit's recovery fate without minting or consuming it.
-    pub fn recovery_claim_status(
+    fn recovery_claim_status(
         &self,
         receipt: &WorthQueryApplicationCommitReceipt,
     ) -> Result<WorthQueryRecoveryClaimStatus, WorthQueryRecoveryHandleDenial> {
-        ensure_receipt_belongs_to_runtime(
-            self.runtime.authority_identity(),
-            receipt.runtime_authority(),
-        )?;
-        let (claimed, terminal) = self
-            .runtime
-            .recovery_handles
-            .claim_state(&claim_for(receipt));
+        ensure_receipt_belongs_to_runtime(self.authority_identity(), receipt.runtime_authority())?;
+        let (claimed, terminal) = self.recovery_handles().claim_state(&claim_for(receipt));
         Ok(match terminal {
             Some(WorthQueryRecoveryResourceTerminal::Consumed) => {
                 WorthQueryRecoveryClaimStatus::Consumed
@@ -93,11 +74,16 @@ where
             None => WorthQueryRecoveryClaimStatus::Unclaimed,
         })
     }
+}
 
-    // There is deliberately no `recovery_handle_registry()` here. It existed,
-    // was `pub`, and had no caller in either workspace — it simply handed any
-    // host the whole instance registry without holding a single handle. The
-    // registry is reached only through a handle now, and only in fixtures.
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::application_aftermath::host::ApplicationAftermathHost<Schema>
+            + ?Sized,
+    > MintOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
 }
 
 /// Default handle lifetime when the host does not supply a tighter bound.

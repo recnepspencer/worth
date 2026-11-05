@@ -1,0 +1,26 @@
+{
+ "module": "domain_computation::primary_graph::record_reservations",
+ "blocks": 1,
+ "methods": 1,
+ "traits": [
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/record_reservations.rs",
+   "trait": "RecordReservationsOps",
+   "visibility": "pub",
+   "methods": [
+    "observe_record_reservations"
+   ]
+  }
+ ],
+ "facades": 1,
+ "host": {
+  "core_fields": [
+   "primary_provider",
+   "product_runtime"
+  ],
+  "top_fields": [],
+  "core_methods": [],
+  "foreign": [],
+  "hand": []
+ }
+}

@@ -8,6 +8,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryManagedApplicationRecoveryDenial as RecoveryDenial,
     WorthQueryManagedApplicationRecoveryOutcome as RecoveryOutcome,
 };
+use crate::domain_computation::product_publication::OwnerCloseScopedOps;
 use worth_query_declaration::facade::application_operation::ApplicationEncodedInput;
 
 pub(in crate::domain_computation::primary_graph) struct RecoveredProducerPublication {

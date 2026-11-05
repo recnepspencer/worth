@@ -1,4 +1,5 @@
 use crate::domain_computation::execution_runtime::product_world::OwnerCleanupRetirements;
+use crate::domain_computation::product_publication::DiscoveryScopedOps;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{

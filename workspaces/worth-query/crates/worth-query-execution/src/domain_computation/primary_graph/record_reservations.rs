@@ -12,15 +12,12 @@ pub enum WorthQueryRecordReservationObservationDenial {
     ForeignPhase(WorthQueryForeignAdvancementPhase),
     Observation(WorthQueryRecordReservationObservationFailure),
 }
-impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static>
-    WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub trait RecordReservationsOps<
+    Schema: worth_query_installation::facade::ApplicationSchema + 'static,
+>:
+    crate::domain_computation::primary_graph::record_reservations::host::RecordReservationsHost<Schema>
 {
-    /// Record this runtime's actual reservations on the current thread until
-    /// the returned observer is dropped. Its bounded diagnostic backing follows
-    /// the explicit allocation policy. Reports include successful reservation
-    /// coordinates even if the enclosing proposal is later refused. Other
-    /// runtimes, threads and reservations outside the scope are excluded.
-    pub fn observe_record_reservations(
+    fn observe_record_reservations(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         maximum_records: usize,
@@ -28,16 +25,16 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static>
     ) -> Result<WorthQueryRecordReservationObservation, WorthQueryRecordReservationObservationDenial>
     {
         let execution = phase
-            .execution_request_for(&self.runtime.product_runtime)
+            .execution_request_for(self.product_runtime())
             .map_err(WorthQueryRecordReservationObservationDenial::ForeignPhase)?;
-        self.runtime
-            .primary_provider
-            .graph
-            .with_runtime(&execution, |runtime| {
-                runtime
-                    .inspect_what_happened()
-                    .observe_record_reservations(maximum_records, policy)
-                    .map_err(WorthQueryRecordReservationObservationDenial::Observation)
-            })
+        self.provider_graph().with_runtime(&execution, |runtime| {
+            runtime
+                .inspect_what_happened()
+                .observe_record_reservations(maximum_records, policy)
+                .map_err(WorthQueryRecordReservationObservationDenial::Observation)
+        })
     }
 }
+
+impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, HostRuntime: crate::domain_computation::primary_graph::record_reservations::host::RecordReservationsHost<Schema> + ?Sized> RecordReservationsOps<Schema> for HostRuntime {}
+pub(crate) mod host;

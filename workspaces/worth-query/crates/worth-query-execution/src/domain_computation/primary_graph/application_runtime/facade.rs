@@ -1,4 +1,5 @@
 //! The runtime's consumer methods: each only calls the subsystem that owns the work.
+mod application_aftermath;
 mod application_attempt;
 mod application_checkpoint;
 mod application_contribution;
@@ -12,4 +13,6 @@ mod causal_inspection;
 mod conditional_operation;
 mod operation_body;
 mod product_operation;
+mod product_publication;
 mod provider;
+mod record_reservations;

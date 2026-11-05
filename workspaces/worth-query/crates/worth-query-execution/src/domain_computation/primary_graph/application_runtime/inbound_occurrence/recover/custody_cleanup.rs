@@ -1,5 +1,6 @@
 //! Retain exact inbound recovery custody when release or cleanup cannot finish.
 use super::*;
+use crate::domain_computation::product_publication::DiscoveryScopedOps;
 use crate::domain_computation::WorthQueryProductUnpublishedRecoveryReleaseFailure;
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {

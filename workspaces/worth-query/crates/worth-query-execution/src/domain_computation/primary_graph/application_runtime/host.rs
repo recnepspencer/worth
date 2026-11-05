@@ -1,4 +1,5 @@
 //! The runtime implements every module's host trait here: it composes the subsystems.
+mod application_aftermath;
 mod application_attempt;
 mod application_checkpoint;
 mod application_contribution;
@@ -18,5 +19,7 @@ mod output_lineage;
 mod principal_currentness_capture;
 mod product_activation;
 mod product_operation;
+mod product_publication;
 mod provider;
+mod record_reservations;
 mod resolution;

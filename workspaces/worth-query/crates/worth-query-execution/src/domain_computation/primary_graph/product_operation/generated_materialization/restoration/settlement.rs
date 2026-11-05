@@ -1,3 +1,4 @@
+use crate::domain_computation::product_publication::DiscoveryScopedOps;
 use crate::domain_computation::primary_graph::product_operation::generated_materialization::restoration::republication::RepublicationParentOps;
 use crate::domain_computation::execution_runtime::product_world::OwnerCleanupRetirements;
 use worth_query_installation::facade::ApplicationSchema;
