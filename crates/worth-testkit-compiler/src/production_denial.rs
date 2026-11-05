@@ -46,7 +46,13 @@ pub fn production_denials(
     pattern: impl AsRef<Path>,
     contracts: &[ProductionSemanticDenialContract<'_>],
 ) -> Result<(), CompilerFixtureRefusal> {
-    let pattern = pattern.as_ref();
+    production_denials_at(pattern.as_ref(), contracts)
+}
+
+fn production_denials_at(
+    pattern: &Path,
+    contracts: &[ProductionSemanticDenialContract<'_>],
+) -> Result<(), CompilerFixtureRefusal> {
     let selected = paths::expand(pattern)?;
     let resolved = resolve_contracts(pattern, &selected, contracts)?;
     let outcomes = session::outcomes()?;
