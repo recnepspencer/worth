@@ -31,20 +31,19 @@ pub enum WorthQueryCheckpointInspectionDenial {
     Query(super::super::WorthQueryPrimaryGraphInstallationDenial),
     Native(Box<worth_relational::facade::durability::RelationalRecoveryStop>),
 }
-impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static>
-    super::super::WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub trait InspectionOps<Schema: worth_query_installation::facade::ApplicationSchema + 'static>:
+    crate::domain_computation::primary_graph::application_checkpoint::host::ApplicationCheckpointHost<
+    Schema,
+>
 {
-    /// Reconstructive, read-only inspection of the complete checkpoint. Native
-    /// grammar and arenas stay with their codec owner; Query metadata retains
-    /// its original value bytes. This comparison view is not recovery admission.
-    pub fn inspect_application_checkpoint<'a>(
+    fn inspect_application_checkpoint<'a>(
         &self,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         bytes: &'a [u8],
     ) -> Result<WorthQueryApplicationCheckpointInspection<'a>, WorthQueryCheckpointInspectionDenial>
     {
         let execution = phase
-            .execution_request_for(&self.runtime.product_runtime)
+            .execution_request_for(self.product_runtime())
             .map_err(WorthQueryCheckpointInspectionDenial::ForeignPhase)?;
         let header::CurrentSections {
             query_header,
@@ -80,3 +79,5 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static>
         })
     }
 }
+
+impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, HostRuntime: crate::domain_computation::primary_graph::application_checkpoint::host::ApplicationCheckpointHost<Schema> + ?Sized> InspectionOps<Schema> for HostRuntime {}

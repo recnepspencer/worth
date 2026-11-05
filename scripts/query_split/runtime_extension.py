@@ -345,7 +345,7 @@ def main(argv=None):
                     if fargs is None:
                         needs['hand'].append(f'facade arguments of {m["name"]}')
                         continue
-                    path = '::'.join(('crate',) + block['names']) + '::' + name
+                    path = '::'.join(('crate',) + prefix) + '::' + name
                     facades.append(sig.rstrip() + ' {\n        <Self as ' + path + f'<{schema}>>::' +
                                    m['name'] + '(self' + ''.join(', ' + a for a in fargs) + ')\n    }')
             trait_vis = (vis + ' ') if vis else ''

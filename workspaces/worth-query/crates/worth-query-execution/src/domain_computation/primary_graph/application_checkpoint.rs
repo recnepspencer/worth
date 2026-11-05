@@ -221,3 +221,6 @@ impl<'a> CheckpointCursor<'a> {
 }
 
 mod court_doors_for_test;
+pub use crate::domain_computation::primary_graph::application_checkpoint::capture::CaptureOps;
+pub use crate::domain_computation::primary_graph::application_checkpoint::inspection::InspectionOps;
+pub(crate) mod host;

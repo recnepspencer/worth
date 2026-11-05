@@ -1,0 +1,44 @@
+{
+ "module": "domain_computation::primary_graph::application_checkpoint",
+ "blocks": 2,
+ "methods": 4,
+ "traits": [
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_checkpoint/capture.rs",
+   "trait": "CaptureOps",
+   "visibility": "pub",
+   "methods": [
+    "capture_native_truth_checkpoint_for_test",
+    "capture_application_checkpoint",
+    "capture_application_checkpoint_with_sections"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_checkpoint/inspection.rs",
+   "trait": "InspectionOps",
+   "visibility": "pub",
+   "methods": [
+    "inspect_application_checkpoint"
+   ]
+  }
+ ],
+ "facades": 3,
+ "host": {
+  "core_fields": [
+   "output_demands",
+   "primary_provider",
+   "product_runtime",
+   "recovered_outputs"
+  ],
+  "top_fields": [
+   "installed_schema"
+  ],
+  "core_methods": [
+   "authority_identity"
+  ],
+  "foreign": [
+   "publication"
+  ],
+  "hand": []
+ }
+}
