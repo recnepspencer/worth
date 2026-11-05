@@ -1,0 +1,33 @@
+{
+ "module": "domain_computation::primary_graph::handler",
+ "blocks": 2,
+ "methods": 2,
+ "traits": [
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/handler/registry.rs",
+   "trait": "RegistryScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph)",
+   "methods": [
+    "mutation_handler_for_attempt"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/handler/registry/operation_body.rs",
+   "trait": "OperationBodyScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph)",
+   "methods": [
+    "mutation_body_for_approval"
+   ]
+  }
+ ],
+ "facades": 0,
+ "host": {
+  "core_fields": [],
+  "top_fields": [
+   "mutation_handlers"
+  ],
+  "core_methods": [],
+  "foreign": [],
+  "hand": []
+ }
+}

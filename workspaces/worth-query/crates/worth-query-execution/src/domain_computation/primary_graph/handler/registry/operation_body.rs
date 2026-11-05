@@ -99,10 +99,12 @@ impl<Schema: ApplicationSchema> PendingMutationHandlerRegistry<Schema> {
     }
 }
 
-impl<Schema: ApplicationSchema> super::WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    /// Native approval composition alone selects this compiled control body.
-    /// Ordinary lookup still rejects every control binding before touching it.
-    pub(in crate::domain_computation::primary_graph) fn mutation_body_for_approval<Binding>(
+pub(in crate::domain_computation::primary_graph) trait OperationBodyScopedOps<
+    Schema: ApplicationSchema,
+>:
+    crate::domain_computation::primary_graph::handler::host::HandlerHost<Schema>
+{
+    fn mutation_body_for_approval<Binding>(
         &self,
     ) -> Result<
         std::sync::Arc<dyn OperationHandler<Schema, Binding>>,
@@ -113,15 +115,22 @@ impl<Schema: ApplicationSchema> super::WorthQueryPrimaryGraphApplicationRuntime<
     {
         if !Binding::WORKFLOW_CONTROL
             || !self
-                .mutation_handlers
+                .mutation_handlers()
                 .entries
                 .get(Binding::IDENTITY)
                 .is_some_and(|entry| entry.origin == super::HandlerOrigin::CompiledBody)
         {
             return Err(super::MutationHandlerExecutionDenial::WorkflowControl);
         }
-        self.mutation_handlers
+        self.mutation_handlers()
             .get::<Binding>()
             .ok_or(super::MutationHandlerExecutionDenial::HandlerNotInstalled)
     }
+}
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::handler::host::HandlerHost<Schema> + ?Sized,
+    > OperationBodyScopedOps<Schema> for HostRuntime
+{
 }

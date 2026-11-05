@@ -1,5 +1,6 @@
 //! Extend the approval's actual readset, build its installed body, then append native effects.
 use super::*;
+use crate::domain_computation::primary_graph::handler::OperationBodyScopedOps;
 use crate::domain_computation::primary_graph::{
     application_entry::mutation::{
         build_handler_candidate, DecisionReader, HandlerInterruption, HandlerResult,

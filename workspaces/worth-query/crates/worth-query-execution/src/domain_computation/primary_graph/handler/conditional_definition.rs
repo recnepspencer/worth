@@ -14,12 +14,15 @@ use worth_query_installation::facade::{
 };
 
 pub struct ConditionalDefinitionAdmission<'a, Schema> {
-    application: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application:
+        &'a dyn crate::domain_computation::primary_graph::handler::host::HandlerHost<Schema>,
     product: Option<&'a WorthQueryProductBranchLease>,
 }
 impl<'a, Schema> ConditionalDefinitionAdmission<'a, Schema> {
     pub(in crate::domain_computation::primary_graph) fn new(
-        application: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        application: &'a dyn crate::domain_computation::primary_graph::handler::host::HandlerHost<
+            Schema,
+        >,
         product: Option<&'a WorthQueryProductBranchLease>,
     ) -> Self {
         Self {
@@ -59,6 +62,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
         })?;
         let handle = context
             .application
+            .application_runtime()
             .installed_conditionals
             .binding::<Conditional>()
             .ok_or_else(|| {
@@ -68,6 +72,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
             })?;
         context
             .application
+            .application_runtime()
             .admit_conditional_definition_on_product(product, &handle, provider)
             .map_err(HandlerExecutionDenial::new)
     }

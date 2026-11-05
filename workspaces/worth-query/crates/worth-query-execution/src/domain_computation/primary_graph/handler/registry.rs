@@ -169,17 +169,12 @@ where
     }
 }
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub(in crate::domain_computation::primary_graph) trait RegistryScopedOps<Schema>:
+    crate::domain_computation::primary_graph::handler::host::HandlerHost<Schema>
 where
     Schema: ApplicationSchema,
 {
-    /// The installed handler for `Binding`.
-    ///
-    /// A workflow control binding has no handler and is refused as
-    /// `WorkflowControl`; a binding this runtime installed no handler for is
-    /// refused as `HandlerNotInstalled`. Both refusals are deterministic, so
-    /// no retry of the same request can succeed.
-    pub(in crate::domain_computation::primary_graph) fn mutation_handler_for_attempt<Binding>(
+    fn mutation_handler_for_attempt<Binding>(
         &self,
     ) -> Result<Arc<dyn OperationHandler<Schema, Binding>>, MutationHandlerExecutionDenial>
     where
@@ -188,10 +183,19 @@ where
         if Binding::WORKFLOW_CONTROL {
             return Err(MutationHandlerExecutionDenial::WorkflowControl);
         }
-        self.mutation_handlers
+        self.mutation_handlers()
             .get::<Binding>()
             .ok_or(MutationHandlerExecutionDenial::HandlerNotInstalled)
     }
+}
+
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::primary_graph::handler::host::HandlerHost<Schema> + ?Sized,
+    > RegistryScopedOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
 }
 
 fn denial(
@@ -202,3 +206,4 @@ fn denial(
 }
 
 mod court_doors_for_test;
+pub(in crate::domain_computation::primary_graph) use operation_body::OperationBodyScopedOps;

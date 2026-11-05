@@ -2,6 +2,7 @@
 use super::super::DecisionReader;
 use super::*;
 use crate::domain_computation::primary_graph::application_entry::mutation::OperationHandler;
+use crate::domain_computation::primary_graph::handler::RegistryScopedOps;
 
 pub(in crate::domain_computation::primary_graph) trait PreparationScopedOps<
     Schema: ApplicationSchema,
