@@ -11,6 +11,7 @@ mod diagnostic_lists;
 mod diagnostics;
 mod driver_summary;
 mod paths;
+mod production_denial;
 mod refusal;
 mod semantic_denial;
 mod session;
@@ -36,5 +37,8 @@ mod codegen_tests;
 mod semantic_denial_tests;
 
 pub use denial::{denied, production_denial};
+pub use production_denial::{
+    production_denials, ProductionDiagnosticExpectation, ProductionSemanticDenialContract,
+};
 pub use refusal::CompilerFixtureRefusal;
 pub use semantic_denial::{certification_semantic_denial, certification_uncoded_semantic_denial};

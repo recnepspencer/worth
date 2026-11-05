@@ -1,7 +1,10 @@
+use worth_testkit_compiler::{
+    ProductionDiagnosticExpectation as Diagnostic, ProductionSemanticDenialContract as Contract,
+};
 #[test]
 fn external_code_cannot_construct_or_reuse_sealed_phase_artifacts_directly() {
     worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-server/assets/ui/construction/private_middleware_admission_constructor.rs")).expect("prebuilt compiler denial");
-    worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-server/assets/ui/construction/response/private_counter_receipt_constructor.rs")).expect("prebuilt compiler denial");
+    worth_testkit_compiler::production_denials(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-server/assets/ui/construction/response/private_counter_receipt_constructor.rs"), &[Contract { fixture: "private_counter_receipt_constructor.rs", errors: &[Diagnostic::Code { code: "E0451", symbols: &["WorthServerOperatorCounterReceipt", "inner", "private"] }] }]).expect("production compiler denial");
     worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-server/assets/ui/construction/response/private_denial_envelope_constructor.rs")).expect("prebuilt compiler denial");
     worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-server/assets/ui/construction/response/private_evidence_record_constructor.rs")).expect("prebuilt compiler denial");
     worth_testkit_compiler::denied(concat!(env!("CARGO_MANIFEST_DIR"), "/../worth-testkit-server/assets/ui/construction/response/private_success_envelope_constructor.rs")).expect("prebuilt compiler denial");

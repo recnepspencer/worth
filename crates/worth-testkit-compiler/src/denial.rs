@@ -5,6 +5,7 @@ use crate::{diagnostics, paths, session, CompilerFixtureRefusal};
 #[derive(Clone, Copy)]
 pub(crate) enum RequiredEnvironment {
     Any,
+    Certification,
     Production,
 }
 
