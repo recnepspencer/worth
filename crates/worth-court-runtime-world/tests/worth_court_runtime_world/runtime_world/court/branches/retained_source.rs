@@ -165,7 +165,22 @@ fn moved_native_source_forks_exact_old_truth_without_replacing_current_or_siblin
         .snapshots()
         .release_snapshot(&committed.snapshot)
         .unwrap();
-    drop((changed, child, untouched, root, current, committed));
+    let retired_child = branch
+        .retire_product_branch(changed.new_product_head())
+        .unwrap();
+    let retired_untouched = branch.retire_product_branch(&untouched).unwrap();
+    assert_eq!(retired_child.owner_retirement_work().len(), 2);
+    assert_eq!(retired_untouched.owner_retirement_work().len(), 2);
+    drop((
+        retired_child,
+        retired_untouched,
+        changed,
+        child,
+        untouched,
+        root,
+        current,
+        committed,
+    ));
     court.finish();
 }
 
@@ -330,6 +345,16 @@ fn old_world_source_keeps_original_cleanup_when_signal_moves_after_admission() {
     );
     assert_eq!(selected.basis(), signal_moved.new_product_head().basis());
     drop(selected);
-    drop((cleanup, signal_moved, moved, current, old_child, root));
+    let retired_child = branch.retire_product_branch(&old_child).unwrap();
+    assert_eq!(retired_child.owner_retirement_work().len(), 2);
+    drop((
+        retired_child,
+        cleanup,
+        signal_moved,
+        moved,
+        current,
+        old_child,
+        root,
+    ));
     court.finish();
 }
