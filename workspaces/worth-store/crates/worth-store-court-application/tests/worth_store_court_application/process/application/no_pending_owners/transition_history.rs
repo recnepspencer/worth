@@ -56,6 +56,7 @@ fn a_pending_transition_refuses_a_different_successor_before_predecessor_admissi
             HomeProgramTransitionPlanDigest::from_recorded([7; 32]),
             3,
             super::transition_opening::target_meaning(),
+            &crate::batches::transition_body_roster(&execution, 3),
             &execution,
         )
         .err()
@@ -163,6 +164,7 @@ fn commit_original_intent(
             HomeProgramTransitionPlanDigest::from_recorded([7; 32]),
             3,
             super::transition_opening::target_meaning(),
+            &crate::batches::transition_body_roster(execution, 3),
             execution,
         )
         .unwrap();

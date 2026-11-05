@@ -56,6 +56,7 @@ fn an_intent_only_restart_starts_its_original_assignment_once_and_keeps_refused_
                 HomeProgramTransitionPlanDigest::from_recorded([7; 32]),
                 1,
                 target,
+                &crate::batches::transition_body_roster(&execution, 1),
                 &execution,
             )
             .unwrap();
@@ -67,6 +68,7 @@ fn an_intent_only_restart_starts_its_original_assignment_once_and_keeps_refused_
                 HomeProgramTransitionPlanDigest::from_recorded([7; 32]),
                 1,
                 target,
+                &crate::batches::transition_body_roster(&execution, 1),
                 &execution,
             ),
             Err(worth_store_application::ApplicationHomeTransitionIntentDenial::StepAlreadyClaimed)
@@ -264,6 +266,7 @@ fn an_unopened_execution_witness_cannot_restart_a_durable_original_open() {
             HomeProgramTransitionPlanDigest::from_recorded([7; 32]),
             1,
             target,
+            &crate::batches::transition_body_roster(&execution, 1),
             &execution,
         )
         .unwrap();
@@ -312,6 +315,7 @@ fn an_unopened_execution_witness_cannot_restart_a_durable_original_open() {
             HomeProgramTransitionPlanDigest::from_recorded([7; 32]),
             1,
             target,
+            &crate::batches::transition_body_roster(&execution, 1),
             &execution,
         )
         .unwrap();

@@ -40,7 +40,7 @@ impl ReadmittedHomeProgramTransitions {
             if entry.position() != position || entry.payload_bytes() != bytes.len() as u64 {
                 return Err(Denial::SourceMismatch);
             }
-            let intent = intent::decode(&bytes, home, position, request)?;
+            let intent = intent::decode(&bytes, home, position, None, request)?;
             if admitted.elements().last().is_some_and(
                 |previous: &ReadmittedHomeProgramTransition| {
                     previous.intent.successor() != intent.predecessor()
@@ -163,6 +163,7 @@ impl HomeTransitionAdmission {
         digest: worth_foundational::facade::HomeProgramTransitionPlanDigest,
         steps: u32,
         target: worth_foundational::facade::HomeProgramTransitionTargetMeaning,
+        bodies: &[worth_foundational::facade::HomeProgramTransitionBodyDigest],
     ) -> Result<&HomeProgramTransitionIntent, Denial> {
         match self {
             Self::Current { history: _ } => Err(Denial::TransitionNotRequested),
@@ -170,7 +171,7 @@ impl HomeTransitionAdmission {
                 let intent = history
                     .pending(current)?
                     .ok_or(Denial::IntentNotCommitted)?;
-                intent.require_plan(successor, digest, steps, target)?;
+                intent.require_plan(successor, digest, steps, target, bodies)?;
                 Ok(intent)
             }
         }

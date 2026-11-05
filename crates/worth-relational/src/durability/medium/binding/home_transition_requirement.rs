@@ -5,6 +5,10 @@ use worth_proof::{HomeProgramTransitionBindingCommitted, HomeProgramTransitionRe
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum RelationalHomeProgramWriteDenial {
     TransitionRequired,
+    BodyMismatch,
+    BodyCapacityOverflow,
+    BodyEncoding,
+    UnsupportedBody,
     TransitionAlreadyBound,
     TransitionNotRequested,
     MediumMoved,

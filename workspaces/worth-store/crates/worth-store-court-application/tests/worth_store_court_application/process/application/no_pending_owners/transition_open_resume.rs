@@ -74,6 +74,7 @@ fn a_readmitted_transition_open_keeps_its_original_attempt_commit_and_custody() 
                 HomeProgramTransitionPlanDigest::from_recorded([8; 32]),
                 1,
                 target,
+                &crate::batches::transition_body_roster(&execution, 1),
                 &execution,
             ),
             Err(
@@ -88,6 +89,7 @@ fn a_readmitted_transition_open_keeps_its_original_attempt_commit_and_custody() 
                 HomeProgramTransitionPlanDigest::from_recorded([7; 32]),
                 1,
                 target,
+                &crate::batches::transition_body_roster(&execution, 1),
                 &execution,
             )
             .unwrap();

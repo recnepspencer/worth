@@ -15,8 +15,8 @@ pub use checkpoint_admission::{
     CheckpointAdmissionCut, CheckpointAdmissionScope, CheckpointProductBindingIdentity,
 };
 pub use home_program_transition::{
-    HomeProgramTransitionIdentity, HomeProgramTransitionPlanDigest,
-    HomeProgramTransitionStepAssociation,
+    HomeProgramTransitionBodyDigest, HomeProgramTransitionIdentity,
+    HomeProgramTransitionPlanDigest, HomeProgramTransitionStepAssociation,
 };
 pub use home_transition_caller::{
     HomeProgramTransitionCaller, HomeProgramTransitionCallerDenial, HomeProgramTransitionStepRole,

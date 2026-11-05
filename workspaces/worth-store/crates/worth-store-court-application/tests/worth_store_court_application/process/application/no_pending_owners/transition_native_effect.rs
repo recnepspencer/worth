@@ -62,6 +62,7 @@ fn a_durable_native_transition_effect_continues_its_original_world_occurrence_wi
                 HomeProgramTransitionPlanDigest::from_recorded([7; 32]),
                 1,
                 HomeProgramTransitionTargetMeaning::from_recorded(0, contracts.catalog_digest()),
+                &crate::batches::transition_body_roster(&execution, 1),
                 &execution,
             )
             .unwrap();

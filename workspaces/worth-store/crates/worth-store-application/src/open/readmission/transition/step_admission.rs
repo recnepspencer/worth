@@ -85,7 +85,7 @@ pub(crate) fn admit(
         .plan()
         .step_commitment(step, original)
         .map_err(|_| Denial::SourceMismatch)?;
-    let prepared = PreparedStepPermission::prepare(intent, original, request)?;
+    let prepared = PreparedStepPermission::prepare(intent, step.step(), original, request)?;
     let reservation = publication
         .reserved
         .world
@@ -106,6 +106,7 @@ pub(crate) fn admit(
 }
 
 pub(super) struct PreparedStepPermission {
+    body: worth_foundational::facade::HomeProgramTransitionBodyDigest,
     plan: HomeProgramTransitionPlanDescription,
     original: CompositeAttemptAssociation,
     memory: Option<worth_execution::ExecutionMemoryReservation>,
@@ -113,6 +114,7 @@ pub(super) struct PreparedStepPermission {
 impl PreparedStepPermission {
     pub(super) fn prepare(
         intent: &HomeProgramTransitionIntent,
+        step: u32,
         original: &CompositeAttemptAssociation,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<Self, ApplicationHomeTransitionIntentDenial> {
@@ -130,7 +132,12 @@ impl PreparedStepPermission {
             .map_err(Denial::Execution)?;
         let plan = intent.plan().clone();
         let original = original.clone();
+        let body = *intent
+            .bodies()
+            .get(step as usize)
+            .ok_or(Denial::AssignmentCount)?;
         Ok(Self {
+            body,
             plan,
             original,
             memory,
@@ -150,9 +157,12 @@ impl PreparedStepPermission {
             original: self.original,
             reservation,
             execution: None,
-            permission: context
-                .transition
-                .admit_step(commitment, caller_association, source),
+            permission: context.transition.admit_step(
+                commitment,
+                caller_association,
+                self.body.bytes(),
+                source,
+            ),
             _names: self.memory,
         }
     }

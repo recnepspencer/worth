@@ -97,6 +97,7 @@ pub(super) fn steps(execute: bool, check_successor_refusal: bool, refuse_compila
             HomeProgramTransitionPlanDigest::from_recorded([7; 32]),
             2,
             HomeProgramTransitionTargetMeaning::from_recorded(0, contracts.catalog_digest()),
+            &crate::batches::transition_body_roster(&execution, 2),
             &execution,
         )
         .unwrap();

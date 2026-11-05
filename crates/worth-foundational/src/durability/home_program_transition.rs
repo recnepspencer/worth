@@ -55,3 +55,18 @@ impl HomeProgramTransitionPlanDigest {
 }
 impl identity_seal::Sealed for HomeProgramTransitionPlanDigest {}
 impl DurableIdentity for HomeProgramTransitionPlanDigest {}
+
+/// Canonical commitment to one complete authored Native transaction body.
+/// Recorded bytes are data, never permission to execute that body.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct HomeProgramTransitionBodyDigest([u8; 32]);
+impl HomeProgramTransitionBodyDigest {
+    pub const fn from_recorded(bytes: [u8; 32]) -> Self {
+        Self(bytes)
+    }
+    pub const fn bytes(self) -> [u8; 32] {
+        self.0
+    }
+}
+impl identity_seal::Sealed for HomeProgramTransitionBodyDigest {}
+impl DurableIdentity for HomeProgramTransitionBodyDigest {}

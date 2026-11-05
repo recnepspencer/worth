@@ -13,15 +13,16 @@ mod field_text;
 mod guided;
 mod home_program_transition;
 mod initial_schema_installation;
+pub use home_program_transition::{
+    home_program_transition_body_digest, PreparedRelationalHomeProgramContracts,
+    RelationalHomeProgramBodyDenial, RelationalHomeProgramCatalogReadmissionSource,
+    RelationalHomeProgramCatalogReceipt, RelationalHomeProgramContractDenial,
+    RelationalHomeProgramStepContracts,
+};
 pub(crate) use home_program_transition::{
     AdmittedRelationalHomeProgramStep, AdmittedRelationalHomeProgramTarget,
     RelationalHomeProgramPredecessorCatalog, RelationalHomeTargetCoverage,
     RelationalRootExecutionContracts,
-};
-pub use home_program_transition::{
-    PreparedRelationalHomeProgramContracts, RelationalHomeProgramCatalogReadmissionSource,
-    RelationalHomeProgramCatalogReceipt, RelationalHomeProgramContractDenial,
-    RelationalHomeProgramStepContracts,
 };
 mod interruption_counters;
 mod operation_control;

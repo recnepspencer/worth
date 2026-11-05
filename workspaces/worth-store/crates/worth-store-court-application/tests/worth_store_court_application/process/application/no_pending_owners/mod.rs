@@ -1,4 +1,5 @@
 //! Actual Home custody reaches the persisted no-pending admission boundary.
+mod transition_body_fence;
 mod transition_catalog_readmission;
 use worth_store_testkit_application_oracle::facade::home_opening::HomeOpeningRefused as OpenRefusal;
 mod admission_retirement;

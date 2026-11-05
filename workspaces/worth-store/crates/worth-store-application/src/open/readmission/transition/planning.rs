@@ -24,12 +24,16 @@ pub enum ApplicationHomeTransitionPlanningDenial {
 /// The actual World reservation and the original request's description backing.
 pub struct ReservedApplicationHomeTransitionPlan {
     pub(super) world: ReservedWorldHomeTransitionAssignments,
+    pub(super) bodies: std::sync::Arc<super::native_bodies::HomeNativeStepBodies>,
     pub(super) native: worth_relational::facade::branch::RecordedRelationalComponentReference,
     pub(super) _description_memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 impl ReservedApplicationHomeTransitionPlan {
     pub fn description(&self) -> &HomeProgramTransitionPlanDescription {
         self.world.description()
+    }
+    pub fn bodies(&self) -> &[HomeProgramTransitionBodyDigest] {
+        self.bodies.values()
     }
     pub fn assignments(&self) -> &[CompositeAttemptAssociation] {
         self.world.assignments()
@@ -44,6 +48,7 @@ pub(crate) fn reserve<D, I, E, Ctx, T>(
     digest: HomeProgramTransitionPlanDigest,
     steps: u32,
     target: HomeProgramTransitionTargetMeaning,
+    bodies: &[HomeProgramTransitionBodyDigest],
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<ReservedApplicationHomeTransitionPlan, ApplicationHomeTransitionPlanningDenial>
 where
@@ -64,6 +69,7 @@ where
                 digest,
                 steps,
                 target,
+                bodies,
                 request,
             )
         },
@@ -79,6 +85,7 @@ fn reserve_prepared<D, I, E, Ctx, T>(
     digest: HomeProgramTransitionPlanDigest,
     steps: u32,
     target: HomeProgramTransitionTargetMeaning,
+    bodies: &[HomeProgramTransitionBodyDigest],
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<ReservedApplicationHomeTransitionPlan, ApplicationHomeTransitionPlanningDenial>
 where
@@ -94,6 +101,13 @@ where
         .transition
         .admission
         .require_fresh_plan(&context.descriptor.binding)
+        .map_err(Denial::Intent)?;
+    if bodies.len() != steps as usize {
+        return Err(Denial::Intent(
+            super::ApplicationHomeTransitionIntentDenial::AssignmentCount,
+        ));
+    }
+    let bodies = super::native_bodies::HomeNativeStepBodies::capture(bodies, request)
         .map_err(Denial::Intent)?;
     let journal = context
         .serving
@@ -152,6 +166,7 @@ where
         .map_err(Denial::World)?;
     Ok(ReservedApplicationHomeTransitionPlan {
         world,
+        bodies,
         native,
         _description_memory: description_memory,
     })

@@ -56,6 +56,7 @@ fn a_transition_open_resource_refusal_restores_the_same_recovered_custody_for_re
                 HomeProgramTransitionPlanDigest::from_recorded([7; 32]),
                 1,
                 HomeProgramTransitionTargetMeaning::from_recorded(0, contracts.catalog_digest()),
+                &crate::batches::transition_body_roster(&execution, 1),
                 &execution,
             )
             .unwrap();
@@ -125,6 +126,7 @@ fn a_transition_open_resource_refusal_restores_the_same_recovered_custody_for_re
             HomeProgramTransitionPlanDigest::from_recorded([7; 32]),
             1,
             HomeProgramTransitionTargetMeaning::from_recorded(0, contracts.catalog_digest()),
+            &crate::batches::transition_body_roster(&execution, 1),
             &execution,
         )
         .unwrap();

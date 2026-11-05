@@ -8,6 +8,9 @@ use std::sync::Arc;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, WorkCeilingDenial};
 use worth_foundational::facade::HomeProgramTransitionCatalogDigest;
 
+mod body_digest;
+mod body_validation;
+pub use body_digest::{home_program_transition_body_digest, RelationalHomeProgramBodyDenial};
 mod catalog_digest;
 mod predecessor_catalog;
 mod retention;

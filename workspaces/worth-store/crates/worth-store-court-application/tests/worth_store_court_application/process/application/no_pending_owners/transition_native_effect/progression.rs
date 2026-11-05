@@ -79,6 +79,7 @@ impl CurrentOriginal {
                 HomeProgramTransitionPlanDigest::from_recorded([7; 32]),
                 1,
                 HomeProgramTransitionTargetMeaning::from_recorded(0, contracts.catalog_digest()),
+                &crate::batches::transition_body_roster(request, 1),
                 request,
             )
             .unwrap();

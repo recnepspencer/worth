@@ -20,24 +20,27 @@ fn intent_boundary(committed_native_predecessor: bool) {
     let directory = tempfile::tempdir().unwrap();
     let request = crate::workload::serial_request();
     let execution = ExecutionRequest::serial(&request);
-    let fixture = super::transition_opening::open_transition(directory.path(), &execution);
-    let source = fixture
-        .home
-        .world()
-        .observation_port()
-        .observe_root_product_branch()
-        .unwrap();
-    if committed_native_predecessor {
+    let fixture = if committed_native_predecessor {
+        let predecessor = open(directory.path(), &execution);
+        let root = predecessor.bootstrap_root(&execution);
+        let source = root.product_branch().clone();
         let cancellation = worth_runtime_world::facade::RuntimeWorldCancellationSource::new();
-        let prepared = fixture.prepare_publication(
+        let prepared = predecessor.prepare_publication(
             &execution,
             source.clone(),
             crate::batches::create(0),
             &cancellation.token(),
         );
-        let performed = fixture.publish(&execution, prepared, &cancellation.token());
+        let performed = predecessor.publish(&execution, prepared, &cancellation.token());
         drop(performed.consume());
-    }
+        drop((source, root));
+        close(predecessor.home, &execution);
+        // The canonical predecessor is authored under A, before the transition
+        // request installs its mandatory before-service writer fence.
+        super::transition_open_original::reopen(directory.path(), &execution)
+    } else {
+        super::transition_opening::open_transition(directory.path(), &execution)
+    };
     let mut home = fixture.home;
     let source = home
         .world()
@@ -78,6 +81,7 @@ fn intent_boundary(committed_native_predecessor: bool) {
             HomeProgramTransitionPlanDigest::from_recorded([7; 32]),
             3,
             super::transition_opening::target_meaning(),
+            &crate::batches::transition_body_roster(&execution, 3),
             &execution,
         )
         .unwrap();
@@ -197,6 +201,7 @@ fn edited_transition_plan_refuses_before_starting_the_original_intent() {
                 HomeProgramTransitionPlanDigest::from_recorded(digest),
                 3,
                 super::transition_opening::target_meaning(),
+                &crate::batches::transition_body_roster(&execution, 3),
                 &execution,
             )
             .unwrap();

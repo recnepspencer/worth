@@ -78,6 +78,7 @@ fn require_original(
         reserved.description().digest(),
         reserved.description().steps(),
         reserved.description().target_meaning(),
+        reserved.bodies(),
     )?;
     if original.intent.plan() != reserved.description()
         || original.intent.native_predecessor() != &reserved.native

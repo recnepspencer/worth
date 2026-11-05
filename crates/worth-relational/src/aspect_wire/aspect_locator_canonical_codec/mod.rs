@@ -17,3 +17,5 @@ pub(crate) use writing::encode_aspect_field_locator;
 pub(crate) use writing::{encode_aspect_value_locator, encode_boundary_source_locator};
 
 pub(crate) use borrowed_allocation::decoded_bytes as locator_decoded_bytes;
+
+pub(crate) use writing::write_aspect_field_locator;

@@ -90,6 +90,7 @@ impl HomeIntentPublication {
             &bytes,
             reserved.description().identity().home(),
             position,
+            Some(&reserved.bodies),
             request,
         )?;
         let (layout, _) = std::alloc::Layout::new::<[usize; 2]>()

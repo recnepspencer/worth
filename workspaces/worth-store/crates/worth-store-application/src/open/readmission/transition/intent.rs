@@ -20,6 +20,7 @@ pub struct HomeProgramTransitionIntent {
     pub(super) predecessor: ApplicationHomeBinding,
     pub(super) successor: ApplicationHomeBinding,
     pub(super) native: RecordedRelationalComponentReference,
+    pub(super) bodies: std::sync::Arc<super::native_bodies::HomeNativeStepBodies>,
     pub(super) assignments: ExecutionArray<CompositeAttemptAssociation>,
     pub(super) _metadata: Option<ExecutionMemoryReservation>,
 }
@@ -38,6 +39,9 @@ impl HomeProgramTransitionIntent {
     }
     pub fn native_predecessor(&self) -> &RecordedRelationalComponentReference {
         &self.native
+    }
+    pub fn bodies(&self) -> &[HomeProgramTransitionBodyDigest] {
+        self.bodies.values()
     }
     pub fn assignments(&self) -> &[CompositeAttemptAssociation] {
         self.assignments.elements()
@@ -87,6 +91,7 @@ impl HomeProgramTransitionIntent {
         digest: HomeProgramTransitionPlanDigest,
         steps: u32,
         target: HomeProgramTransitionTargetMeaning,
+        bodies: &[HomeProgramTransitionBodyDigest],
     ) -> Result<(), ApplicationHomeTransitionIntentDenial> {
         use ApplicationHomeTransitionIntentDenial as Denial;
         // The pending successor takes precedence over an edited author.
@@ -96,6 +101,7 @@ impl HomeProgramTransitionIntent {
         if self.plan.digest() != digest
             || self.plan.steps() != steps
             || self.plan.target_meaning() != target
+            || self.bodies() != bodies
         {
             return Err(Denial::TransitionPlanDrift);
         }

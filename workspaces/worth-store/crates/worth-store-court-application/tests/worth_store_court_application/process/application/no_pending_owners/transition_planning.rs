@@ -33,6 +33,7 @@ fn transition_plan_reserves_original_attempts_without_publishing_future_heads_or
             HomeProgramTransitionPlanDigest::from_recorded([7; 32]),
             3,
             super::transition_opening::target_meaning(),
+            &crate::batches::transition_body_roster(&execution, 3),
             &execution,
         )
         .expect("the actual Home owner supplies its attached planning admission");
@@ -134,6 +135,7 @@ fn stopped_transition_planning_retains_the_source_without_issuing_attempt_assign
             digest,
             1,
             super::transition_opening::target_meaning(),
+            &crate::batches::transition_body_roster(&execution, 1),
             &execution,
         )
         .expect("the actual issuer reserves the first assignment");
@@ -152,6 +154,7 @@ fn stopped_transition_planning_retains_the_source_without_issuing_attempt_assign
             digest,
             8,
             super::transition_opening::target_meaning(),
+            &crate::batches::transition_body_roster(&execution, 8),
             &ExecutionRequest::serial(&stopped),
         )
         .err()
@@ -167,6 +170,7 @@ fn stopped_transition_planning_retains_the_source_without_issuing_attempt_assign
             digest,
             1,
             super::transition_opening::target_meaning(),
+            &crate::batches::transition_body_roster(&execution, 1),
             &execution,
         )
         .expect("the same actual owner remains usable");

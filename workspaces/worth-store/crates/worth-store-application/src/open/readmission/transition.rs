@@ -141,3 +141,5 @@ fn require_empty_journal(
         }),
     }
 }
+
+mod native_bodies;

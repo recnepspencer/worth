@@ -98,6 +98,7 @@ impl RelationalPreparationRuntime {
                     crate::mvcc::RelationalPublicationDenial::HomeProgramTransition(cause),
                 )
             })?;
+        transaction.require_home_program_body(execution)?;
         require_not_interrupted(
             &transaction.control,
             &transaction.basis.inner.retention_binding,

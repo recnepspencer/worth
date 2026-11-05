@@ -29,12 +29,14 @@ pub(in crate::open::readmission::transition) fn encode(
             reserved
                 .assignments()
                 .len()
-                .checked_mul(8)
+                .checked_mul(40)
                 .and_then(|n| size.checked_add(n))
         })
         .filter(|size| *size <= MAXIMUM)
         .ok_or(Denial::SizeLimit)?;
-    if reserved.assignments().len() != plan.steps() as usize {
+    if reserved.assignments().len() != plan.steps() as usize
+        || reserved.bodies().len() != plan.steps() as usize
+    {
         return Err(Denial::AssignmentCount);
     }
     let frame = crate::frame_encoding::encode(size, request, |out| {
@@ -62,8 +64,9 @@ pub(in crate::open::readmission::transition) fn encode(
         binding::emit(predecessor, out);
         out.extend_from_slice(&(successor_size as u32).to_le_bytes());
         binding::emit(successor, out);
-        for assignment in reserved.assignments() {
+        for (assignment, body) in reserved.assignments().iter().zip(reserved.bodies()) {
             out.extend_from_slice(&assignment.attempt().ordinal().to_le_bytes());
+            out.extend_from_slice(&body.bytes());
         }
         let checksum = Sha256::digest(out.as_slice());
         out.extend_from_slice(&checksum);

@@ -14,6 +14,7 @@ pub(crate) fn admit(
     digest: HomeProgramTransitionPlanDigest,
     steps: u32,
     target: HomeProgramTransitionTargetMeaning,
+    bodies: &[worth_foundational::facade::HomeProgramTransitionBodyDigest],
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<AdmittedApplicationHomeProgramStep, ApplicationHomeTransitionIntentDenial> {
     use ApplicationHomeTransitionIntentDenial as Denial;
@@ -38,6 +39,7 @@ pub(crate) fn admit(
         digest,
         steps,
         target,
+        bodies,
     )?;
     let original = intent
         .assignments()
@@ -53,8 +55,12 @@ pub(crate) fn admit(
         .plan()
         .step_commitment(step, original)
         .map_err(|_| Denial::SourceMismatch)?;
-    let prepared =
-        super::step_admission::PreparedStepPermission::prepare(intent, original, request)?;
+    let prepared = super::step_admission::PreparedStepPermission::prepare(
+        intent,
+        step.step(),
+        original,
+        request,
+    )?;
     let association = claim
         .caller_association_commitment(request, intent.plan(), step)
         .map_err(Denial::WorldAssociation)?;

@@ -1,3 +1,5 @@
+mod encoding_sink;
+pub(crate) use encoding_sink::{CanonicalAspectOutput, CollectCanonicalAspect};
 mod aspect_locator_canonical_codec;
 mod aspect_value_canonical_codec;
 mod canonical_byte_input;
@@ -39,3 +41,6 @@ pub(crate) struct CanonicalDecodeStorage {
     pub(crate) retained_bytes: u64,
     pub(crate) transient_bytes: u64,
 }
+
+pub(crate) use aspect_locator_canonical_codec::write_aspect_field_locator;
+pub(crate) use aspect_value_canonical_codec::write_aspect_value;

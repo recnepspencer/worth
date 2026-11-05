@@ -21,6 +21,7 @@ fn a_current_home_cannot_reserve_a_transition_without_an_open_request() {
             HomeProgramTransitionPlanDigest::from_recorded([7; 32]),
             3,
             super::transition_opening::target_meaning(),
+            &crate::batches::transition_body_roster(&execution, 3),
             &execution,
         )
         .err()
@@ -69,6 +70,7 @@ fn a_transition_intent_cannot_substitute_another_genuinely_admitted_successor() 
             HomeProgramTransitionPlanDigest::from_recorded([7; 32]),
             3,
             super::transition_opening::target_meaning(),
+            &crate::batches::transition_body_roster(&execution, 3),
             &execution,
         )
         .unwrap();

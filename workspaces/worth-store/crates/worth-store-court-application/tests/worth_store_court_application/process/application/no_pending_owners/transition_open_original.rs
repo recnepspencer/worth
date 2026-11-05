@@ -123,6 +123,7 @@ fn commit_intent_steps(
             HomeProgramTransitionPlanDigest::from_recorded([7; 32]),
             steps,
             HomeProgramTransitionTargetMeaning::from_recorded(0, contracts.catalog_digest()),
+            &crate::batches::transition_body_roster(execution, steps),
             execution,
         )
         .unwrap();

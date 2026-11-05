@@ -12,6 +12,8 @@ use worth_execution::{
 
 #[derive(Debug)]
 pub(crate) struct RelationalHomeTargetCoverage {
+    pub(crate) authored_batches: usize,
+    pub(crate) rejudgment_body: worth_foundational::facade::HomeProgramTransitionBodyDigest,
     pub(crate) records: ExecutionArray<RecordRef>,
     _batch_memory: Option<ExecutionMemoryReservation>,
 }
@@ -104,9 +106,18 @@ impl BranchBoundRelationalTransaction {
                 ),
             });
         }
+        let authored_batches = self.batches().len();
+        let rejudgment_body = super::home_program_transition_body_digest(
+            execution,
+            &crate::mvcc::RelationalTransactionIntent::ordinary(),
+            std::slice::from_ref(&batch),
+        )
+        .map_err(super::body_validation::body_denial)?;
         self.push_batch(batch, execution.allocation_policy())
             .map_err(staging)?;
         self.home_target_coverage = Some(Arc::new(RelationalHomeTargetCoverage {
+            authored_batches,
+            rejudgment_body,
             records,
             _batch_memory: memory,
         }));

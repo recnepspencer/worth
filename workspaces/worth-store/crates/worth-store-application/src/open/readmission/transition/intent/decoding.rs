@@ -10,6 +10,7 @@ pub(in crate::open::readmission::transition) fn decode(
     bytes: &[u8],
     home: HomeIdentity,
     position: u64,
+    shared_bodies: Option<&std::sync::Arc<super::super::native_bodies::HomeNativeStepBodies>>,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<HomeProgramTransitionIntent, Denial> {
     if bytes.len() > MAXIMUM {
@@ -69,7 +70,7 @@ pub(in crate::open::readmission::transition) fn decode(
     let native = read.bytes()?;
     let predecessor = read.bytes()?;
     let successor = read.bytes()?;
-    if steps as usize != read.0.len() / 8 || read.0.len() % 8 != 0 {
+    if steps as usize != read.0.len() / 40 || read.0.len() % 40 != 0 {
         return Err(Denial::AssignmentCount);
     }
     let metadata_bytes = binding::allocation_bytes(predecessor)
@@ -113,9 +114,30 @@ pub(in crate::open::readmission::transition) fn decode(
         .map_err(Denial::Native)?;
     let mut assignments = ExecutionRequestArrayBuilder::allocate(*request, steps as usize)
         .map_err(Denial::Backing)?;
+    if shared_bodies.is_some_and(|bodies| bodies.values().len() != steps as usize) {
+        return Err(Denial::AssignmentCount);
+    }
+    let mut bodies = if shared_bodies.is_none() {
+        Some(
+            ExecutionRequestArrayBuilder::allocate(*request, steps as usize)
+                .map_err(Denial::Backing)?,
+        )
+    } else {
+        None
+    };
     let mut previous = None;
-    for _ in 0..steps {
+    for step in 0..steps {
+        request.consult().map_err(Denial::Execution)?;
         let ordinal = read.u64()?;
+        let body = HomeProgramTransitionBodyDigest::from_recorded(read.fixed()?);
+        if let Some(shared) = shared_bodies {
+            if shared.values()[step as usize] != body {
+                return Err(Denial::TransitionPlanDrift);
+            }
+        }
+        if let Some(bodies) = &mut bodies {
+            bodies.push(body).map_err(Denial::Backing)?;
+        }
         if previous.is_some_and(|previous| ordinal <= previous) {
             return Err(Denial::AssignmentOrder);
         }
@@ -128,7 +150,16 @@ pub(in crate::open::readmission::transition) fn decode(
         .map_err(|_| Denial::Malformed)?;
         assignments.push(association).map_err(Denial::Backing)?;
     }
+    let bodies = match (shared_bodies, bodies) {
+        (Some(shared), None) => shared.clone(),
+        (None, Some(bodies)) => super::super::native_bodies::HomeNativeStepBodies::retain(
+            bodies.seal().map_err(Denial::Backing)?,
+            request,
+        )?,
+        (Some(_), Some(_)) | (None, None) => return Err(Denial::Malformed),
+    };
     Ok(HomeProgramTransitionIntent {
+        bodies,
         plan,
         predecessor,
         successor,

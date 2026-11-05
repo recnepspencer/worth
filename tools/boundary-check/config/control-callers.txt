@@ -600,3 +600,4 @@ workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/cr
 
 # Original-request metadata compilation observes actual checks and only cancels.
 crates/worth-execution/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_compilation.rs
+crates/worth-execution/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_body_fence.rs

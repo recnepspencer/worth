@@ -58,6 +58,7 @@ where
         digest: worth_foundational::facade::HomeProgramTransitionPlanDigest,
         steps: u32,
         target: worth_foundational::facade::HomeProgramTransitionTargetMeaning,
+        bodies: &[worth_foundational::facade::HomeProgramTransitionBodyDigest],
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<
         crate::AdmittedApplicationHomeProgramStep,
@@ -71,6 +72,7 @@ where
             digest,
             steps,
             target,
+            bodies,
             request,
         )
     }
@@ -83,6 +85,7 @@ where
         digest: worth_foundational::facade::HomeProgramTransitionPlanDigest,
         steps: u32,
         target: worth_foundational::facade::HomeProgramTransitionTargetMeaning,
+        bodies: &[worth_foundational::facade::HomeProgramTransitionBodyDigest],
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<
         crate::AdmittedApplicationHomeProgramStep,
@@ -96,6 +99,7 @@ where
             digest,
             steps,
             target,
+            bodies,
             request,
         )
     }
@@ -169,6 +173,7 @@ where
         digest: worth_foundational::facade::HomeProgramTransitionPlanDigest,
         steps: u32,
         target: worth_foundational::facade::HomeProgramTransitionTargetMeaning,
+        bodies: &[worth_foundational::facade::HomeProgramTransitionBodyDigest],
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<
         crate::ReservedApplicationHomeTransitionPlan,
@@ -182,6 +187,7 @@ where
             digest,
             steps,
             target,
+            bodies,
             request,
         )
     }

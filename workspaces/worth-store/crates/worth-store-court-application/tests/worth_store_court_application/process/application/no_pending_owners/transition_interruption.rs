@@ -28,6 +28,7 @@ fn a_live_advancer_cannot_publish_an_intent_after_its_staging_request_is_cancell
             HomeProgramTransitionPlanDigest::from_recorded([7; 32]),
             3,
             super::transition_opening::target_meaning(),
+            &crate::batches::transition_body_roster(&original_execution, 3),
             &original_execution,
         )
         .unwrap();

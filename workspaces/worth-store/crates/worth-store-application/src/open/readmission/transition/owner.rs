@@ -107,6 +107,7 @@ impl HomeTransitionOwner {
                     publication.intent.plan().digest(),
                     publication.intent.plan().steps(),
                     publication.intent.plan().target_meaning(),
+                    publication.intent.bodies(),
                 )?;
                 if original.intent.plan() != publication.intent.plan()
                     || original.intent.native_predecessor()
@@ -181,10 +182,12 @@ impl HomeTransitionOwner {
         &self,
         commitment: [u8; 32],
         caller_association: [u8; 32],
+        body: [u8; 32],
         source: worth_relational::facade::branch::RelationalBranchBasisAdmissionIdentity,
     ) -> worth_proof::AdmittedHomeProgramTransitionStep<
         worth_relational::facade::branch::RelationalBranchBasisAdmissionIdentity,
     > {
-        self.seal.admit_step(commitment, caller_association, source)
+        self.seal
+            .admit_step(commitment, caller_association, body, source)
     }
 }
