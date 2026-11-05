@@ -2,12 +2,13 @@
 
 use super::*;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::primary_graph::application_attempt::IdempotencyResolutionOps;
 
 impl WorthQueryWorkflowAdvanceAdapter {
     #[doc(hidden)]
     pub fn resolve_guarded_operation_custody<Schema, Operation, Input, Scope>(
 phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
         transition_identity: &[u8; 32],
@@ -20,7 +21,7 @@ phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase
         Schema: ApplicationSchema,
         Input: Clone + Send + Sync + 'static,
 {
-        let phase_request = match phase.execution_request_for(&runtime.runtime.product_runtime) {
+        let phase_request = match phase.execution_request_for(runtime.product_runtime()) {
             Ok(request) => request,
             Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "workflow-phase"))),
         };

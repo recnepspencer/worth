@@ -1,4 +1,5 @@
 use super::*;
+use crate::domain_computation::primary_graph::application_attempt::RetainedCommitScopedOps;
 use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 
 /// One owner of a rostered program on one published host.

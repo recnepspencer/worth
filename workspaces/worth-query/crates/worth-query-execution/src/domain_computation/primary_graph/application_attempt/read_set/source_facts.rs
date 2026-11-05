@@ -46,14 +46,12 @@ fn compare_source_facts<Schema, Operation, Input, Scope>(
     Ok(())
 }
 
-impl<Schema: worth_query_installation::facade::ApplicationSchema>
-    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub(in crate::domain_computation::primary_graph) trait SourceFactsScopedOps<
+    Schema: worth_query_installation::facade::ApplicationSchema,
+>:
+    crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>
 {
-    pub(in crate::domain_computation::primary_graph) fn validate_projected_source_facts<
-        Operation,
-        Input,
-        Scope,
-    >(
+    fn validate_projected_source_facts<Operation, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
@@ -70,6 +68,8 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
         compare_source_facts(execution, admission, lease)
     }
 }
+
+impl<Schema: worth_query_installation::facade::ApplicationSchema, HostRuntime: crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema> + ?Sized> SourceFactsScopedOps<Schema> for HostRuntime {}
 
 pub fn merge_source_facts(
     admitted: Vec<WorthQueryApplicationObservedFact>,

@@ -1,4 +1,5 @@
 use crate::domain_computation::application_aftermath::ApplicationCommitCausality;
+use crate::domain_computation::primary_graph::application_attempt::EntryCustodyScopedOps;
 use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -14,20 +15,27 @@ use crate::domain_computation::primary_graph::product_operation::document_histor
 use crate::domain_computation::primary_graph::program_occurrence::WorthQueryPresentedProgram;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub(in crate::domain_computation) trait EntryScopedOps<Schema>:
+    crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub(in crate::domain_computation) fn has_installed_application_program(&self) -> bool {
-        self.program_support.is_some()
+    fn has_installed_application_program(&self) -> bool {
+        self.program_support().is_some()
     }
 
-    pub(in crate::domain_computation) fn direct_operation_commit_denial<Operation: 'static>(
+    fn direct_operation_commit_denial<Operation: 'static>(
         &self,
     ) -> Option<WorthQueryApplicationCommitDenial> {
-        if self.operation_requires_workflow_authority::<Operation>() {
+        if self
+            .application_runtime()
+            .operation_requires_workflow_authority::<Operation>()
+        {
             Some(WorthQueryApplicationCommitDenial::workflow_authority_required())
-        } else if self.operation_requires_application_program::<Operation>() {
+        } else if self
+            .application_runtime()
+            .operation_requires_application_program::<Operation>()
+        {
             Some(WorthQueryApplicationCommitDenial::program_lane_required::<
                 Operation,
             >())
@@ -35,21 +43,24 @@ where
             None
         }
     }
+}
 
-    /// Requires that the program presented for this output source is the one
-    /// active on the attempt's own occurrence. The program runtime already
-    /// checked its typed root and source-binding inventory before entering here.
-    pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) fn require_occurrence_owns_output_source<
-        Operation,
-        Input,
-        Scope,
-    >(
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema> + ?Sized> EntryScopedOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema, {}
+
+pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) trait ProviderExecutionEntryScopedOps<
+    Schema,
+>:
+    crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema> where
+    Schema: ApplicationSchema,
+{
+    fn require_occurrence_owns_output_source<Operation, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         presented: &WorthQueryPresentedProgram<'_>,
         program: &WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
     ) -> Result<(), WorthQueryApplicationCommitOutcome> {
-        let Some(support) = self.program_support.as_ref() else {
+        let Some(support) = self.program_support().as_ref() else {
             return Err(WorthQueryApplicationCommitOutcome::Denied(
                 WorthQueryApplicationCommitDenial::application_program_required(),
             ));
@@ -68,12 +79,7 @@ where
         Ok(())
     }
 
-    /// Resolves the active occurrence, then checks selection and operation authority.
-    pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) fn require_occurrence_program_commit_binding<
-        Operation,
-        Input,
-        Scope,
-    >(
+    fn require_occurrence_program_commit_binding<Operation, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         program: &WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
@@ -85,7 +91,7 @@ where
     where
         Operation: 'static,
     {
-        let Some(support) = self.program_support.as_ref() else {
+        let Some(support) = self.program_support().as_ref() else {
             return Err(WorthQueryApplicationCommitOutcome::Denied(
                 WorthQueryApplicationCommitDenial::application_program_required(),
             ));
@@ -98,12 +104,18 @@ where
             .map_err(WorthQueryApplicationCommitOutcome::Denied)?;
         Ok(())
     }
+}
 
-    pub(in crate::domain_computation::primary_graph) fn compare_and_commit_conditional_operation<
-        Operation,
-        Input,
-        Scope,
-    >(
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema> + ?Sized> ProviderExecutionEntryScopedOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema, {}
+
+pub(in crate::domain_computation::primary_graph) trait ProviderExecutionProviderExecutionEntryScopedOps<
+    Schema,
+>:
+    crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema> where
+    Schema: ApplicationSchema,
+{
+    fn compare_and_commit_conditional_operation<Operation, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -123,6 +135,12 @@ where
     }
 }
 
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema> + ?Sized> ProviderExecutionProviderExecutionEntryScopedOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema, {}
+
 mod application_commit;
 
 mod output_source;
+pub use application_commit::ApplicationCommitOps;
+pub(in crate::domain_computation::primary_graph) use application_commit::ApplicationCommitScopedOps;
+pub use output_source::OutputSourceOps;

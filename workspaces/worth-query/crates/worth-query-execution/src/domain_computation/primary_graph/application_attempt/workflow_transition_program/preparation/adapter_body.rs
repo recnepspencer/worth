@@ -11,7 +11,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
     pub fn prepare_body<Schema, Binding>(
         access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
-        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
         prepared: PreparedWorkflowAdvance<Schema, Binding::Operation, Binding::Input,
             <Binding::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope>,
         identities: &ApplicationMutationIdentities<'_, Schema, Binding>,

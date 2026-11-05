@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_attempt::provider_execution::external_dispatch::ExternalDispatchParentOps;
 use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 mod cleanup_failure;
 use worth_query_installation::facade::ApplicationSchema;
@@ -15,7 +16,7 @@ pub fn finish_application_commit<Schema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     phase: &WorthQueryAdvancementPhase<'_>,
 
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
     progressed: WorthQueryProgressedApplicationCommit,
 ) -> WorthQueryApplicationCommitOutcome
 where
@@ -32,11 +33,10 @@ where
     let terminal = terminal_for(&outcome);
     let snapshot_release = lease.release_custody();
     application
-        .runtime
-        .primary_provider
+        .primary_provider()
         .observe_managed_application_cleanup();
     let completion = match cleanup.finish(
-        &application.runtime.primary_provider,
+        application.primary_provider(),
         running,
         terminal,
         snapshot_release,
@@ -45,7 +45,7 @@ where
         Err(failure) => {
             let evidence = cleanup_failure::cleanup_failed_outcome(outcome);
             return WorthQueryApplicationCommitOutcome::CleanupRequired(Box::new(
-                crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCleanupRequired::new(evidence, failure, application.runtime.product_runtime.clone(), application.runtime.bridge.conditional_operations()),
+                crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCleanupRequired::new(evidence, failure, application.product_runtime().clone(), application.bridge().conditional_operations()),
             ));
         }
     };

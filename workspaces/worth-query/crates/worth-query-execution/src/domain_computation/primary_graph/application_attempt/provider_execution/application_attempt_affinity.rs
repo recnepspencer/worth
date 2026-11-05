@@ -110,12 +110,12 @@ impl WorthQueryApplicationAttemptAffinityView for WorthQueryProviderSessionTermi
 
 impl WorthQueryApplicationAttemptBasis {
     pub fn capture<Schema, Operation, Input, Scope>(
-        application: &super::super::super::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        application: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         snapshot: &SnapshotHandle,
         product: &crate::basis::WorthQueryProductBranchLease,
     ) -> Result<Self, ()> {
-        if admission.runtime_authority() != application.runtime.authority_identity()
+        if admission.runtime_authority() != application.authority_identity()
             || snapshot.branch_id() != admission.graph_work_branch()
             || snapshot.branch_id()
                 != product

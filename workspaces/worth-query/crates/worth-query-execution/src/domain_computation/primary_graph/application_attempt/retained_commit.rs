@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_attempt::ApplicationCommitOps;
 use std::sync::Arc;
 
 use worth_query_installation::facade::ApplicationSchema;
@@ -20,13 +21,13 @@ pub enum WorthQueryApplicationRetainedCommitOutcome {
     Other(WorthQueryApplicationCommitOutcome),
 }
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub trait RetainedCommitOps<Schema>:
+    crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>
 where
     Schema: ApplicationSchema,
 {
-    /// Retains the committed observation inside the caller's advancement.
     #[doc(hidden)]
-    pub fn compare_and_commit_application_retained_in_advancement<Operation, Input, Scope>(
+    fn compare_and_commit_application_retained_in_advancement<Operation, Input, Scope>(
         &self,
 
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
@@ -46,8 +47,17 @@ where
         );
         self.retained_commit_outcome(outcome)
     }
+}
 
-    pub(in crate::domain_computation::primary_graph) fn retained_commit_outcome(
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema> + ?Sized> RetainedCommitOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema, {}
+
+pub(in crate::domain_computation::primary_graph) trait RetainedCommitScopedOps<Schema>:
+    crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>
+where
+    Schema: ApplicationSchema,
+{
+    fn retained_commit_outcome(
         &self,
         outcome: WorthQueryApplicationCommitOutcome,
     ) -> WorthQueryApplicationRetainedCommitOutcome {
@@ -64,9 +74,12 @@ where
             publication.composite_commit()
         );
         let retained = WorthQueryApplicationReadObservation::from_product(
-            self,
+            self.application_runtime(),
             crate::basis::WorthQueryProductObservationLease::new(observation),
         );
         WorthQueryApplicationRetainedCommitOutcome::Committed { receipt, retained }
     }
 }
+
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema> + ?Sized> RetainedCommitScopedOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema, {}

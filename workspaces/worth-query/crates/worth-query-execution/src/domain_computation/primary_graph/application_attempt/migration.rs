@@ -8,7 +8,7 @@ use crate::domain_computation::primary_graph::{
 };
 
 pub fn prepare_program_migration_effects<Schema, Operation, Input, Scope>(
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
     program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
 ) -> Result<
     (
@@ -22,15 +22,15 @@ where
     Schema: worth_query_declaration::facade::application_schema::ApplicationSchema,
 {
     if !program.belongs_to_application(
-        application.runtime.authority_identity(),
-        &application.installed_schema.binding_identity(),
+        application.authority_identity(),
+        &application.installed_schema().binding_identity(),
     ) {
         return Err(WorthQueryProgramMigrationPreparationDenial::ForeignCandidate);
     }
     program
         .validate_installed_entry(
-            &application.runtime,
-            &application.installed_schema.binding_identity(),
+            application,
+            &application.installed_schema().binding_identity(),
         )
         .and_then(|()| program.validate_current_authority())
         .map_err(|denial| {
@@ -161,6 +161,7 @@ where
     }
     let source_product = read_set.lease.product().observation().clone();
     let mutation_partition = application
+        .application_runtime()
         .issue_application_mutation_partition()
         .ok_or(WorthQueryProgramMigrationPreparationDenial::MutationPartitionUnavailable)?;
     let effect_count = effects.len();

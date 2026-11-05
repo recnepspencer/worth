@@ -1,5 +1,6 @@
 //! Read-only assessment borrows resources from the exact native runtime phase.
 use super::WorthQueryOperationBodyRequirementFinding;
+use crate::domain_computation::primary_graph::application_attempt::SourceFactsScopedOps;
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationScopeBinding,
 };

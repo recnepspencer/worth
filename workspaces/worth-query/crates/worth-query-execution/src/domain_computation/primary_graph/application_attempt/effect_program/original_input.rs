@@ -46,7 +46,7 @@ impl<Schema, Operation, Input, Scope>
         self,
         access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
-        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
         input: ApplicationEncodedInput<Binding::InputBinding>,
     ) -> Result<Self, WorthQueryApplicationAttemptDenial>
     where
@@ -67,7 +67,7 @@ impl<Schema, Operation, Input, Scope>
         self,
         access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
-        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
         input: ApplicationEncodedInput<Binding::InputBinding>,
     ) -> Result<Self, WorthQueryApplicationAttemptDenial>
     where
@@ -82,7 +82,7 @@ impl<Schema, Operation, Input, Scope>
         mut self,
         access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
-        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
         input: ApplicationEncodedInput<Binding::InputBinding>,
         retain_input: bool,
     ) -> Result<Self, WorthQueryApplicationAttemptDenial>
@@ -104,7 +104,7 @@ impl<Schema, Operation, Input, Scope>
                 "original input differs from the installed handler candidate",
             ));
         }
-        if self.read_set.admission.runtime_authority() != runtime.runtime.authority_identity()
+        if self.read_set.admission.runtime_authority() != runtime.authority_identity()
             || (self.requires_original_input_retention(access)
                 && self.read_set.admission.original_scope().is_none())
         {
@@ -114,7 +114,7 @@ impl<Schema, Operation, Input, Scope>
             ));
         }
         let execution = phase
-            .execution_request_for(&runtime.runtime.product_runtime)
+            .execution_request_for(runtime.product_runtime())
             .map_err(|_| {
                 WorthQueryApplicationAttemptDenial::new(
                     WorthQueryApplicationAttemptDenialKind::ForeignPhase,
@@ -133,7 +133,7 @@ impl<Schema, Operation, Input, Scope>
                     Binding,
                 >(
                     &execution,
-                    runtime,
+                    runtime.application_runtime(),
                     input.input(),
                     self.read_set.admission.original_scope(),
                 )?;

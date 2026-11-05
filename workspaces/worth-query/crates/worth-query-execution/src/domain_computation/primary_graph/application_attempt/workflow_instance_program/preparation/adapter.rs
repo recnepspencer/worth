@@ -1,4 +1,6 @@
 use super::*;
+use crate::domain_computation::primary_graph::application_attempt::CancellationPublicationScopedOps;
+use crate::domain_computation::primary_graph::application_attempt::WorkflowInstanceProgramPublicationScopedOps;
 
 impl WorthQueryWorkflowInstanceAdapter {
     pub fn prepare<Schema, Capability, Operation, Input, Scope, Spec>(
@@ -148,7 +150,7 @@ impl WorthQueryWorkflowInstanceAdapter {
     pub fn compare_and_commit_cancellation<Schema, Operation, Input, Scope>(
         phase: &WorthQueryAdvancementPhase<'_>,
 
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
         prepared: PreparedWorkflowInstanceCancellation<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
     ) -> WorkflowInstanceCancellationOutcome
@@ -157,7 +159,7 @@ impl WorthQueryWorkflowInstanceAdapter {
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        let phase_request = match phase.execution_request_for(&runtime.runtime.product_runtime) {
+        let phase_request = match phase.execution_request_for(runtime.product_runtime()) {
             Ok(request) => request,
             Err(cause) => return WorkflowInstanceCancellationOutcome::Application(
                 crate::domain_computation::request_execution::WorthQueryAdvancementDenial::from(
@@ -181,7 +183,7 @@ impl WorthQueryWorkflowInstanceAdapter {
     pub fn compare_and_commit<Schema, Operation, Input, Scope>(
         phase: &WorthQueryAdvancementPhase<'_>,
 
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
         prepared: PreparedWorkflowInstanceStart<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
     ) -> WorkflowInstanceStartOutcome
@@ -190,7 +192,7 @@ impl WorthQueryWorkflowInstanceAdapter {
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        let phase_request = match phase.execution_request_for(&runtime.runtime.product_runtime) {
+        let phase_request = match phase.execution_request_for(runtime.product_runtime()) {
             Ok(request) => request,
             Err(cause) => return WorkflowInstanceStartOutcome::Application(
                 crate::domain_computation::request_execution::WorthQueryAdvancementDenial::from(

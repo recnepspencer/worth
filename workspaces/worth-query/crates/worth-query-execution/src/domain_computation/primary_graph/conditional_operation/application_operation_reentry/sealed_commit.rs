@@ -1,3 +1,5 @@
+use crate::domain_computation::primary_graph::application_attempt::ProviderExecutionProviderExecutionEntryScopedOps;
+use crate::domain_computation::primary_graph::application_attempt::ReadSetScopedOps;
 use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 use worth_query_installation::facade::{
     ApplicationFieldUnit, ApplicationReadableScalarValueBinding, ApplicationScalarValueBinding,

@@ -1,11 +1,13 @@
 use super::*;
+use crate::domain_computation::primary_graph::application_attempt::CommitScopedOps;
+use crate::domain_computation::primary_graph::application_attempt::IdempotencyResolutionOps;
 use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 
 impl WorthQueryWorkflowAdvanceAdapter {
     pub fn compare_and_commit_assessment<Schema, Operation, Input, Scope, Query>(
         phase: &WorthQueryAdvancementPhase<'_>,
 
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
         prepared: super::super::PreparedWorkflowAssessment<Schema, Operation, Input, Scope>,
         settlement: &crate::domain_computation::primary_graph::WorthQueryOutputDemandSettlement,
         source: &crate::domain_computation::primary_graph::WorthQueryObservedSource<Query>,
@@ -20,7 +22,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        let phase_request = match phase.execution_request_for(&runtime.runtime.product_runtime) {
+        let phase_request = match phase.execution_request_for(runtime.product_runtime()) {
             Ok(request) => request,
             Err(cause) => return Ok(WorkflowProgressOutcome::Application(
                 crate::domain_computation::request_execution::WorthQueryAdvancementDenial::from(
@@ -33,7 +35,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
         };
         let execution = &phase_request;
 
-        if let Err(cause) = phase.execution_request_for(&runtime.runtime.product_runtime) {
+        if let Err(cause) = phase.execution_request_for(runtime.product_runtime()) {
             let uncommitted =
                 crate::domain_computation::request_execution::WorthQueryAdvancementDenial::from(
                     cause,
@@ -50,7 +52,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
     pub fn compare_and_commit_condition<Schema, Operation, Input, Scope>(
         phase: &WorthQueryAdvancementPhase<'_>,
 
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
         prepared: super::super::PreparedWorkflowCondition<Schema, Operation, Input, Scope>,
         sources: crate::domain_computation::primary_graph::WorthQueryWorkflowConditionSources<
             Schema,
@@ -65,7 +67,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        let phase_request = match phase.execution_request_for(&runtime.runtime.product_runtime) {
+        let phase_request = match phase.execution_request_for(runtime.product_runtime()) {
             Ok(request) => request,
             Err(cause) => return Ok(WorkflowProgressOutcome::Application(
                 crate::domain_computation::request_execution::WorthQueryAdvancementDenial::from(
@@ -78,7 +80,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
         };
         let execution = &phase_request;
 
-        if let Err(cause) = phase.execution_request_for(&runtime.runtime.product_runtime) {
+        if let Err(cause) = phase.execution_request_for(runtime.product_runtime()) {
             let uncommitted =
                 crate::domain_computation::request_execution::WorthQueryAdvancementDenial::from(
                     cause,
@@ -104,7 +106,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
     >(
         phase: &WorthQueryAdvancementPhase<'_>,
 
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
         prepared: super::super::PreparedWorkflowOperation<Schema, Operation, Input, Scope>,
         effect_admission: &crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<Schema, EffectOperation, EffectInput, EffectScope>,
         effect_idempotency: WorthQueryApplicationIdempotencyBinding,
@@ -127,7 +129,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
         >,
         EffectInput: Clone + Send + Sync + 'static,
     {
-        let phase_request = match phase.execution_request_for(&runtime.runtime.product_runtime) {
+        let phase_request = match phase.execution_request_for(runtime.product_runtime()) {
             Ok(request) => request,
             Err(cause) => return Ok(WorkflowProgressOutcome::Application(
                 crate::domain_computation::request_execution::WorthQueryAdvancementDenial::from(
@@ -140,7 +142,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
         };
         let execution = &phase_request;
 
-        if let Err(cause) = phase.execution_request_for(&runtime.runtime.product_runtime) {
+        if let Err(cause) = phase.execution_request_for(runtime.product_runtime()) {
             let uncommitted =
                 crate::domain_computation::request_execution::WorthQueryAdvancementDenial::from(
                     cause,
@@ -179,7 +181,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
     pub fn compare_and_commit<Schema, Operation, Input, Scope>(
         phase: &WorthQueryAdvancementPhase<'_>,
 
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
         prepared: PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
     ) -> WorkflowProgressOutcome
@@ -188,7 +190,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        let phase_request = match phase.execution_request_for(&runtime.runtime.product_runtime) {
+        let phase_request = match phase.execution_request_for(runtime.product_runtime()) {
             Ok(request) => request,
             Err(cause) => return WorkflowProgressOutcome::Application(
                 crate::domain_computation::request_execution::WorthQueryAdvancementDenial::from(

@@ -65,7 +65,7 @@ where
         self,
         access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         phase: &WorthQueryAdvancementPhase<'_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
         identities: &ApplicationMutationIdentities<'_, Schema, Binding>,
         principal_identity: &Binding::PrincipalIdentity,
         idempotency: super::super::super::WorthQueryApplicationIdempotencyBinding,
@@ -84,7 +84,7 @@ where
         self.validate_approval_descriptor()
             .map_err(WorkflowApprovalBodyDenial::Authentication)?;
         let request = phase
-            .execution_request_for(&runtime.runtime.product_runtime)
+            .execution_request_for(runtime.product_runtime())
             .map_err(|cause| {
                 WorkflowApprovalBodyDenial::Handler(
                     MutationHandlerExecutionDenial::ForeignAdvancementPhase(cause),

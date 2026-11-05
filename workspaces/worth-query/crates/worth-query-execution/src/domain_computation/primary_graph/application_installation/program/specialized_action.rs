@@ -1,3 +1,5 @@
+use crate::domain_computation::primary_graph::application_attempt::EntryCustodyScopedOps;
+use crate::domain_computation::primary_graph::application_attempt::InstalledReadmissionScopedOps;
 mod capability_advancement;
 mod elevation_advancement;
 use crate::equality_type_id::EqualityTypeId as TypeId;

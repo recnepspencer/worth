@@ -5,12 +5,12 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitReceipt, WorthQueryPrimaryGraphApplicationRuntime,
 };
 
-impl<Schema: worth_query_installation::facade::ApplicationSchema>
-    WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub(in crate::domain_computation::primary_graph) trait ExternalSettlementScopedOps<
+    Schema: worth_query_installation::facade::ApplicationSchema,
+>:
+    crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>
 {
-    /// Correlation selects a terminal candidate; its original publication and
-    /// dispatch facts must match the guarded receipt before workflow use.
-    pub(in crate::domain_computation::primary_graph) fn resolve_guarded_workflow_external_settlement(
+    fn resolve_guarded_workflow_external_settlement(
         &self,
         receipt: &WorthQueryApplicationCommitReceipt,
     ) -> Result<bool, Denial> {
@@ -30,7 +30,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
         self.resolve_original_dispatch_terminal(record, receipt.committed_product_publication())
     }
 
-    pub(in crate::domain_computation::primary_graph) fn resolve_correction_external_settlement(
+    fn resolve_correction_external_settlement(
         &self,
         occurrence: &crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphCommittedApplication,
     ) -> Result<bool, Denial> {
@@ -59,15 +59,20 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
         }
         self.resolve_original_dispatch_terminal(record, occurrence.committed_product_publication())
     }
+}
 
+impl<Schema: worth_query_installation::facade::ApplicationSchema, HostRuntime: crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema> + ?Sized> ExternalSettlementScopedOps<Schema> for HostRuntime {}
+
+trait ExternalSettlementOwnOps<Schema: worth_query_installation::facade::ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>
+{
     fn resolve_original_dispatch_terminal(
         &self,
         record: &crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxRecord,
         publication: &crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
     ) -> Result<bool, Denial> {
         match self
-            .runtime
-            .primary_provider
+            .primary_provider()
             .lookup_completed_inbound(record.correlation())?
         {
             Some(terminal)
@@ -86,5 +91,8 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
     }
 }
 
+impl<Schema: worth_query_installation::facade::ApplicationSchema, HostRuntime: crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema> + ?Sized> ExternalSettlementOwnOps<Schema> for HostRuntime {}
+
 #[path = "external_settlement_court_doors_for_test.rs"]
 mod court_doors_for_test;
+pub use court_doors_for_test::ExternalSettlementCourtDoorsForTestOps;

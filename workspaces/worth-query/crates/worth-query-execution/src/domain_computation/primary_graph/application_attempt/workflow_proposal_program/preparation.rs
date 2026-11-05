@@ -1,4 +1,6 @@
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::primary_graph::application_attempt::ReadSetScopedOps;
+use crate::domain_computation::primary_graph::application_attempt::WorkflowProposalProgramPublicationScopedOps;
 use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 use worth_query_declaration::facade::{
     application_program::ApplicationWorkflowSpec,
@@ -144,7 +146,7 @@ pub struct WorthQueryWorkflowProposalAdapter;
 impl WorthQueryWorkflowProposalAdapter {
     pub fn resolve_replay<Schema, Operation, Input, Scope>(
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
         instance: PublishedWorkflowInstanceRef,
@@ -166,7 +168,7 @@ impl WorthQueryWorkflowProposalAdapter {
 
     pub fn resolve_replay_with_inputs<Schema, Operation, Input, Scope>(
         phase: &WorthQueryAdvancementPhase<'_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
         instance: PublishedWorkflowInstanceRef,
@@ -178,7 +180,7 @@ impl WorthQueryWorkflowProposalAdapter {
         Input: Clone + Send + Sync + 'static,
     {
         let idempotency = idempotency.bind_workflow_captured_inputs(captured.identity);
-        let phase_request = match phase.execution_request_for(&runtime.runtime.product_runtime) {
+        let phase_request = match phase.execution_request_for(runtime.product_runtime()) {
             Ok(request) => request,
             Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "workflow-phase"))),
         };
@@ -264,7 +266,7 @@ impl WorthQueryWorkflowProposalAdapter {
     pub fn compare_and_commit<Schema, Operation, Input, Scope>(
         phase: &WorthQueryAdvancementPhase<'_>,
 
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
         prepared: PreparedWorkflowProposal<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
     ) -> WorkflowProposalOutcome
@@ -273,7 +275,7 @@ impl WorthQueryWorkflowProposalAdapter {
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        let phase_request = match phase.execution_request_for(&runtime.runtime.product_runtime) {
+        let phase_request = match phase.execution_request_for(runtime.product_runtime()) {
             Ok(request) => request,
             Err(cause) => return WorkflowProposalOutcome::Application(
                 crate::domain_computation::request_execution::WorthQueryAdvancementDenial::from(

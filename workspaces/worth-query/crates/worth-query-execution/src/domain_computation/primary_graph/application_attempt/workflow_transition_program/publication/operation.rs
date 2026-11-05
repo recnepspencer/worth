@@ -296,13 +296,13 @@ impl WorkflowOperationAuthority {
     pub fn validate_before_handler<Schema>(
         &self,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
-        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial>
     where
         Schema: worth_query_installation::facade::ApplicationSchema,
     {
-        let phase_request = match phase.execution_request_for(&runtime.runtime.product_runtime) {
+        let phase_request = match phase.execution_request_for(runtime.product_runtime()) {
             Ok(request) => request,
             Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::ForeignPhase, "application-read-phase")),
         };
@@ -317,12 +317,12 @@ impl WorkflowOperationAuthority {
                 "workflow operation authority is no longer current",
             )
         };
-        if runtime.runtime.authority_identity().as_u64() != self.runtime_authority {
+        if runtime.authority_identity().as_u64() != self.runtime_authority {
             return Err(mismatch());
         }
         check_request_live(request, "workflow operation authority")?;
         let selected = runtime
-            .on_branch(self.observation.product_branch())
+            .application_runtime().on_branch(self.observation.product_branch())
             .select_with_request(execution)
             .map_err(|denial| match denial {
                 crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(cause) => WorthQueryApplicationAttemptDenial::new(
@@ -342,7 +342,7 @@ impl WorkflowOperationAuthority {
         }
         let lease = WorthQueryApplicationSnapshotLease::acquire(
             &phase
-                .execution_request_for(&runtime.runtime.product_runtime)
+                .execution_request_for(runtime.product_runtime())
                 .map_err(|_| {
                     WorthQueryApplicationAttemptDenial::new(
                         WorthQueryApplicationAttemptDenialKind::ForeignPhase,

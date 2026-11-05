@@ -1,3 +1,5 @@
+use crate::domain_computation::primary_graph::application_attempt::EntryCustodyScopedOps;
+use crate::domain_computation::primary_graph::application_attempt::OutputSourceOps;
 use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 use worth_foundational::facade::{AspectValue, InternedString};
 use worth_query_declaration::facade::application_program::{
@@ -174,15 +176,12 @@ pub enum WorkflowDefinitionPublicationOutcome {
     ProjectionDenied(super::super::WorthQueryApplicationCommitReceipt),
 }
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub(in crate::domain_computation::primary_graph) trait PublicationScopedOps<Schema>:
+    crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub(in crate::domain_computation::primary_graph) fn compare_and_commit_workflow_definition_publication<
-        Operation: 'static,
-        Input,
-        Scope,
-    >(
+    fn compare_and_commit_workflow_definition_publication<Operation: 'static, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -209,6 +208,7 @@ where
             }
         };
         let presented = match self
+            .application_runtime()
             .installed_program_support()
             .ok_or_else(
                 super::super::WorthQueryApplicationCommitDenial::application_program_required,
@@ -240,6 +240,9 @@ where
         }
     }
 }
+
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema> + ?Sized> PublicationScopedOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema, {}
 
 fn project_published(
     receipt: super::super::WorthQueryApplicationCommitReceipt,

@@ -11,40 +11,43 @@ pub(in crate::domain_computation::primary_graph) use carrier::CommitCarrier;
 /// The exact program whose installed seal and current authority were readmitted.
 /// Entry callers can neither construct nor extract its owned program.
 pub struct ReadmittedCommitProgram<'a, Schema, Program> {
-    application: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &'a dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
     program: Program,
 }
 
 /// Commit work borrows the exact advancement that checked its current authority.
 pub struct CurrentCommitProgram<'a, 'phase, 'request, Schema, Program> {
-    application: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &'a dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
     program: Program,
     phase: &'phase WorthQueryAdvancementPhase<'request>,
 }
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+pub(in crate::domain_computation) trait EntryCustodyScopedOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>
+{
     #[inline]
-    pub(in crate::domain_computation) fn validate_commit_program<Program: CommitCarrier<Schema>>(
+    fn validate_commit_program<Program: CommitCarrier<Schema>>(
         &self,
         program: Program,
     ) -> Result<ReadmittedCommitProgram<'_, Schema, Program>, Program::Refusal> {
         let (core, tag) = program.admission().reentry_parts();
-        if let Err(outcome) = self.runtime.validate_commit_program(
+        if let Err(outcome) = crate::domain_computation::primary_graph::application_attempt::effect_program::validate_installed_commit_program(
+            self.application_attempt_host(),
             None,
             core,
             tag,
-            &self.installed_schema.binding_identity(),
+            &self.installed_schema().binding_identity(),
         ) {
             return Err(program.refuse(outcome));
         }
         Ok(ReadmittedCommitProgram {
-            application: self,
+            application: self.application_attempt_host(),
             program,
         })
     }
 
     #[inline]
-    pub(in crate::domain_computation) fn validate_commit_program_in_advancement<
+    fn validate_commit_program_in_advancement<
         'a,
         'phase,
         'request,
@@ -55,21 +58,24 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         program: Program,
     ) -> Result<CurrentCommitProgram<'a, 'phase, 'request, Schema, Program>, Program::Refusal> {
         let (core, tag) = program.admission().reentry_parts();
-        if let Err(outcome) = self.runtime.validate_commit_program(
+        if let Err(outcome) = crate::domain_computation::primary_graph::application_attempt::effect_program::validate_installed_commit_program(
+            self.application_attempt_host(),
             Some(phase),
             core,
             tag,
-            &self.installed_schema.binding_identity(),
+            &self.installed_schema().binding_identity(),
         ) {
             return Err(program.refuse(outcome));
         }
         Ok(CurrentCommitProgram {
-            application: self,
+            application: self.application_attempt_host(),
             program,
             phase,
         })
     }
 }
+
+impl<Schema: ApplicationSchema, HostRuntime: crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema> + ?Sized> EntryCustodyScopedOps<Schema> for HostRuntime {}
 
 impl<'a, Schema: ApplicationSchema, Program: CommitCarrier<Schema>>
     ReadmittedCommitProgram<'a, Schema, Program>
@@ -91,10 +97,11 @@ impl<'a, Schema: ApplicationSchema, Program: CommitCarrier<Schema>>
         phase: &'phase WorthQueryAdvancementPhase<'request>,
     ) -> Result<CurrentCommitProgram<'a, 'phase, 'request, Schema, Program>, Program::Refusal> {
         let (core, _) = self.program.admission().reentry_parts();
-        if let Err(outcome) = self
-            .application
-            .runtime
-            .validate_commit_lapse_in_advancement(phase, core)
+        if let Err(outcome) = crate::domain_computation::primary_graph::application_attempt::effect_program::validate_commit_lapse(
+            self.application,
+            phase,
+            core,
+        )
         {
             return Err(self.program.refuse(outcome));
         }
@@ -122,3 +129,5 @@ mod elevation_request;
 mod mandatory_review;
 
 mod court_doors_for_test;
+pub use court_doors_for_test::EntryCustodyDoorsOps;
+pub use court_doors_for_test::EntryCustodyEntryCustodyDoorsOps;

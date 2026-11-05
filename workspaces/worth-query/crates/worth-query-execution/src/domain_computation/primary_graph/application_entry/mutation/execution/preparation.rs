@@ -1,6 +1,8 @@
 //! Owner-only mutation preparation; all lent read capability ends here.
 use super::super::DecisionReader;
 use super::*;
+use crate::domain_computation::primary_graph::application_attempt::ReadSetScopedOps;
+use crate::domain_computation::primary_graph::application_attempt::SourceFactsScopedOps;
 use crate::domain_computation::primary_graph::application_entry::mutation::OperationHandler;
 use crate::domain_computation::primary_graph::handler::RegistryScopedOps;
 

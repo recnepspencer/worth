@@ -57,7 +57,7 @@ pub struct WorthQueryRunningApplicationCommit<
 pub fn start_managed_application_commit<Schema, Operation, Input, Scope>(
     phase: &WorthQueryAdvancementPhase<'_>,
 
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
     prepared: WorthQueryPreparedApplicationCommit<Schema, Operation, Input, Scope>,
 ) -> Result<
     WorthQueryRunningApplicationCommit<Schema, Operation, Input, Scope>,
@@ -87,7 +87,7 @@ where
     )
     .map_err(|_| denied(DenialStage::ManagedRunAdmission))?;
     let execution = phase
-        .execution_request_for(&application.runtime.product_runtime)
+        .execution_request_for(application.product_runtime())
         .map_err(|foreign| {
             crate::domain_computation::request_execution::WorthQueryAdvancementDenial::from(foreign)
                 .into_commit_outcome()
@@ -105,7 +105,6 @@ where
         .take_operation_capacity()
         .ok_or_else(|| denied(DenialStage::ResourceAdmission))?;
     let attempt = application
-        .runtime
         .execution()
         .start_reserved_direct_resource_attempt(&operation, reserved)
         .map_err(|_| denied(DenialStage::ResourceAdmission))?;
@@ -113,15 +112,10 @@ where
         lease.product(),
         SnapshotReadPacket::new(Vec::new()),
     );
-    let request_bridge = application
-        .runtime
-        .bridge
-        .ordinary()
-        .fork_managed_request_lane();
+    let request_bridge = application.bridge().ordinary().fork_managed_request_lane();
     let run_admission = application
-        .runtime
         .execution()
-        .managed_run_admission(&request_bridge, &application.runtime.product_runtime.source);
+        .managed_run_admission(&request_bridge, &application.product_runtime().source);
     let running = run_admission
         .admit_direct(&operation, attempt, read_request, execution)
         .map_err(|failure| {
@@ -156,7 +150,7 @@ where
 }
 
 fn bind_execution_operation<Schema, Operation, Input, Scope>(
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
     admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     lease: &WorthQueryApplicationSnapshotLease,
     effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture,
@@ -168,8 +162,7 @@ where
 {
     let snapshot = lease.snapshot();
     application
-        .runtime
-        .primary_provider
+        .primary_provider()
         .observe_managed_application_bridge_plan();
     let branch = admission.graph_work().branch().truth().clone();
     let bridge_snapshot = lease
@@ -178,8 +171,7 @@ where
         .snapshot_identity()
         .clone();
     application
-        .runtime
-        .bridge
+        .bridge()
         .ordinary()
         .plan_truth_view_packet(
             HistoricalEvaluationDeclaration::new(
@@ -207,17 +199,16 @@ where
         .map_err(|_| denied(DenialStage::BasisAdmission))?;
     WorthQueryExecutionBoundOperationAuthority::bind_application(
         WorthQueryApplicationOperationBindingInput {
-            runtime: application.runtime.execution(),
-            owner: application.installed_schema.owner(),
+            runtime: application.execution(),
+            owner: application.installed_schema().owner(),
             installed_operation_fingerprint: admission.retain_installed_operation_fingerprint(),
             operation_slot: admission.operation().into(),
             resource_binding_identity: admission.retain_resource_binding_identity(),
             basis: &basis,
             contracts: admission.allowed_graph_contract(),
-            graph: application.runtime.primary_graph_authority(),
+            graph: application.primary_graph_authority(),
             support: application
-                .runtime
-                .primary_provider
+                .primary_provider()
                 .application_resource_support(),
             graph_work_session: admission.graph_work_session_identity(),
             graph_work_managed_run: admission.graph_work_managed_run_identity(),

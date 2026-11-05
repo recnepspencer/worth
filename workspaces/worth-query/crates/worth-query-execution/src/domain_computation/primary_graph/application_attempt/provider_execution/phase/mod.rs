@@ -24,4 +24,7 @@ pub(super) use prepared::running::{
 };
 pub(super) use prepared::running::WorthQueryRunningApplicationCommit;
 
+pub use prepared::EntryCustodyDoorsOps;
+pub use prepared::EntryCustodyEntryCustodyDoorsOps;
+pub(in crate::domain_computation) use prepared::EntryCustodyScopedOps;
 pub(in crate::domain_computation::primary_graph) use prepared::ReadmittedCommitProgram;

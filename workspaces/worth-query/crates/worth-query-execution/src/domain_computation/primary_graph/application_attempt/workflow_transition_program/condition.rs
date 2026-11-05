@@ -23,7 +23,7 @@ where
     pub(super) fn settle(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
         sources: WorthQueryWorkflowConditionSources<Schema>,
     ) -> Result<
         PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
@@ -33,10 +33,7 @@ where
         if !supplies(sources.operands(), self.required.operands()) {
             return Err(denial(&node_path));
         }
-        let graph = runtime
-            .runtime
-            .primary_graph()
-            .ok_or_else(|| denial(&node_path))?;
+        let graph = runtime.primary_graph().ok_or_else(|| denial(&node_path))?;
         let selected_product = crate::basis::WorthQueryProductBranchReadIdentity::from_observation(
             self.admitted.read_set().lease.product().observation(),
         );
@@ -56,7 +53,7 @@ where
             currentness_facts.extend(
                 source
                     .validate_and_into_facts(
-                        runtime.runtime.authority_identity().as_u64(),
+                        runtime.authority_identity().as_u64(),
                         &runtime.installed_schema().binding_identity(),
                         self.admitted.read_set().admission.graph_work_branch(),
                         self.admitted.subject(),

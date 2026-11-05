@@ -1,7 +1,10 @@
 use super::*;
+use crate::domain_computation::primary_graph::application_attempt::EntryCustodyScopedOps;
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub fn compare_and_commit_application<Operation, Input, Scope>(
+pub trait ApplicationCommitOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>
+{
+    fn compare_and_commit_application<Operation, Input, Scope>(
         &self,
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
@@ -19,7 +22,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     }
 
     #[doc(hidden)]
-    pub fn compare_and_commit_application_in_advancement<Operation, Input, Scope>(
+    fn compare_and_commit_application_in_advancement<Operation, Input, Scope>(
         &self,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
@@ -36,12 +39,16 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         };
         entry.compare_and_commit_application_in_advancement(idempotency, allocation_policy)
     }
+}
 
-    pub(in crate::domain_computation::primary_graph) fn compare_and_commit_application_in_advancement_with_history<
-        Operation,
-        Input,
-        Scope,
-    >(
+impl<Schema: ApplicationSchema, HostRuntime: crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema> + ?Sized> ApplicationCommitOps<Schema> for HostRuntime {}
+
+pub(in crate::domain_computation::primary_graph) trait ApplicationCommitScopedOps<
+    Schema: ApplicationSchema,
+>:
+    crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>
+{
+    fn compare_and_commit_application_in_advancement_with_history<Operation, Input, Scope>(
         &self,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
@@ -64,3 +71,5 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         )
     }
 }
+
+impl<Schema: ApplicationSchema, HostRuntime: crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema> + ?Sized> ApplicationCommitScopedOps<Schema> for HostRuntime {}

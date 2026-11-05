@@ -1,10 +1,11 @@
 use super::*;
+use crate::domain_computation::primary_graph::application_attempt::ApplicationAttemptIdempotencyResolutionScopedOps;
 
 impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation, Input, Scope> {
     pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) fn resolve_condition_replay(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
         required: &RequiredWorkflowCondition,
         sources: &crate::domain_computation::primary_graph::WorthQueryWorkflowConditionSources<
             Schema,
@@ -126,7 +127,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
             else {
                 return Ok(None);
             };
-            if observed.runtime_authority != runtime.runtime.authority_identity().as_u64()
+            if observed.runtime_authority != runtime.authority_identity().as_u64()
                 || observed.schema_binding != runtime.installed_schema().binding_identity()
                 || observed.query_identifier.as_str() != operand.query
                 || observed.query_identity != *expected_query_identity
@@ -159,9 +160,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
             ),
             WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) => Some(
                 runtime
-                    .runtime
-                    .primary_provider
-                    .graph
+                    .provider_graph()
                     .with_runtime(execution, |relational| {
                         super::super::project(
                             execution,

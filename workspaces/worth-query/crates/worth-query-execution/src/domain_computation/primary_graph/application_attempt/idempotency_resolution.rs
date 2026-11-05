@@ -67,11 +67,12 @@ pub enum WorthQueryGuardedWorkflowOperationCustody {
     Indeterminate(WorthQueryApplicationIdempotencyResolutionDenial),
 }
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub trait IdempotencyResolutionOps<Schema>:
+    crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub fn resolve_admitted_guarded_workflow_operation_custody<Operation, Input, Scope>(
+    fn resolve_admitted_guarded_workflow_operation_custody<Operation, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
@@ -86,16 +87,16 @@ where
         Input: Clone + Send + Sync + 'static,
     {
         if !admission.belongs_to(
-            self.runtime.authority_identity(),
-            &self.installed_schema.binding_identity(),
+            self.authority_identity(),
+            &self.installed_schema().binding_identity(),
         ) {
             return Err(WorthQueryApplicationIdempotencyResolutionDenial::foreign_admission());
         }
         admission
             .validate_projection_authority(
-                self.runtime.authority_identity(),
-                &self.installed_schema.binding_identity(),
-                &self.runtime.installed_operations,
+                self.authority_identity(),
+                &self.installed_schema().binding_identity(),
+                self.installed_operations(),
             )
             .map_err(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization)?;
         if !binding.matches_guarded_workflow_effect(transition_identity) {
@@ -107,7 +108,7 @@ where
             // Completed custody keeps its actual executor. The fresh actor
             // must independently admit the same installed operation/subject,
             // but cannot rewrite the original effect's principal-bound key.
-            if receipt.runtime_authority() != self.runtime.authority_identity()
+            if receipt.runtime_authority() != self.authority_identity()
                 || receipt.installed_operation() != admission.installed_operation_identity_bytes()
                 || original.binding_identity() != scope.binding_identity()
                 || original.operation_authority_identity() != scope.operation_authority_identity()
@@ -143,11 +144,10 @@ where
             .mutation_product()
             .ok_or_else(WorthQueryApplicationIdempotencyResolutionDenial::foreign_admission)?
             .publication_binding();
-        let command_lane = self.runtime.primary_provider.correction_commit_lane(&bound);
+        let command_lane = self.primary_provider().correction_commit_lane(&bound);
         let _command = command_lane.as_ref().map(|lane| lane.enter());
         let commit_lane = self
-            .runtime
-            .primary_provider
+            .primary_provider()
             .application_branch_commit_lane(product.observation());
         let coordination = commit_lane.enter();
         let proof = self
@@ -155,8 +155,7 @@ where
             .map_err(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization)?;
         let custody = proof
             .govern((), |()| {
-                self.runtime
-                    .primary_provider
+                self.primary_provider()
                     .resolve_guarded_workflow_operation_custody(execution, bound, &product)
             })
             .map_err(|(_, denial)| {
@@ -228,7 +227,7 @@ where
         })
     }
 
-    pub fn resolve_admitted_application_idempotency<Operation, Input, Scope>(
+    fn resolve_admitted_application_idempotency<Operation, Input, Scope>(
         &self,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
@@ -237,7 +236,7 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
-        let execution = phase.execution_request_for(&self.runtime.product_runtime).map_err(|_| {
+        let execution = phase.execution_request_for(self.product_runtime()).map_err(|_| {
             WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(
                 crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(
                     crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase),
@@ -247,12 +246,17 @@ where
         })?;
         self.resolve_admitted_application_idempotency_with_request(&execution, admission, binding)
     }
+}
 
-    pub(in crate::domain_computation) fn resolve_admitted_application_idempotency_with_request<
-        Operation,
-        Input,
-        Scope,
-    >(
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema> + ?Sized> IdempotencyResolutionOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema, {}
+
+pub(in crate::domain_computation) trait IdempotencyResolutionScopedOps<Schema>:
+    crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>
+where
+    Schema: ApplicationSchema,
+{
+    fn resolve_admitted_application_idempotency_with_request<Operation, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
@@ -268,12 +272,18 @@ where
                     .expect("one requested idempotency binding yields one read")
             })
     }
+}
 
-    pub(in crate::domain_computation::primary_graph) fn resolve_admitted_application_idempotencies<
-        Operation,
-        Input,
-        Scope,
-    >(
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema> + ?Sized> IdempotencyResolutionScopedOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema, {}
+
+pub(in crate::domain_computation::primary_graph) trait ApplicationAttemptIdempotencyResolutionScopedOps<
+    Schema,
+>:
+    crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema> where
+    Schema: ApplicationSchema,
+{
+    fn resolve_admitted_application_idempotencies<Operation, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
@@ -286,16 +296,16 @@ where
         Input: Clone + Send + Sync + 'static,
     {
         if !admission.belongs_to(
-            self.runtime.authority_identity(),
-            &self.installed_schema.binding_identity(),
+            self.authority_identity(),
+            &self.installed_schema().binding_identity(),
         ) {
             return Err(WorthQueryApplicationIdempotencyResolutionDenial::foreign_admission());
         }
         admission
             .validate_projection_authority(
-                self.runtime.authority_identity(),
-                &self.installed_schema.binding_identity(),
-                &self.runtime.installed_operations,
+                self.authority_identity(),
+                &self.installed_schema().binding_identity(),
+                self.installed_operations(),
             )
             .map_err(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization)?;
         let bindings = bindings
@@ -306,8 +316,7 @@ where
             })
             .collect::<Vec<_>>();
         let command_lanes = self
-            .runtime
-            .primary_provider
+            .primary_provider()
             .correction_commit_lanes(bindings.iter().map(|(_, binding)| *binding));
         let _commands = command_lanes
             .iter()
@@ -319,8 +328,7 @@ where
             .ok_or_else(WorthQueryApplicationIdempotencyResolutionDenial::foreign_admission)?
             .publication_binding();
         let commit_lane = self
-            .runtime
-            .primary_provider
+            .primary_provider()
             .application_branch_commit_lane(product.observation());
         let coordination = commit_lane.enter();
         let proof = self
@@ -331,8 +339,7 @@ where
                 bindings
                     .iter()
                     .map(|(_, binding)| {
-                        self.runtime
-                            .primary_provider
+                        self.primary_provider()
                             .resolve_idempotency_binding_at_product(execution, *binding, &product)
                     })
                     .collect::<Vec<_>>()
@@ -385,3 +392,8 @@ where
             .collect()
     }
 }
+
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema> + ?Sized> ApplicationAttemptIdempotencyResolutionScopedOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema, {}
+pub use external_settlement::ExternalSettlementCourtDoorsForTestOps;
+pub(in crate::domain_computation::primary_graph) use external_settlement::ExternalSettlementScopedOps;

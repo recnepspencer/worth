@@ -1,3 +1,5 @@
+use crate::domain_computation::primary_graph::application_attempt::IdempotencyResolutionScopedOps;
+use crate::domain_computation::primary_graph::application_attempt::OutputSourceOps;
 use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 use worth_foundational::facade::{AspectFieldLocator, AspectValue, InternedString};
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
@@ -75,16 +77,14 @@ pub enum WorkflowProposalOutcome {
     ProjectionDenied(super::super::WorthQueryApplicationCommitReceipt),
 }
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
-where
+pub(in crate::domain_computation::primary_graph) trait WorkflowProposalProgramPublicationScopedOps<
+    Schema,
+>:
+    crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema> where
     Schema: ApplicationSchema,
 {
     #[allow(clippy::too_many_arguments)]
-    pub(in crate::domain_computation::primary_graph) fn resolve_workflow_proposal_replay<
-        Operation,
-        Input,
-        Scope,
-    >(
+    fn resolve_workflow_proposal_replay<Operation, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
@@ -115,7 +115,6 @@ where
             }
             WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) => {
                 let layout = self
-                    .runtime
                     .primary_graph()
                     .expect("application runtime requires primary graph")
                     .layout()
@@ -139,11 +138,7 @@ where
         Ok(Some(outcome))
     }
 
-    pub(in crate::domain_computation::primary_graph) fn compare_and_commit_workflow_proposal<
-        Operation: 'static,
-        Input,
-        Scope,
-    >(
+    fn compare_and_commit_workflow_proposal<Operation: 'static, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -154,7 +149,7 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
-        if let Err(cause) = phase.execution_request_for(&self.runtime.product_runtime) {
+        if let Err(cause) = phase.execution_request_for(self.product_runtime()) {
             return WorkflowProposalOutcome::Application(
                 crate::domain_computation::request_execution::WorthQueryAdvancementDenial::from(
                     cause,
@@ -180,6 +175,7 @@ where
             progress_update,
         } = prepared;
         let presented = match self
+            .application_runtime()
             .installed_program_support()
             .ok_or_else(
                 super::super::WorthQueryApplicationCommitDenial::application_program_required,
@@ -223,22 +219,24 @@ where
         {
             let committed_revision = performed.receipt().commit_reference().version_id;
             let progress_key = progress_update.key();
-            let _ = self
-                .runtime
-                .primary_provider
-                .graph
-                .with_workflow_instance_progress_mut(progress_key, |retention| {
+            let _ = self.provider_graph().with_workflow_instance_progress_mut(
+                progress_key,
+                |retention| {
                     progress_update.apply(
                         retention,
                         committed_revision,
                         performed.transition(),
                         None,
                     )
-                });
+                },
+            );
         }
         projected
     }
 }
+
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema> + ?Sized> WorkflowProposalProgramPublicationScopedOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema, {}
 
 struct ProjectionContext {
     transition_identity_locator: AspectFieldLocator,

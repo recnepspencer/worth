@@ -10,7 +10,7 @@ where
         Binding,
     >(
         self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
         receipt: &WorthQueryApplicationCommitReceipt,
     ) -> Result<
         PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
@@ -34,7 +34,7 @@ where
         Binding,
     >(
         self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
         receipt: &WorthQueryApplicationCommitReceipt,
         recovery: &crate::domain_computation::application_aftermath::WorthQueryRecoverySafeRetryAdmission,
     ) -> Result<

@@ -1,4 +1,5 @@
 use super::*;
+use crate::domain_computation::primary_graph::application_attempt::EntryScopedOps;
 use crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation;
 impl<Schema: ApplicationSchema, Operation, Input, Scope>
     CurrentCommitProgram<
@@ -40,7 +41,7 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
             phase,
         } = self;
 
-        let execution = match phase.execution_request_for(&application.runtime.product_runtime) {
+        let execution = match phase.execution_request_for(application.product_runtime()) {
             Ok(execution) => execution,
             Err(cause) => {
                 return crate::domain_computation::request_execution::WorthQueryAdvancementDenial::from(
@@ -85,6 +86,7 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
         let request = self.request_scope().clone();
         let application = self.application;
         application
+            .application_runtime()
             .with_funded_application_advancement(&request, allocation_policy, |phase| {
                 let entry = match self.in_advancement(&phase) {
                     Ok(entry) => entry,

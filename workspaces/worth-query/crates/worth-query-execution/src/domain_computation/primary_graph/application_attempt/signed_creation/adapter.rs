@@ -55,7 +55,7 @@ impl WorthQuerySignedCreationAdapter {
     pub fn prepare<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>(
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         phase: &WorthQueryAdvancementPhase<'_>,
-        application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        application: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
         candidate: sealing::BodyCandidate<Schema, Binding>,
         identities: &ApplicationMutationIdentities<'_, Schema, Binding>,
     ) -> Result<sealing::BodyCandidate<Schema, Binding>, WorthQuerySignedCreationPreparationDenial>

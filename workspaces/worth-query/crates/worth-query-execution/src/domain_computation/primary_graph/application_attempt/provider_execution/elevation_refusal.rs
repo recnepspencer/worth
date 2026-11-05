@@ -6,12 +6,12 @@ use {
     crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
 };
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub(in crate::domain_computation::primary_graph) fn refuse_elevation_request<
-        Operation,
-        Input,
-        Scope,
-    >(
+pub(in crate::domain_computation::primary_graph) trait ElevationRefusalScopedOps<
+    Schema: ApplicationSchema,
+>:
+    crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>
+{
+    fn refuse_elevation_request<Operation, Input, Scope>(
         &self,
         candidate: WorthQueryElevationRequestProgram<Schema, Operation, Input, Scope>,
         denial: WorthQueryAdvancementDenial,
@@ -29,11 +29,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         requested_outcome(denial.into_commit_outcome(), binding)
     }
 
-    pub(in crate::domain_computation::primary_graph) fn refuse_elevation_approval<
-        Operation,
-        Input,
-        Scope,
-    >(
+    fn refuse_elevation_approval<Operation, Input, Scope>(
         &self,
         candidate: WorthQueryElevationApprovalProgram<Schema, Operation, Input, Scope>,
         denial: WorthQueryAdvancementDenial,
@@ -49,11 +45,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         approved_outcome(denial.into_commit_outcome(), binding)
     }
 
-    pub(in crate::domain_computation::primary_graph) fn refuse_elevation_close<
-        Operation,
-        Input,
-        Scope,
-    >(
+    fn refuse_elevation_close<Operation, Input, Scope>(
         &self,
         candidate: WorthQueryElevationCloseProgram<Schema, Operation, Input, Scope>,
         denial: WorthQueryAdvancementDenial,
@@ -65,11 +57,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         closed_outcome(denial.into_commit_outcome(), binding)
     }
 
-    pub(in crate::domain_computation::primary_graph) fn refuse_mandatory_review<
-        Operation,
-        Input,
-        Scope,
-    >(
+    fn refuse_mandatory_review<Operation, Input, Scope>(
         &self,
         candidate: WorthQueryMandatoryReviewProgram<Schema, Operation, Input, Scope>,
         denial: WorthQueryAdvancementDenial,
@@ -81,3 +69,5 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         reviewed_outcome(denial.into_commit_outcome(), binding)
     }
 }
+
+impl<Schema: ApplicationSchema, HostRuntime: crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema> + ?Sized> ElevationRefusalScopedOps<Schema> for HostRuntime {}

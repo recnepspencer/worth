@@ -1,10 +1,13 @@
 use super::*;
+use crate::domain_computation::primary_graph::application_attempt::EntryCustodyScopedOps;
+use crate::domain_computation::primary_graph::application_attempt::EntryScopedOps;
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub trait MandatoryReviewOps<Schema>:
+    crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub fn compare_and_commit_mandatory_review<Operation, Input, Scope>(
+    fn compare_and_commit_mandatory_review<Operation, Input, Scope>(
         &self,
         program: WorthQueryMandatoryReviewProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
@@ -19,39 +22,45 @@ where
         };
         let request = program.request_scope().clone();
         let mut candidate = Some(program);
-        self.with_application_advancement(&request, |active_phase| {
-            let execution = active_phase
-                .execution_request_for(&self.runtime.product_runtime)
-                .map_err(
+        self.application_runtime()
+            .with_application_advancement(&request, |active_phase| {
+                let execution = active_phase
+                    .execution_request_for(self.product_runtime())
+                    .map_err(
                     crate::domain_computation::request_execution::WorthQueryAdvancementDenial::from,
                 )?;
-            Ok(
-                match candidate
-                    .take()
-                    .expect("candidate admitted once")
-                    .in_advancement(&active_phase)
-                {
-                    Ok(entry) => entry.compare_and_commit_mandatory_review_for_program(
-                        &execution,
-                        idempotency,
-                        self.direct_operation_commit_denial::<Operation>(),
-                    ),
-                    Err(outcome) => outcome,
-                },
-            )
-        })
-        .and_then(std::convert::identity)
-        .unwrap_or_else(|denial| match candidate.take() {
-            Some(candidate) => candidate.refuse_advancement(denial),
-            None => WorthQueryMandatoryReviewOutcome::Indeterminate,
-        })
+                Ok(
+                    match candidate
+                        .take()
+                        .expect("candidate admitted once")
+                        .in_advancement(&active_phase)
+                    {
+                        Ok(entry) => entry.compare_and_commit_mandatory_review_for_program(
+                            &execution,
+                            idempotency,
+                            self.direct_operation_commit_denial::<Operation>(),
+                        ),
+                        Err(outcome) => outcome,
+                    },
+                )
+            })
+            .and_then(std::convert::identity)
+            .unwrap_or_else(|denial| match candidate.take() {
+                Some(candidate) => candidate.refuse_advancement(denial),
+                None => WorthQueryMandatoryReviewOutcome::Indeterminate,
+            })
     }
+}
 
-    pub(in crate::domain_computation::primary_graph) fn compare_and_commit_mandatory_review_for_program<
-        Operation,
-        Input,
-        Scope,
-    >(
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema> + ?Sized> MandatoryReviewOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema, {}
+
+pub(in crate::domain_computation::primary_graph) trait MandatoryReviewScopedOps<Schema>:
+    crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>
+where
+    Schema: ApplicationSchema,
+{
+    fn compare_and_commit_mandatory_review_for_program<Operation, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -70,3 +79,6 @@ where
         entry.compare_and_commit_mandatory_review_for_program(execution, idempotency, direct_denial)
     }
 }
+
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema> + ?Sized> MandatoryReviewScopedOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema, {}

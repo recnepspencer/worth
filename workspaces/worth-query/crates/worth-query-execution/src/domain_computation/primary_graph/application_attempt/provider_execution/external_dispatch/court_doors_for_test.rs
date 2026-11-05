@@ -1,12 +1,13 @@
 //! Sealed test doors over this module's private members.
 use super::*;
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub trait ExternalDispatchDoorsOps<Schema>:
+    crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>
 where
     Schema: ApplicationSchema,
 {
     #[doc(hidden)]
-    pub fn perform_committed_external_dispatch_for_test(
+    fn perform_committed_external_dispatch_for_test(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -19,3 +20,6 @@ where
         )
     }
 }
+
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema> + ?Sized> ExternalDispatchDoorsOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema, {}

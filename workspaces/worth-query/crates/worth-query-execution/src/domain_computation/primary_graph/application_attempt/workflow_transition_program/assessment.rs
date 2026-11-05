@@ -35,7 +35,7 @@ where
     pub(super) fn settle<Query>(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
         settlement: &WorthQueryOutputDemandSettlement,
         source: &WorthQueryObservedSource<Query>,
         posture: WorthQueryWorkflowAssessmentPosture,
@@ -253,7 +253,7 @@ pub(super) fn ensure_current<Schema, Operation, Input, Scope>(
 
 fn validate<Schema, Operation, Input, Scope, Query>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
     prepared: &PreparedWorkflowAssessment<Schema, Operation, Input, Scope>,
     settlement: &WorthQueryOutputDemandSettlement,
     source: &WorthQueryObservedSource<Query>,

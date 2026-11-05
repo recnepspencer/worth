@@ -1,13 +1,14 @@
 //! Readmit installed lifecycle programs while returning their original binding on refusal.
 use super::*;
+use crate::domain_computation::primary_graph::application_attempt::EntryCustodyScopedOps;
 use crate::domain_computation::primary_graph::application_attempt::ReadmittedCommitProgram;
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub(in crate::domain_computation::primary_graph) fn readmit_elevation_request_installation<
-        Operation,
-        Input,
-        Scope,
-    >(
+pub(in crate::domain_computation::primary_graph) trait InstalledReadmissionScopedOps<
+    Schema: ApplicationSchema,
+>:
+    crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>
+{
+    fn readmit_elevation_request_installation<Operation, Input, Scope>(
         &self,
         program: WorthQueryElevationRequestProgram<Schema, Operation, Input, Scope>,
     ) -> Result<
@@ -21,11 +22,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         self.validate_commit_program(program)
     }
 
-    pub(in crate::domain_computation::primary_graph) fn readmit_elevation_approval_installation<
-        Operation,
-        Input,
-        Scope,
-    >(
+    fn readmit_elevation_approval_installation<Operation, Input, Scope>(
         &self,
         program: WorthQueryElevationApprovalProgram<Schema, Operation, Input, Scope>,
     ) -> Result<
@@ -39,11 +36,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         self.validate_commit_program(program)
     }
 
-    pub(in crate::domain_computation::primary_graph) fn readmit_elevation_close_installation<
-        Operation,
-        Input,
-        Scope,
-    >(
+    fn readmit_elevation_close_installation<Operation, Input, Scope>(
         &self,
         program: WorthQueryElevationCloseProgram<Schema, Operation, Input, Scope>,
     ) -> Result<
@@ -57,11 +50,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         self.validate_commit_program(program)
     }
 
-    pub(in crate::domain_computation::primary_graph) fn readmit_mandatory_review_installation<
-        Operation,
-        Input,
-        Scope,
-    >(
+    fn readmit_mandatory_review_installation<Operation, Input, Scope>(
         &self,
         program: WorthQueryMandatoryReviewProgram<Schema, Operation, Input, Scope>,
     ) -> Result<
@@ -76,4 +65,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     }
 }
 
+impl<Schema: ApplicationSchema, HostRuntime: crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema> + ?Sized> InstalledReadmissionScopedOps<Schema> for HostRuntime {}
+
 mod court_doors_for_test;
+pub use court_doors_for_test::InstalledReadmissionDoorsOps;

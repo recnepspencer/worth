@@ -1,5 +1,6 @@
 //! Exact native settlement replay precedes ended-state observation, never fresh admission.
 use super::*;
+use crate::domain_computation::primary_graph::application_attempt::ApplicationAttemptIdempotencyResolutionScopedOps;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationIdempotencyResolution, WorthQueryApplicationUncommitted,
 };
@@ -7,7 +8,7 @@ use crate::domain_computation::primary_graph::{
 #[allow(clippy::too_many_arguments)]
 pub(super) fn resolve<S, O, I, Scope>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<S>,
     admission: &WorthQueryAdmittedApplicationOperation<S, O, I, Scope>,
     required: &RequiredWorkflowOperation,
     binding: WorthQueryApplicationIdempotencyBinding,
@@ -24,9 +25,7 @@ where
         .try_into()
         .expect("one native settlement key");
     let locator = runtime
-        .runtime
-        .primary_provider
-        .graph
+        .provider_graph()
         .layout
         .workflow()
         .transition
@@ -44,9 +43,7 @@ where
     };
     Ok(receipt.map(|receipt| {
         runtime
-            .runtime
-            .primary_provider
-            .graph
+            .provider_graph()
             .with_runtime(execution, |relational| {
                 super::super::super::publication::project(
                     execution,

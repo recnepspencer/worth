@@ -10,6 +10,9 @@ mod entity_selection;
 mod field_observation;
 mod forgery;
 mod installed_reentry;
+pub(in crate::domain_computation::primary_graph) use installed_reentry::{
+    validate_commit_lapse, validate_installed_commit_program,
+};
 pub(crate) mod model;
 mod operation_body;
 mod optional_field_authoring;

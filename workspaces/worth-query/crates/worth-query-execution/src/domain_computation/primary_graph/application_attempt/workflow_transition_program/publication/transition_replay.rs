@@ -2,6 +2,8 @@ use super::{
     PreparedWorkflowAdvance, RequiredWorkflowCondition, RequiredWorkflowOperation,
     WorkflowProgressOutcome,
 };
+use crate::domain_computation::primary_graph::application_attempt::ApplicationAttemptIdempotencyResolutionScopedOps;
+use crate::domain_computation::primary_graph::application_attempt::IdempotencyResolutionScopedOps;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitDenial, WorthQueryApplicationIdempotencyBinding,
     WorthQueryApplicationIdempotencyResolution, WorthQueryApplicationIdempotencyResolutionDenial,
@@ -21,7 +23,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
     pub(super) fn resolve_transition_replay(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
     ) -> Result<Option<WorkflowProgressOutcome>, WorthQueryApplicationIdempotencyResolutionDenial>
     where
@@ -143,7 +145,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                 WorthQueryApplicationIdempotencyResolution::Unseen => {}
                 WorthQueryApplicationIdempotencyResolution::IntentDrift => drift = true,
                 WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) => {
-                    return Ok(Some(runtime.runtime.primary_provider.graph.with_runtime(
+                    return Ok(Some(runtime.provider_graph().with_runtime(
                         execution,
                         |relational| {
                             super::project(
@@ -178,7 +180,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
     >(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
         required: &RequiredWorkflowOperation,
         receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
         idempotency: WorthQueryApplicationIdempotencyBinding,
@@ -301,9 +303,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
             .expect("one operation replay binding returns one resolution");
         let project_original = |receipt| {
             runtime
-                .runtime
-                .primary_provider
-                .graph
+                .provider_graph()
                 .with_runtime(execution, |relational| {
                     super::project(
                         execution,

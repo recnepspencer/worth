@@ -1,3 +1,5 @@
+use crate::domain_computation::primary_graph::application_attempt::EntryCustodyScopedOps;
+use crate::domain_computation::primary_graph::application_attempt::OutputSourceOps;
 use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
 use worth_query_installation::facade::ApplicationSchema;
@@ -76,15 +78,12 @@ pub enum WorkflowDefinitionRetirementOutcome {
     Application(WorthQueryApplicationUncommitted),
 }
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub(in crate::domain_computation::primary_graph) trait OutcomeScopedOps<Schema>:
+    crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub(in crate::domain_computation::primary_graph) fn compare_and_commit_workflow_definition_retirement<
-        Operation: 'static,
-        Input,
-        Scope,
-    >(
+    fn compare_and_commit_workflow_definition_retirement<Operation: 'static, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -110,6 +109,7 @@ where
             }
         };
         let presented = match self
+            .application_runtime()
             .installed_program_support()
             .ok_or_else(WorthQueryApplicationCommitDenial::application_program_required)
             .and_then(|support| support.present_for_commit(&program_revision))
@@ -141,6 +141,9 @@ where
         })
     }
 }
+
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema> + ?Sized> OutcomeScopedOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema, {}
 
 impl<Schema, Operation, Input, Scope>
     PreparedWorkflowDefinitionRetirement<Schema, Operation, Input, Scope>

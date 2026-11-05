@@ -296,3 +296,4 @@ fn observe_lineage(
     )?);
     Ok(lineage)
 }
+pub(in crate::domain_computation::primary_graph) use outcome::OutcomeScopedOps;

@@ -3,14 +3,14 @@
 use super::*;
 
 pub fn select_current_product<Schema: ApplicationSchema>(
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
     retained: &crate::basis::WorthQueryProductBranchLease,
 ) -> Result<crate::basis::WorthQueryProductBranchLease, WorthQueryApplicationCommitOutcome> {
     application
+        .application_runtime()
         .admit_with_observation_room(|| {
             application
-                .runtime
-                .product_runtime
+                .product_runtime()
                 .admit_product_occurrence(retained.observation().lifecycle_incarnation())
         })
         .map_err(|denial| {
@@ -27,7 +27,7 @@ pub fn select_current_product<Schema: ApplicationSchema>(
 /// any further head movement. Exact-parent candidates retain their old basis.
 pub(super) fn readmit_current_basis<Schema, Operation, Input, Scope>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
     admission: &mut WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     retained: WorthQueryApplicationSnapshotLease,
     current: crate::basis::WorthQueryProductBranchLease,
@@ -47,7 +47,7 @@ pub(super) fn readmit_current_basis<Schema, Operation, Input, Scope>(
         return Ok(retained);
     }
     let current_admission = acquire_current_lease(execution, &retained, current.retained_clone())?;
-    if let Some(support) = application.program_support.as_ref() {
+    if let Some(support) = application.program_support().as_ref() {
         super::super::super::program_occurrence_gate::require_readmitted_program_matches(
             execution,
             support,
@@ -106,12 +106,13 @@ pub(super) fn validate_operation_currentness<Schema, Operation, Input, Scope>(
 }
 
 pub(super) fn validate_elevation_currentness<Schema>(
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
     elevation_currentness: Option<WorthQueryElevationCommitCurrentness>,
 ) -> Result<(), WorthQueryApplicationCommitOutcome> {
-    if elevation_currentness.as_ref().is_some_and(|currentness| {
-        !currentness.remains_current(&application.runtime.authorization_clock)
-    }) {
+    if elevation_currentness
+        .as_ref()
+        .is_some_and(|currentness| !currentness.remains_current(application.authorization_clock()))
+    {
         Err(denied(DenialStage::DecisionReadSet))
     } else {
         Ok(())
@@ -121,12 +122,12 @@ pub(super) fn validate_elevation_currentness<Schema>(
 /// A workflow step prepared before its instance's deadline still commits only
 /// while the deadline lies ahead on the installed clock.
 pub(super) fn validate_workflow_deadline<Schema>(
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
     deadline: Option<u64>,
 ) -> Result<(), WorthQueryApplicationCommitOutcome> {
     deadline.map_or(Ok(()), |deadline| {
         super::super::super::super::workflow_deadline::ensure_before(
-            &application.runtime.authorization_clock,
+            application.authorization_clock(),
             deadline,
         )
         .map_err(|denial| {

@@ -1,5 +1,6 @@
 //! Exact selected-program and product observations shared by controls and local business actions.
 use super::*;
+use crate::domain_computation::primary_graph::application_attempt::ReadSetScopedOps;
 use crate::domain_computation::primary_graph::{
     WorthQueryCompleteApplicationReadSet, WorthQueryProjectedApplicationMutation,
 };

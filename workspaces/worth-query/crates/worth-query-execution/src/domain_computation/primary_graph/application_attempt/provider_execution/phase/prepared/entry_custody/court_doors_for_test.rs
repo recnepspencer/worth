@@ -1,9 +1,11 @@
 //! Sealed test doors over this module's private members.
 use super::*;
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+pub trait EntryCustodyDoorsOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>
+{
     #[doc(hidden)]
-    pub fn validate_commit_program_for_test<
+    fn validate_commit_program_for_test<
         Refusal,
         Program: CommitCarrier<Schema, Refusal = Refusal>,
     >(
@@ -14,9 +16,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     }
 }
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+impl<Schema: ApplicationSchema, HostRuntime: crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema> + ?Sized> EntryCustodyDoorsOps<Schema> for HostRuntime {}
+
+pub trait EntryCustodyEntryCustodyDoorsOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>
+{
     #[doc(hidden)]
-    pub fn validate_commit_program_in_advancement_for_test<
+    fn validate_commit_program_in_advancement_for_test<
         'a,
         'phase,
         'request,
@@ -30,6 +36,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Self::validate_commit_program_in_advancement::<Program>(self, phase, program)
     }
 }
+
+impl<Schema: ApplicationSchema, HostRuntime: crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema> + ?Sized> EntryCustodyEntryCustodyDoorsOps<Schema> for HostRuntime {}
 
 impl<'a, Schema: ApplicationSchema, Refusal, Program: CommitCarrier<Schema, Refusal = Refusal>>
     ReadmittedCommitProgram<'a, Schema, Program>

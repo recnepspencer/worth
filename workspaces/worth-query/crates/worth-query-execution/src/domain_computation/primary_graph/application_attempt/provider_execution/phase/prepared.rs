@@ -173,7 +173,7 @@ struct WorthQueryCurrentApplicationCommit<Schema, Operation, Input, Scope> {
 pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) use entry_custody::prepare_application_commit;
 
 fn prepare_authorized_application_commit<Schema, Operation, Input, Scope>(
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
     current: WorthQueryCurrentApplicationCommit<Schema, Operation, Input, Scope>,
 ) -> WorthQueryApplicationCommitPreparation<Schema, Operation, Input, Scope>
 where
@@ -206,13 +206,16 @@ where
         Err(outcome) => return terminal(outcome),
     }
     .with_workflow_approval_authority(workflow_approval_authority);
-    let Some(mutation_partition) = application.issue_application_mutation_partition() else {
+    let Some(mutation_partition) = application
+        .application_runtime()
+        .issue_application_mutation_partition()
+    else {
         return terminal(denied(DenialStage::ProposalBinding));
     };
     let effect_posture = provider.effect_posture;
     let native_reference_invariants = match native_reference_invariants::derive(
-        &application.runtime.primary_provider.graph.layout,
-        application.installed_schema.invariants(),
+        &application.provider_graph().layout,
+        application.installed_schema().invariants(),
         &provider.effects,
     ) {
         Ok(requirements) => requirements,
@@ -247,11 +250,11 @@ mod provider_attempt;
 use provider_attempt::prepare_application_provider_attempt;
 
 fn take_commit_authorization<Schema, Operation, Input, Scope>(
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
     admission: &mut WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
 ) -> Result<WorthQueryProviderCommitAuthorization, WorthQueryApplicationCommitOutcome> {
     admission
-        .take_authorization_dependencies(application.runtime.authorization.bridge())
+        .take_authorization_dependencies(application.authorization().bridge())
         .map_err(|denial| denied_with_detail(DenialStage::DecisionReadSet, denial.to_string()))
 }
 
@@ -281,3 +284,6 @@ const fn terminal<Schema, Operation, Input, Scope>(
 }
 
 mod court_doors_for_test;
+pub use entry_custody::EntryCustodyDoorsOps;
+pub use entry_custody::EntryCustodyEntryCustodyDoorsOps;
+pub(in crate::domain_computation) use entry_custody::EntryCustodyScopedOps;

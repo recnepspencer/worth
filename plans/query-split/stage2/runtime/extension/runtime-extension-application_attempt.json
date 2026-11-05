@@ -1,0 +1,450 @@
+{
+ "module": "domain_computation::primary_graph::application_attempt",
+ "blocks": 32,
+ "methods": 67,
+ "traits": [
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/elevation_approval_replay.rs",
+   "trait": "ElevationApprovalReplayOps",
+   "visibility": "pub",
+   "methods": [
+    "resolve_admitted_elevation_approval_replay"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/elevation_approval_replay.rs",
+   "trait": "ElevationApprovalReplayScopedOps",
+   "visibility": "pub(in crate::domain_computation)",
+   "methods": [
+    "resolve_admitted_elevation_approval_replay_with_request"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/elevation_close_replay.rs",
+   "trait": "ElevationCloseReplayOps",
+   "visibility": "pub",
+   "methods": [
+    "resolve_admitted_elevation_close_replay"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/idempotency_resolution.rs",
+   "trait": "IdempotencyResolutionOps",
+   "visibility": "pub",
+   "methods": [
+    "resolve_admitted_guarded_workflow_operation_custody",
+    "resolve_admitted_application_idempotency"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/idempotency_resolution.rs",
+   "trait": "IdempotencyResolutionScopedOps",
+   "visibility": "pub(in crate::domain_computation)",
+   "methods": [
+    "resolve_admitted_application_idempotency_with_request"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/idempotency_resolution.rs",
+   "trait": "ApplicationAttemptIdempotencyResolutionScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph)",
+   "methods": [
+    "resolve_admitted_application_idempotencies"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/idempotency_resolution/external_settlement.rs",
+   "trait": "ExternalSettlementScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph)",
+   "methods": [
+    "resolve_guarded_workflow_external_settlement",
+    "resolve_correction_external_settlement"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/idempotency_resolution/external_settlement.rs",
+   "trait": "ExternalSettlementOwnOps",
+   "visibility": "private",
+   "methods": [
+    "resolve_original_dispatch_terminal"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/idempotency_resolution/external_settlement_court_doors_for_test.rs",
+   "trait": "ExternalSettlementCourtDoorsForTestOps",
+   "visibility": "pub",
+   "methods": [
+    "resolve_guarded_workflow_external_settlement_for_test"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/mandatory_review_replay.rs",
+   "trait": "MandatoryReviewReplayOps",
+   "visibility": "pub",
+   "methods": [
+    "resolve_admitted_mandatory_review_replay"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/capability_revocation.rs",
+   "trait": "CapabilityRevocationOps",
+   "visibility": "pub",
+   "methods": [
+    "compare_and_commit_capability_revocation"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/capability_revocation.rs",
+   "trait": "CapabilityRevocationScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph)",
+   "methods": [
+    "compare_and_commit_capability_revocation_for_program"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/delegation_activation.rs",
+   "trait": "DelegationActivationOps",
+   "visibility": "pub",
+   "methods": [
+    "compare_and_commit_capability_delegation"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/delegation_activation.rs",
+   "trait": "DelegationActivationScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph)",
+   "methods": [
+    "compare_and_commit_capability_delegation_for_program"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/elevation_lifecycle/elevation_approval.rs",
+   "trait": "ElevationApprovalOps",
+   "visibility": "pub",
+   "methods": [
+    "compare_and_commit_elevation_approval"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/elevation_lifecycle/elevation_approval.rs",
+   "trait": "ElevationApprovalScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph)",
+   "methods": [
+    "compare_and_commit_elevation_approval_for_program"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/elevation_lifecycle/elevation_close.rs",
+   "trait": "ElevationCloseOps",
+   "visibility": "pub",
+   "methods": [
+    "compare_and_commit_elevation_close"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/elevation_lifecycle/elevation_close.rs",
+   "trait": "ElevationCloseScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph)",
+   "methods": [
+    "compare_and_commit_elevation_close_for_program"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/elevation_lifecycle/elevation_request.rs",
+   "trait": "ElevationRequestOps",
+   "visibility": "pub",
+   "methods": [
+    "compare_and_commit_elevation_request"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/elevation_lifecycle/elevation_request.rs",
+   "trait": "ElevationRequestScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph)",
+   "methods": [
+    "compare_and_commit_elevation_request_for_program"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/elevation_lifecycle/installed_readmission.rs",
+   "trait": "InstalledReadmissionScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph)",
+   "methods": [
+    "readmit_elevation_request_installation",
+    "readmit_elevation_approval_installation",
+    "readmit_elevation_close_installation",
+    "readmit_mandatory_review_installation"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/elevation_lifecycle/installed_readmission/court_doors_for_test.rs",
+   "trait": "InstalledReadmissionDoorsOps",
+   "visibility": "pub",
+   "methods": [
+    "readmit_elevation_request_installation_for_test"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/elevation_lifecycle/mandatory_review.rs",
+   "trait": "MandatoryReviewOps",
+   "visibility": "pub",
+   "methods": [
+    "compare_and_commit_mandatory_review"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/elevation_lifecycle/mandatory_review.rs",
+   "trait": "MandatoryReviewScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph)",
+   "methods": [
+    "compare_and_commit_mandatory_review_for_program"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/elevation_refusal.rs",
+   "trait": "ElevationRefusalScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph)",
+   "methods": [
+    "refuse_elevation_request",
+    "refuse_elevation_approval",
+    "refuse_elevation_close",
+    "refuse_mandatory_review"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/entry.rs",
+   "trait": "EntryScopedOps",
+   "visibility": "pub(in crate::domain_computation)",
+   "methods": [
+    "has_installed_application_program",
+    "direct_operation_commit_denial"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/entry.rs",
+   "trait": "ProviderExecutionEntryScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution)",
+   "methods": [
+    "require_occurrence_owns_output_source",
+    "require_occurrence_program_commit_binding"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/entry.rs",
+   "trait": "ProviderExecutionProviderExecutionEntryScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph)",
+   "methods": [
+    "compare_and_commit_conditional_operation"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/entry/application_commit.rs",
+   "trait": "ApplicationCommitOps",
+   "visibility": "pub",
+   "methods": [
+    "compare_and_commit_application",
+    "compare_and_commit_application_in_advancement"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/entry/application_commit.rs",
+   "trait": "ApplicationCommitScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph)",
+   "methods": [
+    "compare_and_commit_application_in_advancement_with_history"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/entry/output_source.rs",
+   "trait": "OutputSourceOps",
+   "visibility": "pub",
+   "methods": [
+    "compare_and_commit_application_for_required_output_source",
+    "compare_and_commit_application_for_program_output_producer",
+    "compare_and_commit_application_for_program_action"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/external_dispatch.rs",
+   "trait": "ExternalDispatchOps",
+   "visibility": "pub",
+   "methods": [
+    "install_external_effect_transport",
+    "has_external_effect_transport",
+    "redispatch_admitted_external_effect"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/external_dispatch.rs",
+   "trait": "ExternalDispatchParentOps",
+   "visibility": "pub(super)",
+   "methods": [
+    "dispatch_committed_external_effect"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/external_dispatch.rs",
+   "trait": "ExternalDispatchOwnOps",
+   "visibility": "private",
+   "methods": [
+    "perform_committed_external_dispatch"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/external_dispatch/court_doors_for_test.rs",
+   "trait": "ExternalDispatchDoorsOps",
+   "visibility": "pub",
+   "methods": [
+    "perform_committed_external_dispatch_for_test"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/phase/prepared/entry_custody.rs",
+   "trait": "EntryCustodyScopedOps",
+   "visibility": "pub(in crate::domain_computation)",
+   "methods": [
+    "validate_commit_program",
+    "validate_commit_program_in_advancement"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/phase/prepared/entry_custody/court_doors_for_test.rs",
+   "trait": "EntryCustodyDoorsOps",
+   "visibility": "pub",
+   "methods": [
+    "validate_commit_program_for_test"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution/phase/prepared/entry_custody/court_doors_for_test.rs",
+   "trait": "EntryCustodyEntryCustodyDoorsOps",
+   "visibility": "pub",
+   "methods": [
+    "validate_commit_program_in_advancement_for_test"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/read_set.rs",
+   "trait": "ReadSetOps",
+   "visibility": "pub",
+   "methods": [
+    "begin_application_read_attempt",
+    "begin_projected_application_read_attempt"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/read_set.rs",
+   "trait": "ReadSetScopedOps",
+   "visibility": "pub(in crate::domain_computation)",
+   "methods": [
+    "begin_projected_application_read_attempt_with_request"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/read_set/source_facts.rs",
+   "trait": "SourceFactsScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph)",
+   "methods": [
+    "validate_projected_source_facts"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/retained_commit.rs",
+   "trait": "RetainedCommitOps",
+   "visibility": "pub",
+   "methods": [
+    "compare_and_commit_application_retained_in_advancement"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/retained_commit.rs",
+   "trait": "RetainedCommitScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph)",
+   "methods": [
+    "retained_commit_outcome"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_definition_program/publication.rs",
+   "trait": "PublicationScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph)",
+   "methods": [
+    "compare_and_commit_workflow_definition_publication"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_definition_program/retirement/outcome.rs",
+   "trait": "OutcomeScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph)",
+   "methods": [
+    "compare_and_commit_workflow_definition_retirement"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_instance_program/cancellation/publication.rs",
+   "trait": "CancellationPublicationScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph)",
+   "methods": [
+    "compare_and_commit_workflow_instance_cancellation"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_instance_program/publication.rs",
+   "trait": "WorkflowInstanceProgramPublicationScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph)",
+   "methods": [
+    "compare_and_commit_workflow_instance_start"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_proposal_program/publication.rs",
+   "trait": "WorkflowProposalProgramPublicationScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph)",
+   "methods": [
+    "resolve_workflow_proposal_replay",
+    "compare_and_commit_workflow_proposal"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/workflow_transition_program/publication/commit.rs",
+   "trait": "CommitScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph)",
+   "methods": [
+    "compare_and_commit_workflow_advance"
+   ]
+  }
+ ],
+ "facades": 22,
+ "host": {
+  "core_fields": [
+   "external_effect_transport",
+   "installed_operations",
+   "primary_provider",
+   "product_runtime"
+  ],
+  "top_fields": [
+   "installed_schema",
+   "program_support"
+  ],
+  "core_methods": [
+   "authority_identity",
+   "primary_graph",
+   "validate_commit_program"
+  ],
+  "foreign": [
+   "admit_external_dispatch_attempt",
+   "authorize_idempotency_inspection",
+   "has_retained_installed_transport_completion",
+   "installed_program_support",
+   "observe_committed_dispatch_outbox_with_request",
+   "operation_requires_application_program",
+   "operation_requires_workflow_authority",
+   "progress_retained_inbound_occurrence",
+   "record_installed_transport_completion",
+   "refuse_completed_external_effect",
+   "resume_installed_transport_completion",
+   "with_application_advancement"
+  ],
+  "hand": []
+ }
+}

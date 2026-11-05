@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_attempt::ExternalSettlementScopedOps;
 use sha2::{Digest, Sha256};
 use worth_query_declaration::facade::application_schema::{
     ApplicationOperationRef, ApplicationStructuredValueBinding,
@@ -38,7 +39,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt::workflow_t
     Schema,
     Binding,
 >(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
     required: &RequiredWorkflowOperation,
     subject: worth_relational::facade::identity::EntityId,
     branch: crate::basis::WorthQueryProductBranch,
@@ -68,7 +69,7 @@ where
         .map_err(|_| mismatch(required.node_path()))?;
     let scope = receipt.authority_binding().principal_scope().scope();
     let receipt_idempotency = receipt.authority_binding().idempotency_binding();
-    if receipt.runtime_authority() != runtime.runtime.authority_identity()
+    if receipt.runtime_authority() != runtime.authority_identity()
         || receipt
             .authority_binding()
             .principal_scope()

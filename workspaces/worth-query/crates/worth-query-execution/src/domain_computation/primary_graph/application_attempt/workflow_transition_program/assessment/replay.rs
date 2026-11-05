@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_attempt::IdempotencyResolutionScopedOps;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{decode_hex_identity, evidence_meaning, projection_with_locator};
@@ -34,7 +35,7 @@ where
     >(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
         required: &RequiredWorkflowAssessment,
         settlement: &WorthQueryOutputDemandSettlement,
         source: &WorthQueryObservedSource<Query>,
@@ -125,7 +126,7 @@ where
 #[allow(clippy::too_many_arguments)]
 fn resolve_replay<Schema, Operation, Input, Scope, Query>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
     admission: &crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<
         Schema,
         Operation,
@@ -177,9 +178,7 @@ where
         ),
         WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) => Some(
             runtime
-                .runtime
-                .primary_provider
-                .graph
+                .provider_graph()
                 .with_runtime(execution, |relational| {
                     super::super::publication::project(
                         execution,

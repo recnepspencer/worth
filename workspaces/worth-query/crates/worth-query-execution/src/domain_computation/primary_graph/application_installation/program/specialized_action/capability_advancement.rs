@@ -1,4 +1,11 @@
 use super::*;
+use crate::domain_computation::authorization::MandatoryReviewScopedOps;
+use crate::domain_computation::primary_graph::application_attempt::CapabilityRevocationScopedOps;
+use crate::domain_computation::primary_graph::application_attempt::DelegationActivationScopedOps;
+use crate::domain_computation::primary_graph::application_attempt::ElevationRefusalScopedOps;
+use crate::domain_computation::primary_graph::application_attempt::{
+    ElevationCloseScopedOps as _, MandatoryReviewScopedOps as _,
+};
 use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 
 impl<Schema, Program, Operation> WorthQueryAdmittedProgramOperation<'_, Schema, Program, Operation>

@@ -14,7 +14,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
 
     pub fn resolve_assessment_replay<Schema, Operation, Input, Scope, Query>(
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
         prepared: &PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
         required: &super::super::RequiredWorkflowAssessment,
         settlement: &crate::domain_computation::primary_graph::WorthQueryOutputDemandSettlement,
@@ -30,7 +30,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        let phase_request = match phase.execution_request_for(&runtime.runtime.product_runtime) {
+        let phase_request = match phase.execution_request_for(runtime.product_runtime()) {
             Ok(request) => request,
             Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "workflow-phase"))),
         };
@@ -57,7 +57,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
 
     pub fn resolve_condition_replay<Schema, Operation, Input, Scope>(
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
         prepared: &PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
         required: &super::super::RequiredWorkflowCondition,
         sources: &crate::domain_computation::primary_graph::WorthQueryWorkflowConditionSources<
@@ -73,7 +73,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        let phase_request = match phase.execution_request_for(&runtime.runtime.product_runtime) {
+        let phase_request = match phase.execution_request_for(runtime.product_runtime()) {
             Ok(request) => request,
             Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "workflow-phase"))),
         };
@@ -84,7 +84,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
 
     pub fn resolve_operation_replay<Schema, Operation, Input, Scope, Binding>(
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
         prepared: &PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
         required: &super::super::RequiredWorkflowOperation,
         receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
@@ -104,7 +104,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
             Schema,
         >,
     {
-        let phase_request = match phase.execution_request_for(&runtime.runtime.product_runtime) {
+        let phase_request = match phase.execution_request_for(runtime.product_runtime()) {
             Ok(request) => request,
             Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "workflow-phase"))),
         };

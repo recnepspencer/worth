@@ -3,6 +3,7 @@ use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRe
 use crate::domain_computation::authorization::{
     WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
 };
+use crate::domain_computation::primary_graph::application_attempt::ElevationApprovalReplayScopedOps;
 
 pub trait ApprovalReplayOps<Schema>:
     crate::domain_computation::authorization::host::AuthorizationHost<Schema>

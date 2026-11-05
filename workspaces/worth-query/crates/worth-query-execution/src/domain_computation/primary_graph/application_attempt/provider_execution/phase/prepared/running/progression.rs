@@ -39,10 +39,7 @@ pub struct WorthQueryProgressedApplicationCommit {
 }
 
 struct WorthQueryProviderProgression<'a, Schema, Operation, Input, Scope> {
-    application:
-        &'a crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
-            Schema,
-        >,
+    application: &'a dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
     running: &'a mut crate::domain_computation::WorthQueryRunningDirectRun,
     graph: &'a worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
     provider: &'a std::sync::Arc<WorthQueryPrimaryGraphProvider>,
@@ -94,10 +91,7 @@ pub struct WorthQueryApplicationCommitProgressionAuthority<
     Input,
     Scope,
 > {
-    application:
-        &'a crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
-            Schema,
-        >,
+    application: &'a dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
     provider: &'a std::sync::Arc<WorthQueryPrimaryGraphProvider>,
     admission: &'a crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<
         Schema,
@@ -124,7 +118,7 @@ impl<'a, 'provider, Schema, Operation, Input, Scope>
     ) -> &'a crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
         Schema,
     > {
-        self.application
+        self.application.application_runtime()
     }
 
     pub(super) fn provider(&self) -> &'a std::sync::Arc<WorthQueryPrimaryGraphProvider> {
@@ -165,9 +159,7 @@ pub fn progress_application_commit<Schema, Operation, Input, Scope>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     phase: &WorthQueryAdvancementPhase<'_>,
 
-    application: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
-        Schema,
-    >,
+    application: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
     running_commit: WorthQueryRunningApplicationCommit<Schema, Operation, Input, Scope>,
     history: Option<HistoryProducerInvocation<'_>>,
     allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
@@ -195,8 +187,8 @@ where
         WorthQueryProviderProgression {
             application,
             running: &mut running,
-            graph: application.runtime.primary_graph_authority(),
-            provider: &application.runtime.primary_provider,
+            graph: application.primary_graph_authority(),
+            provider: application.primary_provider(),
             admission: &admission,
             prepared: provider_attempt,
             outcome_identity,
@@ -278,13 +270,11 @@ where
     };
     provider.after_application_attempt_registration_for_test();
     let command_lane = application
-        .runtime
-        .primary_provider
+        .primary_provider()
         .correction_commit_lane(&idempotency);
     let _command = command_lane.as_ref().map(|lane| lane.enter());
     let commit_lane = application
-        .runtime
-        .primary_provider
+        .primary_provider()
         .application_branch_commit_lane(product.observation());
 
     let coordination = commit_lane.enter();

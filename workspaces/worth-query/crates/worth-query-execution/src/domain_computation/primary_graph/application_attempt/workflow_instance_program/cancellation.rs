@@ -163,3 +163,4 @@ where
         })
     }
 }
+pub(in crate::domain_computation::primary_graph) use publication::CancellationPublicationScopedOps;

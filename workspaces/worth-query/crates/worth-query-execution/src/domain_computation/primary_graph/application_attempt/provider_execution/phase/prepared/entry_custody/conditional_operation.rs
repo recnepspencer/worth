@@ -1,4 +1,6 @@
 use super::*;
+use crate::domain_computation::primary_graph::application_attempt::provider_execution::ProviderExecutionEntryScopedOps;
+use crate::domain_computation::primary_graph::application_attempt::EntryScopedOps;
 impl<Schema: ApplicationSchema, Operation, Input, Scope>
     CurrentCommitProgram<
         '_,
@@ -36,6 +38,7 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
             );
         }
         if !application
+            .application_runtime()
             .installed_conditionals
             .contains_operation::<Operation>()
         {
@@ -43,8 +46,9 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
                 WorthQueryApplicationCommitDenial::application_program_required(),
             );
         }
-        if let Err(outcome) =
-            application.require_occurrence_program_commit_binding(execution, &program, None)
+        if let Err(outcome) = application
+            .application_runtime()
+            .require_occurrence_program_commit_binding(execution, &program, None)
         {
             return outcome;
         }

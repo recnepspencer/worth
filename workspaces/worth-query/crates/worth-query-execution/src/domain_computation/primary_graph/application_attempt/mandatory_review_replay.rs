@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_attempt::IdempotencyResolutionOps;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{
@@ -10,12 +11,10 @@ use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationOperation, WorthQueryPrimaryGraphApplicationRuntime,
 };
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    /// Resolve an exact mandatory-review replay before current-state program materialization.
-    ///
-    /// An admission that holds no mandatory review binding has no review replay: this
-    /// returns `None` and the lane refuses it, typed, when it materializes.
-    pub fn resolve_admitted_mandatory_review_replay<Operation, Input, Scope>(
+pub trait MandatoryReviewReplayOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>
+{
+    fn resolve_admitted_mandatory_review_replay<Operation, Input, Scope>(
         &self,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         admission: &mut WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
@@ -60,3 +59,5 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Ok(Some(reviewed_outcome(outcome, binding)))
     }
 }
+
+impl<Schema: ApplicationSchema, HostRuntime: crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema> + ?Sized> MandatoryReviewReplayOps<Schema> for HostRuntime {}

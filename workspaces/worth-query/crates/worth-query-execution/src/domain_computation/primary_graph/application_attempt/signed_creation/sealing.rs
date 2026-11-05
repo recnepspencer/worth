@@ -52,7 +52,7 @@ pub(in crate::domain_computation::primary_graph) fn seal<
     Binding: ApplicationMutationBinding<Schema>,
 >(
     phase: &WorthQueryAdvancementPhase<'_>,
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
     candidate: BodyCandidate<Schema, Binding>,
     identities: &ApplicationMutationIdentities<'_, Schema, Binding>,
 ) -> Result<BodyCandidate<Schema, Binding>, Denial> {
@@ -63,7 +63,7 @@ pub(in crate::domain_computation::primary_graph) fn seal<
         return Err(Denial::CandidateMismatch);
     }
     let execution = phase
-        .execution_for(&application.runtime.product_runtime)
+        .execution_for(application.product_runtime())
         .map_err(|cause| Denial::Execution(cause.into()))?;
     let candidate = super::super::signing_lifecycle::capture_signing(execution, candidate)?;
     let (mut candidate, dependencies_memory) = super::dependencies::capture(execution, candidate)?;
@@ -73,7 +73,7 @@ pub(in crate::domain_computation::primary_graph) fn seal<
         .as_ref()
         .ok_or(Denial::CandidateMismatch)?;
     let request = phase
-        .execution_request_for(&application.runtime.product_runtime)
+        .execution_request_for(application.product_runtime())
         .map_err(|_| Denial::CandidateMismatch)?;
     candidate
         .read_set
@@ -85,6 +85,7 @@ pub(in crate::domain_computation::primary_graph) fn seal<
             ))
         })?;
     let support = application
+        .application_runtime()
         .installed_program_support()
         .ok_or(Denial::OwnerUnavailable)?;
     let occurrence =
@@ -92,7 +93,7 @@ pub(in crate::domain_computation::primary_graph) fn seal<
             .map_err(Denial::Commit)?;
     let revision = *occurrence.entry().revision();
     let owner = application
-        .signing_owners
+        .signing_owners()
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
         .get(&revision)

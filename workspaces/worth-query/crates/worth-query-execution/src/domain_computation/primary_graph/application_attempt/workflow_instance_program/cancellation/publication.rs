@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_attempt::OutputSourceOps;
 use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 use worth_foundational::facade::{AspectFieldLocator, AspectValue, InternedString};
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
@@ -63,15 +64,12 @@ pub enum WorkflowInstanceCancellationOutcome {
     ProjectionDenied(WorthQueryApplicationCommitReceipt),
 }
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub(in crate::domain_computation::primary_graph) trait CancellationPublicationScopedOps<Schema>:
+    crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub(in crate::domain_computation::primary_graph) fn compare_and_commit_workflow_instance_cancellation<
-        Operation: 'static,
-        Input,
-        Scope,
-    >(
+    fn compare_and_commit_workflow_instance_cancellation<Operation: 'static, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -82,7 +80,7 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
-        if let Err(cause) = phase.execution_request_for(&self.runtime.product_runtime) {
+        if let Err(cause) = phase.execution_request_for(self.product_runtime()) {
             return WorkflowInstanceCancellationOutcome::Application(
                 crate::domain_computation::request_execution::WorthQueryAdvancementDenial::from(
                     cause,
@@ -102,6 +100,7 @@ where
             performed,
         } = prepared;
         let presented = match self
+            .application_runtime()
             .installed_program_support()
             .ok_or_else(WorthQueryApplicationCommitDenial::application_program_required)
             .and_then(|support| support.present_for_commit(&program_revision))
@@ -146,6 +145,9 @@ where
         })
     }
 }
+
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema> + ?Sized> CancellationPublicationScopedOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema, {}
 
 impl<Schema, Operation, Input, Scope>
     PreparedWorkflowInstanceCancellation<Schema, Operation, Input, Scope>

@@ -385,3 +385,4 @@ pub enum WorkflowProgressOutcome {
     ),
     IdempotencyDenied(super::super::WorthQueryApplicationIdempotencyResolutionDenial),
 }
+pub(in crate::domain_computation::primary_graph) use commit::CommitScopedOps;

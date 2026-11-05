@@ -204,3 +204,5 @@ fn denial(
 ) -> WorthQueryApplicationAttemptDenial {
     WorthQueryApplicationAttemptDenial::new(kind, subject)
 }
+pub(in crate::domain_computation::primary_graph) use cancellation::CancellationPublicationScopedOps;
+pub(in crate::domain_computation::primary_graph) use publication::WorkflowInstanceProgramPublicationScopedOps;

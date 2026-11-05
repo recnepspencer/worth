@@ -27,7 +27,7 @@ use worth_query_installation::facade::InstalledCorrectionBinding;
 )]
 pub(super) fn capture<Schema, Binding>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
     original: &Binding::Input,
 ) -> Result<Option<Arc<OriginalCorrectionDisclosure>>, Denial>
 where
@@ -60,7 +60,7 @@ where
 
 struct Capture<'a, 'execution, 'authority, Schema> {
     execution: &'a worth_execution::ExecutionRequest<'execution, 'authority>,
-    runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &'a dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
     original: &'a dyn Any,
     association: Arc<InstalledCorrectionBinding>,
 }
@@ -100,7 +100,7 @@ impl<Schema: ApplicationSchema> ApplicationCorrectionVisitor<Schema>
                 Correction::Disclosure,
             >(
                 self.execution,
-                self.runtime,
+                self.runtime.application_runtime(),
                 std::mem::size_of::<OriginalCorrectionDisclosure>()
                     + 2 * std::mem::size_of::<usize>(),
                 || {

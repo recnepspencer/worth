@@ -11,7 +11,7 @@ use std::cell::Cell;
 
 pub(super) fn compose<Schema, Binding>(
     access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
     phase: &WorthQueryAdvancementPhase<'_>,
     identities: &ApplicationMutationIdentities<'_, Schema, Binding>,
     principal_identity: &Binding::PrincipalIdentity,
@@ -30,14 +30,14 @@ where
         .mutation_body_for_approval::<Binding>()
         .map_err(WorkflowApprovalBodyDenial::Handler)?;
     let execution = phase
-        .execution_for(&runtime.runtime.product_runtime)
+        .execution_for(runtime.product_runtime())
         .map_err(|cause| {
             WorkflowApprovalBodyDenial::Handler(
                 MutationHandlerExecutionDenial::ForeignAdvancementPhase(cause),
             )
         })?;
     let request = phase
-        .execution_request_for(&runtime.runtime.product_runtime)
+        .execution_request_for(runtime.product_runtime())
         .map_err(|cause| {
             WorkflowApprovalBodyDenial::Handler(
                 MutationHandlerExecutionDenial::ForeignAdvancementPhase(cause),
@@ -75,7 +75,7 @@ where
     let interruption = Cell::new(None);
     let operation_scope = read_set.admission.operation_scope_binding().clone();
     let (plan, projection, _) = runtime
-        .mutation_projection
+        .application_runtime().mutation_projection
         .project_existing_operation(
             &request,
             &read_set.admission,

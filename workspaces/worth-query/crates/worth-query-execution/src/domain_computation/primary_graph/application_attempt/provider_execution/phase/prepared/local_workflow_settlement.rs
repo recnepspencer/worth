@@ -22,7 +22,7 @@ impl LocalWorkflowSettlementPublication {
         Schema,
     >(
         self,
-        application: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        application: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
         receipt: &crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitReceipt,
     ) {
         let Some(transition) = transition_entity_in_receipt(
@@ -35,9 +35,7 @@ impl LocalWorkflowSettlementPublication {
         let key = self.progress_update.key();
         let committed_revision = receipt.commit_reference().version_id;
         let _ = application
-            .runtime
-            .primary_provider
-            .graph
+            .provider_graph()
             .with_workflow_instance_progress_mut(key, |retention| {
                 self.progress_update
                     .apply(retention, committed_revision, transition, None)

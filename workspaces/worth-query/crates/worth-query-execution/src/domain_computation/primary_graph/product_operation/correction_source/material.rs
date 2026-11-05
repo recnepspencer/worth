@@ -3,6 +3,7 @@ use super::{
     disclosure::WorthQueryCorrectionDerivationDenial as Denial, WorthQuerySelectedCorrectionSource,
 };
 use crate::domain_computation::application_aftermath::retained_preimage::WorthQueryRetainedPreImage;
+use crate::domain_computation::primary_graph::application_attempt::ExternalSettlementScopedOps;
 use worth_query_declaration::facade::{
     application_aftermath::{
         ApplicationCorrectionBinding, ApplicationCorrectionPreImage,

@@ -1,5 +1,7 @@
 //! Definition retirement preparation for one selected branch occurrence.
 
+use crate::domain_computation::primary_graph::application_attempt::OutcomeScopedOps;
+use crate::domain_computation::primary_graph::application_attempt::ReadSetScopedOps;
 use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 use worth_query_declaration::facade::{
     application_capability::ApplicationCapabilityMarkerIdentity,
@@ -140,7 +142,7 @@ impl WorthQueryWorkflowDefinitionRetirementAdapter {
     pub fn compare_and_commit<Schema, Operation, Input, Scope>(
         phase: &WorthQueryAdvancementPhase<'_>,
 
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
         prepared: PreparedWorkflowDefinitionRetirement<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
     ) -> WorkflowDefinitionRetirementOutcome
@@ -149,7 +151,7 @@ impl WorthQueryWorkflowDefinitionRetirementAdapter {
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        let phase_request = match phase.execution_request_for(&runtime.runtime.product_runtime) {
+        let phase_request = match phase.execution_request_for(runtime.product_runtime()) {
             Ok(request) => request,
             Err(cause) => return WorkflowDefinitionRetirementOutcome::Application(
                 crate::domain_computation::request_execution::WorthQueryAdvancementDenial::from(

@@ -23,10 +23,11 @@ where
         aftermath_causality,
     } = request;
     let (core, _) = entry.program.read_set.admission.reentry_parts();
-    if let Err(outcome) = entry
-        .application
-        .runtime
-        .validate_commit_lapse_in_advancement(entry.phase, core)
+    if let Err(outcome) = crate::domain_computation::primary_graph::application_attempt::effect_program::validate_commit_lapse(
+        entry.application,
+        entry.phase,
+        core,
+    )
     {
         return terminal(outcome);
     }
@@ -142,7 +143,7 @@ where
             signed_creation,
             &mut effects,
             phase
-                .execution_for(&application.runtime.product_runtime)
+                .execution_for(application.product_runtime())
                 .expect("phase readmitted for this runtime"),
             &lease,
             &idempotency,
@@ -152,7 +153,7 @@ where
     }
     let lifecycle = match crate::domain_computation::primary_graph::application_attempt::signing_lifecycle::expand(
         &admission, &lease, &mut effects, read_set.facts,
-        phase.execution_for(&application.runtime.product_runtime).expect("phase readmitted for this runtime"),
+        phase.execution_for(application.product_runtime()).expect("phase readmitted for this runtime"),
         *idempotency.key_identity(),
     ) { Ok(lifecycle) => lifecycle, Err(outcome) => return terminal(outcome) };
     let effect_routes = if read_set.effect_routes.matches_body(&lifecycle.facts) {
@@ -169,7 +170,7 @@ where
     };
     content_attachments = match super::super::domain_value_write::admit(
         execution,
-        application.installed_schema.value_bindings(),
+        application.installed_schema().value_bindings(),
         &lease.layout,
         &effects,
         lease.product().relational_basis(),

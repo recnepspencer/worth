@@ -32,9 +32,7 @@ impl<Schema, Operation, Input, Scope>
 {
     pub fn producer_idempotency_identities<OutputBinding>(
         &mut self,
-        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
-            Schema,
-        >,
+        runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         declared_key: [u8; 32],
         implementation: worth_relational::facade::mvcc::RequiredOutputProducingImplementation,
@@ -105,9 +103,7 @@ impl<Schema, Operation, Input, Scope>
             .source_partition_identity()
             .ok_or(WorthQueryProducerIdentityDenial::MissingSourcePartition)?;
         let lineage = runtime
-            .runtime
-            .primary_provider
-            .graph
+            .provider_graph()
             .output_lineage
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
@@ -147,8 +143,7 @@ impl<Schema, Operation, Input, Scope>
                 && head.dependency_identity == Some(dependency);
             let unposted = (head.claims_upstream || !replays)
                 && !runtime
-                    .runtime
-                    .output_demands
+                    .output_demands()
                     .posts_settlement(&head.settlement)
                     .map_err(|_| WorthQueryProducerIdentityDenial::LineageLookupBudgetExceeded)?;
             if replays && !unposted {

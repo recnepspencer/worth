@@ -7,7 +7,7 @@ use graph::WorthQueryApplicationCommitDenialStage as ExecutionDenialStage;
 
 pub(super) fn resolve_retained_idempotency<Schema, Operation, Input, Scope>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
     admission: &mut WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     product: &crate::basis::WorthQueryProductBranchLease,
     idempotency: WorthQueryApplicationIdempotencyBinding,
@@ -19,13 +19,11 @@ where
 {
     let product = product.publication_binding();
     let command_lane = application
-        .runtime
-        .primary_provider
+        .primary_provider()
         .correction_commit_lane(&idempotency);
     let _command = command_lane.as_ref().map(|lane| lane.enter());
     let commit_lane = application
-        .runtime
-        .primary_provider
+        .primary_provider()
         .application_branch_commit_lane(product.observation());
 
     let coordination = commit_lane.enter();
@@ -41,8 +39,7 @@ where
         };
     match proof.govern((), |()| {
         application
-            .runtime
-            .primary_provider
+            .primary_provider()
             .resolve_idempotency_binding_at_product(execution, idempotency, &product)
     }) {
         Err(((), denial)) => Some(commit_outcome_from_authorization_denial(

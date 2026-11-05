@@ -1,3 +1,5 @@
+use crate::domain_computation::primary_graph::application_attempt::IdempotencyResolutionOps;
+use crate::domain_computation::primary_graph::application_attempt::IdempotencyResolutionScopedOps;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{
@@ -10,12 +12,10 @@ use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationOperation, WorthQueryPrimaryGraphApplicationRuntime,
 };
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    /// Resolve an exact approval replay before current-state program materialization.
-    ///
-    /// An admission that holds no elevation approval binding has no approval replay: this
-    /// returns `None` and the lane refuses it, typed, when it materializes.
-    pub fn resolve_admitted_elevation_approval_replay<Operation, Input, Scope>(
+pub trait ElevationApprovalReplayOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>
+{
+    fn resolve_admitted_elevation_approval_replay<Operation, Input, Scope>(
         &self,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         admission: &mut WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
@@ -59,12 +59,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .expect("the elevation approval binding was checked above");
         Ok(Some(approved_outcome(outcome, binding)))
     }
+}
 
-    pub(in crate::domain_computation) fn resolve_admitted_elevation_approval_replay_with_request<
-        Operation,
-        Input,
-        Scope,
-    >(
+impl<Schema: ApplicationSchema, HostRuntime: crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema> + ?Sized> ElevationApprovalReplayOps<Schema> for HostRuntime {}
+
+pub(in crate::domain_computation) trait ElevationApprovalReplayScopedOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>
+{
+    fn resolve_admitted_elevation_approval_replay_with_request<Operation, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: &mut WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
@@ -113,3 +115,5 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Ok(Some(approved_outcome(outcome, binding)))
     }
 }
+
+impl<Schema: ApplicationSchema, HostRuntime: crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema> + ?Sized> ElevationApprovalReplayScopedOps<Schema> for HostRuntime {}

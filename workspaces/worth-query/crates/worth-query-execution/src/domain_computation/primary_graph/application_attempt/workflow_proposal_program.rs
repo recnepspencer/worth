@@ -383,3 +383,4 @@ fn denial(subject: &str) -> WorthQueryApplicationAttemptDenial {
         subject,
     )
 }
+pub(in crate::domain_computation::primary_graph) use publication::WorkflowProposalProgramPublicationScopedOps;

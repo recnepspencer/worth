@@ -76,33 +76,25 @@ impl WorthQueryPerformedExternalRedispatchSeal {
     }
 }
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub trait ExternalDispatchOps<Schema>:
+    crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>
 where
     Schema: ApplicationSchema,
 {
-    /// Installs the host's external-effect transport, once, for this runtime.
-    pub fn install_external_effect_transport(
+    fn install_external_effect_transport(
         &self,
         transport: Arc<dyn WorthQueryExternalEffectTransport>,
     ) -> Result<(), WorthQueryExternalTransportInstallationDenial> {
-        self.runtime
-            .external_effect_transport
+        self.external_effect_transport()
             .set(transport)
             .map_err(|_| WorthQueryExternalTransportInstallationDenial::AlreadyInstalled)
     }
 
-    /// True when this runtime can carry a declared effect out to its rail.
-    pub fn has_external_effect_transport(&self) -> bool {
-        self.runtime.external_effect_transport.get().is_some()
+    fn has_external_effect_transport(&self) -> bool {
+        self.external_effect_transport().get().is_some()
     }
 
-    /// Re-dispatch the handle binding's co-committed outbox through the transport.
-    ///
-    /// Fresh effect authority is required before any transport call (R8.69). The
-    /// outbox is read from the live handle binding — never from a caller-held
-    /// receipt copy. Classification stays inside the crate-internal
-    /// `dispatch_external_effect` step (R8.67). The returned proof is privately minted.
-    pub fn redispatch_admitted_external_effect<Operation, Input, Scope>(
+    fn redispatch_admitted_external_effect<Operation, Input, Scope>(
         &self,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
 
@@ -111,7 +103,7 @@ where
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     ) -> Result<WorthQueryPerformedExternalRedispatch, WorthQueryExternalRedispatchDenial> {
         let request = phase
-            .execution_request_for(&self.runtime.product_runtime)
+            .execution_request_for(self.product_runtime())
             .map_err(|cause| {
                 WorthQueryExternalRedispatchDenial::CompletionExecutionRequest(cause.into())
             })?;
@@ -126,13 +118,13 @@ where
             return Err(WorthQueryExternalRedispatchDenial::RecoveryNotAdmitted);
         }
         if !admission.belongs_to(
-            self.runtime.authority_identity(),
-            &self.installed_schema.binding_identity(),
+            self.authority_identity(),
+            &self.installed_schema().binding_identity(),
         ) {
             return Err(WorthQueryExternalRedispatchDenial::ForeignAdmission);
         }
         admission
-            .validate_installed_operation(&self.runtime.installed_operations)
+            .validate_installed_operation(self.installed_operations())
             .map_err(WorthQueryExternalRedispatchDenial::from_admission_authorization)?;
         if let Some(lapse) = admission.current_authority_lapse() {
             return Err(match lapse {
@@ -152,7 +144,8 @@ where
         };
         // A completed effect may already have released its committed owner
         // row, so the terminal owner answers before that row is read.
-        self.refuse_completed_external_effect(record)
+        self.application_runtime()
+            .refuse_completed_external_effect(record)
             .map_err(|refusal| match refusal {
                 WorthQueryTerminalEffectRefusal::AlreadyCompleted => {
                     WorthQueryExternalRedispatchDenial::AlreadyCompleted
@@ -162,11 +155,10 @@ where
                 }
             })?;
         let committed = self
-            .runtime
-            .primary_provider
+            .primary_provider()
             .committed_dispatch_outbox_for_binding(execution, handle.binding())
             .map_err(WorthQueryExternalRedispatchDenial::OwnerReadDenied)?;
-        let Some(transport) = self.runtime.external_effect_transport.get() else {
+        let Some(transport) = self.external_effect_transport().get() else {
             return Err(WorthQueryExternalRedispatchDenial::TransportNotInstalled);
         };
         let dispatch = self
@@ -186,8 +178,17 @@ where
             ),
         ))
     }
+}
 
-    pub(super) fn dispatch_committed_external_effect(
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema> + ?Sized> ExternalDispatchOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema, {}
+
+pub(super) trait ExternalDispatchParentOps<Schema>:
+    crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>
+where
+    Schema: ApplicationSchema,
+{
+    fn dispatch_committed_external_effect(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -201,7 +202,7 @@ where
         if receipt.dispatch_outbox().is_none() {
             return WorthQueryApplicationCommitOutcome::Committed(receipt);
         }
-        let Some(transport) = self.runtime.external_effect_transport.get() else {
+        let Some(transport) = self.external_effect_transport().get() else {
             return WorthQueryApplicationCommitOutcome::Committed(receipt);
         };
         let committed =
@@ -231,7 +232,16 @@ where
             ),
         }
     }
+}
 
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema> + ?Sized> ExternalDispatchParentOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema, {}
+
+trait ExternalDispatchOwnOps<Schema>:
+    crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>
+where
+    Schema: ApplicationSchema,
+{
     fn perform_committed_external_dispatch(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -242,21 +252,27 @@ where
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     ) -> Result<WorthQueryExternalEffectDispatch, WorthQueryExternalDispatchPreparationDenial> {
         if committed.record().inbound().is_some()
-            && self.has_retained_installed_transport_completion(committed.record().correlation())
+            && self
+                .application_runtime()
+                .has_retained_installed_transport_completion(committed.record().correlation())
         {
-            let resumed = self.resume_installed_transport_completion(
-                execution,
-                phase,
-                committed.record().correlation(),
-                request,
-            );
-            if matches!(resumed, InstalledTransportResumeOutcome::Performed) {
-                let _ = self.progress_retained_inbound_occurrence(
+            let resumed = self
+                .application_runtime()
+                .resume_installed_transport_completion(
                     execution,
                     phase,
-                    *committed.record().correlation().bytes(),
+                    committed.record().correlation(),
                     request,
                 );
+            if matches!(resumed, InstalledTransportResumeOutcome::Performed) {
+                let _ = self
+                    .application_runtime()
+                    .progress_retained_inbound_occurrence(
+                        execution,
+                        phase,
+                        *committed.record().correlation().bytes(),
+                        request,
+                    );
             }
             return Err(match resumed {
                 InstalledTransportResumeOutcome::Performed => {
@@ -269,11 +285,11 @@ where
         }
         let completion_owner = committed.clone();
         let admitted = self
+            .application_runtime()
             .admit_external_dispatch_attempt(committed)
             .map_err(denial::from_attempt_admission)?;
         let in_flight = self
-            .runtime
-            .primary_provider
+            .primary_provider()
             .begin_external_dispatch_in_flight(&completion_owner)
             .map_err(denial::from_in_flight)?;
         let dispatch = dispatch_external_effect(transport, admitted).map_err(|denial| match denial {
@@ -291,29 +307,38 @@ where
             let in_flight = in_flight.expect("inbound dispatch reserved an in-flight slot");
             // The original outbox reserved finite provenance before transport.
             // Keep its actual completion observation even if World needs retry.
-            let _ = self.record_installed_transport_completion(evidence, in_flight);
+            let _ = self
+                .application_runtime()
+                .record_installed_transport_completion(evidence, in_flight);
             if matches!(
-                self.resume_installed_transport_completion(
-                    execution,
-                    phase,
-                    dispatch.correlation(),
-                    request
-                ),
+                self.application_runtime()
+                    .resume_installed_transport_completion(
+                        execution,
+                        phase,
+                        dispatch.correlation(),
+                        request
+                    ),
                 InstalledTransportResumeOutcome::Performed,
             ) {
                 // A callback may have entered signed custody while the
                 // physical send was still in flight. Transport terminal truth
                 // now owns the effect; release that redundant accepted slot.
-                let _ = self.progress_retained_inbound_occurrence(
-                    execution,
-                    phase,
-                    *dispatch.correlation().bytes(),
-                    request,
-                );
+                let _ = self
+                    .application_runtime()
+                    .progress_retained_inbound_occurrence(
+                        execution,
+                        phase,
+                        *dispatch.correlation().bytes(),
+                        request,
+                    );
             }
         }
         Ok(dispatch)
     }
 }
 
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema> + ?Sized> ExternalDispatchOwnOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema, {}
+
 mod court_doors_for_test;
+pub use court_doors_for_test::ExternalDispatchDoorsOps;

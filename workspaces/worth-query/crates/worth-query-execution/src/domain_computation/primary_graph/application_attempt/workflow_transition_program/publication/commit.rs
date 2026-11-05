@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_attempt::OutputSourceOps;
 use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 use worth_foundational::facade::{AspectValue, InternedString};
 #[path = "commit/transition_lookup.rs"]
@@ -8,15 +9,12 @@ use worth_query_installation::facade::ApplicationSchema;
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub(in crate::domain_computation::primary_graph) trait CommitScopedOps<Schema>:
+    crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub(in crate::domain_computation::primary_graph) fn compare_and_commit_workflow_advance<
-        Operation: 'static,
-        Input,
-        Scope,
-    >(
+    fn compare_and_commit_workflow_advance<Operation: 'static, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -27,7 +25,7 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
-        if let Err(cause) = phase.execution_request_for(&self.runtime.product_runtime) {
+        if let Err(cause) = phase.execution_request_for(self.product_runtime()) {
             return WorkflowProgressOutcome::Application(
                 crate::domain_computation::request_execution::WorthQueryAdvancementDenial::from(
                     cause,
@@ -40,7 +38,11 @@ where
         if let Err(denial) = prepared.validate_approval_descriptor() {
             return WorkflowProgressOutcome::AuthenticationDenied(denial);
         }
-        match prepared.resolve_transition_replay(execution, self, idempotency) {
+        match prepared.resolve_transition_replay(
+            execution,
+            self.application_attempt_host(),
+            idempotency,
+        ) {
             Ok(Some(outcome)) => return outcome,
             Ok(None) => {}
             Err(denial) => return WorkflowProgressOutcome::IdempotencyDenied(denial),
@@ -143,7 +145,7 @@ where
             (false, None) => {}
         }
         let presented = match self
-            .installed_program_support()
+            .application_runtime().installed_program_support()
             .ok_or_else(super::super::super::WorthQueryApplicationCommitDenial::application_program_required)
             .and_then(|support| support.present_for_commit(&program_revision))
         {
@@ -178,26 +180,21 @@ where
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         );
         let projected = match outcome.landed() {
-            Ok((receipt, replayed)) => {
-                self.runtime
-                    .primary_provider
-                    .graph
-                    .with_runtime(execution, |runtime| {
-                        project(
-                            execution,
-                            runtime,
-                            receipt,
-                            transition_identity,
-                            transition_identity_locator,
-                            node_path,
-                            terminal,
-                            assessment,
-                            approval,
-                            operation_receipt_identity,
-                            replayed,
-                        )
-                    })
-            }
+            Ok((receipt, replayed)) => self.provider_graph().with_runtime(execution, |runtime| {
+                project(
+                    execution,
+                    runtime,
+                    receipt,
+                    transition_identity,
+                    transition_identity_locator,
+                    node_path,
+                    terminal,
+                    assessment,
+                    approval,
+                    operation_receipt_identity,
+                    replayed,
+                )
+            }),
             Err(uncommitted) => WorkflowProgressOutcome::Application(uncommitted),
         };
         if let (Some(progress_update), WorkflowProgressOutcome::Completed(performed)) =
@@ -205,11 +202,9 @@ where
         {
             let committed_revision = performed.receipt().commit_reference().version_id;
             let progress_key = progress_update.key();
-            let _ = self
-                .runtime
-                .primary_provider
-                .graph
-                .with_workflow_instance_progress_mut(progress_key, |retention| {
+            let _ = self.provider_graph().with_workflow_instance_progress_mut(
+                progress_key,
+                |retention| {
                     progress_update.apply(
                         retention,
                         committed_revision,
@@ -218,11 +213,15 @@ where
                             .assessment_evidence()
                             .map(|evidence| evidence.evidence()),
                     )
-                });
+                },
+            );
         }
         projected
     }
 }
+
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema> + ?Sized> CommitScopedOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema, {}
 
 pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) fn project(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

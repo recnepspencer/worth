@@ -49,7 +49,7 @@ impl WorthQueryApplicationCommittedChanges {
     >(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
         receipt: &super::super::WorthQueryApplicationCommitReceipt,
         approval: EntityId,
     ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial>
@@ -81,8 +81,7 @@ impl WorthQueryApplicationCommittedChanges {
             ));
         };
         runtime
-            .runtime.primary_provider
-            .graph
+            .provider_graph()
             .with_runtime(execution, |native| {
                 use worth_relational::facade::runtime::RelationalPinnedReadAdmissionDenial as PinStop;
                 if native.runtime_instance_id() != receipt.provider_runtime_instance_id() {

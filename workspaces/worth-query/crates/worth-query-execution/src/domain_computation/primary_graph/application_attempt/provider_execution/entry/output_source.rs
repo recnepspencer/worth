@@ -1,7 +1,10 @@
 use super::*;
+use crate::domain_computation::primary_graph::application_attempt::EntryCustodyScopedOps;
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub fn compare_and_commit_application_for_required_output_source<Operation, Input, Scope>(
+pub trait OutputSourceOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>
+{
+    fn compare_and_commit_application_for_required_output_source<Operation, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -28,7 +31,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         )
     }
 
-    pub fn compare_and_commit_application_for_program_output_producer<Operation, Input, Scope>(
+    fn compare_and_commit_application_for_program_output_producer<Operation, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -57,7 +60,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         )
     }
 
-    pub fn compare_and_commit_application_for_program_action<Operation, Input, Scope>(
+    fn compare_and_commit_application_for_program_action<Operation, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -85,3 +88,5 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         )
     }
 }
+
+impl<Schema: ApplicationSchema, HostRuntime: crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema> + ?Sized> OutputSourceOps<Schema> for HostRuntime {}

@@ -25,9 +25,7 @@ impl<'a, 'provider, Schema, Operation, Input, Scope>
 {
     #[doc(hidden)]
     pub fn new_for_test(
-        application: &'a crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
-            Schema,
-        >,
+        application: &'a dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,
         provider: &'a std::sync::Arc<WorthQueryPrimaryGraphProvider>,
         admission: &'a crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<
         Schema,
