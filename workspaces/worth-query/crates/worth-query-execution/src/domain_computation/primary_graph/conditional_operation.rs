@@ -53,6 +53,7 @@ pub use execution_provenance::{
     WorthQueryConditionalExecutionCause, WorthQueryConditionalExecutionProvenance,
     WorthQueryConditionalExecutionTerminal, WorthQueryConditionalSignalDecision,
 };
+pub use inspection::InspectionOps;
 pub use inspection::WorthQueryConditionalRuntimeInspection;
 pub(in crate::domain_computation::primary_graph) use installation::WorthQueryPendingConditionalOperation;
 pub use installation::{
@@ -75,4 +76,6 @@ pub use reconstruction_authority::{
     WorthQueryTemporalPrincipalFailureKind, WorthQueryTemporalPrincipalSource,
     WorthQueryTemporalReconstructionAccess,
 };
+pub use reinstallation::ReinstallationOps;
 pub use reinstallation::WorthQueryConditionalRuntimeReinstallationReceipt;
+pub(crate) mod host;

@@ -88,13 +88,14 @@ impl WorthQueryConditionalRuntimeReinstallationReceipt {
     }
 }
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub trait ReinstallationOps<Schema>:
+    crate::domain_computation::primary_graph::conditional_operation::host::ConditionalOperationHost<
+    Schema,
+>
 where
     Schema: ApplicationSchema + 'static,
 {
-    /// Rebuilds volatile Bridge/Signal state only when the presented
-    /// installation is exactly the installation already owning this runtime.
-    pub fn reinstall_conditional_runtime(
+    fn reinstall_conditional_runtime(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         product_branch: crate::basis::WorthQueryProductBranch,
@@ -102,14 +103,11 @@ where
         WorthQueryConditionalRuntimeReinstallationReceipt,
         WorthQueryConditionalRuntimeInstallationDenial,
     > {
-        let current = self.runtime.retain_installed_packages();
+        let current = self.retain_installed_packages();
         self.reinstall_conditional_runtime_for_installation(execution, current, product_branch)
     }
 
-    /// Rebuilds derived conditional state for one explicitly presented
-    /// installation candidate. A changed generation or meaning cannot inherit
-    /// incumbent typed bindings and therefore fails closed with RebindRequired.
-    pub fn reinstall_conditional_runtime_for_installation(
+    fn reinstall_conditional_runtime_for_installation(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         candidate: Arc<WorthQueryInstalledPackageIndex>,
@@ -118,8 +116,9 @@ where
         WorthQueryConditionalRuntimeReinstallationReceipt,
         WorthQueryConditionalRuntimeInstallationDenial,
     > {
-        require_equivalent_installation(self.runtime.installed_packages(), &candidate)?;
+        require_equivalent_installation(self.installed_packages(), &candidate)?;
         let selected = self
+            .application_runtime()
             .on_branch(product_branch)
             .select_with_request(execution)
             .map_err(|denial| match denial {
@@ -132,8 +131,7 @@ where
             })?;
         let truth = WorthQueryConditionalTruthBasis::from_selected(selected);
         let mut bridge_candidate = self
-            .runtime
-            .bridge
+            .bridge()
             .conditional()
             .prepare_conditional_reconstitution(truth.signal_basis())
             .map_err(|denial| {
@@ -145,13 +143,13 @@ where
                 )
             })?;
         let mut registry = self
-            .conditional_operations
-            .get_mut()
+            .conditional_operations()
+            .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .snapshot();
         let mut prepared = registry.prepare_derived_runtime_reinstallation(
             execution,
-            self,
+            self.conditional_operation_host(),
             &mut bridge_candidate,
             truth.product(),
         )?;
@@ -161,8 +159,7 @@ where
             .sum();
         registry.reconcile_prepared_runtime_reinstallation(&mut bridge_candidate, &mut prepared)?;
         let lower_runtime_reconstitution = self
-            .runtime
-            .bridge
+            .bridge()
             .conditional_lifecycle()
             .activate_conditional_reconstitution(bridge_candidate)
             .map_err(|denial| {
@@ -174,9 +171,7 @@ where
                 )
             })?;
         registry.apply_derived_runtime_reinstallation(prepared);
-        self.runtime
-            .granular_invalidation
-            .advance_runtime_generation();
+        self.granular_invalidation().advance_runtime_generation();
         let work = registry.reconstruction_work();
         Ok(WorthQueryConditionalRuntimeReinstallationReceipt {
             lower_runtime_reconstitution,
@@ -186,10 +181,13 @@ where
             projected_record_count: work.projected_records,
             projected_field_count: work.projected_fields,
             total_work_units: work.total_work_units,
-            successor_invalidation_installation: self.runtime.granular_invalidation.current(),
+            successor_invalidation_installation: self.granular_invalidation().current(),
         })
     }
 }
+
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::conditional_operation::host::ConditionalOperationHost<Schema> + ?Sized> ReinstallationOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema + 'static, {}
 
 fn require_equivalent_installation(
     current: &WorthQueryInstalledPackageIndex,

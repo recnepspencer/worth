@@ -30,9 +30,7 @@ impl WorthQueryRelevantAuthoritativeCommits {
 }
 
 pub(super) fn relevant_authoritative_commits<Schema>(
-    runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
-        Schema,
-    >,
+    runtime: &dyn crate::domain_computation::primary_graph::conditional_operation::host::ConditionalOperationHost<Schema>,
     branch: &worth_relational::facade::history::BranchId,
     commit_ceiling: Option<worth_relational::facade::history::CommitId>,
     cursor: Option<PatchStreamPosition>,
@@ -40,9 +38,7 @@ pub(super) fn relevant_authoritative_commits<Schema>(
     interest: CommitTouchInterest<'_>,
 ) -> WorthQueryRelevantAuthoritativeCommits {
     let batch = runtime
-        .runtime
-        .primary_provider
-        .graph
+        .provider_graph()
         .source_owner
         .invalidation_owner
         .touched_commits_after(branch, cursor, commit_ceiling, maximum_commits, interest);

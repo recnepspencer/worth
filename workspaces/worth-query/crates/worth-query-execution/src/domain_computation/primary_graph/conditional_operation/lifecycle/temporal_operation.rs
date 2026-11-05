@@ -138,7 +138,7 @@ where
         &mut self,
 execution: &worth_execution::ExecutionRequest<'_, '_>,
         bridge: &BridgeSealedRuntimeAssembly,
-        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::conditional_operation::host::ConditionalOperationHost<Schema>,
         truth: &WorthQueryConditionalTruthBasis,
     ) -> Result<(), super::super::installation::WorthQueryConditionalRuntimeInstallationDenial> {
         self.select_product_evaluation_binding(execution, bridge, runtime, truth)
@@ -146,9 +146,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
 
     fn reconstruct(
         &mut self,
-        _runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
-            Schema,
-        >,
+        _runtime: &dyn crate::domain_computation::primary_graph::conditional_operation::host::ConditionalOperationHost<Schema>,
     ) -> Result<(), super::super::installation::WorthQueryConditionalRuntimeInstallationDenial> {
         Ok(())
     }
@@ -162,9 +160,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
     fn prepare_derived_runtime_reinstallation(
         &self,
 execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
-            Schema,
-        >,
+        runtime: &dyn crate::domain_computation::primary_graph::conditional_operation::host::ConditionalOperationHost<Schema>,
         bridge: &mut worth_runtime_bridge::facade::BridgePreparedConditionalReconstitution,
         product: &crate::basis::WorthQueryProductBranchLease,
     ) -> Result<
@@ -180,7 +176,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
             Arc::clone(&self.runtime_binding_identity),
             product,
         )?;
-        prepared.authoritative_commit_cursor = runtime.runtime.primary_provider.graph.source_owner.invalidation_owner.latest_position();
+        prepared.authoritative_commit_cursor = runtime.provider_graph().source_owner.invalidation_owner.latest_position();
         let reconstruction = super::super::temporal_reconstruction::reconstruct_temporal_intents(execution,
             runtime, &self.definition.binding, &self.definition.reconstruction, self.definition.execution.identity_field,
             product,
@@ -215,12 +211,10 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
 
         bridge: &BridgeSealedRuntimeAssembly,
-        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
-            Schema,
-        >,
+        runtime: &dyn crate::domain_computation::primary_graph::conditional_operation::host::ConditionalOperationHost<Schema>,
         truth: &WorthQueryConditionalTruthBasis,
     ) -> ErasedClockObservationOutcome {
-        let execution = match phase.execution_request_for(&runtime.runtime.product_runtime) {
+        let execution = match phase.execution_request_for(runtime.product_runtime()) {
             Ok(execution) => execution,
             Err(cause) => return ErasedClockObservationOutcome::Failed {
                 kind: super::WorthQueryConditionalClockObservationFailureKind::ExecutionRequest(

@@ -47,7 +47,7 @@ where
 execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
 
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::conditional_operation::host::ConditionalOperationHost<Schema>,
         candidate: &WorthQueryTemporalIntentCandidate<Clock, Input>,
         current: WorthQueryCurrentTemporalIntent<Schema, IntentEntity, IdentityValue, RevisionValue>,
         projected: WorthQueryAdmittedTemporalProjection<Schema, Operation, Input, Scope, Invoker::Projection>,
@@ -63,7 +63,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         LifecycleValue: Clone,
     {
         let reads = runtime
-            .begin_projected_application_read_attempt_with_request(execution, projected.admission, projected.projection, worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+            .application_runtime().begin_projected_application_read_attempt_with_request(execution, projected.admission, projected.projection, worth_execution::ExecutionAllocationPolicy::SystemAllocation)
             .map_err(|denial| super::super::WorthQueryConditionalReentryFailure::ApplicationAttempt(denial.kind()))?;
         let mut effects = reads
             .complete_projected_dependencies_with_request(execution, crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)
@@ -95,7 +95,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
             .map_err(|denial| super::super::WorthQueryConditionalReentryFailure::ApplicationAttempt(denial.kind()))?;
         let program = effects.finish().map_err(|denial| super::super::WorthQueryConditionalReentryFailure::ApplicationAttempt(denial.kind()))?;
         Ok(classify_commit(
-            runtime.compare_and_commit_conditional_operation(execution, phase, program, idempotency.binding()),
+            runtime.application_runtime().compare_and_commit_conditional_operation(execution, phase, program, idempotency.binding()),
         ))
     }
 }

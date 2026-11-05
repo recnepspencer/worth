@@ -57,7 +57,7 @@ impl<Schema> WorthQueryConditionalOperationCell<Schema> {
         phase: &WorthQueryAdvancementPhase<'_>,
 
         bridge: &BridgeSealedRuntimeAssembly,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::conditional_operation::host::ConditionalOperationHost<Schema>,
         truth: &WorthQueryConditionalTruthBasis,
     ) -> ErasedClockObservationOutcome {
         let mut operation = self.lock_operation();
@@ -74,7 +74,7 @@ impl<Schema> WorthQueryConditionalOperationCell<Schema> {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         bridge: &BridgeSealedRuntimeAssembly,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::conditional_operation::host::ConditionalOperationHost<Schema>,
         truth: &WorthQueryConditionalTruthBasis,
     ) -> Result<(), super::super::installation::WorthQueryConditionalRuntimeInstallationDenial>
     {

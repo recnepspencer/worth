@@ -68,7 +68,7 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) fn reent
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     phase: &WorthQueryAdvancementPhase<'_>,
 
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::conditional_operation::host::ConditionalOperationHost<Schema>,
     product: &crate::basis::WorthQueryProductBranchLease,
     bridge: &BridgeSealedRuntimeAssembly,
     clock: &BridgeManagedClockBinding,

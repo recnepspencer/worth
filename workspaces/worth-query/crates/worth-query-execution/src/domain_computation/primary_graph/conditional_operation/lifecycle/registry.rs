@@ -100,7 +100,7 @@ impl<Schema> WorthQueryConditionalOperationRegistry<Schema> {
     pub(in crate::domain_computation::primary_graph) fn prepare_derived_runtime_reinstallation(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::conditional_operation::host::ConditionalOperationHost<Schema>,
         bridge: &mut worth_runtime_bridge::facade::BridgePreparedConditionalReconstitution,
         product: &crate::basis::WorthQueryProductBranchLease,
     ) -> Result<
@@ -186,9 +186,7 @@ impl<Schema> WorthQueryConditionalOperationRegistry<Schema> {
 
     pub(in crate::domain_computation::primary_graph) fn reconstruct_all(
         &mut self,
-        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
-            Schema,
-        >,
+        runtime: &dyn crate::domain_computation::primary_graph::conditional_operation::host::ConditionalOperationHost<Schema>,
     ) -> Result<(), WorthQueryConditionalRuntimeInstallationDenial> {
         for cell in self.installed.values() {
             cell.lock_operation().reconstruct(runtime)?;

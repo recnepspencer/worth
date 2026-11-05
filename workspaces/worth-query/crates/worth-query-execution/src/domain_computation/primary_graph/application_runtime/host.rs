@@ -4,6 +4,7 @@ mod application_discovery;
 mod application_entry;
 mod application_resource;
 mod authorization;
+mod conditional_operation;
 mod handler;
 mod identity;
 mod operation_body;

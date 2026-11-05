@@ -139,7 +139,7 @@ pub(super) fn reenter_temporal_operation<
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     phase: &WorthQueryAdvancementPhase<'_>,
 
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::conditional_operation::host::ConditionalOperationHost<Schema>,
     product: &crate::basis::WorthQueryProductBranchLease,
     operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
     access: &WorthQueryTemporalReconstructionAccess<

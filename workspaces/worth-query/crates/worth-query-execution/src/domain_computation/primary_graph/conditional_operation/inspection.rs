@@ -119,22 +119,21 @@ impl WorthQueryConditionalRuntimeInspection {
     }
 }
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub trait InspectionOps<Schema>:
+    crate::domain_computation::primary_graph::conditional_operation::host::ConditionalOperationHost<
+    Schema,
+>
 where
     Schema: ApplicationSchema,
 {
-    pub fn inspect_conditional_runtime(&self) -> WorthQueryConditionalRuntimeInspection {
+    fn inspect_conditional_runtime(&self) -> WorthQueryConditionalRuntimeInspection {
         let registry = self
-            .conditional_operations
+            .conditional_operations()
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .snapshot();
         let retained = registry.retained_resource_counts();
-        let bridge = self
-            .runtime
-            .bridge
-            .conditional()
-            .conditional_lifecycle_probe();
+        let bridge = self.bridge().conditional().conditional_lifecycle_probe();
         WorthQueryConditionalRuntimeInspection::from_live_resources(
             registry.len(),
             bridge.live_managed_clock_count(),
@@ -149,37 +148,33 @@ where
         )
     }
 
-    pub fn conditional_runtime_lifecycle_probe(
+    fn conditional_runtime_lifecycle_probe(
         &self,
     ) -> super::WorthQueryConditionalRuntimeLifecycleProbe {
-        let bridge = self
-            .runtime
-            .bridge
-            .conditional()
-            .conditional_lifecycle_probe();
+        let bridge = self.bridge().conditional().conditional_lifecycle_probe();
         let registry = self
-            .conditional_operations
+            .conditional_operations()
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .snapshot();
         registry.lifecycle_probe(bridge)
     }
 
-    pub fn close_conditional_runtime(
+    fn close_conditional_runtime(
         &mut self,
     ) -> Result<
         WorthQueryConditionalRuntimeInspection,
         WorthQueryConditionalRuntimeInstallationDenial,
     > {
-        if self.installed_resources.cleanup_retained() {
+        if self.installed_resources().cleanup_retained() {
             return Err(WorthQueryConditionalRuntimeInstallationDenial::new(
                 super::WorthQueryConditionalRuntimeInstallationDenialKind::ResourceCleanupRetained,
                 "installed resources still own process-local cleanup or recovery custody",
             ));
         }
         let pending = self
-            .conditional_operations
-            .get_mut()
+            .conditional_operations()
+            .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .snapshot()
             .pending_managed_cleanup();
@@ -196,3 +191,6 @@ where
         Ok(before)
     }
 }
+
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::conditional_operation::host::ConditionalOperationHost<Schema> + ?Sized> InspectionOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema, {}

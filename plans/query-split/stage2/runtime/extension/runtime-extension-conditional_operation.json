@@ -1,0 +1,46 @@
+{
+ "module": "domain_computation::primary_graph::conditional_operation",
+ "blocks": 2,
+ "methods": 5,
+ "traits": [
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/conditional_operation/inspection.rs",
+   "trait": "InspectionOps",
+   "visibility": "pub",
+   "methods": [
+    "inspect_conditional_runtime",
+    "conditional_runtime_lifecycle_probe",
+    "close_conditional_runtime"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/conditional_operation/reinstallation.rs",
+   "trait": "ReinstallationOps",
+   "visibility": "pub",
+   "methods": [
+    "reinstall_conditional_runtime",
+    "reinstall_conditional_runtime_for_installation"
+   ]
+  }
+ ],
+ "facades": 5,
+ "host": {
+  "core_fields": [
+   "bridge",
+   "granular_invalidation"
+  ],
+  "top_fields": [
+   "conditional_operations",
+   "installed_resources"
+  ],
+  "core_methods": [
+   "installed_packages",
+   "retain_installed_packages"
+  ],
+  "foreign": [
+   "on_branch",
+   "release_conditional_runtime_resources"
+  ],
+  "hand": []
+ }
+}

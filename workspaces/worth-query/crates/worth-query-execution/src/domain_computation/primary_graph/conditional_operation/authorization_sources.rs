@@ -58,7 +58,7 @@ pub trait WorthQueryTemporalQueryAuthorization<
     fn admit<'a>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &'a dyn crate::domain_computation::primary_graph::conditional_operation::host::ConditionalOperationHost<Schema>,
         query: &'a WorthQueryInstalledApplicationQuery<
             Schema,
             Query,
@@ -110,7 +110,7 @@ where
     fn admit<'a>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &'a dyn crate::domain_computation::primary_graph::conditional_operation::host::ConditionalOperationHost<Schema>,
         query: &'a WorthQueryInstalledApplicationQuery<
             Schema,
             Query,
@@ -141,6 +141,7 @@ where
         WorthQueryTemporalQueryAuthorizationDenial,
     > {
         runtime
+            .application_runtime()
             .admit_application_query(execution, query, access, parameters, controls)
             .map_err(WorthQueryTemporalQueryAuthorizationDenial::Query)
     }
@@ -233,7 +234,7 @@ where
     fn admit<'a>(
         &self,
 execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &'a dyn crate::domain_computation::primary_graph::conditional_operation::host::ConditionalOperationHost<Schema>,
         query: &'a WorthQueryInstalledApplicationQuery<
             Schema,
             Query,
@@ -277,7 +278,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         )
         .map_err(WorthQueryTemporalQueryAuthorizationDenial::Authorization)?;
         runtime
-            .admit_governed_application_query(execution, query, access, capability, parameters, controls)
+            .application_runtime().admit_governed_application_query(execution, query, access, capability, parameters, controls)
             .map_err(WorthQueryTemporalQueryAuthorizationDenial::Query)
     }
 }

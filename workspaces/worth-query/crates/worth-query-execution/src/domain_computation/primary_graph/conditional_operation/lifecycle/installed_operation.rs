@@ -43,13 +43,13 @@ pub trait WorthQueryInstalledConditionalOperation<Schema>: Send {
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         bridge: &BridgeSealedRuntimeAssembly,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::conditional_operation::host::ConditionalOperationHost<Schema>,
         truth: &WorthQueryConditionalTruthBasis,
     ) -> Result<(), WorthQueryConditionalRuntimeInstallationDenial>;
 
     fn reconstruct(
         &mut self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::conditional_operation::host::ConditionalOperationHost<Schema>,
     ) -> Result<(), WorthQueryConditionalRuntimeInstallationDenial>;
 
     fn reconcile_reconstruction(
@@ -60,7 +60,7 @@ pub trait WorthQueryInstalledConditionalOperation<Schema>: Send {
     fn prepare_derived_runtime_reinstallation(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::conditional_operation::host::ConditionalOperationHost<Schema>,
         bridge: &mut worth_runtime_bridge::facade::BridgePreparedConditionalReconstitution,
         product: &crate::basis::WorthQueryProductBranchLease,
     ) -> Result<
@@ -84,7 +84,7 @@ pub trait WorthQueryInstalledConditionalOperation<Schema>: Send {
         phase: &WorthQueryAdvancementPhase<'_>,
 
         bridge: &BridgeSealedRuntimeAssembly,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::conditional_operation::host::ConditionalOperationHost<Schema>,
         truth: &WorthQueryConditionalTruthBasis,
     ) -> ErasedClockObservationOutcome;
 

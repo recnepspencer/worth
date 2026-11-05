@@ -52,7 +52,7 @@ pub(super) fn bind_source_records<
     IdentityUnit,
 >(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::conditional_operation::host::ConditionalOperationHost<Schema>,
     candidates: BTreeMap<String, WorthQueryTemporalIntentCandidate<Clock, Input>>,
     identity_field: ApplicationFieldRef<
         Schema,
@@ -78,6 +78,7 @@ where
     IdentityUnit: ApplicationFieldUnit,
 {
     let selected = runtime
+        .application_runtime()
         .on_product(execution, product.retained_clone())
         .map_err(super::product_denial)?;
     candidates

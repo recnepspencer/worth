@@ -10,10 +10,7 @@ use super::{
 use crate::domain_computation::primary_graph::conditional_operation::signal_decision_reentry::WorthQueryRetainedConditionalWake;
 
 pub(super) struct AuthoritativeClockWork<'a, Schema> {
-    pub(super) runtime:
-        &'a crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
-            Schema,
-        >,
+    pub(super) runtime: &'a dyn crate::domain_computation::primary_graph::conditional_operation::host::ConditionalOperationHost<Schema>,
     pub(super) bridge: &'a BridgeSealedRuntimeAssembly,
     pub(super) signal_basis: &'a BridgeConditionalSignalBasisBinding,
     pub(super) relational_branch: &'a worth_relational::facade::history::BranchId,
