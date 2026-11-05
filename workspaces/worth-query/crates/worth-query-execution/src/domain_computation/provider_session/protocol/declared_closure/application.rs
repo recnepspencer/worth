@@ -1,13 +1,17 @@
-use {crate::domain_computation::vocabulary::provider_session::declared_closure::bind_direct_role_closure, crate::domain_computation::vocabulary::provider_session::declared_closure::effect_families, crate::domain_computation::vocabulary::provider_session::declared_closure::invariant_slots, crate::domain_computation::vocabulary::provider_session::declared_closure::WorthQueryProviderPlanDeclarations, crate::domain_computation::vocabulary::provider_session::declared_closure::WorthQueryProviderPlanDeclaredClosure};
-
-
-
-
-
+use {
+    crate::domain_computation::vocabulary::provider_session::declared_role_closure::bind_direct_role_closure,
+    crate::domain_computation::vocabulary::provider_session::declared_role_closure::effect_families,
+    crate::domain_computation::vocabulary::provider_session::declared_role_closure::invariant_slots,
+    crate::domain_computation::vocabulary::provider_session::declared_closure::WorthQueryProviderPlanDeclarations,
+    crate::domain_computation::vocabulary::provider_session::declared_role_closure::WorthQueryProviderPlanDeclaredClosure,
+};
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain_computation::vocabulary::provider_session::application::bind_application_candidate_effect_closure;
+    use crate::domain_computation::vocabulary::provider_session::application::bind_native_reference_invariants;
+    use crate::domain_computation::vocabulary::provider_session::application::WorthQueryApplicationEffectPosture;
     use worth_query_installation::facade::{
         WorthQueryInstalledInvariantExecutionRequirement, WorthQueryInvariantEnforcement,
         WorthQueryInvariantExecutionContract,

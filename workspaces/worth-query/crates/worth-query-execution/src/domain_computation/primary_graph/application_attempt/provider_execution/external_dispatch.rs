@@ -33,10 +33,14 @@ use crate::domain_computation::application_aftermath::{
 use crate::domain_computation::authorization::{
     WorthQueryAdmissionLapse, WorthQueryAdmittedApplicationOperation,
 };
-pub use {denial::WorthQueryExternalDispatchPreparationDenial, denial::WorthQueryExternalRedispatchDenial, denial::WorthQueryExternalTransportInstallationDenial};
 use {
     crate::domain_computation::primary_graph::application_inbound::inbound_publication::InstalledTransportCompletion,
     crate::domain_computation::primary_graph::application_inbound::inbound_publication::InstalledTransportResumeOutcome,
+};
+pub use {
+    denial::WorthQueryExternalDispatchPreparationDenial,
+    denial::WorthQueryExternalRedispatchDenial,
+    denial::WorthQueryExternalTransportInstallationDenial,
 };
 
 /// Owner-sealed material for one re-dispatch that actually crossed the

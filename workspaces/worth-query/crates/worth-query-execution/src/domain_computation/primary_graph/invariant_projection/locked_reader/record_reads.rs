@@ -1,11 +1,11 @@
 //! Entity/field reads of the selected native snapshot.
 use super::*;
-use crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
-use worth_relational::facade::transactions::RelationalExecutionDenialCause as NativeReadStop;
 use crate::domain_computation::primary_graph::vocabulary::entity_resolution_denial::WorthQueryEntityResolutionDenial;
-use crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionDenialKind;
 use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
+use crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionDenialKind;
+use crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
 use crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode;
+use worth_relational::facade::transactions::RelationalExecutionDenialCause as NativeReadStop;
 
 impl<Schema> WorthQueryApplicationInvariantProjectionReader<'_, Schema>
 where

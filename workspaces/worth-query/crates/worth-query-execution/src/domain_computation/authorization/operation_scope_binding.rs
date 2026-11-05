@@ -2,11 +2,9 @@
 
 use std::sync::Arc;
 
-use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 use crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryDecisionScopeWitness;
 use crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding;
-
-
+use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 
 /// The runtime, installed schema binding, operation, principal, and scope that
 /// one operation admission was bound to.
@@ -22,7 +20,6 @@ pub struct WorthQueryOperationScopeBinding {
     principal: WorthQueryOperationScopeEntityBinding,
     scope: WorthQueryOperationScopeEntityBinding,
 }
-
 
 impl WorthQueryOperationScopeBinding {
     pub(in crate::domain_computation) fn decision_reuse_witness(

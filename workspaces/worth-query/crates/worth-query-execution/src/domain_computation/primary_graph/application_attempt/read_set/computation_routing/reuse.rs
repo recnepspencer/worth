@@ -171,7 +171,7 @@ impl NativeReadRefresh {
     pub(in crate::domain_computation::primary_graph::application_attempt::read_set) fn position(
         &self,
         key: &WorthQueryApplicationFactKey,
-    ) -> Option<crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::InstalledScopePosition> {
+    ) -> Option<crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::InstalledScopePosition>{
         self.layout.scopes.position(self.ordinal(key)?)
     }
     pub(in crate::domain_computation::primary_graph::application_attempt::read_set) fn decisions(
@@ -230,7 +230,7 @@ impl NativeReadRefresh {
         crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::CompletedReadScopes,
         Arc<[usize]>,
         usize,
-    ) {
+    ){
         self.prior.projection = Some(projection);
         self.prior.original = original;
         self.prior.content = content;

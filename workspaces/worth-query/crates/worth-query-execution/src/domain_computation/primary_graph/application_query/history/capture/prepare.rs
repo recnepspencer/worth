@@ -8,9 +8,18 @@ use worth_relational::facade::history::{
 };
 
 use super::super::super::projection::WorthQueryApplicationDisclosedProjectionTree;
-use {super::super::admission::HistoryMetadataAdmission, super::super::bounds::WorthQueryApplicationHistoryCaptureLimits as Limits, crate::domain_computation::primary_graph::vocabulary::application_query::history_denial::WorthQueryApplicationHistoryDenial as Denial, super::super::request_stage, super::super::SubjectPlan};
 use super::{walk::CaptureWalk, PreparedHistoryCapture};
-use {crate::domain_computation::primary_graph::vocabulary::application_query::authorized_read::WorthQueryAuthorizedApplicationReadDenial, crate::domain_computation::primary_graph::application_query::read_execution::relational_read_denial, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout};
+use {
+    super::super::admission::HistoryMetadataAdmission,
+    super::super::bounds::WorthQueryApplicationHistoryCaptureLimits as Limits,
+    super::super::request_stage, super::super::SubjectPlan,
+    crate::domain_computation::primary_graph::vocabulary::application_query::history_denial::WorthQueryApplicationHistoryDenial as Denial,
+};
+use {
+    crate::domain_computation::primary_graph::application_query::read_execution::relational_read_denial,
+    crate::domain_computation::primary_graph::vocabulary::application_query::authorized_read::WorthQueryAuthorizedApplicationReadDenial,
+    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
+};
 
 /// Called only from the genuine authorized-read callback at its admitted security snapshot.
 #[allow(clippy::too_many_arguments)]

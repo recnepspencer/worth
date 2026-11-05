@@ -23,8 +23,8 @@ mod compound_patch_tests;
 mod expected_steps;
 #[cfg(test)]
 mod ordering_tests;
-use commit_projections::materialize_commit_projections;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::expected_steps::WorthQueryExpectedEffectStepPreparationWork;
+use commit_projections::materialize_commit_projections;
 use expected_steps::WorthQueryExpectedEffectSteps;
 
 pub(super) struct WorthQueryProviderEffectAccumulator<'facts, 'layout, Facts: FactSequence + ?Sized>
@@ -247,7 +247,7 @@ impl WorthQueryRegisteredProviderEffects {
             >,
         ),
         &'static str,
-    > {
+    >{
         let idempotency = dispatch_basis.idempotency;
         let outcome_identity = dispatch_basis.outcome_identity;
         let mutation_partition = self.mutation_partition;

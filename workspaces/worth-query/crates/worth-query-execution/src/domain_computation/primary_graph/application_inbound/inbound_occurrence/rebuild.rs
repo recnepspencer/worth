@@ -6,7 +6,7 @@ use std::num::NonZeroUsize;
 use worth_runtime_world::facade::{CompositeComponentChangePosture, RuntimeWorldPublicationRow};
 
 use super::reconstruct::pair_world_history;
-use super::{WorthQueryInboundVerifierHandle, WorthQueryPrimaryGraphApplicationRuntime};
+use super::WorthQueryInboundVerifierHandle;
 use crate::domain_computation::primary_graph::provider::{
     WorthQueryCanonicalInboundCompletion, WorthQueryInboundCompletionReadDenial,
     WorthQueryInboundTerminalIndexDenial as Denial,

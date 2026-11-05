@@ -145,7 +145,7 @@ impl WorthQueryResourceActionDenial {
     pub fn action_authorization_denial_kind(
         &self,
     ) -> Option<crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind>
-    {
+{
         match &self.cause {
             ResourceCause::Admission(ResourceAdmissionDenial::Authorization(cause)) => {
                 Some(cause.kind())

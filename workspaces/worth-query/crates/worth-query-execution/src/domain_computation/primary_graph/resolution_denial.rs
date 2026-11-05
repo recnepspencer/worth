@@ -1,15 +1,9 @@
-use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
-use worth_query_installation::facade::WorthQueryPrincipalBindingInstallationDenialKind;
-use worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind;
 use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenial;
 use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenialKind;
+use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
 use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionRefusalKind;
-
-
-
-
-
-
+use worth_query_installation::facade::WorthQueryPrincipalBindingInstallationDenialKind;
+use worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind;
 
 pub(super) fn principal_binding_resolution_denial(
     kind: WorthQueryPrincipalBindingInstallationDenialKind,
@@ -157,7 +151,6 @@ pub(super) fn relational_read_denial(
     };
     resolution_denial(kind, binding)
 }
-
 
 #[cfg(test)]
 mod tests {

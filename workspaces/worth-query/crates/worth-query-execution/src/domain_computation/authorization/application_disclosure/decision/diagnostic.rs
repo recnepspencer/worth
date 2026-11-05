@@ -1,7 +1,7 @@
 //! Fresh field and observable-influence admission precedes retained-body lookup.
 use super::*;
-use crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint;
 use crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationInspectionTarget;
+use crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint;
 use std::sync::Arc;
 use worth_execution::{MapKernelContext, MapKernelFailure, MapKernelStop};
 use worth_query_declaration::facade::application_query::{

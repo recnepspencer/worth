@@ -6,8 +6,8 @@
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) struct WorthQueryExpectedEffectStepPreparationWork
 {
-    key_lookups: usize,
-    duplicate_equalities: usize,
+    pub(in crate::domain_computation::primary_graph) key_lookups: usize,
+    pub(in crate::domain_computation::primary_graph) duplicate_equalities: usize,
 }
 
 impl WorthQueryExpectedEffectStepPreparationWork {

@@ -3,9 +3,9 @@ use super::*;
 use crate::domain_computation::authorization::WorthQueryOperationScopeBinding;
 
 pub(crate) mod head;
-use head::SelectedRequiredPublicationHead;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
 use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
+use head::SelectedRequiredPublicationHead;
 
 impl WorthQueryApplicationOutputLineage {
     pub(in crate::domain_computation::primary_graph) fn required_publication_head(

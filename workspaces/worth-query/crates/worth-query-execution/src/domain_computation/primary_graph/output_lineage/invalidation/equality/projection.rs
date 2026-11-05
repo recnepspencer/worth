@@ -1,7 +1,7 @@
 //! A certified successor shares output custody, without retaining obsolete inputs.
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
 use super::super::mark_state::MarkState;
 use crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SettlementRegistrationStop;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
 use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 use std::sync::Arc;
 

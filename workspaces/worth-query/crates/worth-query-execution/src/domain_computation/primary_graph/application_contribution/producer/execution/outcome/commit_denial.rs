@@ -1,8 +1,11 @@
 //! A commit refusal retains its native cause and publication staleness.
 use super::*;
-use {crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control, crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind as Native};
 use crate::domain_computation::vocabulary::primary_graph::capacity_stop::VerificationCapacityStop;
 use graph::WorthQueryApplicationCommitDenialStage as Stage;
+use {
+    crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control,
+    crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind as Native,
+};
 
 pub(super) fn stopped(
     identity: &str,

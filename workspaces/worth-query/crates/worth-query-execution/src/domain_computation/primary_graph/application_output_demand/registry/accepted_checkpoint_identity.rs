@@ -52,8 +52,6 @@ impl WorthQueryAcceptedOutputCheckpointIdentity {
     }
 }
 
-
-
 // Resource custody is not semantic checkpoint identity.
 impl PartialEq for WorthQueryAcceptedOutputCheckpointIdentity {
     fn eq(&self, other: &Self) -> bool {

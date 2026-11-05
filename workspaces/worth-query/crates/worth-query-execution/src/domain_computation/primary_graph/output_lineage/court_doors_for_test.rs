@@ -1,9 +1,9 @@
 //! Sealed test doors over this module's private members.
 use super::*;
 use crate::domain_computation::primary_graph::vocabulary::output_family_identity::OutputFamilyIdentity;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
 
 impl WorthQueryApplicationOutputLineage {
     #[doc(hidden)]
@@ -34,7 +34,6 @@ impl WorthQueryApplicationOutputLineage {
         &mut self.by_source
     }
 }
-
 
 impl WorthQueryCurrentOutputFamilyResolution {
     #[doc(hidden)]
@@ -198,7 +197,7 @@ impl WorthQueryCurrentOutputCandidate {
     #[doc(hidden)]
     pub fn verification_requirement_for_test(
         &self,
-    ) -> &Option<crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason> {
+    ) -> &Option<crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason>{
         &self.verification_requirement
     }
 }
@@ -322,7 +321,7 @@ impl WorthQueryExactRecordedOutput {
         ApplicationSchemaBindingIdentity,
         crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding,
         RetainedSourceFacts,
-    ) {
+    ){
         (
             self.producing_implementation,
             self.correspondence,

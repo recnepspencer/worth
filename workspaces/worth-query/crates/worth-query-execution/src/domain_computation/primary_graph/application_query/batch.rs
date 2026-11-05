@@ -4,7 +4,6 @@ pub(crate) mod planning;
 pub(in crate::domain_computation::primary_graph) use planning::PlannedBatchItem;
 pub use planning::WorthQueryApplicationQueryBatchReadPlan;
 
-
 /// Exact scheduled slots issued from installed queries; not disclosure authority.
 #[derive(Clone)]
 pub struct WorthQueryApplicationQueryBatchAdmission {
@@ -30,5 +29,5 @@ impl WorthQueryApplicationQueryBatchAdmission {
         }
     }
 }
-pub use planning::PlanningOps;
 use crate::domain_computation::primary_graph::vocabulary::application_query::batch::WorthQueryApplicationQueryBatchResourceDenial;
+pub use planning::PlanningOps;

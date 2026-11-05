@@ -17,13 +17,13 @@ use worth_runtime_world::facade::ProductBranchObservation;
 
 mod changes;
 use super::recorded_output::RecordedOutput;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
 use super::WorthQueryApplicationOutputLineage;
 use crate::domain_computation::primary_graph::application_contribution::ComputationPrior;
 use crate::domain_computation::primary_graph::application_contribution::InstalledProducerEdition;
 use crate::domain_computation::primary_graph::application_contribution::PriorAbsence;
 use crate::domain_computation::primary_graph::application_contribution::SealedComputationRun;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
 
 /// What a record holds of its computation's state.
 pub enum RecordedComputation {

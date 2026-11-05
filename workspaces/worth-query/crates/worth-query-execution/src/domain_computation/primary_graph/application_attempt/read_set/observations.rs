@@ -10,7 +10,11 @@ use worth_query_installation::facade::{
 use super::super::fact::{WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact};
 use super::super::observation::{exact_relations, observe_field_value};
 use super::{denial, WorthQueryApplicationReadAttempt, WorthQueryObservedApplicationRelation};
-use {crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity};
+use {
+    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity,
+    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
+};
 
 impl<Schema, Operation, Input, Scope, Phase>
     WorthQueryApplicationReadAttempt<'_, '_, Schema, Operation, Input, Scope, Phase>

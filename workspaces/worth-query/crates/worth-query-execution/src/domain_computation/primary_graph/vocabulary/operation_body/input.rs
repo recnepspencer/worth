@@ -4,5 +4,5 @@ use worth_foundational::facade::AspectValue;
 
 pub(in crate::domain_computation::primary_graph) struct PreparedBodyInputs {
     pub(in crate::domain_computation::primary_graph) values: Vec<Option<AspectValue>>,
-    _reservation: QueryMemoryReservation,
+    pub(in crate::domain_computation::primary_graph) _reservation: QueryMemoryReservation,
 }

@@ -34,7 +34,7 @@ impl<S: ApplicationSchema, F: WorthQueryProducerOutputFamily<S>>
     ) -> Result<
         Option<crate::domain_computation::vocabulary::managed_run::inspection::WorthQueryDirectRunCleanupReceipt>,
         WorthQueryOutputDemandDenial,
-    > {
+    >{
         match self.terminal_caller_denial.as_mut() {
             Some(stop) => stop.release_managed_cleanup(phase),
             None => Ok(None),

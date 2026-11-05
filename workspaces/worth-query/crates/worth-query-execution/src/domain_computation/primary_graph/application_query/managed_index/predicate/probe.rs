@@ -1,5 +1,4 @@
 //! Actual admitted Parent parameters retain their original funded raw probe.
-use {crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop, crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial as Denial};
 use crate::domain_computation::primary_graph::{
     application_query::one_shot::outcome::material::MaterialCompletion,
     source_facts::SourceFactsAllocation,
@@ -10,6 +9,10 @@ use worth_foundational::facade::AspectValue;
 use worth_query_admission::facade::application_query::WorthQueryAdmittedApplicationQueryParameters as Parameters;
 use worth_query_installation::facade::WorthQueryInstalledManagedIndexParent as Parent;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
+use {
+    crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial as Denial,
+    crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop,
+};
 
 pub(in crate::domain_computation::primary_graph::application_query) struct RetainedPredicateProbe {
     pub(super) parent: Parent,

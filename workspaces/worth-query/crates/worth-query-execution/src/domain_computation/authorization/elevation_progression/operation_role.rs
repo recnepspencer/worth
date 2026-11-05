@@ -7,7 +7,10 @@ use worth_query_installation::facade::{
 use super::super::capability_registry::{
     WorthQueryElevationLifecycleOperationRole, WorthQueryInstalledCapabilityPlan,
 };
-use {super::super::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind};
+use {
+    super::super::WorthQueryOperationAuthorizationDenial,
+    crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind,
+};
 
 pub(super) fn installed_lifecycle_owner<'runtime, Schema, Operation, Input>(
     runtime: &'runtime dyn crate::domain_computation::authorization::host::AuthorizationHost<

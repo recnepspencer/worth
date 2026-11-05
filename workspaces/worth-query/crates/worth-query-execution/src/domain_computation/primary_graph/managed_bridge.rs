@@ -4,13 +4,13 @@ use worth_query_installation::facade::{
 use worth_runtime_bridge::facade::{
     AspectKeySelector, BridgeAspectRegistration, BridgeAspectRegistrationId,
     BridgeConditionalRuntimeBuilder, BridgeDeliveryReceipt, BridgeMappingId,
-    BridgeMappingRegistration, BridgeRuntimePolicy, BridgeSealedRuntimeAssembly,
-    BridgeSourceAdapter, BridgeSourceCapability, BridgeSourceCapabilitySet,
-    BridgeTruthViewSelector, CoarseRoutingMode, InvalidationSink, MappingSelector, RuntimeBridge,
-    RuntimeBridgeBuilder, RuntimeBridgeRelationalSource, SignalBridgeSinkError,
-    SignalInvalidationScope, SliceWideningPolicy, SnapshotReadContract, SnapshotReadSource,
-    SourceDeclaration, SourceDeclarationIdentity, SubscriptionSliceKind, TruthDeltaSurfaceKind,
-    TruthPatchScope, TruthPatchTargetSelector, TruthSnapshotIdentity, TruthSnapshotReader,
+    BridgeMappingRegistration, BridgeRuntimePolicy, BridgeSourceAdapter, BridgeSourceCapability,
+    BridgeSourceCapabilitySet, BridgeTruthViewSelector, CoarseRoutingMode, InvalidationSink,
+    MappingSelector, RuntimeBridge, RuntimeBridgeBuilder, RuntimeBridgeRelationalSource,
+    SignalBridgeSinkError, SignalInvalidationScope, SliceWideningPolicy, SnapshotReadContract,
+    SnapshotReadSource, SourceDeclaration, SourceDeclarationIdentity, SubscriptionSliceKind,
+    TruthDeltaSurfaceKind, TruthPatchScope, TruthPatchTargetSelector, TruthSnapshotIdentity,
+    TruthSnapshotReader,
 };
 
 use super::{
@@ -52,8 +52,6 @@ impl WorthQueryApplicationBridgeInstallation {
         })
     }
 }
-
-
 
 pub(super) fn install_application_bridge<Schema>(
     schema: &WorthQueryInstalledApplicationSchema<Schema>,

@@ -3,16 +3,17 @@ use worth_foundational::facade::DeterminismContract;
 use crate::domain_computation::vocabulary::primary_graph::handler_fact_boundary::CompletedHandlerFactBoundary;
 
 use crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryDecisionScopeWitness;
-use {crate::domain_computation::vocabulary::primary_graph::input_reuse_contract::WorthQueryDecisionContextDependencies, crate::domain_computation::vocabulary::primary_graph::input_reuse_contract::WorthQueryProducerInputReuseContract, crate::domain_computation::vocabulary::primary_graph::freshness::WorthQueryPrincipalReuseWitness, crate::domain_computation::vocabulary::primary_graph::decision_context_use::DecisionContextUse};
-
-
-
-
-
+use {
+    crate::domain_computation::vocabulary::primary_graph::decision_context_use::DecisionContextUse,
+    crate::domain_computation::vocabulary::primary_graph::freshness::WorthQueryPrincipalReuseWitness,
+    crate::domain_computation::vocabulary::primary_graph::input_reuse_contract::WorthQueryDecisionContextDependencies,
+    crate::domain_computation::vocabulary::primary_graph::input_reuse_contract::WorthQueryProducerInputReuseContract,
+};
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain_computation::vocabulary::primary_graph::decision_reuse::PreparedDecisionReuseContext;
 
     #[test]
     fn completed_read_reuse_accepts_tracked_context_and_rejects_raw_or_undeclared_use() {

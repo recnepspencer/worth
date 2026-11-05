@@ -1,6 +1,5 @@
 //! Immutable installed producer contracts, inspected without discovering or running outputs.
 use super::*;
-use crate::domain_computation::primary_graph::runtime_host::WorthQueryRuntimeIdentityHost;
 use crate::domain_computation::primary_graph::WorthQueryDocumentHistoryDenial;
 
 impl<S: ApplicationSchema, P: ApplicationProgramDefinition<S>>

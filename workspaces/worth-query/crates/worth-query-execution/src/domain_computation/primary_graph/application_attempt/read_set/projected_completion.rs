@@ -7,7 +7,11 @@ use worth_query_installation::facade::{ApplicationRelationRef, OperationReads};
 use super::super::fact::{WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact};
 use super::super::read_phase::WorthQueryProjectedApplicationMutation;
 use super::{denial, WorthQueryApplicationReadAttempt, WorthQueryCompleteApplicationReadSet};
-use {crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity};
+use {
+    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity,
+    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
+};
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationReadAttempt<
@@ -134,7 +138,7 @@ impl<Schema, Operation, Input, Scope>
             WorthQueryApplicationObservedFact,
         ),
         WorthQueryApplicationAttemptDenial,
-    > {
+    >{
         if let WorthQueryApplicationFactKey::ComponentSelection(key) = key {
             return super::components::observe(
                 execution,
@@ -270,7 +274,7 @@ pub(super) fn observe_projection_dependency<Schema, Operation, Input, Scope>(
         WorthQueryApplicationObservedFact,
     ),
     WorthQueryApplicationAttemptDenial,
-> {
+>{
     if !key_entities_are_in_scope(key, read_scope) {
         return Err(denial(
             WorthQueryApplicationAttemptDenialKind::OutsideRealizedReadScope,

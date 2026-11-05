@@ -4,9 +4,12 @@ use super::super::super::{
     target::InspectionTargetDenial as Target,
 };
 use super::*;
-use {crate::domain_computation::vocabulary::primary_graph::retained_stage::RetainedStorageDenial as Storage, crate::domain_computation::primary_graph::application_query::ProjectionComparisonDenial as Comparison};
 use worth_runtime_bridge::facade::BridgeQueryObservationReportingStop as Bridge;
 use InspectionAdmissionDenial as A;
+use {
+    crate::domain_computation::primary_graph::application_query::ProjectionComparisonDenial as Comparison,
+    crate::domain_computation::vocabulary::primary_graph::retained_stage::RetainedStorageDenial as Storage,
+};
 fn captured<E>(cause: E) -> CaptureStop<E> {
     CaptureStop::Kernel(ScopeStop::Failure(MapKernelFailure::Domain(cause)))
 }

@@ -19,7 +19,6 @@ pub enum WorthQueryProviderSessionProtocolStage {
     Abort,
 }
 
-
 /// A provider session's exact failure, protocol stage and recovery posture.
 /// Native preparation and allocation causes remain available for inspection;
 /// this description does not itself grant retry or cleanup authority.
@@ -62,7 +61,7 @@ impl WorthQueryProviderSessionFailure {
     pub fn preimage_retention_denial(
         &self,
     ) -> Option<crate::domain_computation::vocabulary::application_aftermath::retained_preimage::WorthQueryPreImageRetentionDenial>
-    {
+{
         self.preimage
     }
     pub fn new(
@@ -100,7 +99,7 @@ impl WorthQueryProviderSessionFailure {
     /// data does not change the failure's category or recovery posture.
     pub const fn output_verification_capacity_stop(
         &self,
-    ) -> Option<crate::domain_computation::vocabulary::primary_graph::capacity_stop::VerificationCapacityStop> {
+    ) -> Option<crate::domain_computation::vocabulary::primary_graph::capacity_stop::VerificationCapacityStop>{
         self.output_verification_capacity
     }
 
@@ -130,7 +129,7 @@ impl WorthQueryProviderSessionFailure {
             WorthQueryProviderSessionDenialKind,
             crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
         >,
-    > {
+    >{
         self.checked_read.as_deref().copied()
     }
 
@@ -138,7 +137,7 @@ impl WorthQueryProviderSessionFailure {
     pub fn source_query_authorization_stop(
         &self,
     ) -> Option<crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind>
-    {
+{
         self.source_query_authorization.as_deref().copied()
     }
 
@@ -242,10 +241,16 @@ pub(in crate::domain_computation) fn advancement_denial_cause(
 ) -> Result<
     crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
     crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
-> {
+>{
     use crate::domain_computation::request_execution::advancement::WorthQueryAdvancementDenial as Denial;
-    use {crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control, crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind as Kind};
-    use {crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationInterruption, crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource};
+    use {
+        crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationInterruption,
+        crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource,
+    };
+    use {
+        crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control,
+        crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind as Kind,
+    };
     match denial {
         Denial::Resource(denial) => Ok(Kind::ExecutionResource {
             denial,

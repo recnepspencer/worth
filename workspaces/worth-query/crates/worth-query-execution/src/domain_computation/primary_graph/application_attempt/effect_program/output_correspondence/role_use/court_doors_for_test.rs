@@ -2,7 +2,6 @@
 use super::*;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::role_use::OutputRoleUse;
 
-
 impl OutputRoleUse {
     #[doc(hidden)]
     pub fn member_for_test<Family, Action>(

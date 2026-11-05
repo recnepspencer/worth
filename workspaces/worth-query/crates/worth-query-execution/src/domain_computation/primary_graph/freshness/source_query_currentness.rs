@@ -1,8 +1,8 @@
 //! Native revision dependencies of an already authenticated principal.
 use super::*;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact as Fact;
-use worth_relational::facade::mvcc::CompanionPreflightStop;
 use crate::domain_computation::vocabulary::primary_graph::principal_binding::WorthQueryPrimaryPrincipalBindingLayout;
+use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 impl WorthQueryPrincipalFreshnessEvidence {
     pub(in crate::domain_computation) fn source_query_facts(

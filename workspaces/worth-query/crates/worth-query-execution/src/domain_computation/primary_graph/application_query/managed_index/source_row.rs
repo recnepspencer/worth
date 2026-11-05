@@ -1,7 +1,5 @@
 //! A genuine Source row with controlled, borrow-confined content and text.
 mod content;
-use {super::source_text::SourceText, crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl as Control, crate::domain_computation::primary_graph::vocabulary::application_query::source_rows::WorthQueryManagedIndexSourceSlot as Slot, crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop};
-use {crate::domain_computation::vocabulary::primary_graph::projection_denial::WorthQueryApplicationProjectionDenial, crate::domain_computation::primary_graph::application_query::projection::WorthQueryApplicationProjectionRow, crate::domain_computation::primary_graph::value_decode::ValueDecodeSession};
 use worth_execution::ExecutionRequest;
 use worth_query_declaration::facade::{
     application_query::{
@@ -14,6 +12,17 @@ use worth_query_declaration::facade::{
 use worth_query_installation::facade::{
     ApplicationFieldUnit, ApplicationReadableScalarValueBinding, RequiredApplicationFieldValue,
     WritePosture,
+};
+use {
+    super::source_text::SourceText,
+    crate::domain_computation::primary_graph::vocabulary::application_query::source_rows::WorthQueryManagedIndexSourceSlot as Slot,
+    crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl as Control,
+    crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop,
+};
+use {
+    crate::domain_computation::primary_graph::application_query::projection::WorthQueryApplicationProjectionRow,
+    crate::domain_computation::primary_graph::value_decode::ValueDecodeSession,
+    crate::domain_computation::vocabulary::primary_graph::projection_denial::WorthQueryApplicationProjectionDenial,
 };
 
 type Query<S, I> =

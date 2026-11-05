@@ -12,7 +12,7 @@ pub(in crate::domain_computation) struct CapturedApplicationQueryParameters {
 }
 
 impl CapturedApplicationQueryParameters {
-    fn captured(
+    pub(in crate::domain_computation) fn captured(
         query: WorthQueryInstalledApplicationQueryIdentity,
         parameters: WorthQueryAdmittedApplicationQueryParameters,
         funding: Option<ExecutionMemoryReservation>,

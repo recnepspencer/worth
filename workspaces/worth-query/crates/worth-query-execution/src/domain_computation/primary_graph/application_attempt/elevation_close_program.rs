@@ -9,11 +9,15 @@ use super::elevation_lifecycle_facts::{
     lifecycle_facts_are_exact, WorthQueryElevationLifecycleFactExpectation,
     WorthQueryExpectedLifecycleRelation,
 };
-use {super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, super::WorthQueryApplicationEffectProgram, super::WorthQueryCompleteApplicationReadSet, super::WorthQueryProjectedApplicationMutation};
 use crate::domain_computation::application_contract_admission::{
     application_contract_exactly_matches_program_targets, graph_reads_exactly_match_targets,
 };
 use crate::domain_computation::authorization::WorthQueryElevationCloseBinding;
+use {
+    super::WorthQueryApplicationAttemptDenial, super::WorthQueryApplicationEffectProgram,
+    super::WorthQueryCompleteApplicationReadSet, super::WorthQueryProjectedApplicationMutation,
+    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
+};
 
 /// The exact effect program that closes one approved elevation, ready to commit
 /// through the elevation close lane.

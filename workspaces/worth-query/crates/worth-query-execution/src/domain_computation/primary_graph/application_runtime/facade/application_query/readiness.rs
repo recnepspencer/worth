@@ -1,7 +1,7 @@
 //! The runtime's consumer methods over `readiness` in `domain_computation::primary_graph::application_query`; each only calls its subsystem.
-use crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity;
 use crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial;
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
+use crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity;
 use worth_query_installation::facade::ApplicationSchema;
 
 impl<Schema: ApplicationSchema>

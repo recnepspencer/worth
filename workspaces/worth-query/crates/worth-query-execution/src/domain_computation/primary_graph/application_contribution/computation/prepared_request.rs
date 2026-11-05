@@ -1,10 +1,6 @@
 //! Sealed static compute transport; owner completion is a separate value.
-use crate::domain_computation::primary_graph::vocabulary::application_contribution::member_execution::WorthQueryMemberExecution;
 use std::any::Any;
 use crate::domain_computation::primary_graph::vocabulary::application_contribution::prepared_request::PreparedCompute;
-
-
-
 
 impl PreparedCompute {
     pub(in crate::domain_computation::primary_graph) fn declared_test_request(

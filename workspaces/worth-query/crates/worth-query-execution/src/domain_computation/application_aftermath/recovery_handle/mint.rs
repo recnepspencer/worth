@@ -10,9 +10,7 @@ use crate::domain_computation::managed_run::{
     WorthQueryRecoveryHandleRegistry, WorthQueryRecoveryMintClaim,
     WorthQueryRecoveryResourceTerminal,
 };
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationCommitReceipt, WorthQueryPrimaryGraphApplicationRuntime,
-};
+use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
 use crate::domain_computation::runtime_time::WorthQueryRuntimeClock;
 
 use super::binding::WorthQueryRecoveryHandleBinding;

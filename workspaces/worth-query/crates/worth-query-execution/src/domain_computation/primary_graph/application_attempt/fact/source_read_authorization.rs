@@ -4,11 +4,10 @@ use sha2::{Digest, Sha256};
 use std::sync::Arc;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryBindingObservation;
 use worth_relational::facade::{
-    identity::EntityId, mvcc::CompanionPreflightStop, runtime::RelationalRuntime,
+    mvcc::CompanionPreflightStop, runtime::RelationalRuntime,
     snapshots::SnapshotHandle,
 };
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::source_read_authorization::SourceReadAuthorizationKey;
-
 
 pub(in crate::domain_computation) struct SourceReadAuthorization {
     key: SourceReadAuthorizationKey,

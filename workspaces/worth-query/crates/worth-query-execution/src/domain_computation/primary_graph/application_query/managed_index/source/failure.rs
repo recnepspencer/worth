@@ -9,7 +9,10 @@ pub(in crate::domain_computation::primary_graph::application_query) fn source_pr
     execution: &ExecutionRequest<'_, '_>,
     cause: crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial,
 ) -> Denial {
-    use {crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop, crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial as Work};
+    use {
+        crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial as Work,
+        crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop,
+    };
     match cause {
         Work::Controlled(Stop::Content(cause)) => Denial::Content(cause),
         Work::Controlled(Stop::MaterialStorage(cause)) => source_storage(cause),

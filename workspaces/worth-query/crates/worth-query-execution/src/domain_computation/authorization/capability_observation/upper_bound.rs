@@ -1,6 +1,6 @@
 use super::*;
-use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 pub(in crate::domain_computation::authorization) fn observe_upper_bound_policy(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

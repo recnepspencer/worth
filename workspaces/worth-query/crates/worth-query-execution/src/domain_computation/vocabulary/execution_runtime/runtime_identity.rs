@@ -2,7 +2,8 @@
 use std::sync::atomic::AtomicU64;
 use std::sync::atomic::Ordering;
 
-pub(in crate::domain_computation) static NEXT_RUNTIME_AUTHORITY_IDENTITY: AtomicU64 = AtomicU64::new(1);
+pub(in crate::domain_computation) static NEXT_RUNTIME_AUTHORITY_IDENTITY: AtomicU64 =
+    AtomicU64::new(1);
 
 /// Process-local identity for one concrete Query execution authority owner.
 ///
@@ -29,7 +30,9 @@ impl WorthQueryRuntimeAuthorityIdentity {
     }
 }
 
-pub(in crate::domain_computation) fn next_runtime_authority_ordinal(counter: &AtomicU64) -> Option<u64> {
+pub(in crate::domain_computation) fn next_runtime_authority_ordinal(
+    counter: &AtomicU64,
+) -> Option<u64> {
     {
         let update_counter = counter;
         let mut current = update_counter.load(Ordering::Relaxed);

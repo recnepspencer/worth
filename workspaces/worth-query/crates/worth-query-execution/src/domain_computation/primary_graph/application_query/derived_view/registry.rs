@@ -26,7 +26,10 @@ pub(in crate::domain_computation::primary_graph::application_query) trait Regist
     Send + Sync
 {
     fn dispose(&self);
-    fn belongs_to(&self, basis: &crate::domain_computation::primary_graph::vocabulary::application_query::publication::ViewPublicationBasis<'_>) -> bool;
+    fn belongs_to(
+        &self,
+        basis: &crate::domain_computation::primary_graph::vocabulary::application_query::publication::ViewPublicationBasis<'_>,
+    ) -> bool;
     fn warm_at(&self, before: &worth_runtime_world::facade::CompositeCommitIdentity) -> bool;
     fn prepare_transition(
         &self,

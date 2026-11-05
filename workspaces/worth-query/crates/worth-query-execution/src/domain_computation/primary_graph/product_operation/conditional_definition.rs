@@ -17,7 +17,6 @@ use worth_runtime_world::facade::{
 use super::WorthQuerySelectedProductOperation;
 use crate::domain_computation::primary_graph::vocabulary::conditional_operation::clock_handle::WorthQueryConditionalClockHandle;
 
-
 /// Why publishing a conditional definition was refused before publication.
 /// Nothing was published.
 #[derive(Debug)]

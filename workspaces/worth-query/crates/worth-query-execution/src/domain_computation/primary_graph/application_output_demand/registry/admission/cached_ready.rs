@@ -4,8 +4,8 @@ use super::super::DemandState;
 use super::super::WorthQueryOutputAdvancement;
 use super::super::WorthQueryOutputCheckpoint;
 use super::super::WorthQueryOutputDemandKey;
-use crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
+use crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding;
 
 impl super::super::WorthQueryOutputDemandRegistry {
     /// A scheduling hint for a committed Ready of this exact semantic source.

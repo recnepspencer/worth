@@ -10,7 +10,10 @@ use super::super::fact::{
 };
 use super::denial;
 use crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout;
-use {crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
+use {
+    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
+};
 
 /// The most work observing `key` can take, in the relational work units its
 /// read is bounded by, or `None` when nothing bounds it. An entity or a field

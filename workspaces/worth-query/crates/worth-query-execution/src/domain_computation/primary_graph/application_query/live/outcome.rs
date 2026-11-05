@@ -1,7 +1,14 @@
 use std::marker::PhantomData;
 
-use {crate::domain_computation::vocabulary::primary_graph::projection_denial::WorthQueryApplicationProjectionDenialKind, super::super::WorthQueryApplicationQueryAccessReceipt, crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind};
-use {crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind};
+use {
+    super::super::WorthQueryApplicationQueryAccessReceipt,
+    crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind,
+    crate::domain_computation::vocabulary::primary_graph::projection_denial::WorthQueryApplicationProjectionDenialKind,
+};
+use {
+    crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial,
+    crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind,
+};
 
 /// The specific reason a live read could not be opened.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

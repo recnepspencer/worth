@@ -1,6 +1,8 @@
 //! Atomic field-plus-attachment authoring under the existing operation authority.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::model::WorthQueryApplicationEffectEntity;
 use crate::domain_computation::primary_graph::ContentWriteDenial as Denial;
+use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
 use worth_foundational::facade::ContentRefId;
 use worth_query_declaration::facade::application_schema::{
     ApplicationContentBinding, ApplicationContentFieldRef, ContentRefApplicationValueBinding,
@@ -9,8 +11,6 @@ use worth_query_installation::facade::{
     WorthQueryInstalledApplicationValueBindingCatalog as Catalog, WritableCapability,
 };
 use worth_relational::facade::content::RelationalContentAttachments;
-use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::model::WorthQueryApplicationEffectEntity;
 
 impl<S, O, I, P> WorthQueryApplicationEffectProgramBuilder<S, O, I, P> {
     fn admit_content_target<E>(

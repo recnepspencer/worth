@@ -13,7 +13,10 @@ use worth_query_installation::facade::{
 };
 use worth_relational::facade::storage::RecordLifecycleState;
 
-use {super::WorthQueryApplicationInvariantProjectionSnapshot, crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity, super::WorthQueryInvariantRelation};
+use {
+    super::WorthQueryApplicationInvariantProjectionSnapshot, super::WorthQueryInvariantRelation,
+    crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity,
+};
 
 impl<Schema> WorthQueryApplicationInvariantProjectionSnapshot<Schema>
 where

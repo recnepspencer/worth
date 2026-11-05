@@ -13,7 +13,7 @@ impl<Schema: ApplicationSchema> ApplicationCheckpointHost<Schema>
     fn publication(
         &self,
     ) -> &crate::domain_computation::primary_graph::vocabulary::bootstrap::publication::WorthQueryPrimaryGraphPublication
-    {
+{
         self.runtime.publication()
     }
     fn output_demands(&self) -> &crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandRegistry{

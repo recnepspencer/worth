@@ -108,7 +108,7 @@ pub(in crate::domain_computation) fn encode_workflow_approval_support(
 ) -> Result<
     crate::domain_computation::vocabulary::primary_graph::encoding::FundedActorText,
     WorkflowApprovalRequestEncodingDenial,
->{
+> {
     let request = authorization
         .supporting()
         .map(|support| {

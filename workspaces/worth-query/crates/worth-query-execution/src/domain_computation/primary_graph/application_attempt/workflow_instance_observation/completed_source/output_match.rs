@@ -1,12 +1,12 @@
 //! Choose by validated producer occurrence, never by entity order or current pointers.
 use super::super::history::operation_outputs::ObservedOperationOutputs;
 use super::*;
+use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
 use worth_query_declaration::facade::application_schema::ApplicationOperationBodySuccessionOutputMatch;
 use {
     crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition,
     crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNodeKind,
 };
-use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
 #[cfg(test)]
 mod tests;
 

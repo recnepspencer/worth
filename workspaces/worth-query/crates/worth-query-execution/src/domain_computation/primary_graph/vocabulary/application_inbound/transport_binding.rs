@@ -5,10 +5,10 @@ use worth_query_installation::facade::InstalledInboundOccurrenceContract;
 /// Runtime-sealed operation and verifier audience for one installed outbox.
 /// An external dispatch result cannot supply either field.
 pub struct WorthQueryInstalledTransportCompletionBinding {
-    operation: String,
-    audience: String,
-    contract: InstalledInboundOccurrenceContract,
-    runtime: WorthQueryRuntimeAuthorityIdentity,
+    pub(in crate::domain_computation::primary_graph) operation: String,
+    pub(in crate::domain_computation::primary_graph) audience: String,
+    pub(in crate::domain_computation::primary_graph) contract: InstalledInboundOccurrenceContract,
+    pub(in crate::domain_computation::primary_graph) runtime: WorthQueryRuntimeAuthorityIdentity,
 }
 
 impl WorthQueryInstalledTransportCompletionBinding {

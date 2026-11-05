@@ -119,7 +119,7 @@ impl ReadPlan<'_> {
 impl ReadPlan<'_> {
     pub(in crate::domain_computation::primary_graph::application_query) fn snapshot_unavailable_denial(
         &self,
-    ) -> crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenial {
+    ) -> crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenial{
         if self.contract.orbit().is_some() || !self.contract.root_paths().is_empty() {
             super::read_execution_denial(
                 crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenialKind::TraversalUnavailable,
@@ -134,7 +134,7 @@ impl ReadPlan<'_> {
     }
     pub(in crate::domain_computation::primary_graph::application_query) fn predicate_unavailable_denial(
         &self,
-    ) -> crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenial {
+    ) -> crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenial{
         super::read_execution_denial(
             crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenialKind::PredicateIndexUnavailable,
             match self.contract.predicates() {

@@ -91,7 +91,7 @@ impl WorthQueryOutputDemandDenial {
     pub(in crate::domain_computation::primary_graph) fn release_managed_cleanup(
         &mut self,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
-    ) -> Result<Option<crate::domain_computation::vocabulary::managed_run::inspection::WorthQueryDirectRunCleanupReceipt>, Self> {
+    ) -> Result<Option<crate::domain_computation::vocabulary::managed_run::inspection::WorthQueryDirectRunCleanupReceipt>, Self>{
         match self.cleanup.as_mut().map(|custody| custody.release(phase)) {
             Some(Err(denial)) => Err(denial),
             Some(Ok(receipt)) => Ok(receipt),
@@ -181,7 +181,7 @@ impl WorthQueryOutputDemandDenial {
     /// Diagnostic data grants no admission, currentness, retry or cleanup.
     pub fn output_verification_capacity_stop(
         &self,
-    ) -> Option<crate::domain_computation::vocabulary::primary_graph::capacity_stop::VerificationCapacityStop> {
+    ) -> Option<crate::domain_computation::vocabulary::primary_graph::capacity_stop::VerificationCapacityStop>{
         self.evidence
             .as_ref()
             .and_then(|evidence| evidence.capacity_stop)
@@ -235,7 +235,7 @@ impl WorthQueryOutputDemandDenial {
     pub const fn commit_denial_kind(
         &self,
     ) -> Option<crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind>
-    {
+{
         match &self.evidence {
             Some(evidence) => evidence.commit_denial_kind,
             None => None,
@@ -259,7 +259,7 @@ impl WorthQueryOutputDemandDenial {
             crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
             crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
         >,
-    )> {
+    )>{
         self.evidence
             .as_ref()
             .and_then(|evidence| evidence.commit_execution)

@@ -4,7 +4,6 @@ mod completion_cues;
 mod exceptional_epoch;
 mod output_publication;
 
-use im::OrdSet;
 use worth_relational::facade::mvcc::CompanionBranchCell;
 use worth_relational::facade::mvcc::CompanionCellEditStop;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
@@ -14,7 +13,6 @@ use super::super::input_cutoff::StableEqualityConsequence;
 use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 
 use super::equality;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
 use super::mark_state::SettlementCurrentness;
 use super::owner::SourceInvalidationOwner;
 use super::settlement;
@@ -23,19 +21,17 @@ use super::settlement::SettlementRegistration;
 use super::source_alignment::BranchMarkRoot;
 use super::source_alignment::EqualOutputCurrentness;
 use super::source_alignment::SnapshotAlignedMarkState;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
 
 pub(crate) mod current_registration;
 pub(crate) mod prepared;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SettlementRegistrationStop;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SourceSettlementCurrentness;
 pub(in crate::domain_computation::primary_graph) use current_registration::CurrentSettlementRegistrationCleanup;
 pub(in crate::domain_computation::primary_graph) use current_registration::PreparedCurrentSettlementRegistration;
 pub(in crate::domain_computation::primary_graph) use prepared::PreparedSettlementRegistration;
 pub(in crate::domain_computation::primary_graph) use prepared::SettlementRegistrationCleanup;
 pub(in crate::domain_computation::primary_graph) use prepared::StoppedSettlementRegistration;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SettlementRegistrationStop;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SourceSettlementCurrentness;
-
-
-
 
 /// Only consumed-output evidence may interpret the actor's certified equality
 /// consequence. Direct callers still observe the old settlement's own marks.
@@ -50,7 +46,6 @@ enum RegistrationReadBasis {
     CurrentOnly,
     RetainedReadAllowed,
 }
-
 
 impl SourceInvalidationOwner {
     pub(super) fn cell_for_read(

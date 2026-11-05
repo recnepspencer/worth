@@ -4,7 +4,6 @@ use super::{
     WorthQueryProductUnpublishedRecoveryReleaseFailure,
 };
 use crate::domain_computation::execution_runtime::product_world::OwnerCleanupRetirements;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use std::num::NonZeroUsize;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_world::facade::{
@@ -105,7 +104,6 @@ pub(crate) trait DiscoveryScopedOps<Schema: ApplicationSchema>:
         minimum_age_ticks: u64,
         retirements: &mut OwnerCleanupRetirements,
     ) -> Result<crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanupReceipt, WorthQueryProductUnpublishedRecoveryReleaseFailure>{
-        use crate::domain_computation::primary_graph::application_contribution::execution_denial;
         let mut retained = Some(recovery);
         let mut attempted = None;
         let outcome = execution.in_scope(|lease| {

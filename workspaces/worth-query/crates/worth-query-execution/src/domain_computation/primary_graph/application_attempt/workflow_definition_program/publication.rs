@@ -69,7 +69,6 @@ impl<Schema, Operation, Input, Scope>
     }
 }
 
-
 /// The exact branch-current state an author observed before requesting a
 /// definition publication. A revision never overwrites a newer predecessor.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -93,7 +92,6 @@ impl WorkflowDefinitionExpectedPredecessor {
         }
     }
 }
-
 
 /// A workflow definition publication that landed: the published definition, its commit
 /// receipt, and whether the idempotency key replayed an already-landed commit.

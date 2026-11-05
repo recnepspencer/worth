@@ -1,5 +1,4 @@
 mod content;
-pub(in crate::domain_computation) use crate::domain_computation::vocabulary::primary_graph::retention_work::checkpoint as retention_checkpoint;
 pub use content::{
     AdmittedContent, ContentReadDenial, ContentWriteDenial, RelationalContentDenial,
     RelationalContentRejection,
@@ -52,7 +51,6 @@ mod expression;
 pub(crate) mod freshness;
 mod granular_invalidation;
 pub(crate) mod handler;
-pub(in crate::domain_computation) use crate::domain_computation::vocabulary::primary_graph::decision_context_use::DecisionContextUse;
 pub(crate) mod index_currency;
 pub(crate) mod index_maintenance_budget;
 pub(crate) mod index_refresh;
@@ -154,17 +152,11 @@ pub use {
     crate::domain_computation::primary_graph::application_attempt::workflow::captured_input::WorkflowCapturedInputs,
 };
 
-pub(in crate::domain_computation) use crate::domain_computation::vocabulary::primary_graph::resource_request::application_resource_request;
 pub(in crate::domain_computation) use application_attempt::precondition_binding::bind_empty_mutation_preconditions_admitted;
 pub(in crate::domain_computation) use application_attempt::precondition_binding::bind_mutation_preconditions;
-pub(in crate::domain_computation) use crate::domain_computation::vocabulary::primary_graph::precondition_binding::EmptyMutationPreconditionAdmissionStop;
 pub(in crate::domain_computation) use application_attempt::precondition_binding::WorthQueryBoundMutationPreconditions;
 pub(in crate::domain_computation) use application_attempt::WorthQueryApplicationSnapshotLease;
-pub(in crate::domain_computation) use crate::domain_computation::vocabulary::primary_graph::snapshot_lease::WorthQueryApplicationSnapshotLeaseDenial;
-pub(in crate::domain_computation) use crate::domain_computation::vocabulary::primary_graph::snapshot_lease::WorthQueryApplicationSnapshotRelease;
-pub(in crate::domain_computation) use crate::domain_computation::primary_graph::vocabulary::exact_basis_access::WorthQueryExactBasisSnapshotDenial;
 pub(in crate::domain_computation) use application_attempt::WorthQueryApplicationObservedFact;
-pub(in crate::domain_computation) use crate::domain_computation::vocabulary::primary_graph::observed_source::WorthQuerySourceExpectationKind;
 pub(in crate::domain_computation) use application_attempt::progression_denied;
 pub(in crate::domain_computation) use application_attempt::WorthQueryApplicationAttemptAffinity;
 pub(in crate::domain_computation) use application_attempt::WorthQueryApplicationAttemptBasis;
@@ -172,10 +164,8 @@ pub(in crate::domain_computation) use application_attempt::WorthQueryPreparedApp
 pub(in crate::domain_computation) use application_attempt::WorthQueryProviderAttemptRegistrationContext;
 pub(in crate::domain_computation) use application_attempt::WorthQueryProviderProgressionOutcome;
 pub(in crate::domain_computation) use application_attempt::WorthQueryRegisteredProviderAttempt;
-pub(crate) use crate::domain_computation::vocabulary::primary_graph::commit_authority_binding::WorthQueryRetainedGovernedInput;
 pub(in crate::domain_computation::primary_graph) use application_attempt::WorthQueryApplicationOutputCorrespondence;
 pub(crate) use application_attempt::WorthQueryPerformedExternalRedispatchSeal;
-pub(crate) use crate::domain_computation::vocabulary::primary_graph::selection::WorthQueryRetainedPreImageSeal;
 pub(crate) use provider::WorthQueryPrimaryGraphProvider;
 pub(in crate::domain_computation) use provider::ApplicationFactTable;
 pub(in crate::domain_computation) use provider::CompletedApplicationFacts;
@@ -185,15 +175,7 @@ pub(in crate::domain_computation) use application_branch::primary_relational_bra
 pub(in crate::domain_computation) use application_branch::primary_truth_branch_identity;
 pub(crate) use application_query::WorthQueryApplicationQueryControls;
 pub(in crate::domain_computation) use crate::domain_computation::application_aftermath::external_effect::WorthQueryAdmittedExternalDispatchAttempt;
-pub(in crate::domain_computation) use crate::domain_computation::vocabulary::primary_graph::external_dispatch_attempt::WorthQueryExternalDispatchAttemptOrdinal;
-pub(in crate::domain_computation) use crate::domain_computation::primary_graph::application_inbound::inbound_publication::WorthQueryPerformedInboundCompletion;
-pub(in crate::domain_computation) use crate::domain_computation::primary_graph::application_inbound::inbound_publication::WorthQueryUnpublishedInboundCompletion;
-pub(in crate::domain_computation::primary_graph) use crate::domain_computation::primary_graph::application_inbound::inbound_publication::InstalledTransportCompletion;
-pub(in crate::domain_computation::primary_graph) use crate::domain_computation::primary_graph::application_inbound::inbound_publication::InstalledTransportResumeOutcome;
-pub(in crate::domain_computation::primary_graph) use crate::domain_computation::primary_graph::application_inbound::inbound_publication::PerformedInstalledTransportCompletion;
-pub(in crate::domain_computation) use crate::domain_computation::primary_graph::vocabulary::application_inbound::transport_binding::WorthQueryInstalledTransportCompletionBinding;
 pub(in crate::domain_computation) use entity_resolution::WorthQueryEntityResolutionTruth;
-pub(in crate::domain_computation) use crate::domain_computation::vocabulary::primary_graph::retained_selector::WorthQueryObservedScopeSelector;
 pub(in crate::domain_computation) use entity_resolution::WorthQueryInstalledEntityResolutionContext;
 pub(in crate::domain_computation) use entity_resolution::WorthQueryResolvedEntity;
 pub(in crate::domain_computation) use entity_resolution::WorthQueryIssuedSelectedScope;
@@ -203,10 +185,8 @@ pub(in crate::domain_computation) use freshness::WorthQueryDurablePrincipalCurre
 pub(in crate::domain_computation) use freshness::WorthQueryPrincipalFreshnessEvidence;
 
 pub(in crate::domain_computation) use provider::WorthQueryApplicationBranchCommitCoordination;
-pub(in crate::domain_computation) use crate::domain_computation::vocabulary::primary_graph::outbox_commit::WorthQueryCommittedDispatchOutboxBinding;
 
 pub(in crate::domain_computation) use schema_layout::WorthQueryPrimaryGraphLayout;
-pub(in crate::domain_computation) use crate::domain_computation::vocabulary::primary_graph::principal_binding::WorthQueryPrimaryPrincipalBindingLayout;
 
 pub(in crate::domain_computation) use application_contribution::SealedComputationRun;
 
@@ -223,3 +203,23 @@ mod record_reservations;
 
 pub(crate) mod source_disclosure;
 pub(crate) mod vocabulary;
+pub(crate) use crate::domain_computation::vocabulary::primary_graph::commit_authority_binding::WorthQueryRetainedGovernedInput;
+pub(crate) use crate::domain_computation::vocabulary::primary_graph::selection::WorthQueryRetainedPreImageSeal;
+pub(in crate::domain_computation) use crate::domain_computation::primary_graph::application_inbound::inbound_publication::WorthQueryPerformedInboundCompletion;
+pub(in crate::domain_computation) use crate::domain_computation::primary_graph::application_inbound::inbound_publication::WorthQueryUnpublishedInboundCompletion;
+pub(in crate::domain_computation) use crate::domain_computation::primary_graph::vocabulary::application_inbound::transport_binding::WorthQueryInstalledTransportCompletionBinding;
+pub(in crate::domain_computation) use crate::domain_computation::primary_graph::vocabulary::exact_basis_access::WorthQueryExactBasisSnapshotDenial;
+pub(in crate::domain_computation) use crate::domain_computation::vocabulary::primary_graph::decision_context_use::DecisionContextUse;
+pub(in crate::domain_computation) use crate::domain_computation::vocabulary::primary_graph::external_dispatch_attempt::WorthQueryExternalDispatchAttemptOrdinal;
+pub(in crate::domain_computation) use crate::domain_computation::vocabulary::primary_graph::observed_source::WorthQuerySourceExpectationKind;
+pub(in crate::domain_computation) use crate::domain_computation::vocabulary::primary_graph::outbox_commit::WorthQueryCommittedDispatchOutboxBinding;
+pub(in crate::domain_computation) use crate::domain_computation::vocabulary::primary_graph::precondition_binding::EmptyMutationPreconditionAdmissionStop;
+pub(in crate::domain_computation) use crate::domain_computation::vocabulary::primary_graph::principal_binding::WorthQueryPrimaryPrincipalBindingLayout;
+pub(in crate::domain_computation) use crate::domain_computation::vocabulary::primary_graph::resource_request::application_resource_request;
+pub(in crate::domain_computation) use crate::domain_computation::vocabulary::primary_graph::retained_selector::WorthQueryObservedScopeSelector;
+pub(in crate::domain_computation) use crate::domain_computation::vocabulary::primary_graph::retention_work::checkpoint as retention_checkpoint;
+pub(in crate::domain_computation) use crate::domain_computation::vocabulary::primary_graph::snapshot_lease::WorthQueryApplicationSnapshotLeaseDenial;
+pub(in crate::domain_computation) use crate::domain_computation::vocabulary::primary_graph::snapshot_lease::WorthQueryApplicationSnapshotRelease;
+pub(in crate::domain_computation::primary_graph) use crate::domain_computation::primary_graph::application_inbound::inbound_publication::InstalledTransportCompletion;
+pub(in crate::domain_computation::primary_graph) use crate::domain_computation::primary_graph::application_inbound::inbound_publication::InstalledTransportResumeOutcome;
+pub(in crate::domain_computation::primary_graph) use crate::domain_computation::primary_graph::application_inbound::inbound_publication::PerformedInstalledTransportCompletion;

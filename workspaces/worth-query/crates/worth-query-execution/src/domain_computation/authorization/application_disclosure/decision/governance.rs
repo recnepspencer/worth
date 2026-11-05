@@ -15,7 +15,10 @@ use super::{
 };
 use crate::domain_computation::authorization::WorthQueryRetainedCapabilityAuthorization;
 use crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity;
-use {crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity, crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession};
+use {
+    crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
+    crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
+};
 impl WorthQueryApplicationQueryGovernance {
     /// Return the genuine capability request to admission. Session-bound
     /// computation and disclosure decisions must be issued again by that owner.

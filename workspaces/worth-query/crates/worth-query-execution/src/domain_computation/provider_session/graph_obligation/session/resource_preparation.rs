@@ -1,11 +1,11 @@
 //! Resource intent binds the actual installed leaf before opening Product work.
 use super::*;
+use crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity;
+use crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity;
 use worth_query_declaration::facade::application_resource::ApplicationResourceBinding;
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationResource, WorthQueryResourceAccessPurpose,
 };
-use crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity;
-use crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity;
 
 impl WorthQueryManagedGraphWorkSession {
     #[allow(clippy::too_many_arguments)]

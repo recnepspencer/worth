@@ -11,8 +11,6 @@ mod retention;
 use worth_foundational::facade::CanonicalDigestId;
 use worth_relational::facade::identity::EntityId;
 
-
-
 pub(in crate::domain_computation::primary_graph::application_query) use registry::PredicateRegistration;
 pub(in crate::domain_computation::primary_graph::application_query) use registry::RegisteredManagedIndex;
 pub(in crate::domain_computation::primary_graph::application_query) use registry::{

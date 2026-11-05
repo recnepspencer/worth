@@ -12,7 +12,6 @@ use worth_query_installation::facade::ApplicationSchema;
 
 use crate::domain_computation::authorization::WorthQueryAdmittedApplicationOperation;
 use crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 use super::super::recovery_handle::{
     WorthQueryRecoveryHandle, WorthQueryRecoveryHandleAuthorityIdentity,

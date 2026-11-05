@@ -21,9 +21,7 @@ pub enum VerificationCapacityStop {
 
 impl VerificationCapacityStop {
     /// The meter's stop when it is a capacity stop.
-    pub(in crate::domain_computation) fn of_meter(
-        stop: CompanionPreflightStop,
-    ) -> Option<Self> {
+    pub(in crate::domain_computation) fn of_meter(stop: CompanionPreflightStop) -> Option<Self> {
         match stop {
             CompanionPreflightStop::PreparationMemoryCounterOverflow => Some(Self::Meter(stop)),
             CompanionPreflightStop::Execution(_)

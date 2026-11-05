@@ -13,7 +13,8 @@ pub struct WorthQueryConditionalClockHandle<Schema, Node, Clock> {
     pub(in crate::domain_computation::primary_graph) binding_canonical_work:
         worth_query_installation::facade::WorthQueryCanonicalWorkEvidence,
     pub(in crate::domain_computation::primary_graph) lease: Arc<ConditionalClockLease>,
-    pub(in crate::domain_computation::primary_graph) marker: PhantomData<fn() -> (Schema, Node, Clock)>,
+    pub(in crate::domain_computation::primary_graph) marker:
+        PhantomData<fn() -> (Schema, Node, Clock)>,
 }
 
 pub struct ConditionalClockLease;

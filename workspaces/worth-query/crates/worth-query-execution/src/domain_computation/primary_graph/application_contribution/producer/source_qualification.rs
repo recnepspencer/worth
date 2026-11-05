@@ -5,13 +5,8 @@
 //! family's Initial/Preserve binding; changing source epochs are values.
 
 use crate::domain_computation::primary_graph::application_contribution::producer::demand::selection::selected_basis::SelectionSelectedBasisScopedOps;
-use std::cmp::Ordering;
-use std::hash::Hash;
-use std::hash::Hasher;
 
 use worth_query_installation::facade::ApplicationSchema;
-use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
-use worth_runtime_world::facade::ProductBranchIncarnation;
 
 use super::WorthQueryProducerOutputFamily;
 use crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding;
@@ -21,10 +16,6 @@ use crate::domain_computation::vocabulary::primary_graph::application_query_basi
 use crate::domain_computation::primary_graph::vocabulary::output_family_identity::OutputFamilyIdentity;
 use crate::domain_computation::primary_graph::WorthQueryObservedSource;
 use crate::domain_computation::primary_graph::vocabulary::application_contribution::source_qualification::OutputSourceAddress;
-
-
-
-
 
 /// A complete native query occurrence and selected installed family route.
 /// It deliberately contains no Current/Pending classification.
@@ -44,7 +35,7 @@ impl QualifiedOutputSource {
     pub(in crate::domain_computation::primary_graph) fn source_epoch(
         &self,
     ) -> crate::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryRuntimeSourceIdentity
-    {
+{
         self.source_epoch
     }
 
@@ -58,7 +49,7 @@ impl QualifiedOutputSource {
 
     pub(in crate::domain_computation::primary_graph) fn lifecycle(
         &self,
-    ) -> crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerLifecyclePosture {
+    ) -> crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerLifecyclePosture{
         self.lifecycle
     }
 
@@ -66,7 +57,6 @@ impl QualifiedOutputSource {
         self.generation
     }
 }
-
 
 /// Invoked only after the native selector has admitted the same source and
 /// returned the exact installed entry. Work is constant apart from complete

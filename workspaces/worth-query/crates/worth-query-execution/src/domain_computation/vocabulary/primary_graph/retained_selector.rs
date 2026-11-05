@@ -4,11 +4,11 @@ use worth_foundational::facade::AspectValue;
 use worth_relational::facade::identity::EntityId;
 
 pub struct WorthQueryObservedScopeSelector {
-    locator: AspectFieldLocator,
-    value: AspectValue,
-    subject: EntityId,
+    pub(in crate::domain_computation) locator: AspectFieldLocator,
+    pub(in crate::domain_computation) value: AspectValue,
+    pub(in crate::domain_computation) subject: EntityId,
     // Last to drop: the original request remains charged through the final share.
-    _funding: Option<worth_execution::ExecutionMemoryReservation>,
+    pub(in crate::domain_computation) _funding: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
 impl WorthQueryObservedScopeSelector {

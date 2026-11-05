@@ -6,7 +6,6 @@ use super::{
     },
     WorthQueryApplicationInspectionTarget,
 };
-use {crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint, crate::domain_computation::vocabulary::primary_graph::retained_stage::run_retained_stage, crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop, crate::domain_computation::vocabulary::primary_graph::retained_stage::RetainedStorageDenial, crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkManagedRunIdentity, crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity, crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession};
 use std::sync::Arc;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, MapKernelFailure};
 use worth_query_admission::facade::graph_obligation::WorthQueryGraphWorkPlanIdentity;
@@ -14,6 +13,15 @@ use worth_runtime_bridge::facade::{
     BridgeCausalExplanationEnvelope, BridgeCausalInspectionAdmissionSummaryKind,
     BridgeQueryObservationReportingInputDenial, BridgeQueryObservationReportingRequest,
     BridgeQueryObservationReportingStop,
+};
+use {
+    crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
+    crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint,
+    crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop,
+    crate::domain_computation::vocabulary::primary_graph::retained_stage::run_retained_stage,
+    crate::domain_computation::vocabulary::primary_graph::retained_stage::RetainedStorageDenial,
+    crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkManagedRunIdentity,
+    crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
 };
 
 mod connected;
@@ -183,7 +191,7 @@ impl FundedInspectionReport {
     }
     pub(super) fn basis(
         &self,
-    ) -> &crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity {
+    ) -> &crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity{
         &self.basis
     }
     pub(super) fn capacity_identity(

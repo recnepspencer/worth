@@ -7,9 +7,9 @@ use worth_relational::facade::indexes::BoundedIndexParityMode;
 use worth_relational::facade::runtime::RelationalRuntime;
 use worth_relational::facade::runtime::VisibilityProjectionView;
 
-use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenialKind;
-use crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode;
 use super::WorthQueryPrincipalSnapshotResolution;
+use crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode;
+use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenialKind;
 
 #[derive(Debug)]
 pub(super) enum AdmittedPrincipalLookupStop {

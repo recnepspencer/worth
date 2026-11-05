@@ -1,8 +1,8 @@
 //! Moved whole from `domain_computation::operation_binding::installed_domain_authority`: the items below and every impl they own.
 use crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity;
-use std::sync::Arc;
 use std::sync::atomic::AtomicU64;
 use std::sync::atomic::Ordering;
+use std::sync::Arc;
 use worth_query_installation::facade::WorthQueryInstallationGeneration;
 
 /// Runtime-affine proof that one installed domain remains current for an

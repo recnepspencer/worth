@@ -7,7 +7,6 @@ use worth_relational::facade::{
 
 use crate::domain_computation::primary_graph::vocabulary::application_query::publication::ViewChange;
 
-
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeSet;
@@ -26,9 +25,12 @@ mod tests {
         transactions::RecordRef,
     };
 
-    use {crate::domain_computation::primary_graph::vocabulary::application_query::change_summary::changes_from_summary, crate::domain_computation::primary_graph::vocabulary::application_query::publication::ViewChange};
     use crate::domain_computation::primary_graph::application_query::derived_view::{
         dependency::ViewDependency, publication::DependencyIndex,
+    };
+    use {
+        crate::domain_computation::primary_graph::vocabulary::application_query::change_summary::changes_from_summary,
+        crate::domain_computation::primary_graph::vocabulary::application_query::publication::ViewChange,
     };
 
     fn entity(slot: u64) -> EntityId {

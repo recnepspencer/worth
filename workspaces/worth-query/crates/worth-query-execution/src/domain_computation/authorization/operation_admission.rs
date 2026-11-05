@@ -1,8 +1,6 @@
 //! Move-only installed operation admission authority.
 
 use std::marker::PhantomData;
-use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::Arc;
 
 #[path = "operation_admission/capability_admission/mod.rs"]
 pub(crate) mod capability_admission;
@@ -76,9 +74,7 @@ pub(in crate::domain_computation) use selected_conventional::{
 
 use authorization_basis::ErasedAuthorizationBasis;
 
-const RESOURCE_LABEL: &str = "worth-query-application-admission:";
-
-
+use crate::domain_computation::vocabulary::authorization::operation_admission::RESOURCE_LABEL;
 
 /// Query-owned proof that one installed operation was authorized for one exact
 /// current principal and typed scope.
@@ -217,20 +213,6 @@ where
     Schema: worth_query_installation::facade::ApplicationSchema,
 {
     conventional::transition(execution, bound)
-}
-
-#[cfg(test)]
-mod tests {
-    use std::sync::atomic::AtomicU64;
-
-    use crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity;
-
-    #[test]
-    fn operation_admission_identity_exhaustion_cannot_wrap() {
-        let counter = AtomicU64::new(u64::MAX);
-        assert!(WorthQueryOperationAdmissionIdentity::mint_from(&counter).is_none());
-        assert_eq!(counter.load(std::sync::atomic::Ordering::Relaxed), u64::MAX);
-    }
 }
 
 #[path = "operation_admission/retained_activation_read_tests.rs"]

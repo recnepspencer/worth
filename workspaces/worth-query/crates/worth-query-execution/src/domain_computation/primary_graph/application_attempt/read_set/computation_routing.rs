@@ -17,7 +17,6 @@ use worth_proof::CanonicalUniqueVec;
 
 use super::super::fact::WorthQueryApplicationFactKey;
 
-
 /// Every owner call that read one decision fact while the attempt runs. A
 /// call that reads the fact again is still one call.
 #[derive(Default)]
@@ -329,6 +328,5 @@ mod test_mutation;
 
 pub(in crate::domain_computation::primary_graph) use index::ComputationFactIndex;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::computation_routing::ComputationRead;
-
 
 mod court_doors_for_test;

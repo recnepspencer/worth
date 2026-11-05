@@ -4,6 +4,7 @@ mod approval;
 mod portable;
 mod sources;
 use super::actor_context::{Command, WorthQueryWorkflowActorContext};
+use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
 use approval::approval_actor;
 use worth_query_declaration::facade::application_capability::{
     ApplicationCapabilityRecordedActorRequirement as Requirement,
@@ -21,7 +22,6 @@ use {
     crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle,
     crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
 };
-use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
 
 #[derive(Clone, Debug)]
 pub struct WorkflowRecordedActorObservation {

@@ -1,6 +1,5 @@
 //! A declared index is borrowed through EACH actual Native observation.
 use super::{WorthQueryApplicationInvariantContext, WorthQueryApplicationInvariantScopePlanner};
-use {crate::domain_computation::primary_graph::application_query::managed_index::invariant_read, crate::domain_computation::primary_graph::vocabulary::application_query::invariant_read::ManagedSourceValue, crate::domain_computation::primary_graph::vocabulary::application_query::invariant_read::WorthQueryManagedIndexInvariantDenial, crate::domain_computation::primary_graph::vocabulary::application_query::provider::WorthQueryManagedIndexProbeValue, crate::domain_computation::primary_graph::application_query::WorthQueryApplicationProjection};
 use std::marker::PhantomData;
 use worth_query_declaration::facade::application_query::ApplicationManagedIndexMatchPosture as MatchPosture;
 use worth_query_declaration::facade::{
@@ -10,6 +9,13 @@ use worth_query_declaration::facade::{
 use worth_relational::facade::runtime::{
     ManagedIndexSourcePreparationDenial as Denial, ManagedIndexSourceProgram,
     PreparedManagedIndexSourceRead,
+};
+use {
+    crate::domain_computation::primary_graph::application_query::managed_index::invariant_read,
+    crate::domain_computation::primary_graph::application_query::WorthQueryApplicationProjection,
+    crate::domain_computation::primary_graph::vocabulary::application_query::invariant_read::ManagedSourceValue,
+    crate::domain_computation::primary_graph::vocabulary::application_query::invariant_read::WorthQueryManagedIndexInvariantDenial,
+    crate::domain_computation::primary_graph::vocabulary::application_query::provider::WorthQueryManagedIndexProbeValue,
 };
 
 pub struct WorthQueryApplicationInvariantManagedIndexBinding<S, I> {

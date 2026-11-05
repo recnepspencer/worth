@@ -15,8 +15,6 @@ use super::super::CoveredSourcePublication;
 use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
 use super::super::SourcePublication;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SettlementRegistrationStop;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
 use super::mark_state::MarkState;
 use super::SourceInvalidationOwner;
 use crate::domain_computation::primary_graph::vocabulary::application_contribution::source_qualification::OutputSourceAddress;

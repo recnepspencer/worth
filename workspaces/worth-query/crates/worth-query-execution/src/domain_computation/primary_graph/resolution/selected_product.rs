@@ -4,10 +4,10 @@ use crate::domain_computation::vocabulary::primary_graph::resolution_denial::Wor
 
 #[path = "selected_product/admitted.rs"]
 pub(crate) mod admitted;
-pub(in crate::domain_computation) use admitted::WorthQueryIssuedSelectedPrincipal;
+use crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode;
 use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenial;
 use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenialKind;
-use crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode;
+pub(in crate::domain_computation) use admitted::WorthQueryIssuedSelectedPrincipal;
 
 impl<Schema> super::super::WorthQuerySelectedProductOperation<'_, Schema>
 where

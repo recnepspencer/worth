@@ -1,7 +1,14 @@
 //! Original managed Source read refusal stays owned through producer/output handoff.
 use super::*;
-use {crate::domain_computation::primary_graph::application_query::managed_index::WorthQueryManagedIndexDenial as Cause, crate::domain_computation::primary_graph::application_query::managed_index::WorthQueryManagedIndexDenialCause as Detail, crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop, crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial as Work, crate::domain_computation::primary_graph::output_reuse, crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture};
 use std::sync::Arc;
+use {
+    crate::domain_computation::primary_graph::application_query::managed_index::WorthQueryManagedIndexDenial as Cause,
+    crate::domain_computation::primary_graph::application_query::managed_index::WorthQueryManagedIndexDenialCause as Detail,
+    crate::domain_computation::primary_graph::output_reuse,
+    crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture,
+    crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial as Work,
+    crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop,
+};
 impl WorthQueryOutputDemandDenial {
     pub(in crate::domain_computation::primary_graph) fn managed_source_query(
         cause: Arc<Cause>,

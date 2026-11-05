@@ -1,11 +1,11 @@
 //! Resource graph reads and their terminal consume only their own session proof.
 use super::super::resource_terminal::WorthQueryResourceReadCompletion;
 use super::*;
+use crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity;
 use crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisReleaseReceipt;
+use crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity;
 use worth_query_admission::facade::graph_obligation::WorthQueryGraphWorkPlanIdentity;
 use worth_query_installation::facade::WorthQueryInstalledResourceAccessContract;
-use crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity;
-use crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity;
 
 pub(in crate::domain_computation) struct WorthQuerySessionResourceReadProof {
     session: WorthQueryGraphWorkSessionIdentity,

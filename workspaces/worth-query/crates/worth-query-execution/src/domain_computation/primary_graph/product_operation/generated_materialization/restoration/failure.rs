@@ -3,8 +3,12 @@ use worth_relational::facade::{
     transactions::{ConflictClass, InvariantViolationFields, TransactionCommitError},
 };
 
-use {crate::domain_computation::vocabulary::primary_graph::invariant_denial::WorthQueryGeneratedOutputInvariantAdmissionDenial, super::WorthQueryGeneratedOutputPublicationNoEffect, super::WorthQueryGeneratedOutputRestorationFailure};
 use crate::domain_computation::primary_graph::WorthQuerySuspendedGeneratedOutput;
+use {
+    super::WorthQueryGeneratedOutputPublicationNoEffect,
+    super::WorthQueryGeneratedOutputRestorationFailure,
+    crate::domain_computation::vocabulary::primary_graph::invariant_denial::WorthQueryGeneratedOutputInvariantAdmissionDenial,
+};
 
 /// Why a restoration was rejected. Nothing was published.
 #[derive(Debug)]

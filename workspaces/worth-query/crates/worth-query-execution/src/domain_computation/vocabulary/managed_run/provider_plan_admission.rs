@@ -5,7 +5,7 @@ pub(in crate::domain_computation) struct WorthQueryWorkflowProviderPlanPermit {
 }
 
 impl WorthQueryWorkflowProviderPlanPermit {
-    fn mint() -> Self {
+    pub(in crate::domain_computation) fn mint() -> Self {
         Self { _owner: () }
     }
 }

@@ -1,7 +1,6 @@
 //! One erased entrance on the same typed installed provider allocation.
 use super::{InstalledIndexProvider, TypedIndexProvider};
 use crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationQueryGovernance;
-use {crate::domain_computation::primary_graph::application_query::output_source_observation::SourceQueryReaderAccess, crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess, crate::domain_computation::vocabulary::primary_graph::retained_selector::WorthQueryObservedScopeSelector};
 use crate::domain_computation::{
     primary_graph::{
         application_query::managed_index::{
@@ -24,6 +23,11 @@ use worth_query_declaration::facade::{
     application_query::ApplicationManagedIndexBinding, application_schema::ApplicationSchema,
 };
 use worth_query_installation::facade::WorthQueryInstalledManagedIndexParent;
+use {
+    crate::domain_computation::primary_graph::application_query::output_source_observation::SourceQueryReaderAccess,
+    crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess,
+    crate::domain_computation::vocabulary::primary_graph::retained_selector::WorthQueryObservedScopeSelector,
+};
 
 pub(in crate::domain_computation::primary_graph::application_query::managed_index) trait ErasedIndexExecutor<
     S,

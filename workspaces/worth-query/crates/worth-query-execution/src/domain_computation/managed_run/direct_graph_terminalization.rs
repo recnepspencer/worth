@@ -1,4 +1,8 @@
-use {super::WorthQueryActiveDirectGraphExecution, super::WorthQueryDirectGraphStepOutcome, super::WorthQueryDirectRunTerminal, crate::domain_computation::vocabulary::managed_run::terminal::WorthQueryManagedRunTerminalKind};
+use {
+    super::WorthQueryActiveDirectGraphExecution, super::WorthQueryDirectGraphStepOutcome,
+    super::WorthQueryDirectRunTerminal,
+    crate::domain_computation::vocabulary::managed_run::terminal::WorthQueryManagedRunTerminalKind,
+};
 
 impl WorthQueryActiveDirectGraphExecution {
     pub(super) fn interrupted_terminal(

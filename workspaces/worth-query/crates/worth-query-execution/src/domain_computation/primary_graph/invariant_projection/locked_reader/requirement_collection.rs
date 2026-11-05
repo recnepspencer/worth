@@ -1,11 +1,23 @@
 //! Bounded distinct live endpoints; decision readers seal their liveness facts.
-use {super::ApplicationSchema, super::WorthQueryApplicationInvariantProjectionReader, crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity};
 use worth_query_declaration::facade::application_schema::{
     ApplicationOperationBodyRequirementDirection as Direction,
     ApplicationOperationBodyRequirementSource as Source,
 };
 use worth_relational::facade::identity::EntityId;
-use {crate::domain_computation::primary_graph::HandlerExecutionDenial, crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, crate::domain_computation::request_execution::advancement_denial, crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial, crate::domain_computation::request_execution::QueryMemoryReservation, crate::domain_computation::request_execution::QueryRequestExecution, crate::domain_computation::request_execution::WorthQueryAdvancementDenial};
+use {
+    super::ApplicationSchema, super::WorthQueryApplicationInvariantProjectionReader,
+    crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity,
+};
+use {
+    crate::domain_computation::primary_graph::HandlerExecutionDenial,
+    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::request_execution::advancement_denial,
+    crate::domain_computation::request_execution::QueryMemoryReservation,
+    crate::domain_computation::request_execution::QueryRequestExecution,
+    crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
+    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
+    crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial,
+};
 
 pub(in crate::domain_computation::primary_graph::invariant_projection) struct ObservedRequirementItems
 {

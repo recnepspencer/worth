@@ -14,8 +14,16 @@ use super::read_phase::{
 };
 use super::read_scope::WorthQueryApplicationReadScope;
 use super::snapshot_lease::WorthQueryApplicationSnapshotLease;
-use {super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
-use {crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation, crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity, crate::domain_computation::primary_graph::WorthQueryApplicationOperationInvariantProjectionSnapshot, crate::domain_computation::primary_graph::WorthQueryInstalledEntityResolutionContext, crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode};
+use {
+    super::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
+};
+use {
+    crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation,
+    crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity,
+    crate::domain_computation::primary_graph::WorthQueryApplicationOperationInvariantProjectionSnapshot,
+    crate::domain_computation::primary_graph::WorthQueryInstalledEntityResolutionContext,
+};
 mod fact_routes;
 pub(in crate::domain_computation::primary_graph) use fact_routes::FactRoutes;
 pub(crate) mod application_projection;
@@ -34,12 +42,19 @@ pub(crate) mod computation_routing;
 mod mutation_read_attempt_core;
 mod native_completion;
 mod value_decode;
-pub(in crate::domain_computation::primary_graph) use {computation_routing::CheckedCallShape, computation_routing::ComputationFactAttribution, computation_routing::ComputationFactIndex, computation_routing::NativeCallCarriage, computation_routing::SealedComputationFacts};
+pub(in crate::domain_computation::primary_graph) use {
+    computation_routing::CheckedCallShape, computation_routing::ComputationFactAttribution,
+    computation_routing::ComputationFactIndex, computation_routing::NativeCallCarriage,
+    computation_routing::SealedComputationFacts,
+};
 pub(in crate::domain_computation::primary_graph) mod request_liveness;
 mod retained_facts;
 pub(crate) mod scope_bindings;
 pub(in crate::domain_computation::primary_graph::application_attempt) use admitted_arrays::admit_array;
-use {crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::CompletedReadScopes, crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::InstalledScopePosition};
+use {
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::CompletedReadScopes,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::InstalledScopePosition,
+};
 pub(crate) mod decision_reuse;
 pub(crate) mod fact_observation;
 

@@ -1,6 +1,9 @@
 //! Original handler input retained independently of authorization mode.
 use super::WorthQueryAdmittedOperation;
-use {crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind};
+use {
+    crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
+    crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind,
+};
 
 pub(in crate::domain_computation::authorization) fn retain_original_scope<Schema, Scope>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -14,7 +17,7 @@ pub(in crate::domain_computation::authorization) fn retain_original_scope<Schema
         std::sync::Arc<crate::domain_computation::vocabulary::primary_graph::retained_selector::WorthQueryObservedScopeSelector>,
     >,
     WorthQueryOperationAuthorizationDenial,
-> {
+>{
     if !contracts.source_inspection_disclosures().is_empty() {
         return scope
             .retain_scope_selector_funded(execution)
@@ -55,7 +58,7 @@ impl WorthQueryAdmittedOperation {
         &self,
     ) -> Option<
         &std::sync::Arc<crate::domain_computation::vocabulary::primary_graph::retained_selector::WorthQueryObservedScopeSelector>,
-    > {
+    >{
         self.original_scope.as_ref()
     }
     pub(in crate::domain_computation) fn original_mutation_binding(
@@ -113,7 +116,7 @@ impl WorthQueryAdmittedOperation {
         &std::sync::Arc<
             crate::domain_computation::vocabulary::application_aftermath::original::OriginalCorrectionDisclosure,
         >,
-    > {
+    >{
         self.original_input.as_ref()?.correction.as_ref()
     }
 

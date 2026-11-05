@@ -14,8 +14,8 @@ impl<Schema, Operation, Input, Scope>
     ) {
         use crate::domain_computation::primary_graph::application_attempt::consult_observation::Door;
         use crate::domain_computation::primary_graph::application_attempt::consult_observation::ReadConsultObservationForTest;
-        use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind;
         use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationDecisionFact as Fact;
+        use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind;
         let Some(WorthQueryRetainedAuthorizationDecisionFacts::Abilities {
             principal,
             decisions,

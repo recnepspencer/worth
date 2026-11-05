@@ -1,6 +1,5 @@
 //! Cleanup borrows the original request's bounded native checkpoint before effects.
 use super::*;
-use crate::domain_computation::primary_graph::application_contribution::execution_denial;
 use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 use worth_execution::ExecutionWorkCeiling;
 

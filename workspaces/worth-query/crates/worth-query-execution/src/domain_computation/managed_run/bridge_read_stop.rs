@@ -1,7 +1,13 @@
 //! Bridge snapshot read stops translated once at managed admission.
-use {crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control, crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind as Kind};
 use worth_runtime_bridge::facade::BridgeExecutionDenial as Bridge;
-use {crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource, crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryMemoryLimitLevel as Level};
+use {
+    crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control,
+    crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind as Kind,
+};
+use {
+    crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource,
+    crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryMemoryLimitLevel as Level,
+};
 
 pub(super) fn stopped(cause: Bridge) -> Result<Kind, Control> {
     let resource = |denial, policy_ancestor| Kind::ExecutionResource {

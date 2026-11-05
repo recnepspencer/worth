@@ -1,7 +1,7 @@
 //! Runtime-private structural work for Primary Graph application attempts.
 
-use std::sync::atomic::{AtomicU64, Ordering};
 use crate::domain_computation::primary_graph::vocabulary::provider::application_attempt_work::WorthQueryApplicationAttemptWorkSnapshot;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 #[derive(Default)]
 pub(super) struct WorthQueryApplicationAttemptWorkLedger {
@@ -19,7 +19,6 @@ pub(super) struct WorthQueryApplicationAttemptWorkLedger {
     managed_cleanups: AtomicU64,
     external_dispatch_admissions: AtomicU64,
 }
-
 
 macro_rules! observation {
     ($observe:ident, $field:ident) => {
@@ -74,7 +73,6 @@ impl WorthQueryApplicationAttemptWorkLedger {
         }
     }
 }
-
 
 fn load(counter: &AtomicU64) -> u64 {
     counter.load(Ordering::Relaxed)

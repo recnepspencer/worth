@@ -11,12 +11,16 @@ impl WorthQueryApplicationCommittedChanges {
         outputs: &WorthQueryApplicationOutputCorrespondence,
     ) -> Result<bool, worth_execution::MapKernelStop> {
         for patch in &self.envelope.patch.authoritative_record_patches {
-            crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint(context, 1)?;
+            crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint(
+                context, 1,
+            )?;
             let RecordRef::Entity(entity) = patch.target else {
                 continue;
             };
             for (_, _, _, output) in outputs.native_witness_roles() {
-                crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint(context, 1)?;
+                crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint(
+                    context, 1,
+                )?;
                 if entity == output
                     && (patch.structural_change != RecordStructuralChange::Updated
                         || patch.authoritative_patch.full_grammar_operation_count() != 0)

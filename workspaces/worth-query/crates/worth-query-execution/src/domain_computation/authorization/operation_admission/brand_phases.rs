@@ -7,7 +7,12 @@ use crate::domain_computation::authorization::{
     WorthQueryElevationApprovalBinding, WorthQueryElevationCloseBinding,
     WorthQueryElevationRequestBinding, WorthQueryMandatoryReviewBinding,
 };
-use {crate::domain_computation::vocabulary::primary_graph::handler_fact_boundary::CompletedHandlerFactBoundary, crate::domain_computation::primary_graph::ComputationPrior, crate::domain_computation::primary_graph::RequiredOutputDemandContext, crate::domain_computation::primary_graph::SealedComputationRetention};
+use {
+    crate::domain_computation::primary_graph::ComputationPrior,
+    crate::domain_computation::primary_graph::RequiredOutputDemandContext,
+    crate::domain_computation::primary_graph::SealedComputationRetention,
+    crate::domain_computation::vocabulary::primary_graph::handler_fact_boundary::CompletedHandlerFactBoundary,
+};
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>
@@ -15,14 +20,14 @@ impl<Schema, Operation, Input, Scope>
     #[inline]
     pub(in crate::domain_computation) fn graph_work_session_identity(
         &self,
-    ) -> crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity {
+    ) -> crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity{
         self.core.graph_work_session_identity()
     }
 
     #[inline]
     pub(in crate::domain_computation) fn graph_work_managed_run_identity(
         &self,
-    ) -> crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkManagedRunIdentity {
+    ) -> crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkManagedRunIdentity{
         self.core.graph_work_managed_run_identity()
     }
 
@@ -220,7 +225,7 @@ impl<Schema, Operation, Input, Scope>
         &self,
     ) -> Option<
         &std::sync::Arc<crate::domain_computation::vocabulary::primary_graph::retained_selector::WorthQueryObservedScopeSelector>,
-    > {
+    >{
         self.core.original_scope()
     }
 
@@ -276,7 +281,7 @@ impl<Schema, Operation, Input, Scope>
         &std::sync::Arc<
             crate::domain_computation::vocabulary::application_aftermath::original::OriginalCorrectionDisclosure,
         >,
-    > {
+    >{
         self.core.original_correction_disclosure()
     }
 }

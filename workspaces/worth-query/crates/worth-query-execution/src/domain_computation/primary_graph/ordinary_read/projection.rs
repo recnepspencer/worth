@@ -1,9 +1,15 @@
 use worth_query_installation::facade::ApplicationSchema;
 
-use {super::super::WorthQueryAdmittedApplicationOperation, super::super::WorthQueryApplicationInvariantProjectionAuthority, super::super::WorthQueryApplicationOperationInvariantProjectionReader, crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity, super::super::WorthQueryOperationProjectionDenial};
 use super::outcome::{
     metadata, WorthQueryOrdinaryReadBatch, WorthQueryOrdinaryReadProjection,
     WorthQueryOrdinaryReadVersion,
+};
+use {
+    super::super::WorthQueryAdmittedApplicationOperation,
+    super::super::WorthQueryApplicationInvariantProjectionAuthority,
+    super::super::WorthQueryApplicationOperationInvariantProjectionReader,
+    super::super::WorthQueryOperationProjectionDenial,
+    crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity,
 };
 
 impl<Schema> WorthQueryApplicationInvariantProjectionAuthority<Schema>

@@ -1,4 +1,7 @@
-use {crate::domain_computation::vocabulary::provider_session::denial::WorthQueryGraphProviderStepDenial, crate::domain_computation::vocabulary::provider_session::denial::WorthQueryGraphProviderStepDenialKind};
+use {
+    crate::domain_computation::vocabulary::provider_session::denial::WorthQueryGraphProviderStepDenial,
+    crate::domain_computation::vocabulary::provider_session::denial::WorthQueryGraphProviderStepDenialKind,
+};
 
 pub(crate) fn allocate_scratch_bytes(
     byte_count: usize,

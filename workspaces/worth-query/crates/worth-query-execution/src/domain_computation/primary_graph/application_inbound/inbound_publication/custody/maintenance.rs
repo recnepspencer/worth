@@ -6,7 +6,6 @@ use worth_query_installation::facade::ApplicationSchema;
 
 use super::InstalledTransportCompletionCustody;
 use crate::domain_computation::vocabulary::application_aftermath::correlation::ExternalEffectCorrelationIdentity;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 impl InstalledTransportCompletionCustody {
     fn candidates(

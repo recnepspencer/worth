@@ -1,9 +1,9 @@
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex, Weak};
 
-use crate::domain_computation::vocabulary::primary_graph::application_query_basis_registry::WorthQueryApplicationBasisSelectionIdentity;
 use super::WorthQueryObservedSourceFootprint;
 use crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity;
+use crate::domain_computation::vocabulary::primary_graph::application_query_basis_registry::WorthQueryApplicationBasisSelectionIdentity;
 
 mod checkpoint_commitment;
 #[path = "source_identity/tests/epoch_construction.rs"]
@@ -15,13 +15,14 @@ pub(in crate::domain_computation::primary_graph::application_query) use material
 pub(crate) mod membership;
 mod ordering;
 mod runtime_commitment;
-use {crate::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryCheckpointSourceIdentity, crate::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryRuntimeSourceIdentity};
-pub(in crate::domain_computation::primary_graph) use membership::WorthQueryObservedSourceSelection;
-use runtime_commitment::stable_runtime_identity;
 use crate::domain_computation::primary_graph::vocabulary::application_query::source_identity::WorthQueryObservedSourceCoordinate;
 use crate::domain_computation::primary_graph::vocabulary::application_query::source_identity::WorthQueryObservedSourceOccurrence;
-
-
+pub(in crate::domain_computation::primary_graph) use membership::WorthQueryObservedSourceSelection;
+use runtime_commitment::stable_runtime_identity;
+use {
+    crate::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryCheckpointSourceIdentity,
+    crate::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryRuntimeSourceIdentity,
+};
 
 /// Runtime-owned exact meaning retained by observed sources and output epochs.
 pub struct WorthQueryObservedSourceMeaning {

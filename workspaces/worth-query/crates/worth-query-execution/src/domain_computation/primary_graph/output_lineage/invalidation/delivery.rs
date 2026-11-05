@@ -1,15 +1,14 @@
 //! Native touched-key extraction and exact persistent mark delivery.
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 use super::fact_key::FactPostingKey;
 use super::logical_marking::AppliedNativeMarking;
 use super::logical_marking::NativeMarkingReport;
 use super::logical_marking::WorthQueryNativeMarkingPrecision;
 use super::logical_marking::WorthQueryNativeMarkingWork;
 use super::mark_state::DeliveryEpoch;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
 use super::mark_state::MarkState;
 use super::touch_keys;
 use crate::domain_computation::primary_graph::application_output_demand::RequiredWorkMembership;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 use im::OrdSet;
 use std::sync::Arc;
 use worth_relational::facade::history::CommitId;

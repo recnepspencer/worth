@@ -285,7 +285,7 @@ impl<'runtime, Schema> WorthQuerySelectedProductOperation<'runtime, Schema> {
     >
     where
         Schema: ApplicationSchema,
-    {
+{
         self.selected_program.clone()
     }
 

@@ -1,8 +1,8 @@
 //! Native non-driving assessment of one actual selected publication.
 use super::consumed_output::ConsumedOutputEvidence;
+use crate::domain_computation::primary_graph::output_lineage::WorthQueryCurrentOutputCandidate;
 use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerification as ResultMeaning;
 use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop as Stop;
-use crate::domain_computation::primary_graph::output_lineage::WorthQueryCurrentOutputCandidate;
 use crate::domain_computation::primary_graph::SourceInvalidationOwner;
 use std::sync::Arc;
 mod dependencies;
@@ -10,7 +10,6 @@ use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 use worth_relational::facade::runtime::RelationalRuntime;
 use worth_relational::facade::snapshots::SnapshotHandle;
 use crate::domain_computation::primary_graph::vocabulary::invariant_projection::output_availability_candidate::ObservedOutputPosture;
-
 
 pub(in crate::domain_computation::primary_graph) struct ObservedOutputCandidate {
     candidate: CandidateEvidence,

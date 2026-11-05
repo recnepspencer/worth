@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use crate::domain_computation::primary_graph::WorthQueryAuthenticatedPrincipal;
-use crate::domain_computation::vocabulary::primary_graph::principal_binding::WorthQueryPrimaryPrincipalBindingLayout;
 use crate::domain_computation::primary_graph::WorthQueryPrincipalFreshnessEvidence;
+use crate::domain_computation::vocabulary::primary_graph::principal_binding::WorthQueryPrimaryPrincipalBindingLayout;
 
 #[derive(Clone)]
 pub struct WorthQueryPrincipalCurrentnessDependency {
@@ -38,7 +38,7 @@ impl WorthQueryPrincipalCurrentnessDependency {
 
     pub(in crate::domain_computation) const fn session_identity(
         &self,
-    ) -> crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity {
+    ) -> crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity{
         self.session_identity
     }
 
@@ -81,7 +81,7 @@ impl WorthQueryPrincipalCurrentnessDependency {
     ) -> Result<
         bool,
         crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind,
-    > {
+    >{
         self.freshness
             .remains_current_in(execution, runtime, snapshot, &self.layout, &self.binding)
             .map_err(super::super::denial::principal_currentness)

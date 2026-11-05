@@ -7,9 +7,12 @@ use super::super::{
     },
 };
 use super::*;
-use {crate::domain_computation::authorization::application_disclosure::DiagnosticComparisonAdmission, crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity};
 use worth_query_admission::facade::graph_obligation::WorthQueryGraphWorkPlanIdentity;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationQuery};
+use {
+    crate::domain_computation::authorization::application_disclosure::DiagnosticComparisonAdmission,
+    crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
+};
 
 pub(in super::super) struct RichReportScope {
     pub(in super::super) session: WorthQueryGraphWorkSessionIdentity,

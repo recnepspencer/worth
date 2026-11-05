@@ -33,7 +33,7 @@ impl RetainedOutputCurrentnessRead {
     #[doc(hidden)]
     pub fn verification_requirement_for_test(
         &self,
-    ) -> &Option<crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason> {
+    ) -> &Option<crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason>{
         &self.verification_requirement
     }
 }
@@ -42,7 +42,7 @@ impl RetainedOutputCurrentnessRead {
     #[doc(hidden)]
     pub fn verification_requirement_mut_for_test(
         &mut self,
-    ) -> &mut Option<crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason> {
+    ) -> &mut Option<crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason>{
         &mut self.verification_requirement
     }
 }

@@ -55,7 +55,7 @@ impl WorthQueryManagedDirectRunAdmissionFailure {
 
     pub fn release(
         self,
-    ) -> crate::domain_computation::vocabulary::provider_session::direct_attempt::WorthQueryDirectExecutionAttemptReleaseReceipt {
+    ) -> crate::domain_computation::vocabulary::provider_session::direct_attempt::WorthQueryDirectExecutionAttemptReleaseReceipt{
         self.resource_attempt.release()
     }
 }

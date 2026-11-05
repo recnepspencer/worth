@@ -5,7 +5,11 @@ use worth_query_installation::facade::{
 
 use super::super::fact::WorthQueryApplicationFactKey;
 use super::WorthQueryApplicationReadAttempt;
-use {crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity};
+use {
+    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity,
+    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
+};
 
 impl<Schema, Operation, Input, Scope, Phase>
     WorthQueryApplicationReadAttempt<'_, '_, Schema, Operation, Input, Scope, Phase>
@@ -13,7 +17,7 @@ impl<Schema, Operation, Input, Scope, Phase>
     pub(super) fn admit_target(
         &self,
         target: &ApplicationOperationDecisionReadTarget,
-    ) -> Result<crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::InstalledScopePosition, WorthQueryApplicationAttemptDenial> {
+    ) -> Result<crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::InstalledScopePosition, WorthQueryApplicationAttemptDenial>{
         crate::domain_computation::application_contract_admission::installed_read_scope_for_target(
             self.admission.allowed_graph_contract().graph_reads(),
             target,

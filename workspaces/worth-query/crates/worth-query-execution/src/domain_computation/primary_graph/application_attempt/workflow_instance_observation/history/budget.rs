@@ -1,10 +1,13 @@
-use {super::super::denial, super::super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
 use worth_foundational::facade::AspectFieldLocator;
 use worth_query_installation::facade::WorthQueryWorkflowHistoryReconstructionBudget;
 use worth_relational::facade::{
     identity::{EntityId, KindId},
     runtime::{ProjectionAspectScope, RelationalRuntime},
     snapshots::SnapshotHandle,
+};
+use {
+    super::super::denial, super::super::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
 };
 
 // Logical reservation, not RSS: one reusable observation scratch buffer plus

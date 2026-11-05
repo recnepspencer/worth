@@ -1,6 +1,9 @@
 use worth_relational::facade::runtime::AdjacencyStructuralRevisionDenial;
 
-use {super::WorthQueryApplicationObservedFact, crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure};
+use {
+    super::WorthQueryApplicationObservedFact,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure,
+};
 
 impl WorthQueryApplicationObservedFact {
     pub(in crate::domain_computation::primary_graph) fn comparison(

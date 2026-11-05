@@ -1,11 +1,14 @@
-use {super::super::WorthQueryApplicationQueryBatchAdmission, crate::domain_computation::primary_graph::vocabulary::application_query::batch::WorthQueryApplicationQueryBatchResourceDenial};
 use super::*;
 use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use {
+    super::super::WorthQueryApplicationQueryBatchAdmission,
+    crate::domain_computation::primary_graph::vocabulary::application_query::batch::WorthQueryApplicationQueryBatchResourceDenial,
+};
 
 mod result;
-pub use result::WorthQueryApplicationBatchResult;
-use crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenial;
 use crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::authorization_denial;
+use crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenial;
+pub use result::WorthQueryApplicationBatchResult;
 
 /// A batch read preserves the ordinary execution cause and distinguishes an
 /// aggregate admission refusal. It carries no partially completed result.

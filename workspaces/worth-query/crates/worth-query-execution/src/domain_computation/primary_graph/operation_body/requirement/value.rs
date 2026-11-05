@@ -1,10 +1,13 @@
 //! Exact raw scalar interpretation for the Foundation operand vocabulary.
-use {crate::domain_computation::primary_graph::HandlerExecutionDenial, crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
 use worth_foundational::{expression_api::ExpressionValue, facade::AspectValue};
 use worth_query_declaration::facade::application_schema::{
     ApplicationFieldPresence, ApplicationOperationBodyRequirementSource,
 };
-
+use {
+    crate::domain_computation::primary_graph::HandlerExecutionDenial,
+    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
+};
 
 pub(in crate::domain_computation::primary_graph) fn field_value(
     source: &ApplicationOperationBodyRequirementSource,

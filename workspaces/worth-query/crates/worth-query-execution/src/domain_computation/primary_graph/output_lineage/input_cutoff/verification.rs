@@ -12,21 +12,17 @@ use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 use worth_relational::facade::runtime::RelationalRuntime;
 use worth_relational::facade::snapshots::SnapshotHandle;
 
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SourceSettlementCurrentness;
 use super::super::PreparedInputReuseKey;
 use super::PreparedInputCutoffBasis;
 use super::RetainedInputCutoffCandidate;
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::movement::Movement;
-use crate::domain_computation::vocabulary::primary_graph::decision_reuse::PreparedDecisionReuseContext;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure;
 use crate::domain_computation::primary_graph::application_contribution::MatchedRequiredPredecessors;
 use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence;
 use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerification;
 use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SourceSettlementCurrentness;
 use crate::domain_computation::primary_graph::SourceInvalidationOwner;
-
+use crate::domain_computation::vocabulary::primary_graph::decision_reuse::PreparedDecisionReuseContext;
 
 /// A prior performed record and the exact native read basis checked for reuse.
 /// Only the output-lineage owner can consume this at publication.
@@ -336,8 +332,8 @@ mod matched_roots;
 pub(crate) mod pending_upstream;
 
 pub(crate) mod source_facts;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::verification::cutoff_declines;
 use source_facts::facts_are_current;
 use source_facts::marked_facts_permit_reuse;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::verification::cutoff_declines;
 
 mod court_doors_for_test;

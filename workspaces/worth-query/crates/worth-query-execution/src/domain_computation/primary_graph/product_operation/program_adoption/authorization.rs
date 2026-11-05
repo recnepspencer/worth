@@ -10,7 +10,11 @@ use worth_query_declaration::facade::{
     application_schema::ApplicationOperationRef,
 };
 use worth_query_installation::facade::ApplicationSchema;
-use {crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode, crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation, crate::domain_computation::request_execution::WorthQueryAdvancementPhase};
+use {
+    crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation,
+    crate::domain_computation::request_execution::WorthQueryAdvancementPhase,
+    crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode,
+};
 
 /// Why the selected source program refused inspection or adoption.
 /// Authorization refusals perform no adoption effects and preserve carried custody.

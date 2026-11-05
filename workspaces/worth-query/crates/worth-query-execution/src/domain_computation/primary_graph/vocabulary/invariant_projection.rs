@@ -1,4 +1,20 @@
 //! `invariant_projection`'s vocabulary, moved whole from `primary_graph::invariant_projection`: its root file's items here, one child per other source file.
+pub(crate) mod capacity_stop;
+pub(crate) mod identity_encoding;
+pub(crate) mod output_availability_candidate;
+pub(crate) mod publication_recovery;
+pub(crate) mod verification;
+pub(crate) mod work_budget;
+
+use crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity;
+use std::cmp::Ordering;
+use std::marker::PhantomData;
+use std::sync::Arc;
+use worth_foundational::facade::ChargedBytes;
+use worth_query_declaration::facade::application_program::ApplicationComputationPartition;
+use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
+use worth_relational::facade::identity::EntityId;
+use worth_relational::facade::identity::KindId;
 
 /// An entity observed by an invariant projection, typed by its entity kind.
 ///
@@ -6,11 +22,11 @@
 /// reader refuses it as foreign.
 #[derive(Clone, Debug)]
 pub struct WorthQueryInvariantEntityIdentity<Schema, Entity> {
-    entity_id: EntityId,
-    kind: KindId,
-    entity: Arc<str>,
-    authority_identity: u64,
-    _marker: PhantomData<fn() -> (Schema, Entity)>,
+    pub(in crate::domain_computation::primary_graph) entity_id: EntityId,
+    pub(in crate::domain_computation::primary_graph) kind: KindId,
+    pub(in crate::domain_computation::primary_graph) entity: Arc<str>,
+    pub(in crate::domain_computation::primary_graph) authority_identity: u64,
+    pub(in crate::domain_computation::primary_graph) _marker: PhantomData<fn() -> (Schema, Entity)>,
 }
 
 /// An exact projected entity admitted for the later application effect phase.
@@ -25,7 +41,7 @@ pub struct WorthQueryInvariantMutationTarget<Schema, Entity> {
         ApplicationSchemaBindingIdentity,
     pub(in crate::domain_computation::primary_graph) admission_identity:
         crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity,
-    _marker: PhantomData<fn() -> (Schema, Entity)>,
+    pub(in crate::domain_computation::primary_graph) _marker: PhantomData<fn() -> (Schema, Entity)>,
 }
 
 impl<Schema, Entity> WorthQueryInvariantEntityIdentity<Schema, Entity> {
@@ -111,20 +127,5 @@ impl<Schema, Entity> ChargedBytes for WorthQueryInvariantEntityIdentity<Schema, 
 }
 
 impl ApplicationComputationPartition for WorthQueryInvariantEntityIdentity<(), ()> {
-        const IDENTITY: &'static str = "projection-identity-encoding-test";
-    }
-pub(crate) mod capacity_stop;
-pub(crate) mod identity_encoding;
-pub(crate) mod output_availability_candidate;
-pub(crate) mod publication_recovery;
-pub(crate) mod verification;
-pub(crate) mod work_budget;
-use crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity;
-use std::cmp::Ordering;
-use std::marker::PhantomData;
-use std::sync::Arc;
-use worth_foundational::facade::ChargedBytes;
-use worth_query_declaration::facade::application_program::ApplicationComputationPartition;
-use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
-use worth_relational::facade::identity::EntityId;
-use worth_relational::facade::identity::KindId;
+    const IDENTITY: &'static str = "projection-identity-encoding-test";
+}

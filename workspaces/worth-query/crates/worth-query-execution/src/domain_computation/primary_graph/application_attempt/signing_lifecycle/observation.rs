@@ -1,13 +1,20 @@
 //! Bounded current membership and immutable footprint observation retain native revisions.
 use super::super::signed_creation::PublishedCertifiedSubject as Provenance;
-use {super::super::fact::observe_adjacency_checked, super::super::fact::AdjacencyObservationDenial, crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection as Direction};
-use {super::attempt, super::capacity, super::refused, super::unavailable, super::EntityId, super::Fact, crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind as Kind, super::KindId, super::Lease, super::Outcome, super::Rule};
 use worth_relational::facade::{
     runtime::{
         AdjacencyStructuralRevisionDenial, RelationalAdjacencyDirection as NativeDirection,
         RelationalRuntime,
     },
     snapshots::SnapshotHandle,
+};
+use {
+    super::super::fact::observe_adjacency_checked, super::super::fact::AdjacencyObservationDenial,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection as Direction,
+};
+use {
+    super::attempt, super::capacity, super::refused, super::unavailable, super::EntityId,
+    super::Fact, super::KindId, super::Lease, super::Outcome, super::Rule,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind as Kind,
 };
 
 pub(super) fn adjacency(

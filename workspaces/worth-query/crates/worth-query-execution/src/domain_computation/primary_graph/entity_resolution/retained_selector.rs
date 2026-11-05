@@ -1,12 +1,9 @@
 //! Descriptive scope retained from native entity resolution, never read authority.
 use super::WorthQueryApplicationEntityIdentity;
+use crate::domain_computation::vocabulary::primary_graph::retained_selector::WorthQueryObservedScopeSelector;
 use std::sync::Arc;
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
-use worth_relational::facade::identity::EntityId;
-use crate::domain_computation::vocabulary::primary_graph::retained_selector::WorthQueryObservedScopeSelector;
 mod funding;
-
-
 
 impl<Schema, Entity> WorthQueryApplicationEntityIdentity<Schema, Entity> {
     pub(in crate::domain_computation) fn retain_scope_selector(

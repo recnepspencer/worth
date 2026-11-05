@@ -2,7 +2,11 @@ use worth_query_declaration::facade::application_program::{
     ApplicationProgramIdentity, ApplicationProgramRevision,
 };
 
-use {super::WorthQueryApplicationCommitDenial, crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind, super::WorthQueryApplicationCommitDenialStage, super::WorthQueryProgramActivationUnresolved};
+use {
+    super::WorthQueryApplicationCommitDenial, super::WorthQueryApplicationCommitDenialStage,
+    super::WorthQueryProgramActivationUnresolved,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind,
+};
 
 impl WorthQueryApplicationCommitDenial {
     /// The attempt reached the direct commit entry for a program-owned operation.

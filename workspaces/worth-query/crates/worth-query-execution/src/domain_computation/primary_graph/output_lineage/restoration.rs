@@ -4,7 +4,11 @@ use std::sync::{Arc, Mutex, OnceLock};
 
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 
-use {super::RecordedOutput, super::RecordedOutputMutable, super::RecordedSourceIdentity, crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource, super::WorthQueryApplicationOutputCorrespondence, super::WorthQueryApplicationOutputLineage};
+use {
+    super::RecordedOutput, super::RecordedOutputMutable, super::RecordedSourceIdentity,
+    super::WorthQueryApplicationOutputCorrespondence, super::WorthQueryApplicationOutputLineage,
+    crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource,
+};
 
 pub(crate) mod republication;
 
@@ -26,7 +30,7 @@ impl WorthQueryApplicationOutputLineage {
         scope: crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding,
         observation: &worth_runtime_world::facade::ProductBranchObservation,
         source_partition_identity: [u8; 32],
-    ) -> Option<Arc<crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity>> {
+    ) -> Option<Arc<crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity>>{
         let source = SemanticSource {
             runtime_authority,
             schema,

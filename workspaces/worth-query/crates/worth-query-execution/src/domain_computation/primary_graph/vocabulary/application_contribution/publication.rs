@@ -1,11 +1,11 @@
 //! Moved whole from `domain_computation::primary_graph::application_contribution::execution_denial::publication`: the items below and every impl they own.
-use crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control;
-use crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind as Kind;
 use crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationCheckpointDenial as Checkpoint;
 use crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationInterruption as Interruption;
 use crate::domain_computation::request_execution::execution_stop::checkpoint_denial;
-use crate::domain_computation::request_execution::lease_denial;
-use crate::domain_computation::request_execution::memory_denial;
+use crate::domain_computation::request_execution::execution_stop::lease_denial;
+use crate::domain_computation::request_execution::execution_stop::memory_denial;
+use crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control;
+use crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind as Kind;
 
 pub(in crate::domain_computation) fn publication_execution_kind(
     cause: worth_execution::WorkCeilingDenial,

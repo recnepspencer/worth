@@ -4,11 +4,11 @@ use std::sync::Arc;
 
 use worth_query_installation::facade::ApplicationSchema;
 
-use {crate::domain_computation::primary_graph::vocabulary::application_inbound::transport_binding::WorthQueryInstalledTransportCompletionBinding, super::WorthQueryPrimaryGraphApplicationRuntime};
 use crate::domain_computation::application_aftermath::{
     WorthQueryInboundCustody, WorthQueryTransportPublicationPermit,
     WorthQueryTransportPublicationPermitDenial,
 };
+use crate::domain_computation::primary_graph::vocabulary::application_inbound::transport_binding::WorthQueryInstalledTransportCompletionBinding;
 
 pub(in crate::domain_computation) trait TransportPublicationPermitScopedOps<
     Schema: ApplicationSchema,

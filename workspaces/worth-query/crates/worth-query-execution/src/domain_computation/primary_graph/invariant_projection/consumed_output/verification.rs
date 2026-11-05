@@ -2,9 +2,7 @@ use std::sync::Arc;
 use std::sync::OnceLock;
 
 use im::OrdSet;
-use worth_relational::facade::mvcc::CompanionCellEditStop;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
-use worth_relational::facade::mvcc::RelationalInterruptionEvent;
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 use worth_relational::facade::runtime::RelationalRuntime;
 use worth_relational::facade::snapshots::SnapshotHandle;
@@ -18,18 +16,14 @@ mod equality_recovery;
 mod marked_walk;
 mod restored_root;
 mod work_budget;
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::movement::Movement;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::ConsumedOutputCurrentness;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::DirtyReverification;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::SettlementVerificationStop;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SourceSettlementCurrentness;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 use crate::domain_computation::primary_graph::output_lineage::SealedNativeOutputWitness;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 use crate::domain_computation::primary_graph::SourceInvalidationOwner;
-use crate::domain_computation::vocabulary::primary_graph::capacity_stop::VerificationCapacityStop;
 
 use work_budget::fact_is_current;
 
@@ -90,8 +84,6 @@ impl<'a> From<&'a ConsumedOutputEvidence> for EvidenceView<'a> {
         }
     }
 }
-
-
 
 impl ConsumedOutputEvidence {
     pub(in crate::domain_computation::primary_graph) fn verify_many_with_admission(
@@ -233,6 +225,5 @@ impl ConsumedOutputEvidence {
         result
     }
 }
-
 
 mod court_doors_for_test;

@@ -1,7 +1,6 @@
 //! `entity_resolution_denial`'s vocabulary, moved whole from `primary_graph::entity_resolution_denial`: its root file's items here, one child per other source file.
+
 use crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionDenialKind;
-
-
 
 /// Refusal to resolve an entity from its identity field.
 ///

@@ -1,9 +1,9 @@
 //! One issued physical/empty fact closure for every derived source shape.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
 use worth_relational::facade::{
     runtime::DerivedRelationReadShape as Shape, schema::NativeMemberKey,
 };
-use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
 impl<Schema: ApplicationSchema, Operation: ApplicationOperationMarkerIdentity<Schema>>
     WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>
 {

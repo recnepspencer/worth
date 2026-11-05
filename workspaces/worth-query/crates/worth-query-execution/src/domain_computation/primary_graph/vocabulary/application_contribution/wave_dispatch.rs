@@ -3,7 +3,7 @@ use crate::domain_computation::primary_graph::vocabulary::application_contributi
 use crate::domain_computation::primary_graph::vocabulary::application_contribution::prepared_request::PreparedCompute;
 use crate::domain_computation::request_execution::WorthQueryAdvancementDenial;
 use crate::domain_computation::request_execution::execution_stop::checkpoint_denial;
-use crate::domain_computation::request_execution::lease_denial;
+use crate::domain_computation::request_execution::execution_stop::lease_denial;
 use worth_execution::MapKernelFailure;
 use worth_execution::MapOutcome;
 use worth_execution::MapStop;
@@ -16,7 +16,7 @@ pub struct PreparedMember {
 }
 
 pub struct ComputedMember {
-    slots: Vec<ComputedSlot>,
+    pub(in crate::domain_computation::primary_graph) slots: Vec<ComputedSlot>,
 }
 
 pub(in crate::domain_computation::primary_graph) fn settle_outcome(
@@ -63,7 +63,9 @@ impl ComputedMember {
     }
 }
 
-pub(in crate::domain_computation::primary_graph) fn from_checkpoint(stop: worth_execution::MapKernelStop) -> WorthQueryAdvancementDenial {
+pub(in crate::domain_computation::primary_graph) fn from_checkpoint(
+    stop: worth_execution::MapKernelStop,
+) -> WorthQueryAdvancementDenial {
     match checkpoint_denial(stop) {
         crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationCheckpointDenial::Resource(denial) => {
             WorthQueryAdvancementDenial::Resource(denial)

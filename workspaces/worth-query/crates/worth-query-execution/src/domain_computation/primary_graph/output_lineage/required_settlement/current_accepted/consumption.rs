@@ -11,7 +11,7 @@ impl BoundCurrentAcceptedOutput<'_> {
 
     pub(in crate::domain_computation::primary_graph) fn consumed_identity(
         &self,
-    ) -> &std::sync::Arc<crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity> {
+    ) -> &std::sync::Arc<crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity>{
         &self
             ._proof
             .candidate

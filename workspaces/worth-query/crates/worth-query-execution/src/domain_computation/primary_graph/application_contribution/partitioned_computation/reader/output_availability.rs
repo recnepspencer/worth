@@ -1,5 +1,6 @@
 //! The original reader loan carries a non-driving output dependency.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
 use crate::domain_computation::primary_graph::{
     application_contribution::{WorthQueryApplicationOutputDemand, WorthQueryProducerOutputFamily},
     invariant_projection::WorthQueryObservedOutputAvailability,
@@ -11,7 +12,6 @@ use worth_query_declaration::facade::{
     },
     application_schema::{ApplicationEntityMarkerIdentity, ApplicationStructuredValueBinding},
 };
-use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
 impl<Schema, Operation> WorthQueryComputationReader<'_, '_, '_, Schema, Operation>
 where
     Schema: ApplicationSchema + 'static,

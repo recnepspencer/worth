@@ -1,13 +1,14 @@
 //! Moved whole from `domain_computation::primary_graph::application_contribution::computation::checkpoint`: the items below and every impl they own.
-use crate::domain_computation::request_execution::QueryRequestExecution;
 use crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationCheckpointDenial;
 use crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationInterruption;
 use crate::domain_computation::request_execution::execution_stop::checkpoint_denial;
+use crate::domain_computation::request_execution::QueryRequestExecution;
 
 /// The request a managed computation runs for: its cancellation, its
 /// deadline and how its patterns are placed.
 pub struct WorthQueryManagedComputationExecution<'request> {
-    pub(in crate::domain_computation::primary_graph) request: &'request QueryRequestExecution<'request>,
+    pub(in crate::domain_computation::primary_graph) request:
+        &'request QueryRequestExecution<'request>,
 }
 
 impl<'request> WorthQueryManagedComputationExecution<'request> {
@@ -26,9 +27,12 @@ impl<'request> WorthQueryManagedComputationExecution<'request> {
 pub struct WorthQueryManagedComputationCheckpoint<'request> {
     pub(in crate::domain_computation::primary_graph) charge:
         Option<&'request mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>>,
-    pub(in crate::domain_computation::primary_graph) poll: &'request mut dyn FnMut() -> Result<(), worth_execution::MapKernelStop>,
-    pub(in crate::domain_computation::primary_graph) refused: Option<WorthQueryManagedComputationCheckpointDenial>,
-    pub(in crate::domain_computation::primary_graph) native: Option<&'request worth_execution::ExecutionResourceLease<'request>>,
+    pub(in crate::domain_computation::primary_graph) poll:
+        &'request mut dyn FnMut() -> Result<(), worth_execution::MapKernelStop>,
+    pub(in crate::domain_computation::primary_graph) refused:
+        Option<WorthQueryManagedComputationCheckpointDenial>,
+    pub(in crate::domain_computation::primary_graph) native:
+        Option<&'request worth_execution::ExecutionResourceLease<'request>>,
 }
 
 impl<'request> WorthQueryManagedComputationCheckpoint<'request> {

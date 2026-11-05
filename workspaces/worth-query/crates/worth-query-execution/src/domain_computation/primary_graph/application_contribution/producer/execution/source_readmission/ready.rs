@@ -1,7 +1,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::application_output_demand::denial::ProducerPublicationStale;
-use crate::domain_computation::vocabulary::primary_graph::capacity_stop::VerificationCapacityStop;
 use crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SettlementRegistrationStop;
+use crate::domain_computation::vocabulary::primary_graph::capacity_stop::VerificationCapacityStop;
 
 pub(super) fn ready_work_denial(subject: &'static str) -> ProducerExecutionStop {
     WorthQueryOutputDemandDenial::new(

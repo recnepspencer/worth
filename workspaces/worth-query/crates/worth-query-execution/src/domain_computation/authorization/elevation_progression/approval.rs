@@ -17,7 +17,6 @@ use super::super::capability_registry::{
 use super::super::operation_progression::{
     progress_capability_operation, WorthQueryCapabilityOperationProgression,
 };
-use {super::super::WorthQueryAdmittedApplicationCapabilityAccess, super::super::WorthQueryAdmittedApplicationOperation, super::super::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind};
 use super::context_identity::{
     resolve_elevation_identity, resolve_review_identity, selected_elevation_entity,
 };
@@ -26,6 +25,12 @@ use super::transition_contract::{approval_program_targets, lifecycle_decision_re
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationIdempotencyResolutionDenial,
     WorthQueryElevationApprovalOutcome, WorthQueryRequestedElevation,
+};
+use {
+    super::super::WorthQueryAdmittedApplicationCapabilityAccess,
+    super::super::WorthQueryAdmittedApplicationOperation,
+    super::super::WorthQueryOperationAuthorizationDenial,
+    crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind,
 };
 
 mod support_currentness;

@@ -1,6 +1,11 @@
 use super::*;
 use crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial as Denial;
-use {crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control, crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind as Kind, crate::domain_computation::WorthQueryProviderSessionFailure, crate::domain_computation::WorthQueryProviderSessionProtocolStage as Stage};
+use {
+    crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control,
+    crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind as Kind,
+    crate::domain_computation::WorthQueryProviderSessionFailure,
+    crate::domain_computation::WorthQueryProviderSessionProtocolStage as Stage,
+};
 #[test]
 fn read_fold_indeterminate_idempotency_stop_replaces_the_prior_failure() {
     let prior = WorthQueryProviderSessionFailure::new(

@@ -18,14 +18,13 @@ use super::ProducerSourceQuery as SourceQuery;
 use super::ProducerSourceValue as SourceValue;
 use super::WorthQueryApplicationProducerBinding;
 use super::WorthQueryApplicationProducerProvider;
-use crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerCommitAuthority;
 use crate::basis::WorthQueryProductBranch;
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerCommitAuthority;
 
 use crate::domain_computation::primary_graph::RequiredOutputDemandContext;
 use crate::domain_computation::primary_graph::RequiredOutputExecution;
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
 use crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding;
-use crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode;
 
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;

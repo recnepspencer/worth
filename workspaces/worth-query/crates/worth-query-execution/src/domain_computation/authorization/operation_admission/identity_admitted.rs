@@ -3,8 +3,8 @@
 use std::fmt::Write;
 use std::sync::Arc;
 
-use crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity;
 use super::RESOURCE_LABEL;
+use crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity;
 
 pub(super) enum AdmittedOperationIdentityStop {
     Exhausted,

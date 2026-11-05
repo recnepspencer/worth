@@ -2,9 +2,5 @@
 use super::*;
 use crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop;
 
-
-
-
-
 #[cfg(test)]
 mod tests;

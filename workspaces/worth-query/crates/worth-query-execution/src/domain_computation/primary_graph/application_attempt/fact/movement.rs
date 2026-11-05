@@ -13,7 +13,6 @@ use crate::domain_computation::primary_graph::vocabulary::application_attempt::m
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct FactMovement(Movement);
 
-
 /// The fact the comparator observed for a retained key. It has no equality
 /// of its own: only [`FactMovement::between`] compares it.
 #[derive(Debug)]

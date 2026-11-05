@@ -1,6 +1,9 @@
 use super::{map_index_currency_denial, map_registration_denial};
-use {crate::domain_computation::primary_graph::application_query::controls::WorthQueryApplicationQueryBasis, crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial};
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
+use {
+    crate::domain_computation::primary_graph::application_query::controls::WorthQueryApplicationQueryBasis,
+    crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial,
+};
 
 pub(in crate::domain_computation::primary_graph::application_query) fn admit_application_query_basis<
     Schema,

@@ -1,11 +1,11 @@
 use worth_relational::facade::snapshots::SnapshotHandle;
 
 use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence;
-use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerification;
-use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop;
 use crate::domain_computation::primary_graph::provider::session_commit::provider_failure;
 use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphApplicationAttempt;
 use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerification;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop;
 use crate::domain_computation::WorthQueryProviderSessionCommitStop;
 use crate::domain_computation::WorthQueryProviderSessionProtocolStage;
 

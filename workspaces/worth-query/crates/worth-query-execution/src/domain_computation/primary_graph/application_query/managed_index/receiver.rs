@@ -180,7 +180,7 @@ trait ReceiverOwnOps<S: ApplicationSchema>:
                     governance,
                     || one_shot::plan_admission::admit_request(request, query),
                     |projection| {
-                        one_shot::denial(
+                        crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::denial(
                             crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenialKind::Projection(
                                 projection.kind(),
                             ),

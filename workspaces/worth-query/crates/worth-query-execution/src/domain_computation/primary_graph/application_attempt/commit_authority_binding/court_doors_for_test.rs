@@ -12,12 +12,11 @@ impl WorthQueryApplicationCommitAuthorityBinding {
     }
 }
 
-
 impl WorthQueryApplicationCommitAuthorityBinding {
     #[doc(hidden)]
     pub fn original_inspection_disclosure_for_test(
         &self,
-    ) -> Option<&crate::domain_computation::vocabulary::primary_graph::inspection::OriginalSourceInspectionDisclosure> {
+    ) -> Option<&crate::domain_computation::vocabulary::primary_graph::inspection::OriginalSourceInspectionDisclosure>{
         Self::original_inspection_disclosure(self)
     }
 }

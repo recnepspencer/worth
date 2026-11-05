@@ -10,7 +10,10 @@ use worth_query_installation::facade::WorthQueryInstalledApplicationQueryIdentit
 use worth_relational::facade::{history::RelationalRecordHistorySelection, identity::EntityId};
 
 use super::super::WorthQueryObservedResultSet;
-use {crate::domain_computation::primary_graph::vocabulary::application_query::history_denial::WorthQueryApplicationHistoryDenial as Denial, super::SubjectPlan, super::SubjectQuery};
+use {
+    super::SubjectPlan, super::SubjectQuery,
+    crate::domain_computation::primary_graph::vocabulary::application_query::history_denial::WorthQueryApplicationHistoryDenial as Denial,
+};
 
 mod prepare;
 pub(in crate::domain_computation::primary_graph::application_query) use prepare::prepare as prepare_capture;

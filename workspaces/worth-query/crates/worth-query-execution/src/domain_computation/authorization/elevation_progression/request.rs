@@ -18,7 +18,12 @@ use super::super::capability_registry::{
 use super::super::operation_progression::{
     progress_capability_operation, WorthQueryCapabilityOperationProgression,
 };
-use {super::super::WorthQueryAdmittedApplicationCapabilityAccess, super::super::WorthQueryAdmittedApplicationOperation, super::super::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind};
+use {
+    super::super::WorthQueryAdmittedApplicationCapabilityAccess,
+    super::super::WorthQueryAdmittedApplicationOperation,
+    super::super::WorthQueryOperationAuthorizationDenial,
+    crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind,
+};
 
 use super::request_binding::bind_request;
 

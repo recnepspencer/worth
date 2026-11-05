@@ -1,8 +1,8 @@
 //! Sealed test doors over this module's private members.
 use super::*;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
 
 impl PreparedOutputLineageSlot {
     #[doc(hidden)]

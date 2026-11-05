@@ -3,8 +3,6 @@
 //! These are derived from the admitted operation and the attempt's idempotency
 //! binding. Callers cannot supply them as assertions.
 
-use crate::equality_type_id::EqualityTypeId as TypeId;
-use std::any::Any;
 use std::sync::Arc;
 
 use crate::domain_computation::authorization::WorthQueryOperationScopeBinding;
@@ -12,13 +10,7 @@ use crate::domain_computation::vocabulary::execution_runtime::runtime_identity::
 use worth_query_installation::facade::WorthQueryInstalledAftermathContract;
 
 use super::WorthQueryApplicationIdempotencyBinding;
-use worth_query_declaration::facade::application_operation::ApplicationSharedInput;
 use crate::domain_computation::vocabulary::primary_graph::commit_authority_binding::WorthQueryRetainedGovernedInput;
-
-
-
-
-
 
 /// Installed operation, admitted principal scope, and idempotency binding
 /// retained on a commit receipt so recovery can bind to admitted truth.
@@ -137,13 +129,13 @@ impl WorthQueryApplicationCommitAuthorityBinding {
 
     pub(in crate::domain_computation::primary_graph) fn original_inspection_disclosure(
         &self,
-    ) -> Option<&crate::domain_computation::vocabulary::primary_graph::inspection::OriginalSourceInspectionDisclosure> {
+    ) -> Option<&crate::domain_computation::vocabulary::primary_graph::inspection::OriginalSourceInspectionDisclosure>{
         self.original_inspection_disclosure.as_deref()
     }
 
     pub(in crate::domain_computation::primary_graph) fn retain_original_inspection_disclosure(
         &self,
-    ) -> Option<Arc<crate::domain_computation::vocabulary::primary_graph::inspection::OriginalSourceInspectionDisclosure>> {
+    ) -> Option<Arc<crate::domain_computation::vocabulary::primary_graph::inspection::OriginalSourceInspectionDisclosure>>{
         self.original_inspection_disclosure.clone()
     }
 

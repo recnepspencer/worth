@@ -1,9 +1,9 @@
 //! A declared create/preserve pair follows its actual publication positions.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
 use std::cmp::Reverse;
 use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
 
 type Publication<'a> = ((Reverse<usize>, u64), &'a RecordedOutput);
 

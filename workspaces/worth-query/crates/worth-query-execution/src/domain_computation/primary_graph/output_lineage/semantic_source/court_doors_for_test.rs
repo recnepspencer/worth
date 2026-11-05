@@ -2,12 +2,11 @@
 use super::*;
 use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
 
-
 impl SemanticSource {
     #[doc(hidden)]
     pub fn output_binding_for_test(
         &self,
-    ) -> &crate::domain_computation::primary_graph::vocabulary::output_binding_identity::OutputBindingIdentity {
+    ) -> &crate::domain_computation::primary_graph::vocabulary::output_binding_identity::OutputBindingIdentity{
         &self.output_binding
     }
 }
@@ -30,7 +29,7 @@ impl SemanticSource {
     #[doc(hidden)]
     pub fn output_binding_mut_for_test(
         &mut self,
-    ) -> &mut crate::domain_computation::primary_graph::vocabulary::output_binding_identity::OutputBindingIdentity {
+    ) -> &mut crate::domain_computation::primary_graph::vocabulary::output_binding_identity::OutputBindingIdentity{
         &mut self.output_binding
     }
 }

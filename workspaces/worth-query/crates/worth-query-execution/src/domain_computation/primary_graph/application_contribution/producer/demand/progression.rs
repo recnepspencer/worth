@@ -4,7 +4,6 @@ use worth_query_admission::facade::authenticated_principal::WorthQueryRequestSco
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::super::ProducerInvocationAuthority;
-use crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerCommitAuthority;
 use super::disclosure::validate_disclosure;
 use super::own_effect_observation;
 use super::own_effect_observation::Stage;
@@ -15,7 +14,7 @@ use super::WorthQueryOutputDemandAdvance;
 use super::WorthQueryProducerOutputFamily;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
-
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerCommitAuthority;
 
 pub(in crate::domain_computation::primary_graph) use required_wave::CurrentProof;
 pub(crate) mod admission;

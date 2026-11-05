@@ -16,7 +16,10 @@ use worth_relational::facade::snapshots::SnapshotHandle;
 use worth_relational::facade::storage::RecordLifecycleState;
 
 use crate::domain_computation::vocabulary::primary_graph::principal_binding::WorthQueryPrimaryPrincipalBindingLayout;
-use {crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenial, crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenialKind};
+use {
+    crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenial,
+    crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenialKind,
+};
 
 #[derive(Clone, Debug, PartialEq)]
 pub(super) struct WorthQueryPrincipalMappingObservation {

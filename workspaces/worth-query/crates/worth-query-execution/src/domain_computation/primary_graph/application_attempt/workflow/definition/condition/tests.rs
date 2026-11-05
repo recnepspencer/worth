@@ -1,4 +1,8 @@
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::condition::encode_draft;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::condition::CompiledWorkflowCondition;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::condition::CompiledWorkflowConditionExpression;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::condition::WorkflowConditionOperand;
 
 fn operand(name: &str) -> [&str; OPERAND_FIELDS] {
     [name, "query.v1", "parameter.v1", "result.v1", "binding.v1"]

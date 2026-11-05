@@ -10,7 +10,11 @@ use worth_query_installation::facade::{
 };
 
 use super::CandidateWriter;
-use {crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial, crate::domain_computation::primary_graph::vocabulary::application_attempt::model::WorthQueryApplicationEffectEntity, crate::domain_computation::primary_graph::WorthQueryApplicationEntityKey};
+use {
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::model::WorthQueryApplicationEffectEntity,
+    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::primary_graph::WorthQueryApplicationEntityKey,
+};
 
 impl<Schema, Binding> CandidateWriter<'_, Schema, Binding>
 where

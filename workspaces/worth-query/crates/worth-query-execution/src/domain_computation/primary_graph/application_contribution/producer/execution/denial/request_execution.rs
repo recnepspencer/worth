@@ -1,7 +1,13 @@
 //! One classifier for caller-local native stops at source read and producer commit.
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind as Demand;
-use {crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control, crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind as Native};
-use {crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenialKind as Query, crate::domain_computation::request_execution::WorthQueryAdvancementDenial as Request};
+use {
+    crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenialKind as Query,
+    crate::domain_computation::request_execution::WorthQueryAdvancementDenial as Request,
+};
+use {
+    crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control,
+    crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind as Native,
+};
 
 pub fn kind(cause: Native) -> Demand {
     stop(Ok(cause)).unwrap_or(Demand::SourceQueryExecution(Query::ExecutionRequest(cause)))

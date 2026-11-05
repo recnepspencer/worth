@@ -1,11 +1,6 @@
 //! Moved whole from `domain_computation::primary_graph::application_query::managed_index::control`: the items below and every impl they own.
-use crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop;
-use std::cell::RefCell;
-use worth_execution::MapKernelStop;
-use worth_execution::WorkCeilingDenial;
 use crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl;
-
-
+use crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop;
 
 impl<'a> WorthQueryManagedIndexControl<'a> {
     #[doc(hidden)]

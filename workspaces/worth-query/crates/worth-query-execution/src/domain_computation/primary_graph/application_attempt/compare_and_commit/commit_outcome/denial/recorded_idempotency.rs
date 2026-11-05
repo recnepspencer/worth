@@ -1,7 +1,10 @@
 //! Commit denials for a key whose durable record resolves, but not to a
 //! receipt this runtime can return.
 
-use {super::WorthQueryApplicationCommitDenial, crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind, super::WorthQueryApplicationCommitDenialStage};
+use {
+    super::WorthQueryApplicationCommitDenial, super::WorthQueryApplicationCommitDenialStage,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind,
+};
 
 impl WorthQueryApplicationCommitDenial {
     pub(in crate::domain_computation::primary_graph::application_attempt) const fn idempotency_receipt_not_retained(

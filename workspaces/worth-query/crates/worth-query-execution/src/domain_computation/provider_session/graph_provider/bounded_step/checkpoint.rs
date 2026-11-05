@@ -7,8 +7,11 @@ use super::{
     WorthQueryProviderCheckpointReleaseDisposition, WorthQueryProviderCheckpointReleaseEvidence,
     WorthQueryProviderCheckpointRestoreInvocation, WorthQueryProviderCheckpointRetentionFailure,
 };
-use {crate::domain_computation::WorthQueryGraphProviderCall, crate::domain_computation::vocabulary::provider_session::failure::WorthQueryGraphProviderFailure};
 use crate::execution_digest::hash_parts;
+use {
+    crate::domain_computation::vocabulary::provider_session::failure::WorthQueryGraphProviderFailure,
+    crate::domain_computation::WorthQueryGraphProviderCall,
+};
 
 static NEXT_PROVIDER_CHECKPOINT: AtomicU64 = AtomicU64::new(1);
 

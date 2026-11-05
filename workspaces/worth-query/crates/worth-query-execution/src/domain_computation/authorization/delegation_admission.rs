@@ -7,7 +7,11 @@ use super::capability_observation::WorthQueryObservedCapabilityDecision;
 use super::capability_registry::WorthQueryInstalledCapabilityPlan;
 use super::decision_facts::WorthQueryDelegationDecisionFact;
 use super::retained_capability_request::WorthQueryRetainedCapabilityRequest;
-use {super::WorthQueryAuthorizationDecisionFact, super::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind, super::WorthQueryRuntimeTimeSample};
+use {
+    super::WorthQueryAuthorizationDecisionFact, super::WorthQueryOperationAuthorizationDenial,
+    super::WorthQueryRuntimeTimeSample,
+    crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind,
+};
 
 pub(in crate::domain_computation::authorization) mod observation;
 use observation::{denial, observe_lineage, observe_policy};
@@ -109,7 +113,7 @@ impl<Schema> source_seal::SealedCapabilityObservationSource
 {
     fn session_identity(
         &self,
-    ) -> crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity {
+    ) -> crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity{
         self.session_identity()
     }
     fn relational(&self) -> &worth_relational::facade::runtime::RelationalRuntime {
@@ -137,7 +141,7 @@ impl source_seal::SealedCapabilityObservationSource
 {
     fn session_identity(
         &self,
-    ) -> crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity {
+    ) -> crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity{
         self.session_identity()
     }
     fn relational(&self) -> &worth_relational::facade::runtime::RelationalRuntime {
@@ -165,7 +169,7 @@ impl source_seal::SealedCapabilityObservationSource
 {
     fn session_identity(
         &self,
-    ) -> crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity {
+    ) -> crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity{
         self.session_identity()
     }
     fn relational(&self) -> &worth_relational::facade::runtime::RelationalRuntime {
@@ -193,7 +197,7 @@ impl source_seal::SealedCapabilityObservationSource
 {
     fn session_identity(
         &self,
-    ) -> crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity {
+    ) -> crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity{
         self.session_identity()
     }
     fn relational(&self) -> &worth_relational::facade::runtime::RelationalRuntime {

@@ -179,4 +179,3 @@ pub fn admit_pair_width<E>(
 }
 
 mod traversal;
-

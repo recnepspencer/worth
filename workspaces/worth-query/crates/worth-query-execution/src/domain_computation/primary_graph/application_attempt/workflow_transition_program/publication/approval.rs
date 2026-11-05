@@ -3,8 +3,6 @@ use {
     crate::domain_computation::primary_graph::application_attempt::workflow::instance::SelectedWorkflowTransition,
 };
 
-
-
 /// An approval the instance waits on: the capability and operation that must approve, and
 /// the operation the approval authorizes.
 #[derive(Clone, Debug, Eq, PartialEq)]

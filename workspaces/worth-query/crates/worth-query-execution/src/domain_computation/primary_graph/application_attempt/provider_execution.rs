@@ -19,7 +19,6 @@ pub(crate) mod resource_request;
 pub(in crate::domain_computation) use application_attempt_affinity::WorthQueryApplicationAttemptAffinity;
 pub(in crate::domain_computation) use application_attempt_affinity::WorthQueryApplicationAttemptBasis;
 pub(crate) use external_dispatch::WorthQueryPerformedExternalRedispatchSeal;
-pub use {external_dispatch::WorthQueryExternalDispatchPreparationDenial, external_dispatch::WorthQueryExternalRedispatchDenial, external_dispatch::WorthQueryExternalTransportInstallationDenial};
 pub(in crate::domain_computation) use outcome::{
     progression_denied, WorthQueryProviderProgressionOutcome,
 };
@@ -31,7 +30,11 @@ pub(in crate::domain_computation::primary_graph::application_attempt) use phase:
 pub(in crate::domain_computation) use phase::{
     WorthQueryProviderAttemptRegistrationContext, WorthQueryRegisteredProviderAttempt,
 };
-
+pub use {
+    external_dispatch::WorthQueryExternalDispatchPreparationDenial,
+    external_dispatch::WorthQueryExternalRedispatchDenial,
+    external_dispatch::WorthQueryExternalTransportInstallationDenial,
+};
 
 pub(in crate::domain_computation::primary_graph) use phase::ReadmittedCommitProgram;
 pub use capability_revocation::CapabilityRevocationOps;

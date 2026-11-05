@@ -4,7 +4,7 @@
 pub(in crate::domain_computation) struct WorthQueryExternalDispatchAttemptOrdinal(u64);
 
 impl WorthQueryExternalDispatchAttemptOrdinal {
-    fn mint(value: u64) -> Self {
+    pub(in crate::domain_computation) fn mint(value: u64) -> Self {
         Self(value)
     }
 

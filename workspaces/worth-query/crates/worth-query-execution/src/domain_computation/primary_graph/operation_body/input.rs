@@ -1,4 +1,5 @@
 //! Select once under the request owner; retain its reservation into the candidate.
+use crate::domain_computation::primary_graph::vocabulary::operation_body::input::PreparedBodyInputs;
 use crate::domain_computation::primary_graph::vocabulary::operation_body::WorthQueryOperationBodyDenial;
 use worth_foundational::facade::AspectValue;
 use worth_query_declaration::facade::{
@@ -6,9 +7,13 @@ use worth_query_declaration::facade::{
     application_schema::{ApplicationNativeInputAdmissionDenial, ApplicationOperationBodyProgram},
 };
 use worth_query_installation::facade::WorthQueryInstalledApplicationValueBinding;
-use {super::super::HandlerExecutionDenial, super::super::HandlerResult, crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial, crate::domain_computation::request_execution::QueryMemoryReservation, crate::domain_computation::request_execution::QueryRequestExecution, crate::domain_computation::request_execution::WorthQueryAdvancementDenial};
-use crate::domain_computation::primary_graph::vocabulary::operation_body::input::PreparedBodyInputs;
-
+use {
+    super::super::HandlerExecutionDenial, super::super::HandlerResult,
+    crate::domain_computation::request_execution::QueryMemoryReservation,
+    crate::domain_computation::request_execution::QueryRequestExecution,
+    crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
+    crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial,
+};
 
 pub(in crate::domain_computation::primary_graph) fn prepare_inputs(
     execution: &QueryRequestExecution<'_>,

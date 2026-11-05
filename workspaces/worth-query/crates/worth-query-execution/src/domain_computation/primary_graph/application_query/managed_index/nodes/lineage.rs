@@ -1,5 +1,4 @@
 //! Descriptive node coordinates are never reused across isolated sibling edits.
-use {crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop, crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl};
 use std::{
     alloc::Layout,
     sync::{
@@ -8,6 +7,10 @@ use std::{
     },
 };
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
+use {
+    crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl,
+    crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop,
+};
 
 pub(super) struct NodeLineage {
     next: AtomicUsize,

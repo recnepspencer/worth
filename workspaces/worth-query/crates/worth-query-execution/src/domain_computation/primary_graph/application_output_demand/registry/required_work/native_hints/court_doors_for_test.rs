@@ -3,7 +3,6 @@ use super::*;
 use crate::domain_computation::primary_graph::vocabulary::application_output_demand::native_hints::NativeBranch;
 use crate::domain_computation::primary_graph::vocabulary::application_output_demand::native_hints::NativeHint;
 
-
 impl RequiredWorkMembership {
     #[doc(hidden)]
     pub fn prepared_native_branch_for_test(branch: BranchId) -> Arc<NativeBranch> {

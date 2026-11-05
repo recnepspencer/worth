@@ -47,16 +47,24 @@ pub use clock_observation::{
     WorthQueryConditionalClockObservationOutcome, WorthQueryConditionalClockObservationPort,
     WorthQueryConditionalClockObservationReceipt,
 };
-pub use {execution_provenance::WorthQueryConditionalExecutionCause, execution_provenance::WorthQueryConditionalExecutionProvenance, execution_provenance::WorthQueryConditionalExecutionTerminal};
 pub use inspection::InspectionOps;
 pub use inspection::WorthQueryConditionalRuntimeInspection;
 pub(in crate::domain_computation::primary_graph) use installation::WorthQueryPendingConditionalOperation;
-pub use {installation::WorthQueryConditionalApplicationRuntimeInstallation, installation::WorthQueryConditionalRuntimeInstallationDenial, installation::WorthQueryConditionalRuntimeInstallationDenialKind};
 pub(in crate::domain_computation::primary_graph) use lifecycle::WorthQueryConditionalOperationRegistry;
 pub use lifecycle_inventory::WorthQueryConditionalRuntimeLifecycleProbe;
 pub use operation_invocation::{
     WorthQueryTemporalInvocationFailure, WorthQueryTemporalInvocationFailureKind,
     WorthQueryTemporalOperationExecution, WorthQueryTemporalOperationInvoker,
+};
+pub use {
+    execution_provenance::WorthQueryConditionalExecutionCause,
+    execution_provenance::WorthQueryConditionalExecutionProvenance,
+    execution_provenance::WorthQueryConditionalExecutionTerminal,
+};
+pub use {
+    installation::WorthQueryConditionalApplicationRuntimeInstallation,
+    installation::WorthQueryConditionalRuntimeInstallationDenial,
+    installation::WorthQueryConditionalRuntimeInstallationDenialKind,
 };
 
 pub(in crate::domain_computation::primary_graph) use publication::{

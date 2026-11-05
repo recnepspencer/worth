@@ -9,10 +9,10 @@ use worth_relational::facade::runtime::VisibilityProjectionView;
 use super::super::authenticated_principal::WorthQueryResolvedPrincipalEvidence;
 use super::super::freshness::WorthQueryPrincipalFreshnessEvidence;
 
-use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenialKind;
 use super::admitted_lookup::AdmittedPrincipalLookupStop;
 use super::admitted_observations::AdmittedPrincipalObservationStop;
 use super::WorthQueryPrincipalSnapshotResolution;
+use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenialKind;
 
 #[derive(Debug)]
 pub(super) enum AdmittedPrincipalResolutionStop {

@@ -2,15 +2,15 @@ use crate::domain_computation::primary_graph::application_checkpoint::facts::Fac
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as NativeReadStop;
 
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::movement::Movement;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::verification::cutoff_declines;
+use crate::domain_computation::primary_graph::output_lineage::SealedNativeOutputWitness;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::movement::Movement;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure;
 use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
 use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
-use crate::domain_computation::primary_graph::output_lineage::SealedNativeOutputWitness;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::verification::cutoff_declines;
 use crate::domain_computation::primary_graph::SourceInvalidationOwner;
 
 /// Internal choice; callers can only request an output through demand

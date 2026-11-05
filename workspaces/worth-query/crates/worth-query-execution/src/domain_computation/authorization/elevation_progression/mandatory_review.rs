@@ -13,11 +13,19 @@ use super::super::capability_registry::WorthQueryElevationLifecycleOperationRole
 use super::super::operation_progression::{
     progress_capability_operation, WorthQueryCapabilityOperationProgression,
 };
-use {super::super::WorthQueryAdmittedApplicationCapabilityAccess, super::super::WorthQueryAdmittedApplicationOperation, super::super::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind};
 use super::context_identity::{selected_elevation_entity, selected_review_entity};
 use super::operation_role::installed_lifecycle_owner;
 use super::transition_contract::{review_decision_reads, review_program_targets};
-use {crate::domain_computation::vocabulary::primary_graph::elevation_close_outcome::WorthQueryElevationClosureKind, crate::domain_computation::primary_graph::WorthQueryMandatoryReview};
+use {
+    super::super::WorthQueryAdmittedApplicationCapabilityAccess,
+    super::super::WorthQueryAdmittedApplicationOperation,
+    super::super::WorthQueryOperationAuthorizationDenial,
+    crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind,
+};
+use {
+    crate::domain_computation::primary_graph::WorthQueryMandatoryReview,
+    crate::domain_computation::vocabulary::primary_graph::elevation_close_outcome::WorthQueryElevationClosureKind,
+};
 
 mod binding;
 pub(in crate::domain_computation) use binding::WorthQueryMandatoryReviewBinding;

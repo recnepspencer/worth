@@ -18,7 +18,11 @@ use worth_query_installation::facade::{
 use self::effect_accumulator::WorthQueryProviderEffectAccumulator;
 use super::effect_program::WorthQueryApplicationRealizedEffect;
 use super::fact::WorthQueryApplicationObservedFact;
-use {super::WorthQueryAdmittedApplicationEmissionBatch, super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, super::WorthQueryApplicationEmission};
+use {
+    super::WorthQueryAdmittedApplicationEmissionBatch, super::WorthQueryApplicationAttemptDenial,
+    super::WorthQueryApplicationEmission,
+    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
+};
 
 pub struct WorthQueryPreparedApplicationProviderAttempt {
     workflow_origin: Option<crate::domain_computation::primary_graph::application_attempt::workflow::operation_output::WorkflowOperationOrigin>,

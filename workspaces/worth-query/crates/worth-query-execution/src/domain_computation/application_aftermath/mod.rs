@@ -25,7 +25,6 @@ pub(in crate::domain_computation) use external_effect::dispatch_external_effect;
 pub(crate) use external_effect::dispatch_outbox_create_intent;
 pub use external_effect::WorthQueryInboundCleanupReport;
 
-pub use {external_effect::derive_external_effect_correlation_identity, external_effect::ExternalEffectCausalLink, external_effect::ExternalEffectClassification, external_effect::ExternalEffectCorrelationBasis, external_effect::ExternalEffectPosture, external_effect::ExternalEffectPostureIdentity, external_effect::ExternalEffectPostureKind, external_effect::ExternalRailTransportFault, external_effect::WorthQueryExternalDispatchCausalRelation, external_effect::WorthQueryExternalDispatchPosture, external_effect::WorthQueryExternalDispatchPostureKind, external_effect::WorthQueryExternalDispatchRequest, external_effect::WorthQueryExternalEffectCausalLadder, external_effect::WorthQueryExternalEffectDispatch, external_effect::WorthQueryExternalEffectTransport, external_effect::WorthQueryExternalTransportOutcome, external_effect::WorthQueryInboundOccurrenceClaims, external_effect::WorthQueryInboundOccurrenceVerifier, external_effect::WorthQueryInboundVerificationDenial};
 pub(in crate::domain_computation) use external_effect::{
     WorthQueryAcceptedInboundOccurrence, WorthQueryInboundCustody,
     WorthQueryInboundCustodyAdmission, WorthQueryInboundPublicationClaim,
@@ -52,6 +51,24 @@ pub use recovery_progression::{
     WorthQueryRecoveryExpiryEvaluation, WorthQueryRecoveryInspectAuthority,
     WorthQueryRecoveryInspectionView, WorthQueryRecoveryReconcileAdmission,
     WorthQueryRecoverySafeRetryAdmission, WorthQueryRecoverySafeRetryDenial,
+};
+pub use {
+    external_effect::derive_external_effect_correlation_identity,
+    external_effect::ExternalEffectCausalLink, external_effect::ExternalEffectClassification,
+    external_effect::ExternalEffectCorrelationBasis, external_effect::ExternalEffectPosture,
+    external_effect::ExternalEffectPostureIdentity, external_effect::ExternalEffectPostureKind,
+    external_effect::ExternalRailTransportFault,
+    external_effect::WorthQueryExternalDispatchCausalRelation,
+    external_effect::WorthQueryExternalDispatchPosture,
+    external_effect::WorthQueryExternalDispatchPostureKind,
+    external_effect::WorthQueryExternalDispatchRequest,
+    external_effect::WorthQueryExternalEffectCausalLadder,
+    external_effect::WorthQueryExternalEffectDispatch,
+    external_effect::WorthQueryExternalEffectTransport,
+    external_effect::WorthQueryExternalTransportOutcome,
+    external_effect::WorthQueryInboundOccurrenceClaims,
+    external_effect::WorthQueryInboundOccurrenceVerifier,
+    external_effect::WorthQueryInboundVerificationDenial,
 };
 pub use {retained_preimage::demanded_field_slot, retained_preimage::WorthQueryRetainedPreImage};
 // `WorthQueryPreImageRetentionDenial` is re-exported as of slice 10: the

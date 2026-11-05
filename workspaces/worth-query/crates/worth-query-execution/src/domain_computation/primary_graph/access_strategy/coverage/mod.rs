@@ -4,13 +4,19 @@ mod traversal;
 pub(in crate::domain_computation::primary_graph) use traversal::visit;
 mod frame;
 mod frontier;
-use {crate::domain_computation::primary_graph::application_query::managed_index::SourceTree, crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl as Control, crate::domain_computation::primary_graph::vocabulary::application_query::source_rows::WorthQueryManagedIndexSourceSlot as Slot, crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop, crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial as Denial};
 use crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation;
 pub(in crate::domain_computation::primary_graph) use frame::CoverageFrame;
 pub(in crate::domain_computation::primary_graph) use frontier::RecordedFrontier;
 use std::{any::Any, sync::Arc};
 use worth_execution::{ExecutionArray, ExecutionRequest};
 use worth_proof::{ManagedIndexCoverageAuthority, ManagedIndexCoverageIssuer};
+use {
+    crate::domain_computation::primary_graph::application_query::managed_index::SourceTree,
+    crate::domain_computation::primary_graph::vocabulary::application_query::source_rows::WorthQueryManagedIndexSourceSlot as Slot,
+    crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl as Control,
+    crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial as Denial,
+    crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop,
+};
 
 pub(in crate::domain_computation::primary_graph) struct CoverageVerifier {
     issuer: ManagedIndexCoverageIssuer,

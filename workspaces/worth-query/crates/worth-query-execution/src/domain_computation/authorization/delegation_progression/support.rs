@@ -10,7 +10,12 @@ use worth_query_installation::facade::{
 };
 
 pub(in crate::domain_computation::authorization) use super::super::operation_progression::WorthQueryDelegationResolvedRequest;
-use {super::super::WorthQueryAdmittedApplicationCapabilityAccess, super::super::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind, super::super::WorthQueryRetainedCapabilitySupport};
+use {
+    super::super::WorthQueryAdmittedApplicationCapabilityAccess,
+    super::super::WorthQueryOperationAuthorizationDenial,
+    super::super::WorthQueryRetainedCapabilitySupport,
+    crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind,
+};
 
 pub(in crate::domain_computation::authorization) struct WorthQueryObservedDelegationSupport {
     resolved: WorthQueryDelegationResolvedRequest,

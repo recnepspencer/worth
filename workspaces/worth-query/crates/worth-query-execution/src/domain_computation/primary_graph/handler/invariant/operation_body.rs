@@ -11,13 +11,21 @@ mod reuse;
 mod selection;
 mod source;
 mod values;
-use {crate::domain_computation::primary_graph::vocabulary::operation_body::field_expectation::BodyFieldExpectation, crate::domain_computation::primary_graph::vocabulary::operation_body::source::PreparedBodySource};
 use super::{
     ApplicationMutationBinding, ApplicationMutationScopeBinding, ApplicationSchema, DecisionReader,
 };
 use worth_foundational::facade::AspectValue;
 use worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus;
-use {super::super::super::HandlerExecutionDenial, crate::domain_computation::request_execution::advancement_denial, crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial, crate::domain_computation::request_execution::WorthQueryAdvancementDenial};
+use {
+    super::super::super::HandlerExecutionDenial,
+    crate::domain_computation::request_execution::advancement_denial,
+    crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
+    crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial,
+};
+use {
+    crate::domain_computation::primary_graph::vocabulary::operation_body::field_expectation::BodyFieldExpectation,
+    crate::domain_computation::primary_graph::vocabulary::operation_body::source::PreparedBodySource,
+};
 enum BodySource<'a, Schema> {
     Scope,
     Principal,
@@ -36,7 +44,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
     ) -> super::super::super::HandlerResult<
         Option<crate::domain_computation::primary_graph::vocabulary::operation_body::input::PreparedBodyInputs>,
         crate::domain_computation::primary_graph::vocabulary::operation_body::WorthQueryOperationBodyDenial,
-    > {
+    >{
         super::super::super::operation_body::prepare_inputs(
             self.execution,
             self.identities.canonical_input(),
@@ -139,7 +147,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
             <Binding::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
         >,
         HandlerExecutionDenial,
-    > {
+    >{
         self.context_use.set(self.context_use.get().scope());
         if body.scope_fields().is_empty() {
             self.checkpoint().map_err(HandlerExecutionDenial::new)?;
@@ -158,7 +166,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
     ) -> Result<
         crate::domain_computation::primary_graph::vocabulary::operation_body::assessment::WorthQueryCurrentBodyRequirementAssessment,
         HandlerExecutionDenial,
-    > {
+    >{
         self.checkpoint().map_err(HandlerExecutionDenial::new)?;
         self.context_use.set(self.context_use.get().scope());
         if body.requirements().iter().flat_map(|requirement| requirement.operands()).any(|operand| matches!(operand.source(), worth_query_declaration::facade::application_schema::ApplicationOperationBodyRequirementSource::PrincipalIdentity { .. })) {

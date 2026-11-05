@@ -1,8 +1,8 @@
 //! The one operation-scoped reader envelope for owned and borrowed projections.
 use super::*;
 mod root;
-pub(super) use root::AdmittedReadRoot;
 use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
+pub(super) use root::AdmittedReadRoot;
 
 /// The optional real source-query loan an admitted projection may read through.
 pub(super) struct SourceAccess<'access, Schema> {

@@ -7,7 +7,6 @@ use super::super::WorthQueryOutputCheckpoint;
 
 use super::selection::SelectedReadyReadmission;
 use super::*;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 
 /// What a downstream pending edge waits on.
 pub(in crate::domain_computation::primary_graph) enum PendingUpstream {

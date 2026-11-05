@@ -1,5 +1,11 @@
 use crate::domain_computation::primary_graph::provider::session_commit::provider_failure;
-use {crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind, crate::domain_computation::WorthQueryProviderSessionFailure, crate::domain_computation::WorthQueryProviderSessionProtocolCounters, crate::domain_computation::WorthQueryProviderSessionProtocolStage, crate::domain_computation::WorthQueryProviderSessionRecoveryPosture};
+use {
+    crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
+    crate::domain_computation::WorthQueryProviderSessionFailure,
+    crate::domain_computation::WorthQueryProviderSessionProtocolCounters,
+    crate::domain_computation::WorthQueryProviderSessionProtocolStage,
+    crate::domain_computation::WorthQueryProviderSessionRecoveryPosture,
+};
 
 pub(super) fn failure(detail: &'static str) -> WorthQueryProviderSessionFailure {
     provider_failure(WorthQueryProviderSessionProtocolStage::Commit, detail)

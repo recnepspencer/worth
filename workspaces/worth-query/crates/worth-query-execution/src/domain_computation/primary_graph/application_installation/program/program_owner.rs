@@ -51,7 +51,6 @@ pub struct WorthQuerySelectedProgramOwner<'runtime, Schema> {
         worth_query_installation::facade::WorthQueryInstalledActionInventory<'runtime>,
 }
 
-
 mod contract;
 mod output_root;
 pub use contract::WorthQueryProgramOwner;

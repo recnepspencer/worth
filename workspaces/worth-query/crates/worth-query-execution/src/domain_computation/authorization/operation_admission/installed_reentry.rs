@@ -1,9 +1,13 @@
 //! Re-entry compares admission facts with the installation owner's retained handle.
 use super::brand_tag::BrandTag;
 use super::*;
-use {crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial as Denial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind as Kind, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as Refusal};
 use crate::equality_type_id::EqualityTypeId;
 use worth_query_installation::facade::{InstalledOperationCatalog, InstalledOperationView};
+use {
+    crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial as Denial,
+    crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind as Kind,
+    crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as Refusal,
+};
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>

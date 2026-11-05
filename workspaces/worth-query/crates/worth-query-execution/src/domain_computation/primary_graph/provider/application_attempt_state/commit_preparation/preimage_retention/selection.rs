@@ -10,7 +10,11 @@ use worth_relational::facade::identity::{EntityId, KindId};
 use worth_relational::facade::mvcc::ValidatedMutationFootprint;
 use worth_relational::facade::transactions::RecordRef;
 
-use {crate::domain_computation::application_aftermath::demanded_field_slot, crate::domain_computation::vocabulary::application_aftermath::retained_preimage::WorthQueryPreImageRetentionDenial, crate::domain_computation::application_aftermath::WorthQueryRetainedPreImage};
+use {
+    crate::domain_computation::application_aftermath::demanded_field_slot,
+    crate::domain_computation::application_aftermath::WorthQueryRetainedPreImage,
+    crate::domain_computation::vocabulary::application_aftermath::retained_preimage::WorthQueryPreImageRetentionDenial,
+};
 
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationDecisionFact;
 use crate::domain_computation::vocabulary::primary_graph::selection::WorthQueryRetainedPreImageFieldSeal;
@@ -24,8 +28,6 @@ pub struct WorthQueryObservedPreImageCandidate {
     entity_kind: KindId,
     locator: AspectFieldLocator,
 }
-
-
 
 pub struct WorthQueryRetainedPreImageSelection {
     retained: WorthQueryRetainedPreImage,
@@ -237,7 +239,5 @@ fn candidate_matches_locus(
         && demanded_field_slot(candidate.locator().field_path())
             .is_some_and(|field| field.as_str() == locus.field())
 }
-
-
 
 mod court_doors_for_test;

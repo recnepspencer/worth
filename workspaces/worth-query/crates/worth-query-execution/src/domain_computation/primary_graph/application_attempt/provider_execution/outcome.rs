@@ -1,5 +1,12 @@
-use {super::super::WorthQueryApplicationCommitDenial, super::super::WorthQueryApplicationCommitDenialStage, super::super::WorthQueryApplicationCommitOutcome, super::super::WorthQueryApplicationCommitReceipt, super::super::WorthQueryApplicationNoEffect, crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome::WorthQueryApplicationStaleAttempt, super::super::WorthQueryPendingApplicationCommitReceipt};
 use crate::domain_computation::provider_session::WorthQueryMutationGraphWorkCompletion;
+use {
+    super::super::WorthQueryApplicationCommitDenial,
+    super::super::WorthQueryApplicationCommitDenialStage,
+    super::super::WorthQueryApplicationCommitOutcome,
+    super::super::WorthQueryApplicationCommitReceipt, super::super::WorthQueryApplicationNoEffect,
+    super::super::WorthQueryPendingApplicationCommitReceipt,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome::WorthQueryApplicationStaleAttempt,
+};
 
 pub enum WorthQueryProviderProgressionOutcome {
     ProductStale(crate::domain_computation::WorthQueryProductStaleApplication),

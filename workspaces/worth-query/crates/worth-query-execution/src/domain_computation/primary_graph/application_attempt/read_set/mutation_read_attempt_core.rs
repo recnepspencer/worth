@@ -3,12 +3,12 @@ use super::*;
 use crate::domain_computation::authorization::{
     ReadCompletionAdmission, WorthQueryAdmittedOperation,
 };
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::InstalledScopePosition;
 use crate::domain_computation::primary_graph::{
     application_contribution::{CompletedComputationRetention, PriorAbsence},
     invariant_projection::{ExpectedFactKeys, ObservedComputationInputs},
     value_decode::ValueDecodeState,
 };
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::InstalledScopePosition;
 use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
 
 type ComputationReads = (ObservedComputationInputs, CompletedComputationRetention);

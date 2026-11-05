@@ -1,9 +1,9 @@
 //! Issued values are consumed only by their original admitted projection.
 use super::*;
-use crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity as Admission;
 use crate::domain_computation::primary_graph::structural_walk::{
     StructuralWalkKey, StructuralWalkObservation,
 };
+use crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity as Admission;
 use std::{collections::BTreeMap, sync::Arc};
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, MapKernelContext};
 use worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts as Contracts;

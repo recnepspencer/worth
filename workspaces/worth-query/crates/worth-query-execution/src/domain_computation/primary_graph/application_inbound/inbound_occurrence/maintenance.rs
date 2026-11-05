@@ -15,7 +15,7 @@ use worth_query_installation::facade::ApplicationSchema;
 use super::receive::{
     WorthQueryInboundAdmissionDenial as Denial, WorthQueryInboundReceiptPosture as Posture,
 };
-use super::{WorthQueryInboundVerifierHandle, WorthQueryPrimaryGraphApplicationRuntime};
+use super::WorthQueryInboundVerifierHandle;
 use {
     crate::domain_computation::primary_graph::application_inbound::inbound_publication::InstalledTransportPendingReason,
     crate::domain_computation::primary_graph::application_inbound::inbound_publication::InstalledTransportResumeOutcome,

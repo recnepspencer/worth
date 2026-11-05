@@ -1,10 +1,17 @@
 //! Complete source intent captured from a real plan, without its grant or session.
 use super::output_read::{control_denial, HistoryOutputControlPlan};
 use super::*;
-use {crate::domain_computation::primary_graph::application_query::execution_validation::validate_execution_lifetimes, crate::domain_computation::primary_graph::application_query::execution_validation::validate_execution_plan, crate::domain_computation::primary_graph::product_operation::document_history::HistoryModelIdentity, crate::domain_computation::primary_graph::WorthQueryHistoryNavigationDenial, crate::domain_computation::primary_graph::WorthQueryHistoryOutputReadDenial, crate::domain_computation::vocabulary::primary_graph::retained_selector::WorthQueryObservedScopeSelector};
 use std::sync::Arc;
 use worth_query_admission::facade::application_query::WorthQueryAdmittedApplicationQueryParameters;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
+use {
+    crate::domain_computation::primary_graph::application_query::execution_validation::validate_execution_lifetimes,
+    crate::domain_computation::primary_graph::application_query::execution_validation::validate_execution_plan,
+    crate::domain_computation::primary_graph::product_operation::document_history::HistoryModelIdentity,
+    crate::domain_computation::primary_graph::WorthQueryHistoryNavigationDenial,
+    crate::domain_computation::primary_graph::WorthQueryHistoryOutputReadDenial,
+    crate::domain_computation::vocabulary::primary_graph::retained_selector::WorthQueryObservedScopeSelector,
+};
 
 /// Immutable source correspondence. Fresh current permission is always separate.
 #[derive(Clone)]

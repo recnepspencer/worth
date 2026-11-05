@@ -1,8 +1,8 @@
 //! Ordinary handlers retain the same exact derived source facts as computations.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
 use crate::domain_computation::primary_graph::WorthQueryInvariantDerivedRelation;
 use worth_query_declaration::facade::application_schema::ApplicationDerivedRelationRef;
-use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
 
 impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
     DecisionReader<'_, '_, '_, Schema, Binding>

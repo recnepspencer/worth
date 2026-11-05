@@ -1,9 +1,12 @@
 //! The erased node header is admitted separately from its already paid array.
-use {super::WorthQueryManagedIndexNodes, super::WorthQueryManagedIndexProvider, crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop};
 use std::{any::Any, marker::PhantomData, sync::Arc};
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 use worth_query_declaration::facade::{
     application_query::ApplicationManagedIndexBinding, application_schema::ApplicationSchema,
+};
+use {
+    super::WorthQueryManagedIndexNodes, super::WorthQueryManagedIndexProvider,
+    crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop,
 };
 
 pub(super) struct ProviderNodeBacking<S, I, P>

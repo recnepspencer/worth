@@ -4,15 +4,14 @@ use worth_relational::facade::mvcc::CompanionPreflightStop;
 use worth_relational::facade::runtime::RelationalRuntime;
 use worth_relational::facade::snapshots::SnapshotHandle;
 
-use crate::domain_computation::primary_graph::vocabulary::provider::failure::RebaseVerificationFailure;
 use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphCommittedApplication;
 
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 use super::super::WorthQueryApplicationOutputLineage;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
 use super::SettlementRegistration;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SettlementRegistrationStop;
 use super::SourceInvalidationOwner;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SettlementRegistrationStop;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 
 /// Both performed and stable publications retain the same exact upstream
 /// identities through the invalidation owner's admitted ordered set. The set
@@ -142,7 +141,6 @@ pub fn register_republished(
         })
         .map_err(registration_reason)
 }
-
 
 fn registration_reason(stop: SettlementRegistrationStop) -> FullVerificationReason {
     match stop {

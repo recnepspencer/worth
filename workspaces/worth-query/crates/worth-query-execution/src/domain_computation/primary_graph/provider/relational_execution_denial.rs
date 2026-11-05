@@ -7,10 +7,16 @@ pub fn relational_execution_kind(
 ) -> Result<
     crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
     crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
-> {
-    use {crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control, crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind as Kind};
+>{
     use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
-    use {crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource, crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryMemoryLimitLevel as Level};
+    use {
+        crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control,
+        crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind as Kind,
+    };
+    use {
+        crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource,
+        crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryMemoryLimitLevel as Level,
+    };
 
     let resource = |denial, policy_ancestor| Kind::ExecutionResource {
         denial,
@@ -120,7 +126,7 @@ pub fn native_preparation_kind(
 ) -> Result<
     Option<crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind>,
     crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
-> {
+>{
     if let Some(stop) = failure.checked_read_stop() {
         return stop.map(Some);
     }
@@ -141,7 +147,7 @@ pub(in crate::domain_computation::primary_graph) fn query_read_execution_kind(
 ) -> Result<
     Option<crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind>,
     crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
-> {
+>{
     let Some(denial) = stop.execution_denial() else {
         return Ok(None);
     };

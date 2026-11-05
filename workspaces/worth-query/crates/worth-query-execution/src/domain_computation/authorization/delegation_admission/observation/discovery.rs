@@ -6,7 +6,10 @@ use worth_relational::facade::authorization::{
 };
 
 use super::super::super::capability_registry::WorthQueryInstalledCapabilityPlan;
-use {super::super::super::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind};
+use {
+    super::super::super::WorthQueryOperationAuthorizationDenial,
+    crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind,
+};
 
 use super::ObservedDelegationParent;
 

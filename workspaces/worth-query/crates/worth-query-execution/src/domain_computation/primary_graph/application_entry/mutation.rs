@@ -1,7 +1,7 @@
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
 use worth_query_installation::facade::ApplicationSchema;
 
-pub use {super::super::handler::CandidateWriter, super::super::handler::DecisionReader, crate::domain_computation::primary_graph::vocabulary::handler::invariant::HandlerInterruption};
+pub use {super::super::handler::CandidateWriter, super::super::handler::DecisionReader};
 mod decision_plan;
 pub use decision_plan::WorthQueryDecisionPlan;
 mod completed_candidate;
@@ -103,6 +103,7 @@ where
         candidate: &mut CandidateWriter<'_, Schema, Binding>,
     ) -> HandlerResult<Binding::Result, Binding::Denial>;
 }
+pub use crate::domain_computation::primary_graph::vocabulary::handler::invariant::HandlerInterruption;
 pub use execution::DecisionQueryOps;
 pub use execution::ExecutionOps;
 pub(in crate::domain_computation::primary_graph) use execution::PreparationScopedOps;

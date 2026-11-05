@@ -1,8 +1,8 @@
 //! Retained consistency authority exposes no rows, READ grant or publication.
 mod comparison;
 mod history;
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure as Stop;
 use crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure as Stop;
 pub(in crate::domain_computation::primary_graph) use history::ManagedHistoryRelevanceDenial;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;

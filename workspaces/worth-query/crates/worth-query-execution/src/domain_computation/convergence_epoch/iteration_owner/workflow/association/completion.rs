@@ -11,7 +11,11 @@ use super::super::super::core::{
     admit_assessed_domain_report, WorthQueryConvergenceReportAdmissionFailure,
 };
 use super::WorkflowIterationAssociation;
-use {crate::domain_computation::WorthQueryCompletedWorkflowGraphExecution, crate::domain_computation::vocabulary::managed_run::terminal::WorthQueryManagedRunTerminalKind, crate::domain_computation::WorthQueryWorkflowRunTerminal};
+use {
+    crate::domain_computation::vocabulary::managed_run::terminal::WorthQueryManagedRunTerminalKind,
+    crate::domain_computation::WorthQueryCompletedWorkflowGraphExecution,
+    crate::domain_computation::WorthQueryWorkflowRunTerminal,
+};
 
 impl WorkflowIterationAssociation<WorthQueryCompletedWorkflowGraphExecution> {
     pub(super) fn admit_completion(

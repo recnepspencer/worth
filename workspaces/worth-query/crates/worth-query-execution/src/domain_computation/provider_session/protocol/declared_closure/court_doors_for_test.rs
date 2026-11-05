@@ -1,8 +1,7 @@
 //! Sealed test doors over this module's private members.
 use super::*;
 use crate::domain_computation::vocabulary::provider_session::declared_closure::WorthQueryProviderPlanDeclarations;
-use crate::domain_computation::vocabulary::provider_session::declared_closure::WorthQueryProviderPlanDeclaredClosure;
-
+use crate::domain_computation::vocabulary::provider_session::declared_role_closure::WorthQueryProviderPlanDeclaredClosure;
 
 impl WorthQueryProviderPlanDeclarations {
     #[doc(hidden)]
@@ -61,7 +60,6 @@ impl WorthQueryProviderPlanDeclarations {
         Self::decision_fact_families(self)
     }
 }
-
 
 impl WorthQueryProviderPlanDeclaredClosure {
     #[doc(hidden)]

@@ -120,7 +120,9 @@ impl WorthQueryApplicationQueryAdmissionDenial {
         }
     }
 
-    pub(in crate::domain_computation::primary_graph) fn from_authorization(denial: WorthQueryOperationAuthorizationDenial) -> Self {
+    pub(in crate::domain_computation::primary_graph) fn from_authorization(
+        denial: WorthQueryOperationAuthorizationDenial,
+    ) -> Self {
         Self {
             kind: WorthQueryApplicationQueryAdmissionDenialKind::Authorization(denial.kind()),
             // The boxed denial owns the sole subject. Duplicating it here

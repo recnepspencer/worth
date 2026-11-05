@@ -64,7 +64,7 @@ impl DemandRecord {
     pub fn source_scope_for_test(
         &self,
     ) -> &Option<crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding>
-    {
+{
         &self.source_scope
     }
 }
@@ -88,7 +88,7 @@ impl DemandRecord {
     pub fn source_scope_mut_for_test(
         &mut self,
     ) -> &mut Option<crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding>
-    {
+{
         &mut self.source_scope
     }
 }
@@ -263,7 +263,7 @@ impl DemandRecord {
         &self,
     ) -> &Vec<
         Arc<crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity>,
-    > {
+    >{
         &self.settlements
     }
 }
@@ -326,7 +326,7 @@ impl DemandRecord {
         &mut self,
     ) -> &mut Vec<
         Arc<crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity>,
-    > {
+    >{
         &mut self.settlements
     }
 }

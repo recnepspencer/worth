@@ -1,9 +1,9 @@
 //! Full native validation owns its end-of-validation window before returning.
 use super::*;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::ObservedSourcePublication;
-use std::sync::Arc;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::movement::Movement;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure;
+use std::sync::Arc;
 pub(super) fn validate(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     provider: &WorthQueryPrimaryGraphProvider,

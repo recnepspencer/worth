@@ -167,7 +167,7 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
     pub(in crate::domain_computation::primary_graph) const fn producer_required_invariants(
         &self,
     ) -> &'static [crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerInvariantRequirement]
-    {
+{
         self.producer_required_invariants
     }
 
@@ -180,7 +180,7 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
     pub(in crate::domain_computation::primary_graph) const fn dispatch_outbox(
         &self,
     ) -> Option<&crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryPendingDispatchOutbox>
-    {
+{
         self.dispatch_outbox.as_ref()
     }
 

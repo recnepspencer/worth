@@ -34,8 +34,13 @@ use worth_foundational::facade::{AspectValue, InternedString};
 use worth_query_declaration::facade::application_program::ApplicationWorkflowDefinitionContentIdentity;
 use worth_relational::facade::identity::EntityId;
 
-use {super::super::application_attempt::observe_adjacency, super::super::application_attempt::observe_field_value, crate::domain_computation::primary_graph::vocabulary::application_attempt::publication::PublishedWorkflowDefinitionRef, crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection};
 use crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout;
+use {
+    super::super::application_attempt::observe_adjacency,
+    super::super::application_attempt::observe_field_value,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::publication::PublishedWorkflowDefinitionRef,
+};
 
 /// A lineage is unique per definition identity, so a second candidate is
 /// already a corrupt branch.

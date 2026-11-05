@@ -7,16 +7,10 @@
 //! admission is handed in as a step the publication runs at that exact moment
 //! rather than bolted on afterwards.
 
-use std::sync::Arc;
-
-use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
-use worth_query_installation::facade::{
-    WorthQueryInstalledApplicationSchema, WorthQueryProgramSupportRoster,
-};
+use worth_query_installation::facade::WorthQueryInstalledApplicationSchema;
 
 use super::WorthQueryInMemoryApplicationDenial;
 use crate::domain_computation::primary_graph::vocabulary::application_installation::program_admission::WorthQueryAdmittedProgramSupport;
-
 
 /// The admission step a program-hosted installation runs against its own
 /// installed schema, before invariant lowering and before bootstrap.

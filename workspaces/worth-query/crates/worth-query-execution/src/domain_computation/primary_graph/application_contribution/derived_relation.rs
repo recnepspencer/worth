@@ -1,5 +1,6 @@
 //! Closed endpoint-count projection through the existing partitioned engine.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::checkpoint::WorthQueryManagedComputationCheckpoint;
 use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
 use std::marker::PhantomData;
 use worth_query_declaration::facade::application_program::*;
@@ -7,7 +8,6 @@ use worth_query_declaration::facade::application_schema::{
     ApplicationDerivedRelationRef, ApplicationOperationMarkerIdentity, ApplicationSchema,
     OperationReads,
 };
-use crate::domain_computation::primary_graph::vocabulary::application_contribution::checkpoint::WorthQueryManagedComputationCheckpoint;
 
 /// Framework-owned count projection for one actual installed derived recipe.
 /// Obtain it through contribution setup; descriptive collection parts cannot

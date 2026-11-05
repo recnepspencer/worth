@@ -3,10 +3,10 @@ use crate::domain_computation::primary_graph::vocabulary::provider::diagnostic::
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::indexed_entity_selection::IndexedSelectionReobserveDenial as Indexed;
 use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason as Registration;
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain_computation::primary_graph::vocabulary::provider::failure::RebaseVerificationFailure;
     #[test]
     fn native_fact_reason_and_registration_keep_the_actual_stage_and_position() {
         let reason = RebaseVerificationFailure::native_unavailable().at_fact(37);

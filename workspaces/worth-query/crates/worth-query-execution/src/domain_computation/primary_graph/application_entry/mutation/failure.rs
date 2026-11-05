@@ -1,6 +1,9 @@
 //! Typed failure propagation across handler-owned preparation and completion.
 
-use {super::HandlerExecutionDenial, crate::domain_computation::primary_graph::vocabulary::handler::invariant::HandlerInterruption, super::HandlerResult};
+use {
+    super::HandlerExecutionDenial, super::HandlerResult,
+    crate::domain_computation::primary_graph::vocabulary::handler::invariant::HandlerInterruption,
+};
 
 /// A domain refusal retains its meaning; execution and request interruption
 /// remain distinct through composition of handler work.

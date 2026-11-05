@@ -24,9 +24,12 @@ use super::interruption_classification::producer_terminal_kind;
 use super::managed_graph_execution::{
     WorthQueryManagedGraphExecution, WorthQueryManagedProviderStep,
 };
-use {super::WorthQueryDirectRunTerminal, crate::domain_computation::vocabulary::managed_run::terminal::WorthQueryManagedRunTerminalKind, super::WorthQueryRunningDirectRun};
 use crate::domain_computation::provider_session::graph_provider::bounded_step::WorthQueryGraphProviderStepCompletion;
 use crate::domain_computation::{WorthQueryGraphProviderStepReport, WorthQueryGraphReadMaterial};
+use {
+    super::WorthQueryDirectRunTerminal, super::WorthQueryRunningDirectRun,
+    crate::domain_computation::vocabulary::managed_run::terminal::WorthQueryManagedRunTerminalKind,
+};
 
 #[must_use = "active graph execution must be advanced or explicitly abandoned"]
 pub struct WorthQueryActiveDirectGraphExecution {
@@ -287,7 +290,7 @@ impl WorthQueryActiveDirectGraphExecution {
     ) -> Result<
         crate::domain_computation::vocabulary::managed_run::safe_point_observation::WorthQueryManagedSafePointObservation,
         super::WorthQueryManagedSafePointFailure,
-    > {
+    >{
         let observation = self.running.observe_safe_point()?;
         self.running
             .provider_work_mut()

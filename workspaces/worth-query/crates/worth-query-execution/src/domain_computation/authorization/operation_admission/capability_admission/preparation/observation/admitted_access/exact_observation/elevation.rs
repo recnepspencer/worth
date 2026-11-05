@@ -15,7 +15,12 @@ use crate::domain_computation::authorization::elevation_progression::{
     WorthQueryObservedElevationSupport,
 };
 use crate::domain_computation::authorization::retained_capability_request::WorthQueryRetainedCapabilityRequest;
-use {crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind, crate::domain_computation::authorization::WorthQueryRetainedCapabilitySupport, crate::domain_computation::authorization::WorthQueryRuntimeTimeSample};
+use {
+    crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
+    crate::domain_computation::authorization::WorthQueryRetainedCapabilitySupport,
+    crate::domain_computation::authorization::WorthQueryRuntimeTimeSample,
+    crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind,
+};
 
 impl<Schema> WorthQueryExactCapabilityObservation<'_, Schema>
 where

@@ -8,7 +8,12 @@ use worth_relational::facade::{
     runtime::RelationalRuntime,
     snapshots::SnapshotHandle,
 };
-use {crate::domain_computation::primary_graph::application_attempt::observe_adjacency, crate::domain_computation::primary_graph::application_attempt::observe_field_value, crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout, crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection as Direction};
+use {
+    crate::domain_computation::primary_graph::application_attempt::observe_adjacency,
+    crate::domain_computation::primary_graph::application_attempt::observe_field_value,
+    crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection as Direction,
+};
 
 pub struct ObservedOperationOutputs {
     pub(in crate::domain_computation::primary_graph::application_attempt) binding: String,

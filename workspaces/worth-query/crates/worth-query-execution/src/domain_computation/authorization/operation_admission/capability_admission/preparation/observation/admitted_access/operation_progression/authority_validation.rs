@@ -9,7 +9,10 @@ use worth_query_installation::facade::{
 use super::super::WorthQueryAdmittedApplicationCapabilityAccess;
 use crate::domain_computation::authorization::admission::admit_request;
 use crate::domain_computation::authorization::operation_progression::WorthQueryCapabilityOperationProgression;
-use {crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind};
+use {
+    crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
+    crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind,
+};
 
 pub(super) fn validate_progression_authority<Schema, Capability, Operation, Input>(
     runtime: &dyn crate::domain_computation::authorization::host::AuthorizationHost<Schema>,

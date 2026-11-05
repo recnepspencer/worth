@@ -2,7 +2,6 @@
 mod evaluation;
 pub(super) mod history;
 use super::WorthQueryApplicationInspectionTarget;
-use {crate::domain_computation::vocabulary::primary_graph::application_query_basis_registry::WorthQueryApplicationBasisSelectionIdentity, crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession};
 pub(super) use evaluation::producer_explanation_identity;
 use std::{
     alloc::Layout,
@@ -17,6 +16,10 @@ use worth_foundational::facade::{
     CanonicalizationRuleVersion,
 };
 use worth_runtime_bridge::facade::{bridge_truth_external_identity_token, BridgeIdentityEvidence};
+use {
+    crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
+    crate::domain_computation::vocabulary::primary_graph::application_query_basis_registry::WorthQueryApplicationBasisSelectionIdentity,
+};
 
 mod source;
 

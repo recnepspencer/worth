@@ -11,11 +11,11 @@ use worth_relational::facade::storage::RecordLifecycleState;
 
 use super::*;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::role_use::OutputRoleUse;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationOutputPosture,
     WorthQueryPriorOutputDenial, WorthQueryPriorOutputDenialKind,
 };
-use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
 
 mod prior_member;
 mod succession;

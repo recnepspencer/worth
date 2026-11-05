@@ -1,8 +1,13 @@
 use crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
 use worth_relational::facade::indexes::{BoundedEntityFieldLookupRequest, BoundedIndexParityMode};
 
-use {super::super::WorthQueryApplicationEntityIdentity, crate::domain_computation::primary_graph::vocabulary::entity_resolution_denial::WorthQueryEntityResolutionDenial, crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionDenialKind, crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode};
 use super::WorthQueryEntityResolutionTruth;
+use {
+    super::super::WorthQueryApplicationEntityIdentity,
+    crate::domain_computation::primary_graph::vocabulary::entity_resolution_denial::WorthQueryEntityResolutionDenial,
+    crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionDenialKind,
+    crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode,
+};
 
 pub(super) fn validate<Schema, Entity>(
     truth: &WorthQueryEntityResolutionTruth<'_>,

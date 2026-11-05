@@ -9,9 +9,9 @@ use super::super::super::basis::ensure_query_truth_and_security_indexes_admitted
 use super::super::super::graph_read_plan_binding::WorthQueryQueryIndexPosture;
 use super::super::super::WorthQueryAdmittedApplicationQueryPlan;
 use super::super::super::WorthQueryApplicationQueryAccessContext;
+use super::super::super::WorthQueryApplicationQueryControls;
 use crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial;
 use crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind;
-use super::super::super::WorthQueryApplicationQueryControls;
 
 pub(in crate::domain_computation::primary_graph) trait ReadmittedScopedOps<
     Schema: ApplicationSchema,

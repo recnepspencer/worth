@@ -1,7 +1,7 @@
 //! Batch rank windows split at actual discriminating bits, never empty bit levels.
 use super::*;
-use std::ops::Range;
 use crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl;
+use std::ops::Range;
 
 pub(super) struct Batch<'pages, 'control, 'call, 'request, Node> {
     pub(super) pages: &'pages [(usize, &'pages WorkingPage<'request, Node>)],

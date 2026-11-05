@@ -14,7 +14,12 @@ use super::partitioned_computation::{
     WorthQueryComputationPartitionStop, WorthQueryPartitionedComputationDenial,
     WorthQueryReductionInputDenial as ReductionInput,
 };
-use {super::WorthQueryManagedComputationDenial, crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationCheckpointDenial, crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationInterruption, crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial};
+use {
+    super::WorthQueryManagedComputationDenial,
+    crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationCheckpointDenial,
+    crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationInterruption,
+    crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial,
+};
 
 type Resource = WorthQueryManagedComputationResourceDenial;
 
@@ -231,9 +236,5 @@ use crate::domain_computation::request_execution::execution_stop::checkpoint_den
 use crate::domain_computation::request_execution::execution_stop::interruption_stop;
 use crate::domain_computation::request_execution::execution_stop::lease_denial;
 pub(in crate::domain_computation::primary_graph) use handler::managed_advancement_denial;
-
-
-
-
 
 mod court_doors_for_test;

@@ -11,7 +11,7 @@ impl WorthQueryPrincipalCurrentnessDependency {
     ) -> Result<
         bool,
         crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind,
-    > {
+    >{
         Self::remains_current_in(self, execution, runtime, snapshot)
     }
 }

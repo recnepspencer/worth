@@ -1,5 +1,9 @@
-use {crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity, super::super::resource_lifecycle::WorthQueryApplicationBasisLease, crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisReleaseReceipt};
 use crate::domain_computation::primary_graph::product_operation::SharedQueryBasisScopedOps;
+use {
+    super::super::resource_lifecycle::WorthQueryApplicationBasisLease,
+    crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity,
+    crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisReleaseReceipt,
+};
 
 /// The basis admitted by the query pipeline owns the exact selected World
 /// occurrence and its matching application component lease.

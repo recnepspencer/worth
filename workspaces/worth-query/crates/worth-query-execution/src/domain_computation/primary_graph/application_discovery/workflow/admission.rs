@@ -2,9 +2,9 @@
 use crate::domain_computation::authorization::WorthQueryAdmittedApplicationCapabilityAccess;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial;
 
-use crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode;
 use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
 use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
+use crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode;
 use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::application_program::ApplicationWorkflowReadBinding;

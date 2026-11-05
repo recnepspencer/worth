@@ -1,10 +1,13 @@
 use worth_foundational::facade::AspectValue;
 use worth_relational::facade::identity::EntityId;
 
-use {super::WorthQueryApplicationCommitDenial, super::WorthQueryApplicationCommitOutcome, super::WorthQueryApplicationCommitReceipt, crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome::WorthQueryApplicationStaleAttempt, super::WorthQueryApprovedElevation};
 use crate::domain_computation::authorization::WorthQueryElevationCloseBinding;
 use crate::domain_computation::vocabulary::primary_graph::elevation_close_outcome::WorthQueryElevationClosureKind;
-
+use {
+    super::WorthQueryApplicationCommitDenial, super::WorthQueryApplicationCommitOutcome,
+    super::WorthQueryApplicationCommitReceipt, super::WorthQueryApprovedElevation,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome::WorthQueryApplicationStaleAttempt,
+};
 
 /// Move-only obligation produced only after the approved elevation is closed.
 ///

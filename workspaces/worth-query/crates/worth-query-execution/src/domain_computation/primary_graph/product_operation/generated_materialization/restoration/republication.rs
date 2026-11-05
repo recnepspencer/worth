@@ -6,7 +6,12 @@ use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_world::facade::ProductBranchObservation;
 
 use super::super::ProducerQualification;
-use {crate::domain_computation::primary_graph::output_lineage::invalidation::register_republished, crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason, crate::domain_computation::primary_graph::output_lineage::PreparedNativeOutputWitness, crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence};
+use {
+    crate::domain_computation::primary_graph::output_lineage::invalidation::register_republished,
+    crate::domain_computation::primary_graph::output_lineage::PreparedNativeOutputWitness,
+    crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason,
+    crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
+};
 
 pub(super) trait RepublicationParentOps<Schema: ApplicationSchema>:
     crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>

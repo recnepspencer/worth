@@ -1,9 +1,9 @@
 //! One registry owner; production supplies its original controlled comparison extent.
 use super::*;
-use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
-use crate::domain_computation::vocabulary::primary_graph::application_query_basis_registry::WorthQueryApplicationBasisSelectionIdentity;
 use crate::domain_computation::primary_graph::vocabulary::application_query::source_identity::WorthQueryObservedSourceCoordinate;
 use crate::domain_computation::primary_graph::vocabulary::application_query::source_identity::WorthQueryObservedSourceOccurrence;
+use crate::domain_computation::vocabulary::primary_graph::application_query_basis_registry::WorthQueryApplicationBasisSelectionIdentity;
+use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 
 impl WorthQueryObservedSourceMeaningRegistry {
     pub(in crate::domain_computation::primary_graph) fn intern_compared(

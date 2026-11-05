@@ -25,15 +25,15 @@ use std::sync::OnceLock;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 use worth_runtime_world::facade::ProductBranchObservation;
 
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
 use super::PreparedInputReuseKey;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
 use super::RecordedOutput;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 use super::SealedNativeOutputWitness;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
 use super::WorthQueryApplicationOutputLineage;
 use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
 
 /// Pins the exact owner-selected record, including its retained capacity and
 /// source evidence. A restored row may lack the proofs needed for input reuse.
@@ -82,7 +82,7 @@ impl RetainedInputCutoffCandidate {
 
     pub(in crate::domain_computation::primary_graph) fn completed_decision_reuse(
         &self,
-    ) -> Option<&crate::domain_computation::vocabulary::primary_graph::decision_reuse::CompletedDecisionReuseProof> {
+    ) -> Option<&crate::domain_computation::vocabulary::primary_graph::decision_reuse::CompletedDecisionReuseProof>{
         self.originating_recorded()?
             .completed_decision_reuse
             .as_ref()

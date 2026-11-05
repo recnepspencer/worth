@@ -1,8 +1,13 @@
 //! Output-sized source-slot membership, without raw entity or mutation authority.
-use {super::source_rows::SourceImageView, crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl, super::WorthQueryManagedIndexSourceRows, crate::domain_computation::primary_graph::vocabulary::application_query::source_rows::WorthQueryManagedIndexSourceSlot as Slot, crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop};
 use crate::domain_computation::primary_graph::access_strategy::ordered_storage;
 use worth_execution::{
     ExecutionArray, ExecutionOrderedMap, ExecutionRequest, ExecutionRequestArrayBuilder,
+};
+use {
+    super::source_rows::SourceImageView, super::WorthQueryManagedIndexSourceRows,
+    crate::domain_computation::primary_graph::vocabulary::application_query::source_rows::WorthQueryManagedIndexSourceSlot as Slot,
+    crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl,
+    crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop,
 };
 
 /// Candidate source slots. Final ordinary projection and disclosure remain authoritative.

@@ -103,7 +103,7 @@ impl WorthQueryPrimaryGraphCommittedApplication {
         &std::sync::Arc<
             crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity,
         >,
-    > {
+    >{
         self.exact_output_settlement.as_ref()
     }
 

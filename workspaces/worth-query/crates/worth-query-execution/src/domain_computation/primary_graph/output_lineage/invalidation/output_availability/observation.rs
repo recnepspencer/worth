@@ -60,7 +60,7 @@ impl ObservedSourcePublication {
 
     pub(in crate::domain_computation::primary_graph) fn posture(
         &self,
-    ) -> crate::domain_computation::primary_graph::vocabulary::invariant_projection::output_availability_candidate::ObservedOutputPosture {
+    ) -> crate::domain_computation::primary_graph::vocabulary::invariant_projection::output_availability_candidate::ObservedOutputPosture{
         self.candidate.as_ref().map_or(crate::domain_computation::primary_graph::vocabulary::invariant_projection::output_availability_candidate::ObservedOutputPosture::Pending, |c| c.expected())
     }
     pub(in crate::domain_computation::primary_graph) fn touches_entity(

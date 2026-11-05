@@ -4,6 +4,7 @@ use crate::domain_computation::primary_graph::vocabulary::output_lineage::settle
 use std::sync::Arc;
 
 pub struct ReplacedRequiredWorkHint {
-    _native: Option<Box<NativeHint>>,
-    _settlement: Option<Arc<RecordedSettlementIdentity>>,
+    pub(in crate::domain_computation::primary_graph) _native: Option<Box<NativeHint>>,
+    pub(in crate::domain_computation::primary_graph) _settlement:
+        Option<Arc<RecordedSettlementIdentity>>,
 }

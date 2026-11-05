@@ -10,11 +10,11 @@ use crate::domain_computation::primary_graph::application_output_demand::ReadyCo
 use crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority;
 
 use super::input_cutoff::RetainedInputCutoffCandidate;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
 use super::RecordedSourceIdentity;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
 use super::WorthQueryApplicationOutputLineage;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
 
 pub(crate) mod current_accepted;
 pub(in crate::domain_computation::primary_graph) use current_accepted::BoundCurrentAcceptedOutput;
@@ -62,7 +62,7 @@ impl AcceptedCurrentCandidate {
     /// identity remains pinned by the accepted candidate during the read.
     pub(in crate::domain_computation::primary_graph) fn recorded_identity(
         &self,
-    ) -> &crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity {
+    ) -> &crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity{
         self.selected.settlement_identity().as_ref()
     }
 

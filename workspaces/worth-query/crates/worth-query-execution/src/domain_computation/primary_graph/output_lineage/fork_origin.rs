@@ -1,5 +1,8 @@
 //! Captured fork origins; registration copies no computation state.
-use {crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate, super::WorthQueryApplicationOutputLineage};
+use {
+    super::WorthQueryApplicationOutputLineage,
+    crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate,
+};
 impl WorthQueryApplicationOutputLineage {
     pub(crate) fn register_fork(
         &mut self,

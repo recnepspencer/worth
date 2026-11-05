@@ -14,7 +14,14 @@ use worth_query_installation::facade::{
 
 use super::{WorkflowDefinitionBindingDenial, WorkflowDefinitionPreparationDenial};
 use crate::basis::WorthQueryProductBranchReadIdentity;
-use {crate::domain_computation::primary_graph::PreparedWorkflowDefinitionRetirement, crate::domain_computation::primary_graph::vocabulary::application_attempt::publication::PublishedWorkflowDefinitionRef, crate::domain_computation::primary_graph::WorkflowDefinitionRetirementOutcome, crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation, crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding, crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation};
+use {
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::publication::PublishedWorkflowDefinitionRef,
+    crate::domain_computation::primary_graph::PreparedWorkflowDefinitionRetirement,
+    crate::domain_computation::primary_graph::WorkflowDefinitionRetirementOutcome,
+    crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation,
+    crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding,
+    crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation,
+};
 
 impl<Schema> WorthQuerySelectedProductOperation<'_, Schema>
 where

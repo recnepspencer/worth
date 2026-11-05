@@ -277,13 +277,19 @@ mod tests {
     use super::*;
     #[test]
     fn checkpoint_recovery_request_arm_keeps_control_and_memory_by_value() {
-        use {crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control, crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind as Denial};
         use worth_relational::facade::{
             durability::RelationalRecoveryStop as Stop,
             transactions::RelationalExecutionDenialCause as Cause,
         };
         use WorthQueryPrimaryGraphInstallationDenialKind as Kind;
-        use {crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource, crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryMemoryLimitLevel as Level};
+        use {
+            crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control,
+            crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind as Denial,
+        };
+        use {
+            crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource,
+            crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryMemoryLimitLevel as Level,
+        };
         for (cause, kind) in [
             (
                 Cause::Cancelled,

@@ -21,7 +21,6 @@ mod signing_lifecycle;
 mod unobserved_write;
 mod workflow;
 
-
 /// Which fail-closed integrity path refused to attribute one occurrence's
 /// branch program activation.
 ///

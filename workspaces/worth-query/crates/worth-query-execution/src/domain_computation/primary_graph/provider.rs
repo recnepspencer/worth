@@ -10,7 +10,9 @@ pub(in crate::domain_computation::primary_graph::provider) use application_attem
 pub(in crate::domain_computation::primary_graph::provider) use application_attempt_state::ManagedUnpublishedAttempt;
 
 pub(in crate::domain_computation) use application_attempt_state::RegisteredPrimaryRead;
-pub use {application_attempt_state::FactlessCurrentness, application_attempt_state::OwnEffectOnReads};
+pub use {
+    application_attempt_state::FactlessCurrentness, application_attempt_state::OwnEffectOnReads,
+};
 pub(crate) mod application_attempt_work;
 pub(crate) mod application_decision_fact;
 pub(crate) mod application_touch_admission;
@@ -76,8 +78,8 @@ pub(in crate::domain_computation::primary_graph) use unpublished_idempotency::Wo
 
 pub(super) use super::application_attempt::WorthQueryPrimaryGraphApplicationAttempt;
 use super::WorthQueryPrimaryGraphIntegrationHandle;
-pub(super) use application_attempt_state::WorthQueryPrimaryGraphCommittedApplication;
 use crate::domain_computation::primary_graph::vocabulary::provider::application_attempt_work::WorthQueryApplicationAttemptWorkSnapshot;
+pub(super) use application_attempt_state::WorthQueryPrimaryGraphCommittedApplication;
 pub(in crate::domain_computation) use application_decision_fact::ApplicationFactTable;
 pub(in crate::domain_computation) use application_decision_fact::CompletedApplicationFacts;
 pub(in crate::domain_computation) use application_decision_fact::WorthQueryPrimaryGraphApplicationDecisionFact;
@@ -91,7 +93,6 @@ pub(super) use idempotency::WorthQueryProviderIdempotencyResolution;
 pub(super) use idempotency::WorthQueryProviderIdempotencyResolutionDenial;
 pub use mutation_work::WorthQueryPrimaryMutationWorkEvidence;
 pub use mutation_work::WorthQueryTouchedRecordIdentity;
-
 
 pub(super) use session_commit::WorthQueryCommittedDispatchOutboxReceiptSeal;
 pub(super) use session_commit::WorthQueryRetainedApplicationCommitBasis;
@@ -216,7 +217,7 @@ impl WorthQueryPrimaryGraphProvider {
             >,
         ),
         &'static str,
-    > {
+    >{
         let record = dispatch_outbox::derive_dispatch_outbox_record(basis)
             .map_err(|_| "external-effect correlation derivation failed")?;
         let pending =

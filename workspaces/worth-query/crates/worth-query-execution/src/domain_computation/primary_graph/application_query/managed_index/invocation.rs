@@ -1,10 +1,13 @@
 //! Pure callbacks run outside cache locks under their actual original request.
-use {crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl as Control, crate::domain_computation::vocabulary::primary_graph::provider_failure::WorthQueryManagedIndexProviderFailure, super::WorthQueryManagedIndexProviderStop as ProviderStop, crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop};
+use crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial;
 use std::cell::RefCell;
 use worth_execution::{ExecutionRequest, MapKernelStop, WorkCeilingDenial};
-use crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial;
-
-
+use {
+    super::WorthQueryManagedIndexProviderStop as ProviderStop,
+    crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl as Control,
+    crate::domain_computation::vocabulary::primary_graph::provider_failure::WorthQueryManagedIndexProviderFailure,
+    crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop,
+};
 
 pub fn controlled<R>(
     execution: &ExecutionRequest<'_, '_>,
@@ -83,7 +86,10 @@ pub fn decoded_provider<R>(
         &crate::domain_computation::primary_graph::value_decode::ValueDecodeSession<'_>,
     ) -> Result<R, WorthQueryManagedIndexWorkDenial>,
 ) -> Result<R, WorthQueryManagedIndexWorkDenial> {
-    use {crate::domain_computation::primary_graph::value_decode::ValueDecodeState, crate::domain_computation::vocabulary::primary_graph::value_decode::WorthQueryValueDecodeDenial as Decode};
+    use {
+        crate::domain_computation::primary_graph::value_decode::ValueDecodeState,
+        crate::domain_computation::vocabulary::primary_graph::value_decode::WorthQueryValueDecodeDenial as Decode,
+    };
     let decode = ValueDecodeState::admitted(bindings.clone());
     let mut returned = None;
     let mut outer_refusal = None;

@@ -10,14 +10,22 @@ use worth_query_installation::facade::{
 };
 
 use super::brand_tag::BrandTag;
-use {super::ErasedAuthorizationBasis, super::WorthQueryAdmittedApplicationOperation, super::WorthQueryAdmittedOperation, crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity};
-use {crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind, crate::domain_computation::authorization::WorthQueryRetainedAuthorizationDecisionFacts};
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationEntityIdentity, WorthQueryAuthenticatedPrincipal,
     WorthQueryBoundMutationPreconditions,
 };
 use crate::domain_computation::provider_session::{
     WorthQueryGraphWorkAccessContextAffinity, WorthQueryManagedGraphWorkSession,
+};
+use {
+    super::ErasedAuthorizationBasis, super::WorthQueryAdmittedApplicationOperation,
+    super::WorthQueryAdmittedOperation,
+    crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity,
+};
+use {
+    crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
+    crate::domain_computation::authorization::WorthQueryRetainedAuthorizationDecisionFacts,
+    crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind,
 };
 
 struct ConventionalAdmissionPreparation<

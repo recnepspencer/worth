@@ -46,12 +46,12 @@ impl WorthQueryApplicationNoEffect {
     }
 }
 
-
-
 pub(crate) mod denial;
-pub(in crate::domain_computation::primary_graph) use denial::WorthQueryProgramActivationUnresolved;
-pub use {denial::WorthQueryApplicationCommitDenial, denial::WorthQueryApplicationCommitDenialStage};
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome::WorthQueryApplicationStaleAttempt;
+pub(in crate::domain_computation::primary_graph) use denial::WorthQueryProgramActivationUnresolved;
+pub use {
+    denial::WorthQueryApplicationCommitDenial, denial::WorthQueryApplicationCommitDenialStage,
+};
 
 /// Every way an application compare-and-commit can end.
 ///
@@ -248,7 +248,7 @@ impl WorthQueryApplicationUnresolvedCommitEvidence {
     ) -> Result<
         crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
         crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
-    > {
+    >{
         self.denial_kind
     }
 

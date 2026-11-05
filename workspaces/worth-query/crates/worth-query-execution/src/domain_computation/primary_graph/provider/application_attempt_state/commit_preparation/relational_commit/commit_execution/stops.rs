@@ -216,8 +216,12 @@ pub(super) fn source_rebase_preparation_stop(
 ) -> crate::domain_computation::WorthQueryProviderSessionCommitStop {
     use super::super::PreparedRebaseDenial as Denial;
     use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial;
-    use {crate::domain_computation::WorthQueryProviderSessionCommitControlStopped as Control, crate::domain_computation::WorthQueryProviderSessionCommitStop as Stop, crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Kind};
     use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption as Interrupted;
+    use {
+        crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Kind,
+        crate::domain_computation::WorthQueryProviderSessionCommitControlStopped as Control,
+        crate::domain_computation::WorthQueryProviderSessionCommitStop as Stop,
+    };
     if let Denial::Admission(stop) = &cause {
         if let worth_relational::facade::mvcc::CompanionPreflightStop::Execution(cause) = stop {
             return relational_execution_stop(*cause, None);

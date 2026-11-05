@@ -1,6 +1,10 @@
 //! The newest published generation of one partition at or below a coordinate.
 
-use {super::OutputPartitionIndex, crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate, crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource};
+use {
+    super::OutputPartitionIndex,
+    crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource,
+    crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate,
+};
 
 impl OutputPartitionIndex {
     pub(in crate::domain_computation::primary_graph::output_lineage) fn latest(

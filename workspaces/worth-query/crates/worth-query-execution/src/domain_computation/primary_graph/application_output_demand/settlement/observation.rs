@@ -3,7 +3,11 @@
 pub(crate) mod provenance;
 use super::*;
 use crate::basis::WorthQueryProductBranchReadIdentity;
-use {crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity, crate::domain_computation::vocabulary::primary_graph::inspection::OriginalSourceInspectionDisclosure, crate::domain_computation::primary_graph::WorthQueryApplicationCommittedChanges};
+use {
+    crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity,
+    crate::domain_computation::primary_graph::WorthQueryApplicationCommittedChanges,
+    crate::domain_computation::vocabulary::primary_graph::inspection::OriginalSourceInspectionDisclosure,
+};
 
 /// No variant asserts that a query row or field was produced by this source.
 /// Fresh metadata admission and exact revision/output overlap remain necessary.

@@ -5,11 +5,11 @@ use super::super::{
 };
 use super::*;
 
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::InstalledScopePosition;
 use crate::domain_computation::primary_graph::{
     invariant_projection::ExpectedFactKeys,
     structural_walk::{StructuralWalkKey, StructuralWalkObservation},
 };
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::InstalledScopePosition;
 use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
 
 pub fn observe<Schema, Operation, Input, Scope>(

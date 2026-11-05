@@ -13,8 +13,8 @@ use worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind;
 use super::super::*;
 use crate::domain_computation::primary_graph::index_currency::ensure_selected_field_indexes_admitted;
 use crate::domain_computation::primary_graph::index_currency::SelectedFieldIndexAdmissionStop;
-use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenial;
 use crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode;
+use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenial;
 
 impl<'runtime, Schema> super::super::super::WorthQuerySelectedProductOperation<'runtime, Schema>
 where

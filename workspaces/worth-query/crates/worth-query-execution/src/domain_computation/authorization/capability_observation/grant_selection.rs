@@ -27,7 +27,11 @@ impl SelectedCapabilityGrant {
 
 use super::super::capability_registry::WorthQueryInstalledCapabilityPlan;
 use super::super::retained_capability_request::WorthQueryRetainedCapabilityRequest;
-use {super::super::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind, super::super::WorthQueryRuntimeTimeSample};
+use {
+    super::super::WorthQueryOperationAuthorizationDenial,
+    super::super::WorthQueryRuntimeTimeSample,
+    crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind,
+};
 
 pub(super) fn select_exact_grant(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

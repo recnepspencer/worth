@@ -1,6 +1,10 @@
 //! Reject caller-authored lifecycle records and association changes before native expansion.
-use {super::attempt, super::refused, super::unavailable, super::Effect, super::EntityId, crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind as Kind, super::Lease, super::Outcome};
 use worth_relational::facade::{runtime::ProjectionAspectScope, transactions::EntityReference};
+use {
+    super::attempt, super::refused, super::unavailable, super::Effect, super::EntityId,
+    super::Lease, super::Outcome,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind as Kind,
+};
 
 pub(in crate::domain_computation::primary_graph::application_attempt) fn validate_incoming<
     Schema,

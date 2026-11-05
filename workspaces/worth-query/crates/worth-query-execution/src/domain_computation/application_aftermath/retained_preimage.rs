@@ -4,6 +4,7 @@
 //! from the decision read-set already observed at admission. Undo consumes this
 //! carrier — it must never live-re-read the graph and call the result original.
 
+use crate::domain_computation::vocabulary::application_aftermath::retained_preimage::WorthQueryPreImageRetentionDenial;
 use worth_foundational::facade::{AspectFieldLocator, AspectValue, CanonicalFieldPath, FieldKey};
 use worth_query_installation::facade::{
     ApplicationFieldRef, ApplicationFieldUnit, DeclaredApplicationFieldValue,
@@ -11,7 +12,6 @@ use worth_query_installation::facade::{
 };
 use worth_relational::facade::identity::KindId;
 use worth_relational::facade::transactions::RecordRef;
-use crate::domain_computation::vocabulary::application_aftermath::retained_preimage::WorthQueryPreImageRetentionDenial;
 
 /// One retained field pre-image bound into the strengthened commit receipt.
 #[derive(Clone, Eq, PartialEq)]
@@ -88,8 +88,10 @@ impl WorthQueryRetainedPreImage {
             worth_relational::facade::content::RelationalContentAttachments::default();
         let mut total = self.total_encoded_bytes;
         for field in &mut self.fields {
-            crate::domain_computation::vocabulary::primary_graph::retention_work::checkpoint(execution)
-                .map_err(Denial::Content)?;
+            crate::domain_computation::vocabulary::primary_graph::retention_work::checkpoint(
+                execution,
+            )
+            .map_err(Denial::Content)?;
             let AspectValue::ContentRef(identity) = field.value() else {
                 continue;
             };
@@ -193,7 +195,6 @@ impl WorthQueryRetainedPreImage {
         }
     }
 }
-
 
 /// The demanded field slot an observed path names, if any (Q8.26-C3).
 ///

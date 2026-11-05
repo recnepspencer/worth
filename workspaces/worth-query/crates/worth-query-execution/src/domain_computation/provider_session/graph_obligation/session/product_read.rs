@@ -1,11 +1,11 @@
 //! One admitted current Product basis shared by distinct sealed read intents.
 use super::*;
+use crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity;
 use crate::domain_computation::vocabulary::primary_graph::application_query_basis_registry::WorthQueryApplicationBasisSelectionIdentity;
-use worth_query_installation::facade::WorthQueryInstalledResourceAccessContract;
 use crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity;
 use crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkManagedRunIdentity;
 use crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity;
-use crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity;
+use worth_query_installation::facade::WorthQueryInstalledResourceAccessContract;
 
 pub(super) struct ProductReadBasis {
     pub(super) identity: WorthQueryApplicationBasisIdentity,

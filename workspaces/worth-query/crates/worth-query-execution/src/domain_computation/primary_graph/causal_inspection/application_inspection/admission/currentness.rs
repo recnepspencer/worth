@@ -2,9 +2,14 @@
 use super::*;
 use crate::domain_computation::authorization::host::AuthorizationHost;
 use crate::domain_computation::authorization::CapabilityRevalidationScopedOps;
-use {crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint, crate::domain_computation::vocabulary::primary_graph::retained_stage::run_retained_stage, crate::domain_computation::vocabulary::primary_graph::retained_stage::RetainedStorageDenial, crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode};
 use worth_execution::MapKernelFailure;
 use worth_query_installation::facade::ApplicationSchema;
+use {
+    crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint,
+    crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode,
+    crate::domain_computation::vocabulary::primary_graph::retained_stage::run_retained_stage,
+    crate::domain_computation::vocabulary::primary_graph::retained_stage::RetainedStorageDenial,
+};
 
 impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
     /// Returns this session's exact proof after current authority and request checks.

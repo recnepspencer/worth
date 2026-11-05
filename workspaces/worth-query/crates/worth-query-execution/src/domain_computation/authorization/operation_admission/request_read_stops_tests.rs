@@ -1,9 +1,12 @@
 //! Admission-owned access to actual retained observations for cancellation proofs.
 use super::*;
 use crate::domain_computation::authorization::WorthQueryRetainedAuthorizationDecisionFacts;
-use {crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationDecisionFact as Fact};
 use worth_execution::{CancellationSource, ExecutionRequest};
 use worth_relational::facade::{runtime::RelationalRuntime, snapshots::SnapshotHandle};
+use {
+    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationDecisionFact as Fact,
+    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind,
+};
 impl<Schema, Operation, Input, Scope>
     WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>
 {

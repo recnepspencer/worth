@@ -5,9 +5,9 @@ use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::denial;
-use crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerCommitAuthority;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerCommitAuthority;
 
 /// A program-bound producer commits under the program its occurrence
 /// actually selects. This checks the commit authority before canonical input

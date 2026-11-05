@@ -1,4 +1,7 @@
-use {crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial, crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind};
+use {
+    crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial,
+    crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind,
+};
 
 pub(in crate::domain_computation::primary_graph::application_query) fn map_basis_denial(
     denial: worth_relational::facade::branch::RelationalBranchBasisDenial,

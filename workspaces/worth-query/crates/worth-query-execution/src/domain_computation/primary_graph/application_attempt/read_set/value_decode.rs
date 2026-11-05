@@ -1,8 +1,11 @@
 //! Ordinary observations borrow the attempt's original native decode loan.
 use super::{denial, WorthQueryApplicationReadAttempt};
-use {crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind};
 use worth_foundational::facade::AspectValue;
 use worth_query_installation::facade::ApplicationReadableScalarValueBinding;
+use {
+    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind,
+};
 
 impl<Schema, Operation, Input, Scope, Phase>
     WorthQueryApplicationReadAttempt<'_, '_, Schema, Operation, Input, Scope, Phase>

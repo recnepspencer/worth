@@ -3,13 +3,13 @@ use super::WorthQueryAdmittedOperation;
 impl WorthQueryAdmittedOperation {
     pub(in crate::domain_computation) fn graph_work_session_identity(
         &self,
-    ) -> crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity {
+    ) -> crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity{
         self.graph_work.identity()
     }
 
     pub(in crate::domain_computation) fn graph_work_managed_run_identity(
         &self,
-    ) -> crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkManagedRunIdentity {
+    ) -> crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkManagedRunIdentity{
         self.graph_work.managed_run_identity()
     }
 

@@ -1,6 +1,9 @@
 //! Domain admission gates the unchanged declared scalar decoder.
-use {crate::domain_computation::primary_graph::HandlerExecutionDenial, crate::domain_computation::primary_graph::vocabulary::handler::invariant::HandlerInterruption};
 use worth_foundational::facade::AspectValue;
+use {
+    crate::domain_computation::primary_graph::vocabulary::handler::invariant::HandlerInterruption,
+    crate::domain_computation::primary_graph::HandlerExecutionDenial,
+};
 
 #[allow(clippy::type_complexity)]
 pub(super) fn decode_admitted<Value, Denied>(

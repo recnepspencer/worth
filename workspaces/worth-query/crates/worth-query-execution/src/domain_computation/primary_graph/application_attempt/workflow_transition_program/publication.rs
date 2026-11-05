@@ -217,8 +217,6 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAssessment<Schema, Operati
     }
 }
 
-
-
 /// A workflow transition that landed: the node it reached, whether that node is terminal,
 /// its commit receipt, whether it replayed, and the assessment evidence, approval or
 /// operation receipt it consumed.

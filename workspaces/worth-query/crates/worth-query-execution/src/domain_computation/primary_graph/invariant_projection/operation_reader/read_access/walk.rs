@@ -1,8 +1,12 @@
 //! Capability-only inspection; decision dependencies have a separate issuer.
 use super::super::WorthQueryApplicationOperationInvariantProjectionReader;
-use {crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity, crate::domain_computation::primary_graph::invariant_projection::WorthQueryInvariantProjectionTraversalDenial, crate::domain_computation::primary_graph::invariant_projection::WorthQueryInvariantProjectionWalk};
 use worth_query_declaration::facade::application_schema::RelationDirection;
 use worth_query_installation::facade::{ApplicationRelationRef, ApplicationSchema, OperationReads};
+use {
+    crate::domain_computation::primary_graph::invariant_projection::WorthQueryInvariantProjectionTraversalDenial,
+    crate::domain_computation::primary_graph::invariant_projection::WorthQueryInvariantProjectionWalk,
+    crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity,
+};
 
 impl<Schema: ApplicationSchema, Operation>
     WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>

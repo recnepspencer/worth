@@ -2,11 +2,11 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use super::super::WorthQueryApplicationAttemptDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::expected_steps::WorthQueryExpectedEffectStepPreparationWork;
 use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
 use crate::domain_computation::{
     WorthQueryProvisionalEffectAction, WorthQueryProvisionalEffectStep,
 };
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::expected_steps::WorthQueryExpectedEffectStepPreparationWork;
 
 /// One ordered, exact summary owned by effect lowering and shared through commit.
 #[derive(Clone)]
@@ -14,8 +14,6 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryExpectedEffect
     steps: Arc<[WorthQueryProvisionalEffectStep]>,
     preparation_work: WorthQueryExpectedEffectStepPreparationWork,
 }
-
-
 
 impl WorthQueryExpectedEffectSteps {
     pub(super) fn from_step_groups(

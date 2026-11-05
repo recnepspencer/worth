@@ -4,15 +4,17 @@ mod evidence;
 pub(crate) mod outbox_commit;
 pub(crate) mod receipt_basis_retention;
 
-
 pub(in crate::domain_computation::primary_graph) use super::application_attempt_state::{
     WorthQueryMutationWorkCommitSeal, WorthQueryPreImageRetentionWork,
 };
 pub(in crate::domain_computation::primary_graph) use evidence::WorthQueryCompletedCommitEvidenceStore;
 
-pub(in crate::domain_computation::primary_graph) use {outbox_commit::WorthQueryCommittedDispatchOutboxReceiptSeal, outbox_commit::WorthQueryCommittedDispatchOutboxResolution};
 pub(in crate::domain_computation::primary_graph) use receipt_basis_retention::{
     WorthQueryReceiptBasisRetentionStore, WorthQueryRetainedApplicationCommitBasis,
+};
+pub(in crate::domain_computation::primary_graph) use {
+    outbox_commit::WorthQueryCommittedDispatchOutboxReceiptSeal,
+    outbox_commit::WorthQueryCommittedDispatchOutboxResolution,
 };
 
 use super::WorthQueryPrimaryGraphProvider;

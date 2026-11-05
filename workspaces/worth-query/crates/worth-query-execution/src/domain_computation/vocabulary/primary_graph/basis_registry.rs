@@ -8,11 +8,11 @@ use worth_relational::facade::snapshots::SnapshotId;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationBasisIdentity {
-    runtime_instance_id: u64,
-    branch_id: BranchId,
-    snapshot_id: SnapshotId,
-    descriptor: RelationalBranchBasisDescriptor,
-    selection: WorthQueryApplicationBasisSelectionIdentity,
+    pub(in crate::domain_computation) runtime_instance_id: u64,
+    pub(in crate::domain_computation) branch_id: BranchId,
+    pub(in crate::domain_computation) snapshot_id: SnapshotId,
+    pub(in crate::domain_computation) descriptor: RelationalBranchBasisDescriptor,
+    pub(in crate::domain_computation) selection: WorthQueryApplicationBasisSelectionIdentity,
 }
 
 impl WorthQueryApplicationBasisIdentity {
@@ -71,8 +71,8 @@ impl WorthQueryApplicationBasisIdentity {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationBasisReleaseReceipt {
-    identity: WorthQueryApplicationBasisIdentity,
-    outcome: WorthQueryApplicationBasisReleaseOutcome,
+    pub(in crate::domain_computation) identity: WorthQueryApplicationBasisIdentity,
+    pub(in crate::domain_computation) outcome: WorthQueryApplicationBasisReleaseOutcome,
 }
 
 impl WorthQueryApplicationBasisReleaseReceipt {

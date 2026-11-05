@@ -1,10 +1,16 @@
 //! One provider contract for spatial and nonspatial pure mechanisms.
-use {super::WorthQueryManagedIndexCandidateWriter, crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl, super::WorthQueryManagedIndexNodeId, super::WorthQueryManagedIndexNodeRegion, super::WorthQueryManagedIndexNodeWriter, super::WorthQueryManagedIndexNodes, super::WorthQueryManagedIndexProviderStop, super::WorthQueryManagedIndexSourceRow, super::WorthQueryManagedIndexSourceRows, super::WorthQueryManagedIndexSummarySources};
-use worth_query_declaration::facade::{
-    application_query::ApplicationManagedIndexBinding,
-    application_schema::{ApplicationScalarValueBinding, ApplicationSchema},
-};
 use crate::domain_computation::primary_graph::vocabulary::application_query::provider::WorthQueryManagedIndexProbeValue;
+use worth_query_declaration::facade::{
+    application_query::ApplicationManagedIndexBinding, application_schema::ApplicationSchema,
+};
+use {
+    super::WorthQueryManagedIndexCandidateWriter, super::WorthQueryManagedIndexNodeId,
+    super::WorthQueryManagedIndexNodeRegion, super::WorthQueryManagedIndexNodeWriter,
+    super::WorthQueryManagedIndexNodes, super::WorthQueryManagedIndexProviderStop,
+    super::WorthQueryManagedIndexSourceRow, super::WorthQueryManagedIndexSourceRows,
+    super::WorthQueryManagedIndexSummarySources,
+    crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl,
+};
 
 /// A Native-issued occurrence delta. Coordinates describe material and carry no
 /// Source loan, public admission or mutation authority.
@@ -14,10 +20,10 @@ pub struct WorthQueryManagedIndexSourceChange {
     pub(super) after: Option<crate::domain_computation::primary_graph::vocabulary::application_query::source_rows::WorthQueryManagedIndexSourceSlot>,
 }
 impl WorthQueryManagedIndexSourceChange {
-    pub const fn before(&self) -> Option<crate::domain_computation::primary_graph::vocabulary::application_query::source_rows::WorthQueryManagedIndexSourceSlot> {
+    pub const fn before(&self) -> Option<crate::domain_computation::primary_graph::vocabulary::application_query::source_rows::WorthQueryManagedIndexSourceSlot>{
         self.before
     }
-    pub const fn after(&self) -> Option<crate::domain_computation::primary_graph::vocabulary::application_query::source_rows::WorthQueryManagedIndexSourceSlot> {
+    pub const fn after(&self) -> Option<crate::domain_computation::primary_graph::vocabulary::application_query::source_rows::WorthQueryManagedIndexSourceSlot>{
         self.after
     }
 }

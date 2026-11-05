@@ -4,14 +4,17 @@ use super::observations::{
     observe_exact_principal_target, observe_mapping, WorthQueryPrincipalMappingObservation,
     WorthQueryPrincipalTargetObservation,
 };
-use {super::resolution_denial::resolution_denial, crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenialKind};
+use crate::domain_computation::vocabulary::primary_graph::freshness::WorthQueryPrincipalReuseWitness;
 use crate::domain_computation::vocabulary::primary_graph::principal_binding::WorthQueryPrimaryPrincipalBindingLayout;
 use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenial;
 use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
 use serde::{Deserialize, Serialize};
 use worth_foundational::facade::{AspectValue, InternedString};
 use worth_relational::facade::identity::{EntityId, KindId, RelationId};
-use crate::domain_computation::vocabulary::primary_graph::freshness::WorthQueryPrincipalReuseWitness;
+use {
+    super::resolution_denial::resolution_denial,
+    crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenialKind,
+};
 
 /// Descriptive evidence retained by a workflow approval, never a live principal permit.
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -142,7 +145,6 @@ pub(in crate::domain_computation) struct WorthQueryPrincipalFreshnessEvidence {
     mapping: WorthQueryPrincipalMappingObservation,
     target: WorthQueryPrincipalTargetObservation,
 }
-
 
 impl WorthQueryPrincipalFreshnessEvidence {
     /// Compare the actual Native scalar decoded by the admitted principal

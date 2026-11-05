@@ -7,7 +7,10 @@ use worth_relational::facade::query::{
 use worth_relational::facade::runtime::{ProjectionAspectRequirement, ProjectionAspectScope};
 use worth_relational::facade::storage::RecordLifecycleState;
 
-use {super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
+use {
+    super::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
+};
 
 pub(crate) mod aspect_presence;
 pub(crate) mod predecode_admission;
@@ -21,8 +24,6 @@ pub fn take_native_field_contacts() -> usize {
 }
 
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::observation::WorthQueryApplicationFieldObservation;
-
-
 
 pub fn observe_field(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,

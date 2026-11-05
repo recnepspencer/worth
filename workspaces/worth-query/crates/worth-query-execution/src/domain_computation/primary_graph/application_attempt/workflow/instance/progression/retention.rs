@@ -8,9 +8,9 @@ use super::{
 
 #[path = "retention/counters.rs"]
 mod counters;
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::retention_counters::WorthQueryWorkflowInstanceProgressCounters;
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::retention::SHARD_COUNT;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::retention::WorkflowInstanceProgressKey;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::retention::SHARD_COUNT;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::retention_counters::WorthQueryWorkflowInstanceProgressCounters;
 
 // Each shard admits 100 small instances even when their keys collide: six
 // root-node OrdMaps (even empty ones allocate a root) plus two short replay
@@ -25,8 +25,6 @@ pub(in crate::domain_computation::primary_graph) fn default_progress_retention_s
         .collect::<Vec<_>>()
         .into()
 }
-
-
 
 #[derive(Clone)]
 struct RetainedWorkflowInstanceProgress {

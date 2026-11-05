@@ -3,7 +3,6 @@ use super::{
     occurrence::RetainedResourceValue,
     provider::{WorthQueryResourceVerificationFailure, WorthQueryResourceVerifiedFrame},
 };
-use {crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint, crate::domain_computation::primary_graph::admitted_capture::run_stage, crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop};
 use worth_execution::{
     ChargedBytes, ExecutionRequest, LeaseDenial, MapKernelFailure, WorkCeilingDenial,
 };
@@ -11,6 +10,11 @@ use worth_foundational::facade::{AspectValue, ValueCodecDenial};
 use worth_query_declaration::facade::application_schema::{
     ApplicationReadableScalarValueBinding, ApplicationScalarValueBinding,
     ApplicationValueDecodeDenial, ApplicationValueEncodeDenial,
+};
+use {
+    crate::domain_computation::primary_graph::admitted_capture::run_stage,
+    crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint,
+    crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop,
 };
 
 #[expect(

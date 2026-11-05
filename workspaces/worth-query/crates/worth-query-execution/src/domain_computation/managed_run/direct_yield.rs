@@ -3,8 +3,11 @@ use std::sync::Arc;
 use super::retained_graph_execution::WorthQueryRetainedManagedGraphExecution;
 use super::run_affinity::WorthQueryDirectRunAffinity;
 use super::WorthQueryManagedRelationalObservation;
-use {crate::domain_computation::vocabulary::managed_run::counters::WorthQueryManagedRunCounters, super::WorthQueryPausedDirectGraphExecution, super::WorthQueryYieldTransitionCounters};
 use worth_runtime_bridge::facade::BridgeYieldedExecutionBasis;
+use {
+    super::WorthQueryPausedDirectGraphExecution, super::WorthQueryYieldTransitionCounters,
+    crate::domain_computation::vocabulary::managed_run::counters::WorthQueryManagedRunCounters,
+};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryDirectYieldDenialKind {

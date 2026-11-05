@@ -1,23 +1,27 @@
 //! Moved whole from `domain_computation::provider_session::protocol::declared_closure`: the items below and every impl they own.
-use crate::domain_computation::vocabulary::provider_session::application::WorthQueryApplicationEffectPosture;
+use crate::domain_computation::vocabulary::provider_session::aftermath_posture;
 use crate::domain_computation::vocabulary::provider_session::application::bind_application_candidate_effect_closure;
 use crate::domain_computation::vocabulary::provider_session::application::bind_native_reference_invariants;
+use crate::domain_computation::vocabulary::provider_session::application::WorthQueryApplicationEffectPosture;
+use crate::domain_computation::vocabulary::provider_session::declared_role_closure::{
+    bind_direct_role_closure, effect_families, invariant_slots, read_binding,
+    WorthQueryProviderPlanDeclaredClosure,
+};
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 use worth_query_installation::facade::WorthQueryDomainOperationSemanticClosure;
-use worth_query_installation::facade::WorthQueryOperationEffectContract;
 use worth_query_installation::facade::WorthQueryOperationGraphAccess;
-use worth_query_installation::facade::WorthQueryOperationInvariantContract;
 use worth_query_installation::facade::WorthQueryOperationTouchContract;
 use worth_query_installation::facade::WorthQueryOperationTouchScope;
 use worth_query_installation::facade::WorthQueryOperationWorkflowContract;
 
 #[derive(Clone, Debug)]
 pub struct WorthQueryProviderPlanDeclarations {
-    direct: BTreeMap<String, WorthQueryProviderPlanDeclaredClosure>,
+    pub(in crate::domain_computation) direct:
+        BTreeMap<String, WorthQueryProviderPlanDeclaredClosure>,
     workflow: BTreeMap<(String, String), WorthQueryProviderPlanDeclaredClosure>,
     decision_fact_families: Vec<worth_query_installation::facade::WorthQueryDecisionFactFamily>,
-    invariant_requirements:
+    pub(in crate::domain_computation) invariant_requirements:
         Vec<worth_query_installation::facade::WorthQueryInstalledInvariantExecutionRequirement>,
     reconciliation_posture: String,
     application_graph_reads:
@@ -25,14 +29,6 @@ pub struct WorthQueryProviderPlanDeclarations {
     application_touches: Option<worth_query_installation::facade::WorthQueryOperationTouchContract>,
     application_read_touch_overlap:
         Option<worth_query_installation::facade::WorthQueryOperationReadTouchOverlapIndex>,
-}
-
-#[derive(Clone, Debug, Default)]
-pub struct WorthQueryProviderPlanDeclaredClosure {
-    pub(in crate::domain_computation) read: Vec<String>,
-    pub(in crate::domain_computation) touch: Vec<String>,
-    pub(in crate::domain_computation) effect: Vec<String>,
-    pub(in crate::domain_computation) invariant: Vec<String>,
 }
 
 impl Default for WorthQueryProviderPlanDeclarations {
@@ -304,60 +300,6 @@ impl WorthQueryProviderPlanDeclarations {
     }
 }
 
-impl WorthQueryProviderPlanDeclaredClosure {
-    fn canonicalize(&mut self) {
-        for values in [
-            &mut self.read,
-            &mut self.touch,
-            &mut self.effect,
-            &mut self.invariant,
-        ] {
-            values.sort();
-            values.dedup();
-        }
-    }
-}
-
-pub fn bind_direct_role_closure(
-    closure: &mut WorthQueryProviderPlanDeclaredClosure,
-    effects: &[String],
-    invariants: &[String],
-) {
-    if !closure.touch.is_empty() {
-        closure.effect.clear();
-        closure.effect.extend_from_slice(effects);
-    }
-    closure.invariant.clear();
-    closure.invariant.extend_from_slice(invariants);
-    closure.canonicalize();
-}
-
-pub(in crate::domain_computation) fn read_binding(role: &str, access: WorthQueryOperationGraphAccess) -> String {
-    match access {
-        WorthQueryOperationGraphAccess::Observe => format!("{role}:observe"),
-        WorthQueryOperationGraphAccess::Project => format!("{role}:project"),
-    }
-}
-
-pub(in crate::domain_computation) fn effect_families(contract: &WorthQueryOperationEffectContract) -> Vec<String> {
-    match contract {
-        WorthQueryOperationEffectContract::NotRequired => Vec::new(),
-        WorthQueryOperationEffectContract::Declared { effect_families } => effect_families
-            .iter()
-            .map(|effect| effect.as_str().to_owned())
-            .collect(),
-    }
-}
-
-pub(in crate::domain_computation) fn invariant_slots(contract: &WorthQueryOperationInvariantContract) -> Vec<String> {
-    match contract {
-        WorthQueryOperationInvariantContract::NotRequired => Vec::new(),
-        WorthQueryOperationInvariantContract::Declared { invariant_slots } => {
-            invariant_slots.clone()
-        }
-    }
-}
-
 impl WorthQueryProviderPlanDeclarations {
     pub(crate) fn from_application_contracts(
         contracts: &worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts,
@@ -409,12 +351,5 @@ impl WorthQueryProviderPlanDeclarations {
         touched: bool,
     ) -> Self {
         Self::test_direct(graph_role, read_access, touched)
-    }
-}
-
-impl WorthQueryProviderPlanDeclaredClosure {
-    #[doc(hidden)]
-    pub fn effect_for_test(&self) -> &Vec<String> {
-        &self.effect
     }
 }

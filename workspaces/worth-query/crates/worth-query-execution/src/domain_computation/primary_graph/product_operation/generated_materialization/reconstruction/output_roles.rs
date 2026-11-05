@@ -13,7 +13,10 @@ use super::{
     WorthQueryGeneratedOutputReconstructionDenial,
 };
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::role_use::OutputRoleUse;
-use {crate::domain_computation::primary_graph::vocabulary::application_attempt::projection::WorthQueryApplicationOutputProjectionDenial, crate::domain_computation::primary_graph::WorthQueryApplicationProducerBinding};
+use {
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::projection::WorthQueryApplicationOutputProjectionDenial,
+    crate::domain_computation::primary_graph::WorthQueryApplicationProducerBinding,
+};
 
 impl<Schema, Producer> WorthQueryGeneratedOutputReconstruction<'_, Schema, Producer>
 where

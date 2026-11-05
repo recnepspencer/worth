@@ -1,7 +1,10 @@
 //! The rejecting producer's declared domain value, beside its diagnostic text.
 use super::WorthQueryOutputDemandDenial;
-use {crate::domain_computation::primary_graph::vocabulary::application_contribution::denial_value::WorthQueryProducerDenialDecodeDenial, crate::domain_computation::primary_graph::vocabulary::application_contribution::denial_value::WorthQueryProducerDenialValue};
 use worth_query_declaration::facade::application_schema::ApplicationReadableScalarValueBinding;
+use {
+    crate::domain_computation::primary_graph::vocabulary::application_contribution::denial_value::WorthQueryProducerDenialDecodeDenial,
+    crate::domain_computation::primary_graph::vocabulary::application_contribution::denial_value::WorthQueryProducerDenialValue,
+};
 
 /// A producer's domain decision: its diagnostic text and declared value travel
 /// together in one box, so the demand denial stays as small as one without it.

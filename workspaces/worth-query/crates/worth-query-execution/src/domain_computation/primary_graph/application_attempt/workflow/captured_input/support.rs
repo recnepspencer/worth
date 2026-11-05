@@ -1,6 +1,9 @@
 //! Rebuildable descriptive support, never a mutation or source-observation owner.
 use super::{inventory_identity, WorkflowCapturedInputContract, WorkflowCapturedTarget};
-use {crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
+use {
+    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
+};
 
 #[derive(Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) struct WorkflowCapturedInputSupport {

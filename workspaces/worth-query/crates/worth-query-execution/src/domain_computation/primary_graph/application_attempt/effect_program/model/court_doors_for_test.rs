@@ -1,6 +1,5 @@
 //! Sealed test doors over this module's private members.
 use super::*;
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::model::WorthQueryApplicationEffectEntity;
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>
@@ -31,7 +30,6 @@ impl<Schema, Operation, Input, Scope>
         &mut self.effects
     }
 }
-
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>

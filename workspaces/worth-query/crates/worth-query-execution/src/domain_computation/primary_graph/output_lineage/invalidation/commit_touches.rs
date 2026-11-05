@@ -17,7 +17,6 @@ use super::owner::SourceInvalidationOwner;
 use crate::domain_computation::primary_graph::vocabulary::output_lineage::commit_touches::CommitTouchEntities;
 use crate::domain_computation::primary_graph::vocabulary::output_lineage::commit_touches::CommitTouchInterest;
 
-
 /// One relevant commit on the branch and the watched entities it touched.
 pub struct TouchedCommit {
     pub(in crate::domain_computation::primary_graph) position: PatchStreamPosition,

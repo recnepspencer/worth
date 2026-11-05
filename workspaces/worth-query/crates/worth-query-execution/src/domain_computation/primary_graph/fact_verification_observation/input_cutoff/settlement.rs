@@ -1,8 +1,11 @@
 //! Fixed-size descriptions of the original native no-row answer at a cutoff.
 use crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding;
-use {crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason, crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SourceSettlementCurrentness};
 use worth_relational::facade::{
     history::CommitId, identity::VersionId, runtime::PositionedRelationalSnapshot,
+};
+use {
+    crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SourceSettlementCurrentness,
+    crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason,
 };
 
 /// The native full-verification reason that declined this cutoff's mark answer.

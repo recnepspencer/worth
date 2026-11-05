@@ -13,7 +13,10 @@ use worth_query_installation::facade::{
     ApplicationSignedAggregateValueBinding, DeclaredApplicationFieldValue, WritePosture,
 };
 
-use {super::WorthQueryApplicationInvariantProjectionReader, crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity};
+use {
+    super::WorthQueryApplicationInvariantProjectionReader,
+    crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity,
+};
 
 /// Why an aggregate over incoming relations could not be computed.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

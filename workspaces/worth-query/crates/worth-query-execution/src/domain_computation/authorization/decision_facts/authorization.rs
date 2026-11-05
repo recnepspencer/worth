@@ -125,7 +125,7 @@ impl WorthQueryAuthorizationDecisionFact {
 
     pub(in crate::domain_computation) const fn session_identity(
         &self,
-    ) -> crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity {
+    ) -> crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity{
         self.session_identity
     }
 

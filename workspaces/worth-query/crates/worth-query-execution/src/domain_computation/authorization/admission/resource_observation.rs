@@ -2,7 +2,6 @@
 use super::validation::denial;
 use super::*;
 use crate::domain_computation::authorization::admission::requirement_observation::RequirementObservationParentOps;
-use {crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind};
 use crate::domain_computation::primary_graph::WorthQueryApplicationQueryAccessContext;
 use worth_query_declaration::facade::{
     application_query::{
@@ -13,6 +12,11 @@ use worth_query_declaration::facade::{
     application_schema::ApplicationSchema,
 };
 use worth_query_installation::facade::WorthQueryInstalledApplicationResource;
+use {
+    crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
+    crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind,
+    crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind,
+};
 
 pub(in crate::domain_computation) trait ResourceObservationScopedOps<Schema: ApplicationSchema>:
     crate::domain_computation::authorization::host::AuthorizationHost<Schema>

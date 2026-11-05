@@ -1,6 +1,10 @@
 //! Preserve the original row-roster request or physical allocation refusal.
-use {super::denial, crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenial, crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenialKind};
 use worth_execution::{ExecutionAllocationDenialClass, ExecutionRequestArrayDenial};
+use {
+    super::denial,
+    crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenial,
+    crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenialKind,
+};
 
 pub(in crate::domain_computation::primary_graph::application_query) fn denied(
     cause: ExecutionRequestArrayDenial,

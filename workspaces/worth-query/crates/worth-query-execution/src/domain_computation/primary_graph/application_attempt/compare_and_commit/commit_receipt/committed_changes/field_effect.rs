@@ -15,7 +15,9 @@ impl WorthQueryApplicationCommittedChanges {
         let mut result = Effect::Unchanged;
         let mut seen = false;
         for patch in &self.envelope.patch.authoritative_record_patches {
-            crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint(context, 1)?;
+            crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint(
+                context, 1,
+            )?;
             if patch.target != RecordRef::Entity(entity) {
                 continue;
             }

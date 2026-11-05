@@ -1,10 +1,19 @@
 //! Funded immutable wire for native revisions, never a manufactured query source.
-use {crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::AuthoringSourceFacts, crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl, crate::domain_computation::primary_graph::application_checkpoint::facts, crate::domain_computation::primary_graph::application_checkpoint::facts::FactDecodeDenial, crate::domain_computation::primary_graph::application_checkpoint::facts::FactDecoder, crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial as Denial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind, crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact as Fact};
 use worth_execution::{
     ExecutionArrayBuilder, ExecutionByteBuffer, ExecutionImmutableBytes, ExecutionRequest,
 };
 use worth_relational::facade::{
     identity::EntityId, runtime::RelationalRuntime, snapshots::SnapshotHandle,
+};
+use {
+    crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::AuthoringSourceFacts,
+    crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl,
+    crate::domain_computation::primary_graph::application_checkpoint::facts,
+    crate::domain_computation::primary_graph::application_checkpoint::facts::FactDecodeDenial,
+    crate::domain_computation::primary_graph::application_checkpoint::facts::FactDecoder,
+    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial as Denial,
+    crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact as Fact,
+    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind,
 };
 
 #[derive(Clone, Debug)]

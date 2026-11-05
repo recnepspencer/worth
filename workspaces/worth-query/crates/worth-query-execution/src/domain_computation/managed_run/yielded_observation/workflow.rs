@@ -1,7 +1,12 @@
 use std::sync::Arc;
 
 use super::WorthQueryYieldedCheckpointInspection;
-use {crate::domain_computation::vocabulary::managed_run::evidence::WorthQueryManagedProviderWorkEvidence, crate::domain_computation::vocabulary::managed_run::counters::WorthQueryManagedRunCounters, crate::domain_computation::WorthQueryWorkflowArtifactRegistryEvidence, crate::domain_computation::WorthQueryYieldTransitionCounters};
+use {
+    crate::domain_computation::vocabulary::managed_run::counters::WorthQueryManagedRunCounters,
+    crate::domain_computation::vocabulary::managed_run::evidence::WorthQueryManagedProviderWorkEvidence,
+    crate::domain_computation::WorthQueryWorkflowArtifactRegistryEvidence,
+    crate::domain_computation::WorthQueryYieldTransitionCounters,
+};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct WorthQueryYieldedWorkflowRunInspection {

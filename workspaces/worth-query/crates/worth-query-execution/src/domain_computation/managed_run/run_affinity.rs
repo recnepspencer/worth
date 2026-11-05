@@ -7,7 +7,11 @@ use crate::domain_computation::provider_session::graph_provider::{
 use crate::domain_computation::provider_session::WorthQueryDirectResourceReadmissionPending;
 use crate::domain_computation::WorthQueryDirectExecutionResourceAttempt;
 
-use {super::provider_work::WorthQueryManagedProviderCleanupAuthority, crate::domain_computation::vocabulary::managed_run::evidence::WorthQueryManagedProviderWorkEvidence, super::provider_work::WorthQueryManagedProviderWorkLedger};
+use {
+    super::provider_work::WorthQueryManagedProviderCleanupAuthority,
+    super::provider_work::WorthQueryManagedProviderWorkLedger,
+    crate::domain_computation::vocabulary::managed_run::evidence::WorthQueryManagedProviderWorkEvidence,
+};
 
 mod readmission;
 mod terminal;
@@ -102,7 +106,7 @@ impl WorthQueryDirectRunAffinity {
     ) -> Result<
         crate::domain_computation::vocabulary::managed_run::safe_point_observation::WorthQueryManagedSafePointObservation,
         super::WorthQueryManagedSafePointFailure,
-    > {
+    >{
         super::safe_point_observation::observe_managed_run_safe_point(
             self.attempt.attempt_identity().description_arc(),
             bridge,

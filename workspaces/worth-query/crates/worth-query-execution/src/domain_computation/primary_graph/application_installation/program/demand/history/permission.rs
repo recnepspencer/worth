@@ -1,7 +1,6 @@
 //! Fresh C-only source permission before a retained tree inspects cached custody.
 use super::*;
 use crate::domain_computation::primary_graph::application_query::RetainedPermissionScopedOps;
-use crate::domain_computation::primary_graph::runtime_host::WorthQueryRuntimeIdentityHost;
 use crate::domain_computation::primary_graph::WorthQueryHistoryOutputReadDenial;
 
 impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>

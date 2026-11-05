@@ -1,6 +1,9 @@
 use super::{map_basis_denial, map_registration_denial};
-use {crate::domain_computation::primary_graph::vocabulary::application_query::basis_registry::WorthQueryApplicationBasisRegistrationDenial, crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind};
 use worth_relational::facade::branch::RelationalBranchBasisDenial;
+use {
+    crate::domain_computation::primary_graph::vocabulary::application_query::basis_registry::WorthQueryApplicationBasisRegistrationDenial,
+    crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind,
+};
 
 #[test]
 fn owner_unavailable_maps_to_basis_unavailable_with_exact_subject() {

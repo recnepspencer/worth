@@ -5,11 +5,11 @@ use super::super::{
     snapshot_lease::WorthQueryApplicationSnapshotLease,
 };
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::InstalledScopePosition;
 use crate::domain_computation::primary_graph::{
     aggregate_observation::{AggregateKey, AggregateObservation},
     invariant_projection::ExpectedFactKeys,
 };
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::InstalledScopePosition;
 use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
 
 pub fn observe<Schema, Operation, Input, Scope>(

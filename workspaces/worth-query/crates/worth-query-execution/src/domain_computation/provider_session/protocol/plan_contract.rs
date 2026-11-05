@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use crate::domain_computation::vocabulary::provider_session::declared_closure::WorthQueryProviderPlanDeclarations;
 use super::execution_plan::WorthQueryValidatedProviderPlan;
+use crate::domain_computation::vocabulary::provider_session::declared_closure::WorthQueryProviderPlanDeclarations;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryProviderOperationScope {
@@ -136,7 +136,7 @@ impl WorthQueryProviderExecutionPlanContract {
 
     pub(crate) const fn runtime_authority(
         &self,
-    ) -> crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity {
+    ) -> crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity{
         self.runtime_authority
     }
 
@@ -195,7 +195,7 @@ impl WorthQueryProviderExecutionPlanContract {
     pub(crate) const fn application_operation_attempt(
         &self,
     ) -> Option<crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity>
-    {
+{
         self.application_operation_attempt
     }
 

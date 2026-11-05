@@ -1,7 +1,6 @@
 //! Source facts can be prepared only from the validation owner's shared loan.
 use crate::domain_computation::primary_graph::application_query::observed_source::prepared_expectation::affinity::AffinityParentOps;
 use super::*;
-use crate::domain_computation::vocabulary::primary_graph::application_query_basis_registry::WorthQueryApplicationBasisSelectionIdentity;
 use crate::domain_computation::vocabulary::primary_graph::observed_source::WorthQuerySourceExpectationKind;
 impl<Schema: worth_query_installation::facade::ApplicationSchema, Operation, Input, Scope>
     CheckedSourceAdmission<'_, Schema, Operation, Input, Scope>

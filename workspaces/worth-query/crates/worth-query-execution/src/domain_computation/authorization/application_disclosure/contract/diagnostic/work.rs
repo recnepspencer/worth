@@ -1,8 +1,8 @@
 //! Admission converts real compiler operations into checked Execution work.
 use super::super::admission::CompilationWork;
 use super::*;
-use worth_execution::{MapKernelContext, MapKernelStop};
 use crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint;
+use worth_execution::{MapKernelContext, MapKernelStop};
 
 pub(super) fn admit(
     context: &mut MapKernelContext<'_, '_>,

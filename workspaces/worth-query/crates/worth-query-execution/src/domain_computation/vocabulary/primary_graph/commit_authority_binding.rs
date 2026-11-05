@@ -26,7 +26,7 @@ impl WorthQueryRetainedGovernedInput {
         clippy::disallowed_methods,
         reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
     )]
-    fn from_admission<Input>(
+    pub(in crate::domain_computation) fn from_admission<Input>(
         input: &ApplicationSharedInput<Input>,
         governed_identity: Option<[u8; 32]>,
         original_scope: Option<&Arc<crate::domain_computation::vocabulary::primary_graph::retained_selector::WorthQueryObservedScopeSelector>>,
@@ -49,7 +49,7 @@ impl WorthQueryRetainedGovernedInput {
         }
     }
 
-    fn downcast_ref<Input: 'static>(&self) -> Option<&Input> {
+    pub(in crate::domain_computation) fn downcast_ref<Input: 'static>(&self) -> Option<&Input> {
         (self.type_id == TypeId::of::<Input>())
             .then(|| {
                 self._value
@@ -77,13 +77,13 @@ impl WorthQueryRetainedGovernedInput {
 
     pub(in crate::domain_computation) fn original_scope(
         &self,
-    ) -> Option<&Arc<crate::domain_computation::vocabulary::primary_graph::retained_selector::WorthQueryObservedScopeSelector>> {
+    ) -> Option<&Arc<crate::domain_computation::vocabulary::primary_graph::retained_selector::WorthQueryObservedScopeSelector>>{
         self.original_scope.as_ref()
     }
     pub(in crate::domain_computation) fn correction(
         &self,
     ) -> Option<&crate::domain_computation::vocabulary::application_aftermath::original::OriginalCorrectionDisclosure>
-    {
+{
         self.correction.as_deref()
     }
 

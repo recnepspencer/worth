@@ -1,6 +1,9 @@
 //! Fresh full Parent admission precedes availability, cause lookup and ACK.
 use super::*;
-use {crate::domain_computation::primary_graph::vocabulary::application_query::round::PredicateNoticeDisposition, crate::domain_computation::primary_graph::live_delivery::WorthQueryLivePredicatePoll};
+use {
+    crate::domain_computation::primary_graph::live_delivery::WorthQueryLivePredicatePoll,
+    crate::domain_computation::primary_graph::vocabulary::application_query::round::PredicateNoticeDisposition,
+};
 
 pub trait NextOps<S: ApplicationSchema>:
     crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<S>

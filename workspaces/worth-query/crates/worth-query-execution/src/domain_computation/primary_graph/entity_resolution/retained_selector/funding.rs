@@ -1,12 +1,18 @@
 //! Exact retained scope backing stays funded after its original request returns.
 use super::*;
-use {crate::domain_computation::primary_graph::vocabulary::application_contribution::publication::publication_execution_kind, crate::domain_computation::primary_graph::vocabulary::application_contribution::scope::scope_stop_kind};
-use {crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind, crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind};
+use crate::domain_computation::vocabulary::primary_graph::retained_selector::WorthQueryObservedScopeSelector;
 use worth_execution::{
     ChargedBytes, ExecutionMemoryReservation, ExecutionRequest, ExecutionWorkCeiling, LeaseDenial,
     MapKernelFailure, WorkCeilingDenial,
 };
-use crate::domain_computation::vocabulary::primary_graph::retained_selector::WorthQueryObservedScopeSelector;
+use {
+    crate::domain_computation::primary_graph::vocabulary::application_contribution::publication::publication_execution_kind,
+    crate::domain_computation::primary_graph::vocabulary::application_contribution::scope::scope_stop_kind,
+};
+use {
+    crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
+    crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
+};
 
 type Stop = Result<WorthQueryProviderSessionDenialKind, WorthQueryProviderSessionControlStopKind>;
 

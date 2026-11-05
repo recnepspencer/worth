@@ -1,5 +1,4 @@
 use super::*;
-use {crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint, crate::domain_computation::primary_graph::admitted_capture::run_stage};
 use worth_execution::{ChargedBytes, LeaseDenial, MapKernelFailure, WorkCeilingDenial};
 use worth_query_admission::facade::graph_obligation::{
     admit_prepared_resource_read_graph_work, WorthQueryAdmittedGraphWorkPlan,
@@ -11,6 +10,10 @@ use worth_query_declaration::facade::{
 };
 use worth_query_installation::facade::{
     WorthQueryInstalledApplicationResource, WorthQueryResourceAccessPurpose,
+};
+use {
+    crate::domain_computation::primary_graph::admitted_capture::run_stage,
+    crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint,
 };
 
 #[expect(

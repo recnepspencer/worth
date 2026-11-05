@@ -9,11 +9,11 @@ use super::causal_event::{
     ExternalEffectPosture,
 };
 use super::classification::{ExternalEffectClassification, ExternalRailTransportFault};
-use crate::domain_computation::vocabulary::application_aftermath::correlation::ExternalEffectCorrelationIdentity;
 use super::identity_derivation::provider_commit_identity;
 use super::observation::classify_dispatch_observation;
 use super::transport::{WorthQueryExternalDispatchRequest, WorthQueryExternalEffectTransport};
 use super::ExternalEffectPostureKind;
+use crate::domain_computation::vocabulary::application_aftermath::correlation::ExternalEffectCorrelationIdentity;
 
 /// Observable kind of one dispatch result.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

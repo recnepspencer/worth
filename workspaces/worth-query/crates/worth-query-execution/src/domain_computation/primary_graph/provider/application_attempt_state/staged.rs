@@ -97,7 +97,7 @@ impl WorthQueryStagedApplicationAttempt<'_> {
     pub(in crate::domain_computation::primary_graph::provider) fn producer_required_invariants(
         &self,
     ) -> &'static [crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerInvariantRequirement]
-    {
+{
         self.attempt.producer_required_invariants()
     }
 

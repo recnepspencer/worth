@@ -6,7 +6,7 @@ use worth_execution::ExecutionImmutableBytes;
 /// Clones retain the same text allocation and its original payer. No owned
 /// String can be extracted; an independent field copy requires fresh admission.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct FundedActorText(ExecutionImmutableBytes);
+pub struct FundedActorText(pub(in crate::domain_computation) ExecutionImmutableBytes);
 
 impl FundedActorText {
     pub(in crate::domain_computation) fn bytes(&self) -> &ExecutionImmutableBytes {

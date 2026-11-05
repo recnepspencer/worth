@@ -1,10 +1,8 @@
 //! Sealed recorder of certified-seed wave acquisition orders: the order the
 //! shipped owned dispatcher actually acquired members in. Disarmed, the order is
 //! dropped as before.
-use std::cell::RefCell;
 use std::marker::PhantomData;
 use crate::domain_computation::primary_graph::vocabulary::application_contribution::seeded_dispatch_orders::ORDERS;
-
 
 /// Owned handle of an armed recorder; dropping it, unwinding included, disarms
 /// and discards what it recorded.
@@ -33,4 +31,3 @@ pub fn record_seeded_dispatch_for_test() -> SeededDispatchOrdersForTest {
         _thread_bound: PhantomData,
     }
 }
-

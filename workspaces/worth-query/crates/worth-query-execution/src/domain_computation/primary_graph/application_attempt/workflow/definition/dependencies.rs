@@ -9,8 +9,8 @@ use worth_query_installation::facade::WorthQueryWorkflowNodeDependency;
 use worth_relational::facade::identity::EntityId;
 
 use super::codec::{WorkflowConnectionTag, WorkflowNodeTag};
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::condition::CompiledWorkflowCondition;
 use crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::condition::CompiledWorkflowCondition;
 use {
     crate::domain_computation::primary_graph::application_attempt::workflow::adoption::WorkflowAdoptionReadDenial,
     crate::domain_computation::primary_graph::application_attempt::workflow::adoption::WorkflowAdoptionTruth,

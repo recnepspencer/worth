@@ -4,12 +4,12 @@ use super::ready_backing::PreparedReadyBacking;
 use super::WorthQueryOutputDemandInterest;
 use super::WorthQueryOutputDemandKey;
 use super::WorthQueryOutputDemandRegistry;
-use crate::domain_computation::vocabulary::primary_graph::handler_fact_boundary::CompletedHandlerFactBoundary;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceInvalidationOwner;
 use crate::domain_computation::primary_graph::ComputationPrior;
 use crate::domain_computation::primary_graph::SealedComputationRetention;
+use crate::domain_computation::vocabulary::primary_graph::handler_fact_boundary::CompletedHandlerFactBoundary;
 
 /// The live demand record selected for a producer operation. This is a
 /// move-only carrier; the source epoch and installed producer are the registry
@@ -125,7 +125,7 @@ impl RequiredOutputDemandContext {
     pub(in crate::domain_computation::primary_graph) fn take_completed_decision_reuse(
         &mut self,
     ) -> Option<crate::domain_computation::vocabulary::primary_graph::decision_reuse::CompletedDecisionReuseProof>
-    {
+{
         self.completed_decision_reuse.take()
     }
 

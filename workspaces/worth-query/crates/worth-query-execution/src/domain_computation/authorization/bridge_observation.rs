@@ -9,7 +9,10 @@ use worth_runtime_bridge::facade::{
 };
 
 use super::installed_policy::WorthQueryInstalledAuthorizationPolicy;
-use {super::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind};
+use {
+    super::WorthQueryOperationAuthorizationDenial,
+    crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind,
+};
 
 pub(super) fn lower_bridge_observation(
     installed: &WorthQueryInstalledAuthorizationPolicy,

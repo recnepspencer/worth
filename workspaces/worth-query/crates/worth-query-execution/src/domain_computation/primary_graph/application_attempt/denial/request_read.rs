@@ -1,5 +1,9 @@
 //! Native read causes retained at the application attempt boundary.
-use {super::AttemptDenialCause, super::AttemptDenialMeaning, super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
+use {
+    super::AttemptDenialCause, super::AttemptDenialMeaning,
+    super::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
+};
 impl From<worth_relational::facade::transactions::RelationalExecutionDenialCause>
     for WorthQueryApplicationAttemptDenial
 {

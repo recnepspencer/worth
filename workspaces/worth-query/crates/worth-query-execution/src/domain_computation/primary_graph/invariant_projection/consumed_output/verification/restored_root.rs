@@ -8,9 +8,9 @@
 
 use super::*;
 use crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout;
-use crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence;
 use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop;
 use crate::domain_computation::primary_graph::vocabulary::invariant_projection::work_budget::map_admission_stop;
+use crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence;
 
 impl ConsumedOutputEvidence {
     /// The witness of a restored output whose facts and output are unchanged

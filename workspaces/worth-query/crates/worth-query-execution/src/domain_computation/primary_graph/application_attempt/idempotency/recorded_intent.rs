@@ -24,7 +24,6 @@ const IDENTITY_DIGITS: usize = 64;
 const FIRST_ENCODING_RUNTIME_DIGITS: usize = 48;
 const MALFORMED: &str = "provider idempotency intent is malformed";
 
-
 impl WorthQueryApplicationIdempotencyBinding {
     /// The intent this binding records under its key.
     pub(in crate::domain_computation::primary_graph) fn intent_text(self) -> String {

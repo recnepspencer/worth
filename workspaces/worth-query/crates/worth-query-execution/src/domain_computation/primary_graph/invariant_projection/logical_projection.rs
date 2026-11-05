@@ -1,13 +1,20 @@
 //! Installed projection authority reads the same exact Native logical sources.
 mod component;
 mod source;
-use {super::WorthQueryApplicationInvariantProjectionReader as Reader, super::WorthQueryInvariantDerivedMemberRelation as Pair, crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity as Entity, super::WorthQueryInvariantGraphMember as Member, super::WorthQueryInvariantProjectionTraversalDenial as Denial, super::WorthQueryInvariantProjectionTraversalDenialKind as Kind};
 use crate::domain_computation::primary_graph::{
     component_selection::storage, schema_layout::MemberDomainBinding as Domain,
 };
 use worth_query_declaration::facade::application_schema::ApplicationDerivedRelationRef;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::runtime::DerivedRelationReadShape as Shape;
+use {
+    super::WorthQueryApplicationInvariantProjectionReader as Reader,
+    super::WorthQueryInvariantDerivedMemberRelation as Pair,
+    super::WorthQueryInvariantGraphMember as Member,
+    super::WorthQueryInvariantProjectionTraversalDenial as Denial,
+    super::WorthQueryInvariantProjectionTraversalDenialKind as Kind,
+    crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity as Entity,
+};
 
 impl<S: ApplicationSchema> Reader<'_, S> {
     /// Retain an already local physical selector; this grants no mutation authority.

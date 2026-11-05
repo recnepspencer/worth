@@ -20,9 +20,9 @@ use worth_relational::facade::storage::RecordLifecycleState;
 use super::super::observations::WorthQueryPrincipalMappingObservation;
 use super::super::observations::WorthQueryPrincipalTargetObservation;
 
+use super::admitted_lookup::CheckedMappingCandidate;
 use crate::domain_computation::vocabulary::primary_graph::principal_binding::WorthQueryPrimaryPrincipalBindingLayout;
 use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenialKind;
-use super::admitted_lookup::CheckedMappingCandidate;
 
 #[derive(Debug)]
 pub(super) enum AdmittedPrincipalObservationStop {

@@ -2,7 +2,9 @@
 use worth_foundational::facade::ScalarAspectType;
 use worth_query_declaration::facade::application_schema::ApplicationScalarValueBinding;
 
-pub(in crate::domain_computation::primary_graph) fn maximum<Binding: ApplicationScalarValueBinding>() -> Result<usize, String> {
+pub(in crate::domain_computation::primary_graph) fn maximum<
+    Binding: ApplicationScalarValueBinding,
+>() -> Result<usize, String> {
     if Binding::SCALAR_FAMILY != ScalarAspectType::String {
         return Err("invariant refusal requires a canonical application value binding".into());
     }

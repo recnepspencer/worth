@@ -1,10 +1,11 @@
 //! Exact attempted write coordinates, without field contents or authority.
-use {super::AttemptDenialCause, super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::unobserved_write::WorthQueryApplicationUnobservedWrite;
 use worth_foundational::facade::AspectFieldLocator;
 use worth_relational::facade::identity::EntityId;
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::unobserved_write::WorthQueryApplicationUnobservedWrite;
-
-
+use {
+    super::AttemptDenialCause, super::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
+};
 
 impl WorthQueryApplicationAttemptDenial {
     pub(in crate::domain_computation::primary_graph::application_attempt) fn unobserved_field_write(

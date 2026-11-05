@@ -12,7 +12,11 @@ use super::super::capability_registry::{
 };
 use super::super::operation_progression::WorthQueryCapabilityContextKey;
 use super::super::retained_capability_request::WorthQueryRetainedCapabilityRequest;
-use {super::super::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind, super::super::WorthQueryRuntimeTimeSample};
+use {
+    super::super::WorthQueryOperationAuthorizationDenial,
+    super::super::WorthQueryRuntimeTimeSample,
+    crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind,
+};
 
 pub(super) fn prepare_exact_policy_paths(
     installed: &WorthQueryInstalledCapabilityPlan,

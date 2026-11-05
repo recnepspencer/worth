@@ -9,7 +9,7 @@ impl<'run> WorthQueryRegisteredProviderAttempt<'run> {
         crate::domain_computation::WorthQuerySessionBoundReadsAndEffects<'run>,
         std::sync::Arc<[crate::domain_computation::WorthQueryProvisionalEffectStep]>,
         Option<crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxRecord>,
-    ) {
+    ){
         (self.staged, self.steps, self.dispatch_outbox)
     }
 }

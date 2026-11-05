@@ -88,7 +88,7 @@ pub enum WorthQueryApplicationOneShotDenialKind {
 #[derive(Clone, Debug)]
 pub struct WorthQueryApplicationOneShotDenial {
     kind: WorthQueryApplicationOneShotDenialKind,
-    payload: std::sync::Arc<OneShotDenialPayload>,
+    pub(in crate::domain_computation::primary_graph) payload: std::sync::Arc<OneShotDenialPayload>,
 }
 
 #[derive(Debug)]
@@ -96,7 +96,8 @@ pub struct OneShotDenialPayload {
     authorization_denial: Option<Box<WorthQueryOperationAuthorizationDenial>>,
     query: String,
     subject: String,
-    custody: std::sync::OnceLock<worth_execution::ExecutionMemoryReservation>,
+    pub(in crate::domain_computation::primary_graph) custody:
+        std::sync::OnceLock<worth_execution::ExecutionMemoryReservation>,
 }
 
 impl PartialEq for WorthQueryApplicationOneShotDenial {
@@ -162,7 +163,10 @@ pub fn authorization_denial(
 
 impl WorthQueryApplicationOneShotDenial {
     /// The shared payload and its one reservation live until the last denial clone drops.
-    fn retain_custody(&self, hold: worth_execution::ExecutionMemoryReservation) {
+    pub(in crate::domain_computation::primary_graph) fn retain_custody(
+        &self,
+        hold: worth_execution::ExecutionMemoryReservation,
+    ) {
         // A concurrent clone may have retained custody first. Its hold remains;
         // the rejected second hold drops and refunds at the set statement.
         let _ = self.payload.custody.set(hold);

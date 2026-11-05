@@ -5,7 +5,6 @@ use super::{
     source_image::{SourceBinding, SourceImage},
 };
 use crate::domain_computation::primary_graph::application_query::AdmissionScopedOps as _;
-use {crate::domain_computation::primary_graph::application_query::one_shot::outcome::material::MaterialCompletion, crate::domain_computation::primary_graph::application_query::WorthQueryApplicationQueryAccessContext, crate::domain_computation::primary_graph::application_query::WorthQueryApplicationQueryControls, crate::domain_computation::vocabulary::primary_graph::retained_selector::WorthQueryObservedScopeSelector, crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation, crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode, crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation, crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession};
 use std::{num::NonZeroUsize, sync::Arc};
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
@@ -19,6 +18,16 @@ use worth_query_declaration::facade::{
 };
 use worth_query_installation::facade::WorthQueryInstalledManagedIndexParent;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
+use {
+    crate::domain_computation::primary_graph::application_query::one_shot::outcome::material::MaterialCompletion,
+    crate::domain_computation::primary_graph::application_query::WorthQueryApplicationQueryAccessContext,
+    crate::domain_computation::primary_graph::application_query::WorthQueryApplicationQueryControls,
+    crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation,
+    crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation,
+    crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
+    crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode,
+    crate::domain_computation::vocabulary::primary_graph::retained_selector::WorthQueryObservedScopeSelector,
+};
 
 pub(in crate::domain_computation::primary_graph::application_query) mod temporary;
 

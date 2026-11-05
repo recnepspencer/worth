@@ -15,9 +15,9 @@ use {
 };
 mod input;
 mod recovery;
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerCommitAuthority;
 pub(super) use input::prepare_input;
 pub(in crate::domain_computation::primary_graph) use recovery::RecoveredProducerPublication;
-use crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerCommitAuthority;
 type Original = Option<std::sync::Arc<crate::domain_computation::primary_graph::application_output_demand::OriginalProducingPublication>>;
 
 /// Both allocations precede effects. None is exposed only through this prepared

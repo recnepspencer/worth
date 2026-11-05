@@ -22,7 +22,10 @@ impl super::ManagedDerivedViewRegistry {
     pub(in crate::domain_computation::primary_graph::application_query) fn issue_predicate_slot(
         &self, execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<crate::domain_computation::primary_graph::vocabulary::application_query::tree::WatchSlot, crate::domain_computation::primary_graph::application_query::managed_index::retention::WorthQueryManagedIndexLifecycleDenial>{
-        use {crate::domain_computation::primary_graph::vocabulary::application_query::tree::WatchSlot, crate::domain_computation::primary_graph::application_query::managed_index::retention::WorthQueryManagedIndexLifecycleDenial as Denial};
+        use {
+            crate::domain_computation::primary_graph::application_query::managed_index::retention::WorthQueryManagedIndexLifecycleDenial as Denial,
+            crate::domain_computation::primary_graph::vocabulary::application_query::tree::WatchSlot,
+        };
         crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation::work(
             execution, 1,
         )?;

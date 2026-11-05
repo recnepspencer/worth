@@ -1,8 +1,8 @@
 //! Sealed test doors over this module's private members.
 use super::*;
-use crate::domain_computation::vocabulary::primary_graph::handler_fact_boundary::CompletedHandlerFactBoundary;
 use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
 use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
+use crate::domain_computation::vocabulary::primary_graph::handler_fact_boundary::CompletedHandlerFactBoundary;
 
 impl RecordedOutput {
     #[doc(hidden)]
@@ -15,7 +15,7 @@ impl RecordedOutput {
     #[doc(hidden)]
     pub fn completed_decision_reuse_for_test(
         &self,
-    ) -> &Option<crate::domain_computation::vocabulary::primary_graph::decision_reuse::CompletedDecisionReuseProof> {
+    ) -> &Option<crate::domain_computation::vocabulary::primary_graph::decision_reuse::CompletedDecisionReuseProof>{
         &self.completed_decision_reuse
     }
 }
@@ -47,7 +47,7 @@ impl RecordedOutput {
     #[doc(hidden)]
     pub fn completed_decision_reuse_mut_for_test(
         &mut self,
-    ) -> &mut Option<crate::domain_computation::vocabulary::primary_graph::decision_reuse::CompletedDecisionReuseProof> {
+    ) -> &mut Option<crate::domain_computation::vocabulary::primary_graph::decision_reuse::CompletedDecisionReuseProof>{
         &mut self.completed_decision_reuse
     }
 }

@@ -2,6 +2,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost;
 use crate::domain_computation::primary_graph::application_query::OutputReadScopedOps;
+use crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial;
 use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
 use worth_query_declaration::facade::{
     application_query::ApplicationQueryBinding,
@@ -15,7 +16,6 @@ use {
     crate::domain_computation::primary_graph::WorthQueryHistoryOutputAuthority,
     crate::domain_computation::request_execution::WorthQueryAdvancementPhase,
 };
-use crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial;
 
 type Rows<S, B> =
     <<B as ApplicationQueryBinding<S>>::ResultBinding as ApplicationStructuredValueBinding>::Value;

@@ -38,7 +38,7 @@ impl WorkflowConditionOperand {
         &self.binding
     }
 
-    fn fields(&self) -> [&str; OPERAND_FIELDS] {
+    pub(in crate::domain_computation::primary_graph) fn fields(&self) -> [&str; OPERAND_FIELDS] {
         [
             &self.name,
             &self.query,
@@ -113,7 +113,9 @@ pub(in crate::domain_computation::primary_graph) fn encode_draft(draft: &[u8]) -
     text
 }
 
-pub(in crate::domain_computation::primary_graph) fn decode_draft(member: &str) -> Option<Box<[u8]>> {
+pub(in crate::domain_computation::primary_graph) fn decode_draft(
+    member: &str,
+) -> Option<Box<[u8]>> {
     if member.is_empty() || !member.len().is_multiple_of(2) {
         return None;
     }
@@ -135,7 +137,9 @@ pub(in crate::domain_computation::primary_graph) fn decode_draft(member: &str) -
 
 /// The exact inverse of [`encode_operands`]: canonical lengths, nonempty
 /// fields, whole operands, and strictly ascending names.
-pub(in crate::domain_computation::primary_graph) fn decode_operands(mut text: &str) -> Option<Box<[WorkflowConditionOperand]>> {
+pub(in crate::domain_computation::primary_graph) fn decode_operands(
+    mut text: &str,
+) -> Option<Box<[WorkflowConditionOperand]>> {
     let mut fields = Vec::new();
     while !text.is_empty() {
         let (length, rest) = text.split_once(':')?;

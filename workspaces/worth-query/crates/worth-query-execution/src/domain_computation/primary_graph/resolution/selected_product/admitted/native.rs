@@ -1,8 +1,8 @@
 //! Original principal admission on a supplied native Query borrow.
 use super::*;
+use crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode;
 use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenial;
 use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenialKind;
-use crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode;
 
 impl<'runtime, Schema: ApplicationSchema>
     crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<'runtime, Schema>

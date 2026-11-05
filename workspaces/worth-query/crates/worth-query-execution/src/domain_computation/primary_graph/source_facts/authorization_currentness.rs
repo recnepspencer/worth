@@ -1,5 +1,12 @@
 //! Map the authorization owner's refusal at ordinary Source consumers.
-use {crate::domain_computation::authorization::SourceReadSupportCurrentnessStop as Support, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind as Authorization, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as Refusal, crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure as Currentness, crate::domain_computation::primary_graph::vocabulary::invariant_projection::work_budget::map_admission_stop, crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop as Stop};
+use {
+    crate::domain_computation::authorization::SourceReadSupportCurrentnessStop as Support,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure as Currentness,
+    crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop as Stop,
+    crate::domain_computation::primary_graph::vocabulary::invariant_projection::work_budget::map_admission_stop,
+    crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind as Authorization,
+    crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as Refusal,
+};
 pub(in crate::domain_computation::primary_graph) fn map_source_authorization_currentness(
     stop: Support,
 ) -> Stop {

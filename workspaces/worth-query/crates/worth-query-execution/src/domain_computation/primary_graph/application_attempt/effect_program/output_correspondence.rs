@@ -17,8 +17,8 @@ mod family_entry;
 pub use family_entry::WorthQueryApplicationOutputFamilyEntry;
 
 mod projection;
-pub use projection::WorthQueryApplicationOutputEntity;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::projection::WorthQueryApplicationOutputProjectionDenial;
+pub use projection::WorthQueryApplicationOutputEntity;
 
 pub(crate) mod role_use;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::role_use::OutputRoleUse;
@@ -34,7 +34,6 @@ struct CommittedOutputBinding {
     entity_type: TypeId,
     entity: EntityId,
 }
-
 
 /// Sealed role-to-identity correspondence resolved from one Relational commit.
 ///

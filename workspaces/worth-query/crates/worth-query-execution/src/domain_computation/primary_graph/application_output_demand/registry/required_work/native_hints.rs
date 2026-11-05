@@ -9,9 +9,6 @@ use super::RequiredWorkMembership;
 use crate::domain_computation::primary_graph::vocabulary::application_output_demand::native_hints::NativeBranch;
 use crate::domain_computation::primary_graph::vocabulary::application_output_demand::native_hints::NativeHint;
 
-
-
-
 impl RequiredWorkMembership {
     pub(in crate::domain_computation::primary_graph) fn prepared_native_branch(
         branch: BranchId,
@@ -33,6 +30,5 @@ impl RequiredWorkMembership {
         })
     }
 }
-
 
 mod court_doors_for_test;

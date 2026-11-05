@@ -126,10 +126,15 @@ fn original_law_payload_survives_all_query_refusal_translations() {
         bootstrap_publication::map_bootstrap_commit_denial, WorthQueryApplicationCommitDenial,
         WorthQueryApplicationCommitDenialStage,
     };
-    use {crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind, crate::domain_computation::WorthQueryProviderSessionFailure, crate::domain_computation::WorthQueryProviderSessionProtocolStage, crate::domain_computation::WorthQueryRelationLawDenial};
     use worth_relational::facade::identity::{EntityId, KindId, PartitionId};
     use worth_relational::facade::schema::ContractId;
     use worth_relational::facade::transactions::{CreatedEntityRef, EntityReference};
+    use {
+        crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
+        crate::domain_computation::WorthQueryProviderSessionFailure,
+        crate::domain_computation::WorthQueryProviderSessionProtocolStage,
+        crate::domain_computation::WorthQueryRelationLawDenial,
+    };
 
     // Payload transport only: these coordinates make no claim of graph admission.
     // The installed public graph court proves actual law/identity derivation.

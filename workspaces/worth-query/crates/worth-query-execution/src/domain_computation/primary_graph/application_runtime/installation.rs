@@ -379,7 +379,7 @@ fn seal_application_graph(
 ) -> Result<
     PublishedApplicationGraph<crate::domain_computation::primary_graph::vocabulary::managed_bridge::WorthQueryInstalledApplicationBridge>,
     WorthQueryPrimaryGraphInstallationDenial,
-> {
+>{
     Ok(PublishedApplicationGraph {
         runtime: graph.runtime,
         publication: graph.publication,

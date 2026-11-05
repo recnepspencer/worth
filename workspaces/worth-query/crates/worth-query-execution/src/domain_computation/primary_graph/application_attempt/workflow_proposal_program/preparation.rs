@@ -1,7 +1,7 @@
-use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::primary_graph::application_attempt::ReadSetScopedOps;
 use crate::domain_computation::primary_graph::application_attempt::WorkflowProposalProgramPublicationScopedOps;
 use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_declaration::facade::{
     application_program::ApplicationWorkflowSpec,
     application_schema::{ApplicationOperationMarkerIdentity, ApplicationStructuredValueBinding},

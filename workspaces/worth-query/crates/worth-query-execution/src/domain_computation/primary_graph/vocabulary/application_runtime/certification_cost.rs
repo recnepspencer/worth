@@ -10,11 +10,14 @@ use worth_relational::facade::inspection::RelationalMvccCostScope;
 /// `observe_certification_cost` after the work. Capturing it changes nothing.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WorthQueryCertificationCostScope {
-    relational: RelationalMvccCostScope,
-    application_work: WorthQueryApplicationAttemptWorkSnapshot,
-    output_producer_attempts: u64,
-    world_retention: WorthQueryCertificationWorldRetention,
-    world_history: WorthQueryCertificationWorldHistory,
+    pub(in crate::domain_computation::primary_graph) relational: RelationalMvccCostScope,
+    pub(in crate::domain_computation::primary_graph) application_work:
+        WorthQueryApplicationAttemptWorkSnapshot,
+    pub(in crate::domain_computation::primary_graph) output_producer_attempts: u64,
+    pub(in crate::domain_computation::primary_graph) world_retention:
+        WorthQueryCertificationWorldRetention,
+    pub(in crate::domain_computation::primary_graph) world_history:
+        WorthQueryCertificationWorldHistory,
 }
 
 /// The cost of the work done since a [`WorthQueryCertificationCostScope`] was
@@ -24,14 +27,19 @@ pub struct WorthQueryCertificationCostScope {
 /// Read-only evidence for certification; it grants nothing.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WorthQueryCertificationCostObservation {
-    relational: RelationalMvccCostObservation,
-    application_work: WorthQueryCertificationApplicationWork,
-    output_producer_attempts: u64,
-    world_retention_before: WorthQueryCertificationWorldRetention,
-    world_retention_after: WorthQueryCertificationWorldRetention,
-    world_history_before: WorthQueryCertificationWorldHistory,
-    world_history_after: WorthQueryCertificationWorldHistory,
-    world_reserved_entry_writes: u64,
+    pub(in crate::domain_computation::primary_graph) relational: RelationalMvccCostObservation,
+    pub(in crate::domain_computation::primary_graph) application_work:
+        WorthQueryCertificationApplicationWork,
+    pub(in crate::domain_computation::primary_graph) output_producer_attempts: u64,
+    pub(in crate::domain_computation::primary_graph) world_retention_before:
+        WorthQueryCertificationWorldRetention,
+    pub(in crate::domain_computation::primary_graph) world_retention_after:
+        WorthQueryCertificationWorldRetention,
+    pub(in crate::domain_computation::primary_graph) world_history_before:
+        WorthQueryCertificationWorldHistory,
+    pub(in crate::domain_computation::primary_graph) world_history_after:
+        WorthQueryCertificationWorldHistory,
+    pub(in crate::domain_computation::primary_graph) world_reserved_entry_writes: u64,
 }
 
 /// Counts of application attempt work steps done during an observed interval,
@@ -39,19 +47,19 @@ pub struct WorthQueryCertificationCostObservation {
 /// cleanups, and external dispatch admissions.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct WorthQueryCertificationApplicationWork {
-    retained_resolutions: u64,
-    managed_bridge_plans: u64,
-    provider_session_readmissions: u64,
-    provider_session_preparations: u64,
-    staged_session_preparations: u64,
-    attempt_registrations: u64,
-    overlay_stagings: u64,
-    invariant_state_loads: u64,
-    invariant_executions: u64,
-    prepared_commits: u64,
-    attempt_aborts: u64,
-    managed_cleanups: u64,
-    external_dispatch_admissions: u64,
+    pub(in crate::domain_computation::primary_graph) retained_resolutions: u64,
+    pub(in crate::domain_computation::primary_graph) managed_bridge_plans: u64,
+    pub(in crate::domain_computation::primary_graph) provider_session_readmissions: u64,
+    pub(in crate::domain_computation::primary_graph) provider_session_preparations: u64,
+    pub(in crate::domain_computation::primary_graph) staged_session_preparations: u64,
+    pub(in crate::domain_computation::primary_graph) attempt_registrations: u64,
+    pub(in crate::domain_computation::primary_graph) overlay_stagings: u64,
+    pub(in crate::domain_computation::primary_graph) invariant_state_loads: u64,
+    pub(in crate::domain_computation::primary_graph) invariant_executions: u64,
+    pub(in crate::domain_computation::primary_graph) prepared_commits: u64,
+    pub(in crate::domain_computation::primary_graph) attempt_aborts: u64,
+    pub(in crate::domain_computation::primary_graph) managed_cleanups: u64,
+    pub(in crate::domain_computation::primary_graph) external_dispatch_admissions: u64,
 }
 
 /// A snapshot of what the product world is holding: pins, component
@@ -59,24 +67,24 @@ pub struct WorthQueryCertificationApplicationWork {
 /// publication attempts.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct WorthQueryCertificationWorldRetention {
-    unique_pins: usize,
-    component_obligations: usize,
-    in_flight_acquisitions: usize,
-    reserved_unique_pins: usize,
-    reserved_acquisitions: usize,
-    observations: usize,
-    active_publication_attempts: usize,
+    pub(in crate::domain_computation::primary_graph) unique_pins: usize,
+    pub(in crate::domain_computation::primary_graph) component_obligations: usize,
+    pub(in crate::domain_computation::primary_graph) in_flight_acquisitions: usize,
+    pub(in crate::domain_computation::primary_graph) reserved_unique_pins: usize,
+    pub(in crate::domain_computation::primary_graph) reserved_acquisitions: usize,
+    pub(in crate::domain_computation::primary_graph) observations: usize,
+    pub(in crate::domain_computation::primary_graph) active_publication_attempts: usize,
 }
 
 /// A snapshot of the product world's commit history: installed and reserved
 /// commits, metadata bytes, and reserved entry writes.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct WorthQueryCertificationWorldHistory {
-    installed_commits: usize,
-    reserved_commits: usize,
-    metadata_bytes: usize,
-    reserved_entry_writes: u64,
-    reachability_lookups: u64,
+    pub(in crate::domain_computation::primary_graph) installed_commits: usize,
+    pub(in crate::domain_computation::primary_graph) reserved_commits: usize,
+    pub(in crate::domain_computation::primary_graph) metadata_bytes: usize,
+    pub(in crate::domain_computation::primary_graph) reserved_entry_writes: u64,
+    pub(in crate::domain_computation::primary_graph) reachability_lookups: u64,
 }
 
 impl WorthQueryCertificationCostObservation {

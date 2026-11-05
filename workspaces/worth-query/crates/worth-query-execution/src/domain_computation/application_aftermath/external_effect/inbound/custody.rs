@@ -6,10 +6,10 @@ use std::sync::{Arc, Mutex};
 use worth_query_installation::facade::InstalledInboundOccurrenceContract;
 use worth_runtime_world::facade::CompositeCommitIdentity;
 
-use crate::domain_computation::vocabulary::application_aftermath::correlation::ExternalEffectCorrelationIdentity;
 use super::WorthQueryInboundOccurrenceClaims;
 use super::WorthQueryInboundTerminalOwnerResult;
 use crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxObservation;
+use crate::domain_computation::vocabulary::application_aftermath::correlation::ExternalEffectCorrelationIdentity;
 
 mod acceptance;
 pub(crate) mod publication_permit;

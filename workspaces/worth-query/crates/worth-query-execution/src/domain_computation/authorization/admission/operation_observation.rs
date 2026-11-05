@@ -6,12 +6,22 @@ use super::{
 };
 use crate::domain_computation::authorization::admission::requirement_observation::RequirementObservationParentOps;
 use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
-use {crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind, crate::domain_computation::authorization::WorthQueryPrincipalCurrentnessDependency, crate::domain_computation::authorization::WorthQueryRetainedAuthorizationDecisionFacts};
-use {crate::domain_computation::primary_graph::validate_freshness_at_snapshot, crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity, crate::domain_computation::primary_graph::WorthQueryAuthenticatedPrincipal, crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode};
 use worth_query_declaration::facade::authentication::WorthQueryExternalPrincipalIdentityBinding;
 use worth_query_installation::facade::{
     ApplicationScalarValueBinding, ApplicationSchema, WorthQueryInstalledApplicationOperation,
     WorthQueryInstalledApplicationOperationAuthorization,
+};
+use {
+    crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
+    crate::domain_computation::authorization::WorthQueryPrincipalCurrentnessDependency,
+    crate::domain_computation::authorization::WorthQueryRetainedAuthorizationDecisionFacts,
+    crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind,
+};
+use {
+    crate::domain_computation::primary_graph::validate_freshness_at_snapshot,
+    crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity,
+    crate::domain_computation::primary_graph::WorthQueryAuthenticatedPrincipal,
+    crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode,
 };
 
 pub(in crate::domain_computation::authorization) trait OperationObservationScopedOps<Schema>:

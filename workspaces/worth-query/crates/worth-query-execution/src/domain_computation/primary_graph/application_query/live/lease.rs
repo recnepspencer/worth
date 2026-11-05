@@ -122,7 +122,7 @@ where
 {
     pub fn graph_work_session_identity(
         &self,
-    ) -> crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity {
+    ) -> crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity{
         self.graph_work
             .as_ref()
             .expect("an open live lease retains its graph-work session")

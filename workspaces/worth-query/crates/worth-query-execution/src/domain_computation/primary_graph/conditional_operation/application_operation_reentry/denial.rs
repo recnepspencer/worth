@@ -27,7 +27,10 @@ mod tests {
 
     #[test]
     fn native_decode_cancellation_remains_control_stop_and_codec_refusal_remains_terminal() {
-        use {crate::domain_computation::primary_graph::WorthQueryInvariantProjectionDenialKind as Kind, crate::domain_computation::vocabulary::primary_graph::value_decode::WorthQueryValueDecodeDenial as Decode};
+        use {
+            crate::domain_computation::primary_graph::WorthQueryInvariantProjectionDenialKind as Kind,
+            crate::domain_computation::vocabulary::primary_graph::value_decode::WorthQueryValueDecodeDenial as Decode,
+        };
         assert!(matches!(
             WorthQueryTemporalReentryDenial::invariant_kind(
                 Kind::ValueDecode(Decode::Checkpoint(

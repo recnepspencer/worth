@@ -1,11 +1,8 @@
 //! Host lease requests borrow the one execution authority installed in World.
 use super::WorthQueryPrimaryGraphApplicationRuntime;
-use worth_execution::{ExecutionResourceLease, LeaseDenial, LeaseRequest};
-use worth_query_installation::facade::ApplicationSchema;
 use crate::domain_computation::primary_graph::vocabulary::application_runtime::execution_memory::WorthQueryExecutionLeaseDenial;
-
-
-
+use worth_execution::{ExecutionResourceLease, LeaseRequest};
+use worth_query_installation::facade::ApplicationSchema;
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     /// Requests the caller's explicit policy from the host authority in World.

@@ -12,8 +12,6 @@ use worth_runtime_world::facade::{
 use super::dependency::ViewDependency;
 use crate::domain_computation::primary_graph::vocabulary::application_query::publication::ViewChange;
 
-
-
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 enum Target<Key> {
     Membership,

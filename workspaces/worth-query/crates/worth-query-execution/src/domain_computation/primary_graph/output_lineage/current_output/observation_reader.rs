@@ -2,9 +2,9 @@
 
 use super::*;
 use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence;
-use worth_relational::facade::mvcc::CompanionPreflightStop;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
 use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
+use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 /// One retained output as a retained observation selects it. Holding it
 /// keeps its lineage row. The row is the latest one at or before the

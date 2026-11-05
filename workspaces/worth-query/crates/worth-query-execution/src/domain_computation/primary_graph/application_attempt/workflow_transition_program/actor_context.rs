@@ -1,12 +1,12 @@
 //! Original typed command locators. This carries neither an actor nor a grant.
 use super::*;
 use crate::domain_computation::execution_runtime::WorthQueryApplicationIdentityHost;
+use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
 use worth_query_declaration::facade::{
     application_capability::ApplicationWorkflowRecordedActorSource,
     application_operation::ApplicationMutationBinding,
     application_program::ApplicationProgramRevision,
 };
-use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
 
 /// Opaque original typed command locators for native capability observation.
 /// Only the designated publication owner constructs this context. It carries

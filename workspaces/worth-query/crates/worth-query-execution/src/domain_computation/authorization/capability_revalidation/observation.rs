@@ -37,7 +37,7 @@ impl WorthQueryCapabilityRevalidationObservation<'_> {
 
     pub(in crate::domain_computation::authorization) const fn session_identity(
         &self,
-    ) -> crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity {
+    ) -> crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity{
         self.session
     }
     pub(in crate::domain_computation::authorization) const fn relational(

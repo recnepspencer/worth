@@ -1,10 +1,10 @@
 //! Current-body views over checked ordinals and a freshly admitted overlay.
 use super::{application_facts::*, WorthQueryPrimaryGraphApplicationDecisionFact as Decision};
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::CompletedReadScopes;
 use crate::domain_computation::primary_graph::application_attempt::{
     CompletedFactProjection, CompletedOriginalRead,
 };
 use crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::scope_bindings::CompletedReadScopes;
 use std::{collections::BTreeMap, sync::Arc};
 
 mod preimage;

@@ -3,7 +3,7 @@ use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDe
 use crate::domain_computation::primary_graph::vocabulary::application_query::admission::MetadataValidationDenial;
 use crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial;
 
-impl From<MetadataValidationDenial> for Denial {
+impl From<MetadataValidationDenial> for WorthQueryApplicationHistoryDenial {
     fn from(cause: MetadataValidationDenial) -> Self {
         match cause {
             MetadataValidationDenial::Session => Self::SubjectMismatch,

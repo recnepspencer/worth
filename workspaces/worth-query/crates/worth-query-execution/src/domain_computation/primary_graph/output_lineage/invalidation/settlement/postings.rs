@@ -2,9 +2,9 @@
 use super::super::fact_key::FactPostingKey;
 use super::super::fact_keys;
 use super::super::fact_keys::FactKeyProjectionStop;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
 use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
 use im::OrdMap;
 use im::OrdSet;
 use std::hash::Hash;

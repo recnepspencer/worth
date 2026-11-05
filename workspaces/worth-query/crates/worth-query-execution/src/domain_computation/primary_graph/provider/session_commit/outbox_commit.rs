@@ -1,11 +1,9 @@
 //! Exact dispatch-outbox identity sealed from the authoritative commit artifact.
 
-use {crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxRecord, crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryPendingDispatchOutbox};
-use worth_relational::facade::transactions::{CommitResult, RecordRef};
+use crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryPendingDispatchOutbox;
 use crate::domain_computation::vocabulary::primary_graph::outbox_commit::WorthQueryCommittedDispatchOutboxBinding;
 use crate::domain_computation::vocabulary::primary_graph::outbox_commit::WorthQueryCommittedDispatchOutboxBindingDenial;
-
-
+use worth_relational::facade::transactions::{CommitResult, RecordRef};
 
 /// Owner-sealed outcome of binding one pending outbox create to its commit.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -23,8 +21,6 @@ pub struct WorthQueryCommittedDispatchOutboxResolution {
 pub struct WorthQueryCommittedDispatchOutboxReceiptSeal {
     binding: Option<WorthQueryCommittedDispatchOutboxBinding>,
 }
-
-
 
 impl WorthQueryCommittedDispatchOutboxResolution {
     pub(in crate::domain_computation::primary_graph::provider) fn from_commit(
@@ -61,6 +57,5 @@ impl WorthQueryCommittedDispatchOutboxReceiptSeal {
         self.binding
     }
 }
-
 
 mod court_doors_for_test;

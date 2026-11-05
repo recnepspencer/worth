@@ -3,8 +3,8 @@
 use std::sync::{Arc, Mutex};
 
 use super::{decrement, OutstandingDispatchOwner};
-use crate::domain_computation::vocabulary::application_aftermath::correlation::ExternalEffectCorrelationIdentity;
 use crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxObservation;
+use crate::domain_computation::vocabulary::application_aftermath::correlation::ExternalEffectCorrelationIdentity;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryOutstandingInFlightDenial {

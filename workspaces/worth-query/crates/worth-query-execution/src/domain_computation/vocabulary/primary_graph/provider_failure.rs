@@ -7,8 +7,8 @@ use worth_execution::ExecutionRequest;
 
 #[derive(Debug)]
 pub(in crate::domain_computation) struct PaidProviderDenial<D> {
-    cause: D,
-    _memory: Option<ExecutionMemoryReservation>,
+    pub(in crate::domain_computation) cause: D,
+    pub(in crate::domain_computation) _memory: Option<ExecutionMemoryReservation>,
 }
 
 impl<D: std::error::Error> std::fmt::Display for PaidProviderDenial<D> {
@@ -26,15 +26,17 @@ impl<D: std::error::Error + 'static> std::error::Error for PaidProviderDenial<D>
 /// A provider's concrete refusal retained without formatting or losing its type.
 #[derive(Clone, Debug)]
 pub struct WorthQueryManagedIndexProviderFailure {
-    cause: Arc<dyn std::error::Error + Send + Sync>,
-    retained_bytes: u64,
-    equal: fn(
+    pub(in crate::domain_computation) cause: Arc<dyn std::error::Error + Send + Sync>,
+    pub(in crate::domain_computation) retained_bytes: u64,
+    pub(in crate::domain_computation) equal: fn(
         &(dyn std::error::Error + Send + Sync + 'static),
         &(dyn std::error::Error + Send + Sync + 'static),
     ) -> bool,
 }
 
-pub(in crate::domain_computation) fn equal_cause<D: Eq + std::error::Error + Send + Sync + 'static>(
+pub(in crate::domain_computation) fn equal_cause<
+    D: Eq + std::error::Error + Send + Sync + 'static,
+>(
     left: &(dyn std::error::Error + Send + Sync + 'static),
     right: &(dyn std::error::Error + Send + Sync + 'static),
 ) -> bool {

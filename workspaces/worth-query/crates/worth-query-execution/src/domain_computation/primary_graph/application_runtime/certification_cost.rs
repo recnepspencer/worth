@@ -4,23 +4,16 @@ use std::sync::atomic::Ordering;
 
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::inspection::{
-    RelationalBranchSharingInspectionDenial, RelationalMvccCostObservation,
-    RelationalMvccCostScope, RelationalRetainedStorageInspectionDenial,
-    RelationalRetainedStorageObservation,
+    RelationalBranchSharingInspectionDenial, RelationalMvccCostScope,
+    RelationalRetainedStorageInspectionDenial, RelationalRetainedStorageObservation,
 };
 
 use super::WorthQueryPrimaryGraphApplicationRuntime;
-use crate::domain_computation::primary_graph::vocabulary::provider::application_attempt_work::WorthQueryApplicationAttemptWorkSnapshot;
 use crate::domain_computation::primary_graph::vocabulary::application_runtime::certification_cost::WorthQueryCertificationApplicationWork;
 use crate::domain_computation::primary_graph::vocabulary::application_runtime::certification_cost::WorthQueryCertificationCostObservation;
 use crate::domain_computation::primary_graph::vocabulary::application_runtime::certification_cost::WorthQueryCertificationCostScope;
 use crate::domain_computation::primary_graph::vocabulary::application_runtime::certification_cost::WorthQueryCertificationWorldHistory;
 use crate::domain_computation::primary_graph::vocabulary::application_runtime::certification_cost::WorthQueryCertificationWorldRetention;
-
-
-
-
-
 
 /// Read-only cost measurement on an application runtime, for certification.
 ///
@@ -177,7 +170,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     }
 }
 
-
 macro_rules! accessors {
     ($type:ty; $($name:ident : $kind:ty),+ $(,)?) => {
         impl $type { $(pub const fn $name(self) -> $kind { self.$name })+ }
@@ -201,7 +193,6 @@ accessors!(WorthQueryCertificationWorldHistory;
     installed_commits: usize, reserved_commits: usize, metadata_bytes: usize,
     reserved_entry_writes: u64, reachability_lookups: u64,
 );
-
 
 #[derive(Debug)]
 pub enum WorthQueryCertificationCostDenial {

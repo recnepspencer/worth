@@ -8,7 +8,11 @@ use worth_relational::facade::authorization::{
 
 use super::super::super::capability_registry::WorthQueryInstalledCapabilityPlan;
 use super::super::super::retained_capability_request::WorthQueryRetainedCapabilityRequest;
-use {super::super::super::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind, super::super::super::WorthQueryRuntimeTimeSample};
+use {
+    super::super::super::WorthQueryOperationAuthorizationDenial,
+    super::super::super::WorthQueryRuntimeTimeSample,
+    crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind,
+};
 
 use super::ObservedDelegationTransition;
 

@@ -52,6 +52,7 @@ pub(in crate::domain_computation) use workflow_approval_dependencies::WorthQuery
 pub(in crate::domain_computation) use crate::domain_computation::runtime_time::WorthQueryRuntimeClock;
 pub(in crate::domain_computation) use crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSample;
 
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind;
 pub(in crate::domain_computation) use application_commit_authorization::WorthQueryApplicationCommitAuthorization;
 pub(super) use bridge_binding::bridge_authorization_binding_identity;
 pub(in crate::domain_computation) use capability_decision_fact::WorthQueryCapabilityCommitBasis;
@@ -74,8 +75,6 @@ pub(in crate::domain_computation) use denial::WorthQueryAdmissionLapse;
 pub use denial::WorthQueryApplicationAuthorizationExplanationCause;
 pub use denial::WorthQueryOperationAuthorizationDenial;
 pub use denial::WorthQueryOperationAuthorizationDenialIdentity;
-use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind;
-use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind;
 pub(in crate::domain_computation) use elevation_progression::WorthQueryCurrentElevationSupport;
 pub use elevation_progression::WorthQueryElevationApprovalAuthorizationDenial;
 pub(in crate::domain_computation) use elevation_progression::WorthQueryElevationApprovalBinding;

@@ -3,7 +3,6 @@ use super::super::super::{
     WorthQueryPrimaryGraphInstallationDenial as Denial,
     WorthQueryPrimaryGraphInstallationDenialKind as DenialKind,
 };
-use {super::super::WorthQueryApplicationConditionalBinding as Conditional, super::super::WorthQueryApplicationProducerBinding as Producer, crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerLifecyclePosture, super::super::WorthQueryProducerOutputFamily};
 use std::marker::PhantomData;
 use worth_query_declaration::facade::{
     application_operation::{ApplicationMutationBinding, WorthQueryApplicationOutputRole},
@@ -14,6 +13,12 @@ use worth_query_declaration::facade::{
     },
     application_query::ApplicationQueryBinding,
     application_schema::ApplicationSchema,
+};
+use {
+    super::super::WorthQueryApplicationConditionalBinding as Conditional,
+    super::super::WorthQueryApplicationProducerBinding as Producer,
+    super::super::WorthQueryProducerOutputFamily,
+    crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerLifecyclePosture,
 };
 
 /// One required Initial/Preserve declaration. It contains no runtime values.

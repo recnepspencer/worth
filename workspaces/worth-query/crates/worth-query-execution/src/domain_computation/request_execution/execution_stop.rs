@@ -6,7 +6,12 @@ use worth_execution::WorkCeilingDenial;
 
 use worth_execution::{LeaseDenial, MapKernelStop, MemoryLimitDenial, MemoryLimitLevel};
 
-use {crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationCheckpointDenial, crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationInterruption, crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial, crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryMemoryLimitLevel};
+use {
+    crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationCheckpointDenial,
+    crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationInterruption,
+    crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial,
+    crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryMemoryLimitLevel,
+};
 
 type Resource = WorthQueryManagedComputationResourceDenial;
 

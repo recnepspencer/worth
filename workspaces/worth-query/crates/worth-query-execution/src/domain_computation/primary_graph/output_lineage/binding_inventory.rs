@@ -1,6 +1,6 @@
 //! The existing schema installation supplies binding names without registration.
-use crate::domain_computation::primary_graph::vocabulary::output_binding_identity::OutputBindingIdentity;
 use super::WorthQueryApplicationOutputLineage;
+use crate::domain_computation::primary_graph::vocabulary::output_binding_identity::OutputBindingIdentity;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 
 impl WorthQueryApplicationOutputLineage {

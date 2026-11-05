@@ -6,7 +6,10 @@ use worth_query_declaration::lifecycle_effect_derivation_authority::{
     derive_application_capability_lifecycle_effect, DerivedApplicationCapabilityLifecycleEffect,
 };
 
-use {super::super::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind};
+use {
+    super::super::WorthQueryOperationAuthorizationDenial,
+    crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind,
+};
 
 pub(super) fn derive_lifecycle_effect<Input: 'static>(
     transition: &ApplicationCapabilityTransitionBinding,

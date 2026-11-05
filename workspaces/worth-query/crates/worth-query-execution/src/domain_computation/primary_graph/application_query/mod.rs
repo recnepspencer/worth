@@ -15,7 +15,9 @@ pub(crate) mod basis;
 pub(crate) mod batch;
 pub(in crate::domain_computation::primary_graph) use basis::PreparedSelectedReadIndexes;
 pub(in crate::domain_computation::primary_graph) use basis::WorthQueryApplicationQueryBasisCustody;
-pub use {batch::WorthQueryApplicationQueryBatchAdmission, batch::WorthQueryApplicationQueryBatchReadPlan};
+pub use {
+    batch::WorthQueryApplicationQueryBatchAdmission, batch::WorthQueryApplicationQueryBatchReadPlan,
+};
 mod continuation;
 mod control_validation;
 pub(crate) mod controls;
@@ -35,16 +37,40 @@ mod execution_validation;
 
 mod graph_read_plan_binding;
 mod history;
-pub use {history::WorthQueryAdmittedApplicationHistoryCapture, history::WorthQueryApplicationHistoryCaptureLimits, history::WorthQueryApplicationHistoryCursor, history::WorthQueryApplicationHistoryEntry, history::WorthQueryApplicationHistoryPage, history::WorthQueryApplicationHistoryPageLimits, history::WorthQueryCapturedApplicationHistorySubjects};
 pub use one_shot::WorthQueryApplicationHistoryCaptureResult;
+pub use {
+    history::WorthQueryAdmittedApplicationHistoryCapture,
+    history::WorthQueryApplicationHistoryCaptureLimits,
+    history::WorthQueryApplicationHistoryCursor, history::WorthQueryApplicationHistoryEntry,
+    history::WorthQueryApplicationHistoryPage, history::WorthQueryApplicationHistoryPageLimits,
+    history::WorthQueryCapturedApplicationHistorySubjects,
+};
 mod installed_schema_currentness;
 mod live;
 pub(crate) mod managed_index;
 
-pub use {managed_index::WorthQueryManagedIndex, managed_index::WorthQueryManagedIndexCandidateWriter, managed_index::WorthQueryManagedIndexContentReadDenial, managed_index::WorthQueryManagedIndexDenial, managed_index::WorthQueryManagedIndexDenialCause, managed_index::WorthQueryManagedIndexLifecycle, managed_index::WorthQueryManagedIndexNodeId, managed_index::WorthQueryManagedIndexNodeRegion, managed_index::WorthQueryManagedIndexNodeWriter, managed_index::WorthQueryManagedIndexNodes, managed_index::WorthQueryManagedIndexPredicateProvider, managed_index::WorthQueryManagedIndexPredicateSummary, managed_index::WorthQueryManagedIndexProvider, managed_index::WorthQueryManagedIndexProviderStop, managed_index::WorthQueryManagedIndexRefinementProvider, managed_index::WorthQueryManagedIndexRefusal, managed_index::WorthQueryManagedIndexSourceChange, managed_index::WorthQueryManagedIndexSourceRow, managed_index::WorthQueryManagedIndexSourceRows, managed_index::WorthQueryManagedIndexSummarySources, managed_index::WorthQueryManagedIndexTextReadDenial};
 pub use managed_index::{
     WorthQueryManagedIndexWatch, WorthQueryManagedIndexWatchOutcome,
     WorthQueryManagedIndexWatchUpdate,
+};
+pub use {
+    managed_index::WorthQueryManagedIndex, managed_index::WorthQueryManagedIndexCandidateWriter,
+    managed_index::WorthQueryManagedIndexContentReadDenial,
+    managed_index::WorthQueryManagedIndexDenial, managed_index::WorthQueryManagedIndexDenialCause,
+    managed_index::WorthQueryManagedIndexLifecycle, managed_index::WorthQueryManagedIndexNodeId,
+    managed_index::WorthQueryManagedIndexNodeRegion,
+    managed_index::WorthQueryManagedIndexNodeWriter, managed_index::WorthQueryManagedIndexNodes,
+    managed_index::WorthQueryManagedIndexPredicateProvider,
+    managed_index::WorthQueryManagedIndexPredicateSummary,
+    managed_index::WorthQueryManagedIndexProvider,
+    managed_index::WorthQueryManagedIndexProviderStop,
+    managed_index::WorthQueryManagedIndexRefinementProvider,
+    managed_index::WorthQueryManagedIndexRefusal,
+    managed_index::WorthQueryManagedIndexSourceChange,
+    managed_index::WorthQueryManagedIndexSourceRow,
+    managed_index::WorthQueryManagedIndexSourceRows,
+    managed_index::WorthQueryManagedIndexSummarySources,
+    managed_index::WorthQueryManagedIndexTextReadDenial,
 };
 mod native_access;
 pub(in crate::domain_computation::primary_graph) use native_access::ApplicationQueryNativeAccess;
@@ -119,13 +145,33 @@ pub use live::{
     WorthQueryApplicationLiveOpenDenialKind, WorthQueryApplicationLiveOutcome,
     WorthQueryApplicationLiveOverflow, WorthQueryApplicationLiveUpdate,
 };
-pub(in crate::domain_computation::primary_graph) use {observed_source::BoundStableObservedSourceFacts, observed_source::PreparedObservedSourceExpectation, crate::domain_computation::vocabulary::primary_graph::retained_selector::WorthQueryObservedScopeSelector, observed_source::WorthQueryObservedSourceEpoch, observed_source::WorthQueryObservedSourceSelection};
-pub use {observed_source::WorthQueryBoundSourceExpectation, observed_source::WorthQueryObservedResultSet, observed_source::WorthQueryObservedSource, observed_source::WorthQueryPendingSourceExpectation, observed_source::WorthQuerySourceExpectationDenial};
-pub use {one_shot::WorthQueryApplicationBatchReadDenial, one_shot::WorthQueryApplicationBatchResult, one_shot::WorthQueryApplicationOneShotResult};
-pub use {projection::WorthQueryApplicationDisclosed, projection::WorthQueryApplicationOmission, projection::WorthQueryApplicationProjection, projection::WorthQueryApplicationProjectionRow, projection::WorthQueryApplicationProjectionRows};
 pub use readiness::WorthQueryPrimaryGraphApplicationReadinessSnapshot;
-pub use {resource_lifecycle::WorthQueryApplicationBasisObservation, resource_lifecycle::WorthQueryApplicationBasisObserver};
 pub use retained_read::WorthQueryApplicationReadObservation;
+pub(in crate::domain_computation::primary_graph) use {
+    observed_source::BoundStableObservedSourceFacts,
+    observed_source::PreparedObservedSourceExpectation,
+    observed_source::WorthQueryObservedSourceEpoch,
+    observed_source::WorthQueryObservedSourceSelection,
+};
+pub use {
+    observed_source::WorthQueryBoundSourceExpectation,
+    observed_source::WorthQueryObservedResultSet, observed_source::WorthQueryObservedSource,
+    observed_source::WorthQueryPendingSourceExpectation,
+    observed_source::WorthQuerySourceExpectationDenial,
+};
+pub use {
+    one_shot::WorthQueryApplicationBatchReadDenial, one_shot::WorthQueryApplicationBatchResult,
+    one_shot::WorthQueryApplicationOneShotResult,
+};
+pub use {
+    projection::WorthQueryApplicationDisclosed, projection::WorthQueryApplicationOmission,
+    projection::WorthQueryApplicationProjection, projection::WorthQueryApplicationProjectionRow,
+    projection::WorthQueryApplicationProjectionRows,
+};
+pub use {
+    resource_lifecycle::WorthQueryApplicationBasisObservation,
+    resource_lifecycle::WorthQueryApplicationBasisObserver,
+};
 
 pub use one_shot::{WorthQueryDependentPairReadContext, WorthQueryDerivedPairReadPlans};
 
@@ -203,3 +249,4 @@ pub use derived_view::ReconstructLazyOps;
 pub use derived_view::ReconstructParallelOps;
 pub use derived_view::RefreshBatchOps;
 pub use document_history::OutputIntentOps;
+pub(in crate::domain_computation::primary_graph) use crate::domain_computation::vocabulary::primary_graph::retained_selector::WorthQueryObservedScopeSelector;

@@ -66,7 +66,10 @@ impl FailedDecisionRead {
         self,
         operation: &str,
     ) -> crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial {
-        use {crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial as Denial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind};
+        use {
+            crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial as Denial,
+            crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind,
+        };
         match self {
             Self::Execution(cause) => Denial::relational_read_stopped(cause, operation),
             failed => Denial::new(Kind::MissingAuthoritativeFact, format!("{failed:?}")),

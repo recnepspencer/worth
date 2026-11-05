@@ -201,5 +201,5 @@ pub(in crate::domain_computation::primary_graph) trait ResumeScopedOps<Schema: A
 impl<Schema: ApplicationSchema, HostRuntime: crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema> + ?Sized> ResumeScopedOps<Schema> for HostRuntime {}
 
 pub(crate) mod court_doors_for_test;
-pub use court_doors_for_test::ResumeDoorsOps;
 use crate::domain_computation::vocabulary::application_aftermath::correlation::ExternalEffectCorrelationIdentity;
+pub use court_doors_for_test::ResumeDoorsOps;

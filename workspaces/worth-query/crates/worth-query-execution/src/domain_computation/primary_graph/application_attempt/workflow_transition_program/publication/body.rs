@@ -5,7 +5,12 @@ use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationIdentities, ApplicationMutationScopeBinding,
 };
 use worth_query_installation::facade::ApplicationSchema;
-use {crate::domain_computation::primary_graph::MutationHandlerExecutionDenial, crate::domain_computation::primary_graph::WorthQueryOperationBodyDecision, crate::domain_computation::primary_graph::vocabulary::operation_body::WorthQueryOperationBodyDenial, crate::domain_computation::request_execution::WorthQueryAdvancementPhase};
+use {
+    crate::domain_computation::primary_graph::vocabulary::operation_body::WorthQueryOperationBodyDenial,
+    crate::domain_computation::primary_graph::MutationHandlerExecutionDenial,
+    crate::domain_computation::primary_graph::WorthQueryOperationBodyDecision,
+    crate::domain_computation::request_execution::WorthQueryAdvancementPhase,
+};
 
 mod program;
 type BodyScope<S, B> = <<B as ApplicationMutationBinding<S>>::ScopeBinding as ApplicationMutationScopeBinding<S>>::Scope;

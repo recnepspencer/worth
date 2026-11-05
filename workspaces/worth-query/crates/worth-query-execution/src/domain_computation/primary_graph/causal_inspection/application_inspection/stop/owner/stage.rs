@@ -1,10 +1,10 @@
 //! Exact non-resource stage diagnostics, leaving canonical/resource payloads with their readers.
 use super::super::super::{identity::InspectionIdentityStop, report::InspectionReportDenial};
 use super::*;
+use crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop;
 use crate::domain_computation::vocabulary::primary_graph::retained_stage::RetainedStorageDenial;
 use worth_foundational::facade::{CanonicalBasisPreparationStop, CanonicalDigestAdmissionStop};
 use worth_runtime_bridge::facade::BridgeQueryObservationReportingStop;
-use crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop;
 
 pub(super) fn capture<'a, E>(
     owner_stage: Stage,

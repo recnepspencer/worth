@@ -3,7 +3,8 @@ use worth_runtime_bridge::facade::RelationalBridgeObservationReleaseReceipt;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation) struct WorthQueryManagedRelationalObservationReleaseReceipt {
-    bridge_release: Option<RelationalBridgeObservationReleaseReceipt>,
+    pub(in crate::domain_computation) bridge_release:
+        Option<RelationalBridgeObservationReleaseReceipt>,
 }
 
 impl WorthQueryManagedRelationalObservationReleaseReceipt {

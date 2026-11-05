@@ -4,9 +4,11 @@ use worth_query_declaration::facade::application_program::ApplicationWorkflowDef
 /// Opaque identity of one definition revision proven by an application commit.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct PublishedWorkflowDefinitionRef {
-    branch: crate::basis::WorthQueryProductBranch,
-    entity_id: worth_relational::facade::identity::EntityId,
-    content_identity: ApplicationWorkflowDefinitionContentIdentity,
+    pub(in crate::domain_computation::primary_graph) branch: crate::basis::WorthQueryProductBranch,
+    pub(in crate::domain_computation::primary_graph) entity_id:
+        worth_relational::facade::identity::EntityId,
+    pub(in crate::domain_computation::primary_graph) content_identity:
+        ApplicationWorkflowDefinitionContentIdentity,
 }
 
 impl PublishedWorkflowDefinitionRef {

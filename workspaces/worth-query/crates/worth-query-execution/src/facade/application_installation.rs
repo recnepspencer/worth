@@ -1,11 +1,55 @@
 //! In-memory application construction from declared contributions.
-pub use {crate::domain_computation::primary_graph::application_installation::in_memory, crate::domain_computation::primary_graph::application_installation::in_memory_program, crate::domain_computation::primary_graph::application_installation::in_memory_program_from_checkpoint, crate::domain_computation::primary_graph::application_installation::in_memory_program_from_checkpoint_with_projection, crate::domain_computation::primary_graph::application_installation::in_memory_program_with_authorization_time_source, crate::domain_computation::primary_graph::application_installation::in_memory_rostered_program, crate::domain_computation::primary_graph::application_installation::in_memory_rostered_program_from_checkpoint, crate::domain_computation::primary_graph::application_installation::in_memory_rostered_program_from_checkpoint_with_transition, crate::domain_computation::primary_graph::application_installation::in_memory_rostered_program_from_checkpoint_with_transition_in_advancement, crate::domain_computation::primary_graph::application_installation::in_memory_rostered_program_in_advancement, crate::domain_computation::primary_graph::application_installation::in_memory_rostered_program_with_authorization_time_source, crate::domain_computation::primary_graph::application_installation::WorthQueryAdmittedProgramOperation, crate::domain_computation::primary_graph::application_installation::WorthQueryAdmittedProgramOutput, crate::domain_computation::primary_graph::application_installation::WorthQueryApplicationPreviewReadmissionDenial, crate::domain_computation::primary_graph::application_installation::WorthQueryApplicationPreviewRequest, crate::domain_computation::primary_graph::application_installation::WorthQueryApplicationPreviewSession, crate::domain_computation::primary_graph::application_installation::WorthQueryApplicationProgramRoots, crate::domain_computation::primary_graph::application_installation::WorthQueryApplicationProgramRoster, crate::domain_computation::primary_graph::application_installation::WorthQueryCheckpointMigrationWriter, crate::domain_computation::primary_graph::application_installation::WorthQueryCheckpointProgramPredecessor, crate::domain_computation::primary_graph::application_installation::WorthQueryCheckpointTransitionRecovery, crate::domain_computation::primary_graph::application_installation::WorthQueryCheckpointTransitionResources, crate::domain_computation::primary_graph::application_installation::WorthQueryInMemoryApplicationDenial, crate::domain_computation::primary_graph::application_installation::WorthQueryInMemoryApplicationLimits, crate::domain_computation::primary_graph::application_installation::WorthQueryInMemoryApplicationProfile, crate::domain_computation::primary_graph::application_installation::WorthQueryProgramApplicationRuntime, crate::domain_computation::primary_graph::application_installation::WorthQueryProgramOutputAdvance, crate::domain_computation::primary_graph::application_installation::WorthQueryProgramOwner, crate::domain_computation::primary_graph::application_installation::WorthQueryProgramRootDemand, crate::domain_computation::primary_graph::application_installation::WorthQueryProgramSupportRetirementFailure, crate::domain_computation::primary_graph::application_installation::WorthQueryProgramSupportRetirementReceipt, crate::domain_computation::primary_graph::application_installation::WorthQueryReadmittedApplicationPreview, crate::domain_computation::primary_graph::application_installation::WorthQueryRecoveredProgramOutputSource, crate::domain_computation::primary_graph::application_installation::WorthQuerySelectedProgramOwner, crate::domain_computation::primary_graph::vocabulary::application_installation::program_owner::WorthQuerySelectedProgramOwnerDenial, crate::domain_computation::primary_graph::application_installation::WorthQuerySettledProgramOutput, crate::domain_computation::primary_graph::application_installation::WorthQuerySigningOwnerInstallationDenial, crate::domain_computation::primary_graph::application_installation::WorthQuerySupportedProgramHandle, crate::domain_computation::primary_graph::application_installation::WorthQueryUnpublishedProgramOutputSource, crate::domain_computation::primary_graph::application_installation::WorthQueryWorkflowApplicationRuntime, crate::domain_computation::primary_graph::application_installation::WorthQueryWorkflowRuntimeBindingDenial, crate::domain_computation::primary_graph::application_installation::WorthQueryWorkflowRuntimeBindingRefusal, crate::domain_computation::primary_graph::application_installation::WorthQueryWorkflowVocabulary};
 pub use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCheckpoint, WorthQueryApplicationCheckpointSectionBytes,
     WorthQueryCheckpointCaptureDenial, WorthQueryCheckpointCapturePolicy,
     WorthQueryNativeCheckpointSectionBytes,
 };
 pub use worth_foundational::facade::{ApplicationBuildIdentity, InvalidApplicationBuildIdentity};
+pub use {
+    crate::domain_computation::primary_graph::application_installation::in_memory,
+    crate::domain_computation::primary_graph::application_installation::in_memory_program,
+    crate::domain_computation::primary_graph::application_installation::in_memory_program_from_checkpoint,
+    crate::domain_computation::primary_graph::application_installation::in_memory_program_from_checkpoint_with_projection,
+    crate::domain_computation::primary_graph::application_installation::in_memory_program_with_authorization_time_source,
+    crate::domain_computation::primary_graph::application_installation::in_memory_rostered_program,
+    crate::domain_computation::primary_graph::application_installation::in_memory_rostered_program_from_checkpoint,
+    crate::domain_computation::primary_graph::application_installation::in_memory_rostered_program_from_checkpoint_with_transition,
+    crate::domain_computation::primary_graph::application_installation::in_memory_rostered_program_from_checkpoint_with_transition_in_advancement,
+    crate::domain_computation::primary_graph::application_installation::in_memory_rostered_program_in_advancement,
+    crate::domain_computation::primary_graph::application_installation::in_memory_rostered_program_with_authorization_time_source,
+    crate::domain_computation::primary_graph::application_installation::WorthQueryAdmittedProgramOperation,
+    crate::domain_computation::primary_graph::application_installation::WorthQueryAdmittedProgramOutput,
+    crate::domain_computation::primary_graph::application_installation::WorthQueryApplicationPreviewReadmissionDenial,
+    crate::domain_computation::primary_graph::application_installation::WorthQueryApplicationPreviewRequest,
+    crate::domain_computation::primary_graph::application_installation::WorthQueryApplicationPreviewSession,
+    crate::domain_computation::primary_graph::application_installation::WorthQueryApplicationProgramRoots,
+    crate::domain_computation::primary_graph::application_installation::WorthQueryApplicationProgramRoster,
+    crate::domain_computation::primary_graph::application_installation::WorthQueryCheckpointMigrationWriter,
+    crate::domain_computation::primary_graph::application_installation::WorthQueryCheckpointProgramPredecessor,
+    crate::domain_computation::primary_graph::application_installation::WorthQueryCheckpointTransitionRecovery,
+    crate::domain_computation::primary_graph::application_installation::WorthQueryCheckpointTransitionResources,
+    crate::domain_computation::primary_graph::application_installation::WorthQueryInMemoryApplicationDenial,
+    crate::domain_computation::primary_graph::application_installation::WorthQueryInMemoryApplicationLimits,
+    crate::domain_computation::primary_graph::application_installation::WorthQueryInMemoryApplicationProfile,
+    crate::domain_computation::primary_graph::application_installation::WorthQueryProgramApplicationRuntime,
+    crate::domain_computation::primary_graph::application_installation::WorthQueryProgramOutputAdvance,
+    crate::domain_computation::primary_graph::application_installation::WorthQueryProgramOwner,
+    crate::domain_computation::primary_graph::application_installation::WorthQueryProgramRootDemand,
+    crate::domain_computation::primary_graph::application_installation::WorthQueryProgramSupportRetirementFailure,
+    crate::domain_computation::primary_graph::application_installation::WorthQueryProgramSupportRetirementReceipt,
+    crate::domain_computation::primary_graph::application_installation::WorthQueryReadmittedApplicationPreview,
+    crate::domain_computation::primary_graph::application_installation::WorthQueryRecoveredProgramOutputSource,
+    crate::domain_computation::primary_graph::application_installation::WorthQuerySelectedProgramOwner,
+    crate::domain_computation::primary_graph::application_installation::WorthQuerySettledProgramOutput,
+    crate::domain_computation::primary_graph::application_installation::WorthQuerySigningOwnerInstallationDenial,
+    crate::domain_computation::primary_graph::application_installation::WorthQuerySupportedProgramHandle,
+    crate::domain_computation::primary_graph::application_installation::WorthQueryUnpublishedProgramOutputSource,
+    crate::domain_computation::primary_graph::application_installation::WorthQueryWorkflowApplicationRuntime,
+    crate::domain_computation::primary_graph::application_installation::WorthQueryWorkflowRuntimeBindingDenial,
+    crate::domain_computation::primary_graph::application_installation::WorthQueryWorkflowRuntimeBindingRefusal,
+    crate::domain_computation::primary_graph::application_installation::WorthQueryWorkflowVocabulary,
+    crate::domain_computation::primary_graph::vocabulary::application_installation::program_owner::WorthQuerySelectedProgramOwnerDenial,
+};
 
 // Actual result vocabulary returned by the application preview lifecycle.
 pub use worth_runtime_bridge::facade::{

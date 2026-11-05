@@ -3,7 +3,10 @@ use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusa
 use crate::basis::WorthQueryProductObservationLease;
 use crate::domain_computation::primary_graph::product_activation::InspectionScopedOps;
 use crate::domain_computation::primary_graph::product_operation::ApplicationBasisScopedOps;
-use {crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial, crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind};
+use {
+    crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial,
+    crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind,
+};
 
 pub(super) fn admit<Schema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

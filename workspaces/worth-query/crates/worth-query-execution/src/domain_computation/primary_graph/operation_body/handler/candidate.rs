@@ -1,5 +1,5 @@
 //! Native candidate assembly consumes one sealed body decision; no graph rereads.
-use super::super::{path_value, retirement, reuse};
+use super::super::{path_value, retirement};
 use super::*;
 use crate::domain_computation::primary_graph::vocabulary::operation_body::WorthQueryOperationBodyDenial;
 impl<Schema, Binding> OperationBodyHandler<Schema, Binding>

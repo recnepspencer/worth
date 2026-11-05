@@ -10,7 +10,6 @@ use worth_runtime_bridge::facade::{
 };
 
 use super::super::clock_observation::ErasedClockObservationOutcome;
-use crate::domain_computation::primary_graph::vocabulary::conditional_operation::clock_handle::ConditionalClockLease;
 use super::super::signal_decision_reentry::WorthQueryConditionalTruthBasis;
 use super::{
     authoritative_clock_progression, bridge_clock_outcome, commit_watch, due_wake_retention,
@@ -18,6 +17,7 @@ use super::{
     WorthQueryConditionalRetainedResourceCounts, WorthQueryInstalledConditionalOperation,
     WorthQueryInstalledTemporalOperation, WorthQueryPreparedConditionalRuntimeBinding,
 };
+use crate::domain_computation::primary_graph::vocabulary::conditional_operation::clock_handle::ConditionalClockLease;
 #[rustfmt::skip]
 impl<
         Schema, ApplicationOperation, Input, D, O, F, Node, Provider, Clock, Source, Query, Parameters, QueryResult, Scope, Projector,

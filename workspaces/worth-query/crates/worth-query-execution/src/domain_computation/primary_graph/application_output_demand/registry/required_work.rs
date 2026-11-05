@@ -27,9 +27,9 @@ pub(in crate::domain_computation::primary_graph) use selection::SelectedReadyRea
 pub(super) use queue::RequiredWorkPop;
 pub(super) use queue::RequiredWorkQueue;
 
-pub(super) use discontinuity::DiscontinuityCursors;
 use crate::domain_computation::primary_graph::vocabulary::application_output_demand::native_hints::NativeBranch;
 use crate::domain_computation::primary_graph::vocabulary::application_output_demand::native_hints::NativeHint;
+pub(super) use discontinuity::DiscontinuityCursors;
 
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -98,7 +98,6 @@ pub enum SelectedRequiredWorkKind {
     Discontinuity,
     UnresolvedInitial,
 }
-
 
 impl RequiredWorkMembership {
     pub(super) fn new(key: Arc<WorthQueryOutputDemandKey>, queue: &Arc<RequiredWorkQueue>) -> Self {

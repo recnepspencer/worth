@@ -1,9 +1,7 @@
 //! What `authorization` needs from the runtime that composes it.
 use std::sync::Arc;
 
-use crate::domain_computation::authorization::{
-    WorthQueryInstalledAuthorizationRegistry, WorthQueryRuntimeClock,
-};
+use crate::domain_computation::authorization::WorthQueryInstalledAuthorizationRegistry;
 use crate::domain_computation::primary_graph::product_operation::{
     WorthQueryProductObservationSource, WorthQueryProductSecurityBasis,
 };

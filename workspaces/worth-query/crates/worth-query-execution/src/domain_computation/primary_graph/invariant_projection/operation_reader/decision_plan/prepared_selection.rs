@@ -19,7 +19,11 @@ use super::{
     WorthQueryInvariantDecisionPlanDenialKind,
 };
 use crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity;
-use {crate::domain_computation::primary_graph::HandlerExecutionDenial, crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionDenialKind, crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity};
+use {
+    crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity,
+    crate::domain_computation::primary_graph::HandlerExecutionDenial,
+    crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionDenialKind,
+};
 
 /// A declared equality target prepared at one actual projection and operation
 /// admission. It grants no mutation or latest-head authority and stores no policy.

@@ -4,8 +4,8 @@ use super::PreparedStableLineagePublication;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::collect_consumed_output_upstream;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::PreparedCurrentSettlementRegistration;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::SettlementRegistration;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SettlementRegistrationStop;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceInvalidationOwner;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SettlementRegistrationStop;
 use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 
 impl<'lane, 'selected> PreparedStableLineagePublication<'lane, 'selected> {

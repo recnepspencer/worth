@@ -13,9 +13,16 @@ use worth_relational::facade::transactions::{CommitResult, EntityReference};
 
 use contract::{ExpectedOutputBinding, ExpectedOutputFamily};
 
-use {super::CommittedOutputBinding, crate::domain_computation::primary_graph::vocabulary::application_attempt::role_use::OutputRoleUse, super::WorthQueryApplicationOutputCorrespondence, super::WorthQueryApplicationOutputPosture, super::WorthQueryApplicationOutputRoleNameDenial};
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::model::WorthQueryApplicationEffectEntity;
-use {crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
+use {
+    super::CommittedOutputBinding, super::WorthQueryApplicationOutputCorrespondence,
+    super::WorthQueryApplicationOutputPosture, super::WorthQueryApplicationOutputRoleNameDenial,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::role_use::OutputRoleUse,
+};
+use {
+    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
+};
 #[derive(Clone, Debug, Eq, PartialEq)]
 struct CandidateOutputBinding {
     posture: WorthQueryApplicationOutputPosture,

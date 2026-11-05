@@ -1,9 +1,12 @@
 //! The retained read must describe the settlement's actual immutable owner.
 use super::*;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputSettlementProvenanceDenial as Reason;
-use {crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint, crate::domain_computation::primary_graph::output_reuse::read_denial};
-use worth_execution::{ExecutionRequest, MapKernelContext, MapKernelStop, WorkCeilingDenial};
 use crate::domain_computation::vocabulary::primary_graph::inspection::OriginalSourceInspectionDisclosure;
+use worth_execution::{ExecutionRequest, MapKernelContext, MapKernelStop, WorkCeilingDenial};
+use {
+    crate::domain_computation::primary_graph::output_reuse::read_denial,
+    crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint,
+};
 
 impl OriginalSettledProducerObservation {
     pub(in crate::domain_computation::primary_graph::application_output_demand) fn require_settlement(

@@ -1,5 +1,4 @@
 use std::collections::{BTreeMap, BTreeSet};
-use std::marker::PhantomData;
 use std::sync::Arc;
 
 use worth_foundational::facade::{AspectFieldLocator, AspectValue, PortableAspectContractBasis};
@@ -13,8 +12,6 @@ pub(crate) mod emission;
 pub(in crate::domain_computation::primary_graph) use emission::{
     WorthQueryAdmittedApplicationEmissionBatch, WorthQueryApplicationEmission,
 };
-
-
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationOptionalFieldWrite {
     pub(in crate::domain_computation::primary_graph::application_attempt) contract:

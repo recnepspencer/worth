@@ -1,10 +1,13 @@
 //! Both actual Native owners survive borrowed, allocation-free typed iteration.
-use {crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity, super::super::WorthQueryInvariantProjectionWalk, super::super::WorthQueryInvariantRelation};
 use crate::domain_computation::primary_graph::aggregate_identity::WorthQueryAggregateIdentity;
 use crate::domain_computation::primary_graph::aggregate_observation::AggregateObservation;
 use std::sync::Arc;
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 use worth_relational::facade::identity::KindId;
+use {
+    super::super::WorthQueryInvariantProjectionWalk, super::super::WorthQueryInvariantRelation,
+    crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity,
+};
 
 /// Complete orbit inspected at one projection snapshot. Membership order comes
 /// from the successor relation, while persistent naming comes from Native storage.

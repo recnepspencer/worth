@@ -2,14 +2,12 @@
 pub(crate) mod retained_stage;
 pub(in crate::domain_computation) mod storage;
 
+use crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop;
 use worth_execution::{
     ChargedBytes, ExecutionMemoryReservation, ExecutionRequest, ExecutionResultMemory,
     ExecutionWorkCeiling, MapKernelContext, MapKernelFailure, MapKernelStop, ScopeStop,
     WorkCeilingDenial,
 };
-use crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop;
-
-
 
 pub(super) fn run_stage<Value: ChargedBytes, E: ChargedBytes>(
     execution: &ExecutionRequest<'_, '_>,

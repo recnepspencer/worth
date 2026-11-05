@@ -9,7 +9,7 @@ pub(in crate::domain_computation::primary_graph) enum PublicationRecoveryStop {
 }
 
 impl PublicationRecoveryStop {
-    fn reason(self) -> FullVerificationReason {
+    pub(in crate::domain_computation::primary_graph) fn reason(self) -> FullVerificationReason {
         match self {
             Self::Reason(reason) => reason,
             Self::Closure(_) | Self::Registration(_) | Self::Admission(_) => {

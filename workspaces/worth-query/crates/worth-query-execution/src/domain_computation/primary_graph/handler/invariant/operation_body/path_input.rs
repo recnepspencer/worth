@@ -1,8 +1,11 @@
 //! Path selection and the terminal comparison share the native decision observation.
 use super::*;
-use {crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial as Denial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind};
-use worth_query_declaration::facade::application_schema::ApplicationOperationBodyPathFieldSource;
 use crate::domain_computation::primary_graph::vocabulary::operation_body::field_expectation::BodyFieldExpectation;
+use worth_query_declaration::facade::application_schema::ApplicationOperationBodyPathFieldSource;
+use {
+    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial as Denial,
+    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind,
+};
 impl<S: ApplicationSchema, B: ApplicationMutationBinding<S>> DecisionReader<'_, '_, '_, S, B> {
     pub(in crate::domain_computation::primary_graph) fn body_path_input_equals(
         &mut self,

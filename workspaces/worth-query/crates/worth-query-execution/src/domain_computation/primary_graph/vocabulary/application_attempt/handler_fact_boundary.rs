@@ -1,9 +1,8 @@
 //! Moved whole from `domain_computation::primary_graph::application_attempt::read_set::decision_reuse`: the items below and every impl they own.
+use crate::domain_computation::vocabulary::primary_graph::decision_context_use::DecisionContextUse;
 use crate::domain_computation::vocabulary::primary_graph::decision_reuse::CompletedDecisionReuseProof;
 use crate::domain_computation::vocabulary::primary_graph::decision_reuse::PreparedDecisionReuseContext;
-use crate::domain_computation::vocabulary::primary_graph::decision_context_use::DecisionContextUse;
 use crate::domain_computation::vocabulary::primary_graph::handler_fact_boundary::CompletedHandlerFactBoundary;
-
 
 impl CompletedHandlerFactBoundary {
     #[doc(hidden)]
@@ -16,9 +15,10 @@ impl CompletedHandlerFactBoundary {
     }
 }
 
-
 impl CompletedHandlerFactBoundary {
-    pub(in crate::domain_computation::primary_graph) const fn from_completed_read(handler_fact_count: usize) -> Self {
+    pub(in crate::domain_computation::primary_graph) const fn from_completed_read(
+        handler_fact_count: usize,
+    ) -> Self {
         Self { handler_fact_count }
     }
 

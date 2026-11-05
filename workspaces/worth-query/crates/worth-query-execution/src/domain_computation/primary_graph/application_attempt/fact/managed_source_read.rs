@@ -15,7 +15,6 @@ use worth_relational::facade::{
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::managed_source_read::ManagedInfluenceOrigin;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::managed_source_read::ManagedSourceReadKey;
 
-
 #[derive(Clone)]
 pub struct ManagedSourceRead {
     key: ManagedSourceReadKey,
@@ -177,7 +176,7 @@ impl ManagedSourceRead {
         runtime: &RelationalRuntime,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         snapshot: &SnapshotHandle,
-    ) -> Result<bool, crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure> {
+    ) -> Result<bool, crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure>{
         self.checked_at(runtime, execution, snapshot)
             .map(|checked| checked.is_some())
     }
@@ -186,7 +185,7 @@ impl ManagedSourceRead {
         runtime: &RelationalRuntime,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         snapshot: &SnapshotHandle,
-    ) -> Result<Option<CheckedManagedSource>, crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure> {
+    ) -> Result<Option<CheckedManagedSource>, crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure>{
         self.authorization
             .validate_current(runtime, execution, snapshot)
             .map_err(crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure::OutputObservation)?;
@@ -209,7 +208,7 @@ impl ManagedSourceRead {
         runtime: &RelationalRuntime,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         snapshot: &SnapshotHandle,
-    ) -> Result<bool, crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure> {
+    ) -> Result<bool, crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure>{
         use crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure as Stop;
         runtime
             .read_truth()

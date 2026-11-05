@@ -20,7 +20,11 @@ use worth_relational::facade::identity::{EntityId, KindId};
 use super::operation_progression::{
     progress_capability_operation, WorthQueryCapabilityOperationProgression,
 };
-use {super::WorthQueryAdmittedApplicationCapabilityAccess, super::WorthQueryAdmittedApplicationOperation, super::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind};
+use {
+    super::WorthQueryAdmittedApplicationCapabilityAccess,
+    super::WorthQueryAdmittedApplicationOperation, super::WorthQueryOperationAuthorizationDenial,
+    crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind,
+};
 
 pub(in crate::domain_computation) struct WorthQueryCapabilityRevocationBinding {
     proposal_identity: [u8; 32],

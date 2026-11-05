@@ -1,6 +1,5 @@
 //! One immutable signing service per installed program revision, not per workflow frontier.
 use super::WorthQueryProgramApplicationRuntime;
-use crate::domain_computation::primary_graph::runtime_host::WorthQueryRuntimeIdentityHost;
 use worth_query_admission::facade::authentication_event::WorthQueryAuthenticationEventSigningOwner;
 use worth_query_declaration::facade::{
     application_program::ApplicationProgramRevision, application_schema::ApplicationSchema,

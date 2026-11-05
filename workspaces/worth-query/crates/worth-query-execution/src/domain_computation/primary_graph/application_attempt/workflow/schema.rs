@@ -22,7 +22,6 @@ mod succession;
 mod transition;
 pub(in crate::domain_computation::primary_graph) mod version;
 
-
 pub(in crate::domain_computation::primary_graph) use fact_custody::fact_custody_registration;
 pub(in crate::domain_computation::primary_graph) use indexes::register_indexes;
 pub(in crate::domain_computation::primary_graph) use layout::*;

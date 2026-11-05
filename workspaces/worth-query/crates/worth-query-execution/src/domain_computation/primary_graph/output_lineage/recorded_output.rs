@@ -2,8 +2,15 @@
 
 use std::sync::{Arc, Mutex, OnceLock};
 
-use {crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason, crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity, super::RecordedSourceIdentity, super::WorthQueryApplicationOutputCorrespondence};
-use {crate::domain_computation::vocabulary::primary_graph::handler_fact_boundary::CompletedHandlerFactBoundary, crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence};
+use {
+    super::RecordedSourceIdentity, super::WorthQueryApplicationOutputCorrespondence,
+    crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason,
+    crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity,
+};
+use {
+    crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence,
+    crate::domain_computation::vocabulary::primary_graph::handler_fact_boundary::CompletedHandlerFactBoundary,
+};
 
 pub struct RecordedOutput {
     pub(super) producing_implementation:

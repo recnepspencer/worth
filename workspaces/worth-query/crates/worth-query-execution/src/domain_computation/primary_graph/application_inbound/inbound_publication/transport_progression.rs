@@ -20,7 +20,6 @@ use super::installed_transport::{
     UnpublishedInstalledTransportCompletion,
 };
 use crate::domain_computation::execution_runtime::product_world::WorthQueryReservedProductPublicationReceipt;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::WorthQueryProductUnpublishedApplication;
 
 pub(in crate::domain_computation::primary_graph) trait TransportProgressionScopedOps<Schema>:

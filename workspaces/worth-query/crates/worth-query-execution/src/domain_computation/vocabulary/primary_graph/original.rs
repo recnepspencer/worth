@@ -4,7 +4,9 @@ use crate::domain_computation::vocabulary::primary_graph::funded_parameters::Cap
 pub struct OriginalSourceDisclosure(CapturedApplicationQueryParameters);
 
 impl OriginalSourceDisclosure {
-    pub(in crate::domain_computation) fn captured(parameters: CapturedApplicationQueryParameters) -> Self {
+    pub(in crate::domain_computation) fn captured(
+        parameters: CapturedApplicationQueryParameters,
+    ) -> Self {
         Self(parameters)
     }
     pub(in crate::domain_computation) fn query(

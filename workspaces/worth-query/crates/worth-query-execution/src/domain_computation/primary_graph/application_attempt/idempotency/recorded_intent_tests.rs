@@ -1,7 +1,11 @@
 //! A recorded intent matches a request by its durable parts, in the current
 //! encoding and in the first one, which also named the admitting runtime.
 
-use {super::WorthQueryApplicationIdempotencyBinding, super::WorthQueryIdempotencyEntityIdentity, super::WorthQueryIdempotencyScopeIdentity, crate::domain_computation::primary_graph::vocabulary::application_attempt::recorded_intent::WorthQueryRecordedIntentMatch as Match};
+use {
+    super::WorthQueryApplicationIdempotencyBinding, super::WorthQueryIdempotencyEntityIdentity,
+    super::WorthQueryIdempotencyScopeIdentity,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::recorded_intent::WorthQueryRecordedIntentMatch as Match,
+};
 
 const DEFINITION: [u8; 32] = [0x0d; 32];
 const SEAL: [u8; 32] = [0x5e; 32];

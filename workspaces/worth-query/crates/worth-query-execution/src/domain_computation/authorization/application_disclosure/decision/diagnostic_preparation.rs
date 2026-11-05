@@ -1,11 +1,15 @@
 //! Pay the existing policy preparation pass from the diagnostic request's payer.
 use super::*;
-use {crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint, crate::domain_computation::vocabulary::primary_graph::retained_stage::run_retained_stage, crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop};
 use worth_execution::{
     ExecutionMemoryReservation, ExecutionRequest, MapKernelContext, MapKernelFailure, MapKernelStop,
 };
 use worth_query_declaration::facade::application_query::ApplicationQueryDisclosureSelector;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQuery;
+use {
+    crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint,
+    crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop,
+    crate::domain_computation::vocabulary::primary_graph::retained_stage::run_retained_stage,
+};
 
 pub(in crate::domain_computation) enum DiagnosticPreparationDenial {
     Governance(WorthQueryApplicationQueryGovernanceDenialKind),

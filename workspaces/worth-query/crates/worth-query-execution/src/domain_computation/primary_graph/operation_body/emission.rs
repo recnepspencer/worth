@@ -61,7 +61,7 @@ impl BodyExternalEffectSelection {
     }
     pub(in crate::domain_computation::primary_graph) fn values(
         &self,
-    ) -> Option<crate::domain_computation::primary_graph::vocabulary::operation_body::operation_body_value::PreparedBodyValues> {
+    ) -> Option<crate::domain_computation::primary_graph::vocabulary::operation_body::operation_body_value::PreparedBodyValues>{
         self.values.clone()
     }
     pub(in crate::domain_computation::primary_graph) fn matches(&self, meaning: &Meaning) -> bool {

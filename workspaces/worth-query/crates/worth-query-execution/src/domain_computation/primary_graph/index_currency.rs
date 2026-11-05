@@ -7,10 +7,9 @@ use super::WorthQueryPrimaryGraphIntegrationHandle;
 
 #[path = "index_currency/selected_field.rs"]
 mod selected_field;
+use crate::domain_computation::primary_graph::vocabulary::index_currency::WorthQueryPrimaryIndexCurrencyDenial;
 pub(crate) use selected_field::ensure_selected_field_indexes_admitted;
 pub(crate) use selected_field::SelectedFieldIndexAdmissionStop;
-use crate::domain_computation::primary_graph::vocabulary::index_currency::WorthQueryPrimaryIndexCurrencyDenial;
-
 
 /// Probe the one selected published generation through the native index
 /// authority. The primary integration handle's installed index inventory is
@@ -121,7 +120,7 @@ fn require_complete_build(
 
 fn index_basis_denial(
     denial: worth_relational::facade::branch::RelationalBranchBasisDenial,
-) -> crate::domain_computation::primary_graph::vocabulary::exact_basis_access::WorthQueryExactBasisSnapshotDenial {
+) -> crate::domain_computation::primary_graph::vocabulary::exact_basis_access::WorthQueryExactBasisSnapshotDenial{
     use crate::domain_computation::primary_graph::vocabulary::exact_basis_access::WorthQueryExactBasisSnapshotDenial as QueryDenial;
     use worth_relational::facade::branch::RelationalBranchBasisDenial as Denial;
     match denial {

@@ -1,11 +1,14 @@
 //! One interpretation collects only its own output-sized, originally funded notices.
 use super::*;
-use {crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl as Control, crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop, crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial as WorkDenial};
-use std::collections::BTreeMap;
-use worth_execution::{ExecutionArray, ExecutionRequestArrayBuilder};
 use crate::domain_computation::primary_graph::vocabulary::application_query::round::PredicateNoticeDisposition;
 use crate::domain_computation::primary_graph::vocabulary::application_query::tree::WatchSlot;
-use crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial;
+use std::collections::BTreeMap;
+use worth_execution::{ExecutionArray, ExecutionRequestArrayBuilder};
+use {
+    crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl as Control,
+    crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial as WorkDenial,
+    crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop,
+};
 
 struct Collected {
     slots: BTreeMap<WatchSlot, PredicateNoticeDisposition>,

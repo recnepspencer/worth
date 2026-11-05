@@ -13,7 +13,10 @@ use worth_relational::facade::identity::{EntityId, KindId};
 use super::super::capability_registry::WorthQueryInstalledCapabilityPlan;
 use super::denial;
 use super::support::WorthQueryDelegationResolvedRequest;
-use {crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind};
+use {
+    crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
+    crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind,
+};
 
 mod activation_material;
 mod program;

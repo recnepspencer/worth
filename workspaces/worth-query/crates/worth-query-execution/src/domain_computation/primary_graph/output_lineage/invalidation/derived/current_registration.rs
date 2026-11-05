@@ -9,10 +9,10 @@ use super::PreparedSettlementRegistration;
 use super::RegistrationReadBasis;
 use super::SettlementRegistration;
 use super::SettlementRegistrationCleanup;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SettlementRegistrationStop;
 use super::SourceInvalidationOwner;
 use super::StoppedSettlementRegistration;
 use crate::domain_computation::primary_graph::output_lineage::input_cutoff::StableEqualityConsequence;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SettlementRegistrationStop;
 use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 
 /// Bound to the exact source root checked by the cutoff, and to the new

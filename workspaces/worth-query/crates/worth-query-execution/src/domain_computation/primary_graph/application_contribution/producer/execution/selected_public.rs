@@ -11,8 +11,8 @@ use super::*;
 use crate::domain_computation::authorization::authorize_current_control_mutation_on_selected;
 use crate::domain_computation::authorization::authorize_public_mutation_on_selected;
 use crate::domain_computation::authorization::SelectedConventionalAdmissionStop;
-use crate::domain_computation::primary_graph::SharedSelectedProductOperation;
 use crate::domain_computation::primary_graph::vocabulary::entity_resolution_denial::WorthQueryEntityResolutionDenial;
+use crate::domain_computation::primary_graph::SharedSelectedProductOperation;
 use crate::domain_computation::primary_graph::WorthQueryIssuedSelectedPrincipal;
 use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenial;
 
@@ -270,5 +270,5 @@ where
 }
 
 mod denial;
-pub(super) use denial::preparation_stop;
 use crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode;
+pub(super) use denial::preparation_stop;

@@ -1,8 +1,11 @@
 //! Publication enters composed signing only with the actual prepared native approval.
 use super::*;
-use {crate::domain_computation::primary_graph::operation_body::WorthQueryOperationBodyDecision, crate::domain_computation::primary_graph::vocabulary::operation_body::WorthQueryOperationBodyDenial};
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationIdentities, ApplicationMutationScopeBinding,
+};
+use {
+    crate::domain_computation::primary_graph::operation_body::WorthQueryOperationBodyDecision,
+    crate::domain_computation::primary_graph::vocabulary::operation_body::WorthQueryOperationBodyDenial,
 };
 
 impl WorthQueryWorkflowAdvanceAdapter {

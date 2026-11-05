@@ -21,4 +21,3 @@ where
 
 impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema> + ?Sized> TransportBindingDoorsOps<Schema> for HostRuntime where
     Schema: ApplicationSchema, {}
-

@@ -5,7 +5,7 @@ pub(in crate::domain_computation) struct WorthQueryDirectReadmissionTransitionPe
 }
 
 impl WorthQueryDirectReadmissionTransitionPermit {
-    const fn mint() -> Self {
+    pub(in crate::domain_computation) const fn mint() -> Self {
         Self { _owner: () }
     }
 }

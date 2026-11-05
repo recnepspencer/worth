@@ -13,9 +13,12 @@ use worth_foundational::facade::{
 use worth_relational::facade::identity::{EntityId, KindId};
 
 use super::ObservedFactIndex;
-use {crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
 use crate::domain_computation::primary_graph::schema_layout::{
     WorthQueryUniqueFieldIndex, WorthQueryUniqueFields,
+};
+use {
+    crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
 };
 
 pub(in crate::domain_computation::primary_graph::application_attempt::provider_binding) struct UniqueValueWrites<

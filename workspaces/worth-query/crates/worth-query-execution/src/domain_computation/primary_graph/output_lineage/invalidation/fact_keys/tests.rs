@@ -13,7 +13,10 @@ use worth_relational::facade::{
     transactions::RecordRef,
 };
 
-use {super::visit, super::Fact, super::FactKeyProjectionStop, crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason, super::Key};
+use {
+    super::visit, super::Fact, super::FactKeyProjectionStop, super::Key,
+    crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason,
+};
 
 fn locator() -> AspectFieldLocator {
     AspectFieldLocator::new(

@@ -1,6 +1,10 @@
 //! Typed execution refusals before application publication.
-use {super::WorthQueryApplicationCommitDenial as Denial, crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind as Kind, super::WorthQueryApplicationCommitDenialStage as Stage};
 use crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource;
+use {
+    super::WorthQueryApplicationCommitDenial as Denial,
+    super::WorthQueryApplicationCommitDenialStage as Stage,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind as Kind,
+};
 
 impl Denial {
     pub(in crate::domain_computation::primary_graph::application_attempt) fn execution_resource(
@@ -44,7 +48,7 @@ impl Denial {
             crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
             crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
         >,
-    > {
+    >{
         use super::denial_cause::DenialCause as Cause;
         use crate::domain_computation::WorthQueryInvariantExecutionDenialKind as Invariant;
         match self.cause.as_deref() {
@@ -248,7 +252,7 @@ pub(super) fn execution_kind(
 
 fn control_kind(
     stop: worth_relational::facade::mvcc::RelationalOperationInterruption,
-) -> crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind {
+) -> crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind{
     use crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control;
     match stop {
         worth_relational::facade::mvcc::RelationalOperationInterruption::Cancelled => {
@@ -266,7 +270,7 @@ fn allocation_control(
         crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind,
         crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind,
     >,
-> {
+>{
     use crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control;
     use worth_execution::{
         ExecutionAllocationDenialClass as Class, MapKernelStop as Stop,

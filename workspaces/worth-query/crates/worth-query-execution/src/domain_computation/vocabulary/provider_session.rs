@@ -4,6 +4,7 @@ pub(crate) mod application;
 pub(crate) mod call_kind;
 pub(crate) mod control_stopped;
 pub(crate) mod declared_closure;
+pub(crate) mod declared_role_closure;
 pub(crate) mod denial;
 pub(crate) mod direct_attempt;
 pub(crate) mod failure;

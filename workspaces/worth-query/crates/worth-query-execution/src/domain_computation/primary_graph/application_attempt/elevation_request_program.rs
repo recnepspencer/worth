@@ -7,9 +7,13 @@ use worth_relational::facade::transactions::{CreatedEntityRef, EntityReference};
 use super::effect_program::WorthQueryApplicationRealizedEffect;
 use super::effect_validation::{canonical_key, denial};
 use super::elevation_lifecycle_emission::{append_lifecycle_emission, lifecycle_emission_is_exact};
-use {super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, super::WorthQueryApplicationEffectProgram, super::WorthQueryCompleteApplicationReadSet, super::WorthQueryProjectedApplicationMutation};
 use crate::domain_computation::application_contract_admission::application_contract_exactly_matches_program_targets;
 use crate::domain_computation::authorization::WorthQueryElevationRequestBinding;
+use {
+    super::WorthQueryApplicationAttemptDenial, super::WorthQueryApplicationEffectProgram,
+    super::WorthQueryCompleteApplicationReadSet, super::WorthQueryProjectedApplicationMutation,
+    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
+};
 
 /// Exact request mutation produced from Query-owned lifecycle authority.
 ///

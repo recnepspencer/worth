@@ -43,7 +43,7 @@ pub(in crate::domain_computation) fn encode_workflow_approval_dependencies(
 ) -> Result<
     crate::domain_computation::vocabulary::primary_graph::encoding::FundedActorText,
     WorkflowApprovalRequestEncodingDenial,
->{
+> {
     #[derive(Serialize)]
     struct Dependencies<P, S> {
         version: u8,

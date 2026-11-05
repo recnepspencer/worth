@@ -13,7 +13,7 @@ impl WorthQueryWorkflowApprovalRead {
     pub fn decision(
         &self,
     ) -> crate::domain_computation::primary_graph::vocabulary::application_attempt::approval::WorkflowApprovalDecision
-    {
+{
         self.decision
     }
     pub fn proposal_identity(&self) -> &str {

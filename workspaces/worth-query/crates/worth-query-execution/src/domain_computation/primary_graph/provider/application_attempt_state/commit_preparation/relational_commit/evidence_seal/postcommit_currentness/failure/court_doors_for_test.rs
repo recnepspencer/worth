@@ -2,7 +2,6 @@
 use super::*;
 use crate::domain_computation::primary_graph::vocabulary::provider::failure::RebaseVerificationFailure;
 
-
 impl RebaseVerificationFailure {
     #[doc(hidden)]
     pub fn reason_for_test(&self) -> &Reason {

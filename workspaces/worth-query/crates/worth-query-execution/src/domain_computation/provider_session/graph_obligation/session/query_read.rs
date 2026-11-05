@@ -1,4 +1,7 @@
-use {crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity, crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisReleaseReceipt};
+use {
+    crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity,
+    crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisReleaseReceipt,
+};
 
 use super::super::read_terminal::WorthQueryGraphReadCompletionParts;
 use super::{WorthQueryManagedGraphReadDenial, WorthQueryManagedGraphWorkSession};
@@ -82,12 +85,12 @@ impl WorthQueryQuerySourceContext {
     }
     pub(in crate::domain_computation) fn session(
         &self,
-    ) -> crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity {
+    ) -> crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity{
         self.session
     }
     pub(in crate::domain_computation) fn runtime(
         &self,
-    ) -> crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity {
+    ) -> crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity{
         self.runtime
     }
     pub(in crate::domain_computation) fn principal(

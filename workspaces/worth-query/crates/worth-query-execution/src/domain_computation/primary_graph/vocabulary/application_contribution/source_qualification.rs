@@ -1,6 +1,6 @@
 //! Moved whole from `domain_computation::primary_graph::application_contribution::producer::source_qualification`: the items below and every impl they own.
-use crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding;
 use crate::domain_computation::primary_graph::vocabulary::output_family_identity::OutputFamilyIdentity;
+use crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding;
 use std::cmp::Ordering;
 use std::hash::Hash;
 use std::hash::Hasher;
@@ -10,12 +10,12 @@ use worth_runtime_world::facade::ProductBranchIncarnation;
 /// Only native source qualification constructs this stable family address.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation) struct OutputSourceAddress {
-    runtime: u64,
-    schema: ApplicationSchemaBindingIdentity,
-    occurrence: ProductBranchIncarnation,
-    scope: WorthQueryOperationScopeEntityBinding,
-    family: OutputFamilyIdentity,
-    partition: [u8; 32],
+    pub(in crate::domain_computation::primary_graph) runtime: u64,
+    pub(in crate::domain_computation::primary_graph) schema: ApplicationSchemaBindingIdentity,
+    pub(in crate::domain_computation::primary_graph) occurrence: ProductBranchIncarnation,
+    pub(in crate::domain_computation::primary_graph) scope: WorthQueryOperationScopeEntityBinding,
+    pub(in crate::domain_computation::primary_graph) family: OutputFamilyIdentity,
+    pub(in crate::domain_computation::primary_graph) partition: [u8; 32],
 }
 
 impl Hash for OutputSourceAddress {

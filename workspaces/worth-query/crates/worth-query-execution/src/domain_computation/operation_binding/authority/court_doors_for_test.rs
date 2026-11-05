@@ -1,7 +1,7 @@
 //! Sealed test doors over this module's private members.
 use super::*;
-use crate::domain_computation::vocabulary::operation_binding::installed_domain_authority::WorthQueryInstalledDomainExecutionAuthority;
 use crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity;
+use crate::domain_computation::vocabulary::operation_binding::installed_domain_authority::WorthQueryInstalledDomainExecutionAuthority;
 
 impl WorthQueryWorkflowStageResourceAuthority {
     #[doc(hidden)]
@@ -28,7 +28,7 @@ impl WorthQueryExecutionBoundOperationAuthority {
     #[doc(hidden)]
     pub fn provider_plan_declarations_for_test(
         &self,
-    ) -> &Arc<crate::domain_computation::vocabulary::provider_session::declared_closure::WorthQueryProviderPlanDeclarations> {
+    ) -> &Arc<crate::domain_computation::vocabulary::provider_session::declared_closure::WorthQueryProviderPlanDeclarations>{
         &self.provider_plan_declarations
     }
 }
@@ -70,7 +70,7 @@ impl WorthQueryExecutionBoundOperationAuthority {
     pub fn provider_plan_declarations_mut_for_test(
         &mut self,
     ) -> &mut Arc<crate::domain_computation::vocabulary::provider_session::declared_closure::WorthQueryProviderPlanDeclarations>
-    {
+{
         &mut self.provider_plan_declarations
     }
 }

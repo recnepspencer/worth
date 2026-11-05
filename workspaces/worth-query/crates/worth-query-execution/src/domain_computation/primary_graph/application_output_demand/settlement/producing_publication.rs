@@ -84,7 +84,9 @@ impl OriginalProducingPublication {
                 .native_witness_roles()
                 .zip(current.native_witness_roles())
             {
-                crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint(context, 1)?;
+                crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint(
+                    context, 1,
+                )?;
                 if (old.0, old.2, old.3) != (new.0, new.2, new.3)
                     || new.1 == crate::domain_computation::primary_graph::WorthQueryApplicationOutputPosture::Retire {
                     return Ok(false);

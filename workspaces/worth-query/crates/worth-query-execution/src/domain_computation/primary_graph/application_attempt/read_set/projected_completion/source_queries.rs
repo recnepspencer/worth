@@ -23,7 +23,7 @@ impl<Schema, Operation, Input, Scope>
             WorthQueryApplicationObservedFact,
         ),
         WorthQueryApplicationAttemptDenial,
-    > {
+    >{
         self.lease.handle().with_runtime(execution, |_runtime| {
             if !read.admits(self.admission.admission_identity()) {
                 return Err(denial(
@@ -60,7 +60,7 @@ impl<Schema, Operation, Input, Scope>
             WorthQueryApplicationObservedFact,
         ),
         WorthQueryApplicationAttemptDenial,
-    > {
+    >{
         let observation = self
             .expected_facts
             .as_ref()
@@ -94,7 +94,7 @@ impl<Schema, Operation, Input, Scope>
             WorthQueryApplicationObservedFact,
         ),
         WorthQueryApplicationAttemptDenial,
-    > {
+    >{
         let observation = self
             .expected_facts
             .as_ref()

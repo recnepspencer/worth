@@ -1,5 +1,7 @@
 //! `output_binding_identity`'s vocabulary, moved whole from `primary_graph::output_binding_identity`: its root file's items here, one child per other source file.
 
+use std::sync::Arc;
+
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct OutputBindingIdentity(Arc<str>);
 
@@ -18,4 +20,3 @@ impl OutputBindingIdentity {
         Self::declared(name)
     }
 }
-use std::sync::Arc;

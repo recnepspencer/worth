@@ -1,7 +1,6 @@
 //! Selected canonical source effects retain their actual original envelope owners.
 use super::super::{admission::InspectionAdmissionDenial, source_original::SourceOriginal};
 use super::*;
-use {crate::domain_computation::authorization::application_disclosure::DiagnosticComparisonAdmission, crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint, crate::domain_computation::vocabulary::primary_graph::retained_stage::run_retained_stage, crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop, crate::domain_computation::primary_graph::application_attempt::MaterializedCommittedField, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout};
 use std::sync::Arc;
 use worth_execution::{
     ExecutionArray, ExecutionMemoryReservation, ExecutionRequest, ExecutionRequestArrayBuilder,
@@ -10,6 +9,14 @@ use worth_execution::{
 use worth_query_declaration::facade::application_query::ApplicationQueryResultSlotKey;
 use worth_query_installation::facade::WorthQueryInstalledApplicationSchemaContractCatalog;
 pub use worth_relational::facade::publication::PublishedAuthoritativeFieldEffect as WorthQueryMaterializedSourceFieldEffect;
+use {
+    crate::domain_computation::authorization::application_disclosure::DiagnosticComparisonAdmission,
+    crate::domain_computation::primary_graph::application_attempt::MaterializedCommittedField,
+    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
+    crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint,
+    crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop,
+    crate::domain_computation::vocabulary::primary_graph::retained_stage::run_retained_stage,
+};
 
 pub struct WorthQueryMaterializedSourceField {
     slot: Arc<ApplicationQueryResultSlotKey>,

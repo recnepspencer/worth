@@ -3,8 +3,15 @@ use crate::domain_computation::primary_graph::application_attempt::provider_exec
     outcome::WorthQueryProviderProgressionOutcome as Progression,
     recovery_evidence::unknown_commit_recovery_evidence,
 };
-use {crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind as Kind, crate::domain_computation::primary_graph::WorthQueryApplicationUncommitted as Outcome};
-use {crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind as Session, crate::domain_computation::WorthQueryProviderSessionFailure, crate::domain_computation::WorthQueryProviderSessionProtocolStage};
+use {
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind as Kind,
+    crate::domain_computation::primary_graph::WorthQueryApplicationUncommitted as Outcome,
+};
+use {
+    crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind as Session,
+    crate::domain_computation::WorthQueryProviderSessionFailure,
+    crate::domain_computation::WorthQueryProviderSessionProtocolStage,
+};
 
 pub(super) fn cleanup_failed_outcome(outcome: Progression) -> Outcome {
     match outcome {

@@ -1,12 +1,18 @@
 //! Native source-edit consequence progression, sharing one publication with its cause.
 use super::snapshot_lease::WorthQueryApplicationSnapshotLease as Lease;
-use {super::WorthQueryApplicationCommitDenial as Denial, crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind as Kind, super::WorthQueryApplicationCommitOutcome as Outcome, super::WorthQueryApplicationObservedFact as Fact, super::WorthQueryApplicationRealizedEffect as Effect};
 use crate::domain_computation::request_execution::QueryRequestExecution;
 use worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus as Locus;
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledSigningLifecycleRule as Rule,
 };
 use worth_relational::facade::identity::{EntityId, KindId};
+use {
+    super::WorthQueryApplicationCommitDenial as Denial,
+    super::WorthQueryApplicationCommitOutcome as Outcome,
+    super::WorthQueryApplicationObservedFact as Fact,
+    super::WorthQueryApplicationRealizedEffect as Effect,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind as Kind,
+};
 mod changes;
 mod consequences;
 mod graph;

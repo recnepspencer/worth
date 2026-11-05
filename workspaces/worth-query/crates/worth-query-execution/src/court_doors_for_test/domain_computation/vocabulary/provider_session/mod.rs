@@ -5,3 +5,5 @@ pub mod aftermath_posture;
 pub mod application;
 #[path = "declared_closure/mod.rs"]
 pub mod declared_closure;
+#[path = "declared_role_closure/mod.rs"]
+pub mod declared_role_closure;

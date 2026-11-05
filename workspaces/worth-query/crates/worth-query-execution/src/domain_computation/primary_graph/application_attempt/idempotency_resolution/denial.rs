@@ -1,9 +1,8 @@
 //! Why an idempotency key could not be resolved.
 
 use crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial as Provider;
-use {crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind};
+use crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::idempotency_resolution_denial::WorthQueryApplicationIdempotencyResolutionDenialKind;
-
 
 /// A refusal to resolve an idempotency key. Nothing took effect.
 ///

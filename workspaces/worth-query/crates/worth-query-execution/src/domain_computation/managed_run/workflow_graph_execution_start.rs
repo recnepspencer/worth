@@ -73,7 +73,7 @@ impl WorthQueryWorkflowGraphExecutionStartFailure {
 
     pub const fn provider_execution_release(
         &self,
-    ) -> Option<&crate::domain_computation::vocabulary::provider_session::provider_execution_release::WorthQueryProviderExecutionReleaseEvidence> {
+    ) -> Option<&crate::domain_computation::vocabulary::provider_session::provider_execution_release::WorthQueryProviderExecutionReleaseEvidence>{
         self.provider_execution_release.as_ref()
     }
 }

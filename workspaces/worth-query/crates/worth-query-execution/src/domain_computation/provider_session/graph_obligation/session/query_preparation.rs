@@ -1,8 +1,8 @@
 //! Query intent around the sole admitted Product-read startup.
 use super::product_read::ProductReadIntent;
 use super::*;
-use crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity;
 use crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity;
+use crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity;
 
 impl WorthQueryManagedGraphWorkSession {
     #[allow(clippy::too_many_arguments)]

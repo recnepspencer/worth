@@ -35,10 +35,11 @@ pub(in crate::domain_computation::primary_graph) use indexed_entity_selection::r
 pub(in crate::domain_computation::primary_graph) use indexed_entity_selection::{
     observe_indexed_candidates, observe_indexed_entity_selection, WorthQueryIndexedSelectionRefusal,
 };
-pub(in crate::domain_computation::primary_graph) use {movement::FactMovement, movement::ObservedRetained};
+pub(in crate::domain_computation::primary_graph) use {
+    movement::FactMovement, movement::ObservedRetained,
+};
 
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection;
-
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct WorthQueryApplicationObservedRelation {

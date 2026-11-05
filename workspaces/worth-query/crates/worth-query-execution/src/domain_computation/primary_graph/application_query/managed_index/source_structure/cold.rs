@@ -1,7 +1,11 @@
 //! One invocation-local DFS over the immutable functional parent graph.
-use {crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl as Control, super::ExecutionRequest, crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop};
 use std::cell::Cell;
 use worth_execution::ExecutionRequestArrayBuilder;
+use {
+    super::ExecutionRequest,
+    crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl as Control,
+    crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop,
+};
 
 /// The caller supplies every live node as a seed and only actual live parents.
 /// This numeric traversal creates no Source, node-identity or root authority.

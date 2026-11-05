@@ -1,9 +1,13 @@
 use worth_foundational::facade::AspectValue;
 use worth_relational::facade::identity::EntityId;
 
-use {super::WorthQueryApplicationCommitDenial, super::WorthQueryApplicationCommitOutcome, super::WorthQueryApplicationCommitReceipt, crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome::WorthQueryApplicationStaleAttempt};
 use crate::domain_computation::authorization::{
     WorthQueryElevationApprovalBindingPermit, WorthQueryElevationRequestBinding,
+};
+use {
+    super::WorthQueryApplicationCommitDenial, super::WorthQueryApplicationCommitOutcome,
+    super::WorthQueryApplicationCommitReceipt,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome::WorthQueryApplicationStaleAttempt,
 };
 
 /// Exact, move-only evidence that Query committed one requested elevation.

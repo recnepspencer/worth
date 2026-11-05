@@ -5,10 +5,10 @@ use std::sync::Arc;
 use im::OrdSet;
 use worth_relational::facade::history::CommitId;
 
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 use super::logical_marking::{NativeMarkingReport, WorthQueryNativeMarkingPrecision};
-use crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding;
 use crate::domain_computation::execution_observation;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
+use crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding;
 
 /// One affected output described by its actual lineage identity. These copied
 /// fields cannot select a settlement or authorize a graph operation.

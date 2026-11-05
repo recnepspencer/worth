@@ -9,7 +9,8 @@ pub struct WorthQueryWorkflowInstanceProgressCounters {
     pub(in crate::domain_computation::primary_graph) cold_retains: usize,
     pub(in crate::domain_computation::primary_graph) cold_reconstruction_transition_visits: usize,
     pub(in crate::domain_computation::primary_graph) history_reconstruction_charge_bytes: usize,
-    pub(in crate::domain_computation::primary_graph) peak_history_reconstruction_charge_bytes: usize,
+    pub(in crate::domain_computation::primary_graph) peak_history_reconstruction_charge_bytes:
+        usize,
     pub(in crate::domain_computation::primary_graph) incremental_advances: usize,
     pub(in crate::domain_computation::primary_graph) incremental_evidence_bytes: u64,
     pub(in crate::domain_computation::primary_graph) incremental_replays: usize,

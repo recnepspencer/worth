@@ -25,8 +25,6 @@ mod staged;
 use commit_completion::WorthQueryPreparedProviderApplicationAttempt;
 pub(in crate::domain_computation::primary_graph::provider) use commit_preparation::commit_prepared_application;
 
-
-pub use {commit_preparation::FactlessCurrentness, commit_preparation::OwnEffectOnReads};
 pub(in crate::domain_computation::primary_graph) use commit_preparation::{
     WorthQueryMutationWorkCommitSeal, WorthQueryPreImageRetentionWork,
     WorthQueryPrimaryGraphCommittedApplication,
@@ -37,6 +35,7 @@ pub(super) use retained_basis::{
     WorthQueryAdmittedApplicationOverlay, WorthQueryApplicationIdempotencyBasis,
     WorthQueryObservedApplicationFactBasis,
 };
+pub use {commit_preparation::FactlessCurrentness, commit_preparation::OwnEffectOnReads};
 
 use super::WorthQueryPrimaryGraphApplicationAttempt;
 

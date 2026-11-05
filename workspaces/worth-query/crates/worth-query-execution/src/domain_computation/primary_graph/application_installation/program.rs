@@ -42,7 +42,6 @@ pub use demand::{
 };
 pub use output_roots::WorthQueryApplicationProgramRoots;
 pub use program_owner::SelectedOwnerOps;
-pub use {program_owner::WorthQueryProgramOwner, program_owner::WorthQuerySelectedProgramOwner};
 pub use program_runtime::{
     WorthQueryProgramApplicationRuntime, WorthQueryProgramSupportRetirementFailure,
     WorthQueryProgramSupportRetirementReceipt,
@@ -59,3 +58,4 @@ pub use workflow_runtime::{
     WorthQueryWorkflowApplicationRuntime, WorthQueryWorkflowRuntimeBindingDenial,
     WorthQueryWorkflowRuntimeBindingRefusal, WorthQueryWorkflowVocabulary,
 };
+pub use {program_owner::WorthQueryProgramOwner, program_owner::WorthQuerySelectedProgramOwner};

@@ -1,7 +1,11 @@
 //! A retained context and its complete recursive currentness footprint travel together.
-use {crate::domain_computation::primary_graph::application_query::observed_source::WorthQueryObservedRootSelection, crate::domain_computation::primary_graph::application_query::observed_source::WorthQueryObservedSourceFootprint, crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenialKind as Denial};
 use std::sync::Arc;
 use worth_relational::facade::identity::EntityId;
+use {
+    crate::domain_computation::primary_graph::application_query::observed_source::WorthQueryObservedRootSelection,
+    crate::domain_computation::primary_graph::application_query::observed_source::WorthQueryObservedSourceFootprint,
+    crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenialKind as Denial,
+};
 
 pub(super) struct ResultSetFootprint<'a> {
     root: EntityId,

@@ -4,9 +4,8 @@ use worth_runtime_world::facade::{
     CompositeCommitProvenance, CompositeComponentChangePosture, CompositeHistoryTraversal,
 };
 
-use super::WorthQueryPrimaryGraphApplicationRuntime;
-use crate::domain_computation::vocabulary::application_aftermath::correlation::ExternalEffectCorrelationIdentity;
 use crate::domain_computation::primary_graph::provider::WorthQueryInboundTerminalIndexDenial as Denial;
+use crate::domain_computation::vocabulary::application_aftermath::correlation::ExternalEffectCorrelationIdentity;
 
 pub(in crate::domain_computation) trait ReconstructScopedOps<Schema>:
     crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema>

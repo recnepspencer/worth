@@ -9,7 +9,11 @@ use worth_relational::facade::authorization::{
 use super::super::capability_registry::{
     WorthQueryCapabilityPathTemplate, WorthQueryInstalledCapabilityPlan,
 };
-use {super::super::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind, super::super::WorthQueryRuntimeTimeSample};
+use {
+    super::super::WorthQueryOperationAuthorizationDenial,
+    super::super::WorthQueryRuntimeTimeSample,
+    crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind,
+};
 
 pub(super) fn prepare_temporal_path(
     installed: &WorthQueryInstalledCapabilityPlan,

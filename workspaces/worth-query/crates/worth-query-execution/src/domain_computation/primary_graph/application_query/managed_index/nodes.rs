@@ -1,9 +1,12 @@
 //! Finite build scratch and isolated edits of immutable retained node pages.
-use {crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl, crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop};
 use crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity;
 use std::{cell::Cell, sync::Arc};
 use worth_execution::{
     ExecutionArray, ExecutionOrderedMap, ExecutionRequest, ExecutionRequestArrayBuilder,
+};
+use {
+    crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl,
+    crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop,
 };
 mod lineage;
 pub(super) mod pages;

@@ -1,12 +1,10 @@
 //! Availability is non-driving, but its source and image remain commit dependencies.
 use super::*;
 mod validation;
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::movement::Movement;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact as Fact;
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure;
-use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop as VerificationStop;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::SourcePublicationReadFence;
 use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphApplicationDecisionFact as DecisionFact;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop as VerificationStop;
 
 pub(super) fn prepare(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

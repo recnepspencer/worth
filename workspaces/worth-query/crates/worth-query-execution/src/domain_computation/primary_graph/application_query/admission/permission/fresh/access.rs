@@ -192,5 +192,5 @@ impl<
 }
 
 pub(crate) mod court_doors_for_test;
-pub use court_doors_for_test::AccessDoorsOps;
 use crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode;
+pub use court_doors_for_test::AccessDoorsOps;

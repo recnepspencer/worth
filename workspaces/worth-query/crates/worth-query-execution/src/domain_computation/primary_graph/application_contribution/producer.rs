@@ -4,20 +4,23 @@ use worth_query_declaration::facade::application_operation::{
     ApplicationQueryMutationSource, WorthQueryApplicationOutputRole, WorthQueryExactlyOneOutput,
 };
 use worth_query_declaration::facade::application_query::ApplicationQueryBinding;
+use worth_query_declaration::facade::application_schema::ApplicationEntityMarkerIdentity;
 use worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding;
-use worth_query_declaration::facade::application_schema::{
-    ApplicationEntityMarkerIdentity, ApplicationInvariantExecutionPoint,
-};
 use worth_query_installation::facade::ApplicationSchema;
 
 pub(crate) mod demand;
 mod denial_value;
-pub(in crate::domain_computation::primary_graph) use demand::MatchedRequiredPredecessors;
 pub(in crate::domain_computation::primary_graph) use demand::CurrentProof;
-pub use {denial_value::WorthQueryProducerDenialDeclaration, denial_value::WorthQueryProducerDenialProjection, denial_value::WorthQueryProjectedProducerDenial, denial_value::WorthQueryUndeclaredProducerDenial};
+pub(in crate::domain_computation::primary_graph) use demand::MatchedRequiredPredecessors;
 pub use {
     demand::WorthQueryAdmittedOutputDemand, demand::WorthQueryOutputDemandAdvance,
     demand::WorthQuerySelectedApplicationProducer,
+};
+pub use {
+    denial_value::WorthQueryProducerDenialDeclaration,
+    denial_value::WorthQueryProducerDenialProjection,
+    denial_value::WorthQueryProjectedProducerDenial,
+    denial_value::WorthQueryUndeclaredProducerDenial,
 };
 pub(crate) mod execution;
 pub(in crate::domain_computation::primary_graph) use execution::unpublished::PendingProducerPublication;
@@ -48,9 +51,6 @@ pub(in crate::domain_computation::primary_graph) use scheduling::{
 };
 pub(in crate::domain_computation::primary_graph) use source_qualification::QualifiedOutputSource;
 
-
-
-
 pub trait WorthQueryProducerOutputFamily<Schema>: Sized + 'static
 where
     Schema: ApplicationSchema,
@@ -75,7 +75,6 @@ pub(super) type ProducerSourceQuery<Schema, Binding> =
 pub(super) type ProducerSourceValue<Schema, Binding> =
     <<<<Binding as WorthQueryApplicationProducerBinding<Schema>>::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::Source as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value;
 
-
 /// Assessment meaning owned by the installed output-family contract rather
 /// than selected by a workflow caller.
 pub trait WorthQueryWorkflowAssessmentOutputFamily<Schema>:
@@ -99,8 +98,6 @@ where
         &self,
     ) -> <<Self::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::Source as ApplicationQueryBinding<Schema>>::Input;
 }
-
-
 
 pub trait WorthQueryApplicationProducerProvider<Schema, Binding>: Send + Sync + 'static
 where
@@ -188,6 +185,9 @@ where
 }
 
 pub(crate) mod registry;
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerApplicability;
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerInvariantRequirement;
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryWorkflowAssessmentPosture;
 pub use demand::AdmissionOps;
 pub(in crate::domain_computation) use demand::AdmissionScopedOps;
 pub(in crate::domain_computation) use demand::DependentScopedOps;
@@ -205,6 +205,3 @@ pub(in crate::domain_computation::primary_graph) use registry::InstalledProducer
 pub(in crate::domain_computation::primary_graph) use registry::PendingProducerRegistry;
 pub use registry::WorthQueryInstalledApplicationProducerRegistry;
 pub(in crate::domain_computation::primary_graph) use source_qualification::SourceQualificationScopedOps;
-use crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerApplicability;
-use crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerInvariantRequirement;
-use crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryWorkflowAssessmentPosture;

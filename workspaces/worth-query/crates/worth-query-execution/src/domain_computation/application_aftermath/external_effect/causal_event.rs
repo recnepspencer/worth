@@ -9,10 +9,13 @@ use super::identity::{ExternalEffectCausalLink, ExternalEffectPostureIdentity};
 use super::identity_derivation::{
     attempt_identity, emission_identity, observation_identity, provider_commit_identity,
 };
-use {super::ExternalEffectPostureKind, crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxRecord};
-use crate::domain_computation::vocabulary::primary_graph::external_dispatch_attempt::WorthQueryExternalDispatchAttemptOrdinal;
 use crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxObservation;
 use crate::domain_computation::runtime_time::WorthQueryRuntimeClock;
+use crate::domain_computation::vocabulary::primary_graph::external_dispatch_attempt::WorthQueryExternalDispatchAttemptOrdinal;
+use {
+    super::ExternalEffectPostureKind,
+    crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxRecord,
+};
 
 /// Read-only projection of one causal stage. Only the typed transitions in this module can seal it.
 #[derive(Clone, Debug, Eq, PartialEq)]

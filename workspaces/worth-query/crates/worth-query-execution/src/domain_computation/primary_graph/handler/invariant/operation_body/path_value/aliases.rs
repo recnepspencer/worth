@@ -1,10 +1,10 @@
 //! Native candidate assembly permits replacement; authored destinations must be distinct.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantMutationTarget;
 use crate::domain_computation::request_execution::QueryRequestExecution;
+use crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial;
 use worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus;
 use worth_relational::facade::identity::EntityId;
-use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantMutationTarget;
-use crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial;
 /// O(w log w) work and O(w) temporary slots for all actual authored write targets.
 pub(super) fn reject<S>(
     scope: EntityId,

@@ -1,11 +1,11 @@
 //! Compare decisive meanings; scheduling and unavailable evidence cannot pass.
 
-use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerification;
-use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop;
 use super::verification::EvidenceView;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationDecision;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationImage;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationStop;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerification;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum DecisiveMeaning {
@@ -99,8 +99,8 @@ fn compare(
 
 #[cfg(test)]
 mod tests {
-    use crate::domain_computation::vocabulary::primary_graph::capacity_stop::VerificationCapacityStop;
     use super::*;
+    use crate::domain_computation::vocabulary::primary_graph::capacity_stop::VerificationCapacityStop;
     use worth_relational::facade::mvcc::CompanionPreflightStop;
 
     #[test]

@@ -56,9 +56,18 @@ pub use prior_output::WorthQueryPriorOutputFamilyMember;
 pub(in crate::domain_computation::primary_graph) use prior_output::WorthQueryPriorOutputRead;
 
 use super::super::request_local::{assert_request_local, RequestLocal};
-use {super::WorthQueryApplicationInvariantProjectionAuthority, super::WorthQueryApplicationInvariantProjectionReader, super::WorthQueryApplicationInvariantProjectionSnapshot, super::WorthQueryCompletedInvariantProjection, super::WorthQueryInvariantAggregateDenial, crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity, crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantMutationTarget, super::WorthQueryInvariantProjectionDenial, super::WorthQueryInvariantProjectionTraversalDenial, super::WorthQueryInvariantProjectionWork, super::WorthQueryInvariantRelation, super::WorthQueryOperationProjectionDenial};
+use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation;
 use crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity;
-use {crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation, crate::domain_computation::primary_graph::vocabulary::entity_resolution_denial::WorthQueryEntityResolutionDenial};
+use {
+    super::WorthQueryApplicationInvariantProjectionAuthority,
+    super::WorthQueryApplicationInvariantProjectionReader,
+    super::WorthQueryApplicationInvariantProjectionSnapshot,
+    super::WorthQueryCompletedInvariantProjection, super::WorthQueryInvariantAggregateDenial,
+    super::WorthQueryInvariantProjectionDenial,
+    super::WorthQueryInvariantProjectionTraversalDenial, super::WorthQueryInvariantProjectionWork,
+    super::WorthQueryInvariantRelation, super::WorthQueryOperationProjectionDenial,
+    crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity,
+};
 
 /// An invariant projection reader restricted to one operation's declared reads.
 ///

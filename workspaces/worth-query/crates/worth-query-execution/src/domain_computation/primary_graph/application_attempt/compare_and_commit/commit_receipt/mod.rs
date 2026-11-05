@@ -16,9 +16,21 @@ mod publication_source;
 use worth_query_installation::facade::WorthQueryCanonicalWorkPhases;
 use worth_relational::facade::history::RelationalCommitReceipt;
 
-use {crate::domain_computation::application_aftermath::WorthQueryCommittedAftermathCausality, crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxRecord, crate::domain_computation::application_aftermath::WorthQueryExternalEffectDispatch, crate::domain_computation::application_aftermath::WorthQueryRetainedPreImage};
+use {
+    crate::domain_computation::application_aftermath::WorthQueryCommittedAftermathCausality,
+    crate::domain_computation::application_aftermath::WorthQueryExternalEffectDispatch,
+    crate::domain_computation::application_aftermath::WorthQueryRetainedPreImage,
+    crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxRecord,
+};
 
-use {super::super::WorthQueryApplicationCommitAuthorityBinding, super::super::WorthQueryApplicationCommitTerminalEvidence, super::super::WorthQueryApplicationOutputCorrespondence, crate::domain_computation::primary_graph::vocabulary::application_attempt::projection::WorthQueryApplicationOutputProjectionDenial, super::super::WorthQueryApplicationTypedOutputCorrespondence, super::super::WorthQueryMutationPreconditionComparisonEvidence};
+use {
+    super::super::WorthQueryApplicationCommitAuthorityBinding,
+    super::super::WorthQueryApplicationCommitTerminalEvidence,
+    super::super::WorthQueryApplicationOutputCorrespondence,
+    super::super::WorthQueryApplicationTypedOutputCorrespondence,
+    super::super::WorthQueryMutationPreconditionComparisonEvidence,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::projection::WorthQueryApplicationOutputProjectionDenial,
+};
 
 pub(in crate::domain_computation::primary_graph) use pending::WorthQueryPendingApplicationCommitReceipt;
 pub(in crate::domain_computation::primary_graph) use projection::WorthQueryCommittedReceiptProjection;
@@ -121,7 +133,7 @@ impl WorthQueryApplicationCommitReceipt {
 
     pub const fn outcome_identity(
         &self,
-    ) -> Option<crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome_identity::WorthQueryApplicationCommitOutcomeIdentity> {
+    ) -> Option<crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome_identity::WorthQueryApplicationCommitOutcomeIdentity>{
         self.outcome_identity
     }
 
@@ -212,7 +224,7 @@ impl WorthQueryApplicationCommitReceipt {
         &std::sync::Arc<
             crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity,
         >,
-    > {
+    >{
         self.exact_output_settlement.as_ref()
     }
 
@@ -248,7 +260,7 @@ impl WorthQueryApplicationCommitReceipt {
 
     pub(in crate::domain_computation) fn committed_dispatch_outbox(
         &self,
-    ) -> Option<&crate::domain_computation::vocabulary::primary_graph::outbox_commit::WorthQueryCommittedDispatchOutboxBinding> {
+    ) -> Option<&crate::domain_computation::vocabulary::primary_graph::outbox_commit::WorthQueryCommittedDispatchOutboxBinding>{
         self.committed_dispatch_outbox.as_ref()
     }
 
@@ -272,7 +284,7 @@ impl WorthQueryApplicationCommitReceipt {
 
     pub(crate) const fn runtime_authority(
         &self,
-    ) -> crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity {
+    ) -> crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity{
         self.authority_binding.runtime_authority()
     }
 

@@ -1,8 +1,16 @@
 //! Exact precommit capacity evidence survives the existing provider mapping.
 use super::*;
-use {crate::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_session_denied, crate::domain_computation::vocabulary::primary_graph::capacity_stop::VerificationCapacityStop as Capacity, crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind as Kind, crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage as Stage};
-use {crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind as ProviderKind, crate::domain_computation::WorthQueryProviderSessionRecoveryPosture};
 use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
+use {
+    crate::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_session_denied,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind as Kind,
+    crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage as Stage,
+    crate::domain_computation::vocabulary::primary_graph::capacity_stop::VerificationCapacityStop as Capacity,
+};
+use {
+    crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind as ProviderKind,
+    crate::domain_computation::WorthQueryProviderSessionRecoveryPosture,
+};
 
 #[test]
 fn precommit_capacity_keeps_original_cause_and_pre_effect_posture() {

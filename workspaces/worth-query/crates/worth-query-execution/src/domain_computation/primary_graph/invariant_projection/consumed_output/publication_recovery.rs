@@ -10,8 +10,6 @@ use worth_relational::facade::runtime::RelationalRuntime;
 use worth_relational::facade::snapshots::SnapshotHandle;
 use crate::domain_computation::primary_graph::vocabulary::invariant_projection::publication_recovery::PublicationRecoveryStop;
 
-
-
 enum Visit<'a> {
     Enter(&'a ConsumedOutputEvidence),
     Established(&'a ConsumedOutputEvidence),

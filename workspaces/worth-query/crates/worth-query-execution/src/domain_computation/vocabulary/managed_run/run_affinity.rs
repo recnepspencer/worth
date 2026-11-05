@@ -5,7 +5,7 @@ pub(in crate::domain_computation) struct WorthQueryWorkflowRunTransitionPermit {
 }
 
 impl WorthQueryWorkflowRunTransitionPermit {
-    const fn mint() -> Self {
+    pub(in crate::domain_computation) const fn mint() -> Self {
         Self { _owner: () }
     }
 }

@@ -1,11 +1,10 @@
+use crate::domain_computation::vocabulary::managed_run::relational_observation::WorthQueryManagedRelationalObservationReleaseReceipt;
 use worth_relational::facade::branch::{
     AdmittedRelationalBranchBasis, RelationalBranchBasisDescriptor,
 };
 use worth_runtime_bridge::facade::{
-    RelationalBridgeObservationLease, RelationalBridgeObservationReleaseReceipt,
-    RuntimeBridgeRelationalSource, TruthSnapshotIdentity,
+    RelationalBridgeObservationLease, RuntimeBridgeRelationalSource, TruthSnapshotIdentity,
 };
-use crate::domain_computation::vocabulary::managed_run::relational_observation::WorthQueryManagedRelationalObservationReleaseReceipt;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryManagedRelationalObservationIdentity {
@@ -83,8 +82,6 @@ impl WorthQueryManagedRelationalObservation {
         WorthQueryManagedRelationalObservationReleaseReceipt { bridge_release }
     }
 }
-
-
 
 mod court_doors_for_test;
 

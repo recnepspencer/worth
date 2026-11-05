@@ -1,6 +1,11 @@
 use worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome;
 
-use {super::denial, super::CompiledWorkflowDefinition, super::CompiledWorkflowNodeKind, super::SettledWorkflowTransition, super::WorkflowInstanceProgress, super::WorkflowTransitionProgressObservation, super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
+use {
+    super::denial, super::CompiledWorkflowDefinition, super::CompiledWorkflowNodeKind,
+    super::SettledWorkflowTransition, super::WorkflowInstanceProgress,
+    super::WorkflowTransitionProgressObservation, super::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
+};
 
 impl WorkflowInstanceProgress {
     pub(in crate::domain_computation::primary_graph) fn reconstruct(

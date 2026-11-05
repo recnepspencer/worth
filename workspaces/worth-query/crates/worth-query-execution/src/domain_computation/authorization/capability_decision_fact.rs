@@ -218,7 +218,7 @@ impl WorthQueryRetainedCapabilityAuthorization {
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
         bridge: &worth_runtime_bridge::facade::BridgeAuthorizationRuntime,
-    ) -> Result<(), crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind> {
+    ) -> Result<(), crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind>{
         if !self
             .principal
             .remains_current_in(execution, runtime, snapshot)?

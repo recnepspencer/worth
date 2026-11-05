@@ -1,21 +1,25 @@
 //! A candidate read reborrows the actual observation and original request each time.
 mod projection;
-use {super::invocation::decoded_provider, super::source::projection::project_row, super::source::service::ManagedSourceRoot, crate::domain_computation::primary_graph::vocabulary::application_query::provider::WorthQueryManagedIndexProbeValue, crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial};
-use {crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationQueryGovernance, crate::domain_computation::primary_graph::application_query::WorthQueryApplicationProjection, crate::domain_computation::vocabulary::primary_graph::projection_denial::WorthQueryApplicationProjectionDenial, crate::domain_computation::primary_graph::application_query::WorthQueryApplicationProjectionRow};
+use crate::domain_computation::primary_graph::vocabulary::application_query::invariant_read::ManagedSourceValue;
+use crate::domain_computation::primary_graph::vocabulary::application_query::invariant_read::ReadPosture;
+use crate::domain_computation::primary_graph::vocabulary::application_query::invariant_read::WorthQueryManagedIndexInvariantDenial;
 use worth_query_declaration::facade::{
     application_query::{ApplicationManagedIndexBinding, ApplicationQueryBinding},
-    application_schema::{
-        ApplicationScalarValueBinding, ApplicationSchema, ApplicationStructuredValueBinding,
-    },
+    application_schema::{ApplicationScalarValueBinding, ApplicationSchema},
 };
 use worth_relational::facade::runtime::{
     ManagedIndexSourcePreparationDenial as NativeDenial, ManagedIndexSourceRead,
 };
-use crate::domain_computation::primary_graph::vocabulary::application_query::invariant_read::ManagedSourceValue;
-use crate::domain_computation::primary_graph::vocabulary::application_query::invariant_read::ReadPosture;
-use crate::domain_computation::primary_graph::vocabulary::application_query::invariant_read::WorthQueryManagedIndexInvariantDenial;
-
-
+use {
+    super::invocation::decoded_provider, super::source::projection::project_row,
+    super::source::service::ManagedSourceRoot,
+    crate::domain_computation::primary_graph::vocabulary::application_query::provider::WorthQueryManagedIndexProbeValue,
+};
+use {
+    crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationQueryGovernance,
+    crate::domain_computation::primary_graph::application_query::WorthQueryApplicationProjection,
+    crate::domain_computation::primary_graph::application_query::WorthQueryApplicationProjectionRow,
+};
 
 pub(in crate::domain_computation::primary_graph) fn query<S, I>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

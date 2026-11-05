@@ -1,9 +1,9 @@
 //! Completion aliases from the actual retained consumed-output closure.
 use super::*;
 use crate::domain_computation::primary_graph::invariant_projection::EvidenceView;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
 use im::OrdSet;
 use std::sync::Arc;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
 
 impl WorthQueryApplicationOutputLineage {
     pub(super) fn supporting_publication_sources(

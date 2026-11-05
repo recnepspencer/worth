@@ -2,7 +2,10 @@
 use super::super::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
 };
-use {super::WorthQueryOperationBodyDecision, crate::domain_computation::primary_graph::vocabulary::operation_body::WorthQueryOperationBodyDenial};
+use {
+    super::WorthQueryOperationBodyDecision,
+    crate::domain_computation::primary_graph::vocabulary::operation_body::WorthQueryOperationBodyDenial,
+};
 #[path = "handler/candidate.rs"]
 mod candidate;
 #[path = "handler/creation_initializers.rs"]

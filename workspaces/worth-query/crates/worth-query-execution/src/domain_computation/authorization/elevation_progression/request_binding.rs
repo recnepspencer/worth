@@ -137,7 +137,7 @@ impl WorthQueryObservedElevationSupport {
 impl WorthQueryElevationRequestBinding {
     pub(in crate::domain_computation) const fn runtime_authority(
         &self,
-    ) -> &crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity {
+    ) -> &crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity{
         &self.runtime_authority
     }
     pub(in crate::domain_computation) const fn branch(

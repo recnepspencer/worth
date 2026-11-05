@@ -30,10 +30,9 @@ use crate::domain_computation::primary_graph::application_attempt::WorthQueryApp
 use crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerOutputFamily;
 use crate::domain_computation::primary_graph::invariant_projection::consumed_output::ConsumedOutputEvidence;
 use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerification;
-use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
 use crate::domain_computation::primary_graph::WorthQueryApplicationOperationInvariantProjectionReader;
 use crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence;
-use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
 
 impl<'reader, 'runtime, Schema, Operation>
     WorthQueryApplicationOperationInvariantProjectionReader<'reader, 'runtime, Schema, Operation>

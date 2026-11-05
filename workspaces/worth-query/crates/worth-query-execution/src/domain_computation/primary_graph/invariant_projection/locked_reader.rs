@@ -11,8 +11,12 @@ use worth_query_installation::facade::{
 };
 
 use super::work::WorthQueryInvariantProjectionWorkBudget;
-use {super::WorthQueryApplicationInvariantProjectionAuthority, super::WorthQueryApplicationInvariantProjectionSnapshot, crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity, super::WorthQueryInvariantProjectionDenial, super::WorthQueryInvariantProjectionWork, super::WorthQueryRealizedProjectionScope};
-use {crate::domain_computation::primary_graph::vocabulary::entity_resolution_denial::WorthQueryEntityResolutionDenial, crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionDenialKind, crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode};
+use {
+    super::WorthQueryApplicationInvariantProjectionAuthority,
+    super::WorthQueryApplicationInvariantProjectionSnapshot,
+    super::WorthQueryInvariantProjectionDenial, super::WorthQueryInvariantProjectionWork,
+    super::WorthQueryRealizedProjectionScope,
+};
 
 mod borrowed_snapshot;
 #[path = "locked_reader/content.rs"]

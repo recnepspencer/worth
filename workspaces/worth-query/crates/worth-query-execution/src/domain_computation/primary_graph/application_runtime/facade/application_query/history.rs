@@ -3,10 +3,10 @@ use crate::domain_computation::authorization::WorthQueryAdmittedApplicationCapab
 use crate::domain_computation::primary_graph::application_query::WorthQueryAdmittedApplicationHistoryCapture;
 use crate::domain_computation::primary_graph::application_query::WorthQueryApplicationHistoryCaptureLimits;
 use crate::domain_computation::primary_graph::application_query::WorthQueryApplicationHistoryCursor;
-use crate::domain_computation::primary_graph::vocabulary::application_query::history_denial::WorthQueryApplicationHistoryDenial;
 use crate::domain_computation::primary_graph::application_query::WorthQueryApplicationHistoryPage;
 use crate::domain_computation::primary_graph::application_query::WorthQueryApplicationHistoryPageLimits;
 use crate::domain_computation::primary_graph::application_query::WorthQueryCapturedApplicationHistorySubjects;
+use crate::domain_computation::primary_graph::vocabulary::application_query::history_denial::WorthQueryApplicationHistoryDenial;
 use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
 use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;

@@ -5,7 +5,11 @@ use worth_query_declaration::facade::{
 };
 use worth_query_installation::facade::WorthQueryInstalledApplicationQuery;
 
-use {super::WorthQueryAdmittedApplicationQueryPlan, super::WorthQueryApplicationQueryAccessContext, crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial, super::WorthQueryApplicationQueryControls};
+use {
+    super::WorthQueryAdmittedApplicationQueryPlan, super::WorthQueryApplicationQueryAccessContext,
+    super::WorthQueryApplicationQueryControls,
+    crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial,
+};
 
 mod access_observation;
 mod authorization;

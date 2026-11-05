@@ -15,9 +15,9 @@ use worth_query_installation::facade::WorthQueryInstalledManagedIndex;
 
 mod execution;
 mod history;
-pub(super) use execution::ErasedIndexExecutor;
-use crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop;
 use crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial;
+use crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop;
+pub(super) use execution::ErasedIndexExecutor;
 
 pub(super) trait InstalledIndexProvider<S, I>: Send + Sync
 where

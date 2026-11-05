@@ -4,12 +4,16 @@ use super::super::{
     report::InspectionReportDenial, target::InspectionTargetDenial,
 };
 use super::*;
-use {crate::domain_computation::vocabulary::primary_graph::retained_stage::RetainedStorageDenial, crate::domain_computation::provider_session::WorthQueryInspectionReadTerminalDenial, crate::domain_computation::provider_session::WorthQueryManagedGraphReadDenial};
+use crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop;
 use worth_execution::{LeaseDenial, MapKernelFailure, MapKernelStop, MemoryLimitDenial, ScopeStop};
 use worth_foundational::facade::{CanonicalBasisPreparationStop, CanonicalDigestAdmissionStop};
 use worth_relational::facade::transactions::RelationalExecutionDenialCause;
 use worth_runtime_bridge::facade::BridgeQueryObservationReportingStop;
-use crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop;
+use {
+    crate::domain_computation::provider_session::WorthQueryInspectionReadTerminalDenial,
+    crate::domain_computation::provider_session::WorthQueryManagedGraphReadDenial,
+    crate::domain_computation::vocabulary::primary_graph::retained_stage::RetainedStorageDenial,
+};
 
 /// A borrowed original stop; reading it creates no replacement work or authority.
 #[derive(Clone, Copy, Debug)]

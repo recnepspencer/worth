@@ -75,7 +75,7 @@ impl DeclaredProducerBinding {
     #[doc(hidden)]
     pub fn input_reuse_mut_for_test(
         &mut self,
-    ) -> &mut Option<crate::domain_computation::vocabulary::primary_graph::input_reuse_contract::WorthQueryProducerInputReuseContract> {
+    ) -> &mut Option<crate::domain_computation::vocabulary::primary_graph::input_reuse_contract::WorthQueryProducerInputReuseContract>{
         &mut self.input_reuse
     }
 }

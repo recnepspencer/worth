@@ -1,5 +1,4 @@
 //! Sealed authority for creating a subject and enrolling it in one publication.
-use {super::super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, super::super::WorthQueryApplicationObservedFact};
 use crate::domain_computation::authorization::WorthQueryOperationScopeBinding;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::sync::{Arc, Mutex};
@@ -8,6 +7,11 @@ use worth_query_declaration::facade::application_operation::{
 };
 use worth_query_declaration::facade::application_program::ApplicationWorkflowSpec;
 use worth_query_installation::facade::ApplicationSchema;
+use {
+    super::super::WorthQueryApplicationAttemptDenial,
+    super::super::WorthQueryApplicationObservedFact,
+    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
+};
 use {
     crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition,
     crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowLineageCarry,

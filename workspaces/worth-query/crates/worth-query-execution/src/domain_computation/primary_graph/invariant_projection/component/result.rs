@@ -1,12 +1,12 @@
 //! Typed membership iterates the original funded Native body without a copy.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
 use crate::domain_computation::primary_graph::{
     aggregate_identity::WorthQueryAggregateIdentity, aggregate_observation::AggregateObservation,
 };
 use std::{marker::PhantomData, sync::Arc};
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 use worth_relational::facade::identity::KindId;
-use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
 
 /// A complete component admitted by its issuing projection reader.
 /// Retention preserves the original Native request custody, not read authority.

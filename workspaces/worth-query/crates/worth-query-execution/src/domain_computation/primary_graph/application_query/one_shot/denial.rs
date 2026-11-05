@@ -1,15 +1,11 @@
 use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
-use {crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind};
+use {
+    crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial,
+    crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind,
+};
 
-use crate::domain_computation::vocabulary::primary_graph::projection_denial::WorthQueryApplicationProjectionDenialKind;
 use crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::denial;
-
-
-
-
-
-
-
+use crate::domain_computation::vocabulary::primary_graph::projection_denial::WorthQueryApplicationProjectionDenialKind;
 
 /// Owner stages and the complete reconstruction return through this boundary.
 /// A worker's map allowance ends before its returned payload acquires custody.
@@ -35,11 +31,12 @@ pub fn retain_reconstruction_result<T>(
     result
 }
 
-
-
 #[cfg(test)]
 mod tests {
-    use {crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::denial, crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenialKind};
+    use {
+        crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::denial,
+        crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenialKind,
+    };
 
     #[test]
     fn execution_denial_preserves_query_and_internal_subject_separately() {
@@ -53,6 +50,5 @@ mod tests {
         assert_eq!(denial.subject(), "root/relation[0]/field[0]");
     }
 }
-
 
 mod court_doors_for_test;

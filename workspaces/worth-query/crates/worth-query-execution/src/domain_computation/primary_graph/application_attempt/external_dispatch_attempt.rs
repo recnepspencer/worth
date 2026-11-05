@@ -5,9 +5,8 @@ use std::sync::Arc;
 
 use crate::domain_computation::application_aftermath::external_effect::WorthQueryAdmittedExternalDispatchAttempt;
 use crate::domain_computation::application_aftermath::external_effect::WorthQueryTerminalEffectRefusal;
-use crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxRecord;
-use crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxObservation;
+use crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxRecord;
 
 /// Why this application runtime could not admit a physical dispatch attempt.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -32,8 +31,6 @@ impl From<WorthQueryTerminalEffectRefusal> for WorthQueryExternalDispatchAdmissi
         }
     }
 }
-
-
 
 pub(in crate::domain_computation::primary_graph) trait ExternalDispatchAttemptScopedOps<
     Schema: worth_query_installation::facade::ApplicationSchema,
@@ -142,5 +139,5 @@ pub(in crate::domain_computation::primary_graph) trait ExternalDispatchAttemptSc
 impl<Schema: worth_query_installation::facade::ApplicationSchema, HostRuntime: crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema> + ?Sized> ExternalDispatchAttemptScopedOps<Schema> for HostRuntime {}
 
 pub(crate) mod court_doors_for_test;
-pub use court_doors_for_test::ExternalDispatchAttemptDoorsOps;
 use crate::domain_computation::vocabulary::primary_graph::external_dispatch_attempt::WorthQueryExternalDispatchAttemptOrdinal;
+pub use court_doors_for_test::ExternalDispatchAttemptDoorsOps;

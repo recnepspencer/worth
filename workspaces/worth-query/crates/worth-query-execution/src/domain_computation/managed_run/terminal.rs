@@ -1,7 +1,5 @@
 use crate::domain_computation::vocabulary::managed_run::terminal::WorthQueryManagedRunTerminalKind;
 
-
-
 pub(in crate::domain_computation::managed_run) fn bridge_terminal_disposition(
     terminal: WorthQueryManagedRunTerminalKind,
 ) -> worth_runtime_bridge::facade::BridgeExecutionBasisTerminalDisposition {

@@ -33,7 +33,6 @@ pub(in crate::domain_computation) use graph_obligation::{
     WorthQueryPreparedProductReadSessionIdentity, WorthQueryProviderSessionBoundMutationRun,
     WorthQueryQuerySourceContext, WorthQuerySessionGraphReadProof,
 };
-pub use {graph_obligation::WorthQueryGraphReadCompletion, graph_obligation::WorthQueryGraphReadDependencyEvidence, graph_obligation::WorthQueryMutationCleanupFailure, graph_obligation::WorthQueryMutationCleanupFailureKind, graph_obligation::WorthQueryMutationGraphWorkCompletion};
 pub use graph_provider::*;
 pub use protocol::*;
 pub use provisional_attempt::*;
@@ -42,6 +41,13 @@ pub use session_identity::WorthQueryExecutionProviderSession;
 pub(in crate::domain_computation) use session_identity::WorthQueryExecutionProviderSessionIdentity;
 pub use workflow_attempt::{
     WorthQueryWorkflowExecutionAttemptReleaseReceipt, WorthQueryWorkflowExecutionResourceAttempt,
+};
+pub use {
+    graph_obligation::WorthQueryGraphReadCompletion,
+    graph_obligation::WorthQueryGraphReadDependencyEvidence,
+    graph_obligation::WorthQueryMutationCleanupFailure,
+    graph_obligation::WorthQueryMutationCleanupFailureKind,
+    graph_obligation::WorthQueryMutationGraphWorkCompletion,
 };
 
 pub(in crate::domain_computation) use provisional_attempt::check_invariant_request_live;

@@ -3,9 +3,9 @@ use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::mvcc::CustomInvariantNonApplicability;
 use worth_relational::facade::runtime::{InvariantDecisionKind, InvariantExecutionPoint};
 
-use crate::domain_computation::vocabulary::primary_graph::invariant_denial::WorthQueryGeneratedOutputInvariantAdmissionDenial as Denial;
-use crate::domain_computation::primary_graph::WorthQueryApplicationProducerBinding;
 use crate::domain_computation::primary_graph::vocabulary::product_operation::invariant_admission::admit_required_invariants;
+use crate::domain_computation::primary_graph::WorthQueryApplicationProducerBinding;
+use crate::domain_computation::vocabulary::primary_graph::invariant_denial::WorthQueryGeneratedOutputInvariantAdmissionDenial as Denial;
 
 pub(super) fn admit<Schema, Producer>(
     evidence: &worth_relational::facade::mvcc::RelationalMutationInvariantEvidence,
@@ -32,11 +32,5 @@ where
     )
 }
 
-
-
-
-
-
 #[cfg(test)]
 mod tests;
-

@@ -1,7 +1,6 @@
 use crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenial;
 use crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenialKind;
 
-
 pub(in crate::domain_computation::primary_graph::application_query) fn read_execution_denial(
     kind: WorthQueryApplicationReadExecutionDenialKind,
     subject: impl Into<String>,
@@ -11,7 +10,6 @@ pub(in crate::domain_computation::primary_graph::application_query) fn read_exec
         subject: subject.into(),
     }
 }
-
 
 pub(super) fn relational_lookup_denial(
     denial: worth_relational::facade::indexes::BoundedEntityFieldLookupDenial,
@@ -53,7 +51,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn managed_r
 ) -> Result<
     crate::domain_computation::primary_graph::vocabulary::application_query::authorized_read::WorthQueryAuthorizedApplicationReadDenial,
     worth_execution::MapKernelStop,
-> {
+>{
     use crate::domain_computation::primary_graph::vocabulary::application_query::authorized_read::WorthQueryAuthorizedApplicationReadDenial as Denial;
     use crate::domain_computation::provider_session::WorthQueryManagedGraphReadDenial as Cause;
     match cause {

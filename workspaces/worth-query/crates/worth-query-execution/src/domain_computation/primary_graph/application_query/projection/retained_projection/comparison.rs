@@ -1,8 +1,14 @@
 //! Compare genuine original disclosed trees only after fresh diagnostic admission.
 use super::OriginalProjection;
-use {crate::domain_computation::authorization::application_disclosure::DiagnosticComparisonAdmission, crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint, crate::domain_computation::vocabulary::primary_graph::retained_stage::run_retained_stage, crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop, crate::domain_computation::vocabulary::primary_graph::retained_stage::RetainedStorageDenial};
 use std::sync::Arc;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, MapKernelFailure};
+use {
+    crate::domain_computation::authorization::application_disclosure::DiagnosticComparisonAdmission,
+    crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint,
+    crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop,
+    crate::domain_computation::vocabulary::primary_graph::retained_stage::run_retained_stage,
+    crate::domain_computation::vocabulary::primary_graph::retained_stage::RetainedStorageDenial,
+};
 
 pub(in crate::domain_computation::primary_graph) enum ProjectionComparisonDenial {
     DisclosureInterpretationChanged,

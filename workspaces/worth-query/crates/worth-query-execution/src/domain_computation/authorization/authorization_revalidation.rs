@@ -13,12 +13,16 @@ use super::{
     decision_facts::WorthQueryObservedCommitBasis,
     delegation_admission::WorthQueryCapabilityObservationSource,
 };
-use {super::WorthQueryApplicationCommitAuthorization, super::WorthQueryCapabilityCommitBasis, super::WorthQueryCommitAuthorizationBasis, super::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind, super::WorthQueryRetainedAuthorizationDecisionFacts};
 use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationOperation, WorthQueryApplicationBranchCommitCoordination,
 };
 use currentness::*;
 pub(in crate::domain_computation::authorization) use observation::WorthQueryAuthorizationRevalidationObservation;
+use {
+    super::WorthQueryApplicationCommitAuthorization, super::WorthQueryCapabilityCommitBasis,
+    super::WorthQueryCommitAuthorizationBasis, super::WorthQueryOperationAuthorizationDenial,
+    super::WorthQueryRetainedAuthorizationDecisionFacts,
+};
 
 struct RevalidationObservationAxes<'observation> {
     session: crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,

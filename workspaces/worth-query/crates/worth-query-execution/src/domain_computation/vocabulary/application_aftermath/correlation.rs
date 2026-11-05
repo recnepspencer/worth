@@ -4,7 +4,7 @@ use worth_foundational::facade::CanonicalDigestId;
 /// Query-owned correlation identity. Equality is digest equality only.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct ExternalEffectCorrelationIdentity {
-    digest: CanonicalDigestId,
+    pub(in crate::domain_computation) digest: CanonicalDigestId,
 }
 
 impl ExternalEffectCorrelationIdentity {

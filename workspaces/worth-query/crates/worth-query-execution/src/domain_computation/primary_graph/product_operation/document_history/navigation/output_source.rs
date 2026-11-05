@@ -1,6 +1,5 @@
 //! The original root claim consumes the same disclosed source whose model is checked.
 use super::*;
-use crate::domain_computation::primary_graph::runtime_host::WorthQueryRuntimeIdentityHost;
 use worth_query_declaration::facade::{
     application_program::{
         ApplicationConnectionShape, ApplicationFixedOutputRoot, ApplicationOutputGraphShape,

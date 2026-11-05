@@ -148,7 +148,7 @@ impl WorthQueryPrimaryGraph {
 
     pub(super) const fn runtime_authority(
         &self,
-    ) -> crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity {
+    ) -> crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity{
         self.runtime_authority
     }
 

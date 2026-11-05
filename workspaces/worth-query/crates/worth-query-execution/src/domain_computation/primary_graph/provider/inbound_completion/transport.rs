@@ -11,7 +11,10 @@ use worth_relational::facade::{
 use super::super::WorthQueryPrimaryGraphProvider;
 use super::{hex, string, WorthQueryInboundCompletionPreparationDenial as Denial};
 use crate::domain_computation::application_aftermath::WorthQueryExternalEffectDispatch;
-use {crate::domain_computation::primary_graph::vocabulary::application_inbound::transport_binding::WorthQueryInstalledTransportCompletionBinding, crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxObservation};
+use {
+    crate::domain_computation::primary_graph::vocabulary::application_inbound::transport_binding::WorthQueryInstalledTransportCompletionBinding,
+    crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxObservation,
+};
 
 impl WorthQueryPrimaryGraphProvider {
     /// Prepare the same one terminal Relational mutation used by authenticated

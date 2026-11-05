@@ -74,7 +74,9 @@ pub(in crate::domain_computation) struct WorthQueryManagedProviderWorkEvidencePa
 }
 
 impl WorthQueryManagedProviderWorkEvidence {
-    pub(in crate::domain_computation) fn from_parts(parts: WorthQueryManagedProviderWorkEvidenceParts) -> Self {
+    pub(in crate::domain_computation) fn from_parts(
+        parts: WorthQueryManagedProviderWorkEvidenceParts,
+    ) -> Self {
         Self {
             provider_session_identity: parts.provider_session_identity,
             issued_call_count: parts.issued_call_count,
@@ -216,13 +218,13 @@ impl WorthQueryManagedProviderWorkEvidence {
 
     pub const fn last_safe_point(
         &self,
-    ) -> Option<&crate::domain_computation::vocabulary::managed_run::safe_point_observation::WorthQueryManagedSafePointObservation> {
+    ) -> Option<&crate::domain_computation::vocabulary::managed_run::safe_point_observation::WorthQueryManagedSafePointObservation>{
         self.last_safe_point.as_ref()
     }
 
     pub const fn last_step_failure(
         &self,
-    ) -> Option<&crate::domain_computation::vocabulary::provider_session::step_failure::WorthQueryGraphProviderStepFailureEvidence> {
+    ) -> Option<&crate::domain_computation::vocabulary::provider_session::step_failure::WorthQueryGraphProviderStepFailureEvidence>{
         self.last_step_failure.as_ref()
     }
 

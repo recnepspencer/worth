@@ -35,9 +35,7 @@ impl DecisionContextUse {
         Self(self.0 | Self::MANAGED_COMPUTATION)
     }
 
-    pub(in crate::domain_computation) const fn source_query_permission(
-        self,
-    ) -> Self {
+    pub(in crate::domain_computation) const fn source_query_permission(self) -> Self {
         Self(self.0 | Self::SOURCE_QUERY_PERMISSION)
     }
 

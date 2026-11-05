@@ -20,7 +20,6 @@ where
     }
 }
 
-
 impl<Schema, Entity> WorthQueryInvariantEntityIdentity<Schema, Entity> {
     #[doc(hidden)]
     pub fn entity_for_test(&self) -> &Arc<str> {

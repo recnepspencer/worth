@@ -1,5 +1,4 @@
 //! Fresh authority for a completed native chain, not a birth or revived instance.
-use {super::super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, super::super::WorthQueryApplicationObservedFact};
 use std::sync::{Arc, Mutex};
 use worth_query_declaration::facade::{
     application_operation::{ApplicationMutationBinding, WorthQueryApplicationOutputRole},
@@ -7,6 +6,11 @@ use worth_query_declaration::facade::{
 };
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::identity::EntityId;
+use {
+    super::super::WorthQueryApplicationAttemptDenial,
+    super::super::WorthQueryApplicationObservedFact,
+    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
+};
 use {
     crate::domain_computation::authorization::WorthQueryOperationScopeBinding,
     crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition,

@@ -56,10 +56,10 @@ use std::sync::OnceLock;
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 
 pub(in crate::domain_computation::primary_graph) use crate::domain_computation::vocabulary::primary_graph::decision_reuse::CompletedDecisionReuseProof;
-pub(in crate::domain_computation::primary_graph) use crate::domain_computation::vocabulary::primary_graph::decision_reuse::PreparedDecisionReuseContext;
 pub use denial::WorthQueryPriorOutputDenial;
 pub use denial::WorthQueryPriorOutputDenialKind;
 
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 pub(in crate::domain_computation::primary_graph) use input_cutoff::prepare_stable_address;
 pub(in crate::domain_computation::primary_graph) use input_cutoff::InputCutoffVerificationStop;
 pub(in crate::domain_computation::primary_graph) use input_cutoff::OwnedInputCutoffDecision;
@@ -77,7 +77,6 @@ pub(in crate::domain_computation::primary_graph) use recorded_output::RecordedOu
 use recorded_output::RecordedOutputMutable;
 pub(in crate::domain_computation::primary_graph) use recorded_source_identity::RecordedSourceIdentity;
 use resolution::latest_output_matching;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 
 use super::provider::WorthQueryPrimaryGraphCommittedApplication;
 use super::WorthQueryApplicationOutputCorrespondence;
@@ -134,7 +133,6 @@ pub(super) struct WorthQueryProducerLineageHead {
     /// Runtime origins retain a replayable receipt; checkpoint origins retain prior identity.
     pub(super) may_replay_idempotency: bool,
 }
-
 
 pub struct WorthQueryPriorOutputBindingResolution {
     pub(super) correspondence: Option<Arc<WorthQueryApplicationOutputCorrespondence>>,
@@ -333,3 +331,4 @@ impl WorthQueryApplicationOutputLineage {
 
 mod court_doors_for_test;
 pub(crate) mod host;
+pub(in crate::domain_computation::primary_graph) use crate::domain_computation::vocabulary::primary_graph::decision_reuse::PreparedDecisionReuseContext;

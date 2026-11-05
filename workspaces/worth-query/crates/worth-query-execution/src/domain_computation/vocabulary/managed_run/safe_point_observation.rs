@@ -7,8 +7,8 @@ use worth_runtime_bridge::facade::BridgeExecutionSafePointSignalState;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryManagedSafePointObservation {
-    run_identity: Arc<str>,
-    bridge_evidence: BridgeExecutionSafePointObservation,
+    pub(in crate::domain_computation) run_identity: Arc<str>,
+    pub(in crate::domain_computation) bridge_evidence: BridgeExecutionSafePointObservation,
 }
 
 impl WorthQueryManagedSafePointObservation {

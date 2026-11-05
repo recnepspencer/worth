@@ -1,10 +1,15 @@
 //! Complete component inspection under installation-owned projection authority.
-use {super::WorthQueryApplicationInvariantProjectionReader, crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity, super::WorthQueryInvariantProjectionTraversalDenial as Denial, super::WorthQueryInvariantProjectionTraversalDenialKind as Kind};
 use crate::domain_computation::primary_graph::{
     aggregate_observation::AggregateSelection, schema_layout::ComponentSetLayout,
 };
 use worth_query_declaration::facade::application_schema::ApplicationComponentSetRef;
 use worth_query_installation::facade::ApplicationSchema;
+use {
+    super::WorthQueryApplicationInvariantProjectionReader,
+    super::WorthQueryInvariantProjectionTraversalDenial as Denial,
+    super::WorthQueryInvariantProjectionTraversalDenialKind as Kind,
+    crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity,
+};
 mod physical_reads;
 mod result;
 pub use result::WorthQueryInvariantProjectionComponent;

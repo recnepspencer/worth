@@ -10,8 +10,6 @@ pub(super) use relational_read::denial as relational_read_denial;
 pub(super) use relational_read::kernel_stop_kind;
 pub(in crate::domain_computation) use relational_read::principal_currentness;
 
-
-
 /// Why an admitted operation's own request authority lapsed after admission.
 ///
 /// These are the only causes current-authority revalidation can report, so a
@@ -46,9 +44,8 @@ impl WorthQueryAdmissionLapse {
 }
 
 mod explanation;
-pub use explanation::WorthQueryApplicationAuthorizationExplanationCause;
 use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind;
-use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind;
+pub use explanation::WorthQueryApplicationAuthorizationExplanationCause;
 
 /// Process-local identity of one authorization denial, for correlation.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -180,6 +177,5 @@ pub(super) fn product_security_basis_denial(
         subject,
     )
 }
-
 
 mod court_doors_for_test;

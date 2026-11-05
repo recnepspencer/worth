@@ -1,11 +1,25 @@
 //! One ordinary source execution, retained only after its genuine terminal.
 use super::source_image::{SourceImage, SourcePlan};
-use {crate::domain_computation::primary_graph::application_query::authorized_read::execute_authorized_read, crate::domain_computation::primary_graph::application_query::authorized_read::refresh_governed_authorization, crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationQueryGovernance, crate::domain_computation::primary_graph::application_query::one_shot, crate::domain_computation::primary_graph::application_query::one_shot::outcome, crate::domain_computation::primary_graph::application_query::one_shot::outcome::material::MaterialCompletion, crate::domain_computation::primary_graph::application_query::read_execution, crate::domain_computation::primary_graph::application_query::read_execution::read_plan::ReadPlan, crate::domain_computation::primary_graph::application_query::read_execution::ReadInterruption, crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenial as Denial, crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenialKind as Kind, crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation, crate::domain_computation::primary_graph::value_decode::ValueDecodeState};
 use std::sync::Arc;
 use worth_query_declaration::facade::{
     application_query::ApplicationManagedIndexBinding, application_schema::ApplicationSchema,
 };
 use worth_query_installation::facade::WorthQueryInstalledManagedIndex;
+use {
+    crate::domain_computation::primary_graph::application_query::authorized_read::execute_authorized_read,
+    crate::domain_computation::primary_graph::application_query::authorized_read::refresh_governed_authorization,
+    crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationQueryGovernance,
+    crate::domain_computation::primary_graph::application_query::one_shot,
+    crate::domain_computation::primary_graph::application_query::one_shot::outcome,
+    crate::domain_computation::primary_graph::application_query::one_shot::outcome::material::MaterialCompletion,
+    crate::domain_computation::primary_graph::application_query::read_execution,
+    crate::domain_computation::primary_graph::application_query::read_execution::read_plan::ReadPlan,
+    crate::domain_computation::primary_graph::application_query::read_execution::ReadInterruption,
+    crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation,
+    crate::domain_computation::primary_graph::value_decode::ValueDecodeState,
+    crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenial as Denial,
+    crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenialKind as Kind,
+};
 
 pub(super) enum SourceDenial {
     Admission(worth_relational::facade::mvcc::CompanionPreflightStop),
@@ -56,7 +70,7 @@ pub(super) fn complete_source<S: ApplicationSchema, I: ApplicationManagedIndexBi
         )
         || plan.retain_expression_context
     {
-        return Err(one_shot::denial(Kind::ForeignPlan, query, query).into());
+        return Err(crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::denial(Kind::ForeignPlan, query, query).into());
     }
     one_shot::plan_admission::validate_one_shot_plan(execution, application, &plan)?;
     refresh_governed_authorization(execution, application, &mut plan)
@@ -65,7 +79,7 @@ pub(super) fn complete_source<S: ApplicationSchema, I: ApplicationManagedIndexBi
         .query
         .binding_observation()
         .cloned()
-        .ok_or_else(|| one_shot::denial(Kind::ForeignPlan, query, query))?;
+        .ok_or_else(|| crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::denial(Kind::ForeignPlan, query, query))?;
     let source_identity = *plan.query.identity().as_bytes();
     let mut rebuild_loan = None;
     let mut native_denial = None;
@@ -130,7 +144,7 @@ pub(super) fn complete_source<S: ApplicationSchema, I: ApplicationManagedIndexBi
     let parts = completed.into_source_parts(execution)?;
     let authorization = crate::domain_computation::primary_graph::application_attempt::SourceReadAuthorization::complete(
         execution, &parts.terminal, binding, source_identity, parts.authorization, application.authorization(), &allocation,
-    ).map_err(SourceDenial::Admission)?.ok_or_else(|| one_shot::denial(Kind::ForeignPlan, query, query))?;
+    ).map_err(SourceDenial::Admission)?.ok_or_else(|| crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::denial(Kind::ForeignPlan, query, query))?;
     let tree = tree.expect("successful completion moved the genuine disclosed source once");
     let order = super::source_order::canonical(execution, &tree)?;
     let dependencies = super::source_dependencies::capture(

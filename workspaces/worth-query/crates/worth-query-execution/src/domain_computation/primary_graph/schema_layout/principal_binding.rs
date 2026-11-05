@@ -38,8 +38,6 @@ impl WorthQueryPrimaryGraphLayout {
     }
 }
 
-
-
 pub(super) fn lower_principal_bindings(
     schema: &ErasedApplicationSchemaDeclaration,
     entity_kinds: &BTreeMap<String, KindId>,

@@ -1,7 +1,11 @@
 //! A correction preserves its source workflow's current continuation and custody.
 use super::{instance::WorkflowInstanceState, operation_output::WorkflowOperationOrigin};
-use {crate::domain_computation::primary_graph::application_attempt::observe_field_value, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
 use worth_foundational::facade::AspectValue;
+use {
+    crate::domain_computation::primary_graph::application_attempt::observe_field_value,
+    crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
+};
 mod settlement;
 
 /// Descriptive disposition of one exact target, not authority to advance a workflow.

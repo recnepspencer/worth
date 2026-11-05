@@ -1,5 +1,5 @@
 //! Borrowed rows and slots from one genuine completed-source session.
-use {crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl, crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop};
+use crate::domain_computation::primary_graph::vocabulary::application_query::source_rows::WorthQueryManagedIndexSourceSlot;
 use crate::domain_computation::primary_graph::{
     application_query::{
         disclosure::WorthQueryApplicationQueryGovernance,
@@ -14,8 +14,10 @@ use worth_query_declaration::facade::{
     application_query::ApplicationManagedIndexBinding, application_schema::ApplicationSchema,
 };
 use worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog;
-use crate::domain_computation::primary_graph::vocabulary::application_query::source_rows::WorthQueryManagedIndexSourceSlot;
-
+use {
+    crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl,
+    crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop,
+};
 
 #[derive(Clone, Copy)]
 pub(super) enum SourceImageRows<'a> {

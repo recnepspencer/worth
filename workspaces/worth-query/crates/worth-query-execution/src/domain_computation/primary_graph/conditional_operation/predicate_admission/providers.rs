@@ -1,7 +1,6 @@
 use super::*;
 use crate::domain_computation::primary_graph::vocabulary::conditional_operation::providers::QueryConditionalComputeContext;
 
-
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(super) struct QueryConditionalComputeSemanticContract(pub(super) Arc<str>);
 

@@ -1,6 +1,7 @@
 //! The declared value codec is the sole refusal encoder and decoder.
 
-use worth_foundational::facade::{AspectValue, InternedString, ScalarAspectType};
+use crate::domain_computation::primary_graph::vocabulary::application_invariant::refusal::maximum;
+use worth_foundational::facade::{AspectValue, InternedString};
 use worth_query_declaration::facade::application_schema::{
     ApplicationReadableScalarValueBinding, ApplicationScalarValueBinding,
     ApplicationValueDecodeDenial, ValueDecodeBounds,
@@ -9,7 +10,6 @@ use worth_relational::facade::runtime::{
     CustomInvariantExecutionError, CustomInvariantLeaseBudget, CustomInvariantRefusal,
     CustomInvariantVerdict,
 };
-use crate::domain_computation::primary_graph::vocabulary::application_invariant::refusal::maximum;
 
 worth_query_declaration::worth_query_value_binding!(pub WorthQueryEmptyInvariantRefusal for () {
     identity: "worth.query.empty-invariant-refusal.v1", scalar: String,
@@ -23,8 +23,6 @@ pub enum WorthQueryInvariantRefusalDecodeDenial {
     InvalidEncoding,
     Value(ApplicationValueDecodeDenial),
 }
-
-
 
 pub(super) fn encode<Binding: ApplicationReadableScalarValueBinding>(
     verdict: super::WorthQueryApplicationInvariantVerdict<Binding::Value>,

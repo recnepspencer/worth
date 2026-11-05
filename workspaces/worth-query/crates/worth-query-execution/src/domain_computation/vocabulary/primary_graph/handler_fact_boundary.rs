@@ -18,5 +18,5 @@ impl CompletedHandlerFactBoundary {
 /// The handler prefix of an exactly covered, completed decision read.
 /// Source-selection facts follow this prefix in the sealed fact sequence.
 pub struct CompletedHandlerFactBoundary {
-    handler_fact_count: usize,
+    pub(in crate::domain_computation) handler_fact_count: usize,
 }

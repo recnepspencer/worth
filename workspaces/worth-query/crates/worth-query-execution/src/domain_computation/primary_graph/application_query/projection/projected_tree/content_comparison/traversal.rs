@@ -1,8 +1,7 @@
 //! Finite original-funded traversal preserves complete Source provenance.
-use crate::domain_computation::primary_graph::vocabulary::application_query::content_comparison::ProjectionContentComparisonFault as Fault;
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::application_query::content_comparison::ProjectionContentComparisonFault as Fault;
 use worth_execution::ExecutionMemoryReservation;
-use crate::domain_computation::primary_graph::vocabulary::application_query::content_comparison::ProjectionContentComparisonFault;
 
 struct Frame<'a> {
     left: &'a [WorthQueryApplicationProjectionNode],

@@ -19,7 +19,7 @@ impl<'a> ApplicationQueryNativeAccess<'a> {
     pub(in crate::domain_computation::primary_graph) fn borrowed(
         graph: &WorthQueryPrimaryGraph,
         runtime: &'a mut RelationalRuntime,
-    ) -> Result<Self, crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial> {
+    ) -> Result<Self, crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial>{
         if graph.relational_runtime_instance_id()
             != runtime.main_branch_identity().runtime_instance_id()
         {

@@ -1,9 +1,9 @@
 //! Project the existing native consumed-edge verifier into retained-read denials.
 use super::*;
 use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence;
+use crate::domain_computation::primary_graph::output_reuse;
 use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerification;
 use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop;
-use crate::domain_computation::primary_graph::output_reuse;
 
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     pub(super) fn require_current_consumed(

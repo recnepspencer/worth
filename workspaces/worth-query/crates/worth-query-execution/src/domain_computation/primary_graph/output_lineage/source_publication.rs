@@ -11,11 +11,11 @@ use crate::domain_computation::primary_graph::application_output_demand::denial:
 mod supporting_sources;
 
 use super::partition_index::SourcePartitionPublication;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
 use super::WorthQueryApplicationOutputLineage;
 use super::WorthQueryCurrentOutputCandidate;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
 
 /// Namespace coverage is installed by the native output-family owner.
 /// Recovery invalidates it before admitting any restored publication.

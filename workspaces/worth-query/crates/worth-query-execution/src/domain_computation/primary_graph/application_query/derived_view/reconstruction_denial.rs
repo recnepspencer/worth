@@ -158,7 +158,11 @@ pub fn session(
     root: EntityId,
     plan: &crate::domain_computation::primary_graph::application_query::read_execution::read_plan::ReadPlan<'_>,
 ) -> Denial {
-    use {crate::domain_computation::primary_graph::vocabulary::application_query::authorized_read::WorthQueryAuthorizedApplicationReadDenial as Read, crate::domain_computation::primary_graph::vocabulary::application_query::one_shot::map_authorized_read_denial, crate::domain_computation::primary_graph::application_query::read_execution::managed_read_denial};
+    use {
+        crate::domain_computation::primary_graph::application_query::read_execution::managed_read_denial,
+        crate::domain_computation::primary_graph::vocabulary::application_query::authorized_read::WorthQueryAuthorizedApplicationReadDenial as Read,
+        crate::domain_computation::primary_graph::vocabulary::application_query::one_shot::map_authorized_read_denial,
+    };
     match managed_read_denial(cause, plan) {
         Err(stop) => kernel(stop, None),
         Ok(Read::Session) => Denial::IncompleteDependencies,

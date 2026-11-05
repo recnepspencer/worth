@@ -4,11 +4,13 @@ mod removal;
 #[cfg(test)]
 mod tests;
 use super::WorthQueryManagedIndexPredicateSummary as Summary;
-use {crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl as Control, crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop};
+use crate::domain_computation::primary_graph::vocabulary::application_query::tree::WatchSlot;
 use std::{cmp::Ordering, collections::BTreeMap};
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
-use crate::domain_computation::primary_graph::vocabulary::application_query::tree::WatchSlot;
-
+use {
+    crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl as Control,
+    crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop,
+};
 
 pub(super) struct Record<P, R, S> {
     pub(super) probe: P,

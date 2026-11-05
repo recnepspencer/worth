@@ -62,7 +62,6 @@ mod yield_recovery_evidence;
 mod yield_transition_counters;
 mod yielded_observation;
 
-
 pub use denial::{WorthQueryManagedRunDenial, WorthQueryManagedRunDenialKind};
 pub use direct::{
     WorthQueryAdmittedDirectRun, WorthQueryDirectRunCompletionRejection, WorthQueryRunningDirectRun,
@@ -79,7 +78,6 @@ pub use direct_graph_execution::{
 pub use direct_graph_execution_start::{
     WorthQueryDirectGraphExecutionStartFailure, WorthQueryDirectGraphExecutionStartFailureKind,
 };
-pub use {direct_terminal::WorthQueryDirectRunCleanupFailure, direct_terminal::WorthQueryDirectRunTerminal};
 pub use direct_yield::{
     WorthQueryDirectYieldDenialKind, WorthQueryDirectYieldDenied, WorthQueryDirectYieldOutcome,
     WorthQueryYieldedDirectRun,
@@ -129,10 +127,17 @@ pub use yielded_observation::{
     WorthQueryYieldedCheckpointInspection, WorthQueryYieldedDirectRunInspection,
     WorthQueryYieldedWorkflowRunInspection,
 };
+pub use {
+    direct_terminal::WorthQueryDirectRunCleanupFailure,
+    direct_terminal::WorthQueryDirectRunTerminal,
+};
 
-pub use {safe_point_observation::WorthQueryManagedSafePointFailure, safe_point_observation::WorthQueryManagedSafePointFailureKind};
 pub use step_contract_admission::WorthQueryManagedStepContractDenialKind;
 pub(in crate::domain_computation::managed_run) use terminal::bridge_terminal_disposition;
+pub use {
+    safe_point_observation::WorthQueryManagedSafePointFailure,
+    safe_point_observation::WorthQueryManagedSafePointFailureKind,
+};
 
 pub use truth_read_request::WorthQueryManagedTruthReadRequest;
 

@@ -37,7 +37,7 @@ impl<'charge> OneShotReadWorkObservation<'charge> {
         &self,
         units: usize,
         subject: &str,
-    ) -> Result<(), crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenial> {
+    ) -> Result<(), crate::domain_computation::primary_graph::vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenial>{
         match self.charge {
             Some(charge) => charge(units, subject),
             None => Ok(()),

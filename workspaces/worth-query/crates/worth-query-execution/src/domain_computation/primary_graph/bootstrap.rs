@@ -13,11 +13,15 @@ use worth_relational::facade::storage::{
     authoritative_aspect_value_field_comparison_key, AuthoritativeFieldComparisonKey,
 };
 
-use {crate::domain_computation::execution_runtime::WorthQueryExecutionInstallationAuthority, crate::domain_computation::execution_runtime::WorthQueryExecutionRuntime, crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity};
+use {
+    crate::domain_computation::execution_runtime::WorthQueryExecutionInstallationAuthority,
+    crate::domain_computation::execution_runtime::WorthQueryExecutionRuntime,
+    crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity,
+};
 
 use super::bootstrap_publication::{build_identity_indexes, commit_bootstrap_rows};
 use super::initial_schema_denial::map_initial_schema_installation_denial;
-use {super::schema_layout::WorthQueryPrimaryGraphLayout, crate::domain_computation::vocabulary::primary_graph::principal_binding::WorthQueryPrimaryPrincipalBindingLayout};
+use super::schema_layout::WorthQueryPrimaryGraphLayout;
 use super::WorthQueryApplicationInvariantFactories;
 use super::{
     WorthQueryApplicationPrincipalKey, WorthQueryPrimaryGraph,
@@ -39,12 +43,11 @@ mod seed_batches;
 mod unique_seed_values;
 use binding_denial::map_binding_denial_kind;
 mod truth_partition;
+use crate::domain_computation::primary_graph::vocabulary::bootstrap::publication::WorthQueryPrimaryGraphPublication;
+use crate::domain_computation::primary_graph::vocabulary::bootstrap::WorthQueryPrincipalBootstrapRow;
 pub(super) use program_activation_recovery::recover_program_activation;
 use program_activation_seeding::commit_initial_program_activation;
 pub(super) use program_activation_seeding::WorthQueryProgramActivationSeed;
-use crate::domain_computation::primary_graph::vocabulary::bootstrap::publication::WorthQueryPrimaryGraphPublication;
-use crate::domain_computation::primary_graph::vocabulary::bootstrap::WorthQueryPrincipalBootstrapRow;
-
 
 /// Move-only installation phase for the primary graph.
 ///

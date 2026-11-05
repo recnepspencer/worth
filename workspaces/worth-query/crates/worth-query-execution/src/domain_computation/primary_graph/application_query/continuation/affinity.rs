@@ -8,7 +8,10 @@ use worth_relational::facade::{
 };
 
 use super::authority::WorthQueryApplicationQueryContinuation;
-use {crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial, crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind};
+use {
+    crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial,
+    crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind,
+};
 
 pub(super) struct WorthQueryValidatedContinuationAffinity {
     pub(super) parameter_basis: WorthQueryApplicationParameterCanonicalArtifact,

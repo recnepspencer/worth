@@ -2,7 +2,10 @@ use crate::domain_computation::primary_graph::application_checkpoint::facts::Fac
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 use worth_relational::facade::identity::{EntityId, KindId};
 
-use {crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection, super::WorthQueryApplicationObservedFact};
+use {
+    super::WorthQueryApplicationObservedFact,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection,
+};
 
 #[cfg(test)]
 mod tests;

@@ -12,8 +12,8 @@ use crate::domain_computation::primary_graph::vocabulary::application_attempt::s
 
 use super::adjacency;
 use super::retirement;
-use crate::domain_computation::primary_graph::vocabulary::provider::failure::RebaseVerificationFailure;
 use super::WorthQueryApplicationObservedFact as Fact;
+use crate::domain_computation::primary_graph::vocabulary::provider::failure::RebaseVerificationFailure;
 
 /// A fact a source query read. It stays at the revision it was read at, so
 /// it is the one kind the walk asks the committed effect about: every other

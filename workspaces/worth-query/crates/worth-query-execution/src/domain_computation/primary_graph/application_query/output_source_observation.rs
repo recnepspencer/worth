@@ -1,6 +1,5 @@
 //! Governed source read inside the original producer reader and native borrow.
 use super::*;
-use {crate::domain_computation::primary_graph::SharedSelectedProductOperation, crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode};
 use std::num::NonZeroUsize;
 use std::sync::Arc;
 use worth_query_admission::facade::authenticated_principal::{
@@ -14,6 +13,10 @@ use worth_query_declaration::facade::application_schema::{
     ApplicationSchema, ApplicationStructuredValueBinding,
 };
 use worth_relational::facade::mvcc::CompanionPreflightStop;
+use {
+    crate::domain_computation::primary_graph::SharedSelectedProductOperation,
+    crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode,
+};
 
 mod admitted;
 mod current_control;
@@ -21,9 +24,9 @@ mod permission;
 mod read_closure;
 mod same_scope;
 mod single;
-pub(in crate::domain_computation::primary_graph) use read_closure::SourceQueryReadClosure;
-use crate::domain_computation::primary_graph::vocabulary::application_query::one_shot::WorthQueryAdmittedOneShotStop;
 use crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_query::one_shot::WorthQueryAdmittedOneShotStop;
+pub(in crate::domain_computation::primary_graph) use read_closure::SourceQueryReadClosure;
 
 type SourceValue<S, B> =
     <<B as ApplicationQueryBinding<S>>::ResultBinding as ApplicationStructuredValueBinding>::Value;

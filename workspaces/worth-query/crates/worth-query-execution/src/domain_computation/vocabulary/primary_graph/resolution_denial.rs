@@ -63,9 +63,9 @@ pub enum WorthQueryPrincipalResolutionRefusalKind {
 /// [`Self::kind`] says why and [`Self::binding`] names the principal binding.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryPrincipalResolutionDenial {
-    kind: WorthQueryPrincipalResolutionDenialKind,
-    binding: String,
-    native_query_read_stop:
+    pub(in crate::domain_computation) kind: WorthQueryPrincipalResolutionDenialKind,
+    pub(in crate::domain_computation) binding: String,
+    pub(in crate::domain_computation) native_query_read_stop:
         Option<std::sync::Arc<worth_relational::facade::runtime::QueryReadExecutionStop>>,
 }
 

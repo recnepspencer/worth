@@ -100,7 +100,7 @@ impl WorthQueryPrimaryGraphApplicationDecisionFact {
     pub(in crate::domain_computation) fn session_identity(
         &self,
     ) -> Option<crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity>
-    {
+{
         match self {
             Self::Principal(dependency) => Some(dependency.session_identity()),
             Self::Authorization { session, .. } => Some(*session),
@@ -149,8 +149,8 @@ impl WorthQueryPrimaryGraphApplicationDecisionFact {
                 fact.remains_equal_in(runtime, execution, snapshot)?
             }
             Self::Principal(dependency) => {
-                use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Attempt;
                 use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind as Authorization;
+                use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Attempt;
                 match dependency.remains_current_in(execution, runtime, snapshot) {
                     Ok(current) => current,
                     Err(kind) => {

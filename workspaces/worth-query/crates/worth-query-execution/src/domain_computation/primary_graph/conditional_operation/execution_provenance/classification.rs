@@ -2,7 +2,6 @@
 //! ended.
 use crate::domain_computation::primary_graph::vocabulary::conditional_operation::classification::WorthQueryConditionalSignalDecision;
 
-
 /// How processing one due wake ended during a clock observation.
 ///
 /// Retained states keep the wake for a later observation.

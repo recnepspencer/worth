@@ -7,16 +7,20 @@ use worth_query_declaration::facade::application_schema::ApplicationOperationBod
 
 pub(in crate::domain_computation::primary_graph) struct InstalledBodyValue {
     pub(in crate::domain_computation::primary_graph) program: ApplicationOperationBodyValueProgram,
-    bindings: Vec<worth_query_installation::facade::WorthQueryInstalledApplicationValueBinding>,
+    pub(in crate::domain_computation::primary_graph) bindings:
+        Vec<worth_query_installation::facade::WorthQueryInstalledApplicationValueBinding>,
 }
 
 #[derive(Clone)]
-pub(in crate::domain_computation::primary_graph) struct PreparedBodyValues(Arc<RetainedValues>);
+pub(in crate::domain_computation::primary_graph) struct PreparedBodyValues(
+    pub(in crate::domain_computation::primary_graph) Arc<RetainedValues>,
+);
 
 pub(in crate::domain_computation::primary_graph) struct RetainedValues {
-    values: Vec<(String, AspectValue)>,
-    snapshot: ApplicationOperationBodyValueSnapshot,
-    _reservation: QueryMemoryReservation,
+    pub(in crate::domain_computation::primary_graph) values: Vec<(String, AspectValue)>,
+    pub(in crate::domain_computation::primary_graph) snapshot:
+        ApplicationOperationBodyValueSnapshot,
+    pub(in crate::domain_computation::primary_graph) _reservation: QueryMemoryReservation,
 }
 
 impl PreparedBodyValues {

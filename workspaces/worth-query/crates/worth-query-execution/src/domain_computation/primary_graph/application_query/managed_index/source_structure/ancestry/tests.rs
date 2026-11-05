@@ -1,10 +1,13 @@
 //! Numeric relation only; actual SDK control, no fabricated Source or cached fact.
 use super::*;
-use {crate::domain_computation::primary_graph::application_query::managed_index::invocation::controlled, crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial as Denial};
 use std::cell::Cell;
 use worth_execution::{
     CancellationSource, ExecutionWorkCeiling, MapKernelStop, SerialMemoryBudget, SerialRequest,
     WorkCeilingDenial,
+};
+use {
+    crate::domain_computation::primary_graph::application_query::managed_index::invocation::controlled,
+    crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial as Denial,
 };
 #[derive(Clone, Copy)]
 enum CancelAt {

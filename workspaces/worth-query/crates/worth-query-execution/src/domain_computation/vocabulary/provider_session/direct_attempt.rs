@@ -3,8 +3,8 @@ use worth_query_admission::integration::WorthQueryExecutionCapacityReleaseReceip
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryDirectExecutionAttemptReleaseReceipt {
-    provider_session_identity: String,
-    capacity: WorthQueryExecutionCapacityReleaseReceipt,
+    pub(in crate::domain_computation) provider_session_identity: String,
+    pub(in crate::domain_computation) capacity: WorthQueryExecutionCapacityReleaseReceipt,
 }
 
 impl WorthQueryDirectExecutionAttemptReleaseReceipt {

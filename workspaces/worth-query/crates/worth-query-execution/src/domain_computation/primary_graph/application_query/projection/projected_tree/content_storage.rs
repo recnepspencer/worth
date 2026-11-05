@@ -1,5 +1,4 @@
 //! Physical scratch faults are descriptive; the original caller owns refusal.
-use worth_execution::ExecutionMemoryReservation;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ProjectionContentStorageFault {
     CapacityOverflow,

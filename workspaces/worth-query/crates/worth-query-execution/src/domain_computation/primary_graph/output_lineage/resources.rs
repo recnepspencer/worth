@@ -1,5 +1,8 @@
 use super::super::WorthQueryApplicationCommitReceipt;
-use {crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource, super::WorthQueryApplicationOutputLineage};
+use {
+    super::WorthQueryApplicationOutputLineage,
+    crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource,
+};
 
 impl WorthQueryApplicationOutputLineage {
     /// The exact committed record supplies its producer facts and original

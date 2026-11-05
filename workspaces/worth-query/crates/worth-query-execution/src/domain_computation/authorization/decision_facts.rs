@@ -2,7 +2,10 @@ use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOper
 use worth_relational::facade::authorization::RelationalAuthorizationObservationCounters;
 use worth_runtime_bridge::facade::BridgeAuthorizationRuntime;
 
-use {super::WorthQueryCapabilityCommitBasis, crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity, super::WorthQueryRetainedCapabilityAuthorization};
+use {
+    super::WorthQueryCapabilityCommitBasis, super::WorthQueryRetainedCapabilityAuthorization,
+    crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity,
+};
 mod admitted_currentness;
 mod source_read_support;
 pub(in crate::domain_computation) use admitted_currentness::AuthorizationCurrentnessStop;
@@ -154,7 +157,7 @@ impl WorthQueryRetainedAuthorizationDecisionFacts {
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
         bridge: &BridgeAuthorizationRuntime,
-    ) -> Result<(), crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind> {
+    ) -> Result<(), crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind>{
         if !self.principal_remains_current_in(execution, runtime, snapshot)? {
             return Err(crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind::Refused(
                 AuthorizationRefusal::StalePrincipal,
@@ -172,7 +175,7 @@ impl WorthQueryRetainedAuthorizationDecisionFacts {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    ) -> Result<bool, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind> {
+    ) -> Result<bool, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind>{
         principal(self).remains_current_in(execution, runtime, snapshot)
     }
 
@@ -182,7 +185,7 @@ impl WorthQueryRetainedAuthorizationDecisionFacts {
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
         bridge: &BridgeAuthorizationRuntime,
-    ) -> Result<bool, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind> {
+    ) -> Result<bool, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind>{
         match self {
             Self::Capability(authorization) => {
                 match authorization.validate_currentness_in(execution, runtime, snapshot, bridge) {
@@ -340,7 +343,7 @@ impl WorthQueryObservedCommitBasis {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    ) -> Result<bool, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind> {
+    ) -> Result<bool, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind>{
         self.principal
             .remains_current_in(execution, runtime, snapshot)
     }
@@ -351,7 +354,7 @@ impl WorthQueryObservedCommitBasis {
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
         bridge: &BridgeAuthorizationRuntime,
-    ) -> Result<bool, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind> {
+    ) -> Result<bool, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind>{
         for fact in &self.decisions {
             if !fact
                 .remains_current_in(execution, runtime, snapshot, bridge)

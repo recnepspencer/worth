@@ -6,8 +6,8 @@ use worth_relational::facade::identity::EntityId;
 /// These coordinates identify the attempted write; they grant no read or write access.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationUnobservedWrite {
-    entity_id: EntityId,
-    locator: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) entity_id: EntityId,
+    pub(in crate::domain_computation::primary_graph) locator: AspectFieldLocator,
 }
 
 impl WorthQueryApplicationUnobservedWrite {
@@ -21,7 +21,9 @@ impl WorthQueryApplicationUnobservedWrite {
         &self.locator
     }
 
-    pub(in crate::domain_computation::primary_graph) fn owned_allocation_capacity_bytes(&self) -> usize {
+    pub(in crate::domain_computation::primary_graph) fn owned_allocation_capacity_bytes(
+        &self,
+    ) -> usize {
         self.locator.owned_allocation_capacity_bytes()
     }
 }

@@ -1,6 +1,9 @@
 //! Request refusals at authorization's Relational read boundary.
-use {super::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind as Kind};
 use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use {
+    super::WorthQueryOperationAuthorizationDenial,
+    crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind as Kind,
+};
 pub(in crate::domain_computation::authorization) fn denial(
     cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
     subject: &str,

@@ -1,5 +1,5 @@
-use crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity;
 use crate::domain_computation::primary_graph::read_observation::WorthQueryInvariantProjectionWork;
+use crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity;
 use worth_foundational::facade::CanonicalDigestId;
 use worth_query_admission::facade::application_query::WorthQueryApplicationQueryLane;
 use worth_query_installation::facade::{

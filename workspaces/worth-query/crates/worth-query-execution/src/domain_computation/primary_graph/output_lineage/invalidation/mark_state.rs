@@ -8,17 +8,15 @@ use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
 use crate::domain_computation::primary_graph::application_output_demand::RequiredWorkMembership;
 
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 use super::fact_key::FactPostingKey;
 use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct FactPosting {
     pub(super) settlement: Arc<RecordedSettlementIdentity>,
     pub(super) ordinal: usize,
 }
-
-
 
 /// Derived continuity identity scoped by the owning source and branch. The
 /// native commit that declared a discontinuity replaces a redundant counter.

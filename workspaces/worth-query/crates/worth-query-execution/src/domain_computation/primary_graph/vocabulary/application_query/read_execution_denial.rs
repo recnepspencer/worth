@@ -24,8 +24,9 @@ pub enum WorthQueryApplicationReadExecutionDenialKind {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationReadExecutionDenial {
-    kind: WorthQueryApplicationReadExecutionDenialKind,
-    subject: String,
+    pub(in crate::domain_computation::primary_graph) kind:
+        WorthQueryApplicationReadExecutionDenialKind,
+    pub(in crate::domain_computation::primary_graph) subject: String,
 }
 
 impl WorthQueryApplicationReadExecutionDenial {
@@ -37,9 +38,7 @@ impl WorthQueryApplicationReadExecutionDenial {
         &self.subject
     }
 
-    pub(in crate::domain_computation::primary_graph) fn into_subject(
-        self,
-    ) -> String {
+    pub(in crate::domain_computation::primary_graph) fn into_subject(self) -> String {
         self.subject
     }
 }

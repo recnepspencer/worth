@@ -44,7 +44,6 @@ pub use walk::{
     WorthQueryInvariantProjectionWalkStep,
 };
 
-use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::marker::PhantomData;
 use std::sync::Arc;
@@ -64,7 +63,6 @@ use super::{
 use crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity;
 
 pub use super::read_observation::WorthQueryInvariantProjectionWork;
-pub use crate::domain_computation::vocabulary::primary_graph::value_decode::WorthQueryValueDecodeDenial;
 pub use admission_denial::{
     WorthQueryInvariantProjectionDenial, WorthQueryInvariantProjectionDenialKind,
 };
@@ -73,7 +71,6 @@ pub use aggregate::{
     WorthQueryInvariantAggregateDenialKind,
 };
 
-pub(in crate::domain_computation::primary_graph) use {consumed_output::ConsumedOutputEvidence, consumed_output::SelectedPendingConsumedOutput};
 pub use field_projection::WorthQueryRetainedSnapshotRead;
 pub use locked_reader::{
     WorthQueryApplicationInvariantProjectionReader, WorthQueryCompletedInvariantProjection,
@@ -97,6 +94,9 @@ pub use operation_reader::{
     WorthQueryPriorOutputFamilyMember,
 };
 pub(in crate::domain_computation::primary_graph) use realized_scope::WorthQueryRealizedProjectionScope;
+pub(in crate::domain_computation::primary_graph) use {
+    consumed_output::ConsumedOutputEvidence, consumed_output::SelectedPendingConsumedOutput,
+};
 
 static NEXT_INVARIANT_PROJECTION_AUTHORITY: std::sync::atomic::AtomicU64 =
     std::sync::atomic::AtomicU64::new(1);
@@ -142,8 +142,6 @@ pub struct WorthQueryApplicationInvariantProjectionSnapshot<Schema> {
         Option<super::application_attempt::retained_decision_facts::RetainedSourceFacts>,
     _schema: PhantomData<fn() -> Schema>,
 }
-
-
 
 impl<Schema> WorthQueryApplicationInvariantProjectionAuthority<Schema>
 where
@@ -275,12 +273,6 @@ where
     }
 }
 
-
-
-
-
-
-
 impl<Schema> Drop for WorthQueryApplicationInvariantProjectionSnapshot<Schema> {
     fn drop(&mut self) {
         if let Some(snapshot) = self.snapshot.take() {
@@ -290,3 +282,4 @@ impl<Schema> Drop for WorthQueryApplicationInvariantProjectionSnapshot<Schema> {
 }
 
 mod court_doors_for_test;
+pub use crate::domain_computation::vocabulary::primary_graph::value_decode::WorthQueryValueDecodeDenial;

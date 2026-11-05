@@ -21,7 +21,11 @@ use worth_runtime_world::facade::{
 
 use super::inbound_completion::WorthQueryCanonicalCompletionRow;
 use super::inbound_completion::WorthQueryCompletionProvenance;
-use {crate::domain_computation::vocabulary::application_aftermath::correlation::ExternalEffectCorrelationIdentity, crate::domain_computation::application_aftermath::WorthQueryInboundOccurrenceClaims, crate::domain_computation::application_aftermath::WorthQueryInboundTerminalOwnerResult};
+use {
+    crate::domain_computation::application_aftermath::WorthQueryInboundOccurrenceClaims,
+    crate::domain_computation::application_aftermath::WorthQueryInboundTerminalOwnerResult,
+    crate::domain_computation::vocabulary::application_aftermath::correlation::ExternalEffectCorrelationIdentity,
+};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryCanonicalInboundCompletion {

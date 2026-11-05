@@ -1,4 +1,5 @@
 use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
+use crate::domain_computation::primary_graph::vocabulary::product_activation::inspection::WorthQuerySelectedProgramInspectionDenial;
 use worth_query_declaration::facade::application_program::{
     ApplicationProgramIdentity, ApplicationProgramRevision,
 };
@@ -6,7 +7,6 @@ use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::branch::AdmittedRelationalBranchBasis;
 use worth_relational::facade::runtime::{ProjectionAspectRequirement, ProjectionAspectScope};
 use worth_relational::facade::storage::RecordLifecycleState;
-use crate::domain_computation::primary_graph::vocabulary::product_activation::inspection::WorthQuerySelectedProgramInspectionDenial;
 
 /// The rostered program actually carried by one selected product occurrence.
 /// This is descriptive operator evidence; it grants no mutation or adoption
@@ -26,7 +26,6 @@ impl WorthQuerySelectedProgramInspection {
         &self.revision
     }
 }
-
 
 pub(in crate::domain_computation::primary_graph) fn inspect_selected_program<
     Schema: ApplicationSchema,

@@ -22,8 +22,6 @@ const BUDGET: CanonicalDigestWorkBudget = match CanonicalDigestWorkBudget::new(2
     None => panic!("fixed external-effect correlation budget is valid"),
 };
 
-
-
 /// Inputs that may bind correlation. Provider strings are excluded by type.
 pub struct ExternalEffectCorrelationBasis<'a> {
     pub correlation_family: WorthQueryExternalEffectCorrelationFamily,

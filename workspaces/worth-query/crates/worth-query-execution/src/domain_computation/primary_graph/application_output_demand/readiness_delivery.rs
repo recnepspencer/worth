@@ -112,7 +112,7 @@ impl WorthQueryOutputReadinessDeliveryEvidence {
 
     pub const fn signal_decision(
         &self,
-    ) -> crate::domain_computation::primary_graph::vocabulary::conditional_operation::classification::WorthQueryConditionalSignalDecision {
+    ) -> crate::domain_computation::primary_graph::vocabulary::conditional_operation::classification::WorthQueryConditionalSignalDecision{
         self.signal_decision
     }
 

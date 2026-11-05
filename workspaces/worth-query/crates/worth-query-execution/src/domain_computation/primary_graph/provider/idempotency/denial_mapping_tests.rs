@@ -13,7 +13,10 @@ fn retention_identity_exhaustion_survives_idempotency_snapshot_mapping() {
 #[test]
 fn mapping_contract_pending_execution_retains_kind_and_ancestry() {
     use crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource;
-    use {crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind as Kind, crate::domain_computation::WorthQueryProviderSessionFailure};
+    use {
+        crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind as Kind,
+        crate::domain_computation::WorthQueryProviderSessionFailure,
+    };
     let kind = Kind::ExecutionResource {
         denial: Resource::ScratchCapacityExceeded,
         partition_identity: Some(3),

@@ -1,7 +1,7 @@
 //! Native collection membership and scalar observations share one retained decision.
 use super::*;
-use crate::domain_computation::primary_graph::vocabulary::operation_body::value::PreparedRequirementOperand;
 use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
+use crate::domain_computation::primary_graph::vocabulary::operation_body::value::PreparedRequirementOperand;
 use crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial;
 
 impl<Schema: ApplicationSchema, Operation>

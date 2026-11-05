@@ -1,5 +1,5 @@
 //! Moved whole from `domain_computation::provider_session::protocol::declared_closure::application`: the items below and every impl they own.
-use crate::domain_computation::vocabulary::provider_session::declared_closure::WorthQueryProviderPlanDeclaredClosure;
+use crate::domain_computation::vocabulary::provider_session::declared_role_closure::WorthQueryProviderPlanDeclaredClosure;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationEffectPosture {
@@ -13,7 +13,9 @@ impl WorthQueryApplicationEffectPosture {
         !matches!(self, Self::Application)
     }
 
-    const fn includes_application(self) -> bool {
+    pub(in crate::domain_computation::vocabulary::provider_session) const fn includes_application(
+        self,
+    ) -> bool {
         !matches!(self, Self::Platform)
     }
 }

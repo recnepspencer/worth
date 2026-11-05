@@ -9,13 +9,13 @@ use worth_relational::facade::indexes::DerivedIndexId;
 
 use super::entity_denial;
 use super::WorthQueryApplicationEntityIdentity;
-use crate::domain_computation::primary_graph::vocabulary::entity_resolution_denial::WorthQueryEntityResolutionDenial;
-use crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionDenialKind as Kind;
 use super::WorthQueryEntityResolutionSubject;
-use crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode;
 use super::WorthQueryResolvedEntity;
 use crate::domain_computation::primary_graph::index_currency::selected_index_is_current;
+use crate::domain_computation::primary_graph::vocabulary::entity_resolution_denial::WorthQueryEntityResolutionDenial;
 use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
+use crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionDenialKind as Kind;
+use crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {

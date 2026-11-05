@@ -5,7 +5,7 @@ pub(in crate::domain_computation::primary_graph) const SHARD_COUNT: usize = 16;
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub(in crate::domain_computation::primary_graph) struct WorkflowInstanceProgressKey {
-    branch_occurrence: u64,
+    pub(in crate::domain_computation::primary_graph) branch_occurrence: u64,
     instance: EntityId,
     definition: EntityId,
 }

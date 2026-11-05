@@ -1,6 +1,11 @@
 //! Lazy complete Entry content; the immutable Entry pays its inline cache.
 use super::projection::Entry;
-use {crate::domain_computation::primary_graph::application_query::derived_view::ViewDependency, crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl as Control, crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop, crate::domain_computation::primary_graph::application_query::projection::ContentWriter};
+use {
+    crate::domain_computation::primary_graph::application_query::derived_view::ViewDependency,
+    crate::domain_computation::primary_graph::application_query::projection::ContentWriter,
+    crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl as Control,
+    crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop,
+};
 impl Entry {
     pub(in crate::domain_computation::primary_graph::application_query::managed_index) fn content(
         &self,

@@ -4,7 +4,11 @@
 //! that depends on any of those, or on a shared resource that frees again,
 //! stays with the caller.
 
-use {crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenialKind, crate::domain_computation::vocabulary::primary_graph::projection_denial::WorthQueryApplicationProjectionDenialKind, crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind};
+use {
+    crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind,
+    crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenialKind,
+    crate::domain_computation::vocabulary::primary_graph::projection_denial::WorthQueryApplicationProjectionDenialKind,
+};
 
 pub(super) fn admission_is_row(kind: WorthQueryApplicationQueryAdmissionDenialKind) -> bool {
     use WorthQueryApplicationQueryAdmissionDenialKind as Kind;

@@ -27,9 +27,12 @@ use super::managed_graph_execution::{
 use super::workflow_graph_chunk::{
     WorthQueryPendingWorkflowGraphChunk, WorthQueryPendingWorkflowGraphQueueState,
 };
-use {crate::domain_computation::vocabulary::managed_run::terminal::WorthQueryManagedRunTerminalKind, super::WorthQueryRunningWorkflowRun};
 use crate::domain_computation::provider_session::graph_provider::bounded_step::WorthQueryGraphProviderStepCompletion;
 use crate::domain_computation::{WorthQueryGraphProviderStepReport, WorthQueryGraphReadMaterial};
+use {
+    super::WorthQueryRunningWorkflowRun,
+    crate::domain_computation::vocabulary::managed_run::terminal::WorthQueryManagedRunTerminalKind,
+};
 
 #[must_use = "active graph execution must be advanced or explicitly abandoned"]
 pub struct WorthQueryActiveWorkflowGraphExecution {
@@ -295,7 +298,7 @@ impl WorthQueryActiveWorkflowGraphExecution {
     ) -> Result<
         crate::domain_computation::vocabulary::managed_run::safe_point_observation::WorthQueryManagedSafePointObservation,
         super::WorthQueryManagedSafePointFailure,
-    > {
+    >{
         let observation = self.running.observe_safe_point()?;
         self.running.record_safe_point(&observation);
         Ok(observation)

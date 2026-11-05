@@ -1,6 +1,5 @@
 //! Explicit borrowed preconditions use the same native capability progression.
 use super::*;
-use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind;
 pub trait BorrowedCapabilityOps<Schema: ApplicationSchema>:
     crate::domain_computation::authorization::host::AuthorizationHost<Schema>
 {

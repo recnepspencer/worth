@@ -20,7 +20,10 @@ impl RecordedSourceIdentity {
 #[cfg(test)]
 mod tests {
     use super::RecordedSourceIdentity;
-    use {crate::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryCheckpointSourceIdentity, crate::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryRuntimeSourceIdentity};
+    use {
+        crate::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryCheckpointSourceIdentity,
+        crate::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryRuntimeSourceIdentity,
+    };
 
     #[test]
     fn matching_never_crosses_runtime_and_checkpoint_lanes() {

@@ -1,8 +1,14 @@
 //! Concrete content checks retain the exact original first refusal.
-use {crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl as Control, crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop};
-use {crate::domain_computation::primary_graph::application_query::projection::WorthQueryApplicationProjectedField, crate::domain_computation::vocabulary::primary_graph::projection_denial::WorthQueryApplicationProjectionDenial};
 use worth_relational::facade::content::{
     RelationalContentDenial as Native, RelationalContentFrame,
+};
+use {
+    crate::domain_computation::primary_graph::application_query::projection::WorthQueryApplicationProjectedField,
+    crate::domain_computation::vocabulary::primary_graph::projection_denial::WorthQueryApplicationProjectionDenial,
+};
+use {
+    crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl as Control,
+    crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]

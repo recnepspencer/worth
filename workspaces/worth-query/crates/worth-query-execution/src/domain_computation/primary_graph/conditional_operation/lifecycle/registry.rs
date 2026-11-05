@@ -3,7 +3,10 @@ use std::{collections::BTreeMap, sync::Arc};
 use worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly;
 
 use super::{WorthQueryConditionalOperationCell, WorthQueryInstalledConditionalOperation};
-use {crate::domain_computation::primary_graph::vocabulary::conditional_operation::clock_handle::ConditionalClockLease, crate::domain_computation::primary_graph::conditional_operation::installation::WorthQueryConditionalRuntimeInstallationDenial};
+use {
+    crate::domain_computation::primary_graph::conditional_operation::installation::WorthQueryConditionalRuntimeInstallationDenial,
+    crate::domain_computation::primary_graph::vocabulary::conditional_operation::clock_handle::ConditionalClockLease,
+};
 
 pub struct WorthQueryConditionalOperationRegistry<Schema> {
     installed: Arc<BTreeMap<String, WorthQueryConditionalOperationCell<Schema>>>,

@@ -10,12 +10,12 @@ use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
 use super::RecordedOutput;
 use super::RecordedSourceIdentity;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
 use super::WorthQueryApplicationOutputLineage;
 use super::WorthQueryProducerLineageHead;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
 
 pub struct RetainedOutputCurrentnessRead {

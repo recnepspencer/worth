@@ -74,7 +74,10 @@ impl StoreDenial {
         self,
         subject: &str,
     ) -> crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial {
-        use {crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial as Denial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind};
+        use {
+            crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial as Denial,
+            crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as Kind,
+        };
         if let Self::Content(cause) = self {
             return Denial::relational_read_stopped(cause.into_execution_cause(), subject);
         }

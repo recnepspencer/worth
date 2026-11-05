@@ -1,5 +1,4 @@
 //! The runtime's consumer methods over `operation_input_capture`; each only calls its subsystem.
-use crate::domain_computation::primary_graph::product_operation::operation_input_capture::OperationInputCaptureOps;
 use crate::domain_computation::primary_graph::WorthQueryOperationInputCaptureDenial;
 use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 use crate::publication_boundary::WorthQueryProgramPublicationAccess;

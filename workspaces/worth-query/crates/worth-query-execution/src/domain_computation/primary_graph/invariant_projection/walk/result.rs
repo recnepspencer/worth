@@ -1,10 +1,13 @@
 //! Owned Native facts; typed iteration acquires no more graph metadata.
-use {crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity, super::super::WorthQueryInvariantRelation};
 use crate::domain_computation::primary_graph::structural_walk::StructuralWalkObservation;
 use std::{marker::PhantomData, sync::Arc};
 use worth_relational::facade::{
     identity::{EntityId, KindId},
     runtime::PinnedStructuralWalkVisit,
+};
+use {
+    super::super::WorthQueryInvariantRelation,
+    crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity,
 };
 
 /// Complete reachability on one pinned projection, with its original result payer.

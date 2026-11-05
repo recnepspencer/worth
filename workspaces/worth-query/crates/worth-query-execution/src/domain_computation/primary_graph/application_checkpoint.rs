@@ -175,7 +175,7 @@ impl<'a> CheckpointCursor<'a> {
     ) -> Result<
         crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding,
         String,
-    > {
+    >{
         Ok(
             crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding::from_entity(
                 self.next_entity()?,

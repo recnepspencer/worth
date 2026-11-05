@@ -8,9 +8,12 @@ use worth_query_installation::facade::{
 };
 
 use super::super::WorthQueryAdmittedApplicationCapabilityAccess;
-use {crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind};
 use crate::domain_computation::primary_graph::{
     bind_mutation_preconditions, WorthQueryBoundMutationPreconditions,
+};
+use {
+    crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
+    crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind,
 };
 
 pub(super) fn bind_progression_preconditions<Schema, Capability, Operation, Input>(

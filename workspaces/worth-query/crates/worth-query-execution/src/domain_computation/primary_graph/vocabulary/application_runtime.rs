@@ -1,4 +1,8 @@
 //! `application_runtime`'s vocabulary, moved whole from `primary_graph::application_runtime`: its root file's items here, one child per other source file.
+pub(crate) mod certification_cost;
+pub(crate) mod execution_memory;
+pub(crate) mod receipt;
+pub(crate) mod storage_retention;
 
 /// Receipt from closing this runtime's live delivery.
 ///
@@ -6,7 +10,7 @@
 /// no live consumers remain.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationLiveDeliveryCloseReceipt {
-    remaining_live_consumers: usize,
+    pub(in crate::domain_computation::primary_graph) remaining_live_consumers: usize,
 }
 
 impl WorthQueryApplicationLiveDeliveryCloseReceipt {
@@ -18,7 +22,3 @@ impl WorthQueryApplicationLiveDeliveryCloseReceipt {
         self.remaining_live_consumers == 0
     }
 }
-pub(crate) mod certification_cost;
-pub(crate) mod execution_memory;
-pub(crate) mod receipt;
-pub(crate) mod storage_retention;

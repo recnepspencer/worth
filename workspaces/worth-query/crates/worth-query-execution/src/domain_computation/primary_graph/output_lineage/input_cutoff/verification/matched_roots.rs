@@ -5,10 +5,10 @@ use std::sync::Arc;
 use im::OrdSet;
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 use super::InputCutoffVerificationStop;
 use crate::domain_computation::primary_graph::application_contribution::MatchedRequiredPredecessors;
 use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 
 /// Whether every matched old identity is one of this record's own consumed
 /// roots, joined on this invocation's certified wave.

@@ -1,6 +1,5 @@
 //! Actual historical candidate matching; exact rejection never discards influence.
 use super::super::source::service::ManagedSourceRoot;
-use {crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop, crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial};
 use super::CapturedIndexInfluence;
 use crate::domain_computation::primary_graph::access_strategy::realized_footprint::ManagedHistoryRelevanceDenial as Denial;
 use std::sync::Arc;
@@ -10,6 +9,10 @@ use worth_query_declaration::facade::{
     application_schema::ApplicationSchema,
 };
 use worth_relational::facade::history::RelationalAuthoredManagedSourceImpact as Impact;
+use {
+    crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial,
+    crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop,
+};
 
 pub(super) fn relevant<S: ApplicationSchema + 'static, I: ApplicationManagedIndexBinding<S>>(
     capture: &CapturedIndexInfluence<S, I>,

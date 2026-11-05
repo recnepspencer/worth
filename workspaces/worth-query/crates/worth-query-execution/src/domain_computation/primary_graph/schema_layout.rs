@@ -52,8 +52,9 @@ pub(in crate::domain_computation::primary_graph) use unique_fields::{
     WorthQueryUniqueFieldIndex, WorthQueryUniqueFields,
 };
 
-use crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxLayout;
 use crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout;
+use crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxLayout;
+use crate::domain_computation::vocabulary::primary_graph::principal_binding::WorthQueryPrimaryPrincipalBindingLayout;
 use application_layout_lowering::{field_capability_keys, lower_fields, lower_relation_layouts};
 use capability_grant_join::{lower_capability_grant_joins, WorthQueryCapabilityGrantJoinLayout};
 use continuation_ordering::{
@@ -65,7 +66,6 @@ pub(in crate::domain_computation::primary_graph) use installation_primitives::{
 };
 use platform_entity_lowering::lower_platform_entities;
 use principal_binding::lower_principal_bindings;
-use crate::domain_computation::vocabulary::primary_graph::principal_binding::WorthQueryPrimaryPrincipalBindingLayout;
 pub(in crate::domain_computation::primary_graph) use program_activation::WorthQueryProgramActivationLayout;
 pub(super) use provider_aftermath_causality::WorthQueryAftermathCausalityLayout;
 pub(super) use provider_idempotency::WorthQueryProviderIdempotencyLayout;

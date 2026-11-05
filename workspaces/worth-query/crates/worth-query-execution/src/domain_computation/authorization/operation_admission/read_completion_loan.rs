@@ -1,7 +1,10 @@
 //! Completion may record facts on a proof, but cannot replace the proof.
 use super::{WorthQueryAdmittedApplicationOperation, WorthQueryAdmittedOperation};
-use {crate::domain_computation::vocabulary::primary_graph::handler_fact_boundary::CompletedHandlerFactBoundary, crate::domain_computation::primary_graph::SealedComputationRetention};
 use worth_query_installation::facade::WorthQueryCanonicalWorkEvidence;
+use {
+    crate::domain_computation::primary_graph::SealedComputationRetention,
+    crate::domain_computation::vocabulary::primary_graph::handler_fact_boundary::CompletedHandlerFactBoundary,
+};
 
 pub(in crate::domain_computation) struct ReadCompletionAdmission<'admission> {
     core: &'admission mut WorthQueryAdmittedOperation,

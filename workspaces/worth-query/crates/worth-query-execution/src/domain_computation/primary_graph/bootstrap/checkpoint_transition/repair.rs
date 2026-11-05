@@ -1,6 +1,12 @@
 //! Linear repair custody for an unpublished, performed installation.
-use {crate::domain_computation::primary_graph::WorthQueryApplicationCheckpoint, crate::domain_computation::primary_graph::WorthQueryCheckpointCaptureDenial, crate::domain_computation::primary_graph::WorthQueryCheckpointCapturePolicy, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle, crate::domain_computation::primary_graph::vocabulary::bootstrap::publication::WorthQueryPrimaryGraphPublication};
 use worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority;
+use {
+    crate::domain_computation::primary_graph::vocabulary::bootstrap::publication::WorthQueryPrimaryGraphPublication,
+    crate::domain_computation::primary_graph::WorthQueryApplicationCheckpoint,
+    crate::domain_computation::primary_graph::WorthQueryCheckpointCaptureDenial,
+    crate::domain_computation::primary_graph::WorthQueryCheckpointCapturePolicy,
+    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle,
+};
 
 /// An acknowledged transition awaiting checkpoint capture. This capsule never
 /// exposes a World. Consuming repair never reruns authoring or republishes: it

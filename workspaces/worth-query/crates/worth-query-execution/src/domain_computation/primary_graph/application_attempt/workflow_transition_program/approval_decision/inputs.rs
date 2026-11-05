@@ -1,7 +1,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::application_attempt::check_request_live;
-use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 
 pub(super) struct ObservedApprovalEvidence {
     pub(super) node_path: String,

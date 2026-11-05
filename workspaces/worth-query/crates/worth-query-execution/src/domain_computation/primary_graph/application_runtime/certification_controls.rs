@@ -383,7 +383,7 @@ where
     pub fn application_attempt_work_for_test(
         &self,
     ) -> crate::domain_computation::primary_graph::vocabulary::provider::application_attempt_work::WorthQueryApplicationAttemptWorkSnapshot
-    {
+{
         self.runtime
             .primary_provider
             .application_attempt_work_for_test()

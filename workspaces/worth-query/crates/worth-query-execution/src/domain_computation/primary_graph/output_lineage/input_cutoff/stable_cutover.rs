@@ -16,10 +16,10 @@ use super::super::RecordedOutput;
 use super::generation_append::PreparedGenerationAppend;
 use super::stable_publication::PreparedStableLineagePublication;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial;
-use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind as Kind;
 use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind;
 
 pub(in crate::domain_computation::primary_graph) enum StablePublicationStop {
     Demand(WorthQueryOutputDemandDenial),

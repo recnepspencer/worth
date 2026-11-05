@@ -269,9 +269,9 @@ fn publication_request_stop(
 fn world_no_effect(
     no_effect: worth_runtime_world::facade::NoEffectCompositePublication,
 ) -> crate::domain_computation::WorthQueryProviderSessionCommitStop {
+    use crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind;
     use crate::domain_computation::WorthQueryProviderSessionCommitControlStopped;
     use crate::domain_computation::WorthQueryProviderSessionCommitStop as Stop;
-    use crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind;
     use worth_runtime_world::facade::NoEffectCause;
     match no_effect.cause() {
         NoEffectCause::StaleExpectedProductHead => Stop::ProductStale(

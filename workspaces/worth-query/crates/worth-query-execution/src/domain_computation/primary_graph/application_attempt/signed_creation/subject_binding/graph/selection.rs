@@ -1,12 +1,15 @@
 //! Preserve exact selected identities and the native structural revision of each hop.
 use super::{coordinates, identity, BodyCandidate, CaptureSpec, Denial, Selection};
-use {crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection as Direction, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact as Fact};
 use worth_query_declaration::facade::{
     application_operation::ApplicationMutationBinding,
     application_query::RelationDirection as PathDirection, application_schema::ApplicationSchema,
 };
 use worth_relational::facade::{
     identity::EntityId, runtime::RelationalAdjacencyDirection as NativeDirection,
+};
+use {
+    crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact as Fact,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection as Direction,
 };
 
 pub(super) fn capture<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>(

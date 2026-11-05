@@ -1,6 +1,5 @@
 use std::marker::PhantomData;
 
-use worth_query_declaration::facade::application_operation::WorthQueryApplicationOutputRoleNameDenial;
 use worth_relational::facade::identity::EntityId;
 
 /// The committed entity behind one declared output role, projected from a
@@ -26,4 +25,3 @@ impl<Entity, Action> WorthQueryApplicationOutputEntity<Entity, Action> {
         self.entity_id
     }
 }
-

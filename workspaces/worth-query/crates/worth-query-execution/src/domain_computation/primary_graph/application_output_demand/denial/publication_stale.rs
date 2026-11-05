@@ -2,11 +2,14 @@
 //! These values retain neither observation custody nor permission to retry.
 
 use super::WorthQueryOutputDemandDenial;
-use {crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage, crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome::WorthQueryApplicationStaleAttempt};
 use worth_relational::facade::mvcc::{CompanionCellEditStop, CompanionPreflightStop};
 use worth_runtime_world::facade::{
     CompositeCommitIdentity, ProductBranchIncarnation, ProductBranchObservation,
     ProductBranchReferenceGeneration, ProductBranchReferenceSnapshot, RuntimeWorldOwnerIdentity,
+};
+use {
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::commit_outcome::WorthQueryApplicationStaleAttempt,
+    crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]

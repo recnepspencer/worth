@@ -20,7 +20,6 @@ mod workflow_transition;
 pub use capability_workflow::WorthQueryCapabilityWorkflowIdempotency;
 use encoding::{append_identity_slot, encode_identity};
 
-
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 struct WorthQueryIdempotencyEntityIdentity {
     partition: u32,

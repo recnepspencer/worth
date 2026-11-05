@@ -14,8 +14,11 @@ pub(crate) mod caller_pass;
 mod managed_source;
 pub use managed_source::WorthQueryManagedSourceRevalidationPauseForTest;
 mod source_publication;
-pub use {source_publication::WorthQuerySourceFactComparisonPauseForTest, source_publication::WorthQuerySourcePublicationValidationPauseForTest};
 use crate::domain_computation::primary_graph::vocabulary::application_runtime::receipt::WorthQuerySourcePublicationImageForTest;
+pub use {
+    source_publication::WorthQuerySourceFactComparisonPauseForTest,
+    source_publication::WorthQuerySourcePublicationValidationPauseForTest,
+};
 
 #[derive(Clone, Default)]
 pub struct WorthQueryApplicationAttemptOperationControl {

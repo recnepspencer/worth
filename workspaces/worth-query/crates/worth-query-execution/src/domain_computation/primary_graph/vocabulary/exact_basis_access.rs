@@ -1,5 +1,7 @@
 //! `exact_basis_access`'s vocabulary, moved whole from `primary_graph::exact_basis_access`: its root file's items here, one child per other source file.
 
+use worth_relational::facade::snapshots::RelationalSnapshotAdmissionDenial;
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryExactBasisSnapshotDenial {
     BranchIdentityUnavailable,
@@ -38,4 +40,3 @@ impl From<RelationalSnapshotAdmissionDenial> for WorthQueryExactBasisSnapshotDen
         }
     }
 }
-use worth_relational::facade::snapshots::RelationalSnapshotAdmissionDenial;

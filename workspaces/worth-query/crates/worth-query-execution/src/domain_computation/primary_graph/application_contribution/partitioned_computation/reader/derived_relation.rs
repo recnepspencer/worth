@@ -1,10 +1,10 @@
 //! The closed collection and ordinary owner use the same issued decision read.
 use super::*;
 use crate::domain_computation::primary_graph::invariant_projection::WorthQueryInvariantDerivedRelation;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
 use worth_query_declaration::facade::application_schema::{
     ApplicationDerivedRelationRef, ApplicationOperationMarkerIdentity,
 };
-use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
 
 impl<Schema: ApplicationSchema, Operation: ApplicationOperationMarkerIdentity<Schema>>
     WorthQueryComputationReader<'_, '_, '_, Schema, Operation>

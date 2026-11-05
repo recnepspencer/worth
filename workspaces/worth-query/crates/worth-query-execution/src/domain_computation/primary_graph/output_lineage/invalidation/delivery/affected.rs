@@ -6,12 +6,12 @@ use super::CommitId;
 use super::CompanionPreflightStop;
 use super::DeliveryEpoch;
 use super::FactPostingKey;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
 use super::MarkState;
 use super::NativeMarkingReport;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 use super::WorthQueryNativeMarkingPrecision;
 use super::WorthQueryNativeMarkingWork;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 use im::OrdSet;
 pub(crate) mod posting_order;
 

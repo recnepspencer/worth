@@ -9,9 +9,13 @@ use super::super::{
 };
 use super::*;
 use crate::domain_computation::primary_graph::application_query::AccessScopedOps;
-use {crate::domain_computation::authorization::application_disclosure::WorthQueryPendingApplicationQueryGovernance, crate::domain_computation::primary_graph::application_query::FreshQueryPermissionStop, crate::domain_computation::vocabulary::primary_graph::application_query_basis_registry::WorthQueryApplicationBasisSelectionIdentity};
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryBinding;
 use worth_relational::facade::identity::EntityId;
+use {
+    crate::domain_computation::authorization::application_disclosure::WorthQueryPendingApplicationQueryGovernance,
+    crate::domain_computation::primary_graph::application_query::FreshQueryPermissionStop,
+    crate::domain_computation::vocabulary::primary_graph::application_query_basis_registry::WorthQueryApplicationBasisSelectionIdentity,
+};
 
 enum MaterializedInspection {
     Observed(FundedInspectionReport),

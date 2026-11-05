@@ -1,8 +1,8 @@
 //! Retained computation changes use the same source-aligned native mark image.
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 use super::super::RetainedSourceFacts;
 use super::source_alignment::SnapshotAlignedMarkState;
 use super::SourceInvalidationOwner;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 pub(crate) mod postcondition_carry;
 use im::OrdSet;
 pub(in crate::domain_computation::primary_graph) use postcondition_carry::PostconditionCarry;

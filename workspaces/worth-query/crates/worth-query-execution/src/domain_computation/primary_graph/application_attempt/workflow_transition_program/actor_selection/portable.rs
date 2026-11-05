@@ -1,8 +1,8 @@
 //! Private durable evidence. Decoding never admits capability access.
 use super::*;
+use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
 
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -52,7 +52,7 @@ impl WorkflowRecordedActorObservation {
     ) -> Result<
         crate::domain_computation::vocabulary::primary_graph::encoding::FundedActorText,
         crate::domain_computation::authorization::WorkflowApprovalRequestEncodingDenial,
-    >{
+    > {
         #[derive(Serialize)]
         struct Role<'a> {
             version: u16,

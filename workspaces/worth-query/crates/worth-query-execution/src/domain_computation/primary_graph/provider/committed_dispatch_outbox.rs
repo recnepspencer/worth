@@ -6,9 +6,12 @@ use worth_relational::facade::runtime::{ProjectionAspectRequirement, ProjectionA
 use worth_relational::facade::transactions::RecordRef;
 
 use super::WorthQueryPrimaryGraphProvider;
-use {crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxLayout, crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxRecord};
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitReceipt, WorthQueryCommittedProductPublication,
+};
+use {
+    crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxLayout,
+    crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxRecord,
 };
 
 mod correlation;
@@ -39,7 +42,6 @@ pub struct WorthQueryCommittedDispatchOutboxOwnerObservation {
     relational_runtime_instance_id: u64,
     work: WorthQueryCommittedDispatchOutboxReadWork,
 }
-
 
 use WorthQueryCommittedDispatchOutboxReadDenial as Denial;
 
@@ -307,8 +309,8 @@ where
 }
 
 mod record_read;
-use record_read::CommittedOutboxRead;
 use crate::domain_computation::vocabulary::primary_graph::committed_dispatch_outbox::WorthQueryCommittedDispatchOutboxReadDenial;
+use record_read::CommittedOutboxRead;
 
 #[cfg(test)]
 #[path = "committed_dispatch_outbox/restoration_tests.rs"]

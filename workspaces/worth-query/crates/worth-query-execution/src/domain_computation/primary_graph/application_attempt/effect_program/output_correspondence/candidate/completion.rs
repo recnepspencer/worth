@@ -10,7 +10,10 @@ use worth_relational::facade::transactions::{CreatedEntityRef, EntityReference};
 use super::super::WorthQueryApplicationOutputPosture;
 use super::{denial, family_matches, WorthQueryApplicationOutputCorrespondenceCandidate};
 use crate::domain_computation::primary_graph::application_attempt::effect_program::WorthQueryApplicationRealizedEffect;
-use {crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
+use {
+    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
+};
 
 impl WorthQueryApplicationOutputCorrespondenceCandidate {
     pub(in crate::domain_computation::primary_graph::application_attempt) fn validate_effects(

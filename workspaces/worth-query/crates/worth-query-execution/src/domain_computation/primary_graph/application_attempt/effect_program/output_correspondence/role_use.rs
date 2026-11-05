@@ -8,14 +8,8 @@ use crate::equality_type_id::EqualityTypeId as TypeId;
 
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationOutputPosture, ApplicationMutationOutputRoleCardinality,
-    WorthQueryApplicationDeclaredOutputRole, WorthQueryApplicationDeclaredOutputRoleFamily,
-    WorthQueryApplicationOutputAction, WorthQueryApplicationOutputCardinality,
-    WorthQueryApplicationOutputRole, WorthQueryApplicationOutputRoleFamily,
+    WorthQueryApplicationOutputAction, WorthQueryApplicationOutputRoleFamily,
     WorthQueryApplicationOutputRoleNameDenial,
 };
-use worth_query_declaration::facade::application_schema::ApplicationEntityMarkerIdentity;
-
-
-
 
 mod court_doors_for_test;

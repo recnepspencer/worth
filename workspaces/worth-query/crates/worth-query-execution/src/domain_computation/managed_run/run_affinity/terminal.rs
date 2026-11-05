@@ -34,7 +34,7 @@ impl WorthQueryDirectRunTerminalAffinity {
 
     pub(in crate::domain_computation::managed_run) fn release(
         self,
-    ) -> crate::domain_computation::vocabulary::provider_session::direct_attempt::WorthQueryDirectExecutionAttemptReleaseReceipt {
+    ) -> crate::domain_computation::vocabulary::provider_session::direct_attempt::WorthQueryDirectExecutionAttemptReleaseReceipt{
         self.attempt.release()
     }
 }

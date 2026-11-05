@@ -1,7 +1,10 @@
 //! Exact indexed-read causes remain attached to their owning attempt refusal.
-use {super::AttemptDenialCause, super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
 use worth_relational::facade::indexes::{
     BoundedEntityFieldLookupDenial, BoundedEntityFieldLookupDenialKind,
+};
+use {
+    super::AttemptDenialCause, super::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
 };
 
 impl WorthQueryApplicationAttemptDenial {

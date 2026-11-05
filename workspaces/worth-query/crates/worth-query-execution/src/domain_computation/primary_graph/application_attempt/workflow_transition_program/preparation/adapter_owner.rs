@@ -1,8 +1,8 @@
 //! Query-owned lookup for one admitted guarded operation.
 
 use super::*;
-use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::primary_graph::application_attempt::IdempotencyResolutionOps;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 impl WorthQueryWorkflowAdvanceAdapter {
     #[doc(hidden)]

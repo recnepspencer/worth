@@ -1,8 +1,12 @@
 //! Complete invariant-owner refusal evidence at the application commit boundary.
 
-use {super::denial_cause::DenialCause, super::WorthQueryApplicationCommitDenial, crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind as CommitKind, super::WorthQueryApplicationCommitDenialStage};
 use crate::domain_computation::{
     WorthQueryInvariantExecutionDenialKind as Kind, WorthQueryInvariantExecutionFailure,
+};
+use {
+    super::denial_cause::DenialCause, super::WorthQueryApplicationCommitDenial,
+    super::WorthQueryApplicationCommitDenialStage,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind as CommitKind,
 };
 
 impl WorthQueryApplicationCommitDenial {

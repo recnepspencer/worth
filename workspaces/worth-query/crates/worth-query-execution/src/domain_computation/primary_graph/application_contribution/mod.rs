@@ -16,9 +16,9 @@ pub(in crate::domain_computation::primary_graph) use output_production::WorthQue
 pub(in crate::domain_computation) mod execution_denial;
 pub(crate) mod partitioned_computation;
 pub(crate) mod producer;
+pub(in crate::domain_computation::primary_graph) use producer::CurrentProof;
 pub(in crate::domain_computation::primary_graph) use producer::OwnerPlan;
 pub(in crate::domain_computation::primary_graph) use producer::PendingProducerPublication;
-pub(in crate::domain_computation::primary_graph) use producer::CurrentProof;
 
 mod setup;
 
@@ -64,20 +64,42 @@ pub use partitioned_computation::{
     WorthQueryPartitionedComputationOwner, WorthQueryPreparedPartitionedComputation,
     WorthQueryReductionInputDenial,
 };
-pub(in crate::domain_computation::primary_graph) use {producer::install_output_readiness_routes, producer::InstalledProducerEdition, producer::MatchedRequiredPredecessors, producer::PendingOutputReadiness, producer::QualifiedOutputSource, producer::TypedPendingOutputReadiness, producer::WorthQueryInstalledOutputProducerRoutes, producer::WorthQueryInstalledOutputReadinessRoutes};
-pub use {computation::WorthQueryCompletedManagedComputation, computation::WorthQueryInstalledManagedComputation, computation::WorthQueryManagedComputationDenial, computation::WorthQueryManagedComputationOwner, computation::WorthQueryPreparedManagedComputation};
+pub use {
+    computation::WorthQueryCompletedManagedComputation,
+    computation::WorthQueryInstalledManagedComputation,
+    computation::WorthQueryManagedComputationDenial,
+    computation::WorthQueryManagedComputationOwner,
+    computation::WorthQueryPreparedManagedComputation,
+};
+pub(in crate::domain_computation::primary_graph) use {
+    producer::install_output_readiness_routes, producer::InstalledProducerEdition,
+    producer::MatchedRequiredPredecessors, producer::PendingOutputReadiness,
+    producer::QualifiedOutputSource, producer::TypedPendingOutputReadiness,
+    producer::WorthQueryInstalledOutputProducerRoutes,
+    producer::WorthQueryInstalledOutputReadinessRoutes,
+};
 
 pub use setup::{
     WorthQueryApplicationContributionSetup, WorthQueryManagedIndexProviderRegistration,
 };
-pub use {producer::WorthQueryAdmittedOutputDemand, producer::WorthQueryApplicationOutputDemand, producer::WorthQueryApplicationProducerBinding, producer::WorthQueryApplicationProducerProvider, producer::WorthQueryInstalledApplicationProducerRegistry, producer::WorthQueryOutputDemandAdvance, producer::WorthQueryProducerDenialDeclaration, producer::WorthQueryProducerDenialProjection, producer::WorthQueryProducerEvaluationIneligibility, producer::WorthQueryProducerOutputEquivalence, producer::WorthQueryProducerOutputFamily, producer::WorthQueryProjectedProducerDenial, producer::WorthQuerySelectedApplicationProducer, producer::WorthQueryUndeclaredProducerDenial, producer::WorthQueryWorkflowAssessmentOutputFamily};
+pub use {
+    producer::WorthQueryAdmittedOutputDemand, producer::WorthQueryApplicationOutputDemand,
+    producer::WorthQueryApplicationProducerBinding,
+    producer::WorthQueryApplicationProducerProvider,
+    producer::WorthQueryInstalledApplicationProducerRegistry,
+    producer::WorthQueryOutputDemandAdvance, producer::WorthQueryProducerDenialDeclaration,
+    producer::WorthQueryProducerDenialProjection,
+    producer::WorthQueryProducerEvaluationIneligibility,
+    producer::WorthQueryProducerOutputEquivalence, producer::WorthQueryProducerOutputFamily,
+    producer::WorthQueryProjectedProducerDenial, producer::WorthQuerySelectedApplicationProducer,
+    producer::WorthQueryUndeclaredProducerDenial,
+    producer::WorthQueryWorkflowAssessmentOutputFamily,
+};
 
 pub(in crate::domain_computation) use partitioned_computation::observe_discarded;
 pub(in crate::domain_computation::primary_graph) use partitioned_computation::observe_published;
 
 pub use producer::demand::progression::caller_pass_observation::caller_pass_reports_on_this_thread_for_test;
-
-
 
 pub use producer::AdmissionOps;
 pub(in crate::domain_computation) use producer::AdmissionScopedOps;

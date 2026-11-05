@@ -1,8 +1,11 @@
 //! Keep the original native source/storage stop behind the admission refusal.
 use super::*;
-use {crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial as NativeDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as NativeKind};
-use std::sync::Arc;
 use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind;
+use std::sync::Arc;
+use {
+    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial as NativeDenial,
+    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind as NativeKind,
+};
 #[derive(Clone, Debug)]
 pub(super) struct WorkflowActorNativeDenial(Arc<NativeDenial>);
 impl PartialEq for WorkflowActorNativeDenial {

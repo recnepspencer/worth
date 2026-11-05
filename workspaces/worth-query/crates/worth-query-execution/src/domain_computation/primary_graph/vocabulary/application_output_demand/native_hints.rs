@@ -4,7 +4,8 @@ use worth_relational::facade::history::BranchId;
 use worth_relational::facade::mvcc::CompanionPublicationCompletionObserver;
 
 pub struct NativeHint {
-    pub(in crate::domain_computation::primary_graph) observer: CompanionPublicationCompletionObserver,
+    pub(in crate::domain_computation::primary_graph) observer:
+        CompanionPublicationCompletionObserver,
     pub(in crate::domain_computation::primary_graph) branch: Arc<NativeBranch>,
     // The selection version at which this publication was seen installed
     // (or aborted) before a head check. Only such a hint is covered.
@@ -15,7 +16,7 @@ pub struct NativeHint {
 /// The final selected Arc, not the hint node, owns branch text and control
 /// block capacity. A stale selected worker can outlive an acknowledged node.
 pub struct NativeBranch {
-    branch: BranchId,
+    pub(in crate::domain_computation::primary_graph) branch: BranchId,
 }
 
 impl NativeBranch {

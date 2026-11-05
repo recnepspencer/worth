@@ -2,9 +2,11 @@
 use std::sync::atomic::AtomicU64;
 use std::sync::atomic::Ordering;
 
-pub(in crate::domain_computation) static NEXT_GRAPH_WORK_SESSION_IDENTITY: AtomicU64 = AtomicU64::new(1);
+pub(in crate::domain_computation) static NEXT_GRAPH_WORK_SESSION_IDENTITY: AtomicU64 =
+    AtomicU64::new(1);
 
-pub(in crate::domain_computation) static NEXT_GRAPH_WORK_MANAGED_RUN_IDENTITY: AtomicU64 = AtomicU64::new(1);
+pub(in crate::domain_computation) static NEXT_GRAPH_WORK_MANAGED_RUN_IDENTITY: AtomicU64 =
+    AtomicU64::new(1);
 
 /// Fixed-width identity of the managed run that owns one provider session.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]

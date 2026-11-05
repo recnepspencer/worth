@@ -1,12 +1,11 @@
 //! Finite Work and scratch admission for consumed-output verification.
 
 use super::*;
-use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::movement::Movement;
-use crate::domain_computation::vocabulary::primary_graph::capacity_stop::VerificationCapacityStop;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop;
 use crate::domain_computation::primary_graph::vocabulary::invariant_projection::work_budget::map_admission_stop;
-
+use crate::domain_computation::vocabulary::primary_graph::capacity_stop::VerificationCapacityStop;
 
 pub(in crate::domain_computation::primary_graph) fn map_verification_stop(
     stop: SettlementVerificationStop,
@@ -35,7 +34,6 @@ pub(in crate::domain_computation::primary_graph) fn map_verification_stop(
         }
     }
 }
-
 
 pub(super) fn fact_is_current(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -66,6 +64,7 @@ pub(super) fn fact_is_current(
 
 #[cfg(test)]
 mod tests {
+    use crate::domain_computation::primary_graph::vocabulary::invariant_projection::work_budget::reserve_pending;
     use worth_relational::facade::mvcc::RelationalCancellationSource;
     use worth_relational::facade::mvcc::RelationalInterruptionBoundary;
     use worth_relational::facade::mvcc::RelationalOperationControl;

@@ -6,17 +6,17 @@ use worth_relational::facade::identity::KindId;
 use worth_relational::facade::transactions::RecordRef;
 
 pub(crate) struct WorthQueryRetainedPreImageFieldSeal {
-    locus: InstalledPreImageLocus,
-    value: AspectValue,
-    encoded_bytes: usize,
-    target_record: RecordRef,
-    entity_kind: KindId,
-    locator: AspectFieldLocator,
+    pub(in crate::domain_computation) locus: InstalledPreImageLocus,
+    pub(in crate::domain_computation) value: AspectValue,
+    pub(in crate::domain_computation) encoded_bytes: usize,
+    pub(in crate::domain_computation) target_record: RecordRef,
+    pub(in crate::domain_computation) entity_kind: KindId,
+    pub(in crate::domain_computation) locator: AspectFieldLocator,
 }
 
 pub(crate) struct WorthQueryRetainedPreImageSeal {
-    fields: Vec<WorthQueryRetainedPreImageFieldSeal>,
-    total_encoded_bytes: usize,
+    pub(in crate::domain_computation) fields: Vec<WorthQueryRetainedPreImageFieldSeal>,
+    pub(in crate::domain_computation) total_encoded_bytes: usize,
 }
 
 impl WorthQueryRetainedPreImageSeal {

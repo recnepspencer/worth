@@ -1,8 +1,14 @@
 //! Local diagnostic values preserve type, equality and declared footprint.
 //! Actual request retention is exercised by the public exact-refinement court.
 use super::*;
-use {crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial, crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial};
+use crate::domain_computation::vocabulary::primary_graph::provider_failure::equal_cause;
+use crate::domain_computation::vocabulary::primary_graph::provider_failure::PaidProviderDenial;
+use crate::domain_computation::vocabulary::primary_graph::provider_failure::WorthQueryManagedIndexProviderFailure;
 use worth_execution::ChargedBytes;
+use {
+    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial,
+};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 struct Domain(u8);

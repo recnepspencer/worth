@@ -96,7 +96,7 @@ impl WorthQueryDecisionReadSetFailure {
     /// The original pure provider or controlled refusal during consistency.
     pub fn managed_index_denial(
         &self,
-    ) -> Option<&crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial> {
+    ) -> Option<&crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial>{
         self.managed_index.as_ref()
     }
 

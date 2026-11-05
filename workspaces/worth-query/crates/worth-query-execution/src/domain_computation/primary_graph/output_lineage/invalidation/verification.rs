@@ -14,12 +14,12 @@ use worth_relational::facade::snapshots::SnapshotHandle;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::movement::Movement;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure;
 
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 use super::mark_state::SettlementCurrentness;
 use super::mark_state::SettlementMarks;
 use super::source_alignment::BranchMarkRoot;
 use super::source_alignment::SnapshotAlignedMarkState;
 use super::SourceInvalidationOwner;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 
 #[derive(Debug)]
 pub enum SettlementVerificationStop {

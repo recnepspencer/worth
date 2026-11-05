@@ -1,5 +1,4 @@
 //! Invocation/image-confined decoded text; no shared text handle crosses this owner.
-use {crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl as Control, crate::domain_computation::primary_graph::vocabulary::application_query::source_rows::WorthQueryManagedIndexSourceSlot as Slot, crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop};
 use crate::domain_computation::primary_graph::access_strategy::ordered_storage;
 use std::{cell::RefCell, sync::Arc};
 use worth_execution::{
@@ -8,6 +7,11 @@ use worth_execution::{
 };
 use worth_query_declaration::facade::application_query::ApplicationQueryResultSlotKey as Key;
 use worth_query_installation::facade::WorthQueryInstalledApplicationValueBinding as Binding;
+use {
+    crate::domain_computation::primary_graph::vocabulary::application_query::source_rows::WorthQueryManagedIndexSourceSlot as Slot,
+    crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl as Control,
+    crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop,
+};
 
 #[derive(Default)]
 pub(super) struct SourceText {

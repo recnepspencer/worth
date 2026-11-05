@@ -11,8 +11,6 @@ impl WorthQueryPrimaryGraphLayout {
     }
 }
 
-
-
 impl WorthQueryPrimaryGraphLayout {
     #[doc(hidden)]
     pub fn principal_binding_for_test(

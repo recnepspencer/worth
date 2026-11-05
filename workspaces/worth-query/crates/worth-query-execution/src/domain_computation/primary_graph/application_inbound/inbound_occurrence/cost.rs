@@ -3,7 +3,7 @@
 use crate::domain_computation::primary_graph::application_inbound::InboundOccurrenceScopedOps;
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use super::{WorthQueryInboundVerifierHandle, WorthQueryPrimaryGraphApplicationRuntime};
+use super::WorthQueryInboundVerifierHandle;
 
 #[derive(Default)]
 pub(in crate::domain_computation::primary_graph) struct WorthQueryInboundCostLedger {

@@ -87,10 +87,10 @@ pub enum WorthQueryApplicationInspectionStage {
     ReportIdentity,
     ReportBridge,
 }
-use WorthQueryApplicationInspectionStage as Stage;
 use crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial;
 use crate::domain_computation::primary_graph::vocabulary::entity_resolution_denial::WorthQueryEntityResolutionDenial;
 use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenial;
+use WorthQueryApplicationInspectionStage as Stage;
 
 type Refusal<'a> = WorthQueryApplicationInspectionOwnerRefusal<'a>;
 

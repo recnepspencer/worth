@@ -13,8 +13,11 @@ use crate::domain_computation::vocabulary::primary_graph::committed_dispatch_out
 
 use crate::domain_computation::primary_graph::application_inbound::inbound_publication::InstalledTransportPendingReason;
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage as Stage;
-use {crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control, crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind as SessionKind};
 use crate::domain_computation::vocabulary::primary_graph::denial::WorthQueryExternalDispatchAttemptDenial;
+use {
+    crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control,
+    crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind as SessionKind,
+};
 
 /// Why a host could not install an external-effect transport.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -22,7 +25,6 @@ pub enum WorthQueryExternalTransportInstallationDenial {
     /// A transport is already installed; it is never replaced in flight.
     AlreadyInstalled,
 }
-
 
 /// Exact failure before an initial post-commit transport call could be made.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

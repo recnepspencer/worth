@@ -1,5 +1,4 @@
 //! The type-dependent shell exposes actual nodes; the concrete core checks their graph.
-use {super::super::invocation::provider_result, super::super::WorthQueryManagedIndexNodes, super::super::WorthQueryManagedIndexProvider, super::super::WorthQueryManagedIndexSourceRows, crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial as Denial};
 use super::*;
 use worth_execution::{ExecutionArray, ExecutionRequestArrayBuilder};
 use worth_query_declaration::facade::{
@@ -8,6 +7,11 @@ use worth_query_declaration::facade::{
         ApplicationManagedIndexSourceStructure as Structure,
     },
     application_schema::ApplicationSchema,
+};
+use {
+    super::super::invocation::provider_result, super::super::WorthQueryManagedIndexNodes,
+    super::super::WorthQueryManagedIndexProvider, super::super::WorthQueryManagedIndexSourceRows,
+    crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial as Denial,
 };
 
 pub(in super::super) enum Step<'a> {

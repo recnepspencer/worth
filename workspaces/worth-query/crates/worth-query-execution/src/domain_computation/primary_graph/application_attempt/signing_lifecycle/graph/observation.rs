@@ -1,9 +1,14 @@
 //! Native bounded inverse traversal retains the exact preimage used to route a source edit.
-use {crate::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedRelation as Edge, crate::domain_computation::primary_graph::application_attempt::fact::observe_adjacency_with_work, crate::domain_computation::primary_graph::application_attempt::fact::AdjacencyObservationDenial, crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection as Direction};
 use {
     super::attempt, super::capacity, super::stopped, super::unavailable, super::Batch,
     super::EntityId, super::Fact, super::KindId, super::Lease, super::Outcome,
     super::PathDirection, crate::domain_computation::request_execution::QueryRequestExecution,
+};
+use {
+    crate::domain_computation::primary_graph::application_attempt::fact::observe_adjacency_with_work,
+    crate::domain_computation::primary_graph::application_attempt::fact::AdjacencyObservationDenial,
+    crate::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedRelation as Edge,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection as Direction,
 };
 pub(super) fn edges(
     lease: &Lease,

@@ -1,6 +1,5 @@
 use crate::domain_computation::primary_graph::application_contribution::AdmissionOps as _;
 use crate::domain_computation::primary_graph::application_contribution::ProgressionScopedOps;
-use crate::domain_computation::primary_graph::product_operation::AdmissionOps;
 use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 use worth_query_declaration::facade::application_program::ApplicationWorkflowSpec;
 use worth_query_installation::facade::ApplicationSchema;

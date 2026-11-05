@@ -1,6 +1,6 @@
 pub(crate) mod field_text;
-use crate::domain_computation::vocabulary::primary_graph::encoding::FundedActorText;
 use crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial;
+use crate::domain_computation::vocabulary::primary_graph::encoding::FundedActorText;
 pub(in crate::domain_computation::primary_graph) use field_text::WorkflowApprovalFieldText;
 use std::collections::BTreeMap;
 use worth_relational::facade::branch::AdmittedRelationalBranchBasis;

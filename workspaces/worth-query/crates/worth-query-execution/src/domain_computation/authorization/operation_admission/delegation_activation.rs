@@ -1,6 +1,10 @@
 use super::{ErasedAuthorizationBasis, WorthQueryAdmittedOperation};
 use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
-use {crate::domain_computation::authorization::WorthQueryDelegationActivationBinding, crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind};
+use {
+    crate::domain_computation::authorization::WorthQueryDelegationActivationBinding,
+    crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
+    crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind,
+};
 
 impl WorthQueryAdmittedOperation {
     pub(in crate::domain_computation) fn retain_delegation_proposal_canonical_work(

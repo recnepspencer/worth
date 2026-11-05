@@ -1,8 +1,17 @@
 //! Full Parent admission precedes any Source, provider, or retained-root lookup.
 use super::*;
 use crate::domain_computation::primary_graph::product_operation::ObservationRoomScopedOps;
-use {crate::domain_computation::primary_graph::application_query::authorized_read::refresh_governed_authorization, crate::domain_computation::primary_graph::application_query::authorized_read::validate_before_callback, crate::domain_computation::primary_graph::application_query::one_shot::outcome::material::retain_scope, crate::domain_computation::primary_graph::application_query::one_shot::outcome::material::MaterialCompletion, crate::domain_computation::primary_graph::application_query::one_shot::plan_admission::validate_one_shot_plan, crate::domain_computation::vocabulary::primary_graph::application_query_basis_registry::WorthQueryApplicationBasisSelectionIdentity, crate::domain_computation::vocabulary::primary_graph::retained_selector::WorthQueryObservedScopeSelector, crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation};
 use worth_query_installation::facade::WorthQueryInstalledManagedIndexParent;
+use {
+    crate::domain_computation::primary_graph::application_query::authorized_read::refresh_governed_authorization,
+    crate::domain_computation::primary_graph::application_query::authorized_read::validate_before_callback,
+    crate::domain_computation::primary_graph::application_query::one_shot::outcome::material::retain_scope,
+    crate::domain_computation::primary_graph::application_query::one_shot::outcome::material::MaterialCompletion,
+    crate::domain_computation::primary_graph::application_query::one_shot::plan_admission::validate_one_shot_plan,
+    crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation,
+    crate::domain_computation::vocabulary::primary_graph::application_query_basis_registry::WorthQueryApplicationBasisSelectionIdentity,
+    crate::domain_computation::vocabulary::primary_graph::retained_selector::WorthQueryObservedScopeSelector,
+};
 
 pub(super) struct ParentContext<'a, S> {
     pub(super) association: WorthQueryInstalledManagedIndexParent,

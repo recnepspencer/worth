@@ -106,11 +106,27 @@ pub mod signed_creation {
 
 pub mod workflow_definition_publication {
 
-    pub use {crate::domain_computation::primary_graph::application_attempt::workflow::WorkflowDefinitionBindingDenial, crate::domain_computation::primary_graph::application_attempt::workflow::WorkflowDefinitionPreparationDenial, crate::domain_computation::primary_graph::application_attempt::workflow::WorthQueryWorkflowDefinitionPublicationAdapter, crate::domain_computation::primary_graph::PerformedWorkflowDefinitionPublication, crate::domain_computation::primary_graph::PreparedWorkflowDefinitionPublication, crate::domain_computation::primary_graph::vocabulary::application_attempt::publication::PublishedWorkflowDefinitionRef, crate::domain_computation::primary_graph::WorkflowDefinitionExpectedPredecessor, crate::domain_computation::primary_graph::WorkflowDefinitionPublicationOutcome};
+    pub use {
+        crate::domain_computation::primary_graph::application_attempt::workflow::WorkflowDefinitionBindingDenial,
+        crate::domain_computation::primary_graph::application_attempt::workflow::WorkflowDefinitionPreparationDenial,
+        crate::domain_computation::primary_graph::application_attempt::workflow::WorthQueryWorkflowDefinitionPublicationAdapter,
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::publication::PublishedWorkflowDefinitionRef,
+        crate::domain_computation::primary_graph::PerformedWorkflowDefinitionPublication,
+        crate::domain_computation::primary_graph::PreparedWorkflowDefinitionPublication,
+        crate::domain_computation::primary_graph::WorkflowDefinitionExpectedPredecessor,
+        crate::domain_computation::primary_graph::WorkflowDefinitionPublicationOutcome,
+    };
 }
 
 pub mod workflow_definition_retirement {
-    pub use {crate::domain_computation::primary_graph::application_attempt::workflow::WorkflowDefinitionPreparationDenial, crate::domain_computation::primary_graph::application_attempt::workflow::WorthQueryWorkflowDefinitionRetirementAdapter, crate::domain_computation::primary_graph::PerformedWorkflowDefinitionRetirement, crate::domain_computation::primary_graph::PreparedWorkflowDefinitionRetirement, crate::domain_computation::primary_graph::vocabulary::application_attempt::publication::PublishedWorkflowDefinitionRef, crate::domain_computation::primary_graph::WorkflowDefinitionRetirementOutcome};
+    pub use {
+        crate::domain_computation::primary_graph::application_attempt::workflow::WorkflowDefinitionPreparationDenial,
+        crate::domain_computation::primary_graph::application_attempt::workflow::WorthQueryWorkflowDefinitionRetirementAdapter,
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::publication::PublishedWorkflowDefinitionRef,
+        crate::domain_computation::primary_graph::PerformedWorkflowDefinitionRetirement,
+        crate::domain_computation::primary_graph::PreparedWorkflowDefinitionRetirement,
+        crate::domain_computation::primary_graph::WorkflowDefinitionRetirementOutcome,
+    };
 }
 
 pub mod workflow_instance {

@@ -7,7 +7,10 @@ use worth_query_declaration::facade::application_capability::{
     ErasedApplicationCapabilityEntitySelector,
 };
 
-use {super::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind};
+use {
+    super::WorthQueryOperationAuthorizationDenial,
+    crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind,
+};
 
 pub fn validate_elevation_projection<Schema, Scope, Context>(
     contract: &ErasedApplicationCapabilityContract,

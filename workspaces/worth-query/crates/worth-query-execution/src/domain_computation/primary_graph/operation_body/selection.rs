@@ -1,7 +1,4 @@
 //! One decision-owned selection supplies related field reads and predecessor retirement.
-use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantMutationTarget;
-use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
-use crate::domain_computation::request_execution::QueryMemoryReservation;
 use worth_query_declaration::facade::application_schema::ApplicationOperationDecisionReadTarget;
 
 pub(super) fn installed_reads(

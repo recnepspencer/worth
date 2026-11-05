@@ -23,7 +23,11 @@ use super::super::definition::{
     CompiledWorkflowDefinition, CompiledWorkflowNode, CompiledWorkflowNodeKind,
 };
 use super::SettledWorkflowTransition;
-use {crate::domain_computation::primary_graph::application_attempt::WorkflowStepAllowance, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
+use {
+    crate::domain_computation::primary_graph::application_attempt::WorkflowStepAllowance,
+    crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
+};
 
 /// A receipted transition the successor must carry: the source's own, or one
 /// the source itself inherited. Either maps by the path of the node it ran.

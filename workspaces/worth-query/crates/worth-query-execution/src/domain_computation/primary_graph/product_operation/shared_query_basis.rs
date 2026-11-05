@@ -2,13 +2,12 @@
 use super::WorthQuerySelectedProductOperation;
 use crate::basis::WorthQueryProductObservationLease;
 use crate::domain_computation::primary_graph::application_query::resource_lifecycle::WorthQueryApplicationBasisLease;
-use worth_relational::facade::mvcc::CompanionPreflightStop;
 use crate::domain_computation::primary_graph::vocabulary::product_operation::shared_query_basis::SelectedQueryBasisRetentionStop;
+use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 pub struct SharedSelectedProductOperation<'runtime, Schema> {
     selected: WorthQuerySelectedProductOperation<'runtime, Schema>,
 }
-
 
 impl<'runtime, Schema> WorthQuerySelectedProductOperation<'runtime, Schema> {
     /// This phase preserves the issued snapshot and its program interpretation;

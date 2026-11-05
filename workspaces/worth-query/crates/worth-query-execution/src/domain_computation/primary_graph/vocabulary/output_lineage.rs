@@ -1,9 +1,16 @@
 //! `output_lineage`'s vocabulary, moved whole from `primary_graph::output_lineage`: its root file's items here, one child per other source file.
+pub(crate) mod commit_touches;
+pub(crate) mod derived;
+pub(crate) mod mark_state;
+pub(crate) mod semantic_source;
+pub(crate) mod settlement_identity;
+pub(crate) mod verification;
 
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct ProductCoordinate {
-    occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
-    generation: u64,
+    pub(in crate::domain_computation::primary_graph) occurrence:
+        worth_runtime_world::facade::ProductBranchIncarnation,
+    pub(in crate::domain_computation::primary_graph) generation: u64,
 }
 
 impl ProductCoordinate {
@@ -18,9 +25,3 @@ impl ProductCoordinate {
         }
     }
 }
-pub(crate) mod commit_touches;
-pub(crate) mod derived;
-pub(crate) mod mark_state;
-pub(crate) mod semantic_source;
-pub(crate) mod settlement_identity;
-pub(crate) mod verification;

@@ -1,6 +1,11 @@
 //! Merge native owner observations without losing or contradicting handler facts.
 use super::super::check_request_live;
-use {super::denial, super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, super::WorthQueryApplicationObservedFact, super::WorthQueryCompleteApplicationReadSet, super::WorthQueryProjectedApplicationMutation};
+use {
+    super::denial, super::WorthQueryApplicationAttemptDenial,
+    super::WorthQueryApplicationObservedFact, super::WorthQueryCompleteApplicationReadSet,
+    super::WorthQueryProjectedApplicationMutation,
+    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
+};
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryCompleteApplicationReadSet<

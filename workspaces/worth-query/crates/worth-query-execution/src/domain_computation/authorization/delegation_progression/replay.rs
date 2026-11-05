@@ -1,5 +1,5 @@
-use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::primary_graph::application_attempt::IdempotencyResolutionScopedOps;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_declaration::facade::{
     application_capability::{
         ApplicationCapabilityDelegationRequest, ApplicationCapabilityRequest,

@@ -2,18 +2,25 @@ use super::application_operation_reentry as reentry;
 use super::signal_decision_reentry::{
     WorthQueryRetainedConditionalDecision, WorthQueryRetainedConditionalWake,
 };
-use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::primary_graph as graph;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
 use classification::WorthQueryConditionalExecutionCause as Cause;
-use {graph::WorthQueryInvariantProjectionDenialKind as InvariantKind, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind as AuthorizationKind, crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenialKind as PrincipalKind};
+use {
+    crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind as AuthorizationKind,
+    crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenialKind as PrincipalKind,
+    graph::WorthQueryInvariantProjectionDenialKind as InvariantKind,
+};
 
 mod classification;
 mod commit_cause;
-pub(in crate::domain_computation::primary_graph::conditional_operation) use classification::signal_decision;
-pub use {classification::WorthQueryConditionalExecutionCause, classification::WorthQueryConditionalExecutionTerminal};
 use crate::domain_computation::primary_graph::vocabulary::conditional_operation::classification::WorthQueryConditionalSignalDecision;
+pub(in crate::domain_computation::primary_graph::conditional_operation) use classification::signal_decision;
 use commit_cause::application_commit_cause;
+pub use {
+    classification::WorthQueryConditionalExecutionCause,
+    classification::WorthQueryConditionalExecutionTerminal,
+};
 
 /// Descriptive, non-authorizing lineage for one temporal wake processed by an
 /// observed clock reading.
@@ -115,7 +122,10 @@ fn cause(
     };
     use super::signal_decision_reentry::WorthQueryOperationBackpressureCause as Backpressure;
     use super::signal_decision_reentry::WorthQueryRetainedConditionalDecision as Decision;
-    use {crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind as CommitKind, graph::WorthQueryApplicationCommitDenialStage as Stage};
+    use {
+        crate::domain_computation::primary_graph::vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind as CommitKind,
+        graph::WorthQueryApplicationCommitDenialStage as Stage,
+    };
     match decision {
         Decision::OperationExecutionControlRetryable(_, kind) => {
             Some(Cause::ApplicationExecutionDenied {

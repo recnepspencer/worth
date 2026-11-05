@@ -21,12 +21,12 @@ mod operation_inputs;
 mod projection;
 #[path = "approval_decision/validation.rs"]
 mod validation;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::approval::WorkflowApprovalDecision;
+use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
 use materialization::materialize_decision;
 pub(super) use operation_inputs::observe_operation_approval_inputs;
 pub(super) use validation::validate_requirement_definition as actor_approval_node;
 use validation::*;
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::approval::WorkflowApprovalDecision;
-use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryCompleteApplicationReadSet<

@@ -1,10 +1,10 @@
+use crate::domain_computation::primary_graph::vocabulary::exact_basis_access::WorthQueryExactBasisSnapshotDenial;
 use worth_relational::facade::{
     branch::AdmittedRelationalBranchBasis,
     runtime::RelationalRuntime,
     snapshots::{RelationalSnapshotAdmissionDenial, SnapshotHandle},
 };
 use worth_relational::facade::{branch::RelationalBranchBasisDenial, history::BranchId};
-use crate::domain_computation::primary_graph::vocabulary::exact_basis_access::WorthQueryExactBasisSnapshotDenial;
 
 pub fn open_exact_basis_snapshot(
     runtime: &mut RelationalRuntime,
@@ -14,7 +14,6 @@ pub fn open_exact_basis_snapshot(
         .snapshots()
         .snapshot_for_observation(&basis.observation())
 }
-
 
 fn observation_denial(denial: RelationalBranchBasisDenial) -> WorthQueryExactBasisSnapshotDenial {
     match denial {
@@ -30,7 +29,6 @@ fn observation_denial(denial: RelationalBranchBasisDenial) -> WorthQueryExactBas
         _ => WorthQueryExactBasisSnapshotDenial::BranchObservationUnavailable,
     }
 }
-
 
 /// Opens an ephemeral snapshot from the Relational owner's exact current
 /// branch observation. The descriptive branch name never selects storage on

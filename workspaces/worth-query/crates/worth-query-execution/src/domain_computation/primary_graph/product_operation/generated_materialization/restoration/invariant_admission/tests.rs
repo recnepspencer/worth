@@ -1,5 +1,8 @@
 use super::*;
 use crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerInvariantRequirement;
+use crate::domain_computation::primary_graph::vocabulary::product_operation::invariant_admission::admit_requirement_facts;
+use crate::domain_computation::primary_graph::vocabulary::product_operation::invariant_admission::ReceiptFact;
+use crate::domain_computation::primary_graph::vocabulary::product_operation::invariant_admission::RequirementSatisfaction;
 use CustomInvariantNonApplicability as Basis;
 
 const REQUIREMENT: WorthQueryProducerInvariantRequirement =

@@ -22,7 +22,7 @@ impl WorthQueryApplicationRuntimeCore {
     #[doc(hidden)]
     pub fn authority_identity_for_test(
         &self,
-    ) -> crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity {
+    ) -> crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity{
         Self::authority_identity(self)
     }
 }
@@ -54,7 +54,7 @@ impl WorthQueryApplicationRuntimeCore {
     #[doc(hidden)]
     pub fn bridge_for_test(
         &self,
-    ) -> &crate::domain_computation::primary_graph::vocabulary::managed_bridge::WorthQueryInstalledApplicationBridge {
+    ) -> &crate::domain_computation::primary_graph::vocabulary::managed_bridge::WorthQueryInstalledApplicationBridge{
         &self.bridge
     }
 }

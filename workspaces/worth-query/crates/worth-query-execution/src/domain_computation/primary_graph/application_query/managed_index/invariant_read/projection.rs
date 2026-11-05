@@ -1,9 +1,9 @@
 //! Materialize candidates only through the current Native loan's occurrence and fields.
-use crate::domain_computation::primary_graph::vocabulary::application_query::source_rows::WorthQueryManagedIndexSourceSlot;
 use super::*;
-use worth_relational::facade::runtime::{ManagedIndexSourceOccurrence, ManagedIndexSourceRows};
 use crate::domain_computation::primary_graph::vocabulary::application_query::invariant_read::ManagedSourceValue;
 use crate::domain_computation::primary_graph::vocabulary::application_query::invariant_read::WorthQueryManagedIndexInvariantDenial;
+use crate::domain_computation::primary_graph::vocabulary::application_query::source_rows::WorthQueryManagedIndexSourceSlot;
+use worth_relational::facade::runtime::{ManagedIndexSourceOccurrence, ManagedIndexSourceRows};
 type Denial = WorthQueryManagedIndexInvariantDenial;
 
 pub(super) fn read<S, I>(

@@ -1,7 +1,7 @@
 //! Moved whole from `domain_computation::primary_graph::application_contribution::execution_denial::scope`: the items below and every impl they own.
+use crate::domain_computation::primary_graph::vocabulary::application_contribution::publication::publication_execution_kind;
 use crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control;
 use crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind as Kind;
-use crate::domain_computation::primary_graph::vocabulary::application_contribution::publication::publication_execution_kind;
 use worth_execution::MapKernelFailure;
 use worth_execution::ScopeStop;
 use worth_execution::WorkCeilingDenial;

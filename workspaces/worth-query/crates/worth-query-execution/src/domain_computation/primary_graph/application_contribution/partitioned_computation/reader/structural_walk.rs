@@ -1,8 +1,8 @@
 //! Complete structural inputs retain the attribution of this actual owner call.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
 use crate::domain_computation::primary_graph::WorthQueryInvariantProjectionWalk;
 use worth_query_declaration::facade::application_schema::RelationDirection;
-use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
 impl<Schema: ApplicationSchema, Operation>
     WorthQueryComputationReader<'_, '_, '_, Schema, Operation>
 {

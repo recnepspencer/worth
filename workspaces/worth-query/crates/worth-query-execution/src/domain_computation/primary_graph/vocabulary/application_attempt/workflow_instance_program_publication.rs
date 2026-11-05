@@ -7,15 +7,19 @@ use worth_query_declaration::facade::application_program::ApplicationWorkflowDef
 /// node path.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct PublishedWorkflowInstanceRef {
-    branch: crate::basis::WorthQueryProductBranch,
+    pub(in crate::domain_computation::primary_graph) branch: crate::basis::WorthQueryProductBranch,
     /// The branch the instance was started on, whose occurrence its facts
     /// record. Only a fork's copy is read on another branch.
-    started_on: crate::basis::WorthQueryProductBranch,
-    entity_id: worth_relational::facade::identity::EntityId,
-    definition_content_identity: ApplicationWorkflowDefinitionContentIdentity,
-    definition: worth_relational::facade::identity::EntityId,
-    program_revision: ApplicationProgramRevision,
-    start_path: String,
+    pub(in crate::domain_computation::primary_graph) started_on:
+        crate::basis::WorthQueryProductBranch,
+    pub(in crate::domain_computation::primary_graph) entity_id:
+        worth_relational::facade::identity::EntityId,
+    pub(in crate::domain_computation::primary_graph) definition_content_identity:
+        ApplicationWorkflowDefinitionContentIdentity,
+    pub(in crate::domain_computation::primary_graph) definition:
+        worth_relational::facade::identity::EntityId,
+    pub(in crate::domain_computation::primary_graph) program_revision: ApplicationProgramRevision,
+    pub(in crate::domain_computation::primary_graph) start_path: String,
 }
 
 impl PublishedWorkflowInstanceRef {

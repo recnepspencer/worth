@@ -1,6 +1,6 @@
 //! Moved whole from `domain_computation::primary_graph::output_lineage::settlement_identity`: the items below and every impl they own.
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
 use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
 use std::sync::Arc;
 
 /// The exact retained output selected by the lineage owner.
@@ -47,7 +47,9 @@ impl RecordedSettlementIdentity {
             self.slot,
         )
     }
-    pub(in crate::domain_computation::primary_graph) const fn coordinate(&self) -> ProductCoordinate {
+    pub(in crate::domain_computation::primary_graph) const fn coordinate(
+        &self,
+    ) -> ProductCoordinate {
         self.coordinate
     }
     pub(in crate::domain_computation::primary_graph) const fn slot(&self) -> usize {

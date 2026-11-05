@@ -10,7 +10,11 @@ use worth_runtime_world::facade::{
     ProductBranchIncarnation, ProductBranchObservation,
 };
 
-use {crate::domain_computation::vocabulary::application_aftermath::correlation::ExternalEffectCorrelationIdentity, crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxRecord, crate::domain_computation::application_aftermath::WorthQueryInboundTerminalOwnerResult};
+use {
+    crate::domain_computation::application_aftermath::WorthQueryInboundTerminalOwnerResult,
+    crate::domain_computation::vocabulary::application_aftermath::correlation::ExternalEffectCorrelationIdentity,
+    crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxRecord,
+};
 use {
     crate::domain_computation::primary_graph::application_inbound::inbound_publication::PerformedInstalledTransportCompletion,
     crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxObservation,

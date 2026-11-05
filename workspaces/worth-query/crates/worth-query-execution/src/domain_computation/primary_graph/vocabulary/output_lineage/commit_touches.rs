@@ -30,7 +30,7 @@ impl<'a> From<&'a [EntityId]> for CommitTouchEntities<'a> {
 }
 
 impl CommitTouchEntities<'_> {
-    fn contains(&self, id: &EntityId) -> bool {
+    pub(in crate::domain_computation::primary_graph) fn contains(&self, id: &EntityId) -> bool {
         match self {
             Self::Set(v) => v.contains(id),
             Self::Slice(v) => v.contains(id),

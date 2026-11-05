@@ -1,11 +1,16 @@
 //! Exact-snapshot aggregate identity paired with complete business successor truth.
-use {super::WorthQueryApplicationInvariantProjectionReader, crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity, super::WorthQueryInvariantProjectionTraversalDenial as Denial, super::WorthQueryInvariantProjectionTraversalDenialKind as Kind};
 use crate::domain_computation::primary_graph::aggregate_identity::WorthQueryAggregateIdentity;
 use crate::domain_computation::primary_graph::structural_walk::StructuralWalkObservation;
 use worth_execution::MapKernelContext;
 use worth_query_declaration::facade::application_schema::RelationDirection;
 use worth_query_installation::facade::{ApplicationRelationRef, ApplicationSchema};
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
+use {
+    super::WorthQueryApplicationInvariantProjectionReader,
+    super::WorthQueryInvariantProjectionTraversalDenial as Denial,
+    super::WorthQueryInvariantProjectionTraversalDenialKind as Kind,
+    crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity,
+};
 mod result;
 pub use result::WorthQueryInvariantProjectionOrbit;
 

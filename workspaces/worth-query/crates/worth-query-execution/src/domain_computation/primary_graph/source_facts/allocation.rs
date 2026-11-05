@@ -1,6 +1,6 @@
 //! Original complete-source backing for walk or material-selection custody.
-use crate::domain_computation::vocabulary::primary_graph::storage::tree_clone_bytes;
 use super::super::structural_walk::{memory, StructuralWalkObservation};
+use crate::domain_computation::vocabulary::primary_graph::storage::tree_clone_bytes;
 use std::sync::{Arc, Mutex};
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;

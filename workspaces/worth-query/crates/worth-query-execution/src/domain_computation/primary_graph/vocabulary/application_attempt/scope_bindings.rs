@@ -16,7 +16,10 @@ pub enum InstalledScopePosition {
 }
 
 impl InstalledScopePosition {
-    pub(in crate::domain_computation::primary_graph) fn from_installed(contracts: &Contracts, scope: &Scope) -> Option<Self> {
+    pub(in crate::domain_computation::primary_graph) fn from_installed(
+        contracts: &Contracts,
+        scope: &Scope,
+    ) -> Option<Self> {
         contracts
             .graph_reads()
             .roles()
@@ -30,7 +33,10 @@ impl InstalledScopePosition {
                     .map(|scope| Self::Physical { role, scope })
             })
     }
-    pub(in crate::domain_computation::primary_graph) fn resolve(self, contracts: &Contracts) -> Option<&Scope> {
+    pub(in crate::domain_computation::primary_graph) fn resolve(
+        self,
+        contracts: &Contracts,
+    ) -> Option<&Scope> {
         let Self::Physical { role, scope } = self else {
             return None;
         };
@@ -103,7 +109,10 @@ impl CompletedReadScopes {
             Self::EmptyOwnerFixture => false,
         }
     }
-    pub(in crate::domain_computation::primary_graph) fn position(&self, ordinal: usize) -> Option<InstalledScopePosition> {
+    pub(in crate::domain_computation::primary_graph) fn position(
+        &self,
+        ordinal: usize,
+    ) -> Option<InstalledScopePosition> {
         match self {
             Self::Installed { positions, .. } => positions.get(ordinal).copied(),
             Self::EmptyOwnerFixture => None,

@@ -19,7 +19,6 @@ use super::outcome::{
 };
 use crate::domain_computation::application_aftermath::WorthQueryAcceptedInboundOccurrence;
 use crate::domain_computation::execution_runtime::product_world::WorthQueryReservedProductPublicationReceipt;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::WorthQueryProductUnpublishedApplication;
 
 pub(in crate::domain_computation) trait ProgressionScopedOps<Schema: ApplicationSchema>:

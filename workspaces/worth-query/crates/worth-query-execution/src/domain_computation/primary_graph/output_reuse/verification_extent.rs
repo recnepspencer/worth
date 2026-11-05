@@ -1,8 +1,13 @@
 //! Stack-owned verification for one request, runtime and selected image.
-use {crate::domain_computation::primary_graph::application_attempt::FactMovement, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact, crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure, crate::domain_computation::primary_graph::source_read_verification::SourceReadVerification};
 use worth_relational::facade::{
     mvcc::CompanionPreflightStop, runtime::RelationalRuntime, snapshots::SnapshotHandle,
     transactions::RelationalExecutionDenialCause,
+};
+use {
+    crate::domain_computation::primary_graph::application_attempt::FactMovement,
+    crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact,
+    crate::domain_computation::primary_graph::source_read_verification::SourceReadVerification,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure,
 };
 
 pub(in crate::domain_computation::primary_graph) struct RetainedFactVerification<

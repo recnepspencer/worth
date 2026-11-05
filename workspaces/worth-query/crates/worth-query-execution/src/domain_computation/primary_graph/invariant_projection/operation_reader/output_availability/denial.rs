@@ -1,5 +1,12 @@
 //! Original native owner stops from a non-driving output observation.
-use {crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial, crate::domain_computation::primary_graph::application_query::SourceQueryObservationStop, crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop, crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SettlementRegistrationStop, crate::domain_computation::primary_graph::WorthQueryCurrentOutputDenial, crate::domain_computation::primary_graph::WorthQueryInvariantDecisionPlanDenial};
+use {
+    crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial,
+    crate::domain_computation::primary_graph::application_query::SourceQueryObservationStop,
+    crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop,
+    crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SettlementRegistrationStop,
+    crate::domain_computation::primary_graph::WorthQueryCurrentOutputDenial,
+    crate::domain_computation::primary_graph::WorthQueryInvariantDecisionPlanDenial,
+};
 /// Original admission, source-read or output-verification refusal.
 /// The causal accessors retain native failure meaning; a refusal grants no
 /// pending state or independent source/currentness authority.
@@ -42,7 +49,7 @@ impl WorthQueryOutputAvailabilityDenial {
     pub fn query_admission_denial(
         &self,
     ) -> Option<&crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial>
-    {
+{
         match self.cause.as_ref() {
             Cause::SourceQuery(SourceQueryObservationStop::Admission(stop))
             | Cause::SourceQuery(SourceQueryObservationStop::Preparation { cause: stop, .. }) => {
@@ -54,7 +61,7 @@ impl WorthQueryOutputAvailabilityDenial {
     /// The original admitted Query read refusal, if that phase stopped.
     pub fn query_execution_denial(
         &self,
-    ) -> Option<&crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenial> {
+    ) -> Option<&crate::domain_computation::primary_graph::vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenial>{
         match self.cause.as_ref() { Cause::SourceQuery(SourceQueryObservationStop::Read(crate::domain_computation::primary_graph::vocabulary::application_query::one_shot::WorthQueryAdmittedOneShotStop::Execution(stop))) => Some(stop), _ => None }
     }
     /// Exact owned managed Source read failure, including domain/request causes.

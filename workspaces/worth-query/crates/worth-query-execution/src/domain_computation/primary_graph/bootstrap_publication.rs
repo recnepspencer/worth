@@ -14,7 +14,6 @@ use worth_relational::facade::transactions::{
     RelationSpec, WorkerIntentBatch,
 };
 
-use crate::domain_computation::primary_graph::vocabulary::bootstrap::WorthQueryPrincipalBootstrapRow;
 use super::typed_bootstrap::{
     WorthQueryTypedEntityBootstrapRow, WorthQueryTypedRelationBootstrapRow,
 };
@@ -22,6 +21,7 @@ use super::{
     primary_relational_branch_id, WorthQueryPrimaryGraph, WorthQueryPrimaryGraphInstallationDenial,
     WorthQueryPrimaryGraphInstallationDenialKind,
 };
+use crate::domain_computation::primary_graph::vocabulary::bootstrap::WorthQueryPrincipalBootstrapRow;
 
 pub(super) fn commit_bootstrap_rows(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

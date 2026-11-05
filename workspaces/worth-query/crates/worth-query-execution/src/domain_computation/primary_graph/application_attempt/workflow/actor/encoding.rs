@@ -1,16 +1,11 @@
 //! Canonical actor-envelope JSON in its native, execution-owned byte backing.
 use std::io::{self, Write};
 
-use serde::{Serialize, Serializer};
-use worth_execution::{ExecutionByteBuffer, ExecutionImmutableBytes, ExecutionRequest};
+use serde::Serialize;
+use worth_execution::{ExecutionByteBuffer, ExecutionRequest};
 
 use crate::domain_computation::authorization::WorkflowApprovalRequestEncodingDenial as Denial;
 use crate::domain_computation::vocabulary::primary_graph::encoding::FundedActorText;
-
-
-
-
-
 
 pub fn encode(
     execution: &ExecutionRequest<'_, '_>,

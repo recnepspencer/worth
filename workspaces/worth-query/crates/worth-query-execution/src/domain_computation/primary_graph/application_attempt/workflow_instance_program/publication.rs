@@ -24,8 +24,6 @@ pub struct PreparedWorkflowInstanceStart<Schema, Operation, Input, Scope> {
     pub(super) supersession: Option<super::supersession::WorkflowStartSupersession>,
 }
 
-
-
 /// A workflow instance start that landed: the instance, its commit receipt, and whether the
 /// idempotency key replayed an already-landed commit.
 #[derive(Debug)]

@@ -1,5 +1,7 @@
 //! Descriptive extension of one native completed readset, retaining its existing lease.
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
+use crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity;
 use crate::{
     basis::WorthQueryProductBranchReadIdentity,
     domain_computation::primary_graph::application_attempt::{
@@ -8,8 +10,6 @@ use crate::{
     },
 };
 use std::collections::BTreeMap;
-use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
-use crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity;
 
 pub(in crate::domain_computation::primary_graph) struct BorrowedOperationProjection<
     Schema,

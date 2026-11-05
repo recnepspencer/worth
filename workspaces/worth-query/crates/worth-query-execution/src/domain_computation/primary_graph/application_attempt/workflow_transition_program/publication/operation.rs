@@ -308,7 +308,10 @@ impl WorkflowOperationAuthority {
         };
         let execution = &phase_request;
 
-        use {crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
+        use {
+            crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
+            crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
+        };
         let mismatch = || {
             WorthQueryApplicationAttemptDenial::new(
                 WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,

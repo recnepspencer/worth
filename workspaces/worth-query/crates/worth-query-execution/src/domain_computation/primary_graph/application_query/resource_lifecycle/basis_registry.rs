@@ -6,20 +6,12 @@ use std::sync::{
 use super::lifecycle_count::{acquire, record_one_saturating};
 
 pub(crate) mod lease;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle;
-pub(crate) use lease::WorthQueryApplicationBasisLease;
-use worth_relational::facade::{
-    branch::{
-        AdmittedRelationalBranchBasis, RelationalBranchBasisDescriptor,
-        RelationalBranchRetentionTerminalOutcome,
-    },
-    history::BranchId,
-    snapshots::SnapshotId,
-};
 use crate::domain_computation::primary_graph::vocabulary::application_query::basis_registry::WorthQueryApplicationBasisRegistrationDenial;
-use crate::domain_computation::vocabulary::primary_graph::application_query_basis_registry::WorthQueryApplicationBasisReleaseOutcome;
+use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle;
 use crate::domain_computation::vocabulary::primary_graph::application_query_basis_registry::WorthQueryApplicationBasisSelectionIdentity;
 use crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity;
+pub(crate) use lease::WorthQueryApplicationBasisLease;
+use worth_relational::facade::branch::AdmittedRelationalBranchBasis;
 
 #[derive(Default)]
 struct WorthQueryApplicationBasisRegistryState {
@@ -42,13 +34,6 @@ pub struct WorthQueryApplicationBasisObserver {
     state: Arc<WorthQueryApplicationBasisRegistryState>,
 }
 
-
-
-
-
-
-
-
 /// Point-in-time counts of query bases: how many are open now, the most ever
 /// open at once, and how many were ever acquired.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -57,7 +42,6 @@ pub struct WorthQueryApplicationBasisObservation {
     peak_active: usize,
     acquisitions: usize,
 }
-
 
 impl WorthQueryApplicationBasisRegistry {
     pub fn observer(&self) -> WorthQueryApplicationBasisObserver {

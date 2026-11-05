@@ -2,9 +2,9 @@
 
 use super::*;
 
-use worth_relational::facade::mvcc::CompanionPreflightStop;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
 use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
+use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 /// The latest output one binding recorded for a source, with everything
 /// selection compares before it reuses that output.

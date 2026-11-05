@@ -11,7 +11,7 @@ impl WorthQueryCommittedReceiptProjection {
     ) -> Result<
         Self,
         crate::domain_computation::vocabulary::primary_graph::outbox_commit::WorthQueryCommittedDispatchOutboxBindingDenial,
-    > {
+    >{
         let committed_dispatch_outbox = provider
             .commit_evidence()
             .committed_dispatch_outbox()
@@ -25,7 +25,7 @@ impl WorthQueryCommittedReceiptProjection {
     pub(in crate::domain_computation::primary_graph) fn committed_dispatch_outbox(
         &self,
     ) -> Option<&crate::domain_computation::vocabulary::primary_graph::outbox_commit::WorthQueryCommittedDispatchOutboxBinding>
-    {
+{
         self.committed_dispatch_outbox.binding()
     }
 
@@ -34,7 +34,7 @@ impl WorthQueryCommittedReceiptProjection {
     ) -> (
         super::super::super::super::provider::WorthQueryPrimaryGraphCommittedApplication,
         Option<crate::domain_computation::vocabulary::primary_graph::outbox_commit::WorthQueryCommittedDispatchOutboxBinding>,
-    ) {
+    ){
         (self.provider, self.committed_dispatch_outbox.into_binding())
     }
 }

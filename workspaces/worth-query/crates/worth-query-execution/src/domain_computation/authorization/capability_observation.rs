@@ -6,8 +6,11 @@ use worth_runtime_bridge::facade::BridgeAuthorizationRuntime;
 
 use super::capability_registry::WorthQueryInstalledCapabilityPlan;
 use super::retained_capability_request::WorthQueryRetainedCapabilityRequest;
-use {super::WorthQueryAuthorizationDecisionFact, super::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind};
 use crate::domain_computation::authorization::WorthQueryRuntimeTimeSample;
+use {
+    super::WorthQueryAuthorizationDecisionFact, super::WorthQueryOperationAuthorizationDenial,
+    crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind,
+};
 
 mod bridge_observation;
 mod decision_denial;

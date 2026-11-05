@@ -9,7 +9,11 @@ use worth_query_installation::facade::{
     WorthQueryInstalledPrincipalBinding, WritePosture,
 };
 
-use {crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity, crate::domain_computation::primary_graph::WorthQueryAuthenticatedPrincipal, crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode};
+use {
+    crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity,
+    crate::domain_computation::primary_graph::WorthQueryAuthenticatedPrincipal,
+    crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode,
+};
 
 pub(super) struct WorthQueryFreshTemporalOperationAccess<
     Schema,

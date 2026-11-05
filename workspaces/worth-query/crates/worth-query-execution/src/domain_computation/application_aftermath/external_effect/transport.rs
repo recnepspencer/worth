@@ -124,8 +124,12 @@ mod tests {
         InstalledExternalEffectContract, WorthQueryExternalEffectCorrelationFamily,
     };
 
-    use {super::super::derive_external_effect_correlation_identity, super::super::ExternalEffectCorrelationBasis, crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxRecord};
     use super::WorthQueryExternalDispatchRequest;
+    use {
+        super::super::derive_external_effect_correlation_identity,
+        super::super::ExternalEffectCorrelationBasis,
+        crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxRecord,
+    };
 
     #[test]
     fn request_is_an_exact_borrowed_projection_of_one_outbox_record() {

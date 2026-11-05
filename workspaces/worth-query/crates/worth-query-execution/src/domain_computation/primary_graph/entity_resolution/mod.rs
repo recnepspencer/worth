@@ -53,7 +53,6 @@ pub(in crate::domain_computation) use product::WorthQueryIssuedSelectedScope;
 pub(crate) mod resolved;
 pub(crate) mod retained_selector;
 
-
 pub use resolved::WorthQueryApplicationEntityIdentity;
 use resolved::WorthQueryEntityResolutionSubject;
 pub(in crate::domain_computation) use resolved::WorthQueryResolvedEntity;
@@ -72,7 +71,12 @@ use worth_relational::facade::indexes::{
 };
 
 use super::schema_layout::WorthQueryPrimaryGraphLayout;
-use {crate::domain_computation::primary_graph::vocabulary::entity_resolution_denial::WorthQueryEntityResolutionDenial, crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionDenialKind, super::WorthQueryPrimaryGraph, crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode};
+use {
+    super::WorthQueryPrimaryGraph,
+    crate::domain_computation::primary_graph::vocabulary::entity_resolution_denial::WorthQueryEntityResolutionDenial,
+    crate::domain_computation::vocabulary::primary_graph::entity_resolution_denial::WorthQueryEntityResolutionDenialKind,
+    crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode,
+};
 
 #[derive(Clone)]
 pub struct WorthQueryInstalledEntityResolutionContext {

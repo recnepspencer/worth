@@ -44,7 +44,9 @@ pub fn reversal_posture(contract: Option<&WorthQueryInstalledAftermathContract>)
     }
 }
 
-pub(in crate::domain_computation) fn aftermath_postcondition(postcondition: &InstalledAftermathPostcondition) -> String {
+pub(in crate::domain_computation) fn aftermath_postcondition(
+    postcondition: &InstalledAftermathPostcondition,
+) -> String {
     match postcondition {
         InstalledAftermathPostcondition::ExactPriorTruth => "exact-prior-truth".to_owned(),
         InstalledAftermathPostcondition::InvariantRestored { invariant } => {

@@ -6,7 +6,10 @@ use super::WorthQueryRunningWorkflowRun;
 use crate::domain_computation::provider_session::graph_provider::bounded_step::{
     WorthQueryGraphProviderMemoryArena, WorthQueryGraphProviderMemorySnapshot,
 };
-use {crate::domain_computation::WorthQueryGraphProviderStepReport, crate::domain_computation::vocabulary::provider_session::provider_execution_release::WorthQueryProviderExecutionReleaseEvidence};
+use {
+    crate::domain_computation::vocabulary::provider_session::provider_execution_release::WorthQueryProviderExecutionReleaseEvidence,
+    crate::domain_computation::WorthQueryGraphProviderStepReport,
+};
 
 impl WorthQueryRunningWorkflowRun {
     pub(in crate::domain_computation::managed_run) fn release_or_retain_queue_occupancy(

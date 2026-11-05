@@ -8,7 +8,17 @@ use crate::domain_computation::primary_graph::application_attempt::{
 use {crate::domain_computation::primary_graph::application_attempt::workflow::instance::progression::PreparedWorkflowProgressUpdate, crate::domain_computation::primary_graph::application_attempt::workflow::instance::progression::WorkflowTransitionProgressBasis};
 
 mod selection;
-pub(in crate::domain_computation::primary_graph) use {selection::select_assessment_collection, selection::select_back_action_transition, selection::select_current_proposal_need, selection::select_current_transition, selection::select_navigation_back_transition, selection::select_proposal_replay_transition, selection::select_proposal_transition, selection::select_settled_replay_transition, selection::select_terminal_transition, selection::select_termination_action_transition, selection::SelectedWorkflowApproval, selection::SelectedWorkflowAssessment, selection::SelectedWorkflowInbound, selection::SelectedWorkflowOperation, selection::SelectedWorkflowProposal, selection::SelectedWorkflowTransition, selection::SelectedWorkflowTransitionKind};
+pub(in crate::domain_computation::primary_graph) use {
+    selection::select_assessment_collection, selection::select_back_action_transition,
+    selection::select_current_proposal_need, selection::select_current_transition,
+    selection::select_navigation_back_transition, selection::select_proposal_replay_transition,
+    selection::select_proposal_transition, selection::select_settled_replay_transition,
+    selection::select_terminal_transition, selection::select_termination_action_transition,
+    selection::SelectedWorkflowApproval, selection::SelectedWorkflowAssessment,
+    selection::SelectedWorkflowInbound, selection::SelectedWorkflowOperation,
+    selection::SelectedWorkflowProposal, selection::SelectedWorkflowTransition,
+    selection::SelectedWorkflowTransitionKind,
+};
 
 pub(in crate::domain_computation::primary_graph) struct AdmittedWorkflowTransition<
     Schema,

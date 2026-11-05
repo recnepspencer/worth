@@ -303,5 +303,3 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
             .pause_before_source_fact_comparison(attempts)
     }
 }
-
-

@@ -9,8 +9,8 @@ use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 use worth_relational::facade::identity::EntityId;
 use worth_runtime_world::facade::ProductBranchIncarnation;
 
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
 use super::super::WorthQueryApplicationOutputLineage;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
 
 pub(crate) mod denial;
 mod materialization;

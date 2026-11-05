@@ -3,7 +3,11 @@ use std::sync::Arc;
 
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 
-use {super::latest_output_matching, crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource, super::WorthQueryApplicationOutputLineage, super::WorthQueryExactRecordedOutput};
+use {
+    super::latest_output_matching, super::WorthQueryApplicationOutputLineage,
+    super::WorthQueryExactRecordedOutput,
+    crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource,
+};
 
 impl WorthQueryApplicationOutputLineage {
     pub(in crate::domain_computation::primary_graph) fn qualified_output<Binding: 'static>(

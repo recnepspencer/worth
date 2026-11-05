@@ -1,11 +1,17 @@
 use crate::domain_computation::artifact_owner::WorthQueryArtifactOccurrenceSnapshot;
 use crate::domain_computation::provider_session::graph_provider::bounded_step::WorthQueryGraphProviderMemorySnapshot;
-use {crate::domain_computation::WorthQueryGraphProviderStepReport, crate::domain_computation::vocabulary::provider_session::provider_execution_release::WorthQueryProviderExecutionReleaseEvidence};
+use {
+    crate::domain_computation::vocabulary::provider_session::provider_execution_release::WorthQueryProviderExecutionReleaseEvidence,
+    crate::domain_computation::WorthQueryGraphProviderStepReport,
+};
 
-use crate::domain_computation::vocabulary::managed_run::evidence::WorthQueryManagedProviderWorkEvidenceParts;
 use super::retention::WorthQueryManagedProviderRetentionLedger;
 use super::WorthQueryManagedProviderCleanupAuthority;
-use {crate::domain_computation::vocabulary::managed_run::release_summary::WorthQueryManagedProviderExecutionReleaseSummary, crate::domain_computation::vocabulary::managed_run::evidence::WorthQueryManagedProviderWorkEvidence};
+use crate::domain_computation::vocabulary::managed_run::evidence::WorthQueryManagedProviderWorkEvidenceParts;
+use {
+    crate::domain_computation::vocabulary::managed_run::evidence::WorthQueryManagedProviderWorkEvidence,
+    crate::domain_computation::vocabulary::managed_run::release_summary::WorthQueryManagedProviderExecutionReleaseSummary,
+};
 
 pub(crate) struct WorthQueryManagedProviderWorkLedger {
     provider_session_identity:

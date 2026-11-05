@@ -2,7 +2,9 @@
 use serde::Serialize;
 use serde::Serializer;
 
-pub(in crate::domain_computation::primary_graph) struct ProjectionAuthorityEncoding(pub(in crate::domain_computation::primary_graph) u64);
+pub(in crate::domain_computation::primary_graph) struct ProjectionAuthorityEncoding(
+    pub(in crate::domain_computation::primary_graph) u64,
+);
 
 impl Serialize for ProjectionAuthorityEncoding {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {

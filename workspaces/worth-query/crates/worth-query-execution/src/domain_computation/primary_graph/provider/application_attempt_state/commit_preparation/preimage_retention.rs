@@ -2,11 +2,12 @@
 
 pub(crate) mod selection;
 
-
-
-use {crate::domain_computation::vocabulary::application_aftermath::retained_preimage::WorthQueryPreImageRetentionDenial, crate::domain_computation::application_aftermath::WorthQueryRetainedPreImage};
 use crate::domain_computation::{
     WorthQueryProviderSessionFailure, WorthQueryProviderSessionProtocolStage,
+};
+use {
+    crate::domain_computation::application_aftermath::WorthQueryRetainedPreImage,
+    crate::domain_computation::vocabulary::application_aftermath::retained_preimage::WorthQueryPreImageRetentionDenial,
 };
 
 use super::super::WorthQueryPrimaryGraphApplicationAttempt;

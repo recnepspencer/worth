@@ -44,7 +44,6 @@ pub struct WorthQueryBoundSourceExpectation {
     partition_identity: [u8; 32],
 }
 
-
 impl WorthQueryBoundSourceExpectation {
     pub(in crate::domain_computation::primary_graph) const fn recorded_source_identity(
         self,
@@ -233,6 +232,6 @@ impl<Query> WorthQueryObservedSource<Query> {
 }
 
 mod court_doors_for_test;
+use crate::domain_computation::vocabulary::primary_graph::observed_source::WorthQuerySourceExpectationKind;
 pub use prepared_expectation::PreparedExpectationOps;
 pub(in crate::domain_computation::primary_graph) use prepared_expectation::PreparedExpectationScopedOps;
-use crate::domain_computation::vocabulary::primary_graph::observed_source::WorthQuerySourceExpectationKind;

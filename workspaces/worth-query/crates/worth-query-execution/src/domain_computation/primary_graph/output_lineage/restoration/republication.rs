@@ -9,17 +9,17 @@ use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 
 use super::super::input_cutoff::performed_fact_sequence;
 use super::super::latest_output_matching;
-use crate::domain_computation::vocabulary::primary_graph::decision_reuse::CompletedDecisionReuseProof;
 use super::super::PreparedInputReuseKey;
 use super::super::RecordedOutput;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 use super::super::RecordedSourceIdentity;
 use super::super::SealedNativeOutputWitness;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
 use super::super::WorthQueryApplicationOutputCorrespondence;
 use super::super::WorthQueryApplicationOutputLineage;
-use crate::domain_computation::vocabulary::primary_graph::handler_fact_boundary::CompletedHandlerFactBoundary;
 use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
+use crate::domain_computation::vocabulary::primary_graph::decision_reuse::CompletedDecisionReuseProof;
+use crate::domain_computation::vocabulary::primary_graph::handler_fact_boundary::CompletedHandlerFactBoundary;
 
 /// What a restoration carries over from the retained performed record it
 /// republishes. Restoring a generated output re-creates that record's exact

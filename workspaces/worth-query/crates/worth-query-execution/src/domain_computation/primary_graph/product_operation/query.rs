@@ -1,5 +1,5 @@
-use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::primary_graph::application_query::AdmissionScopedOps as _;
+use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::num::NonZeroUsize;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest;
@@ -7,7 +7,12 @@ use worth_query_declaration::facade::application_query::ApplicationQueryParamete
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationQuery};
 
 use super::WorthQuerySelectedProductOperation;
-use {crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationQueryPlan, crate::domain_computation::primary_graph::WorthQueryApplicationQueryAccessContext, crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial, crate::domain_computation::primary_graph::WorthQueryApplicationQueryControls};
+use {
+    crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial,
+    crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationQueryPlan,
+    crate::domain_computation::primary_graph::WorthQueryApplicationQueryAccessContext,
+    crate::domain_computation::primary_graph::WorthQueryApplicationQueryControls,
+};
 
 mod batch;
 mod history_outputs;

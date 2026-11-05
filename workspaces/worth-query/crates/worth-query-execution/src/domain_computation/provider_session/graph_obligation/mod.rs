@@ -37,7 +37,6 @@ pub(in crate::domain_computation) use session::{
     WorthQueryPreparedProductReadSessionIdentity, WorthQueryQuerySourceContext,
 };
 
-
 pub use session::WorthQueryManagedGraphReadDenial;
 
 pub use inspection_terminal::WorthQueryInspectionReadTerminalDenial;

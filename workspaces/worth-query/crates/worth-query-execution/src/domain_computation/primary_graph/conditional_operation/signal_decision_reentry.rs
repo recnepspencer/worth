@@ -3,8 +3,8 @@ use worth_runtime_bridge::facade::{
     BridgeManagedDueWake, BridgeSealedRuntimeAssembly, TruthBranchIdentity, TruthSnapshotIdentity,
 };
 
-use crate::domain_computation::primary_graph::vocabulary::conditional_operation::providers::QueryConditionalComputeContext;
 use crate::domain_computation::primary_graph::primary_truth_branch_identity;
+use crate::domain_computation::primary_graph::vocabulary::conditional_operation::providers::QueryConditionalComputeContext;
 
 mod admitted;
 mod selected_projections;
@@ -344,12 +344,12 @@ fn classify(evidence: BridgeConditionalDecisionEvidence) -> WorthQueryRetainedCo
 
 pub(crate) fn classify_bridge_signal(
     evidence: &BridgeConditionalDecisionEvidence,
-) -> crate::domain_computation::primary_graph::vocabulary::conditional_operation::classification::WorthQueryConditionalSignalDecision {
+) -> crate::domain_computation::primary_graph::vocabulary::conditional_operation::classification::WorthQueryConditionalSignalDecision{
     super::execution_provenance::signal_decision(evidence.signal().class())
 }
 
 pub(crate) fn classify_bridge_signal_observation(
     evidence: &worth_runtime_bridge::facade::BridgeConditionalCausalObservation,
-) -> crate::domain_computation::primary_graph::vocabulary::conditional_operation::classification::WorthQueryConditionalSignalDecision {
+) -> crate::domain_computation::primary_graph::vocabulary::conditional_operation::classification::WorthQueryConditionalSignalDecision{
     super::execution_provenance::signal_decision(evidence.signal_class())
 }

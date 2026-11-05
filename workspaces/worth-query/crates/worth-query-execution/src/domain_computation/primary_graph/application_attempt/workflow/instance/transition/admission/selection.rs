@@ -1,7 +1,6 @@
 use worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome;
 use worth_relational::facade::identity::EntityId;
 
-use {crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
 use {
     crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowDefinition,
     crate::domain_computation::primary_graph::application_attempt::workflow::definition::CompiledWorkflowNode,
@@ -12,6 +11,10 @@ use {
     crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowInstanceProgress,
     crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowTransitionProgressBasis,
     crate::domain_computation::primary_graph::application_attempt::workflow::instance::WorkflowTransitionReplayProjection,
+};
+use {
+    crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
 };
 
 mod proposal_need;
@@ -28,13 +31,13 @@ mod identity;
 mod inbound;
 mod navigation;
 mod replay;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::selection::SelectedWorkflowCondition;
 use approval::select_approval;
 pub(in crate::domain_computation::primary_graph) use approval::SelectedWorkflowApproval;
 pub(in crate::domain_computation::primary_graph) use collection::select_assessment_collection;
 use identity::transition_identity;
 use inbound::select_inbound;
 pub(in crate::domain_computation::primary_graph) use replay::select_settled_replay_transition;
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::selection::SelectedWorkflowCondition;
 pub(in crate::domain_computation::primary_graph) struct SelectedWorkflowTransition {
     pub(super) node: EntityId,
     pub(super) node_path: String,
@@ -81,7 +84,6 @@ pub(in crate::domain_computation::primary_graph) struct SelectedWorkflowAssessme
     pub(in crate::domain_computation::primary_graph) subject:
         worth_query_declaration::facade::application_program::ApplicationWorkflowSubjectSelector,
 }
-
 
 impl SelectedWorkflowTransition {
     pub(in crate::domain_computation::primary_graph) const fn node(&self) -> EntityId {

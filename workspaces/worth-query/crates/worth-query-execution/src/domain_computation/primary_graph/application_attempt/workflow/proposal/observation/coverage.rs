@@ -4,7 +4,12 @@ use worth_query_declaration::facade::application_program::ApplicationWorkflowSub
 use worth_relational::facade::identity::{EntityId, PartitionId};
 
 use super::{decode_identity, denial, optional_identity, required_text, required_u64};
-use {crate::domain_computation::primary_graph::application_attempt::observe_adjacency, crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact};
+use {
+    crate::domain_computation::primary_graph::application_attempt::observe_adjacency,
+    crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact,
+    crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection,
+};
 use {
     crate::domain_computation::primary_graph::application_attempt::workflow::proposal::identity::WorkflowProposalCoverageScope,
     crate::domain_computation::primary_graph::application_attempt::workflow::proposal::WorkflowProposalCoverageMeaning,

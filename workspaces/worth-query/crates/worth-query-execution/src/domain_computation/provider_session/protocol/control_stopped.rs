@@ -1,7 +1,6 @@
 use super::{WorthQueryProviderSessionProtocolCounters, WorthQueryProviderSessionProtocolStage};
 use crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind;
 
-
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryProviderSessionCommitControlStopped {
     kind: WorthQueryProviderSessionControlStopKind,

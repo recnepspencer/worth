@@ -10,12 +10,19 @@ use worth_query_installation::facade::{
 };
 use worth_relational::facade::identity::EntityId;
 
-use {crate::domain_computation::vocabulary::primary_graph::resource_request::application_resource_request, crate::domain_computation::primary_graph::WorthQueryApplicationSnapshotLease, crate::domain_computation::vocabulary::primary_graph::snapshot_lease::WorthQueryApplicationSnapshotLeaseDenial};
 use crate::domain_computation::provider_session::{
     WorthQueryGraphWorkAccessContextAffinity, WorthQueryManagedGraphWorkSession,
 };
+use {
+    crate::domain_computation::primary_graph::WorthQueryApplicationSnapshotLease,
+    crate::domain_computation::vocabulary::primary_graph::resource_request::application_resource_request,
+    crate::domain_computation::vocabulary::primary_graph::snapshot_lease::WorthQueryApplicationSnapshotLeaseDenial,
+};
 
-use {super::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind};
+use {
+    super::WorthQueryOperationAuthorizationDenial,
+    crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind,
+};
 
 mod selected;
 pub(in crate::domain_computation) use selected::{

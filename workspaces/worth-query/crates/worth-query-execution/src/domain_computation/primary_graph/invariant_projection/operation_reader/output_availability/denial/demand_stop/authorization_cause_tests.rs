@@ -1,7 +1,11 @@
 //! Output observation retains source interruption and authentication causes.
 use super::*;
-use {crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial as Authorization, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind as AuthKind, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as Refusal};
 use crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind as Control;
+use {
+    crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial as Authorization,
+    crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind as AuthKind,
+    crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as Refusal,
+};
 
 #[test]
 fn entry_custody_output_source_cancellation_and_expiry_keep_their_causes() {

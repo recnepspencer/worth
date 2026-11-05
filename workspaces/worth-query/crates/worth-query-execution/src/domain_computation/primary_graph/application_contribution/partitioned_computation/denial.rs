@@ -8,7 +8,10 @@ use worth_query_declaration::facade::application_schema::ApplicationValueEncodeD
 
 use super::reader::{WorthQueryComputationInputDenial, WorthQueryComputationReadDenial};
 use super::routing::ComputationPartitionRoutingDenial;
-use {crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationInterruption, crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial};
+use {
+    crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationInterruption,
+    crate::domain_computation::vocabulary::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial,
+};
 
 /// Why one partition stopped.
 #[derive(Debug, Eq, PartialEq)]

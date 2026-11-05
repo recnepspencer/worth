@@ -31,7 +31,12 @@ impl ObservedDelegationTransition {
     }
 }
 use super::{WorthQueryDelegationDecisionFact, WorthQueryObservedCapabilityDecision};
-use {crate::domain_computation::authorization::WorthQueryAuthorizationDecisionFact, crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind, crate::domain_computation::authorization::WorthQueryRetainedCapabilityRequest};
+use {
+    crate::domain_computation::authorization::WorthQueryAuthorizationDecisionFact,
+    crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
+    crate::domain_computation::authorization::WorthQueryRetainedCapabilityRequest,
+    crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind,
+};
 
 pub(super) fn observe_lineage(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

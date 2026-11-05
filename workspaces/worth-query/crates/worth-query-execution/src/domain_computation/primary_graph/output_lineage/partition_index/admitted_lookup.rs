@@ -7,10 +7,10 @@ use worth_relational::facade::mvcc::CompanionPreflightStop;
 use worth_runtime_world::facade::ProductBranchIncarnation;
 
 use super::OutputPartitionIndex;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
 use super::RecordedOutput;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
 use crate::domain_computation::primary_graph::output_lineage::WorthQueryApplicationOutputLineage;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
 
 impl OutputPartitionIndex {
     /// A vacant unpublished generation is skipped; every searched level and

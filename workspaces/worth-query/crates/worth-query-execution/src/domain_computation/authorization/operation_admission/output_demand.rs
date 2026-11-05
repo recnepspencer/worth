@@ -1,5 +1,10 @@
 use super::WorthQueryAdmittedOperation;
-use {crate::domain_computation::vocabulary::primary_graph::handler_fact_boundary::CompletedHandlerFactBoundary, crate::domain_computation::primary_graph::ComputationPrior, crate::domain_computation::primary_graph::RequiredOutputDemandContext, crate::domain_computation::primary_graph::SealedComputationRetention};
+use {
+    crate::domain_computation::primary_graph::ComputationPrior,
+    crate::domain_computation::primary_graph::RequiredOutputDemandContext,
+    crate::domain_computation::primary_graph::SealedComputationRetention,
+    crate::domain_computation::vocabulary::primary_graph::handler_fact_boundary::CompletedHandlerFactBoundary,
+};
 
 impl WorthQueryAdmittedOperation {
     pub(in crate::domain_computation) fn record_decision_context_use(

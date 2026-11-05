@@ -53,7 +53,6 @@ impl WorthQueryApplicationOutputCorrespondence {
     }
 }
 
-
 impl WorthQueryCheckpointOutputRole {
     #[doc(hidden)]
     pub fn entity_name_mut_for_test(&mut self) -> &mut String {

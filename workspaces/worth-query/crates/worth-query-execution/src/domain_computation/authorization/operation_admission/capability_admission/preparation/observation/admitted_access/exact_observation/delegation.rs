@@ -20,7 +20,11 @@ use crate::domain_computation::authorization::capability_binding_lowering::relat
 use crate::domain_computation::authorization::capability_registry::WorthQueryInstalledCapabilityPlan;
 use crate::domain_computation::authorization::delegation_admission::WorthQueryCapabilityObservationSource;
 use crate::domain_computation::authorization::retained_capability_request::WorthQueryRetainedCapabilityRequest;
-use {crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind, crate::domain_computation::authorization::WorthQueryRetainedCapabilitySupport};
+use {
+    crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
+    crate::domain_computation::authorization::WorthQueryRetainedCapabilitySupport,
+    crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind,
+};
 
 pub(in crate::domain_computation::authorization) struct WorthQueryDelegationResolvedRequest {
     parent: EntityId,

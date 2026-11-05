@@ -17,11 +17,11 @@ pub(super) use stable_publication::PreparedStablePartitionLocator;
 use worth_runtime_world::facade::ProductBranchIncarnation;
 
 use super::prepared_slot::CancelledLineageSlot;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
 use super::RecordedOutput;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
 use super::WorthQueryApplicationOutputLineage;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
 
 type Generations = BTreeMap<u64, Arc<OnceLock<usize>>>;
 type Partitions = BTreeMap<Option<[u8; 32]>, Generations>;

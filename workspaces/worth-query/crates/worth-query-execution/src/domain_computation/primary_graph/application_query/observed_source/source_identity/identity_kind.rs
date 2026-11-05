@@ -1,9 +1,6 @@
 use crate::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryCheckpointSourceIdentity;
 use crate::domain_computation::primary_graph::vocabulary::application_query::identity_kind::WorthQueryRuntimeSourceIdentity;
 
-
-
-
 impl<Query> super::super::WorthQueryObservedSource<Query> {
     /// Runtime-local source commitment retained from the immutable basis.
     /// Branch occurrence remains part of ordinary output lineage; checkpoint

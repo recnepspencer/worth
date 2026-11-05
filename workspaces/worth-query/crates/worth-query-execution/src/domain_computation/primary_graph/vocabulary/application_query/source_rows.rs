@@ -6,5 +6,6 @@ use crate::domain_computation::vocabulary::provider_session::session_identity::W
 pub struct WorthQueryManagedIndexSourceSlot {
     pub(in crate::domain_computation::primary_graph) owner: WorthQueryGraphWorkSessionIdentity,
     pub(in crate::domain_computation::primary_graph) ordinal: usize,
-    pub(in crate::domain_computation::primary_graph) entity: Option<worth_relational::facade::identity::EntityId>,
+    pub(in crate::domain_computation::primary_graph) entity:
+        Option<worth_relational::facade::identity::EntityId>,
 }

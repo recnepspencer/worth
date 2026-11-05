@@ -13,7 +13,6 @@ use super::delivery;
 use super::fact_key::FactPostingKey;
 
 use super::logical_marking::WorthQueryNativeMarkingWork;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
 use super::mark_state::MarkState;
 use super::mark_state::OutputFactCoverage;
 use super::mark_state::SettlementMarks;
@@ -21,6 +20,7 @@ use super::output_facts::RegisteredOutputFacts;
 use super::source_alignment::BranchMarkRoot;
 use super::source_alignment::EqualOutputCurrentness;
 use super::source_alignment::SnapshotAlignedMarkState;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;
 
 pub(crate) mod posting_bindings;
 pub(crate) mod posting_continuation;

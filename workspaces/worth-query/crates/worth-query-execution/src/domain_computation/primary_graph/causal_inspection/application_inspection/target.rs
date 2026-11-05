@@ -1,12 +1,17 @@
 //! One funded clone retains the actual opaque original observation, never a reader.
 use super::super::application_observation::WorthQueryApplicationQueryObservation;
-use {crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint, crate::domain_computation::vocabulary::primary_graph::retained_stage::run_retained_stage, crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop, crate::domain_computation::vocabulary::primary_graph::retained_stage::RetainedStorageDenial};
 use std::{
     alloc::Layout,
     sync::{atomic::AtomicUsize, Arc},
 };
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, MapKernelFailure};
 use worth_query_installation::facade::WorthQueryInstalledApplicationInspectionContract;
+use {
+    crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint,
+    crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop,
+    crate::domain_computation::vocabulary::primary_graph::retained_stage::run_retained_stage,
+    crate::domain_computation::vocabulary::primary_graph::retained_stage::RetainedStorageDenial,
+};
 
 pub struct WorthQueryApplicationInspectionTarget {
     original: InspectionOriginal,

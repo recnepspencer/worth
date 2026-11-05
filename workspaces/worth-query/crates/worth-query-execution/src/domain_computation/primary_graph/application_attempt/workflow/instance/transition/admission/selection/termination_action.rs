@@ -1,6 +1,12 @@
 //! A global action binds the current occurrence, not a manufactured graph edge.
-use {super::denial, super::select_current_node, super::CompiledWorkflowDefinition, super::EntityId, super::SelectedWorkflowOperation, super::SelectedWorkflowTransition, super::SelectedWorkflowTransitionKind, super::WorkflowTransitionProgressBasis, super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind};
 use worth_query_installation::facade::WorthQueryWorkflowGlobalActionDependency;
+use {
+    super::denial, super::select_current_node, super::CompiledWorkflowDefinition, super::EntityId,
+    super::SelectedWorkflowOperation, super::SelectedWorkflowTransition,
+    super::SelectedWorkflowTransitionKind, super::WorkflowTransitionProgressBasis,
+    super::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
+};
 
 pub(in crate::domain_computation::primary_graph) fn select_termination_action_transition(
     compiled: &CompiledWorkflowDefinition,

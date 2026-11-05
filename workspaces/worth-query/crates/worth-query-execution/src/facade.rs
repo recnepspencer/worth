@@ -45,6 +45,32 @@ pub mod domain_computation {
     pub use crate::domain_computation::managed_run::*;
     pub use crate::domain_computation::operation_binding::*;
     pub use crate::domain_computation::provider_session::*;
+    pub use crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity;
+    pub use crate::domain_computation::vocabulary::managed_run::counters::WorthQueryManagedRunCounters;
+    pub use crate::domain_computation::vocabulary::managed_run::evidence::WorthQueryManagedProviderSessionDisposition;
+    pub use crate::domain_computation::vocabulary::managed_run::evidence::WorthQueryManagedProviderWorkEvidence;
+    pub use crate::domain_computation::vocabulary::managed_run::inspection::WorthQueryDirectRunCleanupInspection;
+    pub use crate::domain_computation::vocabulary::managed_run::inspection::WorthQueryDirectRunCleanupReceipt;
+    pub use crate::domain_computation::vocabulary::managed_run::safe_point_observation::WorthQueryManagedSafePointObservation;
+    pub use crate::domain_computation::vocabulary::managed_run::terminal::WorthQueryManagedRunCleanupDisposition;
+    pub use crate::domain_computation::vocabulary::managed_run::terminal::WorthQueryManagedRunCleanupFailureKind;
+    pub use crate::domain_computation::vocabulary::managed_run::terminal::WorthQueryManagedRunTerminalKind;
+    pub use crate::domain_computation::vocabulary::operation_binding::installed_domain_authority::WorthQueryInstalledDomainExecutionAuthority;
+    pub use crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl;
+    pub use crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial;
+    pub use crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop;
+    pub use crate::domain_computation::vocabulary::provider_session::call_kind::WorthQueryGraphProviderCallKind;
+    pub use crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind;
+    pub use crate::domain_computation::vocabulary::provider_session::denial::WorthQueryGraphProviderStepDenial;
+    pub use crate::domain_computation::vocabulary::provider_session::denial::WorthQueryGraphProviderStepDenialKind;
+    pub use crate::domain_computation::vocabulary::provider_session::direct_attempt::WorthQueryDirectExecutionAttemptReleaseReceipt;
+    pub use crate::domain_computation::vocabulary::provider_session::failure::WorthQueryGraphProviderFailure;
+    pub use crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind;
+    pub use crate::domain_computation::vocabulary::provider_session::provider_execution_release::WorthQueryProviderExecutionDestructorDisposition;
+    pub use crate::domain_computation::vocabulary::provider_session::provider_execution_release::WorthQueryProviderExecutionDisposalDisposition;
+    pub use crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkManagedRunIdentity;
+    pub use crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity;
+    pub use crate::domain_computation::vocabulary::provider_session::step_failure::WorthQueryGraphProviderStepInvocationDisposition;
     pub use crate::domain_computation::{
         canonical_indexed_operation_material, canonical_operation_material,
         WorthQueryConvergenceDomainEvidenceBindingDenial,
@@ -64,7 +90,7 @@ pub mod runtime {
         WorthQueryProductWorldResources,
     };
     pub use crate::domain_computation::execution_runtime::*;
-    pub use {crate::domain_computation::WorthQueryAdmittedDirectRun, crate::domain_computation::WorthQueryAdmittedWorkflowRun, crate::domain_computation::WorthQueryDirectGraphStepOutcome, crate::domain_computation::WorthQueryDirectRunCleanupFailure, crate::domain_computation::vocabulary::managed_run::inspection::WorthQueryDirectRunCleanupReceipt, crate::domain_computation::WorthQueryDirectRunTerminal, crate::domain_computation::WorthQueryExecutionBoundOperationAuthority, crate::domain_computation::WorthQueryExecutionOperationBindingDenial, crate::domain_computation::vocabulary::operation_binding::installed_domain_authority::WorthQueryInstalledDomainExecutionAuthority, crate::domain_computation::WorthQueryManagedDirectRunAdmissionFailure, crate::domain_computation::WorthQueryManagedGraphCallRequest, crate::domain_computation::WorthQueryManagedRunAdmission, crate::domain_computation::WorthQueryManagedTruthReadRequest, crate::domain_computation::WorthQueryManagedWorkflowRunAdmissionFailure, crate::domain_computation::WorthQueryRunningDirectRun, crate::domain_computation::WorthQueryRunningWorkflowRun, crate::domain_computation::WorthQueryWorkflowGraphStepOutcome, crate::domain_computation::WorthQueryWorkflowRunCleanupOutcome, crate::domain_computation::WorthQueryWorkflowRunCleanupReceipt, crate::domain_computation::WorthQueryWorkflowRunTerminal};
+    pub use crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity;
     pub use worth_execution::{
         build_ordered_tree, build_sorted_ordered_tree, insert_ordered_tree, remove_ordered_tree,
         CancellationSource, CancellationToken, ConstructionDenial, ExecutionAllocationDenial,
@@ -90,6 +116,28 @@ pub mod runtime {
     pub use worth_signal::facade::branch::{
         validate_signal_branch_name, ValidatedSignalBranchName,
     };
+    pub use {
+        crate::domain_computation::vocabulary::managed_run::inspection::WorthQueryDirectRunCleanupReceipt,
+        crate::domain_computation::vocabulary::operation_binding::installed_domain_authority::WorthQueryInstalledDomainExecutionAuthority,
+        crate::domain_computation::WorthQueryAdmittedDirectRun,
+        crate::domain_computation::WorthQueryAdmittedWorkflowRun,
+        crate::domain_computation::WorthQueryDirectGraphStepOutcome,
+        crate::domain_computation::WorthQueryDirectRunCleanupFailure,
+        crate::domain_computation::WorthQueryDirectRunTerminal,
+        crate::domain_computation::WorthQueryExecutionBoundOperationAuthority,
+        crate::domain_computation::WorthQueryExecutionOperationBindingDenial,
+        crate::domain_computation::WorthQueryManagedDirectRunAdmissionFailure,
+        crate::domain_computation::WorthQueryManagedGraphCallRequest,
+        crate::domain_computation::WorthQueryManagedRunAdmission,
+        crate::domain_computation::WorthQueryManagedTruthReadRequest,
+        crate::domain_computation::WorthQueryManagedWorkflowRunAdmissionFailure,
+        crate::domain_computation::WorthQueryRunningDirectRun,
+        crate::domain_computation::WorthQueryRunningWorkflowRun,
+        crate::domain_computation::WorthQueryWorkflowGraphStepOutcome,
+        crate::domain_computation::WorthQueryWorkflowRunCleanupOutcome,
+        crate::domain_computation::WorthQueryWorkflowRunCleanupReceipt,
+        crate::domain_computation::WorthQueryWorkflowRunTerminal,
+    };
 }
 
 /// Read-only owner observations for cert-band consumers.
@@ -105,6 +153,15 @@ pub mod product;
 
 pub mod provider_session {
     pub use crate::domain_computation::provider_session::*;
+    pub use crate::domain_computation::vocabulary::provider_session::call_kind::WorthQueryGraphProviderCallKind;
+    pub use crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind;
+    pub use crate::domain_computation::vocabulary::provider_session::denial::WorthQueryGraphProviderStepDenial;
+    pub use crate::domain_computation::vocabulary::provider_session::denial::WorthQueryGraphProviderStepDenialKind;
+    pub use crate::domain_computation::vocabulary::provider_session::direct_attempt::WorthQueryDirectExecutionAttemptReleaseReceipt;
+    pub use crate::domain_computation::vocabulary::provider_session::failure::WorthQueryGraphProviderFailure;
+    pub use crate::domain_computation::vocabulary::provider_session::protocol_denial::WorthQueryProviderSessionDenialKind;
+    pub use crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkManagedRunIdentity;
+    pub use crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity;
 }
 
 pub mod primary_graph;
@@ -151,7 +208,11 @@ pub mod integration {
     use crate::domain_computation::execution_runtime::{
         WorthQueryExecutionInstallationAuthority, WorthQueryExecutionRuntime,
     };
-    use {crate::domain_computation::primary_graph::WorthQueryPrimaryGraphBootstrap, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial, crate::domain_computation::primary_graph::vocabulary::bootstrap::publication::WorthQueryPrimaryGraphPublication};
+    use {
+        crate::domain_computation::primary_graph::vocabulary::bootstrap::publication::WorthQueryPrimaryGraphPublication,
+        crate::domain_computation::primary_graph::WorthQueryPrimaryGraphBootstrap,
+        crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial,
+    };
 
     pub use crate::domain_computation::artifact_owner::{
         WorthQueryArtifactAccessAuthority, WorthQueryArtifactProductionAuthority,
@@ -303,7 +364,7 @@ pub mod integration {
     #[doc(hidden)]
     pub fn classify_conditional_signal_for_certification(
         evidence: &worth_runtime_bridge::facade::BridgeConditionalDecisionEvidence,
-    ) -> crate::domain_computation::primary_graph::vocabulary::conditional_operation::classification::WorthQueryConditionalSignalDecision {
+    ) -> crate::domain_computation::primary_graph::vocabulary::conditional_operation::classification::WorthQueryConditionalSignalDecision{
         crate::domain_computation::primary_graph::classify_bridge_signal(evidence)
     }
 }

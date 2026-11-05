@@ -2,8 +2,8 @@
 use crate::domain_computation::primary_graph::application_contribution::producer::demand::progression::caller_pass::own_publication::OwnPublicationParentOps;
 use super::*;
 mod own_publication;
-use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 use crate::domain_computation::primary_graph::vocabulary::application_contribution::producer::WorthQueryProducerCommitAuthority;
+use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 
 /// What one pass of a caller over its own row answered.
 pub(super) enum CallerPass<Query, Value> {

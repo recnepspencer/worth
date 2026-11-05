@@ -5,13 +5,15 @@ use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 /// declared identity indexes into one execution runtime.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryPrimaryGraphPublication {
-    pub(in crate::domain_computation::primary_graph) binding_identity: ApplicationSchemaBindingIdentity,
+    pub(in crate::domain_computation::primary_graph) binding_identity:
+        ApplicationSchemaBindingIdentity,
     pub(in crate::domain_computation::primary_graph) principal_binding_count: usize,
     pub(in crate::domain_computation::primary_graph) identity_index_count: usize,
     pub(in crate::domain_computation::primary_graph) application_equality_index_count: usize,
     pub(in crate::domain_computation::primary_graph) policy_entity_count: usize,
     pub(in crate::domain_computation::primary_graph) policy_relation_count: usize,
-    pub(in crate::domain_computation::primary_graph) bootstrap_commit_id: worth_relational::facade::history::CommitId,
+    pub(in crate::domain_computation::primary_graph) bootstrap_commit_id:
+        worth_relational::facade::history::CommitId,
 }
 
 impl WorthQueryPrimaryGraphPublication {

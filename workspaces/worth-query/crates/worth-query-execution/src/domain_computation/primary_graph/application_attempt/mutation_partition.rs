@@ -1,5 +1,4 @@
 //! Checked private partition issuance for application mutation attempts.
-use crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime;
 use std::sync::atomic::Ordering;
 
 pub(in crate::domain_computation::primary_graph) trait MutationPartitionScopedOps<Schema>:

@@ -11,13 +11,13 @@ use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 use worth_relational::facade::runtime::RelationalRuntime;
 use worth_relational::facade::snapshots::SnapshotHandle;
 
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 use super::mark_state::MarkState;
 use super::mark_state::SettlementCurrentness;
 use super::source_alignment::BranchMarkRoot;
 use super::source_alignment::SnapshotAlignedMarkState;
 use super::verification::SettlementVerificationStop;
 use super::SourceInvalidationOwner;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 
 /// Moves one row of `next` to the live image `aligned` observed at `selected`
 /// and returns whether the row changed. A row that requires full verification

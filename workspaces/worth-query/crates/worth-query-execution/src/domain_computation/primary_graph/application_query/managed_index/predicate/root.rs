@@ -1,6 +1,4 @@
 //! Typed inverse execution shares the actual forward provider and installed entry.
-use {super::super::invocation::controlled, super::super::invocation::decoded_provider, super::super::invocation::provider_result, super::super::SourceImageView, super::super::WorthQueryManagedIndexPredicateProvider as Provider, super::super::WorthQueryManagedIndexSourceChange as Change, super::super::WorthQueryManagedIndexSourceRows as Rows, crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop, crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial as Denial};
-use {super::probe::storage, super::probe::RetainedPredicateProbe, super::tree::PredicateTree, crate::domain_computation::primary_graph::vocabulary::application_query::tree::WatchSlot};
 use crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation;
 use std::sync::{Arc, Mutex};
 use worth_execution::ExecutionRequest;
@@ -10,6 +8,19 @@ use worth_query_declaration::facade::{
 use worth_query_installation::facade::{
     WorthQueryInstalledApplicationValueBindingCatalog as Bindings,
     WorthQueryInstalledManagedIndex as Installed, WorthQueryInstalledManagedIndexParent as Parent,
+};
+use {
+    super::super::invocation::controlled, super::super::invocation::decoded_provider,
+    super::super::invocation::provider_result, super::super::SourceImageView,
+    super::super::WorthQueryManagedIndexPredicateProvider as Provider,
+    super::super::WorthQueryManagedIndexSourceChange as Change,
+    super::super::WorthQueryManagedIndexSourceRows as Rows,
+    crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial as Denial,
+    crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop,
+};
+use {
+    super::probe::storage, super::probe::RetainedPredicateProbe, super::tree::PredicateTree,
+    crate::domain_computation::primary_graph::vocabulary::application_query::tree::WatchSlot,
 };
 
 pub(in crate::domain_computation::primary_graph::application_query) trait PredicateFactory:
@@ -279,7 +290,7 @@ fn decode<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>>(
     probe: &RetainedPredicateProbe,
     control: &crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl<'_>,
     session: &crate::domain_computation::primary_graph::value_decode::ValueDecodeSession<'_>,
-) -> Result<crate::domain_computation::primary_graph::vocabulary::application_query::provider::WorthQueryManagedIndexProbeValue<S, I>, Denial> {
+) -> Result<crate::domain_computation::primary_graph::vocabulary::application_query::provider::WorthQueryManagedIndexProbeValue<S, I>, Denial>{
     session
         .decode_managed_probe::<I::ProbeBinding>(probe.raw())
         .ok_or_else(|| {

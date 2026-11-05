@@ -5,9 +5,9 @@ use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 /// admitted operation was bound to as its principal or scope.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct WorthQueryOperationScopeEntityBinding {
-    partition_id: u32,
-    local_slot: u64,
-    generation: u32,
+    pub(in crate::domain_computation) partition_id: u32,
+    pub(in crate::domain_computation) local_slot: u64,
+    pub(in crate::domain_computation) generation: u32,
 }
 
 impl WorthQueryOperationScopeEntityBinding {
@@ -36,11 +36,11 @@ impl WorthQueryOperationScopeEntityBinding {
 /// decisions. The admitted operation remains the authority to execute.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryDecisionScopeWitness {
-    runtime_authority: u64,
-    binding_identity: ApplicationSchemaBindingIdentity,
-    operation_authority_identity: [u8; 32],
-    principal: WorthQueryOperationScopeEntityBinding,
-    scope: WorthQueryOperationScopeEntityBinding,
+    pub(in crate::domain_computation) runtime_authority: u64,
+    pub(in crate::domain_computation) binding_identity: ApplicationSchemaBindingIdentity,
+    pub(in crate::domain_computation) operation_authority_identity: [u8; 32],
+    pub(in crate::domain_computation) principal: WorthQueryOperationScopeEntityBinding,
+    pub(in crate::domain_computation) scope: WorthQueryOperationScopeEntityBinding,
 }
 
 impl WorthQueryOperationScopeEntityBinding {

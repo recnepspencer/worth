@@ -13,7 +13,7 @@ impl WorthQueryRestoredAcceptedOutput {
     #[doc(hidden)]
     pub fn source_scope_for_test(
         &self,
-    ) -> &crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding {
+    ) -> &crate::domain_computation::vocabulary::authorization::operation_scope_binding::WorthQueryOperationScopeEntityBinding{
         &self.source_scope
     }
 }

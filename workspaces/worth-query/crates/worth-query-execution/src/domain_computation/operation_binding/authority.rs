@@ -7,10 +7,16 @@ use worth_query_admission::facade::resource_admission::{
 use worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority;
 
 use crate::domain_computation::artifact_owner::WorthQueryInstalledWorkflowArtifactContracts;
-use {crate::domain_computation::execution_runtime::WorthQueryExecutionRuntime, crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity};
-use {crate::domain_computation::operation_binding::WorthQueryExecutionCommitPosture, crate::domain_computation::vocabulary::operation_binding::installed_domain_authority::WorthQueryInstalledDomainExecutionAuthority};
 use crate::domain_computation::vocabulary::provider_session::call_kind::WorthQueryGraphProviderCallKind;
 use crate::domain_computation::WorthQueryInstalledOperationExecutionSupport;
+use {
+    crate::domain_computation::execution_runtime::WorthQueryExecutionRuntime,
+    crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity,
+};
+use {
+    crate::domain_computation::operation_binding::WorthQueryExecutionCommitPosture,
+    crate::domain_computation::vocabulary::operation_binding::installed_domain_authority::WorthQueryInstalledDomainExecutionAuthority,
+};
 
 mod application_binding;
 mod provider_plan;
@@ -92,7 +98,7 @@ impl WorthQueryExecutionBoundOperationAuthority {
     pub(crate) const fn application_operation_attempt(
         &self,
     ) -> Option<crate::domain_computation::vocabulary::authorization::operation_admission::WorthQueryOperationAdmissionIdentity>
-    {
+{
         self.application_operation_attempt
     }
 

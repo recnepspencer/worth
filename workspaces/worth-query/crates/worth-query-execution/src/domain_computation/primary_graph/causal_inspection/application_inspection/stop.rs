@@ -1,7 +1,13 @@
 //! Original owner causes and their backing survive the complete fresh request.
 use super::{admission::InspectionAdmissionDenial, request::binding::InspectionBindingDenial};
 use worth_execution::{ExecutionMemoryReservation, WorkCeilingDenial};
-use {crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop, crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial, crate::domain_computation::primary_graph::vocabulary::entity_resolution_denial::WorthQueryEntityResolutionDenial, crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenial, crate::domain_computation::request_execution::WorthQueryAdvancementDenial};
+use {
+    crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial,
+    crate::domain_computation::primary_graph::vocabulary::entity_resolution_denial::WorthQueryEntityResolutionDenial,
+    crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
+    crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop,
+    crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenial,
+};
 mod captured_domain;
 mod kind;
 mod resource;

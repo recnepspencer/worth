@@ -3,17 +3,17 @@ use worth_query_declaration::facade::application_operation::{
 };
 use worth_query_installation::facade::ApplicationSchema;
 
-use {super::super::WorthQueryApplicationOperationInvariantProjectionReader, crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity, super::super::WorthQueryOperationScopeBinding};
 use crate::domain_computation::vocabulary::primary_graph::decision_context_use::DecisionContextUse;
+use {
+    super::super::WorthQueryApplicationOperationInvariantProjectionReader,
+    super::super::WorthQueryOperationScopeBinding,
+    crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity,
+};
 
 mod interruption;
 mod managed_index;
 mod operation_body;
 mod predecode_admission;
-
-
-
-
 
 /// Exact admitted decision projection and its already-resolved operation scope.
 pub struct DecisionReader<'borrow, 'reader, 'runtime, Schema, Binding>
@@ -165,7 +165,7 @@ where
 }
 use std::cell::Cell;
 
-use crate::domain_computation::request_execution::QueryRequestExecution;
 use crate::domain_computation::primary_graph::vocabulary::handler::invariant::HandlerInterruption;
+use crate::domain_computation::request_execution::QueryRequestExecution;
 
 mod court_doors_for_test;

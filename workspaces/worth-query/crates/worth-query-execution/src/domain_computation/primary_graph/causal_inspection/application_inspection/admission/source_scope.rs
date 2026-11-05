@@ -1,7 +1,10 @@
 //! Borrow the issued source identity through the final consuming inspection check.
 use super::*;
-use {crate::domain_computation::primary_graph::entity_resolution::WorthQueryEntityResolutionTruth, crate::domain_computation::primary_graph::vocabulary::entity_resolution_denial::WorthQueryEntityResolutionDenial};
 use worth_relational::facade::identity::EntityId;
+use {
+    crate::domain_computation::primary_graph::entity_resolution::WorthQueryEntityResolutionTruth,
+    crate::domain_computation::primary_graph::vocabulary::entity_resolution_denial::WorthQueryEntityResolutionDenial,
+};
 
 pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) trait InspectionSourceScope
 {

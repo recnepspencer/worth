@@ -1,9 +1,9 @@
 //! Candidate heads for every source partition in a producer-qualified output family.
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
 use super::WorthQueryApplicationOutputLineage;
 use super::WorthQueryCurrentOutputCandidate;
 use super::WorthQueryCurrentOutputFamilyResolution;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::collections::BTreeSet;
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;

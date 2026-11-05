@@ -8,8 +8,9 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryObservedSourceOc
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct WorthQueryObservedSourceCoordinate {
-    query: [u8; 32],
-    parameters: [u8; 32],
-    occurrence: WorthQueryObservedSourceOccurrence,
-    root: worth_relational::facade::identity::EntityId,
+    pub(in crate::domain_computation::primary_graph) query: [u8; 32],
+    pub(in crate::domain_computation::primary_graph) parameters: [u8; 32],
+    pub(in crate::domain_computation::primary_graph) occurrence: WorthQueryObservedSourceOccurrence,
+    pub(in crate::domain_computation::primary_graph) root:
+        worth_relational::facade::identity::EntityId,
 }

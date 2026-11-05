@@ -2,9 +2,9 @@
 
 use super::*;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::projection::WorthQueryApplicationOutputProjectionDenial;
-use worth_query_declaration::facade::application_operation::WorthQueryApplicationOutputAction;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::role_use::OutputRoleUse;
 use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
+use worth_query_declaration::facade::application_operation::WorthQueryApplicationOutputAction;
 
 impl<'reader, 'runtime, Schema, Operation>
     WorthQueryApplicationOperationInvariantProjectionReader<'reader, 'runtime, Schema, Operation>

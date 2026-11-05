@@ -7,9 +7,18 @@ use worth_query_installation::facade::{
 use worth_relational::facade::history::{BranchId, RelationalCommitReceipt};
 
 use crate::domain_computation::application_aftermath::WorthQueryRetainedPreImage;
-use {crate::domain_computation::vocabulary::application_aftermath::correlation::ExternalEffectCorrelationIdentity, crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxRecord, crate::domain_computation::application_aftermath::WorthQueryExternalDispatchPosture};
 use crate::domain_computation::authorization::WorthQueryOperationScopeBinding;
-use {crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt, crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding, crate::domain_computation::primary_graph::WorthQueryPrimaryMutationWorkEvidence, crate::domain_computation::vocabulary::primary_graph::commit_authority_binding::WorthQueryRetainedGovernedInput};
+use {
+    crate::domain_computation::application_aftermath::WorthQueryExternalDispatchPosture,
+    crate::domain_computation::vocabulary::application_aftermath::correlation::ExternalEffectCorrelationIdentity,
+    crate::domain_computation::vocabulary::application_aftermath::outbox::WorthQueryDispatchOutboxRecord,
+};
+use {
+    crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+    crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding,
+    crate::domain_computation::primary_graph::WorthQueryPrimaryMutationWorkEvidence,
+    crate::domain_computation::vocabulary::primary_graph::commit_authority_binding::WorthQueryRetainedGovernedInput,
+};
 
 use super::denial::{WorthQueryRecoveryHandleDenial, WorthQueryRecoveryHandleDenialKind};
 
@@ -147,7 +156,7 @@ impl WorthQueryRecoveryHandleBinding {
     pub(in crate::domain_computation) fn committed_dispatch_outbox(
         &self,
     ) -> Option<&crate::domain_computation::vocabulary::primary_graph::outbox_commit::WorthQueryCommittedDispatchOutboxBinding>
-    {
+{
         self.committed_dispatch_outbox.as_ref()
     }
 

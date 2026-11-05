@@ -10,11 +10,11 @@ use worth_relational::facade::mvcc::CompanionDerivedRootPreparationStop;
 use worth_relational::facade::mvcc::CompanionDerivedRootStopped;
 use worth_relational::facade::mvcc::PreparedCompanionDerivedRoot;
 
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 use super::super::source_alignment::BranchMarkRoot;
 use super::super::SourceInvalidationOwner;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SettlementRegistrationStop;
 use crate::domain_computation::primary_graph::application_output_demand::RequiredWorkMembership;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SettlementRegistrationStop;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 
 pub(super) struct PreparedRegistrationWorkCue {
     membership: Arc<RequiredWorkMembership>,

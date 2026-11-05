@@ -1,7 +1,6 @@
 //! Moved whole from `domain_computation::primary_graph::invariant_projection::consumed_output::verification::work_budget`: the items below and every impl they own.
-use crate::domain_computation::vocabulary::primary_graph::capacity_stop::VerificationCapacityStop;
 use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop;
-use worth_relational::facade::mvcc::CompanionCellEditStop;
+use crate::domain_computation::vocabulary::primary_graph::capacity_stop::VerificationCapacityStop;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 pub(in crate::domain_computation::primary_graph) fn map_admission_stop(

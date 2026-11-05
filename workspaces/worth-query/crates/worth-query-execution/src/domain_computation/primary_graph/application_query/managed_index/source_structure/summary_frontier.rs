@@ -1,6 +1,6 @@
 //! Only actual changed support and its complete final ancestor closure is requalified.
-use crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial as Denial;
 use super::*;
+use crate::domain_computation::vocabulary::primary_graph::invocation::WorthQueryManagedIndexWorkDenial as Denial;
 
 impl SourceTree {
     pub(super) fn affected(

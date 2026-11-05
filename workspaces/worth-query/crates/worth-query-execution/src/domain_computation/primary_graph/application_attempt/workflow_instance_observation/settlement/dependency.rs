@@ -10,11 +10,10 @@ use super::{denial, observed_text, observed_u64};
 pub(crate) mod aspect_presence;
 mod traversal;
 use crate::domain_computation::primary_graph::application_attempt::workflow::schema::WorthQueryWorkflowLayout;
-use {crate::domain_computation::primary_graph::application_attempt::observation::observe_field, crate::domain_computation::primary_graph::vocabulary::application_attempt::observation::WorthQueryApplicationFieldObservation, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact};
-use {
-    crate::domain_computation::primary_graph::application_attempt::workflow::evidence_dependency::decode_direction,
-    crate::domain_computation::primary_graph::application_attempt::workflow::evidence_dependency::WorkflowEvidenceDependencyKind,
-};
+use crate::domain_computation::primary_graph::application_attempt::{WorthQueryApplicationAttemptDenial, WorthQueryApplicationObservedFact};
+use crate::domain_computation::primary_graph::application_attempt::observation::observe_field;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::observation::WorthQueryApplicationFieldObservation;
+use crate::domain_computation::primary_graph::application_attempt::workflow::evidence_dependency::{WorkflowEvidenceDependencyKind, decode_direction};
 
 pub(in crate::domain_computation::primary_graph::application_attempt) fn observe_evidence_dependencies(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

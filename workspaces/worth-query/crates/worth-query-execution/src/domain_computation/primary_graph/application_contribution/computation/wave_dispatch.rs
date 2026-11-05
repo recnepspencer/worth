@@ -1,12 +1,7 @@
 //! One request settles the wave; member outcomes travel to owner completion.
-use {crate::domain_computation::primary_graph::vocabulary::application_contribution::prepared_request::ComputedSlot, crate::domain_computation::primary_graph::vocabulary::application_contribution::prepared_request::PreparedCompute};
 use crate::domain_computation::primary_graph::vocabulary::application_contribution::member_execution::WorthQueryMemberExecution;
-use worth_execution::{ExecutionMap, MapKernelFailure, MapOutcome, MapStop};
+use worth_execution::{ExecutionMap, MapKernelFailure};
 use worth_foundational::PartitionIdentity;
-use {
-    crate::domain_computation::request_execution::execution_stop::checkpoint_denial,
-    crate::domain_computation::request_execution::execution_stop::lease_denial,
-};
 use {
     crate::domain_computation::request_execution::QueryRequestExecution,
     crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
@@ -15,7 +10,6 @@ use crate::domain_computation::primary_graph::vocabulary::application_contributi
 use crate::domain_computation::primary_graph::vocabulary::application_contribution::wave_dispatch::NoMemberFailure;
 use crate::domain_computation::primary_graph::vocabulary::application_contribution::wave_dispatch::PreparedMember;
 use crate::domain_computation::primary_graph::vocabulary::application_contribution::wave_dispatch::settle_outcome;
-
 
 /// Interruption already present at dispatch has width-independent settlement.
 /// An interruption arriving during compute can be seen by an earlier running
@@ -98,8 +92,6 @@ pub fn dispatch(
         )],
     }
 }
-
-
 
 pub(crate) mod seeded_dispatch_orders;
 

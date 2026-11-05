@@ -45,7 +45,7 @@ impl<'member> WorthQueryMemberExecution<'member> {
         }
     }
 
-    pub(in crate::domain_computation::primary_graph) fn into_checkpoint(self) -> crate::domain_computation::primary_graph::vocabulary::application_contribution::checkpoint::WorthQueryManagedComputationCheckpoint<'member> {
+    pub(in crate::domain_computation::primary_graph) fn into_checkpoint(self) -> crate::domain_computation::primary_graph::vocabulary::application_contribution::checkpoint::WorthQueryManagedComputationCheckpoint<'member>{
         crate::domain_computation::primary_graph::vocabulary::application_contribution::checkpoint::WorthQueryManagedComputationCheckpoint {
             charge: self.charge,
             poll: self.poll,

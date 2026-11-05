@@ -3,8 +3,8 @@ use worth_foundational::facade::AspectKey;
 use worth_foundational::facade::CanonicalFieldPath;
 use worth_relational::facade::storage::AuthoritativeFieldComparisonKey;
 
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection as Direction;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact as Fact;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection as Direction;
 
 use super::fact_key::FactPostingKey as Key;
 use crate::domain_computation::primary_graph::vocabulary::output_lineage::mark_state::FullVerificationReason;

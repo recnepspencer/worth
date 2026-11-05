@@ -12,9 +12,13 @@ use crate::domain_computation::{
     WorthQueryExecutionResourceAttemptEvidence, WorthQueryWorkflowExecutionResourceAttempt,
 };
 
-use {super::super::provider_work::WorthQueryManagedProviderCleanupAuthority, crate::domain_computation::vocabulary::managed_run::evidence::WorthQueryManagedProviderWorkEvidence, super::super::provider_work::WorthQueryManagedProviderWorkLedger};
 use super::super::readmission::{
     WorthQueryWorkflowReadmissionProgressionPermit, WorthQueryWorkflowReadmissionRecoveryPermit,
+};
+use {
+    super::super::provider_work::WorthQueryManagedProviderCleanupAuthority,
+    super::super::provider_work::WorthQueryManagedProviderWorkLedger,
+    crate::domain_computation::vocabulary::managed_run::evidence::WorthQueryManagedProviderWorkEvidence,
 };
 
 static NEXT_WORKFLOW_LOGICAL_RUN: AtomicU64 = AtomicU64::new(1);
@@ -23,13 +27,11 @@ mod cleanup;
 mod readmission;
 mod terminal;
 
+use crate::domain_computation::vocabulary::managed_run::run_affinity::WorthQueryWorkflowRunTransitionPermit;
 pub(in crate::domain_computation::managed_run) use cleanup::{
     WorthQueryWorkflowAffinityCleanupReceipt, WorthQueryWorkflowYieldReleasePending,
 };
 pub(in crate::domain_computation::managed_run::workflow) use terminal::WorthQueryWorkflowRunTerminalAffinity;
-use crate::domain_computation::vocabulary::managed_run::run_affinity::WorthQueryWorkflowRunTransitionPermit;
-
-
 
 /// Move-only association between one logical workflow run, its current live
 /// resource attempt, and the provider-work ledger bound to that attempt.

@@ -18,8 +18,8 @@ use super::mark_state::EqualOutputLink;
 use super::mark_state::MarkState;
 use super::settlement;
 use super::source_alignment::BranchMarkRoot;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SettlementRegistrationStop;
 use super::SourceInvalidationOwner;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SettlementRegistrationStop;
 
 type Identity = Arc<RecordedSettlementIdentity>;
 

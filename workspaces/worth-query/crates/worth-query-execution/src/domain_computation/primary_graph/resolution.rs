@@ -28,11 +28,10 @@ use super::resolution_denial::entity_lookup_resolution_denial;
 use super::resolution_denial::principal_binding_resolution_denial;
 use super::resolution_denial::resolution_denial;
 use super::root::WorthQueryPrimaryGraph;
-use crate::domain_computation::vocabulary::primary_graph::principal_binding::WorthQueryPrimaryPrincipalBindingLayout;
 use super::WorthQueryAuthenticatedPrincipal;
+use crate::domain_computation::vocabulary::primary_graph::principal_binding::WorthQueryPrimaryPrincipalBindingLayout;
 use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenial;
 use crate::domain_computation::vocabulary::primary_graph::resolution_denial::WorthQueryPrincipalResolutionDenialKind;
-
 
 struct WorthQueryPrincipalSnapshotResolution<'a> {
     binding: &'a str,
@@ -51,8 +50,8 @@ mod admitted_lookup;
 mod admitted_observations;
 #[path = "resolution/selected_product.rs"]
 pub(crate) mod selected_product;
-pub(in crate::domain_computation) use selected_product::WorthQueryIssuedSelectedPrincipal;
 use crate::domain_computation::vocabulary::primary_graph::resolution::WorthQueryPrincipalResolutionMode;
+pub(in crate::domain_computation) use selected_product::WorthQueryIssuedSelectedPrincipal;
 
 fn principal_graph_binding<'a>(
     runtime: &'a WorthQueryExecutionRuntime,

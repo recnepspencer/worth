@@ -68,7 +68,7 @@ impl WorthQueryApplicationRuntimeCore {
     }
     pub(in crate::domain_computation) fn authority_identity(
         &self,
-    ) -> crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity {
+    ) -> crate::domain_computation::vocabulary::execution_runtime::runtime_identity::WorthQueryRuntimeAuthorityIdentity{
         self.execution().authority_identity()
     }
     pub(in crate::domain_computation) fn primary_graph(

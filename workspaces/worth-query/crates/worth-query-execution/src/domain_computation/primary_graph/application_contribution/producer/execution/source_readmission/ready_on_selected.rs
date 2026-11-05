@@ -8,9 +8,9 @@ use crate::domain_computation::primary_graph::application_query::FreshQueryPermi
 use crate::domain_computation::primary_graph::application_query::FreshScopedOps;
 use crate::domain_computation::primary_graph::application_query::PreparedApplicationQueryPermission;
 use crate::domain_computation::primary_graph::application_query::WorkLimitOps;
-use crate::domain_computation::primary_graph::vocabulary::product_operation::shared_query_basis::SelectedQueryBasisRetentionStop;
 use crate::domain_computation::primary_graph::product_operation::SharedQueryBasisScopedOps;
 use crate::domain_computation::primary_graph::product_operation::SharedSelectedProductOperation;
+use crate::domain_computation::primary_graph::vocabulary::product_operation::shared_query_basis::SelectedQueryBasisRetentionStop;
 use worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryBinding;
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;

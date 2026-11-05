@@ -29,8 +29,6 @@ struct WorkflowFactCustody {
     existing_target_links: [(KindId, KindId); 7],
 }
 
-
-
 pub(in crate::domain_computation::primary_graph) fn fact_custody_registration(
     layout: &WorthQueryWorkflowLayout,
 ) -> Result<CustomInvariantRegistration, String> {

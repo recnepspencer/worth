@@ -24,8 +24,19 @@ pub(crate) mod restoration;
 mod suspend;
 mod suspension_failure;
 
-pub use {restoration::WorthQueryGeneratedOutputPublicationNoEffect, restoration::WorthQueryGeneratedOutputPublicationNoEffectCause, restoration::WorthQueryGeneratedOutputRestorationFailure, restoration::WorthQueryGeneratedOutputRestorationFailureCause, restoration::WorthQueryGeneratedOutputRestorationReceipt, restoration::WorthQueryGeneratedOutputRestorationRecovery, restoration::WorthQueryGeneratedOutputRestorationRecoveryFailure, restoration::WorthQueryGeneratedOutputRestorationRecoveryStage, restoration::WorthQueryRestoredGeneratedOutput, restoration::WorthQueryUnpublishedGeneratedOutputRestoration};
 use suspend::suspended_output;
+pub use {
+    restoration::WorthQueryGeneratedOutputPublicationNoEffect,
+    restoration::WorthQueryGeneratedOutputPublicationNoEffectCause,
+    restoration::WorthQueryGeneratedOutputRestorationFailure,
+    restoration::WorthQueryGeneratedOutputRestorationFailureCause,
+    restoration::WorthQueryGeneratedOutputRestorationReceipt,
+    restoration::WorthQueryGeneratedOutputRestorationRecovery,
+    restoration::WorthQueryGeneratedOutputRestorationRecoveryFailure,
+    restoration::WorthQueryGeneratedOutputRestorationRecoveryStage,
+    restoration::WorthQueryRestoredGeneratedOutput,
+    restoration::WorthQueryUnpublishedGeneratedOutputRestoration,
+};
 
 use crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding;
 use crate::domain_computation::primary_graph::{

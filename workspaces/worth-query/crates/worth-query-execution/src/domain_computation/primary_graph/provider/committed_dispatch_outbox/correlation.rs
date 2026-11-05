@@ -1,10 +1,10 @@
 //! Correlation selects owner evidence; the exact Relational row and World publication decide authority.
 
 use super::{Denial, WorthQueryCommittedDispatchOutboxObservation};
-use crate::domain_computation::vocabulary::application_aftermath::correlation::ExternalEffectCorrelationIdentity;
 use crate::domain_computation::primary_graph::provider::{
     outstanding_dispatch::OutstandingDispatchPosture, WorthQueryPrimaryGraphProvider,
 };
+use crate::domain_computation::vocabulary::application_aftermath::correlation::ExternalEffectCorrelationIdentity;
 
 impl WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation::primary_graph) fn committed_dispatch_outbox_for_correlation(

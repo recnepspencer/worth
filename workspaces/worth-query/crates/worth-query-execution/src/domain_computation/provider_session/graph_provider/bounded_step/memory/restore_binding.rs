@@ -1,6 +1,14 @@
 use super::{WorthQueryGraphProviderMemoryArena, WorthQueryGraphProviderRetainedMemory};
-use {crate::domain_computation::provider_session::graph_provider::bounded_step::WorthQueryCooperativeGraphProviderExecution, crate::domain_computation::provider_session::graph_provider::bounded_step::WorthQueryOwnedGraphProviderExecution, crate::domain_computation::vocabulary::provider_session::provider_execution_release::WorthQueryProviderExecutionReleaseEvidence};
-use {crate::domain_computation::WorthQueryGraphProviderExecution, crate::domain_computation::vocabulary::provider_session::denial::WorthQueryGraphProviderStepDenial, crate::domain_computation::vocabulary::provider_session::denial::WorthQueryGraphProviderStepDenialKind};
+use {
+    crate::domain_computation::provider_session::graph_provider::bounded_step::WorthQueryCooperativeGraphProviderExecution,
+    crate::domain_computation::provider_session::graph_provider::bounded_step::WorthQueryOwnedGraphProviderExecution,
+    crate::domain_computation::vocabulary::provider_session::provider_execution_release::WorthQueryProviderExecutionReleaseEvidence,
+};
+use {
+    crate::domain_computation::vocabulary::provider_session::denial::WorthQueryGraphProviderStepDenial,
+    crate::domain_computation::vocabulary::provider_session::denial::WorthQueryGraphProviderStepDenialKind,
+    crate::domain_computation::WorthQueryGraphProviderExecution,
+};
 
 /// Step-external port that can provisionally rebind retained provider memory
 /// during the existing same-runtime readmission transaction.
@@ -79,7 +87,7 @@ impl<'scope> WorthQueryGraphProviderRestoreMemory<'scope> {
     ) -> Result<
         Box<dyn WorthQueryGraphProviderExecution>,
         crate::domain_computation::vocabulary::provider_session::failure::WorthQueryGraphProviderFailure,
-    > {
+    >{
         if let Some(denial) = &self.denial {
             return Err(
                 crate::domain_computation::vocabulary::provider_session::failure::WorthQueryGraphProviderFailure::new(denial.detail()),

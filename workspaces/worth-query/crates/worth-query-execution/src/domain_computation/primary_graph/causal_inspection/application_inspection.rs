@@ -49,10 +49,24 @@ pub use result::{
     WorthQueryMaterializedPerformedSourceInspection, WorthQueryObservedApplicationInspection,
     WorthQueryPerformedSourceInspection,
 };
-pub use {stop::DiagnosticComparisonDenial, stop::FactlessCurrentness, crate::domain_computation::primary_graph::vocabulary::application_attempt::indexed_entity_selection::IndexedSelectionReobserveDenial, stop::OutputFieldCaptureFailure, stop::OwnEffectOnReads, crate::domain_computation::primary_graph::vocabulary::provider::diagnostic::RebaseVerificationReason, stop::StoreDenial, stop::WorthQueryApplicationDisclosureContractDenial, stop::WorthQueryApplicationInspectionCanonicalRefusal, stop::WorthQueryApplicationInspectionDenial, stop::WorthQueryApplicationInspectionOwnerRefusal, stop::WorthQueryApplicationInspectionResourceRefusal, stop::WorthQueryApplicationInspectionStage, stop::WorthQueryApplicationInspectionStopKind, stop::WorthQueryApplicationQueryGovernanceDenialKind, stop::WorthQueryApplicationQueryInstallationDenial, stop::WorthQueryApplicationQueryInstallationDenialKind, stop::WorthQueryInspectionReadTerminalDenial, stop::WorthQueryManagedGraphReadDenial, stop::WorthQueryManagedGraphWorkSessionStartDenial};
+pub use {
+    stop::DiagnosticComparisonDenial, stop::FactlessCurrentness, stop::OutputFieldCaptureFailure,
+    stop::OwnEffectOnReads, stop::StoreDenial, stop::WorthQueryApplicationDisclosureContractDenial,
+    stop::WorthQueryApplicationInspectionCanonicalRefusal,
+    stop::WorthQueryApplicationInspectionDenial, stop::WorthQueryApplicationInspectionOwnerRefusal,
+    stop::WorthQueryApplicationInspectionResourceRefusal,
+    stop::WorthQueryApplicationInspectionStage, stop::WorthQueryApplicationInspectionStopKind,
+    stop::WorthQueryApplicationQueryGovernanceDenialKind,
+    stop::WorthQueryApplicationQueryInstallationDenial,
+    stop::WorthQueryApplicationQueryInstallationDenialKind,
+    stop::WorthQueryInspectionReadTerminalDenial, stop::WorthQueryManagedGraphReadDenial,
+    stop::WorthQueryManagedGraphWorkSessionStartDenial,
+};
 
 pub(crate) mod target;
 
 pub use request::RequestOps;
 pub use request::SourceOps;
 pub(in crate::domain_computation) use target::WorthQueryApplicationInspectionTarget;
+pub use crate::domain_computation::primary_graph::vocabulary::application_attempt::indexed_entity_selection::IndexedSelectionReobserveDenial;
+pub use crate::domain_computation::primary_graph::vocabulary::provider::diagnostic::RebaseVerificationReason;

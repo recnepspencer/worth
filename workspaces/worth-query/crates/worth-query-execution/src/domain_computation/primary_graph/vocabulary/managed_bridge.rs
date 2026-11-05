@@ -1,8 +1,12 @@
 //! `managed_bridge`'s vocabulary, moved whole from `primary_graph::managed_bridge`: its root file's items here, one child per other source file.
 
+use worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly;
+use worth_runtime_bridge::facade::RuntimeBridge;
+
 pub struct WorthQueryInstalledApplicationBridge {
-    ordinary: RuntimeBridge,
-    conditional: std::sync::Arc<std::sync::RwLock<BridgeSealedRuntimeAssembly>>,
+    pub(in crate::domain_computation::primary_graph) ordinary: RuntimeBridge,
+    pub(in crate::domain_computation::primary_graph) conditional:
+        std::sync::Arc<std::sync::RwLock<BridgeSealedRuntimeAssembly>>,
 }
 
 impl WorthQueryInstalledApplicationBridge {
@@ -37,5 +41,3 @@ impl WorthQueryInstalledApplicationBridge {
         Self::ordinary(self)
     }
 }
-use worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly;
-use worth_runtime_bridge::facade::RuntimeBridge;

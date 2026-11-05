@@ -2,7 +2,10 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
 use super::WorthQueryGraphProviderRetainedMemory;
-use {crate::domain_computation::vocabulary::provider_session::denial::WorthQueryGraphProviderStepDenial, crate::domain_computation::vocabulary::provider_session::denial::WorthQueryGraphProviderStepDenialKind};
+use {
+    crate::domain_computation::vocabulary::provider_session::denial::WorthQueryGraphProviderStepDenial,
+    crate::domain_computation::vocabulary::provider_session::denial::WorthQueryGraphProviderStepDenialKind,
+};
 
 static NEXT_PROVIDER_MEMORY_ARENA: AtomicU64 = AtomicU64::new(1);
 

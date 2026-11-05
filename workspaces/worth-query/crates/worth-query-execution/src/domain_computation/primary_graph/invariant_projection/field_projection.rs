@@ -1,9 +1,9 @@
 //! Retained native pin and original-request custody through one field-read handoff.
 use super::super::value_decode::{ValueDecodeSession, ValueDecodeState};
 use super::*;
+use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
 use std::cell::Cell;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause;
-use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
 
 /// One request's reads of an existing retained snapshot. A swallowed field
 /// refusal vetoes the closure's output; the native pin remains borrowed.

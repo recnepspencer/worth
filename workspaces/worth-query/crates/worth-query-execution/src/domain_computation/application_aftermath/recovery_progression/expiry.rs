@@ -7,7 +7,6 @@ use worth_proof::{
 };
 use worth_query_installation::facade::ApplicationSchema;
 
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::runtime_time::{
     WorthQueryRuntimeClock, WorthQueryRuntimeTimeSample,
 };

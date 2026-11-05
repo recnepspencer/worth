@@ -7,9 +7,9 @@ use super::*;
 use crate::domain_computation::primary_graph::application_query::admission::permission::PreparedApplicationQueryPermission;
 use crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationQueryGovernance;
 
-use crate::domain_computation::provider_session::WorthQueryPreparedProductReadSessionIdentity;
 use crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial;
 use crate::domain_computation::primary_graph::vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind;
+use crate::domain_computation::provider_session::WorthQueryPreparedProductReadSessionIdentity;
 
 pub(in crate::domain_computation::primary_graph) trait PreparedPermissionScopedOps<
     Schema: ApplicationSchema,

@@ -1,6 +1,6 @@
 use super::*;
-use worth_query_declaration::facade::application_operation::WorthQueryApplicationOutputAction;
 use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
+use worth_query_declaration::facade::application_operation::WorthQueryApplicationOutputAction;
 
 impl<Schema, Binding> DecisionReader<'_, '_, '_, Schema, Binding>
 where

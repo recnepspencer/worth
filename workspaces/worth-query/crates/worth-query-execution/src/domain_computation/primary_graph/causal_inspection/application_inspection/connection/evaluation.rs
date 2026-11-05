@@ -3,11 +3,11 @@ use super::*;
 use crate::domain_computation::primary_graph::application_contribution::{
     ProducerOutputEvaluation, ProducerOutputEvaluationState,
 };
-use worth_execution::MapKernelContext;
-use crate::domain_computation::vocabulary::primary_graph::application_query_basis_registry::WorthQueryApplicationBasisSelectionIdentity;
 use crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop;
+use crate::domain_computation::vocabulary::primary_graph::application_query_basis_registry::WorthQueryApplicationBasisSelectionIdentity;
 use crate::domain_computation::vocabulary::primary_graph::inspection::OriginalSourceInspectionDisclosure;
 use crate::domain_computation::vocabulary::primary_graph::retained_stage::run_retained_stage;
+use worth_execution::MapKernelContext;
 
 pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) fn require_compared(
     state: &ProducerOutputEvaluationState,
@@ -236,8 +236,10 @@ fn evaluate_installed(
                 WorthQueryProducerEvaluationDenial::ObservedFieldUnconnected,
             ));
         }
-        crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint(context, 1)
-            .map_err(MapKernelFailure::Stop)?;
+        crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint(
+            context, 1,
+        )
+        .map_err(MapKernelFailure::Stop)?;
         let compared = require_compared(&evaluation.state).map_err(MapKernelFailure::Domain)?;
         if !observed_field(&observed, context, compared)? {
             return Err(refuse(
@@ -265,8 +267,10 @@ fn observed_field(
     let locus = compared.field();
     for row in observed.original.source.original_row_footprints() {
         for field in &row.aspects {
-            crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint(context, 1)
-                .map_err(MapKernelFailure::Stop)?;
+            crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint(
+                context, 1,
+            )
+            .map_err(MapKernelFailure::Stop)?;
             if row.complete
                 && field.entity == compared.entity
                 && field.entity_name == locus.entity()

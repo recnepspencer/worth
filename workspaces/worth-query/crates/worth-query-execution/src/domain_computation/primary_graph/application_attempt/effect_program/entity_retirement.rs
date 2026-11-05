@@ -1,7 +1,7 @@
 //! Typed writers and installed retirement recipes share exact delete admission.
 use super::*;
-use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
 use crate::domain_computation::primary_graph::vocabulary::application_attempt::model::WorthQueryApplicationEffectEntity;
+use crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind;
 impl<S, O, I, Scope> WorthQueryApplicationEffectProgramBuilder<S, O, I, Scope> {
     pub(in crate::domain_computation::primary_graph) fn delete_at_target<E>(
         &mut self,

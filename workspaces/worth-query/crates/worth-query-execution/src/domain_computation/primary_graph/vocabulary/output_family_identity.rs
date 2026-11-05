@@ -1,10 +1,15 @@
 //! `output_family_identity`'s vocabulary, moved whole from `primary_graph::output_family_identity`: its root file's items here, one child per other source file.
 
+use std::borrow::Borrow;
+use std::borrow::Cow;
+
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct OutputFamilyIdentity(Cow<'static, str>);
 
 impl OutputFamilyIdentity {
-    pub(in crate::domain_computation::primary_graph) const fn declared(identity: &'static str) -> Self {
+    pub(in crate::domain_computation::primary_graph) const fn declared(
+        identity: &'static str,
+    ) -> Self {
         Self(Cow::Borrowed(identity))
     }
 
@@ -31,5 +36,3 @@ impl OutputFamilyIdentity {
         Self::declared(identity)
     }
 }
-use std::borrow::Borrow;
-use std::borrow::Cow;

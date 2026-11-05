@@ -21,7 +21,7 @@ impl WorthQueryRecoveryHandleBinding {
     pub fn committed_dispatch_outbox_for_test(
         &self,
     ) -> &Option<crate::domain_computation::vocabulary::primary_graph::outbox_commit::WorthQueryCommittedDispatchOutboxBinding>
-    {
+{
         &self.committed_dispatch_outbox
     }
 }
@@ -95,7 +95,7 @@ impl WorthQueryRecoveryHandleBinding {
         &mut self,
     ) -> &mut Option<
         crate::domain_computation::vocabulary::primary_graph::outbox_commit::WorthQueryCommittedDispatchOutboxBinding,
-    > {
+    >{
         &mut self.committed_dispatch_outbox
     }
 }

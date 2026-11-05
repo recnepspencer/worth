@@ -8,7 +8,11 @@ use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledWorkflowDefinitionParts,
 };
 
-use {super::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, super::WorthQueryApplicationEffectProgram, super::WorthQueryCompleteApplicationReadSet, super::WorthQueryProjectedApplicationMutation};
+use {
+    super::WorthQueryApplicationAttemptDenial, super::WorthQueryApplicationEffectProgram,
+    super::WorthQueryCompleteApplicationReadSet, super::WorthQueryProjectedApplicationMutation,
+    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
+};
 use {
     crate::domain_computation::primary_graph::application_attempt::workflow::definition::visit_definition_facts,
     crate::domain_computation::primary_graph::application_attempt::workflow::definition::BoundWorkflowDefinitionContract,
@@ -19,10 +23,15 @@ mod publication;
 mod retirement;
 
 use lineage::select_lineage;
-pub use {publication::PerformedWorkflowDefinitionPublication, publication::PreparedWorkflowDefinitionPublication, publication::WorkflowDefinitionExpectedPredecessor, publication::WorkflowDefinitionPublicationOutcome};
 pub use retirement::{
     PerformedWorkflowDefinitionRetirement, PreparedWorkflowDefinitionRetirement,
     WorkflowDefinitionRetirementOutcome,
+};
+pub use {
+    publication::PerformedWorkflowDefinitionPublication,
+    publication::PreparedWorkflowDefinitionPublication,
+    publication::WorkflowDefinitionExpectedPredecessor,
+    publication::WorkflowDefinitionPublicationOutcome,
 };
 
 impl<Schema, Operation, Input, Scope>

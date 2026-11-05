@@ -1,11 +1,15 @@
 //! Literal scope expectations retain their native facts before candidate preparation.
 use crate::domain_computation::primary_graph::vocabulary::operation_body::field_expectation::BodyFieldExpectation;
-use {crate::domain_computation::primary_graph::DecisionReader, crate::domain_computation::primary_graph::HandlerResult, crate::domain_computation::primary_graph::vocabulary::operation_body::WorthQueryOperationBodyDenial};
 use worth_query_declaration::facade::{
     application_operation::ApplicationMutationBinding,
     application_schema::{
         ApplicationOperationBodyProgram, ApplicationOperationBodyScopeField, ApplicationSchema,
     },
+};
+use {
+    crate::domain_computation::primary_graph::vocabulary::operation_body::WorthQueryOperationBodyDenial,
+    crate::domain_computation::primary_graph::DecisionReader,
+    crate::domain_computation::primary_graph::HandlerResult,
 };
 pub(super) fn evaluate<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>(
     body: &ApplicationOperationBodyProgram,

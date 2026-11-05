@@ -1,9 +1,13 @@
 //! Exact equality-index currency consumed by one admitted capability projection.
-use {crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind};
 use crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession;
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityRequestProjection;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::indexes::DerivedIndexBuildRequest;
+use {
+    crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
+    crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind,
+    crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind,
+};
 
 pub(super) fn prepare<Schema: ApplicationSchema, Scope, Context>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

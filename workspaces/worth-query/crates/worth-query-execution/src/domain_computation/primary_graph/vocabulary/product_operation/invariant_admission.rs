@@ -37,12 +37,13 @@ pub(in crate::domain_computation::primary_graph) fn admit_requirement(
 
 #[derive(Clone, Copy)]
 pub(in crate::domain_computation::primary_graph) struct ReceiptFact<'a> {
-    identifier: &'a str,
-    major: u16,
-    minor: u16,
-    execution_point: InvariantExecutionPoint,
-    verdict: InvariantDecisionKind,
-    non_applicability: Option<CustomInvariantNonApplicability>,
+    pub(in crate::domain_computation::primary_graph) identifier: &'a str,
+    pub(in crate::domain_computation::primary_graph) major: u16,
+    pub(in crate::domain_computation::primary_graph) minor: u16,
+    pub(in crate::domain_computation::primary_graph) execution_point: InvariantExecutionPoint,
+    pub(in crate::domain_computation::primary_graph) verdict: InvariantDecisionKind,
+    pub(in crate::domain_computation::primary_graph) non_applicability:
+        Option<CustomInvariantNonApplicability>,
 }
 
 /// How a producer-owned invariant requirement was satisfied.

@@ -1,6 +1,9 @@
 use sha2::{Digest, Sha256};
 
-use {crate::domain_computation::primary_graph::vocabulary::application_query::source_identity::WorthQueryObservedSourceCoordinate, crate::domain_computation::primary_graph::vocabulary::application_query::source_identity::WorthQueryObservedSourceOccurrence};
+use {
+    crate::domain_computation::primary_graph::vocabulary::application_query::source_identity::WorthQueryObservedSourceCoordinate,
+    crate::domain_computation::primary_graph::vocabulary::application_query::source_identity::WorthQueryObservedSourceOccurrence,
+};
 
 /// Stable within one runtime and branch occurrence for equivalent native meaning.
 /// The meaning object's issuance identity remains separate for epoch custody.

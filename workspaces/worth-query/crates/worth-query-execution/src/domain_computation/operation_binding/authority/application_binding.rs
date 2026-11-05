@@ -11,8 +11,15 @@ use worth_query_installation::facade::{
 use super::topology::resource_topology;
 use super::WorthQueryExecutionBoundOperationAuthority;
 use crate::domain_computation::execution_runtime::WorthQueryExecutionRuntime;
-use {crate::domain_computation::operation_binding::WorthQueryExecutionCommitPosture, crate::domain_computation::vocabulary::operation_binding::installed_domain_authority::WorthQueryInstalledDomainExecutionAuthority, crate::domain_computation::operation_binding::WorthQueryInstalledOperationExecutionSupport};
-use {crate::domain_computation::vocabulary::provider_session::application::WorthQueryApplicationEffectPosture, crate::domain_computation::vocabulary::provider_session::declared_closure::WorthQueryProviderPlanDeclarations};
+use {
+    crate::domain_computation::operation_binding::WorthQueryExecutionCommitPosture,
+    crate::domain_computation::operation_binding::WorthQueryInstalledOperationExecutionSupport,
+    crate::domain_computation::vocabulary::operation_binding::installed_domain_authority::WorthQueryInstalledDomainExecutionAuthority,
+};
+use {
+    crate::domain_computation::vocabulary::provider_session::application::WorthQueryApplicationEffectPosture,
+    crate::domain_computation::vocabulary::provider_session::declared_closure::WorthQueryProviderPlanDeclarations,
+};
 
 pub(crate) struct WorthQueryApplicationOperationBindingInput<'a> {
     pub(crate) runtime: &'a WorthQueryExecutionRuntime,

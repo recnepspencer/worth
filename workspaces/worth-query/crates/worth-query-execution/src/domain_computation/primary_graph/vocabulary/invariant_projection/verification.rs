@@ -17,7 +17,9 @@ pub enum ConsumedOutputVerification {
 }
 
 impl ConsumedOutputVerification {
-    fn driving(self) -> Result<Self, ConsumedOutputVerificationStop> {
+    pub(in crate::domain_computation::primary_graph) fn driving(
+        self,
+    ) -> Result<Self, ConsumedOutputVerificationStop> {
         match self {
             Self::PendingUpstream => Err(ConsumedOutputVerificationStop::PendingUpstream),
             Self::ChangedOutput | Self::Unaligned => Ok(Self::ChangedUpstream),

@@ -6,12 +6,9 @@ use super::{
 };
 use crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanupReceipt;
 use crate::domain_computation::product_publication::DiscoveryOps;
+use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_world::facade::RuntimeWorldRecoveryDenial;
-use {
-    crate::domain_computation::primary_graph::application_contribution::execution_denial,
-    crate::domain_computation::request_execution::WorthQueryAdvancementPhase,
-};
 
 pub trait OwnerCloseOps<S: ApplicationSchema>:
     crate::domain_computation::product_publication::host::ProductPublicationHost<S>

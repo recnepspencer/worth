@@ -6,7 +6,6 @@ use worth_runtime_world::facade::{CompositeCommitIdentity, CompositePublicationA
 
 use super::WorthQueryInboundVerifierHandle;
 use crate::domain_computation::vocabulary::application_aftermath::correlation::ExternalEffectCorrelationIdentity;
-use crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime;
 
 /// Read-only World identities of a completed inbound effect.
 pub struct WorthQueryInboundTerminalObservation {

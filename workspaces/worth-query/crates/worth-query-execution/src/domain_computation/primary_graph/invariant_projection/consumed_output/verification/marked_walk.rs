@@ -3,10 +3,10 @@
 use super::*;
 use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerification;
 use crate::domain_computation::primary_graph::vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SourceSettlementCurrentness;
 use crate::domain_computation::primary_graph::vocabulary::invariant_projection::work_budget::map_admission_stop;
 use crate::domain_computation::primary_graph::vocabulary::invariant_projection::work_budget::reserve_pending;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::derived::SourceSettlementCurrentness;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::settlement_identity::RecordedSettlementIdentity;
 
 impl ConsumedOutputEvidence {
     pub(super) fn verify_marked_views<'a>(

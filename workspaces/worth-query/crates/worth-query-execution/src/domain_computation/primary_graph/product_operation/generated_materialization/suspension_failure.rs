@@ -6,7 +6,7 @@ impl WorthQueryGeneratedOutputSuspensionFailure {
     /// failures retain their recovery authority; this projection consumes neither.
     pub fn execution_control_stop(
         &self,
-    ) -> Option<crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind> {
+    ) -> Option<crate::domain_computation::vocabulary::provider_session::control_stopped::WorthQueryProviderSessionControlStopKind>{
         match self {
             Self::ExecutionDenied(cause) => {
                 crate::domain_computation::provider_session::protocol::advancement_denial_cause(

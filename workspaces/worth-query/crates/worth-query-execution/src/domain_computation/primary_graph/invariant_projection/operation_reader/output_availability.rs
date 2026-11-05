@@ -13,8 +13,8 @@ use worth_query_installation::facade::{
     ApplicationEntityRef, ApplicationOperationDecisionReadTarget,
 };
 mod denial;
-pub use denial::WorthQueryOutputAvailabilityDenial;
 use crate::domain_computation::primary_graph::vocabulary::invariant_projection::WorthQueryInvariantEntityIdentity;
+pub use denial::WorthQueryOutputAvailabilityDenial;
 
 /// Result of a non-driving observation through the original checked reader.
 /// Its source and completion dependencies remain in that reader; this value

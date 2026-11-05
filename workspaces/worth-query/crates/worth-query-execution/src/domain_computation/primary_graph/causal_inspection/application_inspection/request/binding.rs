@@ -1,10 +1,15 @@
 //! The installed owner admits its real lookup and owned reissue before copying.
 use super::*;
-use {crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint, crate::domain_computation::vocabulary::primary_graph::retained_stage::run_retained_stage, crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop, crate::domain_computation::vocabulary::primary_graph::retained_stage::RetainedStorageDenial};
 use worth_execution::MapKernelFailure;
 use worth_query_installation::facade::{
     WorthQueryApplicationQueryInstallationDenial, WorthQueryInstalledApplicationQueryBinding,
     WorthQueryInstalledQueryBindingAdmissionStop,
+};
+use {
+    crate::domain_computation::vocabulary::primary_graph::admitted_capture::checkpoint,
+    crate::domain_computation::vocabulary::primary_graph::admitted_capture::CaptureStop,
+    crate::domain_computation::vocabulary::primary_graph::retained_stage::run_retained_stage,
+    crate::domain_computation::vocabulary::primary_graph::retained_stage::RetainedStorageDenial,
 };
 
 pub enum InspectionBindingDenial {

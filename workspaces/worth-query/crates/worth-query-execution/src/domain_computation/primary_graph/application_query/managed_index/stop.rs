@@ -1,7 +1,5 @@
 //! Actual request and storage causes remain distinct from pure provider refusals.
-use worth_execution::{ExecutionRequestArrayDenial, WorkCeilingDenial};
 use crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop;
-
 
 /// A provider's original typed refusal, or an original controlled-work stop.
 #[derive(Debug)]
@@ -15,4 +13,3 @@ impl<D> From<WorthQueryManagedIndexStop> for WorthQueryManagedIndexProviderStop<
         Self::Controlled(cause)
     }
 }
-

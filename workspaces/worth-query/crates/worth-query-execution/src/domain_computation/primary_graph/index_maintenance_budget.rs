@@ -1,6 +1,5 @@
-use worth_relational::facade::indexes::DerivedIndexMaintenanceBudget;
 use crate::domain_computation::vocabulary::primary_graph::index_maintenance_budget::ordinary_index_maintenance_budget;
-
+use worth_relational::facade::indexes::DerivedIndexMaintenanceBudget;
 
 /// Recovery after an interrupted publication has a separate reconstruction posture.
 /// Its counters are returned by Relational with typed exhaustion.

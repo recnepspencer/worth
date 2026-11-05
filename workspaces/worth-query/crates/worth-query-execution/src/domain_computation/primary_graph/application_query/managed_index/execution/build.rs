@@ -1,6 +1,5 @@
 //! Explicit cold reconstruction; no ordinary query silently invokes this lane.
 use super::{purpose, ProviderExecutionDenial as Denial};
-use {crate::domain_computation::primary_graph::application_query::managed_index::retention::ManagedIndexState, crate::domain_computation::primary_graph::application_query::managed_index::retention::ReadyIndex, crate::domain_computation::primary_graph::application_query::managed_index::retention::ReadyIndexMaterial, crate::domain_computation::primary_graph::application_query::managed_index::source_acquisition, crate::domain_computation::vocabulary::primary_graph::retained_selector::WorthQueryObservedScopeSelector, crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation, crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation, crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession};
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 use worth_query_admission::facade::authenticated_principal::{
@@ -8,6 +7,16 @@ use worth_query_admission::facade::authenticated_principal::{
 };
 use worth_query_declaration::facade::{
     application_query::ApplicationManagedIndexBinding, application_schema::ApplicationSchema,
+};
+use {
+    crate::domain_computation::primary_graph::application_query::managed_index::retention::ManagedIndexState,
+    crate::domain_computation::primary_graph::application_query::managed_index::retention::ReadyIndex,
+    crate::domain_computation::primary_graph::application_query::managed_index::retention::ReadyIndexMaterial,
+    crate::domain_computation::primary_graph::application_query::managed_index::source_acquisition,
+    crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation,
+    crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation,
+    crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
+    crate::domain_computation::vocabulary::primary_graph::retained_selector::WorthQueryObservedScopeSelector,
 };
 
 #[allow(clippy::too_many_arguments)]

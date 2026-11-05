@@ -15,7 +15,8 @@ pub(in crate::domain_computation) struct WorthQueryCompletedDirectRunCleanup {
     pub(in crate::domain_computation) terminal: WorthQueryManagedRunTerminalKind,
     pub(in crate::domain_computation) disposition: WorthQueryManagedRunCleanupDisposition,
     pub(in crate::domain_computation) bridge: BridgeExecutionBasisFinalizationReceipt,
-    pub(in crate::domain_computation) relational: WorthQueryManagedRelationalObservationReleaseReceipt,
+    pub(in crate::domain_computation) relational:
+        WorthQueryManagedRelationalObservationReleaseReceipt,
     pub(in crate::domain_computation) attempt: WorthQueryDirectExecutionAttemptReleaseReceipt,
     pub(in crate::domain_computation) counters: WorthQueryManagedRunCounters,
     pub(in crate::domain_computation) provider_work: WorthQueryManagedProviderWorkEvidence,
@@ -43,7 +44,9 @@ pub struct WorthQueryDirectRunCleanupInspection {
 }
 
 impl WorthQueryDirectRunCleanupReceipt {
-    pub(in crate::domain_computation) fn from_completed(completed: WorthQueryCompletedDirectRunCleanup) -> Self {
+    pub(in crate::domain_computation) fn from_completed(
+        completed: WorthQueryCompletedDirectRunCleanup,
+    ) -> Self {
         let capacity = completed.attempt.capacity();
         let inspection = WorthQueryDirectRunCleanupInspection {
             logical_run_identity: completed.logical_run_identity,

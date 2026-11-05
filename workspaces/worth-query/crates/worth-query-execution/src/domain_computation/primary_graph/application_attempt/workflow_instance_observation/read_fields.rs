@@ -1,13 +1,13 @@
 //! Paid current native field projections; no command facts or actor policy.
 use super::*;
 use crate::domain_computation::primary_graph::application_discovery::WorthQueryWorkflowReadDenial as Denial;
+use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection;
 use worth_foundational::facade::{AspectFieldLocator, InternedString};
 use worth_relational::facade::{
     identity::KindId,
     runtime::{RelationalPinnedRead, RelationalRuntime},
     snapshots::SnapshotHandle,
 };
-use crate::domain_computation::primary_graph::vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection;
 pub(in crate::domain_computation::primary_graph) struct ReadFields<'a, 'e, 'r> {
     pub(in crate::domain_computation::primary_graph) runtime: &'a RelationalRuntime,
     pub(in crate::domain_computation::primary_graph) execution:

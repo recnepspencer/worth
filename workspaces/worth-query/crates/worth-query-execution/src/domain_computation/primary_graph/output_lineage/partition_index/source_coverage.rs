@@ -2,8 +2,8 @@
 
 use super::*;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
-use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
 use crate::domain_computation::primary_graph::vocabulary::output_lineage::semantic_source::SemanticSource;
+use crate::domain_computation::primary_graph::vocabulary::output_lineage::ProductCoordinate;
 
 pub(in crate::domain_computation::primary_graph::output_lineage) enum SourcePartitionPublication<
     'lineage,

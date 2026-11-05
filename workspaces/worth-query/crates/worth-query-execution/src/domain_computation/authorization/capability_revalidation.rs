@@ -10,7 +10,11 @@ use worth_query_installation::facade::ApplicationSchema;
 
 use super::delegation_admission::WorthQueryCapabilityObservationSource;
 use super::retained_capability_request::WorthQueryRetainedCapabilityRequest;
-use {super::WorthQueryOperationAuthorizationDenial, crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind, super::WorthQueryRetainedCapabilityAuthorization};
+use {
+    super::WorthQueryOperationAuthorizationDenial,
+    super::WorthQueryRetainedCapabilityAuthorization,
+    crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationDenialKind,
+};
 
 mod observation;
 pub(in crate::domain_computation::authorization) use observation::WorthQueryCapabilityRevalidationObservation;

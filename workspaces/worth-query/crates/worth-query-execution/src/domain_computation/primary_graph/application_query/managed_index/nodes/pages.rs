@@ -1,8 +1,11 @@
 //! Immutable node pages; isolated editors freeze each touched page once.
-use {crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop, crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl};
 use std::{alloc::Layout, cell::Cell, sync::Arc};
 use worth_execution::{
     ExecutionArray, ExecutionMemoryReservation, ExecutionRequest, ExecutionRequestArrayBuilder,
+};
+use {
+    crate::domain_computation::vocabulary::primary_graph::control::WorthQueryManagedIndexControl,
+    crate::domain_computation::vocabulary::primary_graph::stop::WorthQueryManagedIndexStop as Stop,
 };
 
 pub(super) const PAGE_BITS: u32 = 5;

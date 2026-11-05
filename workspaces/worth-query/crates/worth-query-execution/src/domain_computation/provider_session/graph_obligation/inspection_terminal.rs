@@ -1,10 +1,16 @@
 //! Inspection completion carries the actual original target and its own release.
-use {crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkManagedRunIdentity, crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity};
 use crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationInspectionTarget;
-use {crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity, crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisReleaseReceipt};
 use worth_query_admission::{
     facade::graph_obligation::WorthQueryGraphWorkPlanIdentity,
     integration::WorthQueryExecutionCapacityReleaseReceipt,
+};
+use {
+    crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisIdentity,
+    crate::domain_computation::vocabulary::primary_graph::basis_registry::WorthQueryApplicationBasisReleaseReceipt,
+};
+use {
+    crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkManagedRunIdentity,
+    crate::domain_computation::vocabulary::provider_session::session_identity::WorthQueryGraphWorkSessionIdentity,
 };
 mod court;
 

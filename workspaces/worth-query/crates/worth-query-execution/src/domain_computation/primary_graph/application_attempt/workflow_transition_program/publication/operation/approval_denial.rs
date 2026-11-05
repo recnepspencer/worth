@@ -1,6 +1,10 @@
 //! Workflow approval readmission keeps request stops distinct from authority refusal.
 use crate::domain_computation::vocabulary::authorization::denial::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
-use {crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial, crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind, crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial};
+use {
+    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial,
+    crate::domain_computation::vocabulary::primary_graph::kind::WorthQueryApplicationAttemptDenialKind,
+};
 pub(super) fn denial(
     denial: WorthQueryOperationAuthorizationDenial,
 ) -> WorthQueryApplicationAttemptDenial {
