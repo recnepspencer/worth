@@ -1,5 +1,6 @@
 //! Original SDK qualification preserves typed root/model provenance through adoption.
 use super::*;
+use crate::domain_computation::primary_graph::runtime_host::WorthQueryRuntimeIdentityHost;
 use crate::publication_boundary::{
     discovery_currentness::WorthQueryRetainedQueryDependencies,
     original_read_outputs::WorthQueryOriginalReadOutputDenial,
@@ -69,6 +70,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         )?;
         let selected = self
             .runtime()
+            .application_runtime()
             .select_application_read_observation(phase, original.original_endpoint())
             .map_err(Denial::Observation)?;
         let owner = self

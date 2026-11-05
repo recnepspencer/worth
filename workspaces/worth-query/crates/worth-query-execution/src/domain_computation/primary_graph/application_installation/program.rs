@@ -41,6 +41,7 @@ pub use demand::{
     WorthQuerySettledProgramOutput,
 };
 pub use output_roots::WorthQueryApplicationProgramRoots;
+pub use program_owner::SelectedOwnerOps;
 pub use program_owner::{
     WorthQueryProgramOwner, WorthQuerySelectedProgramOwner, WorthQuerySelectedProgramOwnerDenial,
 };

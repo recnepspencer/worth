@@ -1,5 +1,6 @@
 //! One immutable signing service per installed program revision, not per workflow frontier.
 use super::WorthQueryProgramApplicationRuntime;
+use crate::domain_computation::primary_graph::runtime_host::WorthQueryRuntimeIdentityHost;
 use worth_query_admission::facade::authentication_event::WorthQueryAuthenticationEventSigningOwner;
 use worth_query_declaration::facade::{
     application_program::ApplicationProgramRevision, application_schema::ApplicationSchema,
@@ -26,22 +27,26 @@ impl<Schema: ApplicationSchema, Program> WorthQueryProgramApplicationRuntime<Sch
         owner: WorthQueryAuthenticationEventSigningOwner<Schema>,
     ) -> Result<(), WorthQuerySigningOwnerInstallationDenial> {
         validate(self.runtime(), &revision, &owner)?;
-        AdmittedSigningOwner::admit(&self.runtime().signing_owners, revision, owner)?.install();
+        AdmittedSigningOwner::admit(
+            &self.runtime().application_runtime().signing_owners,
+            revision,
+            owner,
+        )?
+        .install();
         Ok(())
     }
 }
 
 pub(super) fn validate<Schema: ApplicationSchema>(
-    runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
-        Schema,
-    >,
+    runtime: &dyn crate::domain_computation::primary_graph::application_installation::host::ApplicationInstallationHost<Schema>,
     revision: &ApplicationProgramRevision,
     owner: &WorthQueryAuthenticationEventSigningOwner<Schema>,
 ) -> Result<(), WorthQuerySigningOwnerInstallationDenial> {
-    if owner.binding_identity() != &runtime.installed_schema.binding_identity() {
+    if owner.binding_identity() != &runtime.installed_schema().binding_identity() {
         return Err(WorthQuerySigningOwnerInstallationDenial::ForeignSchema);
     }
     if runtime
+        .application_runtime()
         .installed_program_support()
         .and_then(|support| support.present(revision))
         .is_none()

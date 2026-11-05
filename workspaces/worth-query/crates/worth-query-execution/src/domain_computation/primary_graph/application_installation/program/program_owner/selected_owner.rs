@@ -34,9 +34,8 @@ where
     }
 }
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    /// Resolves the same installed owner from a plain application's selected branch.
-    pub fn selected_program_owner(
+pub trait SelectedOwnerOps<Schema: ApplicationSchema>: crate::domain_computation::primary_graph::application_installation::host::ApplicationInstallationHost<Schema> {
+fn selected_program_owner(
         &self,
         selected: &crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<
             '_,
@@ -44,7 +43,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         >,
     ) -> Result<WorthQuerySelectedProgramOwner<'_, Schema>, WorthQuerySelectedProgramOwnerDenial>
     {
-        if !std::ptr::eq(selected.application(), self) {
+        if !std::ptr::addr_eq(selected.application(), self) {
             return Err(WorthQuerySelectedProgramOwnerDenial::ProductSelection(
                 crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(
                     AdmissionRefusal::ForeignOwner,
@@ -56,11 +55,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .map_err(WorthQuerySelectedProgramOwnerDenial::Inspection)?;
         let revision = inspection.revision();
         let record = self
-            .installed_program_support()
+            .application_runtime().installed_program_support()
             .and_then(|support| support.native_program(revision))
             .ok_or(WorthQuerySelectedProgramOwnerDenial::InstalledOwnerUnavailable)?;
         Ok(WorthQuerySelectedProgramOwner {
-            runtime: self,
+            runtime: self.application_installation_host(),
             revision: record.revision(),
             action_bindings: &record.action_bindings,
             output_source_bindings: &record.output_source_bindings,
@@ -69,6 +68,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         })
     }
 }
+
+impl<Schema: ApplicationSchema, HostRuntime: crate::domain_computation::primary_graph::application_installation::host::ApplicationInstallationHost<Schema> + ?Sized> SelectedOwnerOps<Schema> for HostRuntime {}
 
 impl<Schema: ApplicationSchema> WorthQuerySelectedProgramOwner<'_, Schema> {
     pub fn resolve_action<Binding, Action>(

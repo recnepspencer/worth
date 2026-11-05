@@ -1,6 +1,7 @@
 //! Fresh C permission precedes every reuse or retention of discovery evidence.
 use super::dependent::{DiscoveryBinding, QueryRows};
 use super::*;
+use crate::domain_computation::primary_graph::runtime_host::WorthQueryRuntimeIdentityHost;
 use crate::domain_computation::primary_graph::{
     WorthQueryHistoryOutputDiscovery, WorthQueryHistoryOutputReadDenial,
 };
@@ -30,7 +31,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         use WorthQueryHistoryOutputReadDenial as Denial;
         let runtime = self.runtime();
         authority
-            .validate(phase, runtime, request)
+            .validate(phase, runtime.application_runtime(), request)
             .map_err(Denial::Authority)?;
         if !discovery.profile.same_custody(authority.profile())
             || !discovery.profile.matches_program(self)
@@ -62,9 +63,10 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
             WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage,
                 "history discovery has no original set observation"),
         ))?.source();
-        let execution = phase.checked_execution_request_for(&runtime.runtime.product_runtime)
+        let execution = phase.checked_execution_request_for(runtime.product_runtime())
             .map_err(|cause| Denial::Authority(crate::domain_computation::primary_graph::WorthQueryHistoryNavigationDenial::Stopped(cause)))?;
         runtime
+            .application_runtime()
             .authorize_retained_history_query::<DiscoveryBinding<S, C>>(
                 &execution,
                 authority.producer_invocation(),
@@ -100,13 +102,18 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         self.authorize_history_discovery::<D, C>(
             phase, access, parent, authority, discovery, principal, request,
         )?;
-        let selected = self.runtime().select_application_read_observation(phase, &discovery.basis)
+        let selected = self.runtime().application_runtime().select_application_read_observation(phase, &discovery.basis)
             .map_err(|cause| Denial::Authority(crate::domain_computation::primary_graph::WorthQueryHistoryNavigationDenial::ProductAdmission(cause)))?;
         let retained = selected
             .retain_query_dependencies(phase, access, &discovery.source)
             .map_err(Denial::Dependencies)?;
         authority
-            .confirm_read(phase, self.runtime(), request, retained)
+            .confirm_read(
+                phase,
+                self.runtime().application_runtime(),
+                request,
+                retained,
+            )
             .map_err(Denial::Authority)
     }
 }

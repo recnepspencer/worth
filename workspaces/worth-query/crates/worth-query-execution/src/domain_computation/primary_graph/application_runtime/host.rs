@@ -2,6 +2,7 @@
 mod application_checkpoint;
 mod application_discovery;
 mod application_entry;
+mod application_installation;
 mod application_resource;
 mod authorization;
 mod conditional_operation;

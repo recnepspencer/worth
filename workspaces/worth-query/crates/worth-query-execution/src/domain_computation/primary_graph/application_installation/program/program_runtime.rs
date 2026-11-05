@@ -174,8 +174,7 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
         let barrier = match self
             .backing
             .runtime
-            .runtime
-            .product_runtime
+            .product_runtime()
             .activations
             .begin_program_retirement(revision)
         {
@@ -189,8 +188,7 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
         let occurrences = match self
             .backing
             .runtime
-            .runtime
-            .product_runtime
+            .product_runtime()
             .activations
             .live_occurrences()
         {
@@ -206,8 +204,7 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
             let selected = match self
                 .backing
                 .runtime
-                .runtime
-                .product_runtime
+                .product_runtime()
                 .admit_product_occurrence(occurrence)
             {
                 Ok(selected) => selected,

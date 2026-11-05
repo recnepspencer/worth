@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::runtime_host::WorthQueryRuntimeIdentityHost;
 use worth_query_declaration::facade::{
     application_program::{
         ApplicationProgramDefinition, ApplicationProgramOutputsShape, ValidatedApplicationProgram,
@@ -120,6 +121,7 @@ where
     )?;
     let projection = runtime
         .runtime()
+        .application_runtime()
         .mutation_projection
         .retain_for_installation();
     Ok((runtime, projection))

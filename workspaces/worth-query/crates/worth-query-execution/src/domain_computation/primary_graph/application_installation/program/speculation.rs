@@ -1,4 +1,6 @@
 use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
+use crate::domain_computation::primary_graph::application_resource::host::ApplicationResourceHost;
+use crate::domain_computation::primary_graph::runtime_host::WorthQueryRuntimeIdentityHost;
 use worth_query_declaration::facade::application_program::ApplicationProgramDefinition;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_bridge::facade::{
@@ -115,9 +117,9 @@ impl WorthQueryApplicationPreviewSession {
         Program: ApplicationProgramDefinition<Schema>,
     {
         let execution = phase
-            .execution_request_for(&runtime.runtime().runtime.product_runtime)
+            .execution_request_for(runtime.runtime().product_runtime())
             .map_err(|_| WorthQueryApplicationPreviewReadmissionDenial::ForeignPhase)?;
-        if runtime.runtime().runtime.authority_identity().as_u64() != self.runtime_authority {
+        if runtime.runtime().authority_identity().as_u64() != self.runtime_authority {
             return Err(WorthQueryApplicationPreviewReadmissionDenial::ForeignRuntime);
         }
         let current = runtime
@@ -190,7 +192,7 @@ where
     ) -> Result<WorthQueryApplicationPreviewSession, WorthQueryApplicationPreviewReadmissionDenial>
     {
         let phase_request = phase
-            .execution_request_for(&self.runtime().runtime.product_runtime)
+            .execution_request_for(self.runtime().product_runtime())
             .map_err(|_| WorthQueryApplicationPreviewReadmissionDenial::ForeignPhase)?;
         let execution = &phase_request;
         let selected = self
@@ -235,8 +237,7 @@ where
         );
         let handle = self
             .runtime()
-            .runtime
-            .bridge
+            .bridge()
             .ordinary()
             .speculate(BridgeSpeculativeSessionRequest::new(
                 BridgePreviewSessionIdentity::from_stable_name(format!("{identity}:session")),
@@ -250,7 +251,7 @@ where
             handle,
             _source: source,
             _runtime: Box::new(self.clone()),
-            runtime_authority: self.runtime().runtime.authority_identity().as_u64(),
+            runtime_authority: self.runtime().authority_identity().as_u64(),
             source_commit: observation.selected_commit().clone(),
             discard_fault: Default::default(),
         })

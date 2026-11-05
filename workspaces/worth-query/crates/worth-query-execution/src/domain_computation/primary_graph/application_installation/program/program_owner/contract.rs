@@ -4,7 +4,7 @@ use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 /// One owner of a rostered program on one published host.
 pub trait WorthQueryProgramOwner<Schema>: sealed::WorthQueryProgramOwnership {
     /// The plain application runtime this owner commits through.
-    fn owned_runtime(&self) -> &WorthQueryPrimaryGraphApplicationRuntime<Schema>;
+    fn owned_runtime(&self) -> &dyn crate::domain_computation::primary_graph::application_installation::host::ApplicationInstallationHost<Schema>;
 
     /// The canonical revision this owner presents.
     fn owned_revision(&self) -> &ApplicationProgramRevision;
@@ -15,7 +15,7 @@ pub trait WorthQueryProgramOwner<Schema>: sealed::WorthQueryProgramOwnership {
     /// Whether one mutation binding is an output source rather than an action.
     fn owns_output_source(&self, binding: std::any::TypeId) -> bool;
 
-    fn runtime(&self) -> &WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    fn runtime(&self) -> &dyn crate::domain_computation::primary_graph::application_installation::host::ApplicationInstallationHost<Schema>{
         self.owned_runtime()
     }
 
@@ -56,6 +56,7 @@ pub trait WorthQueryProgramOwner<Schema>: sealed::WorthQueryProgramOwnership {
     {
         let request = program.request_scope().clone();
         self.runtime()
+            .application_runtime()
             .with_application_advancement(&request, |active_phase| {
                 self.commit_program_action_in_advancement(
                     &active_phase,
@@ -175,7 +176,9 @@ pub trait WorthQueryProgramOwner<Schema>: sealed::WorthQueryProgramOwnership {
             source,
             allocation_policy,
         );
-        self.owned_runtime().retained_commit_outcome(outcome)
+        self.owned_runtime()
+            .application_runtime()
+            .retained_commit_outcome(outcome)
     }
 
     /// Commits one action through the presented program and retains its
@@ -202,6 +205,7 @@ pub trait WorthQueryProgramOwner<Schema>: sealed::WorthQueryProgramOwnership {
     {
         let request = program.request_scope().clone();
         self.runtime()
+            .application_runtime()
             .with_application_advancement(&request, |active_phase| {
                 self.commit_program_action_retained_in_advancement(
                     &active_phase,
@@ -213,6 +217,7 @@ pub trait WorthQueryProgramOwner<Schema>: sealed::WorthQueryProgramOwnership {
             })
             .unwrap_or_else(|denial| {
                 self.runtime()
+                    .application_runtime()
                     .retained_commit_outcome(denial.into_commit_outcome())
             })
     }

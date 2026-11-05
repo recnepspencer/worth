@@ -33,13 +33,14 @@ where
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
-        let phase_request = match phase.execution_request_for(&self.runtime().runtime.product_runtime) {
+        let phase_request = match phase.execution_request_for(self.runtime().product_runtime()) {
             Ok(request) => request,
             Err(cause) => return Err(crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "output-demand-phase")),
         };
         let _execution = &phase_request;
 
         self.runtime()
+            .application_runtime()
             .admit_output_demand::<Family>(phase, source, limits)
     }
 }
@@ -47,7 +48,7 @@ where
 impl crate::publication_boundary::WorthQueryProgramPublicationAccess {
     pub fn advance_workflow_assessment_output<Schema, Family>(
         &self,
-        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_installation::host::ApplicationInstallationHost<Schema>,
         phase: &WorthQueryAdvancementPhase<'_>,
 
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
@@ -65,13 +66,13 @@ impl crate::publication_boundary::WorthQueryProgramPublicationAccess {
         SourceValue<Schema, Family>: 'static,
         SourceQuery<Schema, Family>: 'static,
     {
-        let phase_request = match phase.execution_request_for(&runtime.runtime.product_runtime) {
+        let phase_request = match phase.execution_request_for(runtime.product_runtime()) {
             Ok(request) => request,
             Err(cause) => return Err(crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "output-demand-phase")),
         };
         let execution = &phase_request;
 
-        runtime.advance_program_output_demand(
+        runtime.application_runtime().advance_program_output_demand(
             execution,
             phase,
             demand,

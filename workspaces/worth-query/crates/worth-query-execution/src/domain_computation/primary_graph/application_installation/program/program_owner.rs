@@ -42,7 +42,7 @@ mod sealed {
 /// selection. Its fields are private so a revision or lookalike activation
 /// cannot manufacture commit authority.
 pub struct WorthQuerySelectedProgramOwner<'runtime, Schema> {
-    runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &'runtime dyn crate::domain_computation::primary_graph::application_installation::host::ApplicationInstallationHost<Schema>,
     revision: &'runtime ApplicationProgramRevision,
     action_bindings: &'runtime [TypeId],
     output_source_bindings: &'runtime [TypeId],
@@ -70,3 +70,4 @@ pub use contract::WorthQueryProgramOwner;
 pub(super) fn program_required() -> WorthQueryApplicationCommitDenial {
     WorthQueryApplicationCommitDenial::application_program_required()
 }
+pub use selected_owner::SelectedOwnerOps;

@@ -112,7 +112,7 @@ impl WorthQuerySupportedProgramRecord {
 /// activation: a commit through a handle whose program is not the one this
 /// occurrence activated is refused before any effect.
 pub struct WorthQuerySupportedProgramHandle<'support, Schema, Program> {
-    runtime: &'support WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &'support dyn crate::domain_computation::primary_graph::application_installation::host::ApplicationInstallationHost<Schema>,
     record: &'support WorthQuerySupportedProgramRecord,
     installed: &'support WorthQueryInstalledApplicationProgram<Schema, Program>,
 }
@@ -121,7 +121,7 @@ impl<'support, Schema, Program> WorthQuerySupportedProgramHandle<'support, Schem
     /// Names `record` as `Program`; a record minted for another program
     /// yields no handle.
     pub(in crate::domain_computation::primary_graph) fn rostered(
-        runtime: &'support WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &'support dyn crate::domain_computation::primary_graph::application_installation::host::ApplicationInstallationHost<Schema>,
         record: &'support WorthQuerySupportedProgramRecord,
     ) -> Option<Self>
     where
@@ -143,7 +143,7 @@ impl<'support, Schema, Program> WorthQuerySupportedProgramHandle<'support, Schem
         self.installed
     }
 
-    pub const fn runtime(&self) -> &'support WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    pub const fn runtime(&self) -> &'support dyn crate::domain_computation::primary_graph::application_installation::host::ApplicationInstallationHost<Schema>{
         self.runtime
     }
 

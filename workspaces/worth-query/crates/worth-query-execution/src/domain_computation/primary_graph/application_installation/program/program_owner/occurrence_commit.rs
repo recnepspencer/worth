@@ -44,9 +44,7 @@ where
     Binding::Input: Clone + Send + Sync + 'static,
     Owner: WorthQueryProgramOwner<Schema> + ?Sized,
 {
-    let execution = match phase
-        .execution_request_for(&owner.owned_runtime().runtime.product_runtime)
-    {
+    let execution = match phase.execution_request_for(owner.owned_runtime().product_runtime()) {
         Ok(execution) => execution,
         Err(cause) => {
             return crate::domain_computation::request_execution::WorthQueryAdvancementDenial::from(
@@ -67,22 +65,24 @@ where
         );
     }
     let runtime = owner.owned_runtime();
-    let Some(support) = runtime.installed_program_support() else {
+    let Some(support) = runtime.application_runtime().installed_program_support() else {
         return WorthQueryApplicationCommitOutcome::Denied(program_required());
     };
     let presented = match support.present_for_commit(owner.owned_revision()) {
         Ok(presented) => presented,
         Err(denial) => return WorthQueryApplicationCommitOutcome::Denied(denial),
     };
-    runtime.compare_and_commit_application_for_program_action(
-        &execution,
-        phase,
-        &presented,
-        program,
-        idempotency,
-        causality,
-        allocation_policy,
-    )
+    runtime
+        .application_runtime()
+        .compare_and_commit_application_for_program_action(
+            &execution,
+            phase,
+            &presented,
+            program,
+            idempotency,
+            causality,
+            allocation_policy,
+        )
 }
 
 pub(super) fn commit_program_action_retained<Schema, Binding, Owner>(
@@ -107,5 +107,8 @@ where
         idempotency,
         allocation_policy,
     );
-    owner.owned_runtime().retained_commit_outcome(outcome)
+    owner
+        .owned_runtime()
+        .application_runtime()
+        .retained_commit_outcome(outcome)
 }

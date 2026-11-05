@@ -7,12 +7,11 @@ use super::super::{
 use worth_query_installation::facade::ApplicationSchema;
 
 pub(super) fn restore<Schema: ApplicationSchema>(
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_installation::host::ApplicationInstallationHost<Schema>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
     let Some(authority) = application
-        .runtime
-        .product_runtime
+        .product_runtime()
         .recovered_root_authority
         .as_ref()
     else {
@@ -24,15 +23,13 @@ pub(super) fn restore<Schema: ApplicationSchema>(
     })?;
     let observation = authority.product_branch();
     let mut lineage = application
-        .runtime
-        .primary_provider
-        .graph
+        .provider_graph()
         .output_lineage
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
     // This is one pass over bounded, installed-producer-readmitted checkpoint records.
     // Current-output reads stay indexed and check these facts at their selected basis.
-    for recovered in application.runtime.recovered_outputs.iter() {
+    for recovered in application.recovered_outputs().iter() {
         let checkpoint = &recovered.checkpoint;
         let (Some(binding), Some(bytes)) = (
             recovered.correspondence.binding_type(),
@@ -54,8 +51,8 @@ pub(super) fn restore<Schema: ApplicationSchema>(
         .into_parts();
         lineage.record_restoration(
             binding,
-            application.runtime.authority_identity().as_u64(),
-            application.installed_schema.binding_identity(),
+            application.authority_identity().as_u64(),
+            application.installed_schema().binding_identity(),
             checkpoint.scope,
             observation,
             std::sync::Arc::clone(&recovered.correspondence),

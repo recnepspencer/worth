@@ -1,5 +1,6 @@
 //! The original root claim consumes the same disclosed source whose model is checked.
 use super::*;
+use crate::domain_computation::primary_graph::runtime_host::WorthQueryRuntimeIdentityHost;
 use worth_query_declaration::facade::{
     application_program::{
         ApplicationConnectionShape, ApplicationFixedOutputRoot, ApplicationOutputGraphShape,
@@ -129,8 +130,10 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
             == crate::equality_type_id::EqualityTypeId::of::<P>().into_external()
             && profile.root == crate::equality_type_id::EqualityTypeId::of::<R>().into_external()
             && profile.program == *self.installed_program().revision()
-            && original
-                .belongs_to_selected_occurrence(self.runtime(), original.product_observation())
+            && original.belongs_to_selected_occurrence(
+                self.runtime().application_runtime(),
+                original.product_observation(),
+            )
             && source
                 .result_set_observation()
                 .is_some_and(|set| profile.model.matches_output_source(set.source(), original));
@@ -141,7 +144,12 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
             )));
         }
         let source = authority
-            .confirm_read(phase, self.runtime(), authority.request(), source)
+            .confirm_read(
+                phase,
+                self.runtime().application_runtime(),
+                authority.request(),
+                source,
+            )
             .map_err(Denial::Authority)?;
         // The SAME linear disclosure is consumed here; no preflight re-query or
         // reconstructed source DTO can stand in for the actual root claim.

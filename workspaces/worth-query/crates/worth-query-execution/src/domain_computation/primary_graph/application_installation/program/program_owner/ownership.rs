@@ -17,7 +17,7 @@ impl<Schema> WorthQueryProgramOwner<Schema> for WorthQuerySelectedProgramOwner<'
 where
     Schema: ApplicationSchema,
 {
-    fn owned_runtime(&self) -> &WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    fn owned_runtime(&self) -> &dyn crate::domain_computation::primary_graph::application_installation::host::ApplicationInstallationHost<Schema>{
         self.runtime
     }
 
@@ -45,7 +45,7 @@ where
     Schema: ApplicationSchema,
     Program: ApplicationProgramDefinition<Schema>,
 {
-    fn owned_runtime(&self) -> &WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    fn owned_runtime(&self) -> &dyn crate::domain_computation::primary_graph::application_installation::host::ApplicationInstallationHost<Schema>{
         self.runtime()
     }
 
@@ -77,7 +77,7 @@ where
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
     Program: ApplicationProgramDefinition<Schema>,
 {
-    fn owned_runtime(&self) -> &WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    fn owned_runtime(&self) -> &dyn crate::domain_computation::primary_graph::application_installation::host::ApplicationInstallationHost<Schema>{
         self.program_runtime().owned_runtime()
     }
 
@@ -105,7 +105,7 @@ where
     Schema: ApplicationSchema,
     Program: ApplicationProgramDefinition<Schema>,
 {
-    fn owned_runtime(&self) -> &WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    fn owned_runtime(&self) -> &dyn crate::domain_computation::primary_graph::application_installation::host::ApplicationInstallationHost<Schema>{
         self.runtime()
     }
 

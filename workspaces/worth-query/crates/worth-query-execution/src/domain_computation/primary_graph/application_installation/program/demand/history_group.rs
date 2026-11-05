@@ -1,5 +1,6 @@
 //! Immutable installed producer contracts, inspected without discovering or running outputs.
 use super::*;
+use crate::domain_computation::primary_graph::runtime_host::WorthQueryRuntimeIdentityHost;
 use crate::domain_computation::primary_graph::WorthQueryDocumentHistoryDenial;
 
 impl<S: ApplicationSchema, P: ApplicationProgramDefinition<S>>
@@ -11,6 +12,7 @@ impl<S: ApplicationSchema, P: ApplicationProgramDefinition<S>>
     ) -> Result<(), WorthQueryDocumentHistoryDenial> {
         if self
             .runtime()
+            .application_runtime()
             .installed_producers
             .supports_history_group::<Family<S, D>>()
         {

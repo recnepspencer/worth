@@ -25,7 +25,7 @@ where
     Schema: ApplicationSchema,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
 {
-    runtime: &'vocabulary WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &'vocabulary dyn crate::domain_computation::primary_graph::application_installation::host::ApplicationInstallationHost<Schema>,
     initial: &'vocabulary WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
     supported: &'vocabulary [WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>],
     authentication: &'vocabulary WorthQueryAuthenticationEventSigningOwner<Schema>,
@@ -37,7 +37,7 @@ where
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
 {
     pub(super) const fn new(
-        runtime: &'vocabulary WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &'vocabulary dyn crate::domain_computation::primary_graph::application_installation::host::ApplicationInstallationHost<Schema>,
         initial: &'vocabulary WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         supported: &'vocabulary [WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>],
         authentication: &'vocabulary WorthQueryAuthenticationEventSigningOwner<Schema>,
@@ -51,7 +51,7 @@ where
     }
 
     /// The host this vocabulary was installed on.
-    pub const fn runtime(&self) -> &'vocabulary WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    pub const fn runtime(&self) -> &'vocabulary dyn crate::domain_computation::primary_graph::application_installation::host::ApplicationInstallationHost<Schema>{
         self.runtime
     }
 
@@ -94,7 +94,7 @@ where
         crate::basis::WorthQueryProductBranchAdmissionDenial,
     > {
         let phase_request = phase
-            .execution_request_for(&self.runtime.runtime.product_runtime)
+            .execution_request_for(self.runtime.product_runtime())
             .map_err(|_| {
                 crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(
                     AdmissionRefusal::ForeignPhase,
@@ -103,6 +103,7 @@ where
         let execution = &phase_request;
         match self
             .runtime
+            .application_runtime()
             .on_branch(branch)
             .select_with_request(execution)
         {

@@ -118,7 +118,7 @@ where
             Ok(execution) => execution,
             Err(cause) => return Ok(crate::domain_computation::request_execution::WorthQueryAdvancementDenial::from(cause).into_commit_outcome()),
         };
-        if !std::ptr::eq(application, admitted.runtime.runtime())
+        if !std::ptr::addr_eq(application, admitted.runtime.runtime())
             || !self.change.program.belongs_to_application(
                 application.runtime.authority_identity(),
                 &application.installed_schema.binding_identity(),

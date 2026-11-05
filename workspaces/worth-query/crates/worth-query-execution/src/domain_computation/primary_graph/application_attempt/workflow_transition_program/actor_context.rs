@@ -76,7 +76,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
         Binding: ApplicationMutationBinding<Schema>,
     {
-        if required.original_runtime() != workflow.runtime().runtime.authority_identity().as_u64() {
+        if required.original_runtime() != workflow.runtime().authority_identity().as_u64() {
             return Err(affinity("foreign workflow actor runtime"));
         }
         let installed = workflow

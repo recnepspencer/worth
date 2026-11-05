@@ -175,3 +175,5 @@ where
 }
 
 mod source_scope_ownership;
+pub use program::SelectedOwnerOps;
+pub(crate) mod host;

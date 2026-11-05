@@ -3,6 +3,7 @@ use super::{WorthQueryOutputDemandSettlement, WorthQueryOutputSettlementPosture}
 use crate::domain_computation::primary_graph::application_installation::{
     WorthQueryProgramApplicationRuntime, WorthQuerySelectedProgramOwnerDenial,
 };
+use crate::domain_computation::primary_graph::runtime_host::WorthQueryRuntimeIdentityHost;
 use crate::publication_boundary::{
     discovery_currentness::{
         WorthQueryRequiredSetCurrentnessDenial, WorthQueryRetainedQueryDependencies,
@@ -115,7 +116,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         use WorthQueryOriginalReadOutputDenial as Denial;
         let runtime = self.runtime();
         let execution = phase
-            .checked_execution_request_for(&runtime.runtime.product_runtime)
+            .checked_execution_request_for(runtime.product_runtime())
             .map_err(|cause| {
                 Denial::Output(WorthQueryOutputDemandDenial::new(
                     WorthQueryOutputDemandDenialKind::ExecutionRequest(cause),
@@ -124,6 +125,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
             })?;
         // Admit the real D before inspecting the original output collection.
         let selected_source = runtime
+            .application_runtime()
             .select_application_read_observation(phase, source)
             .map_err(Denial::Observation)?;
         let mut settlements = std::iter::once(root).chain(dependents.clone());
@@ -135,6 +137,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         self.validate_selected_output_root::<R>(phase, access, &endpoint)
             .map_err(Denial::Program)?;
         let selected = runtime
+            .application_runtime()
             .select_application_read_observation(phase, &endpoint)
             .map_err(Denial::Observation)?;
         let (output, memory) = selected

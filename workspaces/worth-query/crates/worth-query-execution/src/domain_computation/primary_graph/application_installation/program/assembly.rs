@@ -168,7 +168,7 @@ where
 /// Requires that every installed binding demanding a program is answered by the
 /// roster as a whole: an action of some rostered program, or an output source.
 fn require_rostered_binding_membership<Schema, Program>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_installation::host::ApplicationInstallationHost<Schema>,
     installed: &WorthQueryInstalledApplicationProgram<Schema, Program>,
     output_source_bindings: &[TypeId],
 ) -> Result<(), WorthQueryInMemoryApplicationDenial>
@@ -180,7 +180,7 @@ where
         .copied()
         .map(TypeId::into_external)
         .collect::<std::collections::HashSet<_>>();
-    if let Some(support) = runtime.installed_program_support() {
+    if let Some(support) = runtime.application_runtime().installed_program_support() {
         answered.extend(
             runtime
                 .installed_schema()

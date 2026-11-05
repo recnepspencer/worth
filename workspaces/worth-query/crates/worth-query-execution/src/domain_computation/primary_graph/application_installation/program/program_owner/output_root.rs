@@ -1,5 +1,6 @@
 //! Resolve the requested typed output root through the actual selected owner.
 use super::*;
+use crate::domain_computation::primary_graph::runtime_host::WorthQueryRuntimeIdentityHost;
 use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 use worth_query_declaration::facade::application_program::ApplicationOutputGraphShape;
 impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
@@ -14,6 +15,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         use WorthQuerySelectedProgramOwnerDenial as Denial;
         let selected = self
             .runtime()
+            .application_runtime()
             .select_application_read_observation(phase, observation)
             .map_err(Denial::ProductSelection)?;
         let owner = self.selected_program_owner(&selected)?;
