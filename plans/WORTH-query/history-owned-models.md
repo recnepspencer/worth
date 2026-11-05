@@ -706,3 +706,66 @@ aspect baseline, skip the exact selected-basis check. Removing the
 older-than-restoration version guard survives as an equivalent mutant: the
 baseline comparison already rejects every such view. This grants no mutation or
 producer settlement; the Query full-verifier integration (#57) is next.
+
+## D1196 #57 join: verified boundary and slice order
+
+Public fixture `certification::document_history::owned_outputs` (7df5047373):
+an OwnedModelGraph Model sourcing two SourceScopeCascade families. Courts fix
+today's boundary. Checkout over the model's owned publications refuses at
+`prepare` with Native `OwnedPublicationRequiresCascade { publication, owner:
+model }`, with no effect or producer contact, because Query navigation still
+passes no output custody (`navigation/progression.rs` and `eligibility.rs`
+call `prepare_owned_graph_selection(.., None)`). Settling producers on the
+document branch outside history moves its head (`HeadDiverged`). In-history
+output settlement therefore belongs to the recorded step
+(`RecordingCompletion::RequiredOutputs`, one tree today). Multi-family
+recording is part of #57, not a workaround.
+
+Verified Query currentness owner: demand-time producer selection
+(`application_contribution/producer/demand/selection/native_selection.rs`).
+It reads lineage candidates, then output liveness, the producing build
+(`RequiredOutputProducingImplementation`), settlement verification
+(`output_reuse::retained_output_settlement_is_verified`, the full verifier
+with its branch/source fence), and the recorded facts
+(`compare_retained_output_dependencies`, which first requires
+`identity_current`: the runtime source idempotency identity). Then it checks
+the sealed witness (`compare_retained_output_witness`). Reuse makes no
+producer contact; any failure selects Preserve. The Native-restored prior
+transport (`selection/native_restoration.rs`) runs only when lineage has no
+candidate. It records a fact-less prior (`output_lineage/restoration/prior_output.rs`),
+which can only select Preserve.
+
+Each gate fails on a healthy restored output for a distinct reason. The
+lineage candidate is the current head's row, not the selected step's. The
+source identity commits to the current basis. Recorded field/aspect revision
+facts name the selected version, while restoration stamps fresh revisions.
+The witness aspects are restamped. The settlement row's read basis lies on the
+selected step's branch coordinate. Slice order, each with courts and mutants:
+
+1. Native exposes whether an installed publisher owns source scopes. Query
+   graph navigation prepares `prepare_historical_output_selections` and
+   `admit_historical_output_selection` only then, so storage absence still
+   refuses typed. It passes `RequiredOutputPublication::HistoricalSelection` in
+   eligibility and progression through one helper. In the same slice, at the
+   performed navigation commit, the selected step's exact lineage rows for each
+   restored route are transported to the new product coordinate. The transport
+   carries their facts, settlement identity, witness, implementation and
+   correspondence. Its `required_publication` is the committed
+   HistoricalSelection publication. It is never a fact-less prior, and never
+   the current head's row. Without this transport, a later Preserve would name
+   a stale predecessor, so slice 1 does not land without it.
+2. A transported row carries the selection commit and selected basis
+   coordinate. The four gates consume `RelationalHistoricalSelectionRead`
+   built from those exact observations. Field and aspect revision facts and
+   witness aspects use it only for restored members whose kind the committed
+   selection names. Source identity and the settlement fence admit the
+   original basis only through that evidence. Every ordinary row keeps today's
+   branch/source fence byte-for-byte.
+3. Multi-family recording and navigation profiles: eligibility admits every
+   installed output tree whose source scope is owned by the model. Edit
+   recording carries one completion per tree. Navigation's AwaitingOutputs
+   advances every tree at one final endpoint.
+4. Courts: undo/redo on `owned_outputs` with zero producer contacts; a changed
+   producing build contacts exactly that family. Mutations: regenerate instead
+   of select (skip slice 1), skip evidence (ordinary fence), and drop one
+   family from verification.
