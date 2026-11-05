@@ -13,57 +13,9 @@ use worth_relational::facade::{
     storage::RelationalStorageUnavailableCause as Cause,
 };
 
-#[derive(Debug)]
-struct Source {
-    members: BTreeMap<RelationalDurableMemberLocator, Vec<u8>>,
-    commits: BTreeMap<PatchStreamPosition, Vec<u8>>,
-    fault: AtomicUsize,
-    reads: AtomicUsize,
-}
-impl RelationalDurableColdSource for Source {
-    fn retain_members(
-        &self,
-        _: &[RelationalDurableMemberLocator],
-    ) -> Result<RelationalDurableMemberCustody, Cause> {
-        Ok(RelationalDurableMemberCustody::new(()))
-    }
-    fn read_member(
-        &self,
-        locator: RelationalDurableMemberLocator,
-        limit: u64,
-    ) -> Result<Vec<u8>, Cause> {
-        let bytes = self.members.get(&locator).ok_or(Cause::MissingMember)?;
-        bounded(bytes, limit)
-    }
-    fn read_commit(&self, position: PatchStreamPosition, limit: u64) -> Result<Vec<u8>, Cause> {
-        let mut bytes = bounded(
-            self.commits
-                .get(&position)
-                .ok_or(Cause::SourceUnavailable)?,
-            limit,
-        )?;
-        if position == PatchStreamPosition(1) {
-            self.reads.fetch_add(1, Ordering::SeqCst);
-            match self.fault.load(Ordering::SeqCst) {
-                0 => {}
-                1 => bytes[8..10].copy_from_slice(&2_u16.to_le_bytes()),
-                2 => bytes[58..66].copy_from_slice(&(256_u64 * 1024 * 1024 - 65).to_le_bytes()),
-                3 => *bytes.last_mut().unwrap() ^= 1,
-                value => panic!("unrecognized court fault {value}"),
-            }
-        }
-        Ok(bytes)
-    }
-}
-fn bounded(bytes: &[u8], limit: u64) -> Result<Vec<u8>, Cause> {
-    if bytes.len() as u64 > limit {
-        return Err(Cause::LimitExceeded {
-            length: bytes.len() as u64,
-            limit,
-        });
-    }
-    Ok(bytes.to_vec())
-}
+mod source;
+use source::Source;
+
 fn cold_runtime(execution: &ExecutionRequest<'_, '_>) -> (RelationalRuntime, Arc<Source>) {
     let (runtime, contract) = fixture();
     publish(&runtime, execution, &contract);
@@ -79,14 +31,6 @@ fn cold_runtime(execution: &ExecutionRequest<'_, '_>) -> (RelationalRuntime, Arc
             },
         )
         .unwrap();
-    let members = checkpoint
-        .members()
-        .iter()
-        .map(|member| match member {
-            RelationalCheckpointMember::New { locator, bytes } => (*locator, bytes.to_vec()),
-            _ => panic!("initial capture owns members"),
-        })
-        .collect();
     let commits = runtime
         .durability()
         .canonical_commit_artifacts(&execution)
@@ -95,12 +39,7 @@ fn cold_runtime(execution: &ExecutionRequest<'_, '_>) -> (RelationalRuntime, Arc
             (artifact.position(), artifact.as_bytes().to_vec())
         })
         .collect();
-    let source = Arc::new(Source {
-        members,
-        commits,
-        fault: AtomicUsize::new(0),
-        reads: AtomicUsize::new(0),
-    });
+    let source = Arc::new(Source::from_checkpoint(&checkpoint, commits));
     let recovery = RelationalDurableRecoverySource::new(
         Some(RelationalDurableCheckpointSource::new(
             checkpoint.covered_position().unwrap(),

@@ -10,53 +10,8 @@ use worth_relational::facade::{
     storage::RelationalStorageUnavailableCause as Cause,
 };
 
-#[derive(Debug)]
-struct Source {
-    members: BTreeMap<RelationalDurableMemberLocator, Vec<u8>>,
-    commits: BTreeMap<PatchStreamPosition, Vec<u8>>,
-    content: RelationalDurableMemberLocator,
-    cause: Cause,
-    limits: Mutex<Vec<u64>>,
-}
-impl RelationalDurableColdSource for Source {
-    fn retain_members(
-        &self,
-        _: &[RelationalDurableMemberLocator],
-    ) -> Result<RelationalDurableMemberCustody, Cause> {
-        Ok(RelationalDurableMemberCustody::new(()))
-    }
-    fn read_member(
-        &self,
-        locator: RelationalDurableMemberLocator,
-        limit: u64,
-    ) -> Result<Vec<u8>, Cause> {
-        if locator == self.content {
-            self.limits.lock().unwrap().push(limit);
-            return Err(self.cause);
-        }
-        let bytes = self.members.get(&locator).ok_or(Cause::MissingMember)?;
-        if bytes.len() as u64 > limit {
-            return Err(Cause::LimitExceeded {
-                length: bytes.len() as u64,
-                limit,
-            });
-        }
-        Ok(bytes.clone())
-    }
-    fn read_commit(&self, position: PatchStreamPosition, limit: u64) -> Result<Vec<u8>, Cause> {
-        let bytes = self
-            .commits
-            .get(&position)
-            .ok_or(Cause::SourceUnavailable)?;
-        if bytes.len() as u64 > limit {
-            return Err(Cause::LimitExceeded {
-                length: bytes.len() as u64,
-                limit,
-            });
-        }
-        Ok(bytes.clone())
-    }
-}
+mod source;
+use source::Source;
 
 #[test]
 fn content_cold_ingress_preserves_physical_refusals_and_uses_exact_funded_limit() {
@@ -76,19 +31,16 @@ fn content_cold_ingress_preserves_physical_refusals_and_uses_exact_funded_limit(
             },
         )
         .unwrap();
-    let members = checkpoint
+    let content = checkpoint
         .members()
         .iter()
-        .map(|member| match member {
-            RelationalCheckpointMember::New { locator, bytes } => (*locator, bytes.to_vec()),
-            _ => panic!("first capture owns bytes"),
+        .find_map(|member| match member {
+            RelationalCheckpointMember::New { locator, bytes } => {
+                bytes.starts_with(b"WRTHCONT").then_some(*locator)
+            }
+            RelationalCheckpointMember::Carried { .. } => panic!("first capture owns bytes"),
         })
-        .collect::<BTreeMap<_, _>>();
-    let content = *members
-        .iter()
-        .find(|(_, bytes)| bytes.starts_with(b"WRTHCONT"))
-        .unwrap()
-        .0;
+        .unwrap();
     assert_eq!(content.length, 75);
     let commits = runtime
         .durability()
@@ -108,13 +60,12 @@ fn content_cold_ingress_preserves_physical_refusals_and_uses_exact_funded_limit(
             limit: 75,
         },
     ] {
-        let source = Arc::new(Source {
-            members: members.clone(),
-            commits: commits.clone(),
+        let source = Arc::new(Source::from_checkpoint(
+            &checkpoint,
+            commits.clone(),
             content,
             cause,
-            limits: Mutex::new(Vec::new()),
-        });
+        ));
         let budget = SerialMemoryBudget::new(Some(512 * 1024 * 1024));
         let receiving = SerialRequest::from_memory(budget.clone(), cancel.token(), None);
         let receiving = ExecutionRequest::serial(&receiving);
