@@ -30,8 +30,6 @@ mod live_control_roles;
 mod managed_source;
 mod member_domain;
 pub(in crate::domain_computation::primary_graph) use member_domain::MemberDomainBinding;
-#[cfg(test)]
-mod create_scope_fixture;
 mod native_outputs;
 mod platform_entity_lowering;
 mod platform_identity_allocator;

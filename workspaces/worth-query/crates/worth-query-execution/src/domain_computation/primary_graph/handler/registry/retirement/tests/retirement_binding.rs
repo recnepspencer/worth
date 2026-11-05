@@ -1,6 +1,5 @@
 //! Declaration-only type parameters for private original-handler slot mechanics.
 //! No runtime, installation, session, principal admission or executable authority is made.
-use worth_foundational::facade::{AspectContractRevision, AspectIdentity};
 use worth_query_declaration::facade::{
     application_operation::*, application_schema::*, authentication::*,
 };
