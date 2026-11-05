@@ -5,9 +5,7 @@ use crate::application_invariant_acceptance::managed_index::maintained::{
 };
 use crate::application_invariant_acceptance::managed_index::prefix_observation;
 use std::sync::{Arc, Mutex};
-use worth_query_decl::facade::{
-    application_query::ApplicationManagedIndexBinding, application_schema::*,
-};
+use worth_query_decl::facade::application_query::ApplicationManagedIndexBinding;
 use worth_query_host::facade::application_invariants::*;
 pub(crate) struct Calls {
     pub records: Mutex<Vec<StagedSourceObservation<query::ItemRow>>>,

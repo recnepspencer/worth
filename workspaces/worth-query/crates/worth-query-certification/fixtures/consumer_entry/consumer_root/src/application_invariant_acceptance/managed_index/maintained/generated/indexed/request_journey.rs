@@ -6,9 +6,7 @@ use crate::application_invariant_acceptance::{
     managed_index::{lifecycle, prefix_observation},
 };
 use std::sync::Arc;
-use worth_query_host::facade::{
-    application_entry::*, primary_graph::*, runtime::ExecutionAllocationPolicy,
-};
+use worth_query_host::facade::{application_entry::*, runtime::ExecutionAllocationPolicy};
 
 #[test]
 fn indexed_request_action_publishes_its_fixed_managed_output() {
