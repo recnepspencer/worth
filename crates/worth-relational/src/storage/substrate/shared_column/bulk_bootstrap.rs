@@ -37,6 +37,22 @@ impl<T: StoredValue> SharedColumn<T> {
         values: Vec<T::Value>,
         request: Option<&ExecutionRequest<'_, '_>>,
     ) -> Result<Self, Cause> {
+        Self::dense_carriers_using(values.into_iter().map(T::from_value), request)
+    }
+    pub(crate) fn from_dense_carriers(values: Vec<T>) -> Self {
+        Self::dense_carriers_using(values.into_iter(), None)
+            .expect("ordinary carrier construction has no request refusal")
+    }
+    pub(crate) fn from_dense_carriers_for_request(
+        values: Vec<T>,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<Self, Cause> {
+        Self::dense_carriers_using(values.into_iter(), Some(request))
+    }
+    fn dense_carriers_using(
+        values: impl ExactSizeIterator<Item = T>,
+        request: Option<&ExecutionRequest<'_, '_>>,
+    ) -> Result<Self, Cause> {
         if let Some(request) = request {
             request.consult()?;
         }
@@ -44,7 +60,7 @@ impl<T: StoredValue> SharedColumn<T> {
         if len == 0 {
             return Ok(Self::default());
         }
-        let mut input = values.into_iter();
+        let mut input = values;
         let mut level = Level::allocate(len.div_ceil(PAGE_LEN), request)?;
         while input.len() != 0 {
             let mut page = ColumnNode::allocate(0, request)?;
@@ -53,7 +69,7 @@ impl<T: StoredValue> SharedColumn<T> {
                 unreachable!("leaf allocator produced a page")
             };
             for (index, value) in input.by_ref().take(PAGE_LEN).enumerate() {
-                rows[index] = Some(T::from_value(value));
+                rows[index] = Some(value);
                 node.value_count += 1;
             }
             level.values.push(page);

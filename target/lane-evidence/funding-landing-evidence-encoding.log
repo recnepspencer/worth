@@ -1,0 +1,13 @@
+command: python target/lane-evidence/funding_landing_encoding_audit.py
+HEAD: 5a49620b1d2c6efe405d7ff97870243b21d87fc0
+git_status_short_empty: false
+start_utc: 2026-11-05T04:10:03.342806+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+All tracked evidence is strict UTF-8; original review differs by the one equivalent dash encoding only.
+All61 frozen source/config hashes match.
+
+end_utc: 2026-11-05T04:10:04.232544+00:00
+exit_code: 0
+tests_passed: 0
+tests_failed: 0
+tests_ignored: 0

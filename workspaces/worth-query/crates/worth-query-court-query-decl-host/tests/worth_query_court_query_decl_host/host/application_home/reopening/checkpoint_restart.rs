@@ -182,8 +182,8 @@ fn restart(case: Case, test: &str) {
         assert_eq!(
             settled.native_canonical_body_reads
                 - before_capture.expect("cold recapture counter recorded"),
-            head - covered,
-            "each uncovered cold Journal frame is demanded once; covered image frames stay cold"
+            next.covered().0 - *covered,
+            "each uncovered original Journal frame is demanded once; covered image frames stay cold"
         );
     }
     assert!(settled.pending.is_none());

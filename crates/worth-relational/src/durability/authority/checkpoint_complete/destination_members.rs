@@ -35,10 +35,10 @@ pub(super) fn require(
             }
             for member in members.values() {
                 crate::execution::check_request(request).map_err(Denial::Request)?;
-                if let RelationalCheckpointMember::Carried { locator } = member {
-                    if !selected.contains_key(locator) {
-                        return Err(Denial::OriginalAuthorityUnavailable);
-                    }
+                if let RelationalCheckpointMember::Carried { locator } = member
+                    && !selected.contains_key(locator)
+                {
+                    return Err(Denial::OriginalAuthorityUnavailable);
                 }
             }
         }

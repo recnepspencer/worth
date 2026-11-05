@@ -154,10 +154,7 @@ impl<'request, 'scope, 'host> HistoryFolder<'request, 'scope, 'host> {
             return Ok(cached.image);
         }
         let remaining = self.limit - self.input_bytes;
-        let length = self
-            .input_bytes
-            .checked_add(reference.member.length)
-            .unwrap_or(u64::MAX);
+        let length = self.input_bytes.saturating_add(reference.member.length);
         if length > self.limit {
             return Err(unavailable(
                 self.partition,
@@ -353,7 +350,7 @@ impl<'request, 'scope, 'host> HistoryFolder<'request, 'scope, 'host> {
         metadata: &impl serde::Serialize,
     ) -> Result<(), Failure> {
         let length = funding::aspect_state::metadata_length(metadata, self.execution)?;
-        self.output_bytes = self.output_bytes.checked_add(length).unwrap_or(u64::MAX);
+        self.output_bytes = self.output_bytes.saturating_add(length);
         if self.output_bytes > self.limit {
             return Err(unavailable(
                 self.partition,

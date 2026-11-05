@@ -1,9 +1,3 @@
-IN PROGRESS ? FUNDING NOT LANDED. Foundation clone quote is reviewed and committed9d04a90050.
+APPROVED FUNDING CANDIDATE: independent review APPROVE; committing frozen61 source.
 
-Both large byte controls and retired-peer proof pass3/0/0 at final top-level cost paths. Large Foundation pure assertion passes1/0/0 in its existing tests.rs::cost. Captured byte fixture now has only the byte record; unrelated edit target enters after the controlled read. Original64MiB ceiling,128KiB room,8/65536 contrast and all lifetime/history assertions remain. Native guard unchanged.
-
-Final runtime qualification: Host5/0/0, unchanged <=40 bounded-tail1/0/0, Store recovery1/0/0 and CDC/recovery3/0/0. Shared-custody plus existing Native9 remain the named green subset of the earlier10/3 packet. Store Clippy,59-file dirty line caps, context and scope audit pass. All raw lane paths/counts are in funding-final-lanes.md; source identity is retained by60 exact hashes.
-
-Root Clippy exits101 with18 errors; two in-area corrections applied later, while16 source-derived residual lints in13 outside-grant files are proposed only. Final boundary exits1 with one new BC7013 for selected_image.rs and exactly the three allowed BC9002 queue sites. The new nested cost category error is fixed. No suppression/baseline growth/budget raise. Exact13-file proposal and one-line caller proposal pass dry-run and remain unapplied. See funding-final-owner-handoff.md.
-
-Fresh Foundation component review APPROVE; fresh whole-funding review REJECT on the new caller registration, with Root qualification still incomplete. Responses in funding-final-review-resolution.md. Remaining source/generated slots intact and dirty, no parking/discard/integration merge/push. Next: owner rulings for the concrete proposals, failed gates, fresh whole approval, funding implementation commit. Integration still waits for a named coordinator HEAD before the ordered decoder/D13/digest/BC9002 queue.
+Root Clippy exits101 only at29 permitted rule3 sites/22 untouched master-changed files. Boundary exits1 only at3 permitted BC9002 sites. Line caps58 Rust files, agent-context, exact scope/hash/encoding audit pass. All final named runtime proofs remain green by source identity. See funding-landing-turn-end-state.md, funding-landing-lanes.md and funding-landing-independent-review.md. No integration merge or push.

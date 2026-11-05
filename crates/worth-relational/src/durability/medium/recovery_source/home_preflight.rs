@@ -135,7 +135,7 @@ impl RelationalDurableRecoverySource {
             .checkpoint
             .as_ref()
             .map(|source| {
-                let image = source.admission_image().cloned().ok_or_else(|| Refusal::Native(
+                let image = source.admission_image().cloned().ok_or(Refusal::Native(
                     crate::durability::data::RelationalRecoveryStop::AdmissionImage(
                         crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal::MissingArtifact,
                     ),

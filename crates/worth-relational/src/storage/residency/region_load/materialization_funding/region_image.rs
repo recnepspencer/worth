@@ -280,29 +280,19 @@ fn frontiers(raw: Raw<'_>, request: &ExecutionRequest<'_, '_>) -> Result<Quote> 
     })?;
     Ok(quote)
 }
-pub(in crate::storage::residency) fn head_commitment_nodes(count: usize) -> Result<u64> {
-    // A Patricia node has the frontier's key/bit/hash, two child pointers,
-    // node count and a memory ticket; an Arc has two counters. Use aligned
-    // public field layouts, including the frontier's extra parent-bit padding.
-    let node = sum(
-        shared::<HistoryFrontierSibling>()?,
-        sum(
-            array::<usize>(3)?,
-            std::mem::size_of::<Option<ExecutionMemoryReservation>>() as u64,
-        )?,
-    )?;
-    sum(
-        times(node, count.checked_mul(2).ok_or_else(overflow)?)?,
-        map::<u64, SharedColumn<u64>>(count)?,
-    )
-}
 pub(in crate::storage::residency) fn head(
     raw: Raw<'_>,
     contract: u64,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<Quote> {
     work(request, raw.0.len() as u64)?;
-    let mut quote = Quote::bytes(shared::<RegionHeadImage>()?, 0);
+    let mut quote = Quote::bytes(
+        sum(
+            shared::<RegionHeadImage>()?,
+            vector::<[usize; 2]>(16 * usize::BITS as usize)?,
+        )?,
+        0,
+    );
     record(
         raw,
         &[

@@ -37,11 +37,11 @@ impl RelationalCheckpointManifestSelection {
         handoff: &mut Option<NativeDirectoryRetirementHandoff>,
     ) -> Result<bool, Ack> {
         let mut state = self.try_source_state()?;
-        if let Some(admission) = &mut state.admission {
-            if !admission.loan_source_retirement(handoff)? {
-                state.admission_loan = true;
-                return Ok(false);
-            }
+        if let Some(admission) = &mut state.admission
+            && !admission.loan_source_retirement(handoff)?
+        {
+            state.admission_loan = true;
+            return Ok(false);
         }
         state.admission_loan = false;
         match &mut state.directory {

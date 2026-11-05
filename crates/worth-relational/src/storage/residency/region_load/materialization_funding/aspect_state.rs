@@ -3,8 +3,8 @@ use super::*;
 use crate::durability::data::*;
 use crate::storage::substrate::*;
 use worth_foundational::facade::{
-    AspectKey, AspectValue, AuthoritativeRecordAspectState, ContractValidatedAspectValue, FieldKey,
-    PortableRecordAspectState, PortableRecordAspectStateEntry, StructAspectValue,
+    AspectKey, AspectValue, ContractValidatedAspectValue, FieldKey, PortableRecordAspectState,
+    PortableRecordAspectStateEntry, StructAspectValue,
 };
 
 fn state_roots(count: usize, contract: u64) -> Result<Quote> {
@@ -132,22 +132,6 @@ fn structure(raw: Raw<'_>, request: &ExecutionRequest<'_, '_>) -> Result<Quote> 
         quote.native = sum(quote.native, array::<(FieldKey, AspectValue)>(count)?)?;
         Ok(())
     })?;
-    Ok(quote)
-}
-/// Current native values are already admitted. Quote their actual deep clones
-/// and the wire/validation owners before partition_to_image clones them.
-pub(in crate::storage::residency) fn native(
-    state: Option<&AuthoritativeRecordAspectState>,
-    contract: u64,
-) -> Result<Quote> {
-    let Some(state) = state else {
-        return Ok(Quote::default());
-    };
-    let mut quote = state_roots(state.aspects().len(), contract)?;
-    for (_, value) in state.aspects().entries() {
-        let nested = value.owned_allocation_capacity_bytes() as u64;
-        quote.add(Quote::bytes(nested, nested))?;
-    }
     Ok(quote)
 }
 pub(in crate::storage::residency) fn owned(
@@ -348,11 +332,15 @@ pub(in crate::storage::residency) fn contracts(
     let mut largest = 0;
     for contract in schema.retained_aspect_contracts() {
         work(request, 1)?;
-        let nested = contract.clone_allocation_bytes().ok_or_else(overflow)? as u64;
+        let nested = crate::durability::checkpoints::aspect_state_images::contract_clone_bytes(
+            contract, request,
+        )
+        .map_err(Failure::Request)?;
         largest = largest.max(nested);
         // Original-to-portable and portable-to-catalog copies coexist.
         bytes = sum(bytes, times(nested, 2)?)?;
     }
+    work(request, bytes)?;
     Ok((Funding::reserve(bytes, request)?, largest))
 }
 

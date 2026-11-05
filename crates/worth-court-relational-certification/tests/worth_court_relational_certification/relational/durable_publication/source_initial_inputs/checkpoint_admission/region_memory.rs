@@ -153,3 +153,130 @@ fn recover(
     drop(authority);
     Ok(runtime)
 }
+
+#[test]
+fn head_materialization_budget_survives_edit_and_last_basis_drop() {
+    materialized_payload_survives_edit(false);
+}
+#[test]
+fn full_materialization_budget_survives_mirror_edits_until_runtime_drop() {
+    materialized_payload_survives_edit(true);
+}
+
+fn materialized_payload_survives_edit(full: bool) {
+    use worth_relational::facade::mvcc::RelationalTransactionReadDenial;
+    const PAYLOAD: usize = 32 * 1024;
+    let setup = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
+    let request = &ExecutionRequest::serial(&setup);
+    let (source, medium) = initialized(request);
+    let payload = create_entity_outcome(request, &source, &"p".repeat(PAYLOAD));
+    let retained_entity = payload.semantic_result().created_entities()[0].assigned;
+    release_test_commit_snapshot(&source, &payload);
+    let editable = create_entity_outcome(request, &source, "small-editable");
+    let editable_entity = editable.semantic_result().created_entities()[0].assigned;
+    release_test_commit_snapshot(&source, &editable);
+    drop((payload, editable));
+    let image = capture_external(&source, &medium, request);
+    let members = selected_members(&image, request);
+    medium.file_checkpoint(image.checkpoint().clone());
+    let input = home_image_input(&medium, &image, request).unwrap();
+    drop((image, source));
+    let recovered = recover(&medium, input, request).unwrap();
+    let edit = |name: &str| {
+        let mut transaction = begin_main_transaction(&recovered);
+        transaction
+            .push_batch(
+                WorkerIntentBatch::new("edit-other-record").push(MutationIntent::Entity(
+                    EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
+                        entity_id: editable_entity,
+                        fields: field_patch("name", "name", name),
+                    }),
+                )),
+                request.allocation_policy(),
+            )
+            .unwrap();
+        let result = transaction.commit(request, &recovered).unwrap();
+        release_test_commit_snapshot(&recovered, &result);
+    };
+    let budget = SerialMemoryBudget::new(None);
+    let caller =
+        SerialRequest::from_memory(budget.clone(), CancellationSource::new().token(), None);
+    let materialization = &ExecutionRequest::serial(&caller);
+    if full {
+        // The public retention owner materializes and promotes its actual
+        // current mirror Full before extracting and freezing its partition.
+        edit("before-full-materialization");
+        let denied_budget = SerialMemoryBudget::new(Some(0));
+        let denied = SerialRequest::from_memory(
+            denied_budget.clone(),
+            CancellationSource::new().token(),
+            None,
+        );
+        let stopped = recovered
+            .retention()
+            .try_run_pass(&ExecutionRequest::serial(&denied))
+            .unwrap_err();
+        assert!(matches!(
+            stopped.stop(),
+            worth_relational::facade::runtime::RelationalRetentionPassStop::Request(
+                RelationalExecutionDenialCause::PolicyMemoryExhausted { admitted: 0, .. }
+            )
+        ));
+        assert_eq!(denied_budget.charged_memory_bytes(), 0);
+        let progress = recovered.retention().try_run_pass(materialization).unwrap();
+        assert!(progress.slots_scanned() >= 2);
+    } else {
+        let denied_budget = SerialMemoryBudget::new(Some(0));
+        let denied = SerialRequest::from_memory(
+            denied_budget.clone(),
+            CancellationSource::new().token(),
+            None,
+        );
+        let mut transaction = begin_main_transaction(&recovered);
+        assert!(matches!(
+            transaction.read_entity(&ExecutionRequest::serial(&denied), retained_entity),
+            Err(RelationalTransactionReadDenial::Request(_))
+        ));
+        drop(transaction);
+        assert_eq!(denied_budget.charged_memory_bytes(), 0);
+        let mut transaction = begin_main_transaction(&recovered);
+        assert!(transaction
+            .read_entity(materialization, retained_entity)
+            .unwrap()
+            .base()
+            .is_some());
+        drop(transaction);
+    }
+    assert!(
+        budget.charged_memory_bytes() >= PAYLOAD as u64,
+        "materialization must retain its actual payload backing"
+    );
+    drop(caller);
+    // This commit extracts the resident partition into an edit and freezes a
+    // new region. The large, untouched record must keep its original tickets.
+    edit("after-materialization");
+    if full {
+        // Full maintenance edits the mirror; a branch basis may independently
+        // retain Head. Observe the actual mirror owner rather than that basis.
+        assert!(
+            budget.charged_memory_bytes() >= PAYLOAD as u64,
+            "the edited mirror must retain its materialized Full payload"
+        );
+        drop((recovered, members, medium));
+    } else {
+        let (_, basis) = recovered
+            .observe_branch(&recovered.main_branch_identity())
+            .unwrap();
+        drop((recovered, members, medium));
+        assert!(
+            budget.charged_memory_bytes() >= PAYLOAD as u64,
+            "the surviving edited basis must retain the original native payload ticket"
+        );
+        drop(basis);
+    }
+    assert_eq!(
+        budget.charged_memory_bytes(),
+        0,
+        "the last actual owner must release every materialization ticket"
+    );
+}

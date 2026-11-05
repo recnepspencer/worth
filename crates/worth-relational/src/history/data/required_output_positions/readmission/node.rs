@@ -52,10 +52,10 @@ pub(super) fn read(
     });
     key(cursor, "left")?;
     let left = read(cursor, context, depth + 1)?;
-    if let Some(previous) = &context.previous {
-        if family::compare(previous, &route, context)? != std::cmp::Ordering::Less {
-            return Err(Refusal::InvalidProjectedMeaning);
-        }
+    if let Some(previous) = &context.previous
+        && family::compare(previous, &route, context)? != std::cmp::Ordering::Less
+    {
+        return Err(Refusal::InvalidProjectedMeaning);
     }
     context.previous = Some(route.clone());
     key(cursor, "right")?;

@@ -1,3 +1,5 @@
+mod readmission;
+pub(in crate::durability::checkpoints) use readmission::ImageReadmission;
 mod entity;
 mod relation;
 use std::marker::PhantomData;
@@ -17,7 +19,7 @@ use crate::storage::substrate::{
 
 use super::bitset_image::restore_bitset;
 use crate::durability::checkpoints::aspect_state_images::{
-    export_state, readmit_state, CheckpointAspectContractCatalog,
+    export_state, readmit_state_using, CheckpointAspectContractCatalog,
 };
 
 pub(super) trait CheckpointArenaKind: RecordKind {
@@ -35,18 +37,20 @@ pub(super) trait CheckpointArenaKind: RecordKind {
         extra: &Self::Extra,
         contracts: Option<&CheckpointAspectContractCatalog>,
     ) -> Result<<Self::ImageKind as RecordArenaCheckpointKind>::ExtraImage, DurabilityError>;
-    fn extra_from_image(
+    fn extra_from_image_using(
         extra: <Self::ImageKind as RecordArenaCheckpointKind>::ExtraImage,
         contracts: &CheckpointAspectContractCatalog,
-    ) -> Result<Self::Extra, DurabilityError>;
+        admission: &ImageReadmission<'_, '_, '_>,
+    ) -> Result<Self::Extra, crate::durability::data::RelationalRecoveryStop>;
     fn meta_to_image(
         meta: &Self::Meta,
         contracts: &CheckpointAspectContractCatalog,
     ) -> Result<<Self::ImageKind as RecordArenaCheckpointKind>::MetaImage, DurabilityError>;
-    fn meta_from_image(
+    fn meta_from_image_using(
         meta: <Self::ImageKind as RecordArenaCheckpointKind>::MetaImage,
         contracts: &CheckpointAspectContractCatalog,
-    ) -> Result<Self::Meta, DurabilityError>;
+        admission: &ImageReadmission<'_, '_, '_>,
+    ) -> Result<Self::Meta, crate::durability::data::RelationalRecoveryStop>;
 }
 
 fn missing_plan(kind_id: KindId) -> DurabilityError {
@@ -130,91 +134,10 @@ pub(super) fn arena_to_image<K: CheckpointArenaKind>(
 
 pub(super) fn arena_from_image<K: CheckpointArenaKind>(
     partition_id: PartitionId,
-    mut image: RecordArenaCheckpointImage<K::ImageKind>,
+    image: RecordArenaCheckpointImage<K::ImageKind>,
     catalog: &AspectContractPlanCatalog,
     contracts: &CheckpointAspectContractCatalog,
-) -> Result<RecordArena<K>, DurabilityError> {
-    let slots = if image.slots.is_empty() && !image.generations.is_empty() {
-        (0..image.generations.len() as u64).collect()
-    } else {
-        std::mem::take(&mut image.slots)
-    };
-    if slots.len() != image.generations.len() {
-        return Err(DurabilityError::new(
-            RecoveryFailureClass::CorruptCheckpoint,
-            "record arena slot directory length differs from its SoA columns",
-        ));
-    }
-    if image.field_revisions.len() != image.generations.len() {
-        return Err(DurabilityError::new(
-            RecoveryFailureClass::CorruptCheckpoint,
-            "record arena field revision length differs from its SoA columns",
-        ));
-    }
-    let slots = crate::storage::substrate::RecordSlotDirectory::restore(slots)
-        .map_err(|detail| DurabilityError::new(RecoveryFailureClass::CorruptCheckpoint, detail))?;
-    let metadata_history = image
-        .metadata_history
-        .into_iter()
-        .map(|entries| {
-            entries
-                .into_iter()
-                .map(|meta| {
-                    let kind_id = K::meta_kind_from_image(&meta);
-                    K::plan(catalog, kind_id).ok_or_else(|| missing_plan(kind_id))?;
-                    K::meta_from_image(meta, contracts)
-                })
-                .collect::<Result<Vec<_>, _>>()
-        })
-        .collect::<Result<Vec<_>, _>>()?;
-    let extra = image
-        .extra
-        .into_iter()
-        .zip(image.kind_ids.iter().copied())
-        .map(|(extra, kind_id)| {
-            if let Some(kind_id) = kind_id {
-                K::plan(catalog, kind_id).ok_or_else(|| missing_plan(kind_id))?;
-            }
-            K::extra_from_image(extra, contracts)
-        })
-        .collect::<Result<Vec<_>, _>>()?;
-    Ok(RecordArena {
-        slots,
-        partition_ids: vec![partition_id; image.generations.len()].into(),
-        history_prefixes: crate::storage::substrate::SharedColumn::with_default(
-            image.generations.len(),
-            None,
-        ),
-        generations: image.generations.into(),
-        lifecycle: image.lifecycle.into(),
-        kind_ids: image.kind_ids.into(),
-        metadata_history: metadata_history.into_iter().map(Into::into).collect(),
-        created_at: image.created_at.into(),
-        retired_at: image.retired_at.into(),
-        extra: extra.into(),
-        aspect_versions: image
-            .aspect_versions
-            .into_iter()
-            .map(|rows| {
-                rows.into_iter()
-                    .collect::<crate::storage::substrate::AspectVersions>()
-            })
-            .collect(),
-        field_revisions: image
-            .field_revisions
-            .into_iter()
-            .map(|rows| {
-                rows.map(|rows| {
-                    rows.into_iter()
-                        .collect::<crate::storage::substrate::FieldRevisions>()
-                })
-            })
-            .collect(),
-        diagnostics_enrichment: image.diagnostics_enrichment.into(),
-        branch_pins: image.branch_pins.into(),
-        replay_pins: image.replay_pins.into(),
-        snapshot_pins: image.snapshot_pins.into(),
-        live_bitset: restore_bitset(image.live_bitset),
-        reclaimable_bitset: restore_bitset(image.reclaimable_bitset),
-    })
+    admission: &ImageReadmission<'_, '_, '_>,
+) -> Result<RecordArena<K>, crate::durability::data::RelationalRecoveryStop> {
+    readmission::arena::<K>(partition_id, image, catalog, contracts, admission)
 }

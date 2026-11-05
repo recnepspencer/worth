@@ -5,6 +5,8 @@ use worth_execution::ExecutionRequestArrayBuilder;
 use worth_foundational::facade::{CheckpointAdmissionCut, CheckpointAdmissionScope, HomeIdentity};
 use RelationalCheckpointAdmissionRefusal as Refusal;
 mod capture_cost;
+pub(crate) mod cold_materialization;
+mod contract_work;
 mod indexes;
 mod operational;
 mod references;

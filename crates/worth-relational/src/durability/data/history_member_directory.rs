@@ -136,6 +136,34 @@ impl RelationalHistoryMemberDirectory {
     }
 }
 
+impl PartialEq for RelationalHistoryMemberDirectory {
+    fn eq(&self, other: &Self) -> bool {
+        self.entries == other.entries
+    }
+}
+impl Eq for RelationalHistoryMemberDirectory {}
+impl RelationalHistoryMemberDirectory {
+    /// Full independent members have no external history dependency edges.
+    pub(crate) fn empty_for_request(
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<std::sync::Arc<Self>, super::RelationalRecoveryStop> {
+        use crate::execution::RelationalExecutionDenialCause as Cause;
+        let layout = std::alloc::Layout::new::<(usize, usize)>()
+            .extend(std::alloc::Layout::new::<Self>())
+            .map_err(|_| Cause::ChargedBytesOverflow)?
+            .0
+            .pad_to_align();
+        let bytes = u64::try_from(layout.size()).map_err(|_| Cause::ChargedBytesOverflow)?;
+        let memory = request
+            .reserve_retained_memory(bytes)
+            .map_err(|cause| super::RelationalRecoveryStop::Request(cause.into()))?;
+        Ok(std::sync::Arc::new(Self {
+            entries: BTreeMap::new(),
+            _memory: memory,
+        }))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -201,33 +229,5 @@ mod tests {
         for index in 1..=16_384 {
             assert!(closure.contains(&member(index)));
         }
-    }
-}
-
-impl PartialEq for RelationalHistoryMemberDirectory {
-    fn eq(&self, other: &Self) -> bool {
-        self.entries == other.entries
-    }
-}
-impl Eq for RelationalHistoryMemberDirectory {}
-impl RelationalHistoryMemberDirectory {
-    /// Full independent members have no external history dependency edges.
-    pub(crate) fn empty_for_request(
-        request: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<std::sync::Arc<Self>, super::RelationalRecoveryStop> {
-        use crate::execution::RelationalExecutionDenialCause as Cause;
-        let layout = std::alloc::Layout::new::<(usize, usize)>()
-            .extend(std::alloc::Layout::new::<Self>())
-            .map_err(|_| Cause::ChargedBytesOverflow)?
-            .0
-            .pad_to_align();
-        let bytes = u64::try_from(layout.size()).map_err(|_| Cause::ChargedBytesOverflow)?;
-        let memory = request
-            .reserve_retained_memory(bytes)
-            .map_err(|cause| super::RelationalRecoveryStop::Request(cause.into()))?;
-        Ok(std::sync::Arc::new(Self {
-            entries: BTreeMap::new(),
-            _memory: memory,
-        }))
     }
 }

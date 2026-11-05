@@ -214,3 +214,5 @@ fn recapture_after_overwrite(bytes: usize) -> (usize, usize, u64, usize) {
         original_bytes,
     )
 }
+
+mod cold_materialization;

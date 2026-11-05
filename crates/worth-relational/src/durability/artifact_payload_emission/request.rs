@@ -137,11 +137,11 @@ struct Emission<'b, 'r, 'a> {
 }
 impl Write for Emission<'_, '_, '_> {
     fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
-        if let Work::Charge = self.work {
-            if let Err(cause) = account_work(&self.request, bytes.len() as u64) {
-                self.failure = Some(cause);
-                return Err(stopped());
-            }
+        if let Work::Charge = self.work
+            && let Err(cause) = account_work(&self.request, bytes.len() as u64)
+        {
+            self.failure = Some(cause);
+            return Err(stopped());
         }
         match self.buffer.extend_from_slice(bytes) {
             Ok(()) => Ok(bytes.len()),

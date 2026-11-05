@@ -1,0 +1,16 @@
+command: cargo run --manifest-path tools/boundary-check/Cargo.toml -- --root .
+HEAD: 5a49620b1d2c6efe405d7ff97870243b21d87fc0
+git_status_short_empty: false
+start_utc: 2026-11-05T04:03:47.395628+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+    Finished `dev` profile [unoptimized] target(s) in 0.05s
+     Running `tools\boundary-check\target\debug\boundary-check.exe --root .`
+BOUNDARY_INPUT_FAILURE inputs: target/lane-evidence/foundation-clone-quote-final-independent-review.md: stream did not contain valid UTF-8
+belongs: tools/boundary-check/src/inputs.rs; restore readable Git inputs and offline Cargo metadata before judging boundaries
+error: process didn't exit successfully: `tools\boundary-check\target\debug\boundary-check.exe --root .` (exit code: 2)
+
+end_utc: 2026-11-05T04:03:51.928228+00:00
+exit_code: 2
+tests_passed: 0
+tests_failed: 0
+tests_ignored: 0

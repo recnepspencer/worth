@@ -1,5 +1,7 @@
 //! Preflight and lifetime custody for ordinary region reconstruction.
 pub(in crate::storage::residency) mod aspect_state;
+mod current_image;
+pub(in crate::storage::residency) mod history_custody;
 pub(in crate::storage::residency) mod region_image;
 #[cfg(test)]
 mod tests;
@@ -253,7 +255,7 @@ impl MaterializationFunding {
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<Self> {
         Ok(Self {
-            retained: Funding::reserve(sum(quote.native, shared::<ResidentRegion>()?)?, request)?,
+            retained: Funding::reserve(shared::<ResidentRegion>()?, request)?,
             _transient: Funding::reserve(quote.wire, request)?,
         })
     }
@@ -279,122 +281,102 @@ pub(in crate::storage::residency) fn ordered(
     }
 }
 
-pub(in crate::storage::residency) fn current(
-    partition: &PartitionState,
-    contract: u64,
-    request: &ExecutionRequest<'_, '_>,
-) -> Result<Quote> {
-    let inventory = partition.allocation_inventory();
-    let native = sum(
-        inventory.authoritative_bytes,
-        sum(
-            inventory.retention_metadata_bytes,
-            inventory.diagnostic_bytes,
-        )?,
-    )?;
-    // Existing shared native pages may survive through conversion. Their
-    // complete physical inventory bounds that native lifetime, not wire size.
-    let mut q = Quote::bytes(native, native);
-    let e = &partition.entity_arena;
-    let r = &partition.relation_arena;
-    for state in e
-        .metadata_history
-        .iter()
-        .flat_map(|rows| rows.iter())
-        .map(|meta| meta.authoritative_aspect_state())
-        .chain(
-            r.metadata_history
-                .iter()
-                .flat_map(|rows| rows.iter())
-                .map(|meta| meta.authoritative_aspect_state()),
-        )
-        .chain(
-            e.extra
-                .iter()
-                .map(|extra| extra.authoritative_aspect_state()),
-        )
-        .chain(
-            r.extra
-                .iter()
-                .map(|extra| extra.authoritative_aspect_state()),
-        )
-    {
-        work(request, 1)?;
-        q.add(aspect_state::native(state, contract)?)?;
+pub(in crate::storage::residency) use super::{at_region, content, scalars};
+pub(in crate::storage::residency) use current_image::{current, layered_commitment};
+
+pub(in crate::storage::residency) fn image(
+    cause: crate::durability::data::RelationalRecoveryStop,
+    partition: PartitionId,
+) -> Failure {
+    use crate::durability::data::RelationalRecoveryStop as Stop;
+    match cause {
+        Stop::Request(cause) => Failure::Request(cause),
+        Stop::Allocation(cause) => match cause.classify() {
+            worth_execution::ExecutionAllocationDenialClass::Request(cause) => {
+                Failure::Request(cause.into())
+            }
+            worth_execution::ExecutionAllocationDenialClass::Physical(_) => {
+                Failure::Request(crate::execution::RelationalExecutionDenialCause::AllocationFailed)
+            }
+        },
+        Stop::Durability(_) | Stop::AdmissionImage(_) => at_region(damaged(), partition),
     }
-    for rows in e.metadata_history.iter() {
-        q.wire = sum(q.wire, vector::<VersionedEntityMetadataImage>(rows.len())?)?;
-    }
-    for rows in r.metadata_history.iter() {
-        q.wire = sum(
-            q.wire,
-            vector::<VersionedRelationMetadataImage>(rows.len())?,
-        )?;
-    }
-    // Every fixed wire column has one entry per physical row. Tuple padding
-    // is conservative for the simultaneous separate scalar Vec backings.
-    q.wire = sum(
-        q.wire,
-        super::super::region_capture::complete::current_scalar_wire([
-            e.generations.len(),
-            r.generations.len(),
-        ])?,
-    )?;
-    for rows in [&e.aspect_versions, &r.aspect_versions] {
-        q.wire = sum(
-            q.wire,
-            vector::<BTreeMap<crate::symbols::data::Symbol, u64>>(rows.len())?,
-        )?;
-        for row in rows.iter() {
-            work(request, 1)?;
-            q.wire = sum(
-                q.wire,
-                tree::<crate::symbols::data::Symbol, u64>(row.len())?,
-            )?;
+}
+pub(in crate::storage::residency) fn owned_read(
+    cause: crate::durability::medium::RelationalDurableOwnedReadRefusal,
+    partition: PartitionId,
+) -> Failure {
+    use crate::durability::medium::RelationalDurableOwnedReadRefusal as R;
+    match cause {
+        R::Request(cause) => Failure::Request(cause),
+        R::Buffer(worth_execution::ExecutionRequestArrayDenial::Request(cause)) => {
+            Failure::Request(cause.into())
         }
-    }
-    for rows in [&e.field_revisions, &r.field_revisions] {
-        q.wire = sum(
-            q.wire,
-            vector::<
-                Option<
-                    BTreeMap<
-                        (crate::symbols::data::Symbol, crate::symbols::data::Symbol),
-                        crate::storage::data::RelationalFieldRevision,
-                    >,
-                >,
-            >(rows.len())?,
-        )?;
-        for row in rows.iter().flatten() {
-            work(request, 1)?;
-            q.wire = sum(
-                q.wire,
-                tree::<
-                    (crate::symbols::data::Symbol, crate::symbols::data::Symbol),
-                    crate::storage::data::RelationalFieldRevision,
-                >(row.len())?,
-            )?;
+        R::Buffer(worth_execution::ExecutionRequestArrayDenial::Allocation(cause)) => {
+            match cause.classify() {
+                worth_execution::ExecutionAllocationDenialClass::Request(cause) => {
+                    Failure::Request(cause.into())
+                }
+                worth_execution::ExecutionAllocationDenialClass::Physical(_) => Failure::Request(
+                    crate::execution::RelationalExecutionDenialCause::AllocationFailed,
+                ),
+            }
         }
+        R::Storage(cause) => RelationalStorageUnavailable {
+            subject: RelationalStorageSubject::Region(partition),
+            cause,
+        }
+        .into(),
+        R::UnsupportedProvider | R::ForeignSource | R::ForeignProtection | R::Bounds | R::Busy => {
+            RelationalStorageUnavailable {
+                subject: RelationalStorageSubject::Region(partition),
+                cause: RelationalStorageUnavailableCause::SourceUnavailable,
+            }
+            .into()
+        }
+        R::CanonicalFrame(_) | R::TransitionFrame(_) => at_region(damaged(), partition),
     }
-    q.wire = sum(q.wire, super::current_diagnostic_wire(partition, request)?)?;
-    // Concrete owned wire column shells and per-row Vec headers coexist with
-    // shared native columns. The metadata payloads above are separate owners.
-    q.wire = sum(
-        q.wire,
-        sum(
-            vector::<EntityExtraImage>(partition.entity_arena.extra.len())?,
-            vector::<RelationExtraImage>(partition.relation_arena.extra.len())?,
-        )?,
-    )?;
-    q.wire = sum(
-        q.wire,
-        sum(
-            vector::<Vec<VersionedEntityMetadataImage>>(partition.entity_arena.extra.len())?,
-            vector::<Vec<VersionedRelationMetadataImage>>(partition.relation_arena.extra.len())?,
-        )?,
-    )?;
-    work(request, sum(q.wire, q.native)?)?;
-    Ok(q)
 }
 
-pub(in crate::storage::residency) use super::{at_region, content, scalars};
+/// Concrete Patricia fields, including both node and shared-backing tickets.
+pub(in crate::storage::residency) fn head_commitment_nodes(count: usize) -> Result<u64> {
+    let node = shared::<(
+        crate::storage::substrate::HistoryFrontierSibling,
+        [usize; 3],
+        Option<ExecutionMemoryReservation>,
+        Option<ExecutionMemoryReservation>,
+    )>()?;
+    sum(
+        times(node, count.checked_mul(2).ok_or_else(overflow)?)?,
+        map::<u64, SharedColumn<u64>>(count)?,
+    )
+}
+
+pub(in crate::storage::residency) fn opening(
+    frontier: &crate::storage::substrate::HistoryAppendFrontier,
+    relations: &[crate::storage::partition::RegionRelationProjection],
+    relation_capacity: usize,
+    request: &ExecutionRequest<'_, '_>,
+) -> Result<Funding> {
+    use crate::storage::{
+        partition::RegionRelationProjection,
+        substrate::{HistoryFrontierSibling, RecordHistoryOpening, StorageAllocation},
+    };
+    let mut bytes = sum(
+        StorageAllocation::<RecordHistoryOpening>::layout_bytes(),
+        array::<HistoryFrontierSibling>(frontier.siblings.capacity())?,
+    )?;
+    bytes = sum(bytes, array::<RegionRelationProjection>(relation_capacity)?)?;
+    for claim in relations {
+        work(request, 1)?;
+        bytes = sum(
+            bytes,
+            sum(
+                tree::<usize, ()>(claim.outgoing.len())?,
+                tree::<usize, ()>(claim.incoming.len())?,
+            )?,
+        )?;
+    }
+    work(request, bytes)?;
+    Funding::reserve(bytes, request)
+}
