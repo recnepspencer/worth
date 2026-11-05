@@ -10,6 +10,27 @@ use crate::domain_computation::primary_graph::{
 };
 
 impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    pub(in crate::domain_computation::primary_graph) fn resolve_output_source_replay(
+        &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        selector: crate::domain_computation::primary_graph::WorthQueryOutputSourceReplay<'_>,
+        kind: crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind,
+    ) -> Result<WorthQueryApplicationCommitReceipt, WorthQueryOutputDemandDenial> {
+        let execution = phase
+            .execution_request_for(&self.runtime.product_runtime)
+            .map_err(|cause| {
+                WorthQueryOutputDemandDenial::new(
+                    WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
+                    "registered-source-replay",
+                )
+            })?;
+        execution.run_native_with_checkpoint(|context| {
+            self.runtime.output_demands.resolve_replay_source(context, selector, kind)
+        }).map_err(|cause| WorthQueryOutputDemandDenial::new(
+            WorthQueryOutputDemandDenialKind::ExecutionRequest(crate::domain_computation::primary_graph::application_contribution::advancement_denial(cause)), "registered-source-replay"
+        ))?.0
+    }
+
     pub(in crate::domain_computation::primary_graph) fn validate_recovered_output_root_kind(
         &self,
         receipt: &WorthQueryApplicationCommitReceipt,

@@ -11,6 +11,8 @@ pub use original_outputs::{
     WorthQueryCompletedOriginalReadOutputs, WorthQueryOriginalReadOutputDenial,
 };
 mod currentness;
+mod source_replay;
+pub use source_replay::WorthQueryOutputSourceReplay;
 mod publication;
 pub use completed_outputs::WorthQueryCompletedRequiredOutputs;
 pub use completed_read::WorthQueryCompletedReadOutputs;

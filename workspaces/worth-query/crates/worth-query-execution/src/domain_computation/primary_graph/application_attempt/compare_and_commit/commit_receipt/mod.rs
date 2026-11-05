@@ -11,6 +11,7 @@ mod output_source_identity;
 mod pending;
 mod projection;
 mod publication_source;
+mod recorded_correspondence;
 
 use worth_query_installation::facade::WorthQueryCanonicalWorkPhases;
 use worth_relational::facade::history::RelationalCommitReceipt;

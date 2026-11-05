@@ -1,4 +1,5 @@
 mod advancement;
+mod source_recovery;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_query_admission::facade::authenticated_principal::{
@@ -150,44 +151,6 @@ where
                 >(),
                 artifact,
                 marker: std::marker::PhantomData,
-            })
-    }
-
-    pub fn recover_prepared_program_root_source<Root>(
-        &self,
-        _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
-        receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
-    ) -> Result<
-        (
-            std::sync::Arc<
-                crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
-            >,
-            WorthQueryPreparedRequiredOutputSource,
-        ),
-        WorthQueryOutputDemandDenial,
-    >
-    where
-        Root: ApplicationOutputGraphShape<Schema>
-            + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
-        RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
-    {
-        if !self.contains_output_root::<Root>() {
-            return Err(WorthQueryOutputDemandDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ForeignDemand,
-                "selected output root is not installed for this program",
-            ));
-        }
-        self.backing.runtime().validate_recovered_output_root_kind(
-            receipt,
-            crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Required(TypeId::of::<Root>()),
-        )?;
-        self.backing.runtime()
-            .recover_prepared_output_source(receipt, TypeId::of::<Root>())
-            .ok_or_else(|| {
-                WorthQueryOutputDemandDenial::new(
-                    crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
-                    "the required root publication has no exact retained observation",
-                )
             })
     }
 

@@ -52,10 +52,12 @@ where
 
     pub fn recover_discovered_program_source<Root>(
         &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
-        receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+        selector: crate::domain_computation::primary_graph::WorthQueryOutputSourceReplay<'_>,
     ) -> Result<
         (
+            crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
             <RootConnection<Schema, Root> as WorthQueryApplicationDiscoveredOutputConnection<
                 Schema,
             >>::Discovery,
@@ -77,9 +79,12 @@ where
                 "discovered output root is not installed for this program",
             ));
         }
-        self.backing.runtime().recover_discovered_output_source::<
+        let receipt = self.backing.runtime().resolve_output_source_replay(phase, selector,
+            crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Discovered(TypeId::of::<Root>()))?;
+        let (discovery, observation, prepared) = self.backing.runtime().recover_discovered_output_source::<
             <RootConnection<Schema, Root> as WorthQueryApplicationDiscoveredOutputConnection<Schema>>::Discovery,
-        >(receipt, TypeId::of::<Root>())
+        >(&receipt, TypeId::of::<Root>())?;
+        Ok((receipt, discovery, observation, prepared))
     }
 
     /// Commits one output source under `presented`, the program its caller

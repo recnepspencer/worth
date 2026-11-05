@@ -28,6 +28,7 @@ pub(in crate::domain_computation) use application_output_demand::RequiredOutputE
 pub use application_output_demand::WorthQueryCompletedReadOutputs;
 pub use application_output_demand::WorthQueryCompletedRequiredOutputs;
 pub use application_output_demand::WorthQueryFulfilledRequiredRoot;
+pub use application_output_demand::WorthQueryOutputSourceReplay;
 pub use application_output_demand::WorthQueryRecoveredProducerPublication;
 pub use application_output_demand::{
     WorthQueryCompletedOriginalReadOutputs, WorthQueryOriginalReadOutputDenial,
