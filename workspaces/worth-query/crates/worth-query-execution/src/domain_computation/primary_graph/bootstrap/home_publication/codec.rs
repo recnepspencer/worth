@@ -32,7 +32,13 @@ pub(super) fn encode(
         .reserve_retained_memory(ENCODED_BYTES as u64)
         .map_err(request)?;
     execution
-        .run_native_with_checkpoint(|context| context.checkpoint(ENCODED_BYTES as u64))
+        .run_native_with_checkpoint(|context| {
+            if context.has_accounting() {
+                context.checkpoint(ENCODED_BYTES as u64)
+            } else {
+                context.poll()
+            }
+        })
         .map_err(request)?
         .0
         .map_err(|cause| request(worth_execution::WorkCeilingDenial::Stopped(cause)))?;

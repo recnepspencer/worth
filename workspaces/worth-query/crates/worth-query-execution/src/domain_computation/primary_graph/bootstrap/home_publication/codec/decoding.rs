@@ -8,7 +8,13 @@ pub(in crate::domain_computation::primary_graph) fn decode(
     execution: &ExecutionRequest<'_, '_>,
 ) -> Result<BootstrapInstallationBinding, Denial> {
     execution
-        .run_native_with_checkpoint(|context| context.checkpoint(input.len() as u64))
+        .run_native_with_checkpoint(|context| {
+            if context.has_accounting() {
+                context.checkpoint(input.len() as u64)
+            } else {
+                context.poll()
+            }
+        })
         .map_err(request)?
         .0
         .map_err(|cause| request(worth_execution::WorkCeilingDenial::Stopped(cause)))?;
