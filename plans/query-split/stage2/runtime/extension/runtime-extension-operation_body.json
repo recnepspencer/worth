@@ -1,0 +1,27 @@
+{
+ "module": "domain_computation::primary_graph::operation_body",
+ "blocks": 1,
+ "methods": 1,
+ "traits": [
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/operation_body/assessment.rs",
+   "trait": "AssessmentOps",
+   "visibility": "pub",
+   "methods": [
+    "assess_admitted_operation_body_requirements"
+   ]
+  }
+ ],
+ "facades": 1,
+ "host": {
+  "core_fields": [
+   "product_runtime"
+  ],
+  "top_fields": [],
+  "core_methods": [],
+  "foreign": [
+   "validate_projected_source_facts"
+  ],
+  "hand": []
+ }
+}

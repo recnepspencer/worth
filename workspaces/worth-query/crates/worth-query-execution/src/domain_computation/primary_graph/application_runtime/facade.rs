@@ -4,3 +4,4 @@ mod application_discovery;
 mod application_entry;
 mod application_resource;
 mod authorization;
+mod operation_body;

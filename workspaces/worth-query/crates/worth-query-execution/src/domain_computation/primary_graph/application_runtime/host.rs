@@ -5,6 +5,7 @@ mod application_entry;
 mod application_resource;
 mod authorization;
 mod identity;
+mod operation_body;
 mod output_demand;
 mod principal_currentness_capture;
 mod product_activation;

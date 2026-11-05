@@ -53,10 +53,10 @@ pub enum WorthQueryOperationBodyAssessmentDenial {
     Observation(HandlerExecutionDenial),
 }
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    /// Inspects the installed body's requirements using an already authorized
-    /// operation. The result retains its owned bytes; no snapshot or mutation target escapes.
-    pub fn assess_admitted_operation_body_requirements<Binding>(
+pub trait AssessmentOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::operation_body::host::OperationBodyHost<Schema>
+{
+    fn assess_admitted_operation_body_requirements<Binding>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         admission: &WorthQueryAdmittedApplicationOperation<
@@ -73,12 +73,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Binding: ApplicationMutationBinding<Schema>,
     {
         let execution = phase
-            .execution_for(&self.runtime.product_runtime)
+            .execution_for(self.product_runtime())
             .map_err(WorthQueryOperationBodyAssessmentDenial::Phase)?;
         let request = phase
-            .execution_request_for(&self.runtime.product_runtime)
+            .execution_request_for(self.product_runtime())
             .map_err(WorthQueryOperationBodyAssessmentDenial::Phase)?;
-        self.validate_projected_source_facts(&request, admission)
+        self.application_runtime()
+            .validate_projected_source_facts(&request, admission)
             .map_err(WorthQueryOperationBodyAssessmentDenial::Source)?;
         let projected = projection
             .project_admitted_operation(
@@ -92,6 +93,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         drop(snapshot);
         findings.map_err(WorthQueryOperationBodyAssessmentDenial::Observation)
     }
+}
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::operation_body::host::OperationBodyHost<
+                Schema,
+            > + ?Sized,
+    > AssessmentOps<Schema> for HostRuntime
+{
 }
 
 mod court_doors_for_test;
