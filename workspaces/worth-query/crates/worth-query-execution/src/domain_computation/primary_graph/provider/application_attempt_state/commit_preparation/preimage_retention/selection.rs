@@ -204,10 +204,10 @@ pub fn retain_matching(
     mutation_is_empty: bool,
     mutates: impl Fn(&WorthQueryObservedPreImageCandidate) -> bool,
 ) -> Result<WorthQueryRetainedPreImage, WorthQueryPreImageRetentionDenial> {
+    if demand.is_empty() {
+        return Err(WorthQueryPreImageRetentionDenial::EmptyDemand);
+    }
     if demand.loci().is_empty() {
-        if demand.relations().is_empty() {
-            return Err(WorthQueryPreImageRetentionDenial::EmptyDemand);
-        }
         return Ok(WorthQueryRetainedPreImage::from_retention_seal(
             WorthQueryRetainedPreImageSeal {
                 fields: Vec::new(),

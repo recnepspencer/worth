@@ -70,8 +70,7 @@ pub(super) fn derive<S: ApplicationSchema, C: ApplicationCorrectionBinding<S>>(
 ) -> Result<C::InverseIntent, Denial> {
     match mechanism(source)? {
         InstalledCorrectionMechanism::RecordedInverse(inverse)
-            if inverse.preimage_demand().loci().is_empty()
-                && inverse.preimage_demand().relations().is_empty() =>
+            if inverse.preimage_demand().is_empty() =>
         {
             let outputs = source_outputs::SourceOutputs::<S, C>::new(source, request);
             let result = C::derive_correction(
