@@ -182,6 +182,10 @@ where
             output_source_memory,
             expected,
             model: document.model.clone(),
+            ownership: (installed.definition().parts().model_domain
+                == worth_query_declaration::facade::application_history::ApplicationHistoryModelDomain::OwnedModelGraph)
+                .then(|| application.runtime.primary_provider.graph.layout.history_ownership(
+                    &installed.definition().parts().identity).expect("eligibility admitted the installed recipe")),
             source: Some(source),
             requested,
             intent,

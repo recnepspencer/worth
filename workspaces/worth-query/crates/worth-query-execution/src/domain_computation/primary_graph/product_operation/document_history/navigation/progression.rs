@@ -156,6 +156,24 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
                 )
                 .map_err(Denial::Transaction)?;
             let port = native.preparation_port();
+            if let Some(ownership) = self.ownership {
+                let selected = native
+                    .prepare_owned_model_graph_selection(
+                        &execution,
+                        current.product().relational_basis(),
+                        historical.product().relational_basis(),
+                        ownership,
+                        graph.layout.installed_history_ownership(),
+                        self.model.entity(),
+                    )
+                    .map_err(Denial::OwnedGraph)?;
+                let selection = port
+                    .admit_owned_graph_selection(&execution, transaction, selected)
+                    .map_err(Denial::GraphPreparation)?;
+                return port
+                    .prepare_owned_graph_selection(&execution, selection, None)
+                    .map_err(Denial::GraphPreparation);
+            }
             let selection = port
                 .admit_retained_entity_selection(
                     transaction,

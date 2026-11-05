@@ -179,11 +179,21 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
                         model.entity(),
                     )
                     .map_err(Denial::OwnedGraph)?;
-                // Single D1114 seam. Never let a graph enter the single-record
-                // candidate path while publication custody is unavailable.
-                return Err(Denial::RequiresCascadeCustody {
-                    model: graph.entities().model(),
-                });
+                let transaction = native
+                    .begin_branch_transaction(
+                        current.product().relational_basis(),
+                        RelationalTransactionIntent::ordinary(),
+                    )
+                    .map_err(Denial::Transaction)?;
+                let port = native.preparation_port();
+                let selection = port
+                    .admit_owned_graph_selection(&execution, transaction, graph)
+                    .map_err(Denial::GraphPreparation)?;
+                drop(
+                    port.prepare_owned_graph_selection(&execution, selection, None)
+                        .map_err(Denial::GraphPreparation)?,
+                );
+                return Ok(());
             }
             let transaction = native
                 .begin_branch_transaction(

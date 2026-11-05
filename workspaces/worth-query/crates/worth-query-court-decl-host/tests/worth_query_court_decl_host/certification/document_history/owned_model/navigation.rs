@@ -1,7 +1,8 @@
-//! A genuine NAV grant reaches the single custody seam without candidate effects.
+//! A genuine NAV grant selects the complete installed graph through Native.
 use super::*;
 use worth_query_decl::facade::application_capability::*;
 mod grant;
+mod transfer;
 worth_query_capability!(pub Navigate in Schema);
 worth_query_capability_context!(pub Context in Schema);
 worth_query_capability_provenance!(pub Provenance in Schema);
@@ -59,8 +60,14 @@ pub fn seed(
 }
 
 #[test]
-fn owned_graph_checkout_reaches_the_single_custody_refusal_without_changing_the_document() {
-    let host = world::install();
+fn owned_graph_checkout_and_redo_restore_members_with_original_identity() {
+    exercise_graph_checkout(world::install());
+}
+#[test]
+fn worker_only_owned_graph_checkout_and_redo_preserve_original_member_identity() {
+    exercise_graph_checkout(world::install_worker_only());
+}
+fn exercise_graph_checkout(host: world::Host) {
     let document = world::attach(&host);
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
@@ -102,39 +109,55 @@ fn owned_graph_checkout_reaches_the_single_custody_refusal_without_changing_the_
     drop(outcome);
     let current = document.current_step(&request).unwrap();
     assert_ne!(current.id(), before.id());
-    let expected = document.selection(&request).unwrap();
-    let branch = expected.physical_endpoint().product_branch();
-    let value = world::member_value(&host, branch, "direct");
-    let refusal = document
-        .navigate::<Navigation>()
-        .checkout(before.id())
-        .expected_selection(expected.clone())
-        .idempotency(0x5353_1717)
-        .prepare(&request)
-        .unwrap_err();
-    let WorthQueryHistoryNavigationAdvanceDenial::Navigation(
-        WorthQueryHistoryNavigationDenial::RequiresCascadeCustody { model },
-    ) = refusal
-    else {
-        panic!("expected the single custody seam: {refusal:?}")
-    };
-    assert_eq!(
-        (
-            model.partition_id.as_u32(),
-            model.local_slot_value(),
-            model.generation_value()
-        ),
-        world::model_identity(&host, branch, "a")
-    );
-    assert_eq!(document.selection(&request).unwrap(), expected);
-    assert_eq!(document.current_step(&request).unwrap().id(), current.id());
-    assert_eq!(world::member_value(&host, branch, "direct"), value);
+    let edited = document.selection(&request).unwrap();
+    let branch = edited.physical_endpoint().product_branch();
+    assert_eq!(world::member_value(&host, branch, "direct"), 717);
+    let identity = world::member_identity(&host, branch, "direct");
+    for (step, expected_value, key) in [
+        (before.id(), 11, 0x5353_1717),
+        (current.id(), 717, 0x5353_1719),
+    ] {
+        let prepare = document.navigate::<Navigation>();
+        let prepare = if step == before.id() {
+            prepare.checkout(step)
+        } else {
+            prepare.redo_to(step)
+        };
+        let mut navigation = prepare
+            .expected_selection(document.selection(&request).unwrap())
+            .idempotency(key)
+            .prepare(&request)
+            .unwrap();
+        let mut selected = false;
+        for _ in 0..16 {
+            navigation = match navigation.advance(&request) {
+                WorthQueryHistoryNavigationAdvance::Pending(next) => next,
+                WorthQueryHistoryNavigationAdvance::Selected(completion) => {
+                    assert_eq!(completion.selection().step().id(), step);
+                    selected = true;
+                    break;
+                }
+                WorthQueryHistoryNavigationAdvance::Refused { cause, .. } => panic!("{cause:?}"),
+            };
+        }
+        assert!(selected, "bounded graph checkout must select");
+        let branch = document
+            .selection(&request)
+            .unwrap()
+            .physical_endpoint()
+            .product_branch();
+        assert_eq!(world::member_value(&host, branch, "direct"), expected_value);
+        assert_eq!(world::member_identity(&host, branch, "direct"), identity);
+        assert_eq!(world::member_value(&host, branch, "nested"), 22);
+        assert_eq!(world::member_value(&host, branch, "foreign"), 33);
+        assert_eq!(world::member_value(&host, branch, "reference"), 44);
+    }
     host.with_host_advancement(|phase| document.close(&phase).unwrap())
         .unwrap();
 }
 
 #[test]
-fn a_foreign_incoming_edge_refuses_before_the_custody_seam_with_public_subject_attribution() {
+fn a_foreign_incoming_edge_refuses_before_effect_with_public_subject_attribution() {
     type Action = ApplicationActionReference<
         Schema,
         ApplicationRootComposition,
@@ -194,7 +217,7 @@ fn a_foreign_incoming_edge_refuses_before_the_custody_seam_with_public_subject_a
     };
     let foreign = cause
         .foreign_incoming_relation()
-        .expect("foreign-edge retirement refusal precedes custody admission");
+        .expect("foreign-edge retirement refusal names its actual source");
     let endpoint = foreign.entity();
     let owner = foreign.owner();
     assert_eq!(

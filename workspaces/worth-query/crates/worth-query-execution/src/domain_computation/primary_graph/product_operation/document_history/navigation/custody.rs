@@ -72,6 +72,8 @@ pub(super) struct NavigationProgress<'runtime, S> {
     pub(super) output_source_memory: Option<ExecutionMemoryReservation>,
     pub(super) expected: WorthQueryHistorySelection,
     pub(super) model: super::super::HistoryModelIdentity,
+    pub(super) ownership:
+        Option<&'runtime worth_relational::facade::branch::RelationalModelOwnership>,
     pub(super) source: Option<super::super::WorthQueryHistoryPreview>,
     pub(super) requested: super::super::WorthQueryHistoryNodeId,
     pub(super) intent: WorthQueryHistoryNavigationIntent,
