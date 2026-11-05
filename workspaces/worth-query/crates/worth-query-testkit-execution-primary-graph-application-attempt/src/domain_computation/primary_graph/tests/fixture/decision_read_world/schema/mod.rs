@@ -1,7 +1,5 @@
 //! The decision-read schema: one principal binding and one contribution that
 //! owns the Source, the managed-index Parent and the decision-read operation.
-use crate::domain_computation::primary_graph::tests::fixture::decision_read_world::operation;
-use crate::domain_computation::primary_graph::tests::fixture::decision_read_world::queries;
 use worth_query_declaration::facade::application_query::ApplicationManagedIndexDefinition;
 use worth_query_declaration::facade::application_schema::U64ApplicationValueBinding;
 use worth_query_declaration::facade::authentication::WorthQueryExternalPrincipalIdentity;

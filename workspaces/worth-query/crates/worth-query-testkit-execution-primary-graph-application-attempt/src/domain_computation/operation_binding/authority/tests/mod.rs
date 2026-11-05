@@ -1,5 +1,3 @@
-use crate::domain_computation::operation_binding::authority::tests::resource_plan::admitted_plan;
-use crate::domain_computation::operation_binding::authority::tests::resource_plan::admitted_plan_with_support_limit;
 use std::sync::Arc;
 use worth_query_admission::facade::basis::admit_basis_capability;
 use worth_query_admission::facade::basis::evaluate_basis_observation_eligibility;
@@ -9,9 +7,6 @@ use worth_query_admission::facade::basis::NormalizedBasisIntent;
 use worth_query_admission::facade::basis::ObservationLaneWitness;
 use worth_query_admission::facade::basis::RawBasisIntent;
 use worth_query_admission::facade::resource_admission::WorthQueryAdmittedExecutionResourcePlan;
-use worth_query_admission::facade::resource_admission::WorthQueryExecutionResourceAdmissionDenialKind;
-use worth_query_execution::court_doors_for_test::domain_computation::operation_binding::authority::topology::test_topology;
-use worth_query_execution::court_doors_for_test::domain_computation::operation_binding::authority::topology::WorthQueryExecutionResourceTopology;
 use worth_query_execution::facade::domain_computation::WorthQueryExecutionBoundOperationAuthority;
 use worth_query_execution::facade::domain_computation::WorthQueryExecutionRuntimeInstaller;
 use worth_query_execution::facade::domain_computation::WorthQueryInstalledDomainExecutionAuthority;

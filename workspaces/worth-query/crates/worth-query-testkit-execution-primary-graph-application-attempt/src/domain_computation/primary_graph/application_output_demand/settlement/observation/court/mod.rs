@@ -230,7 +230,7 @@ impl CourtWorthQueryOutputDemandSettlementForTest for WorthQueryOutputDemandSett
             .original_settled_producer_for_test()
             .unwrap();
         let seed = Arc::new(OriginalSettledProducerObservation::new_for_test(
-            (*original.runtime_authority_for_test()),
+            *original.runtime_authority_for_test(),
             (*original.schema_for_test()).clone(),
             (*original.read_for_test()).clone(),
             source,
@@ -238,8 +238,8 @@ impl CourtWorthQueryOutputDemandSettlementForTest for WorthQueryOutputDemandSett
             None,
         ));
         Self::new_for_test(
-            (*self.posture_for_test()),
-            (*self.runtime_authority_for_test()),
+            *self.posture_for_test(),
+            *self.runtime_authority_for_test(),
             (*self.schema_binding_for_test()).clone(),
             (*self.producer_identity_for_test())
                 .as_str_for_test()
@@ -251,7 +251,7 @@ impl CourtWorthQueryOutputDemandSettlementForTest for WorthQueryOutputDemandSett
             self.output_correspondence.clone(),
             self.restored_source.clone(),
             (*self.readiness_delivery_for_test()).clone(),
-            (*self.producer_contacts_in_this_demand_for_test()),
+            *self.producer_contacts_in_this_demand_for_test(),
             (*self.observation_for_test()).with_original_producer_for_test(seed),
         )
     }

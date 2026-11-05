@@ -4,7 +4,6 @@ use worth_query_execution::court_doors_for_test::domain_computation::primary_gra
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::entity_resolution::interruption_control::PENDING;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::entity_resolution::interruption_control::Pending;
 use std::cell::Cell;
-use std::cell::RefCell;
 use std::rc::Rc;
 use worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource;
 
