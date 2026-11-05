@@ -5,13 +5,7 @@ use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationIdentities, ApplicationMutationScopeBinding,
 };
 use worth_query_installation::facade::ApplicationSchema;
-use {
-    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase,
-    crate::domain_computation::primary_graph::MutationHandlerExecutionDenial,
-    crate::domain_computation::primary_graph::WorthQueryOperationBodyDecision,
-    crate::domain_computation::primary_graph::WorthQueryOperationBodyDenial,
-    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime,
-};
+use {crate::domain_computation::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::MutationHandlerExecutionDenial, crate::domain_computation::primary_graph::WorthQueryOperationBodyDecision, crate::domain_computation::primary_graph::WorthQueryOperationBodyDenial, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime};
 
 mod program;
 type BodyScope<S, B> = <<B as ApplicationMutationBinding<S>>::ScopeBinding as ApplicationMutationScopeBinding<S>>::Scope;

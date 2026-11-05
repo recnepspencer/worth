@@ -3,12 +3,7 @@ use super::{
     ApplicationMutationBinding, ApplicationSchema, DecisionReader, HandlerExecutionDenial,
 };
 use worth_query_declaration::facade::application_schema::ApplicationOperationDecisionReadTarget;
-use {
-    crate::domain_computation::primary_graph::operation_body::PreparedBodySelection,
-    crate::domain_computation::primary_graph::operation_body::PreparedBodySelections,
-    crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial,
-    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
-};
+use {crate::domain_computation::primary_graph::operation_body::PreparedBodySelection, crate::domain_computation::primary_graph::operation_body::PreparedBodySelections, crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial, crate::domain_computation::request_execution::WorthQueryAdvancementDenial};
 impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
     DecisionReader<'_, '_, '_, Schema, Binding>
 {

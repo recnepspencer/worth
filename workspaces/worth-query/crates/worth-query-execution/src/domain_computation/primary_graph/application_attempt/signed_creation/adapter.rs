@@ -11,11 +11,7 @@ use worth_query_declaration::facade::{
     application_operation::{ApplicationMutationBinding, ApplicationMutationIdentities},
     application_schema::ApplicationSchema,
 };
-use {
-    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase,
-    crate::domain_computation::primary_graph::WorthQueryApplicationEffectProgram,
-    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime,
-};
+use {crate::domain_computation::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryApplicationEffectProgram, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime};
 
 pub struct WorthQuerySignedCreationAdapter;
 impl WorthQuerySignedCreationAdapter {

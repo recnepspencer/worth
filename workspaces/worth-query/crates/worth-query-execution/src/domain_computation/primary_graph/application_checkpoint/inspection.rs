@@ -27,7 +27,7 @@ pub struct WorthQueryApplicationCheckpointInspection<'a> {
 #[derive(Debug)]
 /// The original phase, Query-frame or native-codec refusal of inspection.
 pub enum WorthQueryCheckpointInspectionDenial {
-    ForeignPhase(crate::domain_computation::primary_graph::request_execution::WorthQueryForeignAdvancementPhase),
+    ForeignPhase(crate::domain_computation::request_execution::WorthQueryForeignAdvancementPhase),
     Query(super::super::WorthQueryPrimaryGraphInstallationDenial),
     Native(Box<worth_relational::facade::durability::RelationalRecoveryStop>),
 }
@@ -39,7 +39,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static>
     /// its original value bytes. This comparison view is not recovery admission.
     pub fn inspect_application_checkpoint<'a>(
         &self,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         bytes: &'a [u8],
     ) -> Result<WorthQueryApplicationCheckpointInspection<'a>, WorthQueryCheckpointInspectionDenial>
     {

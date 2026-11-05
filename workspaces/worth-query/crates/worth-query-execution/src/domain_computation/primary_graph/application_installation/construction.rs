@@ -20,13 +20,13 @@ use worth_query_installation::facade::{
     WorthQueryPortableDomainPackage,
 };
 pub(super) fn in_memory_with_contributions_in_advancement<Schema, Contributions>(
-    phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
+    phase: &crate::domain_computation::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
     declaration: ApplicationSchemaDeclaration<Schema>,
     configuration: <Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
     build_identity: worth_foundational::facade::ApplicationBuildIdentity,
     limits: WorthQueryInMemoryApplicationLimits,
     initial_state: impl FnOnce(
-        &crate::domain_computation::primary_graph::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
+        &crate::domain_computation::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
         &mut WorthQueryPrimaryGraphBootstrap<Schema>,
         &WorthQueryInstalledApplicationSchema<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>,

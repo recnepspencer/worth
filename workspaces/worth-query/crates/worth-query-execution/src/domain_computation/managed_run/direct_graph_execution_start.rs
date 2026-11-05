@@ -86,7 +86,7 @@ impl std::fmt::Debug for WorthQueryDirectGraphExecutionStartFailure {
 }
 
 pub(super) fn begin(
-    execution: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
     running: WorthQueryRunningDirectRun,
     graph_authority: &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
     request: WorthQueryManagedGraphCallRequest,
@@ -176,7 +176,7 @@ impl WorthQueryBoundDirectGraphStart {
 impl WorthQueryReadyDirectGraphStart {
     fn start_provider(
         mut self,
-        execution: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        execution: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
     ) -> Result<WorthQueryActiveDirectGraphExecution, WorthQueryDirectGraphExecutionStartFailure>
     {
         self.bound.running.provider_work_mut().begin_step_call();

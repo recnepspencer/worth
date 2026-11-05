@@ -1,10 +1,6 @@
 //! Unique native cleanup transfer; diagnostic copies never contain authority.
 use crate::domain_computation::WorthQueryDirectRunCleanupReceipt as Receipt;
-use {
-    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase,
-    crate::domain_computation::primary_graph::WorthQueryApplicationCleanupRequired as Required,
-    crate::domain_computation::primary_graph::WorthQueryApplicationUncommitted,
-};
+use {crate::domain_computation::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryApplicationCleanupRequired as Required, crate::domain_computation::primary_graph::WorthQueryApplicationUncommitted};
 type Recovery = crate::domain_computation::WorthQueryProductUnpublishedRecovery;
 type ReleaseFailure = crate::domain_computation::WorthQueryProductUnpublishedRecoveryReleaseFailure;
 type ReleaseReceipt = crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanupReceipt;

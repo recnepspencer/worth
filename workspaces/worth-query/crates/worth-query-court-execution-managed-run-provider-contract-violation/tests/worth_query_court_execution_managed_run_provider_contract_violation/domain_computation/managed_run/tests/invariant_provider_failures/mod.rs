@@ -11,7 +11,7 @@ use worth_query_installation::facade::WorthQueryInvariantEnforcement;
 
 #[test]
 fn provider_cannot_replay_a_retained_verdict_admission_into_another_attempt() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -61,7 +61,7 @@ fn provider_cannot_replay_a_retained_verdict_admission_into_another_attempt() {
 
 #[test]
 fn provider_panics_during_load_and_execution_are_typed() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 

@@ -53,7 +53,7 @@ pub(in super::super) enum DirectAssociatedYieldReassemblyOutcome {
 impl DirectIterationAssociation<WorthQueryYieldedDirectRun> {
     pub(in super::super) fn readmit_same_runtime(
         self,
-        active_request: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        active_request: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
 
         query_runtime: &crate::domain_computation::WorthQueryExecutionRuntime,
         bridge_runtime: &worth_runtime_bridge::facade::RuntimeBridge,

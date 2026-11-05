@@ -222,5 +222,4 @@ pub(crate) mod admitted_capture;
 pub(crate) mod causal_inspection;
 mod record_reservations;
 
-pub(crate) mod request_execution;
 pub(crate) mod source_disclosure;

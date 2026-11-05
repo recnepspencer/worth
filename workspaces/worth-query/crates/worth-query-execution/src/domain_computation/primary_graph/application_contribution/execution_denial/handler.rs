@@ -75,22 +75,22 @@ where
 }
 
 pub(in crate::domain_computation::primary_graph) fn managed_advancement_denial<Stopped>(
-    cause: crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
+    cause: crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
 ) -> WorthQueryManagedComputationDenial<Stopped> {
     match cause {
-        crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(cause) => {
+        crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(cause) => {
             WorthQueryManagedComputationDenial::Resource(cause)
         }
-        crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Interrupted(cause) => {
+        crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Interrupted(cause) => {
             WorthQueryManagedComputationDenial::Interrupted(cause)
         }
-        crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::NestedStopped => {
+        crate::domain_computation::request_execution::WorthQueryAdvancementDenial::NestedStopped => {
             WorthQueryManagedComputationDenial::NestedPatternStopped
         }
-        crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::NestedOpening => {
+        crate::domain_computation::request_execution::WorthQueryAdvancementDenial::NestedOpening => {
             WorthQueryManagedComputationDenial::Resource(Resource::NestedAdvancementOpening)
         }
-        crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Panicked => {
+        crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Panicked => {
             WorthQueryManagedComputationDenial::Panicked
         }
     }

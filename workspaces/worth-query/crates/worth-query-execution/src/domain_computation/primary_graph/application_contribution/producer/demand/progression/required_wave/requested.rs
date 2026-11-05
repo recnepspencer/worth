@@ -13,7 +13,7 @@ use super::*;
 #[allow(clippy::too_many_arguments)]
 pub(in super::super) fn advance_requested_output<Schema, Family>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<
+    phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<
         '_,
     >,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,

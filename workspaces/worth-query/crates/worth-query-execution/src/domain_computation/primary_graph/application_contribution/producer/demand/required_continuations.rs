@@ -7,7 +7,7 @@
 //! next wave claims that refresh again, after the entry frees its custody.
 
 use super::progression::PerformedMembers;
-use crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase;
+use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::any::Any;
 

@@ -4,7 +4,7 @@ use super::*;
 impl WorthQueryOutputDemandDenialKind {
     #[doc(hidden)]
     pub fn of_execution_interruption_for_test(
-        interruption: crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationInterruption,
+        interruption: crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationInterruption,
     ) -> Self {
         Self::of_execution_interruption(interruption)
     }

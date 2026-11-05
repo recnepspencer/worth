@@ -9,14 +9,7 @@ use worth_query_declaration::facade::{
     application_schema::ApplicationSchema,
 };
 use worth_query_installation::facade::WorthQueryInstalledDocumentHistory;
-use {
-    crate::basis::WorthQueryProductBranchReadIdentity,
-    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase,
-    crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding,
-    crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
-    crate::domain_computation::primary_graph::WorthQueryExpectedProductBranch,
-    crate::publication_boundary::WorthQueryProgramPublicationAccess,
-};
+use {crate::basis::WorthQueryProductBranchReadIdentity, crate::domain_computation::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding, crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation, crate::domain_computation::primary_graph::WorthQueryExpectedProductBranch, crate::publication_boundary::WorthQueryProgramPublicationAccess};
 
 mod admission;
 mod member;

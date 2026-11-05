@@ -191,10 +191,10 @@ impl WorthQueryRunningWorkflowRun {
     /// This view carries custody into the host executor; it starts no work itself.
     pub fn request_in_advancement<'a>(
         &self,
-        phase: &'a crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &'a crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
     ) -> Result<
         worth_execution::ExecutionRequest<'a, 'a>,
-        crate::domain_computation::primary_graph::request_execution::WorthQueryForeignAdvancementPhase,
+        crate::domain_computation::request_execution::WorthQueryForeignAdvancementPhase,
     >{
         phase.request_for_managed(&self.relational_basis)
     }
@@ -290,7 +290,7 @@ impl std::fmt::Debug for WorthQueryWorkflowRunCompletionRejection {
 
 mod court_doors_for_test;
 
-impl crate::domain_computation::primary_graph::request_execution::advancement::WorthQueryAdvancementSource
+impl crate::domain_computation::request_execution::advancement::WorthQueryAdvancementSource
     for WorthQueryRunningWorkflowRun
 {
     fn advancement_owner(&self) -> Option<worth_runtime_world::facade::RuntimeWorldOwnerIdentity> {

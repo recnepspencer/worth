@@ -23,7 +23,7 @@ use crate::domain_computation::primary_graph::{
 impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime, Schema> {
     pub fn authorize_operation<Principal, PrincipalIdentity, Operation, Input, Scope>(
         &self,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
         scope: &WorthQueryApplicationEntityIdentity<Schema, Scope>,
         operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
@@ -45,7 +45,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
 
     pub fn authorize_borrowed_operation<Principal, PrincipalIdentity, Operation, Input, Scope>(
         &self,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
         scope: &WorthQueryApplicationEntityIdentity<Schema, Scope>,
         operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
@@ -113,7 +113,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
 
     pub fn admit_capability_access<Principal, PrincipalIdentity, Capability, Operation, Input>(
         &self,
-phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
         capability: &WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,
         input: Input,
@@ -182,7 +182,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         Input,
     >(
         &self,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         publication_access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
         capability: &WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,
@@ -255,7 +255,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         Input,
     >(
         &self,
-phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         approved: &WorthQueryApprovedElevation,
         principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
         capability: &WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,

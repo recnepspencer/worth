@@ -58,7 +58,7 @@ pub enum WorthQueryConditionalClockObservationFailureKind {
     AuthoritativeDelivery(super::WorthQueryConditionalAuthoritativeDeliveryFailure),
     /// The host's request could not enter this wake advancement.
     ExecutionRequest(
-        crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
+        crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
     ),
     /// The clock source was unavailable.
     SourceUnavailable,

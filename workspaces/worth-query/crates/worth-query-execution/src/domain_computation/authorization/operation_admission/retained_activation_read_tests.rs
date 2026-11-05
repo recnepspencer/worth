@@ -97,7 +97,7 @@ impl<Schema, Operation, Input, Scope>
                 probe.consults() >= k,
                 "the retained equality read reached consult {k}"
             );
-            assert_eq!(answer.unwrap_err().kind(), Kind::ExecutionRequest(crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionResource { denial: crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::WorkExhausted, partition_identity: None, policy_ancestor: None }));
+            assert_eq!(answer.unwrap_err().kind(), Kind::ExecutionRequest(crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionResource { denial: crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::WorkExhausted, partition_identity: None, policy_ancestor: None }));
         }
     }
     pub(in crate::domain_computation) fn assert_cancelled_retained_activation_read(

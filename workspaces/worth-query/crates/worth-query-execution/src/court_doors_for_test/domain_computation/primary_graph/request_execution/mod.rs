@@ -3,6 +3,6 @@
 pub mod advancement;
 #[path = "test_placement/mod.rs"]
 pub mod test_placement;
-pub use crate::domain_computation::primary_graph::request_execution::QueryMemoryReservation;
-pub use crate::domain_computation::primary_graph::request_execution::QueryRequestExecution;
-pub use crate::domain_computation::primary_graph::request_execution::Resource;
+pub use crate::domain_computation::request_execution::QueryMemoryReservation;
+pub use crate::domain_computation::request_execution::QueryRequestExecution;
+pub use crate::domain_computation::request_execution::Resource;

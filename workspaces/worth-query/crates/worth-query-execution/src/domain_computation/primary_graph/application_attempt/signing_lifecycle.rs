@@ -5,7 +5,7 @@ use super::{
     WorthQueryApplicationCommitOutcome as Outcome, WorthQueryApplicationObservedFact as Fact,
     WorthQueryApplicationRealizedEffect as Effect,
 };
-use crate::domain_computation::primary_graph::request_execution::QueryRequestExecution;
+use crate::domain_computation::request_execution::QueryRequestExecution;
 use worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus as Locus;
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledSigningLifecycleRule as Rule,
@@ -124,13 +124,13 @@ fn attempt(cause: super::WorthQueryApplicationAttemptDenial) -> Outcome {
     }
 }
 fn resource(
-    cause: crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial,
+    cause: crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial,
 ) -> Outcome {
-    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(cause)
+    crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(cause)
         .into_commit_outcome()
 }
 fn stopped(cause: worth_execution::MapKernelStop) -> Outcome {
-    crate::domain_computation::primary_graph::request_execution::advancement_denial(
+    crate::domain_computation::request_execution::advancement_denial(
         worth_execution::WorkCeilingDenial::Stopped(cause),
     )
     .into_commit_outcome()

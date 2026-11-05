@@ -14,7 +14,7 @@ use worth_query_execution::facade::domain_computation::WorthQueryInvariantStateL
 use worth_query_installation::facade::WorthQueryInstalledInvariantExecutionRequirement;
 use worth_query_installation::facade::WorthQueryInvariantEnforcement;
 pub fn execute_invariant(
-    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     state: Arc<Mutex<ProvisionalProviderState>>,
     requirements: Vec<WorthQueryInstalledInvariantExecutionRequirement>,
     slot: &str,

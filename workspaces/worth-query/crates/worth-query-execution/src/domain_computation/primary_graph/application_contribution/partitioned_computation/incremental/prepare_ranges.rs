@@ -8,7 +8,7 @@ use super::next_tree::NextPartitioning;
 use super::retained::CarriedItems;
 use super::*;
 use crate::domain_computation::primary_graph::invariant_projection::CallVisit;
-use crate::domain_computation::primary_graph::request_execution::QueryRequestExecution;
+use crate::domain_computation::request_execution::QueryRequestExecution;
 use worth_query_declaration::facade::application_program::{
     ApplicationComputationPartition, ApplicationFeature, ApplicationManagedComputation,
 };
@@ -85,7 +85,7 @@ impl<Key: ApplicationComputationPartition, Item: ApplicationComputationPartition
             .call_binding(&sequence)
             .expect("range preparation checked actual sealed shape");
         let _marks_memory = execution.has_accounting().then(|| {
-            let marks_bytes=self.marked.len().checked_mul(11*size_of::<usize>()+16*size_of::<usize>()).and_then(|n|u64::try_from(n).ok()).ok_or_else(||resource(crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::CapacityOverflow))?;
+            let marks_bytes=self.marked.len().checked_mul(11*size_of::<usize>()+16*size_of::<usize>()).and_then(|n|u64::try_from(n).ok()).ok_or_else(||resource(crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::CapacityOverflow))?;
             execution.reserve(marks_bytes).map_err(resource)
         }).transpose()?;
         let marked = self

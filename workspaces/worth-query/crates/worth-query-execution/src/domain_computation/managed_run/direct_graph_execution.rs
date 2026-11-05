@@ -111,7 +111,7 @@ impl WorthQueryActiveDirectGraphExecution {
 
     pub fn advance(
         mut self,
-        execution: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        execution: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
     ) -> WorthQueryDirectGraphStepOutcome {
         let request = match execution.request_for_managed(&self.running.relational_basis) {
             Ok(request) => request,
@@ -342,7 +342,7 @@ impl WorthQueryPausedDirectGraphExecution {
 
     pub fn advance(
         self,
-        execution: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        execution: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
     ) -> WorthQueryDirectGraphStepOutcome {
         self.active.advance(execution)
     }

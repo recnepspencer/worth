@@ -3,7 +3,7 @@ use super::*;
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub fn authorize_borrowed_capability_operation<Capability, Operation, Input>(
         &self,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         access: WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
         operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
         preconditions: &TypedMutationPreconditions<

@@ -19,7 +19,7 @@ pub enum WorthQueryInboundReceiptPosture {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryInboundPendingReason {
     ExecutionRequest(
-        crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
+        crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
     ),
     PublicationAtCapacity,
     PublicationInProgress,

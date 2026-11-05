@@ -5,12 +5,7 @@
 
 use worth_execution::{LeaseDenial, MapKernelStop, MemoryLimitDenial, MemoryLimitLevel};
 
-use {
-    crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationCheckpointDenial,
-    crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationInterruption,
-    crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial,
-    crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryMemoryLimitLevel,
-};
+use {crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationCheckpointDenial, crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationInterruption, crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial, crate::domain_computation::request_execution::execution_refusal::WorthQueryMemoryLimitLevel};
 
 type Resource = WorthQueryManagedComputationResourceDenial;
 
@@ -31,7 +26,7 @@ pub(in crate::domain_computation) const fn lease_denial(denial: LeaseDenial) -> 
 /// A refused reservation, with the bytes it asked for, the limit that
 /// refused and the room it left. A run's refusal and a reservation's have
 /// this one spelling.
-pub(in crate::domain_computation::primary_graph) const fn memory_denial(
+pub(in crate::domain_computation) const fn memory_denial(
     denial: MemoryLimitDenial,
 ) -> Resource {
     match denial {
@@ -82,7 +77,7 @@ pub(in crate::domain_computation) const fn checkpoint_denial(
 }
 
 /// The kernel stop an interruption is, for a safe point outside any kernel.
-pub(in crate::domain_computation::primary_graph) const fn interruption_stop(
+pub(in crate::domain_computation) const fn interruption_stop(
     interruption: WorthQueryManagedComputationInterruption,
 ) -> MapKernelStop {
     match interruption {

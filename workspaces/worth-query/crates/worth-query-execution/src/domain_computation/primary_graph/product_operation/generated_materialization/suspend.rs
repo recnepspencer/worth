@@ -3,7 +3,7 @@ use crate::domain_computation::execution_runtime::product_world::publication_den
     WorthQueryProductPublicationDenial as PublicationDenial,
     WorthQueryProductPublicationOutcome as PublicationOutcome,
 };
-use crate::domain_computation::primary_graph::request_execution::advancement_denial;
+use crate::domain_computation::request_execution::advancement_denial;
 
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::sync::Arc;
@@ -68,7 +68,7 @@ where
 
     fn suspend_observed_generated_output<Producer>(
         self,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
         source: crate::domain_computation::primary_graph::WorthQueryObservedSource<
             <<Producer::OutputFamily as crate::domain_computation::primary_graph::WorthQueryProducerOutputFamily<Schema>>::Source as ApplicationQueryBinding<Schema>>::Query,
@@ -103,7 +103,7 @@ where
         Producer,
     >(
         self,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
         source: ExpectedSourceQualification,
     ) -> Result<WorthQuerySuspendedGeneratedOutput, WorthQueryGeneratedOutputSuspensionFailure>
@@ -224,7 +224,7 @@ where
             .prepare_relational_candidate(candidate, request, true)
             .map_err(|denial| match denial {
                 PublicationDenial::ClockMismatch => {
-                    WorthQueryGeneratedOutputSuspensionFailure::ExecutionDenied(crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock))
+                    WorthQueryGeneratedOutputSuspensionFailure::ExecutionDenied(crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock))
                 },
 PublicationDenial::Stopped(stop) => {
                     WorthQueryGeneratedOutputSuspensionFailure::ExecutionDenied(advancement_denial(
@@ -283,7 +283,7 @@ PublicationDenial::Stopped(stop) => {
             }
             Err(PublicationDenial::ClockMismatch) => {
                 Err(WorthQueryGeneratedOutputSuspensionFailure::ExecutionDenied(
-                    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock),
+                    crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock),
                 ))
             },
 Err(PublicationDenial::Stopped(stop)) => {

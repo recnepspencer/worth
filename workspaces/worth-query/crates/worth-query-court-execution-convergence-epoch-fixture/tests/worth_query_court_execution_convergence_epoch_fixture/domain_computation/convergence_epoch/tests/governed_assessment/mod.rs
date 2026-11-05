@@ -17,7 +17,7 @@ use worth_query_execution::facade::domain_computation::WorthQueryManagedRunTermi
 
 #[test]
 fn query_counts_each_governed_domain_port_and_contains_rejection_or_panic() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -98,7 +98,7 @@ fn query_counts_each_governed_domain_port_and_contains_rejection_or_panic() {
 }
 
 pub fn indeterminate_terminal_with_probe(
-    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     disposition: FixtureDisposition,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
@@ -141,7 +141,7 @@ pub fn indeterminate_terminal_with_probe(
 
 #[test]
 fn workflow_cleanup_preserves_a_typed_governed_domain_panic() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 

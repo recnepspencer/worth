@@ -6,7 +6,7 @@ use super::retained::RetainedPartitions;
 use super::tree_attempt::{EditDisposition, TreeAttempt};
 pub(super) use super::tree_membership::TreeTarget;
 use super::tree_report::{ReportedTree, WorthQueryPartitionedTreeRebuildCause as Cause};
-use crate::domain_computation::primary_graph::request_execution::QueryRequestExecution;
+use crate::domain_computation::request_execution::QueryRequestExecution;
 use std::collections::BTreeMap;
 use worth_execution::{MapKernelStop, NativeReductionTree, ReductionPlan, ReductionTree};
 use worth_foundational::facade::PartitionIdentity;
@@ -83,7 +83,7 @@ where
     let mut leaves = Vec::new();
     if leaves.try_reserve_exact(plan.identities().len()).is_err() {
         return TreeAttempt::unstarted(TreeBeginning(execution.has_accounting()),Err(Denial::Resource(
-            crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::NativeAllocationRefused {
+            crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::NativeAllocationRefused {
                 kind:worth_execution::ExecutionPhysicalAllocationDenialKind::Allocator,
                 requested_payload_bytes:None,
             })));

@@ -85,7 +85,7 @@ where
         Scope,
     >(
         &self,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         plan: WorthQueryAdmittedApplicationQueryPlan<
             '_,
             Schema,

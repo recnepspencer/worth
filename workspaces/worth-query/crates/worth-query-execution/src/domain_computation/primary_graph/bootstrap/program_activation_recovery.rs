@@ -13,7 +13,7 @@ use super::super::{
 
 /// The phase witnesses the caller's request for the inline recovery read.
 pub(in crate::domain_computation::primary_graph) fn recover_program_activation<Schema>(
-    phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
+    phase: &crate::domain_computation::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
     graph: &WorthQueryPrimaryGraph,
     roster: &WorthQueryProgramSupportRoster<Schema>,
     cell: &WorthQueryProgramActivationCell,

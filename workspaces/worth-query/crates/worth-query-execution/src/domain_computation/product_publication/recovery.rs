@@ -68,7 +68,7 @@ impl WorthQueryProductUnpublishedRecovery {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryProductUnpublishedRecoveryReleaseDenial {
     Execution(
-        crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
+        crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
     ),
     /// Runtime World refused to inspect or release the record.
     World(RuntimeWorldRecoveryDenial),

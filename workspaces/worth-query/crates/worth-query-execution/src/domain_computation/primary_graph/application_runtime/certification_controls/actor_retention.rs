@@ -5,7 +5,7 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
     #[doc(hidden)]
     pub fn run_actor_retention_pass_for_test(
         &self,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
     ) -> Result<
         (usize, usize),
         crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,

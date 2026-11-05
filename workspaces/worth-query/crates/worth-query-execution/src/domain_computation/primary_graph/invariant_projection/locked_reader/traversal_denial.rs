@@ -12,7 +12,7 @@ pub enum WorthQueryInvariantProjectionTraversalDenialKind {
         >,
     ),
     ExecutionRequest(
-        crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
+        crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
     ),
     /// The relation is not installed.
     RelationNotInstalled,

@@ -3,13 +3,13 @@ use super::{
     WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
 };
 
-impl From<crate::domain_computation::primary_graph::request_execution::advancement::WorthQueryCapturePolicyRefusal>
+impl From<crate::domain_computation::request_execution::advancement::WorthQueryCapturePolicyRefusal>
     for WorthQueryPrimaryGraphInstallationDenial
 {
     fn from(
-        refusal: crate::domain_computation::primary_graph::request_execution::advancement::WorthQueryCapturePolicyRefusal,
+        refusal: crate::domain_computation::request_execution::advancement::WorthQueryCapturePolicyRefusal,
     ) -> Self {
-        use crate::domain_computation::primary_graph::request_execution::advancement::WorthQueryCapturePolicyRefusal as Refusal;
+        use crate::domain_computation::request_execution::advancement::WorthQueryCapturePolicyRefusal as Refusal;
         use crate::domain_computation::WorthQueryProviderSessionDenialKind as Kind;
         let (kind, subject) = match refusal {
             Refusal::UnleasedFunding => (
@@ -18,7 +18,7 @@ impl From<crate::domain_computation::primary_graph::request_execution::advanceme
             ),
             Refusal::ForeignCaptureLease => (
                 Kind::ExecutionResource {
-                    denial: crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::NestedLeaseMisuse,
+                    denial: crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::NestedLeaseMisuse,
                     partition_identity: None,
                     policy_ancestor: None,
                 },

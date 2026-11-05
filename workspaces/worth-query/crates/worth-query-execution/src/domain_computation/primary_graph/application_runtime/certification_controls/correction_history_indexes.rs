@@ -9,10 +9,10 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
     #[doc(hidden)]
     pub fn release_correction_history_indexes_for_test(
         &self,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
     ) -> Result<
         usize,
-        crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
+        crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
     > {
         let execution = phase.execution_request_for(self.product_runtime())?;
         let graph = self
@@ -33,7 +33,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
     #[doc(hidden)]
     pub fn rebuild_correction_history_indexes_for_test(
         &self,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         branch: crate::basis::WorthQueryProductBranch,
     ) -> Result<DerivedIndexMaintenanceOutcome, Box<DerivedIndexMaintenanceDenial>> {
         let execution = phase

@@ -8,7 +8,7 @@ pub enum WorthQueryBranchSetAdoptionProgress {
     /// The host call was refused before any owner effects.
     ExecutionDenied {
         branch: WorthQueryProductBranch,
-        cause: crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
+        cause: crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
     },
     /// The branch's adoption is published.
     Performed {

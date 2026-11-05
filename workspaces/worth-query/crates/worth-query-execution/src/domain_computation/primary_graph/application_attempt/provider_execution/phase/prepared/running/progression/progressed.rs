@@ -1,4 +1,4 @@
-use crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase;
+use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 mod cleanup_failure;
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -55,7 +55,7 @@ where
         ))
     });
     if let WorthQueryApplicationCommitOutcome::Committed(receipt) = &committed {
-        crate::domain_computation::primary_graph::request_execution::advancement::observation::application::record_commit(receipt);
+        crate::domain_computation::request_execution::advancement::observation::application::record_commit(receipt);
         if let Some(publication) = workflow_settlement_publication {
             publication.maintain(application, receipt);
         }

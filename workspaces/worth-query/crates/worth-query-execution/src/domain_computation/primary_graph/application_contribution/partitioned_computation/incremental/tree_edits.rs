@@ -1,7 +1,7 @@
 //! Native retained-path edits consume accumulated work on every exit.
 use super::super::WorthQueryPartitionedComputationDenial as Denial;
 use super::tree_attempt::{EditDisposition, TreeAttempt};
-use crate::domain_computation::primary_graph::request_execution::QueryRequestExecution;
+use crate::domain_computation::request_execution::QueryRequestExecution;
 use std::collections::BTreeMap;
 use worth_execution::{
     ExecutionResourceLease, MapKernelStop, NativeReductionTree, ReductionRunFailure,

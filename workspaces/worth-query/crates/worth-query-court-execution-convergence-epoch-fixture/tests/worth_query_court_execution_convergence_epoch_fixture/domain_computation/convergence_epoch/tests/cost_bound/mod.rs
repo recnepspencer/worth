@@ -10,7 +10,7 @@ use worth_runtime_bridge::facade::BridgeManagedExecutionCancellationReason;
 
 #[test]
 fn epoch_counters_are_exact_and_isolated_from_unrelated_epochs() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -60,7 +60,7 @@ fn epoch_counters_are_exact_and_isolated_from_unrelated_epochs() {
 
 #[test]
 fn late_terminal_reconciles_cumulative_convergence_work_without_double_counting() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 

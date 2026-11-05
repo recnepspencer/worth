@@ -7,11 +7,7 @@ use super::{
 use std::sync::{Arc, Weak};
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 use worth_relational::facade::branch::{DeletedRelationalBranch, RelationalBranchIdentity};
-use {
-    crate::domain_computation::primary_graph::application_contribution::execution_denial,
-    crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource,
-    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial as Advancement,
-};
+use {crate::domain_computation::primary_graph::application_contribution::execution_denial, crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource, crate::domain_computation::request_execution::WorthQueryAdvancementDenial as Advancement};
 
 struct Retirement {
     follower: Arc<dyn WorthQueryProductRetentionFollower>,

@@ -89,7 +89,7 @@ pub fn member(
 }
 
 pub fn prepared_bootstrap() -> WorthQueryPrimaryGraphBootstrap<UniqueSeedSchema> {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let phase = &active_phase;
 
         let declaration = UniqueSeedSchema::declaration().unwrap();

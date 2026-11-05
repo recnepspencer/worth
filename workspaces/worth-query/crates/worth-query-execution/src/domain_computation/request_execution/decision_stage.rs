@@ -1,10 +1,10 @@
 //! Native decision work borrows the existing request lease, never a new request.
 use super::advancement::{advancement_denial, WorthQueryAdvancementDenial};
 use super::{ExecutionWorkCeiling, Form, MapKernelContext, QueryRequestExecution};
-use crate::domain_computation::primary_graph::request_execution::execution_stop::lease_denial;
+use crate::domain_computation::request_execution::execution_stop::lease_denial;
 
 impl QueryRequestExecution<'_> {
-    pub(in crate::domain_computation::primary_graph) fn decision_stage<R>(
+    pub(in crate::domain_computation) fn decision_stage<R>(
         &self,
         stage: impl FnOnce(&mut MapKernelContext<'_, '_>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {

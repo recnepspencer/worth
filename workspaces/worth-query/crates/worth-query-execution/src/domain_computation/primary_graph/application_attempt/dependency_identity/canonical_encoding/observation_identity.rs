@@ -69,7 +69,7 @@ pub(super) fn basis<E>(
 #[cfg(test)]
 mod tests {
     use super::{authentication_observation_identity, Denial};
-    use crate::domain_computation::primary_graph::request_execution::QueryRequestExecution;
+    use crate::domain_computation::request_execution::QueryRequestExecution;
     use worth_query_admission::facade::authenticated_principal::{
         WorthQueryCancellationSource, WorthQueryRequestScope,
     };

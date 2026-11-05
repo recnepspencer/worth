@@ -1,5 +1,5 @@
 //! Request-owned captured source preimage for a body-created field.
-use crate::domain_computation::primary_graph::request_execution::QueryMemoryReservation;
+use crate::domain_computation::request_execution::QueryMemoryReservation;
 use worth_foundational::facade::AspectValue;
 
 pub(in crate::domain_computation::primary_graph) struct PreparedBodySource {

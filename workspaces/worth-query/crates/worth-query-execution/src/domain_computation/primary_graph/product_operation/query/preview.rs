@@ -9,7 +9,7 @@ use worth_query_declaration::facade::application_capability::ApplicationCapabili
 impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime, Schema> {
     pub fn admit_document_preview_application_query<Q, P, R, A, I, E>(
         self,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         preview: &WorthQueryHistoryPreviewReadAdmission<'_, '_>,
         query: &'runtime WorthQueryInstalledApplicationQuery<Schema, Q, P, R, E>,
         access: &WorthQueryApplicationQueryAccessContext<'runtime, Schema, A, I, E>,
@@ -31,7 +31,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
 
     pub fn admit_document_preview_governed_application_query<Q, P, R, A, I, E, C, O, Input>(
         self,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         preview: &WorthQueryHistoryPreviewReadAdmission<'_, '_>,
         query: &'runtime WorthQueryInstalledApplicationQuery<Schema, Q, P, R, E>,
         access: &WorthQueryApplicationQueryAccessContext<'runtime, Schema, A, I, E>,
@@ -60,7 +60,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
     fn document_preview_controls<Q, P, R, A, I, E>(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         preview: &WorthQueryHistoryPreviewReadAdmission<'_, '_>,
         query: &'runtime WorthQueryInstalledApplicationQuery<Schema, Q, P, R, E>,
         access: &WorthQueryApplicationQueryAccessContext<'runtime, Schema, A, I, E>,

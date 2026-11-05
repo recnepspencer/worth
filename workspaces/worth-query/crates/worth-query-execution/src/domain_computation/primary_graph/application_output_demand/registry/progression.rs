@@ -268,7 +268,7 @@ pub(super) fn execution_failure_is_retryable(denial: &WorthQueryOutputDemandDeni
         || matches!(
             denial.kind(),
             crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::ExecutionRequest(
-                crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(_)
+                crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(_)
             )
                 | crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::PublicationStale
                 | crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::Cancelled

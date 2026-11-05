@@ -89,7 +89,7 @@ impl WorthQueryApplicationPreviewSession {
     /// Fresh selection refusal returns the complete original owner without cleanup.
     pub fn readmit<Schema, Program>(
         self,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         runtime: &WorthQueryProgramApplicationRuntime<Schema, Program>,
     ) -> Result<
         WorthQueryReadmittedApplicationPreview,
@@ -107,7 +107,7 @@ impl WorthQueryApplicationPreviewSession {
 
     fn check_readmission<Schema, Program>(
         &self,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         runtime: &WorthQueryProgramApplicationRuntime<Schema, Program>,
     ) -> Result<(), WorthQueryApplicationPreviewReadmissionDenial>
     where
@@ -184,7 +184,7 @@ where
 {
     pub fn begin_preview(
         &self,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         observation: &WorthQueryApplicationReadObservation,
         request: WorthQueryApplicationPreviewRequest,
     ) -> Result<WorthQueryApplicationPreviewSession, WorthQueryApplicationPreviewReadmissionDenial>

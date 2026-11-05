@@ -29,7 +29,7 @@ pub struct WorthQueryProductHistoryEntry<'history> {
 impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'runtime, Schema> {
     pub fn history(
         &self,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         branch: WorthQueryProductBranch,
         maximum: Option<NonZeroUsize>,
     ) -> Result<WorthQueryProductHistory<'runtime, Schema>, WorthQueryProductBranchAdmissionDenial>
@@ -73,7 +73,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryProductHistory<'runtime, Sch
 
     pub fn continue_ancestry(
         &self,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         maximum: Option<NonZeroUsize>,
     ) -> Result<Self, WorthQueryProductBranchAdmissionDenial> {
         let execution = phase
@@ -94,7 +94,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryProductHistory<'runtime, Sch
 
     pub fn select(
         &self,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         entry: &WorthQueryProductHistoryEntry<'_>,
     ) -> Result<
         WorthQuerySelectedProductOperation<'runtime, Schema>,

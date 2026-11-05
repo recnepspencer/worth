@@ -7,7 +7,7 @@ use worth_relational::facade::durability::{
 /// An allocation refusal never authorizes a different capture policy.
 #[derive(Debug)]
 pub enum WorthQueryCheckpointCaptureDenial {
-    ForeignPhase(crate::domain_computation::primary_graph::request_execution::WorthQueryForeignAdvancementPhase),
+    ForeignPhase(crate::domain_computation::request_execution::WorthQueryForeignAdvancementPhase),
     /// Boxed: the native durability refusal is the largest cause, and every
     /// capture result would otherwise reserve its bytes inline.
     Durability(Box<DurabilityError>),
@@ -71,8 +71,8 @@ impl std::fmt::Display for WorthQueryCheckpointCaptureDenial {
 
 impl std::error::Error for WorthQueryCheckpointCaptureDenial {}
 
-impl From<crate::domain_computation::primary_graph::request_execution::WorthQueryForeignAdvancementPhase> for WorthQueryCheckpointCaptureDenial {
-    fn from(error: crate::domain_computation::primary_graph::request_execution::WorthQueryForeignAdvancementPhase) -> Self {
+impl From<crate::domain_computation::request_execution::WorthQueryForeignAdvancementPhase> for WorthQueryCheckpointCaptureDenial {
+    fn from(error: crate::domain_computation::request_execution::WorthQueryForeignAdvancementPhase) -> Self {
         Self::ForeignPhase(error)
     }
 }

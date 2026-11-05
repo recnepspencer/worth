@@ -197,6 +197,6 @@ where
 }
 use std::cell::Cell;
 
-use crate::domain_computation::primary_graph::request_execution::QueryRequestExecution;
+use crate::domain_computation::request_execution::QueryRequestExecution;
 
 mod court_doors_for_test;

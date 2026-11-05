@@ -4,11 +4,7 @@ use crate::basis::{
     WorthQueryExpectedProductBasisDescription, WorthQueryProductBranchAdmissionDenial,
 };
 use worth_relational::facade::branch::RelationalBranchBasisDenial;
-use {
-    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
-    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase,
-    crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation,
-};
+use {crate::domain_computation::request_execution::WorthQueryAdvancementDenial, crate::domain_computation::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation};
 
 #[derive(Debug)]
 pub enum WorthQueryExpectedProductBasisSelectionDenial {
@@ -96,7 +92,7 @@ fn check_live(
 ) -> Result<(), WorthQueryExpectedProductBasisSelectionDenial> {
     execution.check_live().map_err(|stop| {
         WorthQueryExpectedProductBasisSelectionDenial::Stopped(
-            crate::domain_computation::primary_graph::request_execution::advancement_denial(
+            crate::domain_computation::request_execution::advancement_denial(
                 worth_execution::WorkCeilingDenial::Stopped(stop),
             ),
         )

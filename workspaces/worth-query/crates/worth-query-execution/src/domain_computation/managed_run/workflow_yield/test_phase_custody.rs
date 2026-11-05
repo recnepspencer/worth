@@ -3,8 +3,8 @@ use super::*;
 impl WorthQueryYieldedWorkflowRun {
     pub(crate) fn fixture_phase<'scope>(
         &self,
-        host: &crate::domain_computation::primary_graph::request_execution::TestHostRequest<'scope>,
-    ) -> crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<
+        host: &crate::domain_computation::request_execution::TestHostRequest<'scope>,
+    ) -> crate::domain_computation::request_execution::WorthQueryAdvancementPhase<
         'scope,
     > {
         host.phase_for_managed(&self.relational_basis)

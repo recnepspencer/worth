@@ -2,7 +2,7 @@
 use crate::domain_computation::managed_run::tests::provisional_attempt_fixture::*;
 
 pub fn staged_with_fresh_read_set<'run>(
-    execution: &'run worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &'run worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     running: &'run mut WorthQueryRunningDirectRun,
     graph: &WorthQueryInstalledGraphParticipationAuthority,

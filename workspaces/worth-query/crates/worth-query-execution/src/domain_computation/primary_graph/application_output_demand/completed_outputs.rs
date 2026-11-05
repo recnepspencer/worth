@@ -74,7 +74,7 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
     /// Native validates every member at this exact basis before sealing it.
     pub fn qualify_completed_required_outputs<'s>(
         self,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         access: &WorthQueryProgramPublicationAccess,
         scope: &WorthQueryRequestScope,
         source: &WorthQueryApplicationCommitReceipt,

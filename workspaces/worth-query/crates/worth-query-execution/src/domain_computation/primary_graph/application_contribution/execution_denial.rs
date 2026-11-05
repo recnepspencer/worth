@@ -14,12 +14,7 @@ use super::partitioned_computation::{
     WorthQueryComputationPartitionStop, WorthQueryPartitionedComputationDenial,
     WorthQueryReductionInputDenial as ReductionInput,
 };
-use {
-    super::WorthQueryManagedComputationDenial,
-    crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationCheckpointDenial,
-    crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationInterruption,
-    crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial,
-};
+use {super::WorthQueryManagedComputationDenial, crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationCheckpointDenial, crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationInterruption, crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial};
 
 type Resource = WorthQueryManagedComputationResourceDenial;
 
@@ -232,9 +227,9 @@ mod handler;
 mod publication;
 mod retained_result;
 mod scope;
-use crate::domain_computation::primary_graph::request_execution::execution_stop::checkpoint_denial;
-use crate::domain_computation::primary_graph::request_execution::execution_stop::interruption_stop;
-use crate::domain_computation::primary_graph::request_execution::execution_stop::lease_denial;
+use crate::domain_computation::request_execution::execution_stop::checkpoint_denial;
+use crate::domain_computation::request_execution::execution_stop::interruption_stop;
+use crate::domain_computation::request_execution::execution_stop::lease_denial;
 pub(in crate::domain_computation::primary_graph) use handler::managed_advancement_denial;
 pub(in crate::domain_computation) use publication::publication_execution_kind;
 pub(in crate::domain_computation) use scope::scope_stop_kind;
@@ -242,28 +237,28 @@ pub(in crate::domain_computation) use scope::scope_stop_kind;
 /// Native lifecycle owners keep the original admitted request's exact stop cause.
 pub(in crate::domain_computation) fn advancement_scope_stop(
     denial: WorkCeilingDenial,
-) -> crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial {
+) -> crate::domain_computation::request_execution::WorthQueryAdvancementDenial {
     match denial {
         WorkCeilingDenial::Admission(denial) => {
-            crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(lease_denial(denial))
+            crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(lease_denial(denial))
         }
         WorkCeilingDenial::Stopped(stop) => advancement_checkpoint_stop(stop),
-        WorkCeilingDenial::Panicked => crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Panicked,
+        WorkCeilingDenial::Panicked => crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Panicked,
     }
 }
 
 pub(in crate::domain_computation) fn advancement_checkpoint_stop(
     stop: MapKernelStop,
-) -> crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial {
+) -> crate::domain_computation::request_execution::WorthQueryAdvancementDenial {
     match checkpoint_denial(stop) {
         WorthQueryManagedComputationCheckpointDenial::Resource(resource) => {
-            crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(resource)
+            crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(resource)
         }
         WorthQueryManagedComputationCheckpointDenial::Interrupted(interruption) => {
-            crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Interrupted(interruption)
+            crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Interrupted(interruption)
         }
         WorthQueryManagedComputationCheckpointDenial::NestedPatternStopped => {
-            crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::NestedStopped
+            crate::domain_computation::request_execution::WorthQueryAdvancementDenial::NestedStopped
         }
     }
 }

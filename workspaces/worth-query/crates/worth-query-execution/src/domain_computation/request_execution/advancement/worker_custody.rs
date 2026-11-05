@@ -1,10 +1,10 @@
 //! A member compute cannot open a second installed host advancement.
 // Execution carries this same refusal context onto every descendant worker.
-pub(in crate::domain_computation::primary_graph) struct MemberComputeCustody {
+pub(in crate::domain_computation) struct MemberComputeCustody {
     _context: worth_execution::ExecutionOwnerContext,
 }
 impl MemberComputeCustody {
-    pub(in crate::domain_computation::primary_graph) fn enter() -> Self {
+    pub(in crate::domain_computation) fn enter() -> Self {
         Self {
             _context: worth_execution::ExecutionOwnerContext::enter(),
         }

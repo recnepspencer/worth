@@ -19,7 +19,7 @@ pub struct WorthQueryRealizedProjectionScope {
         std::ops::Range<usize>,
     )>,
     carried_memory:
-        Option<crate::domain_computation::primary_graph::request_execution::QueryMemoryReservation>,
+        Option<crate::domain_computation::request_execution::QueryMemoryReservation>,
     walk_scope_bytes: u64,
     // Both physical sets drop before their original retained payment.
     walk_scope_memory: Option<worth_execution::ExecutionMemoryReservation>,
@@ -53,8 +53,8 @@ impl WorthQueryRealizedProjectionScope {
         self.entity_ids.extend(entities.iter().copied());
     }
 
-    pub(super) fn carry_range(&mut self, sequence:&std::sync::Arc<super::ComputationCallSequence>, range:std::ops::Range<usize>, execution:&crate::domain_computation::primary_graph::request_execution::QueryRequestExecution<'_>)->Result<(),crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial>{
-        use crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource;
+    pub(super) fn carry_range(&mut self, sequence:&std::sync::Arc<super::ComputationCallSequence>, range:std::ops::Range<usize>, execution:&crate::domain_computation::request_execution::QueryRequestExecution<'_>)->Result<(),crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial>{
+        use crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource;
         if execution.has_accounting() {
             let bytes = self
                 .carried

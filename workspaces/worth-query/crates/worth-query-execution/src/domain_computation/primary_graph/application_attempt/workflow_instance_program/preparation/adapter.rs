@@ -2,7 +2,7 @@ use super::*;
 
 impl WorthQueryWorkflowInstanceAdapter {
     pub fn prepare<Schema, Capability, Operation, Input, Scope, Spec>(
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         selected: &WorthQuerySelectedProductOperation<'_, Schema>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         published: PublishedWorkflowDefinitionRef,
@@ -36,7 +36,7 @@ impl WorthQueryWorkflowInstanceAdapter {
     /// Prepares a successor on the current target definition.
     #[allow(clippy::too_many_arguments)]
     pub fn prepare_migration<Schema, Capability, Operation, Input, Scope, Spec>(
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         selected: &WorthQuerySelectedProductOperation<'_, Schema>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         source: PublishedWorkflowInstanceRef,
@@ -75,7 +75,7 @@ impl WorthQueryWorkflowInstanceAdapter {
     /// Prepares a successor for the selected fork copy.
     #[allow(clippy::too_many_arguments)]
     pub fn prepare_fork_continuation<Schema, Capability, Operation, Input, Scope, Spec>(
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         selected: &WorthQuerySelectedProductOperation<'_, Schema>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         source: PublishedWorkflowInstanceRef,
@@ -113,7 +113,7 @@ impl WorthQueryWorkflowInstanceAdapter {
 
     /// Prepares cancellation on the selected branch.
     pub fn prepare_cancellation<Schema, Capability, Operation, Input, Scope, Spec>(
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         selected: &WorthQuerySelectedProductOperation<'_, Schema>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         instance: PublishedWorkflowInstanceRef,
@@ -161,7 +161,7 @@ impl WorthQueryWorkflowInstanceAdapter {
             match phase.execution_request_for(&runtime.runtime.product_runtime) {
                 Ok(request) => request,
                 Err(cause) => return WorkflowInstanceCancellationOutcome::Application(
-                    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::from(
+                    crate::domain_computation::request_execution::WorthQueryAdvancementDenial::from(
                         cause,
                     )
                     .into_commit_outcome()
@@ -195,7 +195,7 @@ impl WorthQueryWorkflowInstanceAdapter {
             match phase.execution_request_for(&runtime.runtime.product_runtime) {
                 Ok(request) => request,
                 Err(cause) => return WorkflowInstanceStartOutcome::Application(
-                    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::from(
+                    crate::domain_computation::request_execution::WorthQueryAdvancementDenial::from(
                         cause,
                     )
                     .into_commit_outcome()

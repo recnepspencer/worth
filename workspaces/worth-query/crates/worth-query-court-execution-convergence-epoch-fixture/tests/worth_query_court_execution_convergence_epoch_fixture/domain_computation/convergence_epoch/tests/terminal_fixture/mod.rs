@@ -15,7 +15,7 @@ use worth_query_execution::facade::domain_computation::WorthQueryGraphProviderCa
 use worth_query_execution::facade::domain_computation::WorthQueryManagedGraphCallRequest;
 
 pub fn direct_terminal_outcome(
-    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     disposition: FixtureDisposition,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
@@ -52,7 +52,7 @@ pub fn direct_terminal_outcome(
 }
 
 pub fn converged_terminal(
-    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorthQueryDirectConvergenceTerminal<WorthQueryConverged> {
     match direct_terminal_outcome(execution, FixtureDisposition::Converged, resource_request) {
@@ -62,7 +62,7 @@ pub fn converged_terminal(
 }
 
 pub fn stable_without_proof_terminal(
-    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorthQueryDirectConvergenceTerminal<WorthQueryStableWithoutProof> {
     match direct_terminal_outcome(
@@ -76,7 +76,7 @@ pub fn stable_without_proof_terminal(
 }
 
 pub fn indeterminate_terminal(
-    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     disposition: FixtureDisposition,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
@@ -88,7 +88,7 @@ pub fn indeterminate_terminal(
 }
 
 pub fn workflow_converged_terminal(
-    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorthQueryWorkflowConvergenceTerminal<WorthQueryConverged> {
     match workflow_terminal_outcome(execution, FixtureDisposition::Converged, resource_request) {
@@ -98,7 +98,7 @@ pub fn workflow_converged_terminal(
 }
 
 pub fn workflow_indeterminate_terminal(
-    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     disposition: FixtureDisposition,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
@@ -110,7 +110,7 @@ pub fn workflow_indeterminate_terminal(
 }
 
 pub fn workflow_terminal_outcome(
-    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     disposition: FixtureDisposition,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,

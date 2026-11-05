@@ -97,13 +97,13 @@ pub trait WorthQueryCertificationCostRuntimeExt<Schema: ApplicationSchema> {
     /// selected-head sharing. Never called by ordinary publication or capture.
     fn observe_certification_retained_storage(
         &self,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
     ) -> Result<RelationalRetainedStorageObservation, WorthQueryCertificationCostDenial>;
     /// Captures the cost baseline for a product branch. Refused when the branch
     /// cannot be admitted.
     fn capture_certification_cost_scope(
         &self,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         branch: crate::basis::WorthQueryProductBranch,
     ) -> Result<WorthQueryCertificationCostScope, WorthQueryCertificationCostDenial>;
 
@@ -111,7 +111,7 @@ pub trait WorthQueryCertificationCostRuntimeExt<Schema: ApplicationSchema> {
     /// branch's storage cost cannot be inspected.
     fn observe_certification_cost(
         &self,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         scope: &WorthQueryCertificationCostScope,
     ) -> Result<WorthQueryCertificationCostObservation, WorthQueryCertificationCostDenial>;
 }
@@ -121,7 +121,7 @@ impl<Schema: ApplicationSchema> WorthQueryCertificationCostRuntimeExt<Schema>
 {
     fn observe_certification_retained_storage(
         &self,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
     ) -> Result<RelationalRetainedStorageObservation, WorthQueryCertificationCostDenial> {
         let execution = phase.execution_request_for(&self.runtime.product_runtime)?;
         self.runtime
@@ -133,7 +133,7 @@ impl<Schema: ApplicationSchema> WorthQueryCertificationCostRuntimeExt<Schema>
 
     fn capture_certification_cost_scope(
         &self,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         branch: crate::basis::WorthQueryProductBranch,
     ) -> Result<WorthQueryCertificationCostScope, WorthQueryCertificationCostDenial> {
         let lease = self
@@ -167,7 +167,7 @@ impl<Schema: ApplicationSchema> WorthQueryCertificationCostRuntimeExt<Schema>
 
     fn observe_certification_cost(
         &self,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         scope: &WorthQueryCertificationCostScope,
     ) -> Result<WorthQueryCertificationCostObservation, WorthQueryCertificationCostDenial> {
         let execution = phase.execution_request_for(&self.runtime.product_runtime)?;
@@ -319,7 +319,7 @@ pub enum WorthQueryCertificationCostDenial {
     Branch(crate::basis::WorthQueryProductBranchAdmissionDenial),
     Sharing(RelationalBranchSharingInspectionDenial),
     RetainedStorage(RelationalRetainedStorageInspectionDenial),
-    ForeignPhase(crate::domain_computation::primary_graph::request_execution::WorthQueryForeignAdvancementPhase),
+    ForeignPhase(crate::domain_computation::request_execution::WorthQueryForeignAdvancementPhase),
 }
 impl From<crate::basis::WorthQueryProductBranchAdmissionDenial>
     for WorthQueryCertificationCostDenial
@@ -333,11 +333,11 @@ impl From<RelationalBranchSharingInspectionDenial> for WorthQueryCertificationCo
         Self::Sharing(cause)
     }
 }
-impl From<crate::domain_computation::primary_graph::request_execution::WorthQueryForeignAdvancementPhase>
+impl From<crate::domain_computation::request_execution::WorthQueryForeignAdvancementPhase>
     for WorthQueryCertificationCostDenial
 {
     fn from(
-        cause: crate::domain_computation::primary_graph::request_execution::WorthQueryForeignAdvancementPhase,
+        cause: crate::domain_computation::request_execution::WorthQueryForeignAdvancementPhase,
     ) -> Self {
         Self::ForeignPhase(cause)
     }

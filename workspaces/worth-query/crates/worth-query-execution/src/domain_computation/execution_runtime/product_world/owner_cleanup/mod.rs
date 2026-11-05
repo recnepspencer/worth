@@ -53,7 +53,7 @@ pub enum WorthQueryProductBranchOwnerCleanupWork {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryProductBranchOwnerCleanupDenial {
     Execution(
-        crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
+        crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
     ),
     CleanupUnavailable,
     CleanupBusy,

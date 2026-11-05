@@ -112,7 +112,7 @@ where
 {
     pub fn project<Output>(
         &self,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         projection: impl FnOnce(
             &mut WorthQueryApplicationInvariantProjectionReader<'_, Schema>,
         ) -> Output,

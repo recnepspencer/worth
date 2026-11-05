@@ -18,7 +18,7 @@ use worth_query_execution::facade::domain_computation::WorthQueryManagedGraphCal
 
 #[test]
 fn same_semantic_direct_peers_bind_distinct_report_histories() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -69,7 +69,7 @@ fn same_semantic_direct_peers_bind_distinct_report_histories() {
 
 #[test]
 fn same_stage_workflow_peers_bind_distinct_report_histories() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 

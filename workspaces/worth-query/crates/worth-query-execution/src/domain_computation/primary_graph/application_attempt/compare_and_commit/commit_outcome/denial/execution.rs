@@ -3,7 +3,7 @@ use super::{
     WorthQueryApplicationCommitDenial as Denial, WorthQueryApplicationCommitDenialKind as Kind,
     WorthQueryApplicationCommitDenialStage as Stage,
 };
-use crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource;
+use crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource;
 
 impl Denial {
     pub(in crate::domain_computation::primary_graph::application_attempt) fn execution_resource(

@@ -261,7 +261,7 @@ where
     /// ```
     pub fn begin_projected_application_read_attempt<'scope, Operation, Input, Scope>(
         &self,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'scope>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'scope>,
         admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         projection: WorthQueryApplicationOperationInvariantProjectionSnapshot<Schema, Operation>,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,

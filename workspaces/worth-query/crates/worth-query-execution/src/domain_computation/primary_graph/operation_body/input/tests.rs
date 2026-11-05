@@ -1,4 +1,4 @@
-use crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial;
+use crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial;
 use std::{cell::Cell, num::NonZeroUsize};
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
@@ -8,11 +8,7 @@ use worth_query_admission::facade::authenticated_principal::{
 };
 use worth_query_declaration::facade::application_schema::ApplicationNativeInputDecodeResources;
 use worth_runtime_world::facade::RuntimeWorldExecutionPlacement;
-use {
-    super::validate_admitted,
-    crate::domain_computation::primary_graph::request_execution::QueryRequestExecution,
-    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
-};
+use {super::validate_admitted, crate::domain_computation::request_execution::QueryRequestExecution, crate::domain_computation::request_execution::WorthQueryAdvancementDenial};
 
 #[test]
 fn decoder_is_not_called_when_its_declared_work_or_memory_is_refused() {

@@ -1,6 +1,6 @@
 //! Move-only recovery survives failure to enter the caller's original request.
 use super::*;
-use crate::domain_computation::primary_graph::request_execution::with_bootstrap_advancement_from_request;
+use crate::domain_computation::request_execution::with_bootstrap_advancement_from_request;
 impl WorthQueryCheckpointTransitionRecovery {
     /// Repair the same performed transition under original borrowed execution.
     /// Opening refusal returns this capsule; no captured closure can drop it.

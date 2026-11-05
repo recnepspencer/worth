@@ -278,7 +278,7 @@ where
     /// Reads this receipt's outbox from a fresh provider-owned Relational view.
     pub fn observe_committed_dispatch_outbox(
         &self,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         receipt: &WorthQueryApplicationCommitReceipt,
     ) -> Result<Option<WorthQueryCommittedDispatchOutboxObservation>, Denial> {
         let phase_request = phase

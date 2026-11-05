@@ -21,7 +21,7 @@ where
     {
         let _execution = self.execution().execution_request().map_err(|cause| {
             HandlerExecutionDenial::new(
-                crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(
+                crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(
                     cause,
                 ),
             )
@@ -49,7 +49,7 @@ where
     {
         let _execution = self.execution().execution_request().map_err(|cause| {
             HandlerExecutionDenial::new(
-                crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(
+                crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(
                     cause,
                 ),
             )

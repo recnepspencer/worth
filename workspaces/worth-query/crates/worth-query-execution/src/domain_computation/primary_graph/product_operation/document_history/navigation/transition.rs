@@ -3,11 +3,7 @@ use super::super::WorthQueryDocumentHistory;
 use super::*;
 use worth_query_declaration::facade::application_history::ApplicationHistoryBinding;
 use worth_query_installation::facade::ApplicationSchema;
-use {
-    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase,
-    crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation,
-    crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding,
-};
+use {crate::domain_computation::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation, crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding};
 
 impl<'runtime, S: ApplicationSchema> WorthQueryDocumentHistoryNavigation<'runtime, S> {
     pub(super) fn registered_progress<'call, H, O, I, M>(
@@ -122,7 +118,7 @@ impl<'runtime, S: ApplicationSchema> WorthQueryDocumentHistoryNavigation<'runtim
             .map_err(Denial::Stopped)?;
         execution.check_live().map_err(|cause| {
             Denial::Stopped(
-                crate::domain_computation::primary_graph::request_execution::advancement_denial(
+                crate::domain_computation::request_execution::advancement_denial(
                     worth_execution::WorkCeilingDenial::Stopped(cause),
                 ),
             )

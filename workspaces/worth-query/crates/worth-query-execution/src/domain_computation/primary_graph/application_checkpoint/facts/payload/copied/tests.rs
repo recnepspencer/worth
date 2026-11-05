@@ -9,10 +9,7 @@ use worth_relational::facade::{
     identity::{EntityId, KindId, PartitionId},
     transactions::planned_single_field_locator,
 };
-use {
-    crate::domain_computation::primary_graph::application_checkpoint::facts::payload::FactStorage,
-    crate::domain_computation::primary_graph::request_execution::with_bootstrap_advancement,
-};
+use {crate::domain_computation::primary_graph::application_checkpoint::facts::payload::FactStorage, crate::domain_computation::request_execution::with_bootstrap_advancement};
 
 #[test]
 fn new_heap_copy_refuses_before_copy_and_funding_survives_views_until_final_drop() {

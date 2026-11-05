@@ -2,7 +2,7 @@ use crate::domain_computation::operation_binding::authority::tests::*;
 
 #[test]
 fn resource_attempt_requires_the_exact_binding_and_installed_contract() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|_active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|_active_phase| {
         let runtime = runtime();
         let (foreign_binding, contract_identity) = admitted_plan("foreign-binding");
         let installed_authority = authority(
@@ -63,7 +63,7 @@ fn exact_resource_plan_binding_can_start_one_direct_attempt() {
 
 #[test]
 fn stale_bound_operation_cannot_start_an_execution_attempt() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|_active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|_active_phase| {
         let mut runtime = runtime();
         let (plan, contract_identity) = admitted_plan("installed-binding");
         let authority = authority(&runtime, "installed-binding", &contract_identity, &plan);
@@ -92,7 +92,7 @@ fn stale_bound_operation_cannot_start_an_execution_attempt() {
 
 #[test]
 fn resource_attempt_rejects_omitted_installed_support_participants() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|_active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|_active_phase| {
         for (conditional_nodes, graph_providers, commit_groups) in [
             (&["operation:gate"][..], &[][..], &[][..]),
             (&[][..], &["geometry"][..], &[][..]),
@@ -124,7 +124,7 @@ fn resource_attempt_rejects_omitted_installed_support_participants() {
 
 #[test]
 fn resource_attempt_rejects_caller_reconstructed_support() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|_active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|_active_phase| {
         let runtime = runtime();
         let (installed_plan, contract_identity) =
             admitted_plan_with_support_limit("installed-binding", 2);

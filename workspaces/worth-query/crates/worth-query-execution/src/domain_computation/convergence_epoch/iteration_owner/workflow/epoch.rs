@@ -70,8 +70,8 @@ pub struct WorthQueryIteratingWorkflowConvergenceEpoch {
 impl WorthQueryIteratingWorkflowConvergenceEpoch {
     pub(crate) fn fixture_phase<'scope>(
         &self,
-        host: &crate::domain_computation::primary_graph::request_execution::TestHostRequest<'scope>,
-    ) -> crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<
+        host: &crate::domain_computation::request_execution::TestHostRequest<'scope>,
+    ) -> crate::domain_computation::request_execution::WorthQueryAdvancementPhase<
         'scope,
     > {
         self.association.fixture_phase(host)
@@ -91,7 +91,7 @@ impl WorthQueryIteratingWorkflowConvergenceEpoch {
 
     pub fn begin_stage_iteration(
         self,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         stage_identity: &str,
         request: WorthQueryManagedGraphCallRequest,
     ) -> Result<
@@ -125,7 +125,7 @@ impl WorthQueryStartedWorkflowConvergenceIteration {
 
     pub fn advance(
         self,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
     ) -> WorthQueryWorkflowConvergenceStepOutcome {
         admit_associated_step(self.association.advance(phase))
     }
@@ -151,7 +151,7 @@ pub struct WorthQueryPausedWorkflowConvergenceIteration {
 impl WorthQueryPausedWorkflowConvergenceIteration {
     pub fn advance(
         self,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
     ) -> WorthQueryWorkflowConvergenceStepOutcome {
         admit_associated_step(self.association.advance(phase))
     }

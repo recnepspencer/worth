@@ -6,13 +6,7 @@ use worth_query_declaration::facade::{
     application_schema::{ApplicationNativeInputAdmissionDenial, ApplicationOperationBodyProgram},
 };
 use worth_query_installation::facade::WorthQueryInstalledApplicationValueBinding;
-use {
-    super::super::HandlerExecutionDenial, super::super::HandlerResult,
-    crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial,
-    crate::domain_computation::primary_graph::request_execution::QueryMemoryReservation,
-    crate::domain_computation::primary_graph::request_execution::QueryRequestExecution,
-    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
-};
+use {super::super::HandlerExecutionDenial, super::super::HandlerResult, crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial, crate::domain_computation::request_execution::QueryMemoryReservation, crate::domain_computation::request_execution::QueryRequestExecution, crate::domain_computation::request_execution::WorthQueryAdvancementDenial};
 
 pub(in crate::domain_computation::primary_graph) struct PreparedBodyInputs {
     pub(in crate::domain_computation::primary_graph) values: Vec<Option<AspectValue>>,
@@ -104,7 +98,7 @@ pub(in crate::domain_computation::primary_graph) fn prepare_inputs(
             context
                 .checkpoint(u64::try_from(bytes).unwrap_or(u64::MAX))
                 .map_err(|cause| {
-                    crate::domain_computation::primary_graph::request_execution::advancement_denial(
+                    crate::domain_computation::request_execution::advancement_denial(
                         worth_execution::WorkCeilingDenial::Stopped(cause),
                     )
                 })?;
@@ -132,7 +126,7 @@ pub(in crate::domain_computation::primary_graph) fn prepare_inputs(
                     WorthQueryManagedComputationResourceDenial::CapacityOverflow,
                 ))?;
             context.checkpoint(materialization_work).map_err(|cause| {
-                crate::domain_computation::primary_graph::request_execution::advancement_denial(
+                crate::domain_computation::request_execution::advancement_denial(
                     worth_execution::WorkCeilingDenial::Stopped(cause),
                 )
             })?;
@@ -183,13 +177,13 @@ pub(super) fn validate_admitted(
         .reserve(profile.peak_memory_bytes())
         .map_err(WorthQueryAdvancementDenial::Resource)?;
     context.checkpoint(profile.work_units()).map_err(|cause| {
-        crate::domain_computation::primary_graph::request_execution::advancement_denial(
+        crate::domain_computation::request_execution::advancement_denial(
             worth_execution::WorkCeilingDenial::Stopped(cause),
         )
     })?;
     let valid = validate();
     context.checkpoint(0).map_err(|cause| {
-        crate::domain_computation::primary_graph::request_execution::advancement_denial(
+        crate::domain_computation::request_execution::advancement_denial(
             worth_execution::WorkCeilingDenial::Stopped(cause),
         )
     })?;

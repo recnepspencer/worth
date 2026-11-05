@@ -26,7 +26,7 @@ impl TreeTarget {
         removed: CanonicalUniqueVec<PartitionIdentity>,
         identities_unchanged: bool,
         results: &std::collections::BTreeMap<PartitionIdentity, Reduced>,
-        execution: &crate::domain_computation::primary_graph::request_execution::QueryRequestExecution<'_>,
+        execution: &crate::domain_computation::request_execution::QueryRequestExecution<'_>,
     ) -> Result<Self, super::super::WorthQueryPartitionedComputationDenial<Stopped>>
     where
         Reduced: Clone + worth_execution::CanonicalBits,
@@ -38,7 +38,7 @@ impl TreeTarget {
             retained.tree.checked_full_build_cost().map(|cost| cost.0)
         } else {
             let bytes = results.len().checked_mul(size_of::<PartitionIdentity>())
-                .and_then(|n|u64::try_from(n).ok()).ok_or(D::Resource(crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::CapacityOverflow))?;
+                .and_then(|n|u64::try_from(n).ok()).ok_or(D::Resource(crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::CapacityOverflow))?;
             let _memory = execution.reserve(bytes).map_err(D::Resource)?;
             let inserted = CanonicalUniqueVec::try_from_sorted_unique(
                 results

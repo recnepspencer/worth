@@ -164,7 +164,7 @@ impl UnpublishedInstalledTransportCompletion {
 
 #[derive(Debug)]
 pub enum InstalledTransportPublicationDenial {
-    ExecutionDenied(crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial),
+    ExecutionDenied(crate::domain_computation::request_execution::WorthQueryAdvancementDenial),
     ForeignRelationalRuntime,
     ForeignProductWorld,
     OriginalPublicationCommitMismatch,

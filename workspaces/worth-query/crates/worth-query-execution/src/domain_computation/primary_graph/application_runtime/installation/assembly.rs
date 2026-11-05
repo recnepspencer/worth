@@ -7,7 +7,7 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallation
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_query_installation::facade::WorthQueryInstalledApplicationSchema;
 pub(super) fn assemble_application_runtime<Schema>(
-    phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
+    phase: &crate::domain_computation::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
     graph: PublishedApplicationGraph<
         crate::domain_computation::primary_graph::managed_bridge::WorthQueryInstalledApplicationBridge,
     >,

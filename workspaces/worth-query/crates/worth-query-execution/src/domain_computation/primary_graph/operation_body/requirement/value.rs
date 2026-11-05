@@ -11,7 +11,7 @@ use worth_query_declaration::facade::application_schema::{
 pub(in crate::domain_computation::primary_graph) struct PreparedRequirementOperand {
     pub(in crate::domain_computation::primary_graph) value: ExpressionValue,
     pub(in crate::domain_computation::primary_graph) _reservation:
-        crate::domain_computation::primary_graph::request_execution::QueryMemoryReservation,
+        crate::domain_computation::request_execution::QueryMemoryReservation,
 }
 
 pub(in crate::domain_computation::primary_graph) fn field_value(

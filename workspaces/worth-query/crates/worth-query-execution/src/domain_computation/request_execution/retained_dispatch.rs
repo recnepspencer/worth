@@ -15,7 +15,7 @@ pub trait WorthQueryRetainedReductionObserver {
 
 impl QueryRequestExecution<'_> {
     /// Lends the original request's active descendant to native retained nodes.
-    pub(in crate::domain_computation::primary_graph) fn with_native_lease<R>(
+    pub(in crate::domain_computation) fn with_native_lease<R>(
         &self,
         use_lease: impl FnOnce(&ExecutionResourceLease<'_>) -> R,
     ) -> Result<R, worth_execution::WorkCeilingDenial> {
@@ -31,7 +31,7 @@ impl QueryRequestExecution<'_> {
 }
 
 impl QueryDispatch<'_> {
-    pub(in crate::domain_computation::primary_graph) fn advance_retained<T, R, E, F>(
+    pub(in crate::domain_computation) fn advance_retained<T, R, E, F>(
         &self,
         ceiling: Option<u64>,
         prior: &worth_execution::ExecutionRetainedRun<R>,
@@ -55,7 +55,7 @@ impl QueryDispatch<'_> {
         )
     }
 
-    pub(in crate::domain_computation::primary_graph) fn reduce_retained<
+    pub(in crate::domain_computation) fn reduce_retained<
         T,
         R,
         E,
@@ -98,7 +98,7 @@ impl QueryDispatch<'_> {
         if let (Some((seed, kernel, identity, combine)), Ok(result)) =
             (certification, &outcome.result)
         {
-            crate::domain_computation::primary_graph::request_execution::test_placement::certify_native(
+            crate::domain_computation::request_execution::test_placement::certify_native(
                 map,
                 lease,
                 seed,

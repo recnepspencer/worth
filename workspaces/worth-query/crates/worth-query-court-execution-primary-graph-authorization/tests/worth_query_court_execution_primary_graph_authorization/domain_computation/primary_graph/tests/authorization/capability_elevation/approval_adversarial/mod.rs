@@ -179,7 +179,7 @@ fn lifecycle_drift_before_approval_commit_is_stale_and_returns_request_authority
 }
 
 pub fn approval_reads(
-    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     world: &crate::domain_computation::primary_graph::tests::authorization::capability_elevation::approval_transition::World,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     requested: WorthQueryRequestedElevation,

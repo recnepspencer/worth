@@ -174,11 +174,7 @@ mod tests {
         use worth_relational::facade::transactions::{
             CommitExecutionDenial, CommitExecutionDenialKind, RelationalExecutionDenialCause,
         };
-        use {
-            crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource,
-            crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial,
-            crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
-        };
+        use {crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource, crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial, crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage};
         let source = worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource::new();
         let request =
             worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope::new(

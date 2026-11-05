@@ -45,7 +45,7 @@ impl<Schema, Operation, Input, Scope>
     pub fn retain_original_mutation_input<Binding>(
         self,
         access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         input: ApplicationEncodedInput<Binding::InputBinding>,
     ) -> Result<Self, WorthQueryApplicationAttemptDenial>
@@ -66,7 +66,7 @@ impl<Schema, Operation, Input, Scope>
     pub fn retain_performed_correction_input<Binding>(
         self,
         access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         input: ApplicationEncodedInput<Binding::InputBinding>,
     ) -> Result<Self, WorthQueryApplicationAttemptDenial>
@@ -81,7 +81,7 @@ impl<Schema, Operation, Input, Scope>
     fn retain_checked_input<Binding>(
         mut self,
         access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         input: ApplicationEncodedInput<Binding::InputBinding>,
         retain_input: bool,

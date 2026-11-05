@@ -1,4 +1,4 @@
-use crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase;
+use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 use worth_query_declaration::facade::{
     application_capability::ApplicationCapabilityMarkerIdentity,
     application_program::ApplicationWorkflowSpec,
@@ -23,7 +23,7 @@ pub struct WorthQueryWorkflowDefinitionPublicationAdapter;
 impl WorthQueryWorkflowDefinitionPublicationAdapter {
     #[doc(hidden)]
     pub fn prepare<Schema, Capability, Operation, Input, Scope, Spec>(
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         selected: &WorthQuerySelectedProductOperation<'_, Schema>,
         contract: WorthQueryInstalledWorkflowDefinitionContract<Schema, Spec>,
         expected_predecessor: WorkflowDefinitionExpectedPredecessor,
@@ -69,7 +69,7 @@ impl WorthQueryWorkflowDefinitionPublicationAdapter {
             match phase.execution_request_for(&runtime.runtime.product_runtime) {
                 Ok(request) => request,
                 Err(cause) => return WorkflowDefinitionPublicationOutcome::Application(
-                    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::from(
+                    crate::domain_computation::request_execution::WorthQueryAdvancementDenial::from(
                         cause,
                     )
                     .into_commit_outcome()

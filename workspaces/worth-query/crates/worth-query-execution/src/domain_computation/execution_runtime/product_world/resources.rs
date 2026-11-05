@@ -150,7 +150,7 @@ pub(crate) fn test_product_world_resources_with_history_limit_for_test(
         .expect("the test Product World budget is valid"),
         WorthQueryProductWorldClock::start(clock),
         super::super::WorthQueryInvalidationResources::new(),
-        crate::domain_computation::primary_graph::request_execution::advancement::fixture_request_policy(),
+        crate::domain_computation::request_execution::advancement::fixture_request_policy(),
     )
 }
 

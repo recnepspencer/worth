@@ -32,7 +32,7 @@ use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_co
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::decision_read_set_fixture::staged;
 #[test]
 fn all_fact_families_capture_canonically_and_compare_without_false_conflicts() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -84,7 +84,7 @@ fn all_fact_families_capture_canonically_and_compare_without_false_conflicts() {
 }
 #[test]
 fn every_relevant_family_stales_independently_while_unrelated_axes_remain_fresh() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 

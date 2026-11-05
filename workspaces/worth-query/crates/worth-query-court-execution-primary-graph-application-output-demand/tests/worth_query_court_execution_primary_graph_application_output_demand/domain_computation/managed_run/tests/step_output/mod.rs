@@ -58,7 +58,7 @@ impl WorthQueryGraphParticipationProvider<ManagedGraph> for MultiChunkProvider {
 
 #[test]
 fn each_streamed_chunk_requires_consumption_before_the_next_provider_step() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -115,7 +115,7 @@ fn each_streamed_chunk_requires_consumption_before_the_next_provider_step() {
 
 #[test]
 fn stalled_consumer_cancellation_releases_the_chunk_before_terminal_cleanup() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -156,7 +156,7 @@ fn stalled_consumer_cancellation_releases_the_chunk_before_terminal_cleanup() {
 
 #[test]
 fn foreign_consumer_failure_preserves_queue_occupancy_for_owner_cleanup() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -202,7 +202,7 @@ fn foreign_consumer_failure_preserves_queue_occupancy_for_owner_cleanup() {
 
 #[test]
 fn exact_capacity_chunk_drains_before_completion() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -307,7 +307,7 @@ impl WorthQueryGraphParticipationProvider<ManagedGraph> for WideChunkProvider {
 
 #[test]
 fn pending_and_paused_abandonment_release_queue_and_output_retention() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -360,7 +360,7 @@ fn pending_and_paused_abandonment_release_queue_and_output_retention() {
 }
 
 pub fn start_projection(
-    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     provider: MultiChunkProvider,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,

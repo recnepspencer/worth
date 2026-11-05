@@ -13,7 +13,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphBootstrap<Schema> {
     /// The phase witnesses installation custody around inline Relational commits.
     pub fn commit_seed_batch(
         &mut self,
-        _phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
+        _phase: &crate::domain_computation::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         if self.seed_batch_failed {
             return Err(primary_graph_denial(

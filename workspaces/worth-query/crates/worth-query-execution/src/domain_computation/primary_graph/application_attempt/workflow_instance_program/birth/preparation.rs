@@ -11,11 +11,7 @@ use worth_query_declaration::facade::{
     application_schema::ApplicationOperationMarkerIdentity,
 };
 use worth_query_installation::facade::WorthQueryInstalledApplicationWorkflowSpec;
-use {
-    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase,
-    crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation,
-    crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation,
-};
+use {crate::domain_computation::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation, crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation};
 
 impl WorthQueryWorkflowBirthAdapter {
     pub fn prepare<Schema, Binding, Role, Spec>(

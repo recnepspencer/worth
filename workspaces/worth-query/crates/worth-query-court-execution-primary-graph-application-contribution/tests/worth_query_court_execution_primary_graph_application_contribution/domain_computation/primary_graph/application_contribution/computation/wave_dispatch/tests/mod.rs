@@ -7,7 +7,7 @@ pub use worth_execution::MapStop;
 pub use worth_foundational::PartitionIdentity;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::computation::prepared_request::PreparedCompute;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::computation::wave_dispatch::PreparedMember;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::QueryRequestExecution;
+pub use worth_query_execution::court_doors_for_test::domain_computation::request_execution::QueryRequestExecution;
 pub use worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial;
 pub use worth_query_execution::facade::application_contribution::WorthQueryMemberExecution;
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::computation::wave_dispatch::dispatch;
@@ -164,7 +164,7 @@ fn a_panicking_compute_drops_its_suffix_and_clears_worker_custody() {
     );
     assert_eq!(settled.len(), 1);
     assert!(*after.lock().unwrap());
-    assert!(!worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::worker_custody::active());
+    assert!(!worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::worker_custody::active());
 }
 
 #[test]

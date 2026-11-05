@@ -106,7 +106,7 @@ impl WorthQueryGraphParticipationProvider<ManagedGraph> for PhysicalReleaseProvi
 
 #[test]
 fn physical_release_failure_terminalizes_with_exact_recovery_evidence() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -209,7 +209,7 @@ fn physical_release_failure_terminalizes_with_exact_recovery_evidence() {
 
 #[test]
 fn workflow_disposal_rejection_terminalizes_before_returning_running_authority() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -312,7 +312,7 @@ fn workflow_disposal_rejection_terminalizes_before_returning_running_authority()
 
 #[test]
 fn invocation_panic_and_destructor_panic_are_independently_evidenced() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 

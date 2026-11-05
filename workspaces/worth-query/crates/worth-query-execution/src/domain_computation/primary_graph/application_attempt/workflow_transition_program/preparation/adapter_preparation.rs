@@ -2,7 +2,7 @@ use super::*;
 
 impl WorthQueryWorkflowAdvanceAdapter {
     pub fn prepare<Schema, Capability, Operation, Input, Scope, Spec>(
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         selected: &WorthQuerySelectedProductOperation<'_, Schema>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         instance: PublishedWorkflowInstanceRef,
@@ -29,7 +29,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
     }
 
     pub fn prepare_navigate_back<Schema, Capability, Operation, Input, Scope, Spec>(
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         selected: &WorthQuerySelectedProductOperation<'_, Schema>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         instance: PublishedWorkflowInstanceRef,
@@ -56,7 +56,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
     }
 
     pub fn prepare_collect_assessment<Schema, Capability, Operation, Input, Scope, Spec>(
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         selected: &WorthQuerySelectedProductOperation<'_, Schema>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         instance: PublishedWorkflowInstanceRef,
@@ -85,7 +85,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
 
     #[allow(clippy::too_many_arguments)]
     pub fn prepare_approval<Schema, Capability, Operation, Input, Scope, Spec>(
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         selected: &WorthQuerySelectedProductOperation<'_, Schema>,
         workflow: WorthQueryWorkflowVocabulary<'_, Schema, Spec>,
         instance: PublishedWorkflowInstanceRef,

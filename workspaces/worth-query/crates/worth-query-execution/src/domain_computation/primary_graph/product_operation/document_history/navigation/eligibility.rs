@@ -14,10 +14,7 @@ use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledDoc
 use worth_relational::facade::mvcc::{
     RelationalRetainedEntitySelectionPreparationError as Preparation, RelationalTransactionIntent,
 };
-use {
-    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase,
-    crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation,
-};
+use {crate::domain_computation::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation};
 
 fn correction(cause: Eligibility) -> Denial {
     Denial::RequiresSemanticCorrection(cause)

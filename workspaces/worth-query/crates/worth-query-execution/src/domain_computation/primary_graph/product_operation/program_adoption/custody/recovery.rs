@@ -91,7 +91,7 @@ pub enum WorthQueryBranchAdoptionRecoveryDenial {
     Authorization(super::super::authorization::WorthQueryProgramAdoptionAuthorizationDenial),
     /// The recovery call was refused before inspecting its owners.
     ExecutionDenied(
-        crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
+        crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
     ),
     /// The recovery expects a different product than the one selected.
     ProductAffinityMismatch,
@@ -154,7 +154,7 @@ pub enum WorthQueryBranchAdoptionRecoveryOutcome {
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     pub(in crate::domain_computation::primary_graph) fn recover_branch_adoption_authorized_in_advancement(
         &self,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         recovery: WorthQueryBranchAdoptionRecovery,
         principal: &worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,

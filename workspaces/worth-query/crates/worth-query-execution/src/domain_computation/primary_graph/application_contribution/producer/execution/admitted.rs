@@ -1,5 +1,5 @@
 use super::*;
-use crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase;
+use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 
 pub(super) fn execute_fresh<Schema, Binding>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

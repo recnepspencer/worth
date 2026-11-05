@@ -6,14 +6,7 @@ use super::{
 };
 use std::collections::btree_map::IntoValues;
 use worth_query_installation::facade::ApplicationSchema;
-use {
-    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
-    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase,
-    crate::domain_computation::primary_graph::WorthQueryApplicationProductBranchCleanupDenial,
-    crate::domain_computation::primary_graph::WorthQueryApplicationProductBranchCleanupFailure,
-    crate::domain_computation::primary_graph::WorthQueryApplicationProductBranchCloseDenial,
-    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime,
-};
+use {crate::domain_computation::request_execution::WorthQueryAdvancementDenial, crate::domain_computation::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryApplicationProductBranchCleanupDenial, crate::domain_computation::primary_graph::WorthQueryApplicationProductBranchCleanupFailure, crate::domain_computation::primary_graph::WorthQueryApplicationProductBranchCloseDenial, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime};
 
 /// Actual session-owned head completions; other holders retain their own rights.
 pub struct WorthQueryDocumentHistoryCloseReceipt {

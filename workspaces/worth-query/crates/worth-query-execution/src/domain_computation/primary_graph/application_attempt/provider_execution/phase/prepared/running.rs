@@ -1,4 +1,4 @@
-use crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase;
+use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 use worth_query_admission::facade::basis::basis_lifecycle;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_bridge::facade::{
@@ -89,7 +89,7 @@ where
     let execution = phase
         .execution_request_for(&application.runtime.product_runtime)
         .map_err(|foreign| {
-            crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::from(foreign)
+            crate::domain_computation::request_execution::WorthQueryAdvancementDenial::from(foreign)
                 .into_commit_outcome()
         })?;
     let operation = bind_execution_operation(

@@ -29,7 +29,7 @@ pub use worth_query_execution::facade::application_contribution::WorthQueryManag
 pub use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationDenial;
 pub use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationInterruption;
 pub use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationResourceDenial;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::QueryRequestExecution;
+pub use worth_query_execution::court_doors_for_test::domain_computation::request_execution::QueryRequestExecution;
 
 pub struct Schema;
 impl ApplicationSchema for Schema {

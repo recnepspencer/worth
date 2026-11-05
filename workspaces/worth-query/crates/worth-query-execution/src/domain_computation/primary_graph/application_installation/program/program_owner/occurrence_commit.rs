@@ -5,7 +5,7 @@
 //! effect is prepared, so a handle onto a rostered peer program cannot commit
 //! on an occurrence that never activated it.
 
-use crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase;
+use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 
 use worth_query_declaration::facade::application_operation::{
@@ -48,7 +48,7 @@ where
         match phase.execution_request_for(&owner.owned_runtime().runtime.product_runtime) {
             Ok(execution) => execution,
             Err(cause) => {
-                return crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::from(
+                return crate::domain_computation::request_execution::WorthQueryAdvancementDenial::from(
                     cause,
                 )
                 .into_commit_outcome()

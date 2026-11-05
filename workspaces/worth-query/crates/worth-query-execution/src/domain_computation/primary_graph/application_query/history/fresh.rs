@@ -111,7 +111,7 @@ where
 
 fn request_for<'scope, Schema: ApplicationSchema>(
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<
+    phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<
         'scope,
     >,
 ) -> Result<worth_execution::ExecutionRequest<'scope, 'scope>, Denial> {

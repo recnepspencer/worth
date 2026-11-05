@@ -21,7 +21,7 @@ use crate::domain_computation::primary_graph::application_attempt::{
 };
 use crate::domain_computation::primary_graph::application_contribution::InstalledProducerEdition;
 use crate::domain_computation::primary_graph::invariant_projection::ComputationCallCharge;
-use crate::domain_computation::primary_graph::request_execution::QueryMemoryReservation;
+use crate::domain_computation::request_execution::QueryMemoryReservation;
 
 /// How one run of a partitioned computation ran.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -316,7 +316,7 @@ pub(in crate::domain_computation::primary_graph) struct CompletedComputationRun 
 
 mod court_doors_for_test;
 
-impl crate::domain_computation::primary_graph::request_execution::retained_dispatch::WorthQueryRetainedReductionObserver
+impl crate::domain_computation::request_execution::retained_dispatch::WorthQueryRetainedReductionObserver
     for WorthQueryPartitionedComputationFullCause
 {
     fn observe_retained_reduction<R, F, E, Tree>(

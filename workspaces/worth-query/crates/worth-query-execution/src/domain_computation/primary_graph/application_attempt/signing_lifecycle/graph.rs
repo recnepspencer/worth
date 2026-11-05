@@ -10,12 +10,7 @@ use worth_query_declaration::facade::application_query::{
     ApplicationQueryRootPathStep as Step, RelationDirection as PathDirection,
 };
 use worth_relational::facade::identity::KindId;
-use {
-    super::attempt, super::capacity, super::coordinates, super::stopped, super::unavailable,
-    super::Effect, super::EntityId, super::Fact, super::Lease, super::Locus, super::Outcome,
-    super::Rule,
-    crate::domain_computation::primary_graph::request_execution::QueryRequestExecution,
-};
+use {super::attempt, super::capacity, super::coordinates, super::stopped, super::unavailable, super::Effect, super::EntityId, super::Fact, super::Lease, super::Locus, super::Outcome, super::Rule, crate::domain_computation::request_execution::QueryRequestExecution};
 
 fn add_subject(
     rule: &Rule,

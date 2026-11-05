@@ -26,7 +26,7 @@ pub use crate::domain_computation::managed_run::tests::*;
 pub(super) use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::readmission_workflow::readmission_artifact::ReadmissionArtifact;
 #[test]
 fn workflow_readmission_rolls_generation_and_preserves_occurrence_state() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -141,7 +141,7 @@ fn workflow_readmission_rolls_generation_and_preserves_occurrence_state() {
 }
 #[test]
 fn workflow_provider_restore_denial_keeps_frozen_generation_retryable() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -194,7 +194,7 @@ fn workflow_provider_restore_denial_keeps_frozen_generation_retryable() {
 }
 #[test]
 fn workflow_restore_panic_can_recover_only_through_terminal_cleanup() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 

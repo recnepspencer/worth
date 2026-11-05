@@ -2,10 +2,7 @@ use super::WorthQueryDocumentHistoryDenial as Denial;
 use crate::basis::WorthQueryProductObservationLease;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_world::facade::ProductBranchCurrentnessFailure;
-use {
-    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase,
-    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime,
-};
+use {crate::domain_computation::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime};
 
 /// Validate through the same Native commit lane and World head guard as adoption.
 /// Prepared values enter and leave the guard without allocation or authored effects.
@@ -189,7 +186,7 @@ fn confirm_in_native_with_effect<S: ApplicationSchema, Value>(
 
 fn stopped(stop: worth_execution::MapKernelStop) -> Denial {
     Denial::Stopped(
-        crate::domain_computation::primary_graph::request_execution::advancement_denial(
+        crate::domain_computation::request_execution::advancement_denial(
             worth_execution::WorkCeilingDenial::Stopped(stop),
         ),
     )

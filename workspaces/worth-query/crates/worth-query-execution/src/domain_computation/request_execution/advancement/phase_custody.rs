@@ -10,7 +10,7 @@ pub(super) enum AdvancementSource {
 }
 
 /// Runtime custody of an active request, never retained in a product.
-pub(in crate::domain_computation::primary_graph) struct ActiveAdvancement<'scope> {
+pub(in crate::domain_computation) struct ActiveAdvancement<'scope> {
     pub(super) execution: &'scope QueryRequestExecution<'scope>,
 }
 
@@ -241,7 +241,7 @@ impl<'scope> WorthQueryAdvancementPhase<'scope> {
     }
 
     pub fn complete(self) {}
-    pub(in crate::domain_computation::primary_graph) fn execution_for(
+    pub(in crate::domain_computation) fn execution_for(
         &self,
         runtime: &(impl super::source::WorthQueryAdvancementSource + ?Sized),
     ) -> Result<&QueryRequestExecution<'scope>, WorthQueryForeignAdvancementPhase> {

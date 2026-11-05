@@ -7,11 +7,7 @@ use crate::basis::{
 };
 use crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchCloseReceipt;
 use worth_query_declaration::facade::branch::WorthQueryProductBranchComponents;
-use {
-    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase,
-    crate::domain_computation::primary_graph::WorthQueryApplicationProductBranchCloseDenial,
-    crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation,
-};
+use {crate::domain_computation::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryApplicationProductBranchCloseDenial, crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation};
 
 mod adoption;
 pub(in crate::domain_computation::primary_graph) use adoption::ProductBranchAdoptionRelease;

@@ -1,6 +1,6 @@
 //! A declared test policy owns bare provider fixtures that have no product World.
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::opening_custody::OpeningCustody;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::QueryRequestExecution;
+use worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::opening_custody::OpeningCustody;
+use worth_query_execution::court_doors_for_test::domain_computation::request_execution::QueryRequestExecution;
 use worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial;
 use worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase;
 

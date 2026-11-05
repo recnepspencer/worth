@@ -1,6 +1,6 @@
 //! Native candidate assembly permits replacement; authored destinations must be distinct.
 use super::*;
-use crate::domain_computation::primary_graph::request_execution::QueryRequestExecution;
+use crate::domain_computation::request_execution::QueryRequestExecution;
 use worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus;
 use worth_relational::facade::identity::EntityId;
 /// O(w log w) work and O(w) temporary slots for all actual authored write targets.

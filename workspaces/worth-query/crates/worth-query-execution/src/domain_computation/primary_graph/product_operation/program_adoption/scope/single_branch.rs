@@ -115,7 +115,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     pub fn prepare_branch_adoption_in_advancement(
         &self,
 
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         target: &ApplicationProgramRevision,
         expected_requirements: &WorthQueryProgramAdoptionRequirements,
         migration: Option<WorthQueryPreparedProgramMigration>,

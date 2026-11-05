@@ -2,10 +2,7 @@
 use super::*;
 use crate::basis::WorthQueryProductBranch;
 use crate::domain_computation::primary_graph::application_output_demand::denial::read_cleanup::WorthQueryOutputReadCloseDenial;
-use {
-    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase,
-    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime,
-};
+use {crate::domain_computation::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime};
 
 impl<S: ApplicationSchema + 'static, F: WorthQueryProducerOutputFamily<S>>
     WorthQueryAdmittedOutputDemand<S, F>

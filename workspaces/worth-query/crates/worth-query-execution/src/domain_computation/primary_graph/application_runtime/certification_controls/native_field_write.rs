@@ -46,7 +46,7 @@ where
         request: &WorthQueryRequestScope,
     ) -> Result<
         (),
-        crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
+        crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
     >
     where
         Field: DeclaredApplicationFieldValue<Value = Value>,

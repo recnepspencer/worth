@@ -34,14 +34,7 @@ use worth_query_declaration::facade::{
 use worth_query_installation::facade::{
     WorthQueryInstalledApplicationQueryBinding, WorthQueryInstalledDocumentHistory,
 };
-use {
-    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase,
-    crate::domain_computation::primary_graph::WorthQueryDocumentHistory,
-    crate::domain_computation::primary_graph::WorthQueryDocumentHistoryAttachmentFailure,
-    crate::domain_computation::primary_graph::WorthQueryDocumentHistoryDenial as Denial,
-    crate::domain_computation::primary_graph::WorthQueryOwnedProductHead,
-    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime,
-};
+use {crate::domain_computation::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryDocumentHistory, crate::domain_computation::primary_graph::WorthQueryDocumentHistoryAttachmentFailure, crate::domain_computation::primary_graph::WorthQueryDocumentHistoryDenial as Denial, crate::domain_computation::primary_graph::WorthQueryOwnedProductHead, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime};
 
 type Access<S, H> = ApplicationHistoryAccessBinding<S, H>;
 type Query<S, H> = <Access<S, H> as ApplicationQueryBinding<S>>::Query;

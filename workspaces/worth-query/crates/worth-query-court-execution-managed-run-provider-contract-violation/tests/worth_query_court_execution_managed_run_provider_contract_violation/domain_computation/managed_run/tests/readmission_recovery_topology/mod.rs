@@ -2,7 +2,7 @@ use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_co
 
 #[test]
 fn checkpoint_release_panic_reports_exact_non_retryable_physical_posture() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -77,7 +77,7 @@ fn checkpoint_release_panic_reports_exact_non_retryable_physical_posture() {
 
 #[test]
 fn checkpoint_and_restored_execution_drop_panics_preserve_both_physical_dispositions() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 

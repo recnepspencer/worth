@@ -177,7 +177,7 @@ pub fn apply_parent_drift(
 }
 
 pub fn replace_parent_resource(
-    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     world: &worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::authorization_world_installation::AuthorizationWorld,
 ) {
     let kind = relation_kind(world, CapabilityResource::reference().name());
@@ -209,7 +209,7 @@ pub fn replace_parent_resource(
 }
 
 pub fn replace_child_grantor_with_grantee(
-    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::authorization_world_installation::AuthorizationWorld,
 ) {

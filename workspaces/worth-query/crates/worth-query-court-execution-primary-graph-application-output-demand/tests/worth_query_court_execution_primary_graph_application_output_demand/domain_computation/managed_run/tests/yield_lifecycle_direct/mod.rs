@@ -4,7 +4,7 @@ use worth_runtime_bridge::facade::BridgeExecutionBasisSignalTerminal;
 
 #[test]
 fn direct_yield_retains_exact_authorities_and_releases_them_explicitly() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -80,7 +80,7 @@ fn direct_yield_retains_exact_authorities_and_releases_them_explicitly() {
 
 #[test]
 fn direct_yield_denials_preserve_the_paused_execution_authority() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -127,7 +127,7 @@ fn direct_yield_denials_preserve_the_paused_execution_authority() {
 
 #[test]
 fn checkpoint_claim_is_required_even_when_yield_is_installed() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -178,7 +178,7 @@ fn checkpoint_claim_is_required_even_when_yield_is_installed() {
 
 #[test]
 fn suspension_failure_terminalizes_signal_but_preserves_cleanup_authority() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -238,7 +238,7 @@ fn suspension_failure_terminalizes_signal_but_preserves_cleanup_authority() {
 
 #[test]
 fn suspension_panic_and_oversized_checkpoint_follow_the_same_recovery_lane() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -310,7 +310,7 @@ fn suspension_panic_and_oversized_checkpoint_follow_the_same_recovery_lane() {
 
 #[test]
 fn direct_yield_preserves_exact_applied_effect_evidence() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 

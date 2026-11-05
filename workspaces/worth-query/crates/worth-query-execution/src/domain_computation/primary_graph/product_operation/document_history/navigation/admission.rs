@@ -9,12 +9,7 @@ use worth_query_declaration::facade::{
     application_schema::ApplicationOperationRef,
 };
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledDocumentHistory};
-use {
-    crate::domain_computation::primary_graph::application_query::CompletedMetadataRead,
-    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase,
-    crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation,
-    crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding,
-};
+use {crate::domain_computation::primary_graph::application_query::CompletedMetadataRead, crate::domain_computation::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation, crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding};
 
 impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
     WorthQueryDocumentHistory<'runtime, S, H>

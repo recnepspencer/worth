@@ -1,6 +1,6 @@
 //! Business evidence and the real failed cleanup owner travel together.
 use super::WorthQueryApplicationUncommitted;
-use crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase;
+use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 use crate::domain_computation::{
     execution_runtime::product_world::WorthQueryProductRuntime, WorthQueryMutationCleanupFailure,
 };
@@ -84,7 +84,7 @@ pub struct WorthQueryApplicationManagedCleanup {
         std::sync::RwLock<worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly>,
     >,
     last_denial: Option<
-        crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
+        crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
     >,
 }
 impl WorthQueryApplicationManagedCleanup {
@@ -96,7 +96,7 @@ impl WorthQueryApplicationManagedCleanup {
     pub fn last_retry_denial(
         &self,
     ) -> Option<
-        &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
+        &crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
     > {
         self.last_denial.as_ref()
     }

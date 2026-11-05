@@ -12,7 +12,7 @@ use crate::domain_computation::primary_graph::application_output_demand::WorthQu
 use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceSettlementCurrentness;
 use crate::domain_computation::primary_graph::provider::FactlessCurrentness;
-use crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase;
+use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 
 /// Check actual selected required work before the caller's ordinary Ready
 /// result can be accepted. The caller keeps the successors its own chain

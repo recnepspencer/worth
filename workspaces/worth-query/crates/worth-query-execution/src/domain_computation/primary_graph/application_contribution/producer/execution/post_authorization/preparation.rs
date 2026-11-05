@@ -55,7 +55,7 @@ where
     require_selected_program(selected, commit_authority.mode())?;
 
     let application_identity = crate::domain_computation::execution_observation::is_installed().then(|| {
-        crate::domain_computation::primary_graph::request_execution::advancement::observation::WorthQueryAdvancementIdentityForTest::Producer {
+        crate::domain_computation::request_execution::advancement::observation::WorthQueryAdvancementIdentityForTest::Producer {
         producer: Binding::IDENTITY.to_owned(),
         query: *observed_source.query_identity.as_bytes(),
         parameters: *observed_source.parameter_binding_identity.bytes(),
@@ -142,9 +142,9 @@ where
                         let published = publish(&admission)?;
 
                         if let Some(identity) = application_identity {
-                            crate::domain_computation::primary_graph::request_execution::record_event(
-                                crate::domain_computation::primary_graph::request_execution::advancement::observation::WorthQueryAdvancementEventForTest {
-                                    kind: crate::domain_computation::primary_graph::request_execution::advancement::observation::WorthQueryAdvancementEventKindForTest::Publication,
+                            crate::domain_computation::request_execution::record_event(
+                                crate::domain_computation::request_execution::advancement::observation::WorthQueryAdvancementEventForTest {
+                                    kind: crate::domain_computation::request_execution::advancement::observation::WorthQueryAdvancementEventKindForTest::Publication,
                                     identity,
                                 });
                         }
@@ -227,7 +227,7 @@ where
         requests,
         move |slots| {
 
-            let _observation = application_identity.map(crate::domain_computation::primary_graph::request_execution::advancement::observation::application::apply_identity);
+            let _observation = application_identity.map(crate::domain_computation::request_execution::advancement::observation::application::apply_identity);
             let identities = owned_identities.borrow();
             let completed = completed_handler::<_, _, DeclaredDenial<Schema, Binding>>(
                 Binding::IDENTITY,

@@ -1,6 +1,6 @@
 //! One selected Product and native image for an exact required-output wave.
 
-use crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase;
+use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 use std::sync::Arc;
 
 use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;

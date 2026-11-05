@@ -3,7 +3,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::application_output_demand::CheckpointFinishStop;
 use crate::domain_computation::primary_graph::application_output_demand::PreparedSelectedCheckpointFinish;
-use crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase;
+use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 

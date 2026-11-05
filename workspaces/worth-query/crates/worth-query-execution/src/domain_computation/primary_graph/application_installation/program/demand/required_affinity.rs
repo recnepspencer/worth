@@ -22,7 +22,7 @@ where
     /// it neither duplicates the prepared token nor recovers roots from a receipt.
     pub fn validate_required_program_source<Root>(
         &self,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         prepared: &WorthQueryPreparedRequiredOutputSource,
         receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
@@ -115,7 +115,7 @@ where
     /// Validates an initial read-origin continuation without inventing a source receipt.
     pub fn validate_initial_program_source<Root>(
         &self,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         observation: &crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
         branch: crate::basis::WorthQueryProductBranch,

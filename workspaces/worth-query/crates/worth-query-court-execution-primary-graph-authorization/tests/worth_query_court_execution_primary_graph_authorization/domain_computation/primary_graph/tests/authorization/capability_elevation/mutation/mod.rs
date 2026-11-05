@@ -28,7 +28,7 @@ pub(super) use crate::domain_computation::primary_graph::tests::authorization::c
 pub(super) use crate::domain_computation::primary_graph::tests::authorization::capability_elevation::review_support_mutation::replace_support_grantor_with_custodian;
 
 pub fn set_status(
-    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::authorization_world_installation::AuthorizationWorld,
     elevation_identity: &str,
@@ -78,7 +78,7 @@ pub fn set_status(
 }
 
 pub fn add_self_approver(
-    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::authorization_world_installation::AuthorizationWorld,
     elevation_identity: &str,
@@ -127,7 +127,7 @@ pub fn add_self_approver(
 }
 
 pub fn replace_elevation_resource(
-    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::authorization_world_installation::AuthorizationWorld,
     elevation_identity: &str,
@@ -215,7 +215,7 @@ pub fn replace_elevation_resource(
 }
 
 pub fn add_elevation_resource(
-    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::authorization_world_installation::AuthorizationWorld,
     elevation_identity: &str,

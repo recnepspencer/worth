@@ -1,5 +1,5 @@
 use super::own_effect_observation::{self, Stage};
-use crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase;
+use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::progression::denial;

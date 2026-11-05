@@ -4,10 +4,10 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
     #[doc(hidden)]
     pub fn release_primary_index_generations_for_test(
         &self,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
     ) -> Result<
         usize,
-        crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
+        crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
     > {
         let execution = phase.execution_request_for(self.product_runtime())?;
         let graph = self
@@ -43,11 +43,11 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         U: worth_query_installation::facade::ApplicationFieldUnit,
     >(
         &self,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         field: worth_query_installation::facade::ApplicationFieldRef<Schema, E, A, F, V, W, Q, U>,
     ) -> Result<
         usize,
-        crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
+        crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
     > {
         let execution = phase.execution_request_for(self.product_runtime())?;
         let graph = self
@@ -79,12 +79,12 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         U: worth_query_installation::facade::ApplicationFieldUnit,
     >(
         &self,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         branch: crate::basis::WorthQueryProductBranch,
         field: worth_query_installation::facade::ApplicationFieldRef<Schema, E, A, F, V, W, Q, U>,
     ) -> Result<
         bool,
-        crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
+        crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
     > {
         let execution = phase.execution_request_for(self.product_runtime())?;
         let selected = self

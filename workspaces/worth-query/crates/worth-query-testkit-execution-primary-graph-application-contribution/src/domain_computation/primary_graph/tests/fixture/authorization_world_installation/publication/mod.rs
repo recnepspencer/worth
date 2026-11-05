@@ -1,7 +1,7 @@
 use crate::domain_computation::primary_graph::tests::fixture::authorization_world_installation::*;
 
 pub fn publish_authorization_world(
-    phase: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    phase: &worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     prepared: PreparedAuthorizationWorld,
     admission_clock: worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock,
 ) -> AuthorizationWorld {

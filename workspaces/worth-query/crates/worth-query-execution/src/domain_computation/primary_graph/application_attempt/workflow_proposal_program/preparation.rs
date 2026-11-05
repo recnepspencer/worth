@@ -1,5 +1,5 @@
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
-use crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase;
+use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 use worth_query_declaration::facade::{
     application_program::ApplicationWorkflowSpec,
     application_schema::{ApplicationOperationMarkerIdentity, ApplicationStructuredValueBinding},
@@ -143,7 +143,7 @@ pub struct WorthQueryWorkflowProposalAdapter;
 
 impl WorthQueryWorkflowProposalAdapter {
     pub fn resolve_replay<Schema, Operation, Input, Scope>(
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
@@ -200,7 +200,7 @@ impl WorthQueryWorkflowProposalAdapter {
 
     #[allow(clippy::too_many_arguments)]
     pub fn prepare<Schema, Operation, Input, Scope, Spec>(
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         selected: &WorthQuerySelectedProductOperation<'_, Schema>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         instance: PublishedWorkflowInstanceRef,
@@ -277,7 +277,7 @@ impl WorthQueryWorkflowProposalAdapter {
             match phase.execution_request_for(&runtime.runtime.product_runtime) {
                 Ok(request) => request,
                 Err(cause) => return WorkflowProposalOutcome::Application(
-                    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::from(
+                    crate::domain_computation::request_execution::WorthQueryAdvancementDenial::from(
                         cause,
                     )
                     .into_commit_outcome()

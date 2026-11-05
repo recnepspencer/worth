@@ -23,7 +23,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphBootstrap<S> {
     /// ```
     pub fn initialize_managed_index<I: ApplicationManagedIndexBinding<S>>(
         &mut self,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         if self.seed_batch_failed || self.recovered_publication.is_some() {
             return Err(primary_graph_denial(

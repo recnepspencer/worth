@@ -1,6 +1,6 @@
 //! One original advancement owns success, refusal and every nested temporary.
 use super::*;
-use crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial;
+use crate::domain_computation::request_execution::WorthQueryAdvancementDenial;
 pub(super) fn open<T, Schema: ApplicationSchema>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     request: &WorthQueryRequestScope,

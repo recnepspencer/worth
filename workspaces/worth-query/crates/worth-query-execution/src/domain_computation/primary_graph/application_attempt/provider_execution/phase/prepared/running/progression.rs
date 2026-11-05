@@ -10,7 +10,7 @@ use crate::domain_computation::primary_graph::product_operation::document_histor
 use crate::domain_computation::primary_graph::provider::{
     WorthQueryApplicationBranchCommitCoordination, WorthQueryPrimaryGraphProvider,
 };
-use crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase;
+use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 
 mod authorized;
 mod commit_resolution;

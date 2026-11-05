@@ -44,7 +44,7 @@ pub enum WorthQueryProviderSessionDenialKind {
     /// An execution refusal retains Query's shared resource vocabulary.
     ExecutionResource {
         denial:
-            crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial,
+            crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial,
         partition_identity: Option<u64>,
         /// The refusing ancestor, only for a policy memory reservation.
         policy_ancestor: Option<u32>,
@@ -300,16 +300,13 @@ mod court_doors_for_test;
 
 /// How a provider session reports a refused advancement: as its own denial, or as a control stop.
 pub(in crate::domain_computation) fn advancement_denial_cause(
-    denial: crate::domain_computation::primary_graph::request_execution::advancement::WorthQueryAdvancementDenial,
+    denial: crate::domain_computation::request_execution::advancement::WorthQueryAdvancementDenial,
 ) -> Result<
     crate::domain_computation::WorthQueryProviderSessionDenialKind,
     crate::domain_computation::WorthQueryProviderSessionControlStopKind,
 > {
-    use crate::domain_computation::primary_graph::request_execution::advancement::WorthQueryAdvancementDenial as Denial;
-    use crate::domain_computation::primary_graph::request_execution::execution_refusal::{
-        WorthQueryManagedComputationInterruption,
-        WorthQueryManagedComputationResourceDenial as Resource,
-    };
+    use crate::domain_computation::request_execution::advancement::WorthQueryAdvancementDenial as Denial;
+    use {crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationInterruption, crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource};
     use crate::domain_computation::{
         WorthQueryProviderSessionControlStopKind as Control,
         WorthQueryProviderSessionDenialKind as Kind,

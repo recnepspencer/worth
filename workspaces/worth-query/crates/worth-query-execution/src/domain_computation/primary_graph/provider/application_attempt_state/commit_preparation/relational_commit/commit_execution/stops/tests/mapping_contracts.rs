@@ -17,10 +17,7 @@ use worth_relational::facade::{
         RelationalExecutionDenialCause as Cause, TransactionCommitError,
     },
 };
-use {
-    crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource,
-    crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryMemoryLimitLevel as Level,
-};
+use {crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource, crate::domain_computation::request_execution::execution_refusal::WorthQueryMemoryLimitLevel as Level};
 
 fn assert_kind(cause: Cause, expected: Kind) {
     let stop = transaction_commit_stop(TransactionCommitError::Execution {

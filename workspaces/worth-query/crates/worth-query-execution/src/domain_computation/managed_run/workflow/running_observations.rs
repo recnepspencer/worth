@@ -197,7 +197,7 @@ impl WorthQueryRunningWorkflowRun {
 
     pub fn begin_stage_graph_execution(
         self,
-        execution: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        execution: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
 
         stage_identity: &str,
         graph_authority: &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,

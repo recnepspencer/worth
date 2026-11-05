@@ -16,7 +16,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     pub(in crate::domain_computation) fn progress_accepted_inbound_occurrence(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         accepted: Arc<WorthQueryAcceptedInboundOccurrence>,
         request: &WorthQueryRequestScope,
     ) -> Result<WorthQueryInboundReceiptPosture, WorthQueryInboundAdmissionDenial> {

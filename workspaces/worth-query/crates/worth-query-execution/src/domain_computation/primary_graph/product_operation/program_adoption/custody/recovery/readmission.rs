@@ -5,7 +5,7 @@ use crate::domain_computation::execution_runtime::product_world::publication_den
     WorthQueryProductPublicationOutcome as PublicationOutcome,
 };
 use crate::domain_computation::execution_runtime::product_world::OwnerCleanupRetirements;
-use crate::domain_computation::primary_graph::request_execution::advancement_denial;
+use crate::domain_computation::request_execution::advancement_denial;
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     pub(in crate::domain_computation::primary_graph::product_operation::program_adoption) fn recover_branch_adoption_in_advancement<
         Operation,
@@ -76,7 +76,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             Err(PublicationDenial::ClockMismatch) => {
                 drop(unpublished);
                 return Err(failure(
-                    WorthQueryBranchAdoptionRecoveryDenial::ExecutionDenied(crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)),
+                    WorthQueryBranchAdoptionRecoveryDenial::ExecutionDenied(crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)),
                     recovery,
                 ));
             }
@@ -130,7 +130,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 Ok(WorthQueryBranchAdoptionRecoveryOutcome::Performed { adoption, cleanup })
             }
             Err(PublicationDenial::ClockMismatch) => Err(failure(
-                WorthQueryBranchAdoptionRecoveryDenial::ExecutionDenied(crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)),
+                WorthQueryBranchAdoptionRecoveryDenial::ExecutionDenied(crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)),
                 WorthQueryBranchAdoptionRecovery {
                     source,
                     target,
@@ -200,7 +200,7 @@ Err(PublicationDenial::Stopped(stop)) => Err(failure(
 }
 
 pub fn recovery_execution<'scope>(
-    phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<
+    phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<
         'scope,
     >,
     runtime: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime,
@@ -218,7 +218,7 @@ impl crate::domain_computation::execution_observation::WorthQueryExecutionObserv
     pub fn recover_branch_adoption_in_advancement_for_test<Schema: ApplicationSchema>(
         &self,
         selected: &WorthQuerySelectedProductOperation<'_, Schema>,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         recovery: WorthQueryBranchAdoptionRecovery,
         principal: &worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,

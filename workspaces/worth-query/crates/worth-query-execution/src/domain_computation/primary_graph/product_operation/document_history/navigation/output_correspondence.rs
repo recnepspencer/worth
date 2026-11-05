@@ -1,6 +1,6 @@
 //! Fund semantic comparison outside guards, then retain its actual original custody.
 use super::*;
-use crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase;
+use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 
 pub(super) struct ComparedOutputProfile {
     original: Option<WorthQueryHistoryOutputProfile>,

@@ -23,7 +23,7 @@ impl WorthQueryExternalEffectTransport for CountingTransport {
 #[test]
 fn sibling_publication_substitution_denies_before_transport() {
     let (world, first, second) = two_recoverable_application_commits(185, 186);
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let phase = &active_phase;
 
         let transport = CountingTransport(AtomicUsize::new(0));

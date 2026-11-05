@@ -147,7 +147,7 @@ pub fn advancement_requests_on_this_thread_for_test(
         .collect()
 }
 
-pub(in crate::domain_computation::primary_graph) fn record_event(
+pub(in crate::domain_computation) fn record_event(
     event: WorthQueryAdvancementEventForTest,
 ) {
     if !observing() {
@@ -168,7 +168,7 @@ pub(super) fn record_panicked(report: Option<ExecutionReport>) {
     }
 }
 
-pub(in crate::domain_computation::primary_graph) mod application;
+pub(in crate::domain_computation) mod application;
 
 thread_local! { static CLEANUP_REGISTERED: std::cell::Cell<bool> = const { std::cell::Cell::new(false) }; }
 fn observing() -> bool {

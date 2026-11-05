@@ -16,7 +16,7 @@ use worth_query_installation::facade::WorthQueryDecisionFactKind;
 
 #[test]
 fn invalid_completeness_and_kind_deny_before_provider_contact() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -81,7 +81,7 @@ fn invalid_completeness_and_kind_deny_before_provider_contact() {
 
 #[test]
 fn exact_family_count_and_duplicate_discovery_are_prevalidated_canonically() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -124,7 +124,7 @@ fn exact_family_count_and_duplicate_discovery_are_prevalidated_canonically() {
 
 #[test]
 fn duplicate_discovery_for_one_fact_calls_the_provider_once() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -161,7 +161,7 @@ fn duplicate_discovery_for_one_fact_calls_the_provider_once() {
 
 #[test]
 fn bounded_family_accepts_attempt_exact_sets_only_within_installed_ceiling() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 

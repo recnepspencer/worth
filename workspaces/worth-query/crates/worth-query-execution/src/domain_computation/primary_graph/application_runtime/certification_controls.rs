@@ -202,11 +202,11 @@ where
     #[doc(hidden)]
     pub fn attempt_workflow_node_field_update_for_test(
         &self,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         definition: &crate::domain_computation::primary_graph::PublishedWorkflowDefinitionRef,
     ) -> Result<
         Result<(), worth_relational::facade::transactions::TransactionCommitError>,
-        crate::domain_computation::primary_graph::request_execution::WorthQueryForeignAdvancementPhase,
+        crate::domain_computation::request_execution::WorthQueryForeignAdvancementPhase,
     >{
         let execution = phase.execution_request_for(&self.runtime.product_runtime)?;
         let selected = self
@@ -263,11 +263,11 @@ where
     #[doc(hidden)]
     pub fn attempt_workflow_existing_node_attachment_for_test(
         &self,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         definition: &crate::domain_computation::primary_graph::PublishedWorkflowDefinitionRef,
     ) -> Result<
         Result<(), worth_relational::facade::transactions::TransactionCommitError>,
-        crate::domain_computation::primary_graph::request_execution::WorthQueryForeignAdvancementPhase,
+        crate::domain_computation::request_execution::WorthQueryForeignAdvancementPhase,
     >{
         let execution = phase.execution_request_for(&self.runtime.product_runtime)?;
         let selected = self

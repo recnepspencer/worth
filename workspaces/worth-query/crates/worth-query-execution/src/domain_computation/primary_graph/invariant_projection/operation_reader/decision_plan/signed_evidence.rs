@@ -10,15 +10,7 @@ use worth_query_declaration::facade::application_schema::{
     ApplicationOperationBodyRequirementSource as Operand,
     ApplicationSigningEvidenceSource as Source,
 };
-use {
-    crate::domain_computation::primary_graph::operation_body::PreparedRequirementOperand,
-    crate::domain_computation::primary_graph::request_execution::advancement_denial,
-    crate::domain_computation::primary_graph::request_execution::QueryRequestExecution,
-    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
-    crate::domain_computation::primary_graph::HandlerExecutionDenial,
-    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
-    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind,
-};
+use {crate::domain_computation::primary_graph::operation_body::PreparedRequirementOperand, crate::domain_computation::request_execution::advancement_denial, crate::domain_computation::request_execution::QueryRequestExecution, crate::domain_computation::request_execution::WorthQueryAdvancementDenial, crate::domain_computation::primary_graph::HandlerExecutionDenial, crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial, crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind};
 
 impl<Schema: ApplicationSchema, Operation>
     WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>
@@ -109,7 +101,7 @@ impl<Schema: ApplicationSchema, Operation>
     ) -> Result<
         (
             String,
-            crate::domain_computation::primary_graph::request_execution::QueryMemoryReservation,
+            crate::domain_computation::request_execution::QueryMemoryReservation,
         ),
         HandlerExecutionDenial,
     > {

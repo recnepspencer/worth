@@ -5,7 +5,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema, Operation, Inp
 {
     pub(in crate::domain_computation::primary_graph::application_query::observed_source::prepared_expectation) fn bind<Binding>(
         self,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         source: WorthQueryObservedSource<<Binding::SourceExpectation as worth_query_declaration::facade::application_operation::ApplicationMutationSourceExpectation<Schema>>::Query>,
         identity: [u8; 32],
         input: &Input,

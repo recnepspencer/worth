@@ -24,7 +24,7 @@ use super::next_tree::{NextPartitioning, PreparedIncremental};
 use super::retained::RetainedCall;
 use super::{enter, IncrementalRun, Reader, COMPARATOR};
 use crate::domain_computation::primary_graph::application_attempt::ComputationRead;
-use crate::domain_computation::primary_graph::request_execution::QueryRequestExecution;
+use crate::domain_computation::request_execution::QueryRequestExecution;
 
 impl<Key, Item, Reduced> IncrementalRun<Key, Item, Reduced>
 where

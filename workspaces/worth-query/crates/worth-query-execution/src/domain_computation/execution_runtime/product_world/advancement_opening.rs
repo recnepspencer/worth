@@ -1,12 +1,8 @@
 //! An installed product runtime lends one branded request for each public call.
 use super::WorthQueryProductRuntime;
-use crate::domain_computation::primary_graph::request_execution::advancement::installed_opening::{
-    open_leased_advancement, open_placed_advancement,
-};
-use crate::domain_computation::primary_graph::request_execution::advancement::source::WorthQueryAdvancementSource;
-use crate::domain_computation::primary_graph::request_execution::advancement::{
-    WorthQueryAdvancementDenial, WorthQueryAdvancementPhase,
-};
+use {crate::domain_computation::request_execution::advancement::installed_opening::open_leased_advancement, crate::domain_computation::request_execution::advancement::installed_opening::open_placed_advancement};
+use crate::domain_computation::request_execution::advancement::source::WorthQueryAdvancementSource;
+use {crate::domain_computation::request_execution::advancement::WorthQueryAdvancementDenial, crate::domain_computation::request_execution::advancement::WorthQueryAdvancementPhase};
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 
 impl WorthQueryProductRuntime {

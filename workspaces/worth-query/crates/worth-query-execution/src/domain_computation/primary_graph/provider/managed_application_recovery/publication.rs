@@ -10,7 +10,7 @@ use super::{
 use crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding;
 use crate::domain_computation::primary_graph::provider::unpublished_idempotency::ManagedUnpublishedRecoveryGuard;
 use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider;
-use crate::domain_computation::primary_graph::request_execution::advancement_denial;
+use crate::domain_computation::request_execution::advancement_denial;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::{
     WorthQueryProductUnpublishedApplication, WorthQueryProductUnpublishedRecovery,
@@ -136,7 +136,7 @@ fn adoption_denial(
     >,
 ) -> Denial {
     match denial {
-        PublicationDenial::ClockMismatch => Denial::ExecutionDenied(crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)),
+        PublicationDenial::ClockMismatch => Denial::ExecutionDenied(crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)),
 PublicationDenial::Stopped(stop) => Denial::ExecutionDenied(advancement_denial(stop)),
         PublicationDenial::Refused(denial) => Denial::Adoption(Box::new(denial)),
     }

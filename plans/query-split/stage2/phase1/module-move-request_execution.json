@@ -1,65 +1,224 @@
 {
- "move": "domain_computation::primary_graph::application_contribution::request_execution -> domain_computation::primary_graph::request_execution",
- "files": 30,
- "edited_files": 675,
+ "move": "domain_computation::primary_graph::request_execution -> domain_computation::request_execution",
+ "files": 34,
+ "edited_files": 724,
  "widenings": [
   {
-   "item": "domain_computation::primary_graph::application_contribution::request_execution @5413",
-   "from": "pub(super)",
-   "to": "pub(in crate::domain_computation::primary_graph)"
+   "item": "domain_computation::primary_graph::request_execution @1423",
+   "from": "pub(in crate::domain_computation::primary_graph)",
+   "to": "pub(in crate::domain_computation)"
   },
   {
-   "item": "domain_computation::primary_graph::application_contribution::request_execution @6259",
-   "from": "pub(super)",
-   "to": "pub(in crate::domain_computation::primary_graph)"
+   "item": "domain_computation::primary_graph::request_execution @1975",
+   "from": "pub(in crate::domain_computation::primary_graph)",
+   "to": "pub(in crate::domain_computation)"
   },
   {
-   "item": "domain_computation::primary_graph::application_contribution::request_execution @8705",
-   "from": "pub(super)",
-   "to": "pub(in crate::domain_computation::primary_graph)"
+   "item": "domain_computation::primary_graph::request_execution @2064",
+   "from": "pub(in crate::domain_computation::primary_graph)",
+   "to": "pub(in crate::domain_computation)"
   },
   {
-   "item": "domain_computation::primary_graph::application_contribution::request_execution::retained_dispatch @971",
-   "from": "pub(in super::super)",
-   "to": "pub(in crate::domain_computation::primary_graph)"
+   "item": "domain_computation::primary_graph::request_execution @2182",
+   "from": "pub(in crate::domain_computation::primary_graph)",
+   "to": "pub(in crate::domain_computation)"
   },
   {
-   "item": "domain_computation::primary_graph::application_contribution::request_execution::retained_dispatch @1859",
-   "from": "pub(in super::super)",
-   "to": "pub(in crate::domain_computation::primary_graph)"
+   "item": "domain_computation::primary_graph::request_execution @3340",
+   "from": "pub(in crate::domain_computation::primary_graph)",
+   "to": "pub(in crate::domain_computation)"
   },
   {
-   "item": "domain_computation::primary_graph::application_contribution::request_execution::tree_charge @119",
-   "from": "pub(in super::super)",
-   "to": "pub(in crate::domain_computation::primary_graph)"
+   "item": "domain_computation::primary_graph::request_execution @3950",
+   "from": "pub(in crate::domain_computation::primary_graph)",
+   "to": "pub(in crate::domain_computation)"
+  },
+  {
+   "item": "domain_computation::primary_graph::request_execution @5625",
+   "from": "pub(in crate::domain_computation::primary_graph)",
+   "to": "pub(in crate::domain_computation)"
+  },
+  {
+   "item": "domain_computation::primary_graph::request_execution @6524",
+   "from": "pub(in crate::domain_computation::primary_graph)",
+   "to": "pub(in crate::domain_computation)"
+  },
+  {
+   "item": "domain_computation::primary_graph::request_execution @7584",
+   "from": "pub(in crate::domain_computation::primary_graph)",
+   "to": "pub(in crate::domain_computation)"
+  },
+  {
+   "item": "domain_computation::primary_graph::request_execution @7769",
+   "from": "pub(in crate::domain_computation::primary_graph)",
+   "to": "pub(in crate::domain_computation)"
+  },
+  {
+   "item": "domain_computation::primary_graph::request_execution @8093",
+   "from": "pub(in crate::domain_computation::primary_graph)",
+   "to": "pub(in crate::domain_computation)"
+  },
+  {
+   "item": "domain_computation::primary_graph::request_execution @9023",
+   "from": "pub(in crate::domain_computation::primary_graph)",
+   "to": "pub(in crate::domain_computation)"
+  },
+  {
+   "item": "domain_computation::primary_graph::request_execution @10483",
+   "from": "pub(in crate::domain_computation::primary_graph)",
+   "to": "pub(in crate::domain_computation)"
+  },
+  {
+   "item": "domain_computation::primary_graph::request_execution @10577",
+   "from": "pub(in crate::domain_computation::primary_graph)",
+   "to": "pub(in crate::domain_computation)"
+  },
+  {
+   "item": "domain_computation::primary_graph::request_execution::accounting @159",
+   "from": "pub(in crate::domain_computation::primary_graph)",
+   "to": "pub(in crate::domain_computation)"
+  },
+  {
+   "item": "domain_computation::primary_graph::request_execution::advancement @3613",
+   "from": "pub(in crate::domain_computation::primary_graph)",
+   "to": "pub(in crate::domain_computation)"
+  },
+  {
+   "item": "domain_computation::primary_graph::request_execution::advancement @5460",
+   "from": "pub(in crate::domain_computation::primary_graph)",
+   "to": "pub(in crate::domain_computation)"
+  },
+  {
+   "item": "domain_computation::primary_graph::request_execution::advancement @8100",
+   "from": "pub(in crate::domain_computation::primary_graph)",
+   "to": "pub(in crate::domain_computation)"
+  },
+  {
+   "item": "domain_computation::primary_graph::request_execution::advancement::bootstrap_custody @3091",
+   "from": "pub(in crate::domain_computation::primary_graph)",
+   "to": "pub(in crate::domain_computation)"
+  },
+  {
+   "item": "domain_computation::primary_graph::request_execution::advancement::bootstrap_custody @3771",
+   "from": "pub(in crate::domain_computation::primary_graph)",
+   "to": "pub(in crate::domain_computation)"
+  },
+  {
+   "item": "domain_computation::primary_graph::request_execution::advancement::bootstrap_custody @5200",
+   "from": "pub(in crate::domain_computation::primary_graph)",
+   "to": "pub(in crate::domain_computation)"
+  },
+  {
+   "item": "domain_computation::primary_graph::request_execution::advancement::observation @5478",
+   "from": "pub(in crate::domain_computation::primary_graph)",
+   "to": "pub(in crate::domain_computation)"
+  },
+  {
+   "item": "domain_computation::primary_graph::request_execution::advancement::observation @6052",
+   "from": "pub(in crate::domain_computation::primary_graph)",
+   "to": "pub(in crate::domain_computation)"
+  },
+  {
+   "item": "domain_computation::primary_graph::request_execution::advancement::observation::application @396",
+   "from": "pub(in crate::domain_computation::primary_graph)",
+   "to": "pub(in crate::domain_computation)"
+  },
+  {
+   "item": "domain_computation::primary_graph::request_execution::advancement::observation::application @543",
+   "from": "pub(in crate::domain_computation::primary_graph)",
+   "to": "pub(in crate::domain_computation)"
+  },
+  {
+   "item": "domain_computation::primary_graph::request_execution::advancement::observation::application @1111",
+   "from": "pub(in crate::domain_computation::primary_graph)",
+   "to": "pub(in crate::domain_computation)"
+  },
+  {
+   "item": "domain_computation::primary_graph::request_execution::advancement::observation::application @1349",
+   "from": "pub(in crate::domain_computation::primary_graph)",
+   "to": "pub(in crate::domain_computation)"
+  },
+  {
+   "item": "domain_computation::primary_graph::request_execution::advancement::phase_custody @447",
+   "from": "pub(in crate::domain_computation::primary_graph)",
+   "to": "pub(in crate::domain_computation)"
+  },
+  {
+   "item": "domain_computation::primary_graph::request_execution::advancement::phase_custody @10250",
+   "from": "pub(in crate::domain_computation::primary_graph)",
+   "to": "pub(in crate::domain_computation)"
+  },
+  {
+   "item": "domain_computation::primary_graph::request_execution::advancement::worker_custody @147",
+   "from": "pub(in crate::domain_computation::primary_graph)",
+   "to": "pub(in crate::domain_computation)"
+  },
+  {
+   "item": "domain_computation::primary_graph::request_execution::advancement::worker_custody @314",
+   "from": "pub(in crate::domain_computation::primary_graph)",
+   "to": "pub(in crate::domain_computation)"
+  },
+  {
+   "item": "domain_computation::primary_graph::request_execution::caller_lease @1611",
+   "from": "pub(in crate::domain_computation::primary_graph)",
+   "to": "pub(in crate::domain_computation)"
+  },
+  {
+   "item": "domain_computation::primary_graph::request_execution::decision_stage @372",
+   "from": "pub(in crate::domain_computation::primary_graph)",
+   "to": "pub(in crate::domain_computation)"
+  },
+  {
+   "item": "domain_computation::primary_graph::request_execution::descendants @1102",
+   "from": "pub(in crate::domain_computation::primary_graph)",
+   "to": "pub(in crate::domain_computation)"
+  },
+  {
+   "item": "domain_computation::primary_graph::request_execution::descendants @1366",
+   "from": "pub(in crate::domain_computation::primary_graph)",
+   "to": "pub(in crate::domain_computation)"
+  },
+  {
+   "item": "domain_computation::primary_graph::request_execution::descendants @1515",
+   "from": "pub(in crate::domain_computation::primary_graph)",
+   "to": "pub(in crate::domain_computation)"
+  },
+  {
+   "item": "domain_computation::primary_graph::request_execution::descendants @1777",
+   "from": "pub(in crate::domain_computation::primary_graph)",
+   "to": "pub(in crate::domain_computation)"
+  },
+  {
+   "item": "domain_computation::primary_graph::request_execution::execution_stop @1883",
+   "from": "pub(in crate::domain_computation::primary_graph)",
+   "to": "pub(in crate::domain_computation)"
+  },
+  {
+   "item": "domain_computation::primary_graph::request_execution::execution_stop @3931",
+   "from": "pub(in crate::domain_computation::primary_graph)",
+   "to": "pub(in crate::domain_computation)"
+  },
+  {
+   "item": "domain_computation::primary_graph::request_execution::retained_dispatch @658",
+   "from": "pub(in crate::domain_computation::primary_graph)",
+   "to": "pub(in crate::domain_computation)"
+  },
+  {
+   "item": "domain_computation::primary_graph::request_execution::retained_dispatch @1308",
+   "from": "pub(in crate::domain_computation::primary_graph)",
+   "to": "pub(in crate::domain_computation)"
+  },
+  {
+   "item": "domain_computation::primary_graph::request_execution::retained_dispatch @2224",
+   "from": "pub(in crate::domain_computation::primary_graph)",
+   "to": "pub(in crate::domain_computation)"
+  },
+  {
+   "item": "domain_computation::primary_graph::request_execution::tree_charge @119",
+   "from": "pub(in crate::domain_computation::primary_graph)",
+   "to": "pub(in crate::domain_computation)"
   }
  ],
- "removed_reexports": [
-  "domain_computation::primary_graph::application_contribution::QueryMemoryReservation",
-  "domain_computation::primary_graph::application_contribution::QueryRequestExecution",
-  "domain_computation::primary_graph::application_contribution::query_test_execution_authority_for_test",
-  "domain_computation::primary_graph::application_contribution::bound_advancement_requests_on_this_thread_for_test",
-  "domain_computation::primary_graph::application_contribution::place_managed_computations_on_this_thread_for_test",
-  "domain_computation::primary_graph::application_contribution::test_execution_workers_for_test",
-  "domain_computation::primary_graph::application_contribution::WorthQueryExecutionPlacementForTest",
-  "domain_computation::primary_graph::application_contribution::WorthQueryAdvancementDenial",
-  "domain_computation::primary_graph::application_contribution::WorthQueryAdvancementPhase",
-  "domain_computation::primary_graph::application_contribution::WorthQueryForeignAdvancementPhase",
-  "domain_computation::primary_graph::application_contribution::advancement_denial",
-  "domain_computation::primary_graph::application_contribution::advancement_observations_on_this_thread_for_test",
-  "domain_computation::primary_graph::application_contribution::advancement_requests_on_this_thread_for_test",
-  "domain_computation::primary_graph::application_contribution::WorthQueryAdvancementEventForTest",
-  "domain_computation::primary_graph::application_contribution::WorthQueryAdvancementEventKindForTest",
-  "domain_computation::primary_graph::application_contribution::WorthQueryAdvancementIdentityForTest",
-  "domain_computation::primary_graph::application_contribution::WorthQueryAdvancementObservationForTest",
-  "domain_computation::primary_graph::application_contribution::with_test_advancement",
-  "domain_computation::primary_graph::application_contribution::with_test_bootstrap_advancement",
-  "domain_computation::primary_graph::application_contribution::TestHostRequest",
-  "domain_computation::primary_graph::application_contribution::with_bootstrap_advancement",
-  "domain_computation::primary_graph::application_contribution::with_bootstrap_advancement_from_request",
-  "domain_computation::primary_graph::application_contribution::WorthQueryBootstrapAdvancementPhase",
-  "domain_computation::primary_graph::application_contribution::record_advancement_commit",
-  "domain_computation::primary_graph::application_contribution::test_policy"
- ],
+ "removed_reexports": [],
  "problems": []
 }

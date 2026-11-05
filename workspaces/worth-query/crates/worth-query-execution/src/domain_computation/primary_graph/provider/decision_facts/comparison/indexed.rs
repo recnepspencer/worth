@@ -116,7 +116,7 @@ pub fn comparison_stop(
             _ => Ok(false),
         },
         BoundedEntityFieldLookupAdmissionStop::AccountingOverflow => Err(super::super::fact_read_set_failure(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(
-            crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::ExecutionRequest(crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionResource { denial: crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::WorkCounterOverflow, partition_identity: None, policy_ancestor: None }), "prepared indexed comparison accounting"))),
+            crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::ExecutionRequest(crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionResource { denial: crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::WorkCounterOverflow, partition_identity: None, policy_ancestor: None }), "prepared indexed comparison accounting"))),
         BoundedEntityFieldLookupAdmissionStop::ExactBasisRequired => Ok(false),
     }
 }

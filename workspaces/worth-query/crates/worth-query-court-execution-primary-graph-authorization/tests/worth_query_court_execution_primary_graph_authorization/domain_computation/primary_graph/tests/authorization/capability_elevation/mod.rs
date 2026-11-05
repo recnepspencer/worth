@@ -243,7 +243,7 @@ fn approver_drift_after_admission_is_stale_before_operation_authority() {
 }
 
 pub fn admit(
-    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     world: &worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::authorization_world_installation::AuthorizationWorld,
     approved: &WorthQueryApprovedElevation,
     principal: &worth_query_execution::facade::domain_computation::WorthQueryAuthenticatedPrincipal<

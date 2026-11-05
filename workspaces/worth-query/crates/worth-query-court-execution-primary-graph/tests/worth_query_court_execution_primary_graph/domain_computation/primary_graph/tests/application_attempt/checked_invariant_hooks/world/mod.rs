@@ -10,7 +10,7 @@ use worth_query_execution::facade::domain_computation::WorthQueryApplicationInva
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationPrincipalKey;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationRelationSeed;
 use worth_query_execution::facade::domain_computation::WorthQueryPrimaryGraphApplicationRuntime;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement;
+use worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement;
 use worth_query_declaration::facade::application_schema::*;
 use worth_query_declaration::facade::authentication::*;
 use worth_query_installation::facade::*;

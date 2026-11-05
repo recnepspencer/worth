@@ -1,7 +1,7 @@
 //! Projection, admission and candidate construction stay on the advancement owner.
 use super::super::WorthQueryDecisionPlan;
 use super::*;
-use crate::domain_computation::primary_graph::request_execution::QueryRequestExecution;
+use crate::domain_computation::request_execution::QueryRequestExecution;
 
 type Report<Schema, Binding> = WorthQueryMutationHandlerExecutionReport<
     WorthQueryCompletedMutationCandidate<Schema, Binding>,

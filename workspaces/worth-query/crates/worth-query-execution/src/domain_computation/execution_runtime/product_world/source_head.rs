@@ -22,7 +22,7 @@ impl WorthQueryRelationalSourceOwner {
 
     pub fn bind_current_truth_head(
         &self,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         branch: &BranchId,
     ) -> Result<TruthSnapshotIdentity, WorthQuerySourceHeadDenial> {
         let execution = phase.request_for_source(self.runtime_instance_id)?;
@@ -71,18 +71,18 @@ impl WorthQueryRelationalSourceOwner {
 #[derive(Debug)]
 pub enum WorthQuerySourceHeadDenial {
     Native(RelationalBranchBasisDenial),
-    ForeignPhase(crate::domain_computation::primary_graph::request_execution::WorthQueryForeignAdvancementPhase),
+    ForeignPhase(crate::domain_computation::request_execution::WorthQueryForeignAdvancementPhase),
 }
 impl From<RelationalBranchBasisDenial> for WorthQuerySourceHeadDenial {
     fn from(denial: RelationalBranchBasisDenial) -> Self {
         Self::Native(denial)
     }
 }
-impl From<crate::domain_computation::primary_graph::request_execution::WorthQueryForeignAdvancementPhase>
+impl From<crate::domain_computation::request_execution::WorthQueryForeignAdvancementPhase>
     for WorthQuerySourceHeadDenial
 {
     fn from(
-        denial: crate::domain_computation::primary_graph::request_execution::WorthQueryForeignAdvancementPhase,
+        denial: crate::domain_computation::request_execution::WorthQueryForeignAdvancementPhase,
     ) -> Self {
         Self::ForeignPhase(denial)
     }

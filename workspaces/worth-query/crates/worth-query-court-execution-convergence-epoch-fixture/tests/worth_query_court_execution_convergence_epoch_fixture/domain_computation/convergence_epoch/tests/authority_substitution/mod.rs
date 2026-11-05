@@ -13,7 +13,7 @@ use worth_query_execution::facade::domain_computation::WorthQueryManagedGraphCal
 
 #[test]
 fn foreign_runtime_cannot_admit_an_exact_operation_contract_and_run() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -54,7 +54,7 @@ fn foreign_runtime_cannot_admit_an_exact_operation_contract_and_run() {
 
 #[test]
 fn copied_contract_meaning_cannot_substitute_for_installed_contract_authority() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -116,7 +116,7 @@ fn copied_contract_meaning_cannot_substitute_for_installed_contract_authority() 
 
 #[test]
 fn managed_run_and_graph_authorities_cannot_cross_installed_worlds() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -192,7 +192,7 @@ fn managed_run_and_graph_authorities_cannot_cross_installed_worlds() {
 
 #[test]
 fn same_installed_operation_cannot_substitute_a_different_semantic_basis() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -325,7 +325,7 @@ fn every_installed_provider_family_mismatch_denies_before_epoch_construction() {
 }
 
 pub fn finish(
-    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     runtime: worth_query_execution::facade::domain_computation::WorthQueryExecutionRuntime,
     operation: worth_query_execution::facade::domain_computation::WorthQueryExecutionBoundOperationAuthority,
@@ -351,7 +351,7 @@ pub fn admit(
 }
 
 pub fn finish_epoch(
-    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     epoch: worth_query_execution::facade::convergence_epoch::WorthQueryIteratingDirectConvergenceEpoch,
 ) {
     let installed_phase = epoch.fixture_phase_for_test(execution);

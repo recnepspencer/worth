@@ -149,9 +149,9 @@ impl WorthQueryOutputDemandDenialKind {
 
     /// Execution observed an interruption after the advancement opened.
     pub(in crate::domain_computation::primary_graph) const fn of_execution_interruption(
-        interruption: crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationInterruption,
+        interruption: crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationInterruption,
     ) -> Self {
-        use crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationInterruption as Interruption;
+        use crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationInterruption as Interruption;
         match interruption {
             Interruption::Cancelled => Self::Cancelled,
             Interruption::DeadlineExceeded => Self::TimedOut,
@@ -160,9 +160,9 @@ impl WorthQueryOutputDemandDenialKind {
 
     /// Delivery is in flight; its interruption keeps the demand owner's kind.
     pub(in crate::domain_computation::primary_graph) const fn of_execution_stop(
-        cause: crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
+        cause: crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
     ) -> Self {
-        use crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial as Denial;
+        use crate::domain_computation::request_execution::WorthQueryAdvancementDenial as Denial;
         match cause {
             Denial::Interrupted(interruption) => Self::of_execution_interruption(interruption),
             Denial::Resource(_)

@@ -6,10 +6,7 @@
 //! caller's lease, and the caller's charge reaches the lease it names.
 
 use worth_execution::ExecutionResourceLease;
-use {
-    super::Form, super::QueryRequestExecution,
-    crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationInterruption,
-};
+use {super::Form, super::QueryRequestExecution, crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationInterruption};
 
 impl<'a> QueryRequestExecution<'a> {
     /// The request's execution on a controlled child of the caller's `lease`,
@@ -35,7 +32,7 @@ impl<'a> QueryRequestExecution<'a> {
 
     /// The request's cancellation or elapsed deadline, if either happened,
     /// including a cancellation anywhere in its lease's lineage.
-    pub(in crate::domain_computation::primary_graph) fn interruption(
+    pub(in crate::domain_computation) fn interruption(
         &self,
     ) -> Option<WorthQueryManagedComputationInterruption> {
         let lease = match &self.form {

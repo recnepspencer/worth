@@ -8,7 +8,7 @@ use worth_execution::{
 use worth_foundational::facade::PartitionIdentity;
 use worth_query_declaration::facade::application_operation::ApplicationComputationPartitionIdentity;
 
-use crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial;
+use crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial;
 
 /// Why an item has no partition.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

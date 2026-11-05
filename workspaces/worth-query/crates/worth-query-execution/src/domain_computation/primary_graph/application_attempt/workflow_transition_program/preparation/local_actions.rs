@@ -12,7 +12,7 @@ use {
 impl WorthQueryWorkflowAdvanceAdapter {
     #[allow(clippy::too_many_arguments)]
     pub fn prepare_local_action<S, O, I, Scope, Spec, B>(
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         selected: &WorthQuerySelectedProductOperation<'_, S>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<S, Spec>,
         instance: PublishedWorkflowInstanceRef,

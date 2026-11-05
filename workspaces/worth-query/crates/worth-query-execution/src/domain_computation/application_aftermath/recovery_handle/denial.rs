@@ -7,7 +7,7 @@
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryRecoveryHandleDenialKind {
     CompletionExecutionRequest(
-        crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
+        crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
     ),
     /// Exact installed admission refusal before any effect or owner read.
     AdmissionAuthorization(

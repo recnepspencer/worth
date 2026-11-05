@@ -5,7 +5,7 @@ use super::{
     WorthQueryCheckpointTransitionRecovery,
 };
 use crate::domain_computation::primary_graph::application_installation::WorthQueryInMemoryApplicationDenial;
-use crate::domain_computation::primary_graph::request_execution::WorthQueryBootstrapAdvancementPhase;
+use crate::domain_computation::request_execution::WorthQueryBootstrapAdvancementPhase;
 use crate::domain_computation::primary_graph::{
     application_installation::program_admission::WorthQueryAdmittedProgramSupport,
     bootstrap::program_activation_recovery::read_activation,

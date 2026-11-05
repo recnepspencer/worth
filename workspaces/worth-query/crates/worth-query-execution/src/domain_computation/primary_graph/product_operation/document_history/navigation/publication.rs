@@ -2,23 +2,14 @@
 use super::*;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_installation::facade::ApplicationSchema;
-use {
-    crate::domain_computation::execution_runtime::product_world::publication_denial::WorthQueryProductPublicationDenial as PublicationDenial,
-    crate::domain_computation::execution_runtime::product_world::publication_denial::WorthQueryProductPublicationOutcome as Outcome,
-    crate::domain_computation::execution_runtime::product_world::WorthQueryPreparedProductPublication,
-    crate::domain_computation::primary_graph::request_execution::advancement_denial,
-    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase,
-    crate::domain_computation::primary_graph::WorthQueryExpectedProductBranch,
-    crate::domain_computation::WorthQueryProductUnpublishedApplication,
-    crate::domain_computation::WorthQueryProductUnpublishedRecovery,
-};
+use {crate::domain_computation::execution_runtime::product_world::publication_denial::WorthQueryProductPublicationDenial as PublicationDenial, crate::domain_computation::execution_runtime::product_world::publication_denial::WorthQueryProductPublicationOutcome as Outcome, crate::domain_computation::execution_runtime::product_world::WorthQueryPreparedProductPublication, crate::domain_computation::request_execution::advancement_denial, crate::domain_computation::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryExpectedProductBranch, crate::domain_computation::WorthQueryProductUnpublishedApplication, crate::domain_computation::WorthQueryProductUnpublishedRecovery};
 
 pub(super) fn publication_denial(
     cause: PublicationDenial<worth_runtime_world::facade::NoEffectCompositePublication>,
 ) -> WorthQueryHistoryNavigationDenial {
     match cause {
         PublicationDenial::ClockMismatch => {
-            WorthQueryHistoryNavigationDenial::Stopped(crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock))
+            WorthQueryHistoryNavigationDenial::Stopped(crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock))
         },
 PublicationDenial::Stopped(cause) => {
             WorthQueryHistoryNavigationDenial::Stopped(advancement_denial(cause))
@@ -162,7 +153,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
                 .publication_binding()
                 .prepare_settled_relational_adoption(&inspected, request)
                 .map_err(|cause| match cause {
-                    PublicationDenial::ClockMismatch => Denial::Stopped(crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)),
+                    PublicationDenial::ClockMismatch => Denial::Stopped(crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)),
 PublicationDenial::Stopped(cause) => Denial::Stopped(advancement_denial(cause)),
                     PublicationDenial::Refused(cause) => Denial::RecoveryPreparation(cause),
                 })

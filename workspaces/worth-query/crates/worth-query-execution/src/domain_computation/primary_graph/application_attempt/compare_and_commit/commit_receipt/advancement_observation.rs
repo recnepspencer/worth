@@ -1,6 +1,6 @@
 //! What a committed application reports to the advancement observer.
 use super::WorthQueryApplicationCommitReceipt;
-use crate::domain_computation::primary_graph::request_execution::advancement::observation::application::WorthQueryObservedCommit;
+use crate::domain_computation::request_execution::advancement::observation::application::WorthQueryObservedCommit;
 
 impl WorthQueryObservedCommit for WorthQueryApplicationCommitReceipt {
     fn observed_operation(&self) -> [u8; 32] {

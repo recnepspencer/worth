@@ -44,6 +44,6 @@ where
         &self,
         subject: &str,
     ) -> Result<(), WorthQueryInvariantProjectionTraversalDenial> {
-        self.execution().execution_request().map(|_|()).map_err(|cause|WorthQueryInvariantProjectionTraversalDenial::new(crate::domain_computation::primary_graph::WorthQueryInvariantProjectionTraversalDenialKind::ExecutionRequest(crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(cause)),subject))
+        self.execution().execution_request().map(|_|()).map_err(|cause|WorthQueryInvariantProjectionTraversalDenial::new(crate::domain_computation::primary_graph::WorthQueryInvariantProjectionTraversalDenialKind::ExecutionRequest(crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(cause)),subject))
     }
 }

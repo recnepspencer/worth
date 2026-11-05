@@ -3,7 +3,7 @@ use crate::process::domain_computation::managed_run::tests::yield_cost_bound::*;
 
 pub fn measured_workflow_target(unrelated_width: usize) -> stats_alloc::Stats {
     let (paused, unrelated) =
-        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|execution| {
+        worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|execution| {
             let bootstrap = execution.bootstrap_for_test();
             prepared_workflow_target(&execution, unrelated_width, bootstrap.execution_request())
         });
@@ -27,7 +27,7 @@ pub fn measured_workflow_target(unrelated_width: usize) -> stats_alloc::Stats {
 
 pub fn measured_target(unrelated_width: usize) -> stats_alloc::Stats {
     let (paused, unrelated, _, _) =
-        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|execution| {
+        worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|execution| {
             let bootstrap = execution.bootstrap_for_test();
             prepared_target(&execution, unrelated_width, bootstrap.execution_request())
         });

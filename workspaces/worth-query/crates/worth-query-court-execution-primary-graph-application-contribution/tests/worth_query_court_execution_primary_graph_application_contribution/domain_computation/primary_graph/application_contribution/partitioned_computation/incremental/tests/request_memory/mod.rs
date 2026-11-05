@@ -5,7 +5,7 @@ use std::num::NonZeroUsize;
 use worth_foundational::ExecutionRequestPolicy;
 
 use worth_query_execution::facade::domain_computation::query_test_execution_authority_for_test;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::test_placement::test_policy;
+use worth_query_execution::court_doors_for_test::domain_computation::request_execution::test_placement::test_policy;
 use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationResourceDenial as Resource;
 use worth_query_execution::facade::application_contribution::WorthQueryMemoryLimitLevel;
 use crate::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::*;

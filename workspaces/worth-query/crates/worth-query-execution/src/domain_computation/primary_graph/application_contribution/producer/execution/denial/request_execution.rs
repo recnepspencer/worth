@@ -4,10 +4,7 @@ use crate::domain_computation::{
     WorthQueryProviderSessionControlStopKind as Control,
     WorthQueryProviderSessionDenialKind as Native,
 };
-use {
-    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial as Request,
-    crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenialKind as Query,
-};
+use {crate::domain_computation::request_execution::WorthQueryAdvancementDenial as Request, crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenialKind as Query};
 
 pub fn kind(cause: Native) -> Demand {
     stop(Ok(cause)).unwrap_or(Demand::SourceQueryExecution(Query::ExecutionRequest(cause)))

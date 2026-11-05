@@ -1,10 +1,10 @@
 use super::*;
 use crate::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_session_denied;
-use crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource;
+use crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource;
 
 #[test]
 fn cleanup_failure_keeps_heads_indeterminate_posture_for_execution_refusals() {
-    crate::domain_computation::primary_graph::request_execution::with_test_advancement(
+    crate::domain_computation::request_execution::with_test_advancement(
         |_active_phase| {
             let cases = [
                 Session::ExecutionResource {

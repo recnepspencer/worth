@@ -2,7 +2,7 @@ pub use worth_query_testkit_execution_primary_graph_application_attempt_2::domai
 pub use crate::domain_computation::managed_run::tests::*;
 
 pub fn shared_yielded_peers(
-    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     worth_query_execution::facade::domain_computation::WorthQueryYieldedDirectRun,
@@ -14,7 +14,7 @@ pub fn shared_yielded_peers(
 }
 
 pub fn shared_yielded_peers_with_provider(
-    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     provider: YieldProvider,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
@@ -73,7 +73,7 @@ pub fn shared_yielded_peers_with_provider(
 
 #[test]
 fn cleanup_pending_peers_keep_exact_yielded_association_through_rightful_retry() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -117,7 +117,7 @@ fn cleanup_pending_peers_keep_exact_yielded_association_through_rightful_retry()
 }
 
 pub fn direct_recovery_cleanup(
-    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     yielded: worth_query_execution::facade::domain_computation::WorthQueryYieldedDirectRun,
     runtime: &WorthQueryExecutionRuntime,
@@ -206,7 +206,7 @@ pub fn assert_direct_cleanup_association(
 
 #[test]
 fn same_scope_peer_inspection_survives_denial_while_the_other_owner_cleans_up() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -297,7 +297,7 @@ fn same_scope_peer_inspection_survives_denial_while_the_other_owner_cleans_up() 
 }
 
 pub fn yield_peer(
-    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     runtime: &WorthQueryExecutionRuntime,
     graph: &WorthQueryInstalledGraphParticipationAuthority,

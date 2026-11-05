@@ -24,7 +24,7 @@ pub fn idempotency(key: u8, intent: u8) -> WorthQueryApplicationIdempotencyBindi
     WorthQueryApplicationIdempotencyBinding::new_for_test([key; 32], [intent; 32])
 }
 pub fn authenticated_principal(
-    phase: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    phase: &worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     world: &crate::domain_computation::primary_graph::tests::fixture::authorization_world_installation::AuthorizationWorld,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
 ) -> worth_query_execution::facade::domain_computation::WorthQueryAuthenticatedPrincipal<
@@ -56,7 +56,7 @@ pub fn authenticated_principal(
         .unwrap()
 }
 pub fn resolved_account(
-    phase: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    phase: &worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     world: &crate::domain_computation::primary_graph::tests::fixture::authorization_world_installation::AuthorizationWorld,
     status: &str,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,

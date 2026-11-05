@@ -18,7 +18,7 @@ use worth_execution::WorkCeilingDenial;
 
 use crate::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::tree_work::*;
 use worth_query_execution::facade::domain_computation::query_test_execution_authority_for_test;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::test_placement::test_policy;
+use worth_query_execution::court_doors_for_test::domain_computation::request_execution::test_placement::test_policy;
 use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationResourceDenial as Resource;
 
 pub const PARTITIONS: usize = 16;
@@ -31,7 +31,7 @@ pub fn sum(left: &u64, right: &u64) -> u64 {
     left + right
 }
 
-pub fn fill_room(execution: &QueryRequestExecution<'_>) -> worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::QueryMemoryReservation{
+pub fn fill_room(execution: &QueryRequestExecution<'_>) -> worth_query_execution::court_doors_for_test::domain_computation::request_execution::QueryMemoryReservation{
     let Err(Resource::MemoryLimit { admitted, .. }) = execution.reserve(2 * MEMORY) else {
         panic!("the finite policy names its remaining room")
     };

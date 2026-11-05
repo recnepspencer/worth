@@ -7,7 +7,7 @@ pub enum WorthQueryGeneratedOutputSuspensionRecoveryStage {
     SourceSelection(Admission),
     /// The request stopped while continuing retained recovery.
     ExecutionDenied(
-        crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
+        crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
     ),
     /// The unpublished product state could not be inspected.
     Inspection,

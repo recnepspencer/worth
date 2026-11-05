@@ -12,14 +12,7 @@ use worth_query_declaration::facade::{
     application_query::{ApplicationQueryBinding, ApplicationQueryScopeBinding},
 };
 use worth_query_installation::facade::ApplicationSchema;
-use {
-    crate::domain_computation::primary_graph::application_installation::WorthQueryProgramApplicationRuntime,
-    crate::domain_computation::primary_graph::application_installation::WorthQueryProgramOwner,
-    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase,
-    crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemand,
-    crate::domain_computation::primary_graph::WorthQueryApplicationRequiredOutputConnection,
-    crate::domain_computation::primary_graph::WorthQueryProducerOutputFamily,
-};
+use {crate::domain_computation::primary_graph::application_installation::WorthQueryProgramApplicationRuntime, crate::domain_computation::primary_graph::application_installation::WorthQueryProgramOwner, crate::domain_computation::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemand, crate::domain_computation::primary_graph::WorthQueryApplicationRequiredOutputConnection, crate::domain_computation::primary_graph::WorthQueryProducerOutputFamily};
 
 type Connection<S,R> = <<R as ApplicationOutputGraphShape<S>>::RootConnection as ApplicationConnectionShape<S>>::Binding;
 type Demand<S, R> = <Connection<S, R> as WorthQueryApplicationRequiredOutputConnection<S>>::Demand;

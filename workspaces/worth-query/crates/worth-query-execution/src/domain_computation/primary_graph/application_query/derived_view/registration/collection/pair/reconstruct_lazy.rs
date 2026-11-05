@@ -11,11 +11,7 @@ use std::collections::BTreeMap;
 use worth_execution::{ExecutionMemoryReservation, ExecutionWorkCeiling};
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_relational::facade::identity::EntityId;
-use {
-    crate::domain_computation::primary_graph::application_query::derived_view::retention::RetainedMemberToken,
-    crate::domain_computation::primary_graph::application_query::derived_view::retention::WorthQueryManagedDerivedMemberToken,
-    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase,
-};
+use {crate::domain_computation::primary_graph::application_query::derived_view::retention::RetainedMemberToken, crate::domain_computation::primary_graph::application_query::derived_view::retention::WorthQueryManagedDerivedMemberToken, crate::domain_computation::request_execution::WorthQueryAdvancementPhase};
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     /// Reads in canonical root order under the caller's actual advancement.

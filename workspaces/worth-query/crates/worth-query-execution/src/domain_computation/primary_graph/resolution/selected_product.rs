@@ -18,7 +18,7 @@ where
         PrincipalIdentityBinding,
     >(
         &self,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         installed_binding: &WorthQueryInstalledPrincipalBinding<
             Schema,
             Binding,
@@ -157,7 +157,7 @@ where
 
     pub fn validate_authenticated_principal<Principal, PrincipalIdentity>(
         &self,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
         scope: &WorthQueryRequestScope,
     ) -> Result<(), WorthQueryPrincipalResolutionDenial> {

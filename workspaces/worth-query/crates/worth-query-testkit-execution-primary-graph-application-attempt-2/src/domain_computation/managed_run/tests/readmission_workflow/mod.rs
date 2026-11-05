@@ -20,7 +20,7 @@ use crate::domain_computation::managed_run::tests::*;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 pub fn yielded_workflow(
-    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     provider: YieldProvider,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
@@ -33,7 +33,7 @@ pub fn yielded_workflow(
     yielded_workflow_for_stage(execution, provider, "producer", resource_request)
 }
 pub fn yielded_workflow_with_retained_artifact(
-    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     provider: YieldProvider,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
@@ -55,7 +55,7 @@ pub fn yielded_workflow_with_retained_artifact(
     )
 }
 pub fn yielded_workflow_for_stage(
-    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
 
     provider: YieldProvider,
     stage_identity: &str,

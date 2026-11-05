@@ -3,9 +3,9 @@ use crate::domain_computation::execution_runtime::product_world::publication_den
     WorthQueryProductPublicationDenial as PublicationDenial,
     WorthQueryProductPublicationOutcome as PublicationOutcome,
 };
-use crate::domain_computation::primary_graph::request_execution::advancement_denial;
+use crate::domain_computation::request_execution::advancement_denial;
 
-use crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase;
+use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 use std::sync::Arc;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_installation::facade::ApplicationSchema;
@@ -135,7 +135,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 return RecoveryProgress::Pending(
                     prior,
                     None,
-                    Pending::ExecutionRequest(crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)),
+                    Pending::ExecutionRequest(crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)),
                 )
             },
 Err(PublicationDenial::Stopped(stop)) => {
@@ -181,7 +181,7 @@ Err(PublicationDenial::Stopped(stop)) => {
             Err(PublicationDenial::ClockMismatch) => RecoveryProgress::Pending(
                 prior,
                 None,
-                Pending::ExecutionRequest(crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)),
+                Pending::ExecutionRequest(crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)),
             ),
 Err(PublicationDenial::Stopped(stop)) => RecoveryProgress::Pending(
                 prior,

@@ -20,7 +20,7 @@ use worth_runtime_bridge::facade::BridgeManagedExecutionCancellationReason;
 
 #[test]
 fn installed_domain_semantics_preserve_distinct_terminal_kinds() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -71,7 +71,7 @@ fn installed_domain_semantics_preserve_distinct_terminal_kinds() {
 
 #[test]
 fn incoherent_terminal_semantics_become_indeterminate_without_becoming_a_report() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -106,7 +106,7 @@ fn incoherent_terminal_semantics_become_indeterminate_without_becoming_a_report(
 
 #[test]
 fn stalled_progress_remains_explicit_domain_evidence() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -140,7 +140,7 @@ fn stalled_progress_remains_explicit_domain_evidence() {
 
 #[test]
 fn indeterminate_comparison_retains_each_indeterminate_semantic_axis() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -182,7 +182,7 @@ fn indeterminate_comparison_retains_each_indeterminate_semantic_axis() {
 
 #[test]
 fn comparator_failure_retains_exact_attempted_work_without_admitting_a_report() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -218,7 +218,7 @@ fn comparator_failure_retains_exact_attempted_work_without_admitting_a_report() 
 
 #[test]
 fn managed_signal_cancellation_remains_a_distinct_convergence_terminal() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 

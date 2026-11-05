@@ -31,7 +31,7 @@ impl<Schema: ApplicationSchema, Operation>
         &mut self,
         identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
         installed: &WorthQueryInstalledApplicationMutationBinding<Schema, Binding>,
-        execution: &crate::domain_computation::primary_graph::request_execution::QueryRequestExecution<'_>,
+        execution: &crate::domain_computation::request_execution::QueryRequestExecution<'_>,
     ) -> Result<WorthQueryCurrentBodyRequirementAssessment, HandlerExecutionDenial>
     where
         Binding: ApplicationMutationBinding<Schema, Operation = Operation>,
@@ -86,7 +86,7 @@ impl<Schema: ApplicationSchema, Operation>
         identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
         field: &ApplicationFieldBindingLocus,
         expected: Option<&AspectValue>,
-        execution: &crate::domain_computation::primary_graph::request_execution::QueryRequestExecution<'_>,
+        execution: &crate::domain_computation::request_execution::QueryRequestExecution<'_>,
     ) -> Result<bool, HandlerExecutionDenial> {
         let locator = self
             .tracked_body_locator(identity, field)

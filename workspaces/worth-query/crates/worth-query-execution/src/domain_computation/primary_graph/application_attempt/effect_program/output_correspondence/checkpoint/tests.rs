@@ -1,10 +1,7 @@
 //! Reconstructed correspondence keeps its actual payer through every shared clone.
 use super::*;
 use worth_relational::facade::identity::{EntityId, PartitionId};
-use {
-    crate::domain_computation::primary_graph::request_execution::with_bootstrap_advancement,
-    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind as Kind,
-};
+use {crate::domain_computation::request_execution::with_bootstrap_advancement, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind as Kind};
 
 #[test]
 fn reconstructed_roles_retain_their_payer_until_the_last_clone_and_refuse_without_memory() {
@@ -49,7 +46,7 @@ fn reconstructed_roles_retain_their_payer_until_the_last_clone_and_refuse_withou
 
         let held = lease.reserve_memory(lease.available_memory_bytes().expect("the proof declares a finite memory limit")).unwrap();
         let denial = reconstruct().unwrap_err().into_installation_denial();
-        use {crate::domain_computation::WorthQueryProviderSessionDenialKind as Provider, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource, crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryMemoryLimitLevel as Level};
+        use {crate::domain_computation::WorthQueryProviderSessionDenialKind as Provider, crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource, crate::domain_computation::request_execution::execution_refusal::WorthQueryMemoryLimitLevel as Level};
         assert!(matches!(denial.kind(), Kind::ExecutionDenied {
             kind: Provider::ExecutionResource { denial: Resource::MemoryLimit { requested, admitted, level: Level::Policy }, .. }
         } if requested > admitted));

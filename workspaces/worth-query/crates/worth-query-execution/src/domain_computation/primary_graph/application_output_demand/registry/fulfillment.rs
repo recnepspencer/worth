@@ -145,7 +145,7 @@ fn refused(kind: Kind) -> WorthQueryOutputDemandDenial {
 }
 fn stopped(cause: WorkCeilingDenial) -> WorthQueryOutputDemandDenial {
     refused(Kind::ExecutionRequest(
-        crate::domain_computation::primary_graph::request_execution::advancement_denial(cause),
+        crate::domain_computation::request_execution::advancement_denial(cause),
     ))
 }
 fn checkpoint(context: &mut MapKernelContext<'_, '_>) -> Result<(), WorthQueryOutputDemandDenial> {

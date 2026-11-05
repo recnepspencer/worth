@@ -30,7 +30,7 @@ pub use resume::{
 pub enum WorthQueryBranchSetAdoptionPreparationDenial {
     /// The preparation call could not enter its execution request.
     ExecutionDenied(
-        crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
+        crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
     ),
     /// Memory to hold the prepared branches could not be allocated.
     RetentionAllocationRejected,
@@ -84,7 +84,7 @@ impl BranchSetAdoptionResolution {
 pub enum WorthQueryBranchSetAdoptionAdvanceDenial {
     Execution {
         branch: WorthQueryProductBranch,
-        cause: crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
+        cause: crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
     },
     Authorization {
         branch: WorthQueryProductBranch,
@@ -338,7 +338,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     pub(super) fn prepare_branch_set_targets(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         branches: &[WorthQueryProductBranch],
         target: &ApplicationProgramRevision,
         maximum_selection_work_per_branch: usize,

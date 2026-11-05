@@ -3,7 +3,7 @@ use crate::domain_computation::execution_runtime::product_world::publication_den
     WorthQueryProductPublicationDenial as PublicationDenial,
     WorthQueryProductPublicationOutcome as PublicationOutcome,
 };
-use crate::domain_computation::primary_graph::request_execution::advancement_denial;
+use crate::domain_computation::request_execution::advancement_denial;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
@@ -12,7 +12,7 @@ where
     pub(super) fn publish_restoration(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         publication: WorthQueryProductPublicationBinding,
         branch: crate::basis::WorthQueryProductBranch,
         correspondence: std::sync::Arc<WorthQueryApplicationOutputCorrespondence>,
@@ -50,7 +50,7 @@ where
                         completion,
                     ),
                     WorthQueryGeneratedOutputRestorationFailureCause::advancement(
-                        crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock),
+                        crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock),
                     ),
                 ))
             },
@@ -118,7 +118,7 @@ Err(PublicationDenial::Stopped(stop)) => {
                     producer,
                     completion,
                 ),
-                WorthQueryGeneratedOutputRestorationFailureCause::advancement(crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)),
+                WorthQueryGeneratedOutputRestorationFailureCause::advancement(crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)),
             )),
 Err(PublicationDenial::Stopped(stop)) => Err(restoration_failure(
                 suspended_from_completion(

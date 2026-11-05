@@ -122,7 +122,7 @@ impl WorthQueryActiveWorkflowGraphExecution {
 
     pub fn advance(
         mut self,
-        execution: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        execution: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
     ) -> WorthQueryWorkflowGraphStepOutcome {
         let request = match execution.request_for_managed(self.running.relational_basis()) {
             Ok(request) => request,

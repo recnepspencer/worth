@@ -7,11 +7,11 @@ use std::{cell::RefCell, marker::PhantomData, rc::Rc};
 thread_local! {
     static MEMBER: RefCell<Option<Identity>> = const { RefCell::new(None) };
 }
-pub(in crate::domain_computation::primary_graph) struct AppliedIdentity {
+pub(in crate::domain_computation) struct AppliedIdentity {
     previous: Option<Identity>,
     owner_thread: PhantomData<Rc<()>>,
 }
-pub(in crate::domain_computation::primary_graph) fn apply_identity(
+pub(in crate::domain_computation) fn apply_identity(
     identity: Identity,
 ) -> AppliedIdentity {
     AppliedIdentity {
@@ -28,13 +28,13 @@ impl Drop for AppliedIdentity {
 }
 /// The mutation identity a committed application reports when no member identity is applied,
 /// so the advancement observer never names the commit receipt.
-pub(in crate::domain_computation::primary_graph) trait WorthQueryObservedCommit {
+pub(in crate::domain_computation) trait WorthQueryObservedCommit {
     fn observed_operation(&self) -> [u8; 32];
     fn observed_idempotency_key(&self) -> [u8; 32];
     fn observed_idempotency_intent(&self) -> [u8; 32];
 }
 
-pub(in crate::domain_computation::primary_graph) fn record_commit<
+pub(in crate::domain_computation) fn record_commit<
     Commit: WorthQueryObservedCommit + ?Sized,
 >(
     receipt: &Commit,

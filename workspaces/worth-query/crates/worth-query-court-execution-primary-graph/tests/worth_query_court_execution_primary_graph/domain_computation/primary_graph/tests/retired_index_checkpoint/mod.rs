@@ -204,7 +204,7 @@ pub fn assert_retired_index_is_inert(
 }
 
 pub fn resolve_alice(
-    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    phase_custody: &worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     world: &IdentityWorld,
     identity: u64,
 ) -> EntityId {

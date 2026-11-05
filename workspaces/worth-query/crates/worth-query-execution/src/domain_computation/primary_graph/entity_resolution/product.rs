@@ -25,7 +25,7 @@ pub(in crate::domain_computation) use issued_scope::WorthQueryIssuedSelectedScop
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     pub fn resolve_entity<Aspect, Entity, Field, Value, Write, Unit>(
         &self,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         field: ApplicationFieldRef<
             Schema,
             Entity,

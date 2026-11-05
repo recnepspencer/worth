@@ -183,7 +183,7 @@ pub enum WorthQueryGeneratedOutputSuspensionDenial {
 pub enum WorthQueryGeneratedOutputSuspensionFailure {
     /// The host request was refused before observing generated output.
     ExecutionDenied(
-        crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
+        crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
     ),
     /// The output did not qualify for suspension. Nothing changed.
     Qualification(WorthQueryGeneratedOutputSuspensionDenial),

@@ -35,7 +35,7 @@ pub struct CompletedPeer {
 
 #[test]
 fn same_scope_direct_denials_resume_their_exact_epochs() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -55,7 +55,7 @@ fn same_scope_direct_denials_resume_their_exact_epochs() {
 
 #[test]
 fn same_stage_workflow_denials_resume_their_exact_epochs() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -74,7 +74,7 @@ fn same_stage_workflow_denials_resume_their_exact_epochs() {
 }
 
 pub fn direct_denied_peer(
-    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> DirectDeniedPeer {
     let (fixture, probe) = direct_yield_denial_admission_fixture(resource_request);
@@ -120,7 +120,7 @@ pub fn direct_denied_peer(
 }
 
 pub fn workflow_denied_peer(
-    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorkflowDeniedPeer {
     let (fixture, probe) = workflow_yield_denial_admission_fixture(resource_request);
@@ -171,7 +171,7 @@ pub fn workflow_denied_peer(
 }
 
 pub fn complete_direct_peer(
-    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     peer: DirectDeniedPeer,
 ) -> CompletedPeer {
     let terminal = {
@@ -200,7 +200,7 @@ pub fn complete_direct_peer(
 }
 
 pub fn complete_workflow_peer(
-    execution: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
+    execution: &worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::test_host_policy::TestHostRequest<'_>,
     peer: WorkflowDeniedPeer,
 ) -> CompletedPeer {
     let terminal = {

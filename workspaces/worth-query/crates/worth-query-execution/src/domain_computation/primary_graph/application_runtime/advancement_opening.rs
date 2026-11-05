@@ -1,10 +1,8 @@
 //! Installed runtime owners lend one branded request for each public call, through the
 //! product runtime they install.
 use super::WorthQueryPrimaryGraphApplicationRuntime;
-use crate::domain_computation::primary_graph::request_execution::advancement::WorthQueryAdvancementSource as _;
-use crate::domain_computation::primary_graph::request_execution::advancement::{
-    WorthQueryAdvancementDenial, WorthQueryAdvancementPhase, WorthQueryForeignAdvancementPhase,
-};
+use crate::domain_computation::request_execution::advancement::WorthQueryAdvancementSource as _;
+use {crate::domain_computation::request_execution::advancement::WorthQueryAdvancementDenial, crate::domain_computation::request_execution::advancement::WorthQueryAdvancementPhase, crate::domain_computation::request_execution::advancement::WorthQueryForeignAdvancementPhase};
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -85,7 +83,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 }
 
 impl<Schema: ApplicationSchema>
-    crate::domain_computation::primary_graph::request_execution::advancement::WorthQueryAdvancementSource
+    crate::domain_computation::request_execution::advancement::WorthQueryAdvancementSource
     for WorthQueryPrimaryGraphApplicationRuntime<Schema>
 {
     fn advancement_owner(&self) -> Option<worth_runtime_world::facade::RuntimeWorldOwnerIdentity> {

@@ -70,7 +70,7 @@ fn member_host_refusals_do_not_add_thread_dependent_observations() {
                 .map(|_| PreparedMember {
                     requests: vec![PreparedCompute::new_for_test(|_| {
                         with_bootstrap_advancement(
-                            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::test_placement::test_policy(
+                            worth_query_execution::court_doors_for_test::domain_computation::request_execution::test_placement::test_policy(
                                 NonZeroUsize::MIN,
                                 None,
                             ),

@@ -19,7 +19,7 @@ use worth_query_declaration::facade::application_program::{
 use super::preparation_work::{charge_preparation, encode_identity, PreparationWork};
 use super::routing::ComputationPartitionRouting;
 use super::WorthQueryPartitionedComputationDenial;
-use crate::domain_computation::primary_graph::request_execution::QueryRequestExecution;
+use crate::domain_computation::request_execution::QueryRequestExecution;
 
 /// The items of one run by identity.
 pub(super) type Items<Item> = Arc<BTreeMap<PartitionItemId, Item>>;

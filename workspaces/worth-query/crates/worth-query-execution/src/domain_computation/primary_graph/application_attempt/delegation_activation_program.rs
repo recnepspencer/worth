@@ -25,7 +25,7 @@ impl<Schema, Operation, Input, Scope>
 {
     pub fn materialize_capability_delegation_program(
         mut self,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         WorthQueryDelegationActivationProgram<Schema, Operation, Input, Scope>,

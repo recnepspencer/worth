@@ -7,7 +7,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema, Operation, Inp
         Binding,
     >(
         self,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         source: WorthQueryObservedSource<<Binding::SourceExpectation as worth_query_declaration::facade::application_operation::ApplicationMutationSourceExpectation<Schema>>::Query>,
         input: &Input,
     ) -> Result<PreparedObservedSourceExpectation, WorthQuerySourceExpectationDenial>

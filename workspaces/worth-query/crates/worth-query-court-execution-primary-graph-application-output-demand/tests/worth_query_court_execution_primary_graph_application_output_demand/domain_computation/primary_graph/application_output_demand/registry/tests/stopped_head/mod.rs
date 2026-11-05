@@ -9,7 +9,7 @@ use crate::domain_computation::primary_graph::application_output_demand::registr
 fn stopped_head_is_released_by_every_finish_route() {
     let receipt = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
     let _occurrence = occurrence();
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|_| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|_| {
         for route in 0..3 {
             let registry = WorthQueryOutputDemandRegistry::default();
             let row = key("stopped-head", 1, 1);

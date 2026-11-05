@@ -26,7 +26,7 @@ pub use worth_query_testkit_execution_primary_graph_application_attempt_2::domai
 pub use crate::process::domain_computation::managed_run::tests::*;
 #[test]
 fn workflow_stage_provider_call_uses_stage_resources_and_receipt_evidence() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 
@@ -106,7 +106,7 @@ fn workflow_stage_provider_call_uses_stage_resources_and_receipt_evidence() {
 }
 #[test]
 fn workflow_step_derives_artifact_and_checkpoint_evidence_from_governed_ports() {
-    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::advancement::with_test_advancement(|active_phase| {
+    worth_query_execution::court_doors_for_test::domain_computation::request_execution::advancement::with_test_advancement(|active_phase| {
         let bootstrap = active_phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();
 

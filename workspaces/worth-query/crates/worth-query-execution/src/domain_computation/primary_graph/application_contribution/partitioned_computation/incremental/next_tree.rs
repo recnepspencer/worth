@@ -36,8 +36,8 @@ use super::retained::{
 use super::tree_update::{next_tree, same_bits};
 use super::{CompletedComputationRetention, PriorAbsence};
 use crate::domain_computation::primary_graph::invariant_projection::ComputationCallCharge;
-use crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial;
-use crate::domain_computation::primary_graph::request_execution::QueryRequestExecution;
+use crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial;
+use crate::domain_computation::request_execution::QueryRequestExecution;
 
 /// An incremental run after `prepare`: every partition carried or gathered
 /// again, the preparation receipt, and the prior run it carries from.

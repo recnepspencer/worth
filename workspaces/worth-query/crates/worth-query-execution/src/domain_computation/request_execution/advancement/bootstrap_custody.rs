@@ -74,7 +74,7 @@ impl WorthQueryBootstrapAdvancementPhase<'_> {
 }
 
 impl WorthQueryBootstrapAdvancementPhase<'_> {
-    pub(in crate::domain_computation::primary_graph) fn funded_capture_policy(
+    pub(in crate::domain_computation) fn funded_capture_policy(
         &self,
     ) -> Result<worth_execution::ExecutionAllocationPolicy<'_, '_>, WorthQueryCapturePolicyRefusal>
     {
@@ -88,7 +88,7 @@ impl WorthQueryBootstrapAdvancementPhase<'_> {
     /// capped by that lease, which must be the request's funding lease or
     /// descend from it; a sibling or another lineage's lease refuses here,
     /// before any work or charge, rather than inside the capture after ACK.
-    pub(in crate::domain_computation::primary_graph) fn admit_capture_policy<
+    pub(in crate::domain_computation) fn admit_capture_policy<
         'policy,
         'authority,
     >(
@@ -122,7 +122,7 @@ impl WorthQueryBootstrapAdvancementPhase<'_> {
 /// Why a checkpoint capture's allocation policy was refused, before any work or charge.
 /// Installation reports it as an execution denial.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum WorthQueryCapturePolicyRefusal {
+pub(in crate::domain_computation) enum WorthQueryCapturePolicyRefusal {
     /// The transition's own request is not leased.
     UnleasedFunding,
     /// The named capture lease does not descend from the transition's funding lease.

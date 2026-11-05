@@ -15,10 +15,7 @@ use worth_query_declaration::facade::{
     },
     application_schema::{ApplicationSchema, ApplicationSigningProvenanceMetadata},
 };
-use {
-    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase,
-    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime,
-};
+use {crate::domain_computation::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime};
 
 pub type BodyCandidate<Schema, Binding> = WorthQueryApplicationEffectProgram<Schema, <Binding as ApplicationMutationBinding<Schema>>::Operation, <Binding as ApplicationMutationBinding<Schema>>::Input, <<Binding as ApplicationMutationBinding<Schema>>::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope>;
 
@@ -26,7 +23,7 @@ pub type BodyCandidate<Schema, Binding> = WorthQueryApplicationEffectProgram<Sch
 /// Why the native owner could not seal a signed creation at its retained occurrence.
 pub enum WorthQuerySignedCreationPreparationDenial {
     Execution(
-        crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
+        crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
     ),
     Commit(WorthQueryApplicationCommitDenial),
     LifecycleObservation(Box<super::super::WorthQueryApplicationCommitOutcome>),
@@ -268,7 +265,7 @@ pub(in crate::domain_computation::primary_graph) fn seal<
 
 fn stopped(cause: worth_execution::MapKernelStop) -> Denial {
     Denial::Execution(
-        crate::domain_computation::primary_graph::request_execution::advancement_denial(
+        crate::domain_computation::request_execution::advancement_denial(
             worth_execution::WorkCeilingDenial::Stopped(cause),
         ),
     )

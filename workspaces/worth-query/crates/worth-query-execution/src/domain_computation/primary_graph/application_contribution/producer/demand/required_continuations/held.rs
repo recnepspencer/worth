@@ -8,7 +8,7 @@ use super::*;
 use crate::domain_computation::primary_graph::application_output_demand::HeldRequiredSuccessor;
 use crate::domain_computation::primary_graph::application_output_demand::OutputRowStage;
 use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandKey;
-use crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase;
+use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 pub(super) use local_resume::resume as resume_local;
 
 /// The registry's copy of one frame successor and the custody it is funded by.

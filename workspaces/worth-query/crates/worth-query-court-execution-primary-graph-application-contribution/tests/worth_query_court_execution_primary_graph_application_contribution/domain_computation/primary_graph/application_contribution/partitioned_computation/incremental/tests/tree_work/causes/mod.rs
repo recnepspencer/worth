@@ -6,7 +6,7 @@ use worth_execution::ReductionRunFailure;
 use worth_execution::ReductionRunStop;
 
 use crate::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::tree_work::*;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::request_execution::test_placement::test_policy;
+use worth_query_execution::court_doors_for_test::domain_computation::request_execution::test_placement::test_policy;
 
 #[derive(Clone)]
 pub struct Value {

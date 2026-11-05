@@ -34,7 +34,7 @@ pub enum WorthQueryInboundAdmission {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryInboundAdmissionDenial {
     ExecutionDenied(
-        crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
+        crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
     ),
     ForeignVerifier,
     Oversized,
@@ -127,7 +127,7 @@ where
     fn execute_inbound_admission(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         admitted: WorthQueryInboundAdmission,
         envelope: &[u8],
         request: &WorthQueryRequestScope,
@@ -267,7 +267,7 @@ where
 
 impl WorthQueryInboundAdmissionDenial {
     pub(in crate::domain_computation::primary_graph) fn advancement(
-        cause: crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
+        cause: crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
     ) -> Self {
         let stage = crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage::ResourceAdmission;
         match crate::domain_computation::provider_session::protocol::advancement_denial_cause(cause)

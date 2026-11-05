@@ -1,4 +1,4 @@
-use crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase;
+use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 use std::sync::Arc;
 
 use worth_query_installation::facade::{

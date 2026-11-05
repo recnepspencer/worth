@@ -46,7 +46,7 @@ impl WorthQueryProductSharedRoot {
     #[doc(hidden)]
     pub fn deliver_performed_relational_change(
         &self,
-        phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
 
         lowering: &Arc<worth_runtime_bridge::facade::BridgeInstalledConditionalLowering>,
         dependency_ordinal: usize,

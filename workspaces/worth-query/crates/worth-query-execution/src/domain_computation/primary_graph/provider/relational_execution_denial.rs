@@ -13,10 +13,7 @@ pub fn relational_execution_kind(
         WorthQueryProviderSessionDenialKind as Kind,
     };
     use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
-    use {
-        crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource,
-        crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryMemoryLimitLevel as Level,
-    };
+    use {crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource, crate::domain_computation::request_execution::execution_refusal::WorthQueryMemoryLimitLevel as Level};
 
     let resource = |denial, policy_ancestor| Kind::ExecutionResource {
         denial,

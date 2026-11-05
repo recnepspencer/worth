@@ -44,7 +44,7 @@ where
     }
 }
 pub(super) fn publish_application_runtime_with_clock<Schema>(
-    phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
+    phase: &crate::domain_computation::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
     input: ApplicationRuntimePublication<Schema>,
 ) -> Result<
     WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -105,7 +105,7 @@ where
 pub(in crate::domain_computation::primary_graph) fn publish_application_runtime_with_conditionals<
     Schema,
 >(
-    phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
+    phase: &crate::domain_computation::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
     input: ApplicationRuntimePublication<Schema>,
     bindings: Vec<
         Box<dyn super::super::conditional_operation::WorthQueryPendingConditionalOperation<Schema>>,
@@ -280,7 +280,7 @@ where
         })
 }
 fn publish_application_graph<Schema>(
-    phase: &crate::domain_computation::primary_graph::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
+    phase: &crate::domain_computation::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
     mut bootstrap: WorthQueryPrimaryGraphBootstrap<Schema>,
     mut runtime: WorthQueryExecutionRuntime,
     authority: WorthQueryExecutionInstallationAuthority,

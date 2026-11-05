@@ -3,10 +3,7 @@
 use super::{Form, QueryRequestExecution, Resource};
 use worth_execution::{ExecutionRequest, ExecutionWorkCeiling, WorkCeilingDenial};
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
-use {
-    crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationCheckpointDenial,
-    crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationInterruption,
-};
+use {crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationCheckpointDenial, crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationInterruption};
 
 /// Why an advancement could not return its ordinary result.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -36,11 +33,11 @@ impl WorthQueryAdvancementDenial {
                 worth_execution::ExecutionPhysicalAllocationDenialKind::Allocator
             ),
             Self::Resource(Resource::MemoryLimit { level, .. }) => match level {
-                crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryMemoryLimitLevel::Process => {
+                crate::domain_computation::request_execution::execution_refusal::WorthQueryMemoryLimitLevel::Process => {
                     true
                 }
-                crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryMemoryLimitLevel::Policy
-                | crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryMemoryLimitLevel::Declared => {
+                crate::domain_computation::request_execution::execution_refusal::WorthQueryMemoryLimitLevel::Policy
+                | crate::domain_computation::request_execution::execution_refusal::WorthQueryMemoryLimitLevel::Declared => {
                     false
                 }
             },
@@ -81,7 +78,7 @@ mod bootstrap_opening;
 pub use bootstrap_opening::with_bootstrap_advancement_from_request;
 mod bootstrap_custody;
 pub use bootstrap_custody::WorthQueryBootstrapAdvancementPhase;
-pub(in crate::domain_computation::primary_graph) use bootstrap_custody::WorthQueryCapturePolicyRefusal;
+pub(in crate::domain_computation) use bootstrap_custody::WorthQueryCapturePolicyRefusal;
 pub(crate) mod opening_custody;
 use opening_custody::OpeningCustody;
 
@@ -91,7 +88,7 @@ impl QueryRequestExecution<'_> {
             Form::Leased { lease, .. } | Form::Serial { lease, .. } => lease
                 .as_ref()
                 .map(ExecutionRequest::leased)
-                .map_err(|denial| crate::domain_computation::primary_graph::request_execution::execution_stop::lease_denial(*denial)),
+                .map_err(|denial| crate::domain_computation::request_execution::execution_stop::lease_denial(*denial)),
         }
     }
 
@@ -129,15 +126,15 @@ impl QueryRequestExecution<'_> {
     }
 }
 
-pub(in crate::domain_computation::primary_graph) fn advancement_denial(
+pub(in crate::domain_computation) fn advancement_denial(
     denial: WorkCeilingDenial,
 ) -> WorthQueryAdvancementDenial {
     use WorthQueryAdvancementDenial as Denial;
     match denial {
         WorkCeilingDenial::Admission(cause) => {
-            Denial::Resource(crate::domain_computation::primary_graph::request_execution::execution_stop::lease_denial(cause))
+            Denial::Resource(crate::domain_computation::request_execution::execution_stop::lease_denial(cause))
         }
-        WorkCeilingDenial::Stopped(stop) => match crate::domain_computation::primary_graph::request_execution::execution_stop::checkpoint_denial(stop) {
+        WorkCeilingDenial::Stopped(stop) => match crate::domain_computation::request_execution::execution_stop::checkpoint_denial(stop) {
             WorthQueryManagedComputationCheckpointDenial::Resource(cause) => {
                 Denial::Resource(cause)
             }
@@ -191,7 +188,7 @@ fn with_owned_bootstrap_advancement<R>(
     execution.run_advancement(None, None, body)
 }
 
-pub(in crate::domain_computation::primary_graph) mod observation;
+pub(in crate::domain_computation) mod observation;
 
 pub use observation::{
     advancement_observations_on_this_thread_for_test, advancement_requests_on_this_thread_for_test,

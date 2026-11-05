@@ -1,7 +1,7 @@
 //! Keep callback output custody even when the original advancement handoff stops.
 use super::super::stop::WorthQueryResourceActionDenial;
 use super::*;
-use crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial;
+use crate::domain_computation::request_execution::WorthQueryAdvancementDenial;
 
 impl<Schema: ApplicationSchema> WorthQueryApplicationResourcesRequest<'_, '_, '_, Schema> {
     pub(super) fn open<T>(

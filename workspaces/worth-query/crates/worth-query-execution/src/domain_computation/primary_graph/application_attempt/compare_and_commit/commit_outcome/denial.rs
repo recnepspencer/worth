@@ -35,7 +35,7 @@ pub enum WorthQueryApplicationCommitDenialKind {
     StorageUnavailable(worth_relational::facade::storage::RelationalStorageUnavailable),
     /// The execution owner refused preparation before any commit effect.
     ExecutionResource {
-        denial: crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial,
+        denial: crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial,
         partition_identity: Option<u64>,
         policy_ancestor: Option<u32>,
     },

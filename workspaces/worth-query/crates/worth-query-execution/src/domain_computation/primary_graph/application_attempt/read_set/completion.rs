@@ -194,7 +194,7 @@ impl MutationReadAttemptCore<'_, '_, '_> {
         let attribution = reads.into_attribution();
         let _temporary_index_memory = completed.reserve_fact_index(|| attribution.as_ref().map(|reads| {
             reads.index_bytes().ok_or(
-                crate::domain_computation::primary_graph::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::CapacityOverflow,
+                crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::CapacityOverflow,
             )
         }).transpose(), allocation_policy)
             .map_err(|resource| denial(

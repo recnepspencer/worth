@@ -91,7 +91,7 @@ pub(in crate::domain_computation::primary_graph) fn prepare<
     recipe: Arc<Recipe>,
     input: &dyn std::any::Any,
     values: Option<&super::value::PreparedBodyValues>,
-    execution: &crate::domain_computation::primary_graph::request_execution::QueryRequestExecution<
+    execution: &crate::domain_computation::request_execution::QueryRequestExecution<
         '_,
     >,
 ) -> Result<
