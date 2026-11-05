@@ -61,10 +61,11 @@ impl StructuralWalkObservation {
         })
     }
 
-    pub(in crate::domain_computation::primary_graph) fn refresh_at(
+    pub(in crate::domain_computation::primary_graph) fn refresh_at_roots(
         &self,
         pin: &RelationalPinnedRead,
         execution: &ExecutionRequest<'_, '_>,
+        roots: &[EntityId],
         context: &mut MapKernelContext<'_, '_>,
     ) -> Result<Arc<Self>, PinnedStructuralWalkDenial> {
         Self::read(
@@ -72,7 +73,7 @@ impl StructuralWalkObservation {
             execution,
             StructuralWalkQuery {
                 relation: self.query.relation(),
-                roots: self.query.roots(),
+                roots,
                 entity_kind: self.query.entity_kind(),
                 relation_kind: self.query.relation_kind(),
                 direction: self.query.direction(),

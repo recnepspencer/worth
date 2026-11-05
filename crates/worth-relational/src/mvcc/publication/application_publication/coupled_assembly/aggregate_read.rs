@@ -1,5 +1,6 @@
 //! Retain the existing aggregate owner's projection of exactly the applied parts.
 use super::*;
+use crate::execution::request_stage::checkpoint;
 use crate::{aggregate_identity::AggregateCandidateRead, transactions::data::MergedCommitPlan};
 
 impl RelationalAuthoredCoupledCandidate<'_> {
@@ -24,7 +25,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             let mut bytes = 0u64;
             for plan in plans.clone() {
                 for intent in &plan.merged_intents {
-                    context.checkpoint(1).map_err(custody::execution_stop)?;
+                    checkpoint(context, 1).map_err(custody::execution_stop)?;
                     count = count.checked_add(1).ok_or_else(|| custody::execution_stop(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow))?;
                     bytes = bytes.checked_add(intent.owned_allocation_capacity_bytes().saturating_add(std::mem::size_of_val(intent) as u64)).ok_or_else(|| custody::execution_stop(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow))?;
                 }
@@ -34,7 +35,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             commands.merged_intents.try_reserve_exact(count).map_err(|_| custody::execution_stop(crate::execution::RelationalExecutionDenialCause::AllocationFailed))?;
             for plan in plans {
                 for intent in &plan.merged_intents {
-                    context.checkpoint(intent.owned_allocation_capacity_bytes().saturating_add(1)).map_err(custody::execution_stop)?;
+                    checkpoint(context, intent.owned_allocation_capacity_bytes().saturating_add(1)).map_err(custody::execution_stop)?;
                     commands.merged_intents.push(intent.clone());
                 }
             }

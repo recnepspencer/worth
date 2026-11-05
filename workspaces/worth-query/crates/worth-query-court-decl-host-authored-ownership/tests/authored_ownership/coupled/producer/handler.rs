@@ -242,6 +242,7 @@ impl<S: Scenario> OperationHandler<S, Binding<S>> for Provider {
                 None
             };
             Ok::<_, HandlerExecutionDenial>(Decision {
+                boundary: <S::Boundary as sheet_boundary::Profile>::read(reader)?,
                 next_cell,
                 cell_value,
                 source: reader.mutation_target(&source)?,
@@ -305,6 +306,7 @@ impl<S: Scenario> OperationHandler<S, Binding<S>> for Provider {
             }
             writer.preserve_output::<Body<S>>(&body)?;
             let source = writer.projected_entity(&decision.source)?;
+            <S::Boundary as sheet_boundary::Profile>::trim(writer, decision.boundary, &source)?;
             let cell = writer.create_entity_in_context(
                 &source,
                 Node::reference(),

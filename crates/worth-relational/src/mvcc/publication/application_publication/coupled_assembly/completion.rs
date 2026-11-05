@@ -2,6 +2,7 @@
 use super::*;
 use crate::authority::mutation::MutationApplyDenial;
 use crate::branch::SelectedRelationalBranchRead;
+use crate::execution::request_stage::checkpoint;
 use crate::publication::data::AuthoredRetirementRefusal as Cause;
 
 /// The Native-applied group retains each writer's concrete admission and commands.
@@ -113,7 +114,7 @@ pub(crate) fn prepare_coupled_candidate(
         for expected in &binding.owners.owners {
             for part in &parts {
                 let RequiredOutputPublication::Preserve { meaning, .. } = &part.publication else { unreachable!("admitted Preserve") };
-                context.checkpoint((meaning.family.len() + expected.origin.meaning.family.len() + 65) as u64)
+                checkpoint(context, (meaning.family.len() + expected.origin.meaning.family.len() + 65) as u64)
                     .map_err(custody::execution_stop)?;
             }
             if !parts.iter().any(|part| matches!(&part.publication,

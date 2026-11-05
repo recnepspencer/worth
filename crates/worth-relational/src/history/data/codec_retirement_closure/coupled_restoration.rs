@@ -1,4 +1,5 @@
 //! Restore surviving writers from the authenticated original coupled event.
+use crate::execution::request_stage::checkpoint;
 use crate::history::data::{CanonicalCoupledAuthoredSources, CodecRetirementClosureStop as Stop};
 use crate::{
     identity::data::EntityId,
@@ -55,15 +56,14 @@ impl RelationalRuntime {
                 for part in &group.participants {
                     let required = &part.origin;
                     for item in &current {
-                        context
-                            .checkpoint(
-                                (required.meaning.family.len()
-                                    + item.origin.meaning.family.len()
-                                    + 65) as u64,
-                            )
-                            .map_err(|cause| {
-                                super::authored_cascade::stopped(Stop::Request(cause.into()))
-                            })?;
+                        checkpoint(
+                            context,
+                            (required.meaning.family.len() + item.origin.meaning.family.len() + 65)
+                                as u64,
+                        )
+                        .map_err(|cause| {
+                            super::authored_cascade::stopped(Stop::Request(cause.into()))
+                        })?;
                     }
                     let item = current
                         .iter()

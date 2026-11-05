@@ -1,5 +1,6 @@
 //! A Native-restored publication and its actual producer antecedent, without replay inputs.
 use super::*;
+use crate::execution::request_stage::checkpoint;
 use crate::{
     branch::AdmittedRelationalBranchBasis,
     history::data::{
@@ -68,14 +69,14 @@ impl RelationalRuntime {
                     let restored = current
                         .authored_source_restoration()
                         .ok_or_else(corrupted)?;
-                    context
-                        .checkpoint(
-                            bound
-                                .saturating_add(restored.entities.len())
-                                .saturating_add(origin.meaning.family.len())
-                                .saturating_add(1) as u64,
-                        )
-                        .map_err(custody::execution_stop)?;
+                    checkpoint(
+                        context,
+                        bound
+                            .saturating_add(restored.entities.len())
+                            .saturating_add(origin.meaning.family.len())
+                            .saturating_add(1) as u64,
+                    )
+                    .map_err(custody::execution_stop)?;
                     let old = restored
                         .entities
                         .iter()

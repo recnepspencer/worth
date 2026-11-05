@@ -1,6 +1,7 @@
 //! Finite predecessor postings plus the actual Native applied delta.
 //! No proposed index generation or Current entity identity is fabricated.
 use super::PreparedEntityFieldLookup;
+use crate::execution::request_stage::checkpoint;
 use crate::{
     execution::RelationalExecutionDenialCause as Cause,
     identity::data::EntityId,
@@ -135,9 +136,11 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
         }
         let result = execution
             .run_native_with_checkpoint(|context| {
-                context
-                    .checkpoint((old.candidate_entity_ids().len() + changed.len()) as u64)
-                    .map_err(|cause| Denial::Execution(cause.into()))?;
+                checkpoint(
+                    context,
+                    (old.candidate_entity_ids().len() + changed.len()) as u64,
+                )
+                .map_err(|cause| Denial::Execution(cause.into()))?;
                 let mut frontier = Vec::new();
                 frontier
                     .try_reserve_exact(old.candidate_entity_ids().len() + changed.len())
@@ -147,8 +150,7 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
                 let comparisons = frontier
                     .len()
                     .saturating_mul((usize::BITS - frontier.len().max(1).leading_zeros()) as usize);
-                context
-                    .checkpoint(comparisons as u64)
+                checkpoint(context, comparisons as u64)
                     .map_err(|cause| Denial::Execution(cause.into()))?;
                 frontier.sort_unstable();
                 frontier.dedup();
@@ -160,8 +162,7 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
                 let mut overflowed = false;
                 let mut examined = old.examined_entry_count();
                 for entity in frontier {
-                    context
-                        .checkpoint(key_bytes.saturating_mul(2).saturating_add(1))
+                    checkpoint(context, key_bytes.saturating_mul(2).saturating_add(1))
                         .map_err(|cause| Denial::Execution(cause.into()))?;
                     examined += 1;
                     let matched = super::field_candidate_comparison::borrowed_matches(

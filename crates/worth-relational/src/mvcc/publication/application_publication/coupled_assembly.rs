@@ -1,5 +1,6 @@
 //! Query supplies producer execution; Native owns the applied image and writer roster.
 use super::*;
+use crate::execution::request_stage::checkpoint;
 use crate::{
     authority::commit::phases::{
         applied_mutation::AppliedMutationCore, prepare::PreparedWorkingStateScope,
@@ -105,7 +106,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         let original = execution.run_native_with_checkpoint(|context| {
             if let Some(restoration) = &self.binding.owners.restoration {
                 for (old, created) in &restoration.entities {
-                    context.checkpoint(self.mutation.outcome.created_entities.resolve_work_bound(created).ok_or_else(|| custody::execution_stop(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow))?).map_err(custody::execution_stop)?;
+                    checkpoint(context, self.mutation.outcome.created_entities.resolve_work_bound(created).ok_or_else(|| custody::execution_stop(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow))?).map_err(custody::execution_stop)?;
                     if self.mutation.outcome.created_entities.resolve(created) == Some(source) {
                         return Ok::<_, TransactionCommitError>(*old);
                     }

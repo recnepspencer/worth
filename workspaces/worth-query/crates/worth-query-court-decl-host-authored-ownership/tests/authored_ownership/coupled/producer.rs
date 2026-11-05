@@ -48,6 +48,12 @@ impl<S: Scenario> WorthQueryApplicationOutputRole for RetiredCell<S> {
     const NAME: &'static str = "previous-cell";
 }
 impl<S: Scenario> ApplicationMutationOutputContract<S> for Outputs {
+    const ROLE_FAMILIES: &'static [ApplicationMutationOutputRoleFamilyDescriptor] = if S::MODE == 69
+    {
+        &[<sheet_boundary::SurvivingNodes<S> as WorthQueryApplicationDeclaredOutputRoleFamily>::DESCRIPTOR, <sheet_boundary::RetiredNodes<S> as WorthQueryApplicationDeclaredOutputRoleFamily>::DESCRIPTOR]
+    } else {
+        &[]
+    };
     const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] = &[
         <Body<S> as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR,
         <Cell<S> as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR,
@@ -56,6 +62,7 @@ impl<S: Scenario> ApplicationMutationOutputContract<S> for Outputs {
 }
 type Target<S> = WorthQueryInvariantMutationTarget<S, Node>;
 pub struct Decision<S> {
+    pub boundary: Option<sheet_boundary::Decision<S>>,
     pub next_cell: u64,
     pub cell_value: u64,
     pub source: Target<S>,

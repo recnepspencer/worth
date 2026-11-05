@@ -1,5 +1,6 @@
 //! Every Native participant must retain its actual Query settlement session.
 use super::*;
+use crate::domain_computation::primary_graph::admitted_capture::checkpoint;
 use crate::domain_computation::WorthQueryInvariantExecutionFailure;
 use worth_relational::facade::{identity::EntityId, mvcc::ValidatedRelationalProposal};
 pub(super) fn require_complete(
@@ -11,19 +12,19 @@ pub(super) fn require_complete(
         .run_native_with_checkpoint(|context| {
             for (producer, meaning) in candidate.coupled_participants() {
                 for member in members {
-                    context
-                        .checkpoint(
-                            (producer.len()
-                                + member.producer.len()
-                                + meaning.family.len()
-                                + member.meaning.family.len()
-                                + 97) as u64,
-                        )
-                        .map_err(|cause| {
-                            super::invariant_execution_failure::map_validation_failure(native_stop(
-                                cause.into(),
-                            ))
-                        })?;
+                    checkpoint(
+                        context,
+                        (producer.len()
+                            + member.producer.len()
+                            + meaning.family.len()
+                            + member.meaning.family.len()
+                            + 97) as u64,
+                    )
+                    .map_err(|cause| {
+                        super::invariant_execution_failure::map_validation_failure(native_stop(
+                            cause.into(),
+                        ))
+                    })?;
                 }
                 if !members
                     .iter()

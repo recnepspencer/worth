@@ -3,6 +3,7 @@ use super::*;
 use crate::domain_computation::application_aftermath::{
     WorthQueryRelationPreImageDenial as Cause, WorthQueryRelationPreImageFailure as Failure,
 };
+use crate::domain_computation::primary_graph::admitted_capture::checkpoint;
 use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationAdjacencyDirection as Direction, WorthQueryApplicationObservedFact as Fact,
 };
@@ -87,7 +88,7 @@ pub(super) fn retain(
             )
         })?;
     execution
-        .run_native_with_checkpoint(|context| context.checkpoint(quote_work as u64))
+        .run_native_with_checkpoint(|context| checkpoint(context, quote_work as u64))
         .map_err(request_stop)?
         .0
         .map_err(|cause| request_stop(worth_execution::WorkCeilingDenial::Stopped(cause)))?;
@@ -143,7 +144,7 @@ pub(super) fn retain(
             for (locus, kind) in demand.relations().iter().zip(kinds) {
                 let mut count = 0usize;
                 for mutation in footprint.relations() {
-                    context.checkpoint(1).map_err(|cause| {
+                    checkpoint(context, 1).map_err(|cause| {
                         request_stop(worth_execution::WorkCeilingDenial::Stopped(cause))
                     })?;
                     if mutation.kind() != kind {
@@ -164,11 +165,9 @@ pub(super) fn retain(
                         .expect("actual lifecycle transition");
                     let mut observed = false;
                     for fact in facts {
-                        context
-                            .checkpoint(observation_work(fact, locus))
-                            .map_err(|cause| {
-                                request_stop(worth_execution::WorkCeilingDenial::Stopped(cause))
-                            })?;
+                        checkpoint(context, observation_work(fact, locus)).map_err(|cause| {
+                            request_stop(worth_execution::WorkCeilingDenial::Stopped(cause))
+                        })?;
                         if observes(
                             fact,
                             locus,
@@ -210,11 +209,11 @@ pub(super) fn retain(
                     // on a record this actor mutates; absence of a read is not emptiness.
                     let mut empty = false;
                     for decision in facts {
-                        context
-                            .checkpoint(observation_work(decision, locus))
-                            .map_err(|cause| {
+                        checkpoint(context, observation_work(decision, locus)).map_err(
+                            |cause| {
                                 request_stop(worth_execution::WorkCeilingDenial::Stopped(cause))
-                            })?;
+                            },
+                        )?;
                         let Decision::Application { read_scope, fact } = decision else {
                             continue;
                         };
@@ -223,11 +222,11 @@ pub(super) fn retain(
                         }
                         // The field footprint is the existing actor correlation;
                         // its traversal is paid even when it finds no shared record.
-                        context
-                            .checkpoint(field_mutations.records().count() as u64)
-                            .map_err(|cause| {
+                        checkpoint(context, field_mutations.records().count() as u64).map_err(
+                            |cause| {
                                 request_stop(worth_execution::WorkCeilingDenial::Stopped(cause))
-                            })?;
+                            },
+                        )?;
                         empty = match fact.as_ref() {
                             Fact::Relation {
                                 relation_kind,

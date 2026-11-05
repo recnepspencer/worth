@@ -1,5 +1,6 @@
 //! The ordinary apply phase consumes the exact applied candidate once.
 use super::*;
+use crate::execution::request_stage::checkpoint;
 use crate::publication::data::AuthoredRetirementRefusal as Cause;
 
 impl BoundAuthoredCoupling {
@@ -23,9 +24,11 @@ impl BoundAuthoredCoupling {
                     .iter()
                     .chain(&candidate.commands.merged_intents)
                 {
-                    context
-                        .checkpoint(intent.owned_allocation_capacity_bytes().saturating_add(1))
-                        .map_err(custody::execution_stop)?;
+                    checkpoint(
+                        context,
+                        intent.owned_allocation_capacity_bytes().saturating_add(1),
+                    )
+                    .map_err(custody::execution_stop)?;
                 }
                 Ok::<_, TransactionCommitError>(())
             })

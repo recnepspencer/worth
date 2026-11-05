@@ -1,4 +1,5 @@
 //! Retained and external emissions admitted into one effect program.
+use crate::domain_computation::primary_graph::admitted_capture::checkpoint;
 
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::any::Any;
@@ -202,7 +203,7 @@ impl WorthQueryAdmittedApplicationEmissionBatch {
             memory.resize((emissions.capacity() * std::mem::size_of::<WorthQueryApplicationEmission>()) as u64).map_err(|cause| crate::domain_computation::primary_graph::provider::relational_execution_denial::request_commit_stop(worth_execution::WorkCeilingDenial::Admission(worth_execution::LeaseDenial::MemoryExhausted(cause))))?;
         }
         execution.run_native_with_checkpoint(|context| {
-            for batch in batches { for emission in &batch.emissions { context.checkpoint(1)?; emissions.push(emission.clone()); } }
+            for batch in batches { for emission in &batch.emissions { checkpoint(context, 1)?; emissions.push(emission.clone()); } }
             Ok::<_, worth_execution::MapKernelStop>(())
         }).map_err(crate::domain_computation::primary_graph::provider::relational_execution_denial::request_commit_stop)?.0.map_err(|cause| crate::domain_computation::primary_graph::provider::relational_execution_denial::request_commit_stop(worth_execution::WorkCeilingDenial::Stopped(cause)))?;
         Ok(Self { emissions, memory })

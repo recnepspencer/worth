@@ -1,5 +1,6 @@
 //! Each admitted participant keeps its local Create coordinates in the combined transaction.
 use super::*;
+use crate::execution::request_stage::checkpoint;
 use crate::{
     symbols::data::{ClientKey, StringInterner},
     transactions::data::{CommitCreatedEntityBindings, EntityReference, WorkerIntentBatch},
@@ -28,9 +29,7 @@ pub(super) fn scope(
                 let capacity = text.len().checked_add(128).ok_or_else(overflow)?;
                 let mut salt = 0u64;
                 let name = loop {
-                    context
-                        .checkpoint(capacity as u64)
-                        .map_err(custody::execution_stop)?;
+                    checkpoint(context, capacity as u64).map_err(custody::execution_stop)?;
                     let mut name = String::new();
                     name.try_reserve_exact(capacity).map_err(|_| {
                         custody::execution_stop(
@@ -40,7 +39,7 @@ pub(super) fn scope(
                     write!(name, "WORTH.coupled.{part}.{salt}.{}:{text}", text.len())
                         .expect("reserved String framing");
                     if !prior.contains_client_key_text(&name, |work| {
-                        context.checkpoint(work).map_err(custody::execution_stop)
+                        checkpoint(context, work).map_err(custody::execution_stop)
                     })? {
                         break name;
                     }

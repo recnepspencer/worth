@@ -2,6 +2,7 @@
 use super::{
     WorthQueryApplicationAttemptDenial as Denial, WorthQueryApplicationAttemptDenialKind as Kind,
 };
+use crate::domain_computation::primary_graph::admitted_capture::checkpoint;
 use crate::equality_type_id::EqualityTypeId;
 use std::any::Any;
 use worth_query_declaration::facade::{
@@ -114,7 +115,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
         };
         demands.declared = true;
         let result = (|| {
-            self.execution.run_native_with_checkpoint(|context| context.checkpoint((Connection::IDENTITY.len() + Family::<Schema, Connection>::IDENTITY.len() + 1) as u64))
+            self.execution.run_native_with_checkpoint(|context| checkpoint(context, (Connection::IDENTITY.len() + Family::<Schema, Connection>::IDENTITY.len() + 1) as u64))
                 .map_err(|stop| Denial::relational_read_stopped(stop.into(), Connection::IDENTITY))?.0
                 .map_err(|stop| Denial::relational_read_stopped(worth_relational::facade::transactions::RelationalExecutionDenialCause::from(worth_execution::WorkCeilingDenial::Stopped(stop)), Connection::IDENTITY))?;
             let memory = self.execution.allocation_policy().reserve_memory((2 * size_of::<DeclaredCoupledOutputDemand>() + size_of::<<Source<Schema, Connection> as worth_query_declaration::facade::application_query::ApplicationQueryBinding<Schema>>::Input>()) as u64)
