@@ -13,6 +13,8 @@ pub enum WorthQueryOutputDemandDenialKind {
     PublicationReceipt(crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenialKind),
     /// The current control owner is in use. No source result was handed off.
     CurrentControlBusy,
+    /// Native current roster/presence or storage refused this exact publication read.
+    CurrentPublication(Box<worth_relational::facade::transactions::TransactionCommitError>),
     ManagedIndexSourceDenied,
     /// The producer returned actual managed cleanup custody; ordinary rerun is not authorized.
     ManagedCleanupRequired(crate::domain_computation::WorthQueryMutationCleanupFailureKind),

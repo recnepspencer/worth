@@ -94,6 +94,11 @@ fn worker_only_selection_restores_two_publication_families_at_their_original_ids
         .collect::<std::collections::BTreeSet<_>>();
     assert_eq!(restored, [world.output, other].into_iter().collect());
     let after = transfer_fixture::basis(&world.runtime);
+    for publication in &publications {
+        assert!(publication
+            .matches_current_ownership_at(execution, &world.installed, &after)
+            .unwrap());
+    }
     for meaning in [&world.meaning, &second] {
         let selected = world
             .runtime

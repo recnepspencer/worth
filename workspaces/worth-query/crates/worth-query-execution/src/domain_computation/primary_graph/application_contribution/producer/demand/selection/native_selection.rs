@@ -238,6 +238,11 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
 use crate::domain_computation::primary_graph::output_lineage::RecordedSourceIdentity;
                 for (candidate, entity) in &live_candidates {
                     let live=retained_liveness::read(execution,&view,*entity)?;
+                    if candidate.historical_selection.is_some() {
+                        let exact = live && self.restored_output_is_current::<Family>(execution, runtime, selected, candidate)?;
+                        current.push((live, exact));
+                        continue;
+                    }
                     let identity_current = candidate.source_identity.is_some_and(|identity| {
                         match identity {
                             RecordedSourceIdentity::Runtime(runtime) => runtime == source.idempotency_identity(),
@@ -302,21 +307,19 @@ use crate::domain_computation::primary_graph::output_lineage::RecordedSourceIden
                     let (mut selected, entry) = self
                         .installed_producers
                         .select_exact::<Family>(candidate.binding)?;
-                    // A runtime record reaches the input cutoff and needs its
-                    // declared decision proof. A current checkpoint record is
-                    // readmitted through its complete recovered facts instead.
+                    // Restored rows use their own authenticated readmission;
+                    // other runtime rows still need the input cutoff.
                     let recovered = matches!(candidate.source_identity, Some(
                         crate::domain_computation::primary_graph::output_lineage::RecordedSourceIdentity::Checkpoint(_)
                     ));
                     if recovered
+                        || candidate.historical_selection.is_some()
                         || entry.declaration.input_reuse.is_some_and(|contract| {
                             contract.determinism()
                                 == worth_foundational::facade::DeterminismContract::CanonicalBitwise
                         })
                     {
-                        selected.retained_idempotency_key =
-                            Some(candidate.idempotency_key_identity);
-                        selected.retained_output_binding = Some(candidate.binding);
+                        selected.retain_verified_output(&candidate);
                         return Ok((selected, entry));
                     }
                     // A cached delivery belongs to the currently applicable

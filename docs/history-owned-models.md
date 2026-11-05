@@ -102,3 +102,10 @@ coordinates. Both roster/claims and route presence are checked together after
 restoration. Query observation transport and verification of every restored
 family remain under qualification; these Native courts do not establish the
 public zero-producer-contact fast path.
+
+Query qualification now carries each selected producer row's original facts,
+witness and retained computation into historical selection. A healthy demand
+can settle as `HistoricallySelected`, with no new producer receipt or execution.
+Serial and worker-only two-family courts exercise this reuse after undo.
+Automatic verification of every output tree during checkout, including fallback
+and final-endpoint qualification, remains under qualification.

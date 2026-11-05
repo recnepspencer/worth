@@ -24,6 +24,9 @@ pub struct RecordedOutput {
     /// Stable settlements pin the original performed record, never another
     /// alias. This preserves completion proof and its original lifetime cost.
     pub(super) performed_origin: Option<Arc<OnceLock<RecordedOutput>>>,
+    /// Set only on a row a graph selection commit transported: the selected
+    /// and restored bases whose read evidence alone may admit its facts.
+    pub(super) historical_selection: Option<Arc<super::HistoricalSelectionCoordinate>>,
     pub(super) consumed_outputs: Arc<[ConsumedOutputEvidence]>,
     pub(super) completed_handler_facts: Option<CompletedHandlerFactBoundary>,
     pub(super) completed_decision_reuse: Option<super::CompletedDecisionReuseProof>,

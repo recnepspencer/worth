@@ -8,6 +8,7 @@ use crate::{
 };
 use std::sync::Arc;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
+mod antecedent;
 mod revisions;
 
 #[derive(Debug)]

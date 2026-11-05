@@ -248,6 +248,7 @@ where
                 identity: selected.declaration.identity.clone(),
                 applicability: selected.declaration.applicability[0],
                 exact_retained_output: true,
+                retained_read_posture: super::demand::RetainedOutputReadPosture::Ordinary,
 
                 retained_idempotency_key: None,
                 retained_output_binding: None,

@@ -795,3 +795,47 @@ selected step's branch coordinate. Slice order, each with courts and mutants:
   fails both courts. Skipping the transport survives slice 1: in this fixture the selected
   and head rows coincide, and Native's transition-successor readmission names the current
   publication for Preserve. Slice 2's zero-contact court is the transport's kill evidence.
+
+### D1202 slice 2 acceptance boundary
+
+The carried evidence gates alone do not grant contact-free delivery. Verified in
+source: native_selection admits exact retained delivery only for recovered rows,
+CanonicalBitwise input reuse, or an existing Ready at the same current source.
+source_admission then readmits only a recovered checkpoint. A transported row
+therefore reaches Preserve even when all its evidence gates hold.
+
+Generalize the existing restored-accepted origin at the output-demand registry:
+Checkpoint retains its current identity and recovery authority; HistoricalSelection
+retains the committed Native publication and exact transported settlement. The
+selector supplies its exact retained binding/key only after currentness succeeds.
+Admission resolves that exact row at the current selected Product, verifies it
+again against the current head, and admits it through the same restored-demand
+owner. Settlement leases that genuine Product observation, preserving its
+historical-selection provenance and reporting that posture explicitly. It
+requires no recovered-root authority. Ordinary and checkpoint paths keep their
+current fences. Checkpoint capture may carry descriptive historical output
+identity, but cannot encode unrebased original revisions as current checkpoint
+reuse evidence.
+
+The count courts must show two healthy families reused after undo, repeatedly,
+on both serial and worker-only requests. Skip-transport and skip-evidence must
+fail them. Include stale-at-selected-step and post-selection-change legs so
+restored acceptance cannot bless stale rows. Preserve original computation and
+upstream evidence in the transported row; a leaf-only fact comparison cannot
+replace the full dependency-closure verifier for dependent families.
+
+Current-roster qualification refinement: a current roster's decoded canonical
+origin carries no live issuer Arc. The retained Native publication seal carries
+that issuer. Authenticate it through worth-proof's installed-publication owner,
+then compare the authenticated current roster and independent presence. Do not
+compare serialized origin issuer fields to live installation identity. A Native
+court exposed and corrected that mistaken premise before qualification.
+
+D1202 slice 2 evidence: the two independent-family undo demands reuse the exact
+historical rows twice without producer contact, for serial and worker-only
+requests. A stale selected edit still triggers both Preserve producers. Eight
+compiled mutants are killed, including skipped transport, omitted evidence and
+skipped verification. The restored suites pass 126 public history courts, 52
+Native ownership courts and 2260 Native library tests. This does not complete
+slice 3: automatic verification of every route at one endpoint, dependent-family
+and nested-selection courts, multi-tree recording and build-isolation remain.

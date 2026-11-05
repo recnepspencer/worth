@@ -260,5 +260,69 @@ fn bounded_requests_refuse_and_worker_only_requests_poll_without_accounting() {
             aspect
         )
         .unwrap());
+    let hold = world
+        .runtime
+        .snapshots()
+        .snapshot_for_observation(&world.selected.observation())
+        .unwrap();
+    let source = world
+        .runtime
+        .read_truth()
+        .positioned_snapshot(&hold)
+        .unwrap();
+    assert!(evidence
+        .includes_source(worker, &world.runtime, &source)
+        .unwrap());
+    world.runtime.snapshots().release_snapshot(&hold).unwrap();
     assert!(!worker.has_accounting());
+}
+
+#[test]
+fn historical_upstream_sources_require_selected_ancestry_and_the_original_runtime() {
+    let host = serial_request();
+    let request = &ExecutionRequest::serial(&host);
+    let world = SelectedWorld::new(request);
+    let evidence = world.evidence(request).unwrap();
+    let position = |basis: &worth_relational::facade::branch::AdmittedRelationalBranchBasis| {
+        let hold = world
+            .runtime
+            .snapshots()
+            .snapshot_for_observation(&basis.observation())
+            .unwrap();
+        let position = world
+            .runtime
+            .read_truth()
+            .positioned_snapshot(&hold)
+            .unwrap();
+        world.runtime.snapshots().release_snapshot(&hold).unwrap();
+        position
+    };
+    assert!(evidence
+        .includes_source(request, &world.runtime, &position(&world.selected))
+        .unwrap());
+    assert!(!evidence
+        .includes_source(request, &world.runtime, &position(&world.edited))
+        .unwrap());
+    assert!(!evidence
+        .includes_source(request, &world.runtime, &position(&world.restored))
+        .unwrap());
+    let foreign = super::read_evidence_fixture::field_runtime();
+    assert!(matches!(
+        evidence.includes_source(request, &foreign, &position(&world.selected)),
+        Err(ReadDenial::ForeignOwner)
+    ));
+    let foreign_basis = transfer_fixture::basis(&foreign);
+    let foreign_hold = foreign
+        .snapshots()
+        .snapshot_for_observation(&foreign_basis.observation())
+        .unwrap();
+    let foreign_source = foreign
+        .read_truth()
+        .positioned_snapshot(&foreign_hold)
+        .unwrap();
+    assert!(matches!(
+        evidence.includes_source(request, &world.runtime, &foreign_source),
+        Err(ReadDenial::ForeignOwner)
+    ));
+    foreign.snapshots().release_snapshot(&foreign_hold).unwrap();
 }

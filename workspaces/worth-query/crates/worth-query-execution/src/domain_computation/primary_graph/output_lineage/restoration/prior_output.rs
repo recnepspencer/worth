@@ -84,6 +84,7 @@ impl WorthQueryApplicationOutputLineage {
             ),
             computation_source: super::super::ComputationSourceEvidence::unavailable(),
             performed_origin: None,
+            historical_selection: None,
             consumed_outputs: Arc::from([]),
             completed_handler_facts: None,
             completed_decision_reuse: None,

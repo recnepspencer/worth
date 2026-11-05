@@ -47,7 +47,7 @@ impl OutputRefreshPredecessor<'_> {
         match self {
             Self::Committed(receipt) => *receipt.idempotency_binding().key_identity(),
             Self::Stable { published, .. } => published.idempotency_key_identity(),
-            Self::Restored(restored) => restored.checkpoint.idempotency_key,
+            Self::Restored(restored) => restored.origin.key(),
         }
     }
 
@@ -60,7 +60,7 @@ impl OutputRefreshPredecessor<'_> {
                 actual.same_publication(published)
             }
             (Self::Restored(expected), WorthQueryAcceptedOutputAuthority::Restored(actual)) => {
-                actual.checkpoint.idempotency_key == expected.checkpoint.idempotency_key
+                actual.origin.same_owner(&expected.origin)
                     && Arc::ptr_eq(&actual.correspondence, &expected.correspondence)
             }
             _ => false,

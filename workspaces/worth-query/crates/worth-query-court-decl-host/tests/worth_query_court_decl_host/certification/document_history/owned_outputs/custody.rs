@@ -4,7 +4,8 @@ use super::*;
 
 /// Undo then redo over a model whose two owned families settled before the
 /// recorded edit. Each checkout restores the HistoricalSelection custody with
-/// no producer contact. A later settlement on the final head is Preserve for
+/// no producer contact. The redone step's rows were stale at that step (the
+/// edit was not settled in history), so a later settlement is Preserve for
 /// both families: each succeeds the committed selection publication that its
 /// transported row names, keeping the original output identity.
 fn undo_redo_then_settle(host: &world::Host) {
@@ -54,6 +55,51 @@ fn undo_redo_then_settle(host: &world::Host) {
     );
     host.with_host_advancement(|phase| document.close(&phase).unwrap())
         .unwrap();
+}
+
+/// Undo restores the pre-edit model and both families' outputs, which were
+/// current at the selected step. Each family's demand then reuses its restored
+/// output through the selection's read evidence: no producer contact, twice.
+fn undo_then_settle_reuses_restored_outputs(host: &world::Host) {
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host.request(&principal, &scope);
+    let Edited {
+        document,
+        before,
+        selection,
+        outputs,
+        ..
+    } = edited(host, &request, false);
+    let contacts = host.producer_contacts_on_this_thread_for_test();
+    let undone = checkout(&document, &request, before, selection, 0x5356_0201)
+        .unwrap_or_else(|cause| panic!("undo restores owned custody: {cause:?}"));
+    let branch = undone.physical_endpoint().product_branch();
+    let on_branch = host.request(&principal, &scope).on_branch(branch);
+    for _ in 0..2 {
+        first::settle(host, &on_branch, "a");
+        second::settle(host, &on_branch, "a");
+        assert_eq!(
+            host.producer_contacts_on_this_thread_for_test(),
+            contacts,
+            "restored current outputs are reused without a producer contact"
+        );
+        assert_eq!(world::outputs(host, branch), outputs);
+    }
+    host.with_host_advancement(|phase| document.close(&phase).unwrap())
+        .unwrap();
+}
+
+#[test]
+fn undo_reuses_both_restored_families_without_producer_contact() {
+    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
+    undo_then_settle_reuses_restored_outputs(&world::install());
+}
+
+#[test]
+fn worker_only_undo_reuses_both_restored_families_without_producer_contact() {
+    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
+    undo_then_settle_reuses_restored_outputs(&world::install_worker_only());
 }
 
 #[test]

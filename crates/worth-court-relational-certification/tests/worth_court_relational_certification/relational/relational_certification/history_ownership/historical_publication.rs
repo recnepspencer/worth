@@ -22,6 +22,9 @@ fn selected_publication_keeps_original_ids_under_fresh_commit_and_cold_current_c
         )
         .unwrap();
     let old_publication = prior.publication().clone();
+    assert!(old_publication
+        .matches_current_ownership_at(execution, &world.installed, &selected)
+        .unwrap());
     let original_ids: Vec<_> = old_publication.members().map(|(_, _, _, id)| id).collect();
     assert_eq!(original_ids, [world.output]);
     create_entity(execution, &world.runtime, "outside-current-edit");
@@ -111,6 +114,15 @@ fn selected_publication_keeps_original_ids_under_fresh_commit_and_cold_current_c
             .observe_model_owner(execution, &after, &ownership(), world.output)
             .unwrap(),
         Some(world.model)
+    );
+    assert!(publications[0]
+        .matches_current_ownership_at(execution, &world.installed, &after)
+        .unwrap());
+    assert!(
+        !old_publication
+            .matches_current_ownership_at(execution, &world.installed, &after)
+            .unwrap(),
+        "equal output identities and values cannot keep a displaced publication current"
     );
     let antecedent = world
         .runtime

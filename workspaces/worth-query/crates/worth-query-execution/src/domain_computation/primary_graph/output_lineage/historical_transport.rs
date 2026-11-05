@@ -1,9 +1,12 @@
 //! A graph selection restores producer custody; its rows move with it, never the head's.
 use super::*;
-use crate::domain_computation::primary_graph::application_contribution::PriorAbsence;
+mod accepted;
+pub use accepted::HistoricalAcceptedOrigin;
 use worth_relational::facade::mvcc::{
     CompanionPreflightStop as Stop, RelationalRequiredOutputPublication,
 };
+mod coordinate;
+pub use coordinate::HistoricalSelectionCoordinate;
 
 /// The selected step's own row for one route that Native restores.
 struct SelectedRow {
@@ -16,6 +19,7 @@ struct SelectedRow {
 /// Recording after the selection commit allocates only what this funds.
 pub struct PreparedHistoricalTransport {
     rows: Vec<SelectedRow>,
+    selected: worth_relational::facade::mvcc::RelationalBranchObservation,
     _funding: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
@@ -117,6 +121,7 @@ impl WorthQueryApplicationOutputLineage {
         }
         Ok(PreparedHistoricalTransport {
             rows,
+            selected: selected.basis().relational_basis().observation(),
             _funding: funding,
         })
     }
@@ -138,7 +143,12 @@ impl WorthQueryApplicationOutputLineage {
             generation: restored.reference_generation().get(),
         };
         self.invalidate_source_publication_coverage();
+        let restored_basis = restored.basis().relational_basis().observation();
         for selected in prepared.rows {
+            let historical = Arc::new(HistoricalSelectionCoordinate {
+                selected: prepared.selected.clone(),
+                restored: restored_basis.clone(),
+            });
             let position = publications
                 .iter()
                 .position(|publication| {
@@ -185,6 +195,7 @@ impl WorthQueryApplicationOutputLineage {
                 computation_source: origin.computation_source,
                 native_prior_checkpoint: selected.locator,
                 performed_origin: None,
+                historical_selection: Some(historical),
                 consumed_outputs: Arc::clone(&origin.consumed_outputs),
                 completed_handler_facts: None,
                 completed_decision_reuse: None,
@@ -197,7 +208,11 @@ impl WorthQueryApplicationOutputLineage {
                 mutable: std::sync::Mutex::new(RecordedOutputMutable::new(
                     None,
                     row.observed_source_facts(),
-                    retained_computation::RecordedComputation::Absent(PriorAbsence::Restored),
+                    row.mutable
+                        .lock()
+                        .unwrap_or_else(std::sync::PoisonError::into_inner)
+                        .computation
+                        .shared(),
                 )),
                 settlement_identity: RecordedSettlementIdentity::retain(&source, coordinate, slot),
                 correspondence: Arc::clone(&row.correspondence),

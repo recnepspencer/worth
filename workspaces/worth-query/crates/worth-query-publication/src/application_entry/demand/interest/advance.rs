@@ -131,6 +131,7 @@ where
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::ProductSelection(_)
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::SchedulingRejected
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::SchedulingDeferred
+                | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::CurrentPublication(_)
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::CurrentControlBusy
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::PublicationStale
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::NoEffect

@@ -15,6 +15,7 @@ impl WorthQuerySelectedApplicationProducer {
             identity,
             applicability,
             exact_retained_output,
+            retained_read_posture: RetainedOutputReadPosture::Ordinary,
             retained_idempotency_key,
             retained_output_binding,
             reuses_live_output_only,

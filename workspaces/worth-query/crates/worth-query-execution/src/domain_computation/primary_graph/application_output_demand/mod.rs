@@ -46,6 +46,7 @@ pub(in crate::domain_computation) use registry::RequiredOutputExecution;
 pub(in crate::domain_computation::primary_graph) use registry::RequiredRefreshRejection;
 pub(in crate::domain_computation::primary_graph) use registry::RequiredWorkClaim;
 pub(in crate::domain_computation::primary_graph) use registry::RequiredWorkMembership;
+pub use registry::RestoredOutputOrigin;
 pub(in crate::domain_computation::primary_graph) use registry::RetainedOutputReadmissionSource;
 pub(in crate::domain_computation::primary_graph) use registry::SelectedOutputAdmission;
 pub(in crate::domain_computation::primary_graph) use registry::SelectedReadyReadmission;

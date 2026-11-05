@@ -5,6 +5,7 @@ use crate::publication::data::{AuthoredRetirementRefusal as Cause, PublicationEr
 use crate::storage::overlay::CurrentPartitionAccess;
 use crate::transactions::data::{EntityReference, RecordRef, TransactionCommitError};
 use worth_execution::ExecutionRequest;
+mod comparison;
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn readmit(

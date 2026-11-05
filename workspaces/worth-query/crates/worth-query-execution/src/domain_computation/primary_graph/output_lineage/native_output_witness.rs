@@ -23,6 +23,7 @@ mod equality;
 mod fact_coverage;
 mod fact_projection;
 mod preparation;
+mod restored;
 pub(crate) mod retirement;
 use retirement::RetirementMetadata;
 

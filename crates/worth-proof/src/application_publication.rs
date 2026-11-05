@@ -181,6 +181,15 @@ impl InstalledApplicationPublicationAuthority {
         Arc::ptr_eq(&self.occurrence, &other.occurrence)
     }
 
+    /// Authenticate the installed issuer of a retained publication seal.
+    /// Recorded origin descriptions carry no live issuer identity.
+    pub fn owns_required_output_publication(
+        &self,
+        seal: &RequiredOutputPublicationAuthority,
+    ) -> bool {
+        Arc::ptr_eq(&self.occurrence, &seal.occurrence)
+    }
+
     pub fn seal_required_output_publication(
         &self,
         publication: u64,
@@ -316,6 +325,19 @@ mod tests {
         assert!(!installed.authority().admits_required_output(&proof));
         let genuine = installed.admit_required_output("producer", [7; 32]);
         assert!(installed.authority().admits_required_output(&genuine));
+    }
+
+    #[test]
+    fn publication_seals_require_the_installed_issuer_even_at_equal_coordinates() {
+        let owner = InstalledApplicationPublicationOwner::fresh();
+        let foreign = InstalledApplicationPublicationOwner::fresh();
+        let own = owner.authority().seal_required_output_publication_at(9, 1);
+        let other = foreign
+            .authority()
+            .seal_required_output_publication_at(9, 1);
+        assert!(owner.authority().owns_required_output_publication(&own));
+        assert!(!owner.authority().owns_required_output_publication(&other));
+        assert!(!foreign.authority().owns_required_output_publication(&own));
     }
 
     #[test]
