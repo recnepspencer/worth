@@ -278,4 +278,4 @@ pub mod contract;
 #[path = "review/mod.rs"]
 pub mod review;
 #[path = "value_bindings/mod.rs"]
-pub mod value_bindings;
+pub(crate) mod value_bindings;

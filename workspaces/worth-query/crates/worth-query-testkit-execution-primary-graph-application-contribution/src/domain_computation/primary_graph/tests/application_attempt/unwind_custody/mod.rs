@@ -1,9 +1,3 @@
-use crate::domain_computation::primary_graph::tests::application_attempt::authenticated_principal;
-use crate::domain_computation::primary_graph::tests::application_attempt::idempotency;
-use crate::domain_computation::primary_graph::tests::application_attempt::program_fixture::admitted_program;
-use crate::domain_computation::primary_graph::tests::application_attempt::resolved_account;
-use crate::domain_computation::primary_graph::tests::fixture::schema_types::live_scope;
-use crate::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
 use std::num::NonZeroUsize;
 use std::panic::catch_unwind;
 use std::panic::AssertUnwindSafe;

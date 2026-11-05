@@ -271,7 +271,7 @@ fn reversed_completion_still_applies_canonical_effects_and_receipts() {
     probe.take_computes();
     let (expected, report) = worth_execution::ExecutionWorkCeiling::new(None)
         .run_serial(&host_request, || {
-            observe(request_execution, 29, None, funded(0), &probe)
+            observe(request_execution, 29, None, Policy::width(0), &probe)
         })
         .unwrap();
     assert_eq!(
@@ -283,7 +283,7 @@ fn reversed_completion_still_applies_canonical_effects_and_receipts() {
     // dependence, not simply a counter carried over from a previous run.
     probe.take_computes();
     assert_eq!(expected.0.outcome, None);
-    let repeated = observe(request_execution, 29, None, funded(0), &probe);
+    let repeated = observe(request_execution, 29, None, Policy::width(0), &probe);
     assert_eq!(repeated.0.outcome, None);
     assert_eq!(repeated, expected, "two reset serial runs agree");
     assert_eq!(
@@ -299,7 +299,7 @@ fn reversed_completion_still_applies_canonical_effects_and_receipts() {
     for workers in [1, 2] {
         probe.take_computes();
         assert_eq!(
-            observe(request_execution, 29, None, funded(workers), &probe),
+            observe(request_execution, 29, None, Policy::width(workers), &probe),
             expected,
             "funded original grant at width {workers}"
         );
@@ -307,7 +307,7 @@ fn reversed_completion_still_applies_canonical_effects_and_receipts() {
 
     probe.take_computes();
     probe.reorder();
-    let actual = observe(request_execution, 29, None, funded(4), &probe);
+    let actual = observe(request_execution, 29, None, Policy::width(4), &probe);
     assert_eq!(actual.0.outcome, None);
     probe.assert_schedule_completed();
     assert_eq!(actual, expected);

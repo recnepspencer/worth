@@ -3,7 +3,6 @@
 //! and keeps the run seal retains; a moved fact is the retained fact standing
 //! in for an older one.
 
-use worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation as QueryObservation;
 use std::sync::Arc;
 use std::sync::Mutex;
 use worth_execution::PartitionItemId;

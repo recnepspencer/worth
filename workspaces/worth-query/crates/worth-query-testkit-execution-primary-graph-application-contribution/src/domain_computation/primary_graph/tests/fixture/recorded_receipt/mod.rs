@@ -87,21 +87,21 @@ pub fn read_original(
 pub fn read_original_in_phase(
     world: &super::AuthorizationWorld,
     fresh: &WorthQueryApplicationCommitReceipt,
-    phase: &worth_query_execution::facade::primary_graph::WorthQueryAdvancementPhase<'_>,
+    phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
 ) -> WorthQueryRecoveredApplicationCommitReceipt {
     let product = world
         .selected_product(&phase.test_host_request_for_test())
         .product()
         .publication_binding_for_test();
     match world.application.runtime_for_test().primary_provider_for_test().resolve_idempotency_binding_at_product_for_test(&phase.borrowed_request_for_test(), fresh.idempotency_binding(), &product).unwrap() {
-        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolution::Readmitted(original) => original,
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::idempotency::WorthQueryProviderIdempotencyResolution::Readmitted(original) => original,
         other => panic!("actual owner lookup must return original meaning: {other:?}"),
     }
 }
 
 pub fn assert_causality(
     recorded: &worth_query_execution::facade::primary_graph::WorthQueryRecoveredAftermathCausality,
-    fresh: &worth_query_execution::facade::application_aftermath::WorthQueryCommittedAftermathCausality,
+    fresh: &worth_query_execution::facade::primary_graph::WorthQueryCommittedAftermathCausality,
 ) {
     assert_eq!(recorded.role(), fresh.role());
     assert_eq!(recorded.parent(), fresh.parent());

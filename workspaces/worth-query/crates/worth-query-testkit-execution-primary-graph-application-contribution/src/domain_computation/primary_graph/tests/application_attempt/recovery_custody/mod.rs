@@ -3,11 +3,8 @@
 use crate::domain_computation::primary_graph::tests::application_attempt::authenticated_principal;
 use crate::domain_computation::primary_graph::tests::application_attempt::idempotency;
 use crate::domain_computation::primary_graph::tests::application_attempt::resolved_account;
-use crate::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
-use std::time::Duration;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitOutcome;
 
-use crate::domain_computation::primary_graph::tests::application_attempt::*;
 use crate::domain_computation::primary_graph::tests::fixture::authorization_world_installation::AuthorizationWorld;
 use crate::domain_computation::primary_graph::tests::fixture::schema_types::ExactStatusRetentionInput;
 use crate::domain_computation::primary_graph::tests::fixture::Account;
@@ -16,10 +13,7 @@ use crate::domain_computation::primary_graph::tests::fixture::IdentityExecutionS
 use worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_execution::facade::domain_computation::WorthQueryAdmittedApplicationOperation;
-use worth_query_execution::facade::domain_computation::WorthQueryExternalRedispatchDenial;
-use worth_query_execution::facade::domain_computation::WorthQueryOperationAuthorizationDenialKind;
 use worth_query_execution::facade::domain_computation::WorthQueryRecoveryHandle;
-use worth_query_execution::facade::domain_computation::WorthQueryRecoveryHandleDenialKind;
 pub type RecoveryAdmission = WorthQueryAdmittedApplicationOperation<
     IdentityExecutionSchema,
     ExactStatusRetentionOperation,
