@@ -1,5 +1,10 @@
 //! Current native canonical envelope input: managed text remains borrowed until admission.
+#[path = "text_wire/cascade_memory.rs"]
+mod cascade_memory;
+#[path = "text_wire/seed.rs"]
+mod seed;
 use super::{CanonicalCommitAuthorityKind, RelationalDescriptiveTouchGraph};
+pub(crate) use seed::CanonicalEnvelopeSeed;
 use serde::Deserialize;
 
 use crate::diagnostics::data::RelationalDiagnosticArtifact;
@@ -18,10 +23,15 @@ pub(crate) struct CanonicalEnvelopeWire<Symbols> {
     index_definition_delta: super::CanonicalIndexDefinitionDelta,
     semantic_result: std::sync::Arc<crate::transactions::data::RelationalCommitSemanticResult>,
     caller_association: Option<super::super::RelationalCallerAssociation>,
+    content: crate::content::ContentPublication,
     required_output_codec_retirements:
         Vec<std::sync::Arc<super::CanonicalRequiredOutputCodecRetirement>>,
     #[serde(default)]
     required_output_origin: Option<std::sync::Arc<super::CanonicalRequiredOutputOrigin>>,
+    #[serde(default)]
+    producer_cascade_retirement: Option<std::sync::Arc<super::CanonicalProducerRetirement>>,
+    authored_cascade_retirement: Option<std::sync::Arc<super::CanonicalAuthoredRetirement>>,
+    authored_cascade_restoration: Option<std::sync::Arc<super::CanonicalAuthoredRestoration>>,
     #[serde(default)]
     required_output_materialization:
         Option<std::sync::Arc<super::CanonicalRequiredOutputMaterialization>>,
@@ -66,6 +76,7 @@ impl<Symbols> CanonicalEnvelopeWire<Symbols> {
     }
 
     pub(crate) fn attach_shared_readmission_memory(&mut self) -> Result<(), &'static str> {
+        self.attach_cascade_memory()?;
         let memory = self.readmission_memory.index_delta.take();
         if let Err(memory) = self.index_definition_delta.retain_decoded_memory(memory) {
             self.readmission_memory.index_delta = memory;
@@ -205,10 +216,14 @@ impl<Symbols> CanonicalEnvelopeWire<Symbols> {
         symbol_texts: crate::symbols::data::SymbolTableSnapshot,
     ) -> Result<super::CanonicalCommitEnvelope, &'static str> {
         let body = super::CanonicalCommitEnvelopeBody {
+            content: self.content,
             index_definition_delta: self.index_definition_delta,
             caller_association: self.caller_association,
             required_output_codec_retirements: self.required_output_codec_retirements,
             required_output_origin: self.required_output_origin,
+            producer_cascade_retirement: self.producer_cascade_retirement,
+            authored_cascade_retirement: self.authored_cascade_retirement,
+            authored_cascade_restoration: self.authored_cascade_restoration,
             required_output_materialization: self.required_output_materialization,
             authored_index_writes: self.authored_index_writes,
             commit: self.commit,

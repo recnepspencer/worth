@@ -3,14 +3,12 @@
 use super::*;
 
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation::primary_graph::output_lineage::invalidation) enum PostingBindings
-{
+pub enum PostingBindings {
     Settlements(SettlementPostingBindings),
     QueryRead(super::super::query_coverage::QueryReadBinding),
 }
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation::primary_graph::output_lineage::invalidation) struct SettlementPostingBindings
-{
+pub struct SettlementPostingBindings {
     pub(in crate::domain_computation::primary_graph::output_lineage::invalidation) projection:
         Arc<PostingProjection>,
     pub(in crate::domain_computation::primary_graph::output_lineage::invalidation) settlements:
@@ -27,7 +25,7 @@ impl PostingBindings {
     }
 }
 
-pub(super) fn bind(
+pub fn bind(
     state: &mut MarkState,
     projection: &Arc<PostingProjection>,
     identity: &Arc<RecordedSettlementIdentity>,
@@ -83,3 +81,5 @@ pub(in super::super) fn install_physical(
     }
     Ok(())
 }
+
+mod court_doors_for_test;

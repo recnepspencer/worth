@@ -2,6 +2,7 @@
 mod funding;
 mod projection;
 mod values;
+use crate::authority::commit::semantic_plan::RelationalSemanticPlan;
 use crate::branch::SelectedRelationalBranchState;
 use crate::history::data::{
     CanonicalAuthoredIndexWrite as Entry, CanonicalAuthoredIndexWrites as Evidence,
@@ -10,7 +11,7 @@ use crate::history::{
     RelationalAuthoredEntityIndexDefinition as Definition, RelationalAuthoredWriteDenial as Denial,
 };
 use crate::runtime::{RelationalPreparationRuntime, WorkingState};
-use crate::transactions::data::{MergedCommitPlan, RecordRef};
+use crate::transactions::data::RecordRef;
 use worth_execution::{ExecutionRequest, MapKernelContext};
 use worth_foundational::facade::{AspectKey, FieldKey};
 
@@ -19,7 +20,7 @@ pub(super) fn prepare(
     catalog: &crate::runtime::CapturedIndexDefinitionCatalog,
     selected: &SelectedRelationalBranchState,
     working: &WorkingState,
-    plan: &MergedCommitPlan,
+    plan: RelationalSemanticPlan<'_>,
     allocations: &[crate::history::data::CanonicalRecordAllocation],
     supported: bool,
     execution: ExecutionRequest<'_, '_>,
@@ -76,7 +77,7 @@ fn prepare_evidence(
     catalog: &crate::runtime::CapturedIndexDefinitionCatalog,
     selected: &SelectedRelationalBranchState,
     working: &WorkingState,
-    plan: &MergedCommitPlan,
+    plan: RelationalSemanticPlan<'_>,
     allocations: &[crate::history::data::CanonicalRecordAllocation],
     execution: ExecutionRequest<'_, '_>,
 ) -> Result<Evidence, Denial> {

@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex, Weak};
 
 const MAXIMUM_REGISTERED_VIEWS: usize = 64;
-mod index_directory;
+pub(crate) mod index_directory;
 mod managed_index;
 mod managed_source;
 mod native_count;
@@ -18,9 +18,7 @@ pub(in crate::domain_computation::primary_graph) use predicate::{
     PredicateWorld, PreparedPredicateNotices, PreparedPredicatePublication, SourcePredicateAxis,
 };
 
-pub(in crate::domain_computation::primary_graph::application_query) trait RegisteredManagedIndex:
-    Send + Sync
-{
+pub trait RegisteredManagedIndex: Send + Sync {
     fn dispose(&self);
 }
 
@@ -43,15 +41,12 @@ pub(in crate::domain_computation::primary_graph::application_query) trait Regist
     );
 }
 
-pub(in crate::domain_computation::primary_graph) struct PreparedManagedViewPublication {
+pub struct PreparedManagedViewPublication {
     views: Vec<(Arc<dyn RegisteredDerivedView>, Option<Box<dyn Any + Send>>)>,
 }
 
 impl PreparedManagedViewPublication {
-    pub(in crate::domain_computation::primary_graph) fn apply(
-        self,
-        after: &worth_runtime_world::facade::CompositeCommitIdentity,
-    ) {
+    pub fn apply(self, after: &worth_runtime_world::facade::CompositeCommitIdentity) {
         for (view, prepared) in self.views {
             view.apply_transition(prepared, after);
         }
@@ -91,7 +86,7 @@ impl RegistryState {
 }
 
 #[derive(Default)]
-pub(in crate::domain_computation::primary_graph) struct ManagedDerivedViewRegistry {
+pub struct ManagedDerivedViewRegistry {
     state: Mutex<RegistryState>,
     native_runtime: Option<u64>,
     sources: super::super::managed_index::ManagedSourceInstallation,
@@ -243,3 +238,5 @@ impl Drop for ManagedDerivedViewRegistry {
         self.dispose();
     }
 }
+
+mod court_doors_for_test;

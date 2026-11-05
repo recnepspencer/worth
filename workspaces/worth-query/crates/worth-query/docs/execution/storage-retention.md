@@ -1,5 +1,16 @@
 # Reclaim retired storage
 
+For an attached document's selectable history, configure a positive
+`ApplicationHistoryRecentSteps` window and bounded bookmarks through
+[document history](../foundations/branches-and-previews.md#configure-a-navigation-window-and-bookmarks).
+That policy releases its own obsolete source and branch owners. Open previews,
+unfinished navigation and unrelated readers keep their genuine rights.
+`history_retention_status` reports pending window work and owner releases;
+`maintain_history` retries one actual release, and explicit document close
+retains refused cleanup. Availability changes promise no byte bound, immediate
+heap/disk recovery, catalog deletion or log truncation. The physical storage
+pass below remains governed by its existing storage owner.
+
 Use `WorthQueryPrimaryGraphApplicationRuntime::try_reclaim_retired_storage`
 inside an advancement borrowed from that same installed application. The pass
 uses its installed retention backend, automatic-reclaim setting and batch size,

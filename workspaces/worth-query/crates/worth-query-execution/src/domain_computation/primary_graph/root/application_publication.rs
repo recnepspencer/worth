@@ -5,10 +5,9 @@ use worth_relational::facade::{
     runtime::RelationalInitialSchemaInstallationReceipt,
 };
 
-pub(in crate::domain_computation::primary_graph) struct ApplicationPublication {
+pub struct ApplicationPublication {
     pub(in crate::domain_computation::primary_graph) owner: InstalledApplicationPublicationOwner,
-    pub(in crate::domain_computation::primary_graph) native:
-        RelationalInstalledApplicationPublicationAuthority,
+    pub native: RelationalInstalledApplicationPublicationAuthority,
 }
 
 impl ApplicationPublication {
@@ -26,3 +25,7 @@ impl ApplicationPublication {
         Self { owner, native }
     }
 }
+
+impl super::WorthQueryPrimaryGraph {}
+
+mod court_doors_for_test;

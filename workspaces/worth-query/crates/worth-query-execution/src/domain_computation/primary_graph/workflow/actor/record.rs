@@ -5,7 +5,7 @@ use worth_relational::facade::identity::{EntityId, PartitionId};
 
 /// Historical identity, not a grant or an execution right.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) struct WorkflowAdmittedActor(EntityId);
+pub struct WorkflowAdmittedActor(EntityId);
 
 impl WorkflowAdmittedActor {
     pub(in crate::domain_computation::primary_graph) fn from_admission<S, O, I, C>(
@@ -46,7 +46,7 @@ impl WorkflowAdmittedActor {
     }
 }
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation) struct WorkflowActorFields {
+pub struct WorkflowActorFields {
     pub(in crate::domain_computation) partition: AspectFieldLocator,
     pub(in crate::domain_computation) slot: AspectFieldLocator,
     pub(in crate::domain_computation) generation: AspectFieldLocator,
@@ -172,3 +172,5 @@ pub(in crate::domain_computation) fn actor_record_corruption(
         "current workflow actor record is malformed",
     )
 }
+
+mod court_doors_for_test;

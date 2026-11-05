@@ -12,15 +12,15 @@ use std::hash::Hasher;
 use std::sync::Arc;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 mod ordering;
-pub(in super::super) struct PreparedPostingOrdinals {
+pub struct PreparedPostingOrdinals {
     ordinals: OrdMap<Arc<FactPostingKey>, OrdSet<usize>>,
 }
-struct ProjectedKey {
+pub struct ProjectedKey {
     hash: u64,
     key: Arc<FactPostingKey>,
     ordinal: usize,
 }
-struct PostingGroup {
+pub struct PostingGroup {
     key: Arc<FactPostingKey>,
     ordinals: OrdSet<usize>,
 }
@@ -80,7 +80,7 @@ impl PreparedPostingOrdinals {
     }
 }
 /// Fingerprints order the sort; exact key equality alone groups ordinals.
-fn group_projected(
+pub fn group_projected(
     mut projected: Vec<ProjectedKey>,
 ) -> Result<Vec<PostingGroup>, CompanionPreflightStop> {
     ordering::sort(&mut projected);
@@ -105,5 +105,5 @@ fn group_projected(
     }
     Ok(groups)
 }
-#[cfg(test)]
-mod tests;
+
+mod court_doors_for_test;

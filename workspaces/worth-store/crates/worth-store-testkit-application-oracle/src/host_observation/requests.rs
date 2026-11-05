@@ -16,7 +16,7 @@ pub fn resolve_original(
     worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyResolution,
     worth_query_host::facade::application_entry::WorthQueryApplicationRecoveryRequestDenial,
 > {
-    let scope = WorthQueryRequestScope::new(None, WorthQueryCancellationSource::new().token());
+    let scope = WorthQueryRequestScope::new(None, WorthQueryCancellationSource::new().token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let principal = identity::inspection_authentication::authenticate(
         runtime.runtime().installed_schema(),
         &scope,
@@ -34,7 +34,7 @@ pub fn resolve_original(
         .map(|read| read.into_resolution())
 }
 pub fn set(runtime: &OracleRuntime, key: u64, value: u64) -> MutationOutcome {
-    let scope = WorthQueryRequestScope::new(None, WorthQueryCancellationSource::new().token());
+    let scope = WorthQueryRequestScope::new(None, WorthQueryCancellationSource::new().token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let principal = identity::inspection_authentication::authenticate(
         runtime.runtime().installed_schema(),
         &scope,
@@ -55,7 +55,7 @@ pub fn set(runtime: &OracleRuntime, key: u64, value: u64) -> MutationOutcome {
         .unwrap()
 }
 pub fn balance(runtime: &OracleRuntime) -> u64 {
-    let scope = WorthQueryRequestScope::new(None, WorthQueryCancellationSource::new().token());
+    let scope = WorthQueryRequestScope::new(None, WorthQueryCancellationSource::new().token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let principal = identity::inspection_authentication::authenticate(
         runtime.runtime().installed_schema(),
         &scope,

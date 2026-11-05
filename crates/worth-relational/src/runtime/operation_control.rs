@@ -89,7 +89,7 @@ pub struct RelationalCancellationToken {
 #[derive(Debug, Clone)]
 pub struct RelationalOperationControl {
     cancellation: RelationalCancellationToken,
-    deadline: Option<Instant>,
+    deadline: Option<worth_execution::MonotonicDeadline>,
     injected_interruption: Option<RelationalInjectedInterruption>,
     post_linearization_pause: Option<RelationalPostLinearizationPause>,
     critical_section_pause: Option<RelationalCriticalSectionPause>,
@@ -199,7 +199,7 @@ impl RelationalOperationControl {
         RelationalCancellationSource::new().token().into()
     }
 
-    pub fn with_deadline(mut self, deadline: Instant) -> Self {
+    pub fn with_deadline(mut self, deadline: worth_execution::MonotonicDeadline) -> Self {
         self.deadline = Some(deadline);
         self
     }
@@ -209,7 +209,8 @@ impl RelationalOperationControl {
             return Some(RelationalOperationInterruption::Cancelled);
         }
         self.deadline
-            .is_some_and(|deadline| Instant::now() >= deadline)
+            .as_ref()
+            .is_some_and(worth_execution::MonotonicDeadline::is_elapsed)
             .then_some(RelationalOperationInterruption::TimedOut)
     }
 

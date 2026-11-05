@@ -2,6 +2,8 @@
 /// refused.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryConditionalRuntimeInstallationDenialKind {
+    /// Native refused retained content before a reconstruction result existed.
+    Content(worth_relational::facade::content::RelationalContentDenial),
     /// Boxed: every other kind would otherwise reserve its bytes inline.
     Readiness(
         Box<super::super::super::application_contribution::WorthQueryOutputReadinessContractDenial>,

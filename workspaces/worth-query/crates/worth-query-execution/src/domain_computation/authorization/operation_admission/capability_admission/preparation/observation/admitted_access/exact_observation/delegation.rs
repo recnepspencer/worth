@@ -93,6 +93,7 @@ where
     ) -> Result<WorthQueryDelegationResolvedRequest, WorthQueryOperationAuthorizationDenial> {
         let installed = self
             .runtime
+            .runtime
             .authorization
             .capability_plan(target_capability)
             .ok_or_else(|| stale(target_capability.contract().name()))?;
@@ -133,6 +134,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         proposed: &ApplicationCapabilityDelegationRequestProjection<Schema, Scope, Context>,
     ) -> Result<crate::domain_computation::authorization::delegation_progression::support::WorthQueryObservedDelegationSupport, WorthQueryOperationAuthorizationDenial>{
         let installed = self
+            .runtime
             .runtime
             .authorization
             .capability_plan(target_capability)

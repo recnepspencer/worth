@@ -50,7 +50,7 @@ impl WorkflowConditionOperand {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) struct CompiledWorkflowCondition {
+pub struct CompiledWorkflowCondition {
     pub(in crate::domain_computation::primary_graph) expression:
         CompiledWorkflowConditionExpression,
     /// Name-ordered; names are unique.

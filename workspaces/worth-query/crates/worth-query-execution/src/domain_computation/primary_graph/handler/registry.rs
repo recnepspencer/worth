@@ -30,7 +30,7 @@ use super::super::{
 };
 
 #[derive(Clone)]
-struct PendingMutationHandler {
+pub struct PendingMutationHandler {
     origin: HandlerOrigin,
     durable_capabilities: Option<&'static [super::super::application_entry::mutation::WorthQueryOperationDurableCapability]>,
     identity: &'static str,
@@ -42,7 +42,7 @@ struct PendingMutationHandler {
     advance_home_retirement: retirement::AdvanceHandlerRetirement,
 }
 
-struct TypedHandlerSlot<Schema, Binding>
+pub struct TypedHandlerSlot<Schema, Binding>
 where
     Schema: ApplicationSchema,
     Binding: ApplicationMutationBinding<Schema>,
@@ -50,7 +50,7 @@ where
     handler: Arc<dyn OperationHandler<Schema, Binding>>,
 }
 
-pub(in crate::domain_computation::primary_graph) struct PendingMutationHandlerRegistry<Schema> {
+pub struct PendingMutationHandlerRegistry<Schema> {
     entries: BTreeMap<String, PendingMutationHandler>,
     computations: HashMap<TypeId, InstalledManagedComputationOwner>,
     // Locates a typed setup owner; seal still verifies that owner's actual binding.
@@ -58,7 +58,7 @@ pub(in crate::domain_computation::primary_graph) struct PendingMutationHandlerRe
     _schema: PhantomData<fn() -> Schema>,
 }
 
-pub(in crate::domain_computation::primary_graph) struct InstalledMutationHandlerRegistry<Schema> {
+pub struct InstalledMutationHandlerRegistry<Schema> {
     entries: BTreeMap<String, PendingMutationHandler>,
     _schema: PhantomData<fn() -> Schema>,
 }
@@ -220,3 +220,5 @@ fn denial(
 ) -> WorthQueryPrimaryGraphInstallationDenial {
     WorthQueryPrimaryGraphInstallationDenial::new(kind, subject)
 }
+
+mod court_doors_for_test;

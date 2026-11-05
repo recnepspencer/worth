@@ -73,12 +73,7 @@ fn an_attachment_the_medium_moved_out_of_publishes_nothing() {
         .history
         .commit_artifact(positioned.commit.commit_id)
         .unwrap();
-    let refused = binding.publish(
-        positioned,
-        artifact.roots(),
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        execution,
-    );
+    let refused = binding.publish(positioned, artifact.roots(), execution);
 
     assert!(matches!(
         refused,

@@ -19,6 +19,7 @@ where
     let expected = selected.product().observation();
 
     let checked = runtime
+        .runtime
         .product_runtime
         .owner
         .observation_port()

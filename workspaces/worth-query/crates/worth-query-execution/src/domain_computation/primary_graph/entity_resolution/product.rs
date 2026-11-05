@@ -19,7 +19,7 @@ use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation
 use worth_query_installation::facade::DeclaredApplicationFieldValue;
 
 mod admitted_mutation;
-mod issued_scope;
+pub(crate) mod issued_scope;
 pub(in crate::domain_computation) use issued_scope::WorthQueryIssuedSelectedScope;
 
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
@@ -46,7 +46,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         Unit: ApplicationFieldUnit,
     {
         let execution = phase
-            .execution_request_for(&self.application().product_runtime)
+            .execution_request_for(&self.application().runtime.product_runtime)
             .map_err(|_| {
                 entity_denial(
                     WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::ForeignPhase),

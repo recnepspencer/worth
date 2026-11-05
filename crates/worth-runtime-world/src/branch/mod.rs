@@ -23,7 +23,9 @@ pub use bootstrap::{
     RecoveredRuntimeWorldRootAuthority, RuntimeWorldBootstrapIntent,
     RuntimeWorldBootstrapNoEffectCause, RuntimeWorldBootstrapOutcome,
 };
+pub(crate) use creation::BranchCreationSourceKind;
 pub(crate) use creation::LoweredBranchCreationPlan;
+pub use creation::RetainedProductBranchCreationSource;
 pub use creation::{
     ProductBranchCreationIntent, ProductBranchCreationPlans, RelationalBranchCreationPlan,
     SignalBranchCreationPlan,

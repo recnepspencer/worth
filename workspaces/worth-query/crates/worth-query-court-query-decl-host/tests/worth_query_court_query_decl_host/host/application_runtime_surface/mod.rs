@@ -28,9 +28,8 @@ fn host_facade_publishes_a_narrow_primary_graph_application_runtime() {
     );
     let cancellation = WorthQueryCancellationSource::new();
     let request_scope = WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(60)),
-        cancellation.token(),
-    );
+        Some(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(60)),
+        cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let account = application
         .with_host_advancement(|phase| {
             application

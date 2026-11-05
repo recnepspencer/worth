@@ -70,7 +70,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         ResultValue<S, B>: WorthQueryApplicationProjection<S, B::Query>,
     {
         let execution = phase
-            .execution_request_for(&self.product_runtime)
+            .execution_request_for(&self.runtime.product_runtime)
             .map_err(|_| Denial::new(ReceiverCause::Refused(Refusal::ForeignPhase), None))?;
         if !std::ptr::eq(binding.query(), plan.query) {
             return Err(Denial::new(

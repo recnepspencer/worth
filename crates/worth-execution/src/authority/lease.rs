@@ -2,7 +2,6 @@ use std::{
     collections::HashMap,
     num::NonZeroUsize,
     sync::{Arc, Mutex},
-    time::Instant,
 };
 
 use rayon::ThreadPool;
@@ -103,7 +102,7 @@ impl From<ExecutionPolicyDenial> for LeaseDenial {
 #[derive(Debug, Clone)]
 pub struct LeaseRequest {
     pub policy: ExecutionRequestPolicy,
-    pub deadline: Option<Instant>,
+    pub deadline: Option<crate::MonotonicDeadline>,
     pub cancellation: CancellationToken,
 }
 
@@ -154,7 +153,7 @@ struct LeaseNode {
     max_workers: usize,
     posture: ExecutionPosture,
     charged_memory_bytes: Option<u64>,
-    deadline: Option<Instant>,
+    deadline: Option<crate::MonotonicDeadline>,
     cancellation: CancellationToken,
 }
 

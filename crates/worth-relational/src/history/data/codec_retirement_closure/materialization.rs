@@ -56,7 +56,7 @@ pub(super) fn validate_semantics(
     envelope: &CanonicalCommitEnvelope,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
-) -> Result<(), Stop> {
+) -> Result<(), super::PublicationHistoryFailure> {
     validate_header(
         envelope,
         &mut |id| runtime.history.canonical_envelope(id),

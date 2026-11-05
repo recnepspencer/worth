@@ -1,0 +1,13 @@
+error[E0308]: mismatched types
+   --> tests/worth_court_runtime_world/sources/worth_runtime_world/ui/current_read_requires_an_owner_observation.rs:9:33
+    |
+  9 |     intent.require_current_read(description);
+    |            -------------------- ^^^^^^^^^^^ expected `ProductBranchObservation`, found `ProductBranchReferenceDescription`
+    |            |
+    |            arguments to this method are incorrect
+    |
+note: method defined here
+   --> $WORKSPACE/crates/worth-runtime-world/src/publication/intent.rs
+    |
+    |     pub fn require_current_read(
+    |            ^^^^^^^^^^^^^^^^^^^^

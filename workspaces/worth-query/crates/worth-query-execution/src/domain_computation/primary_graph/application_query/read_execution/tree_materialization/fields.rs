@@ -4,6 +4,8 @@ use std::collections::{BTreeMap, BTreeSet};
 use worth_relational::facade::runtime::{ProjectionAspectRequirement, ProjectionAspectScope};
 
 pub(super) fn project_fields(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    native: &worth_relational::facade::runtime::VisibilityProjectionView,
     record: worth_relational::facade::runtime::EntityProjectionRecord<'_>,
     fields: &[&WorthQueryInstalledGraphProjection],
     mut projected: Vec<WorthQueryApplicationProjectedField>,
@@ -24,10 +26,35 @@ pub(super) fn project_fields(
         }
 
         work.material_field(projection.slot_type(), value)?;
-        projected.push(WorthQueryApplicationProjectedField::new(
-            projection,
-            value.clone(),
-        ));
+        let field = if matches!(
+            value,
+            worth_foundational::facade::AspectValue::ContentRef(_)
+        ) {
+            let locator = worth_foundational::facade::AspectFieldLocator::new(
+                worth_foundational::facade::LocatorAuthority::Authoritative,
+                projection.aspect_key().clone(),
+                worth_foundational::facade::CanonicalFieldPath::single(
+                    projection.field_key().clone(),
+                ),
+            );
+            let content = native
+                .retain_entity_field_content(
+                    execution,
+                    record.entity_id(),
+                    record.kind_id(),
+                    &locator,
+                )
+                .map_err(|cause| {
+                    super::super::denial::content_read_denial(cause, projection.result_path())
+                })?;
+            WorthQueryApplicationProjectedField::source(projection, value.clone(), content)
+                .map_err(|cause| {
+                    super::super::denial::content_read_denial(cause, projection.result_path())
+                })?
+        } else {
+            WorthQueryApplicationProjectedField::new(projection, value.clone())
+        };
+        projected.push(field);
     }
     Ok(projected)
 }

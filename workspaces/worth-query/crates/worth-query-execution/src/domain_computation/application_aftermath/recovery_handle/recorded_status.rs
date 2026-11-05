@@ -25,8 +25,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let read = self.resolve_admitted_application_idempotency(phase, admission, binding)?;
         match read.into_resolution() {
             WorthQueryApplicationIdempotencyResolution::RecoveredCommitted(original) => {
-                let (claimed, terminal) = self.recovery_handles.recorded_claim_state(
-                    self.primary_provider.graph.relational_runtime_instance_id(),
+                let (claimed, terminal) = self.runtime.recovery_handles.recorded_claim_state(
+                    self.runtime
+                        .primary_provider
+                        .graph
+                        .relational_runtime_instance_id(),
                     original.new_product_head(),
                 );
                 Ok(Some(super::mint::status_from_claim_state(

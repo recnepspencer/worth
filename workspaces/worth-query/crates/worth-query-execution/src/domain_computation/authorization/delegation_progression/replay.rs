@@ -67,7 +67,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             + Sync
             + 'static,
     {
-        let execution = match phase.execution_request_for(&self.product_runtime) {
+        let execution = match phase.execution_request_for(&self.runtime.product_runtime) {
             Ok(execution) => execution,
             Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody"))),
         };
@@ -123,7 +123,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             + Sync
             + 'static,
     {
-        let Some(installed) = self.authorization.capability_plan(target) else {
+        let Some(installed) = self.runtime.authorization.capability_plan(target) else {
             return Ok(None);
         };
         if super::validate_activation_operation(installed, operation).is_err() {

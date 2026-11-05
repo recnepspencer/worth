@@ -9,7 +9,6 @@ pub(in super::super::super) struct PageEdit<'a, Node> {
     base: NodePages<Node>,
     execution: ExecutionRequest<'a, 'a>,
     touched: ExecutionOrderedMap<usize, Rc<WorkingPage<'a, Node>>>,
-    #[cfg(test)]
     sealed_branches: Rc<Cell<usize>>,
 }
 struct WorkingPage<'a, Node> {
@@ -29,7 +28,6 @@ impl<'a, Node: Copy> PageEdit<'a, Node> {
             base,
             execution,
             touched: ExecutionOrderedMap::default(),
-            #[cfg(test)]
             sealed_branches: Rc::new(Cell::new(0)),
         }
     }
@@ -133,7 +131,6 @@ impl<'a, Node: Copy> PageEdit<'a, Node> {
             pages: ordered.elements(),
             execution: self.execution,
             control,
-            #[cfg(test)]
             allocations: &self.sealed_branches,
         }
         .subtree(self.base.root, 0..self.touched.len())?;

@@ -187,6 +187,8 @@ impl<'a> ManagedIndexSourceScope<'a> {
                         &self.views.after_fields
                     },
                     audience: self.program.0.issuer.admit(),
+                    interpretation: self.interpretation,
+                    before,
                 },
             },
         }

@@ -8,6 +8,7 @@ use worth_query_admission::{
     facade::graph_obligation::WorthQueryGraphWorkPlanIdentity,
     integration::WorthQueryExecutionCapacityReleaseReceipt,
 };
+mod court;
 
 pub(in crate::domain_computation) struct WorthQueryInspectionReadCompletion {
     pub(super) session: WorthQueryGraphWorkSessionIdentity,
@@ -39,16 +40,28 @@ impl WorthQueryInspectionReadCompletion {
     pub(in crate::domain_computation) fn matches_report(
         &self,
         session: WorthQueryGraphWorkSessionIdentity,
+        managed_run: WorthQueryGraphWorkManagedRunIdentity,
         plan: WorthQueryGraphWorkPlanIdentity,
         target: &std::sync::Arc<WorthQueryApplicationInspectionTarget>,
+        basis: &WorthQueryApplicationBasisIdentity,
+        capacity_identity: worth_query_admission::integration::WorthQueryGraphCapacityReservationIdentity,
     ) -> bool {
-        self.session == session && self.plan == plan && std::sync::Arc::ptr_eq(&self.target, target)
+        // Construction checks local basis custody. Admission owns the graph
+        // reservation issuer, which only releases GraphWork with count one.
+        // Match its exact identity rather than repeat the issuer invariant.
+        self.session == session
+            && self.managed_run == managed_run
+            && self.plan == plan
+            && std::sync::Arc::ptr_eq(&self.target, target)
+            && self.basis == *basis
+            && self.basis_release.identity() == basis
+            && self.release.graph_reservation_identity() == Some(capacity_identity)
     }
 }
 
 /// Preserve the original request stop separately from session affinity refusals.
 #[derive(Debug)]
-pub(in crate::domain_computation) enum WorthQueryInspectionReadTerminalDenial {
+pub enum WorthQueryInspectionReadTerminalDenial {
     Request(worth_execution::WorkCeilingDenial),
     Read(super::session::WorthQueryManagedGraphReadDenial),
 }

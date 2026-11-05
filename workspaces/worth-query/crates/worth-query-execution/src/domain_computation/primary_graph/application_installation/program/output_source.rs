@@ -123,6 +123,7 @@ where
         let source_preparation = self
             .backing
             .runtime()
+            .runtime
             .output_demands
             .begin_source_preparation(program.product_branch().occurrence());
         let branch = program.product_branch();

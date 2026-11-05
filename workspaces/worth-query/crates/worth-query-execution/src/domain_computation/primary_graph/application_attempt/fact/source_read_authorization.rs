@@ -18,14 +18,14 @@ use worth_relational::facade::{
 };
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub(in crate::domain_computation::primary_graph) struct SourceReadAuthorizationKey {
-    pub source: [u8; 32],
-    pub support: [u8; 32],
-    pub principal: EntityId,
-    pub scope: EntityId,
+pub struct SourceReadAuthorizationKey {
+    pub(in crate::domain_computation::primary_graph) source: [u8; 32],
+    pub(in crate::domain_computation::primary_graph) support: [u8; 32],
+    pub(in crate::domain_computation::primary_graph) principal: EntityId,
+    pub(in crate::domain_computation::primary_graph) scope: EntityId,
 }
 
-pub(in crate::domain_computation) struct SourceReadAuthorization {
+pub struct SourceReadAuthorization {
     key: SourceReadAuthorizationKey,
     binding: WorthQueryInstalledApplicationQueryBindingObservation,
     session: WorthQueryGraphWorkSessionIdentity,

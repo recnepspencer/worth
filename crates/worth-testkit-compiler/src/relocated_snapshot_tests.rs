@@ -59,6 +59,44 @@ fn symbolic_workspace_paths_keep_the_exact_source_owner_and_module_identity() {
     }
 }
 
+#[test]
+fn workspace_relative_library_sources_keep_complete_package_and_file_identity() {
+    let relative = " --> crates/worth-signal/src/branch/owner_services/port.rs:23:8";
+    let absolute = format!(
+        " --> {}:23:8",
+        workspace()
+            .join("crates/worth-signal/src/branch/owner_services/port.rs")
+            .display()
+    );
+    assert_eq!(
+        normalize(relative, &source()),
+        normalize(&absolute, &source())
+    );
+    for changed in [
+        relative.replace("worth-signal", "worth-other"),
+        relative.replace("port.rs", "another.rs"),
+    ] {
+        assert_ne!(
+            normalize(&changed, &source()),
+            normalize(relative, &source())
+        );
+    }
+    let context = crate::source_locations::SourceContext::new(&source());
+    for path in [
+        "crates/../worth-signal/src/port.rs",
+        "crates/worth-signal/src/../port.rs",
+        "crates//src/port.rs",
+        "libs/worth-signal/src/port.rs",
+    ] {
+        assert!(
+            !context
+                .location(&format!(" --> {path}:23:8"))
+                .unwrap()
+                .known
+        );
+    }
+}
+
 fn renderer_block(primary_margin: &str, gutter: &str, line: &str, external: &str) -> String {
     format!(
         "error[E0308]: mismatched types\n{primary_margin}--> {}:21:33\n{gutter}|\n{line} |     sealed();\n{gutter}|     ^^^^^^ wrong argument\n{gutter}|\nnote: function defined here\n{primary_margin}--> {external}\n{gutter}|\n{gutter}| pub fn sealed()\n{gutter}|        ^^^^^^",

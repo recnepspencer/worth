@@ -55,7 +55,7 @@ impl WorthQueryWorkflowBirthAdapter {
             ));
         }
         let execution = phase
-            .execution_request_for(&selected.application().product_runtime)
+            .execution_request_for(&selected.application().runtime.product_runtime)
             .map_err(|_| denied("foreign birth phase"))?;
         let mut read = selected.begin_instance_read_set(&execution, installed, admission)?;
         let (compiled, carry, _) = read
@@ -63,7 +63,7 @@ impl WorthQueryWorkflowBirthAdapter {
                 &execution,
                 installed,
                 &published,
-                &selected.application().authorization_clock,
+                &selected.application().runtime.authorization_clock,
             )
             .map_err(WorkflowInstancePreparationDenial::Attempt)?;
         let (instance_identity, identity) = super::super::intent_identity::birth_identity(

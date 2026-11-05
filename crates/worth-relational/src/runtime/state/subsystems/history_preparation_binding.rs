@@ -151,6 +151,7 @@ impl RelationalPreparationHistory {
             .map_err(super::canonical_publication_routes::authored_write_commit_denial)?;
         let original_payload = crate::durability::canonical_commit_artifact::PreparedOriginalCanonicalPayload::capture(resident, &execution)
             .map_err(|cause| match cause {
+                crate::durability::data::RelationalRecoveryStop::Content(cause) => crate::content::commit_denial(cause),
                 crate::durability::data::RelationalRecoveryStop::Request(cause) => crate::transactions::data::TransactionCommitError::execution(cause.into()),
                 crate::durability::data::RelationalRecoveryStop::Allocation(cause) => crate::execution::allocation_commit_error(crate::transactions::data::TransactionCommitError::conflict(crate::transactions::data::CommitConflict::new(crate::transactions::data::ConflictClass::ExecutionAllocationDenied { denial: cause }))),
                 crate::durability::data::RelationalRecoveryStop::Durability(cause) => crate::transactions::data::TransactionCommitError::publication(crate::publication::data::PublicationError::new(crate::publication::bundle::PublicationStage::BundleAssembly, cause.detail)),
@@ -207,10 +208,12 @@ impl RelationalPreparationHistory {
 
     pub(crate) fn prepare_branch_root_capture<P: crate::storage::overlay::PartitionAccess>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         partitions: &P,
         published_delta: &crate::storage::RelationalPublishedPartitionDelta,
         previous: Option<&Arc<RelationalBranchRoot>>,
         envelope: Arc<CanonicalCommitEnvelope>,
+        content: &crate::content::ContentPublication,
         registry: &crate::schema::data::RelationalSchemaRegistry,
         symbols: &crate::runtime::RuntimeSymbolTable,
     ) -> Result<PreparedRelationalBranchRootCapture, RelationalBranchRootCaptureDenial> {
@@ -221,11 +224,13 @@ impl RelationalPreparationHistory {
             ));
         }
         RelationalBranchRoot::prepare_capture(
+            execution,
             &self.root_ids,
             partitions,
             published_delta,
             previous,
             envelope,
+            content,
             registry,
             symbols,
         )

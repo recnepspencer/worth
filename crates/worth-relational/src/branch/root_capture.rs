@@ -83,6 +83,7 @@ pub(super) fn build_initial_regions_owned(
 }
 
 pub(super) fn build_incremental_regions(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     issuer: &RelationalBranchRootIdentityIssuer,
     root_id: u64,
     published_delta: &RelationalPublishedPartitionDelta,
@@ -108,6 +109,7 @@ pub(super) fn build_incremental_regions(
         let prepared = if let Some(prior) = previous.regions.get(partition_id) {
             replaced_prior_regions += 1;
             crate::storage::residency::PreparedResidentRegion::incremental(
+                execution,
                 crate::storage::residency::RegionCaptureBasis {
                     retention: &prior.partition,
                     inventory: prior.allocation_inventory(),

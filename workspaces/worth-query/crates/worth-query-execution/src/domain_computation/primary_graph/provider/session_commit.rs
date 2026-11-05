@@ -1,8 +1,8 @@
 //! Named responsibilities for committing one prepared provider session.
 
 mod evidence;
-mod outbox_commit;
-mod receipt_basis_retention;
+pub(crate) mod outbox_commit;
+pub(crate) mod receipt_basis_retention;
 
 pub(crate) use super::application_attempt_state::WorthQueryRetainedPreImageSeal;
 pub(in crate::domain_computation::primary_graph) use super::application_attempt_state::{
@@ -15,13 +15,32 @@ pub(in crate::domain_computation::primary_graph) use outbox_commit::{
     WorthQueryCommittedDispatchOutboxResolution,
 };
 pub(in crate::domain_computation::primary_graph) use receipt_basis_retention::WorthQueryReceiptBasisRetentionStore;
-#[cfg(test)]
-pub(in crate::domain_computation::primary_graph) use receipt_basis_retention::WorthQueryRetainedApplicationCommitBasis;
+pub use receipt_basis_retention::WorthQueryRetainedApplicationCommitBasis;
 
 use super::WorthQueryPrimaryGraphProvider;
 use crate::domain_computation::{
     WorthQueryProviderSessionFailure, WorthQueryProviderSessionProtocolStage,
 };
+
+impl WorthQueryPrimaryGraphProvider {
+    pub(in crate::domain_computation::primary_graph) fn commit_prepared_application_in_history(
+        &self,
+        session: crate::domain_computation::WorthQueryProviderSessionView<'_>,
+        history: crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerCutover<'_>,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+    ) -> Result<
+        crate::domain_computation::WorthQueryProviderTerminalDescription,
+        crate::domain_computation::WorthQueryProviderSessionCommitStop,
+    > {
+        self.application_attempt_work.observe_prepared_commit();
+        super::application_attempt_state::commit_prepared_application(
+            self,
+            session,
+            Some(history),
+            allocation_policy,
+        )
+    }
+}
 
 pub(super) fn commit_prepared_session(
     provider: &WorthQueryPrimaryGraphProvider,
@@ -34,6 +53,7 @@ pub(super) fn commit_prepared_session(
     super::application_attempt_state::commit_prepared_application(
         provider,
         session,
+        None,
         allocation_policy,
     )
 }

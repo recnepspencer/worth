@@ -260,7 +260,7 @@ where
         return Ok(());
     }
     let cancellation = WorthQueryCancellationSource::new();
-    let scope = WorthQueryRequestScope::new(Some(request.deadline), cancellation.token());
+    let scope = WorthQueryRequestScope::new(Some(request.deadline), cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let principal = match tokio::select! {
         biased;
         _ = shutdown.changed() => {
@@ -347,8 +347,7 @@ where
             _ = poll.tick() => {
                 let delivery_scope = WorthQueryRequestScope::new(
                     Some(request.deadline),
-                    cancellation.token(),
-                );
+                    cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
                 if let Some(event) = live_event(
                     &request_id,
                     lease.poll(&principal, &delivery_scope),

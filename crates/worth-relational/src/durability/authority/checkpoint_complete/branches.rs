@@ -17,6 +17,7 @@ use worth_foundational::{
 };
 
 mod axes;
+mod component_admission;
 use axes::Axes;
 
 pub(super) struct BranchImages<'a> {
@@ -162,6 +163,13 @@ impl<'a> BranchImages<'a> {
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<(), Denial> {
         let record = entry.positioned.transition();
+        if matches!(record, RelationalBranchTransition::RetainedFork { .. }) {
+            return Err(Denial::Durability(crate::durability::data::DurabilityError::new(
+                crate::durability::data::RecoveryFailureClass::UnsupportedRetainedForkReplay,
+                "retained-source forks require original live root custody; historical tail reconstruction is unsupported",
+            )));
+        }
+
         if let RelationalBranchTransition::Fork {
             target,
             source,
@@ -212,7 +220,10 @@ impl<'a> BranchImages<'a> {
                 prior_truth_version,
                 ..
             } => (*prior_generation, *prior_truth_version),
-            RelationalBranchTransition::Fork { .. } => unreachable!("fork is handled above"),
+            RelationalBranchTransition::Fork { .. }
+            | RelationalBranchTransition::RetainedFork { .. } => {
+                unreachable!("fork is handled above")
+            }
         };
         if prior.removed
             || prior.generation != generation
@@ -245,7 +256,10 @@ impl<'a> BranchImages<'a> {
                 prior.lifecycle = Lifecycle::Deleting;
                 prior.removed = true;
             }
-            RelationalBranchTransition::Fork { .. } => unreachable!("fork is handled above"),
+            RelationalBranchTransition::Fork { .. }
+            | RelationalBranchTransition::RetainedFork { .. } => {
+                unreachable!("fork is handled above")
+            }
         }
         self.record(branch, prior, execution)
     }
@@ -316,62 +330,6 @@ impl<'a> BranchImages<'a> {
             return Err(Denial::OriginalAuthorityUnavailable);
         }
         Ok(())
-    }
-
-    pub(super) fn is_current_component(
-        &self,
-        descriptor: &RelationalBranchBasisDescriptor,
-        roots: &FoldedRoots,
-    ) -> bool {
-        self.current
-            .get(&descriptor.branch_id())
-            .is_some_and(|axes| {
-                !axes.removed
-                    && axes.truth == descriptor.truth_version()
-                    && axes.generation == descriptor.reference().generation()
-                    && posture(axes.lifecycle)
-                        == match descriptor.posture() {
-                            RelationalBranchBasisPosture::Live => 0,
-                            RelationalBranchBasisPosture::Archived => 1,
-                            RelationalBranchBasisPosture::Deleting => 2,
-                        }
-                    && axes.matches_target(descriptor.reference().target(), roots)
-            })
-    }
-
-    pub(super) fn require_component(
-        &self,
-        descriptor: &RelationalBranchBasisDescriptor,
-        roots: &FoldedRoots,
-    ) -> Result<Arc<RelationalBranchRootSchemaAuthority>, Denial> {
-        let key = (
-            descriptor.branch_id(),
-            descriptor.reference().generation().get(),
-            match descriptor.posture() {
-                RelationalBranchBasisPosture::Live => 0,
-                RelationalBranchBasisPosture::Archived => 1,
-                RelationalBranchBasisPosture::Deleting => 2,
-            },
-        );
-        let axes = self
-            .observations
-            .get(&key)
-            .ok_or(Denial::OriginalAuthorityUnavailable)?;
-        if axes.truth != descriptor.truth_version()
-            || !axes.matches_target(descriptor.reference().target(), roots)
-            || axes.schema.authority_digest() != descriptor.schema_commitment()
-        {
-            return Err(Denial::OriginalAuthorityUnavailable);
-        }
-        let visibility = axes
-            .commit
-            .and_then(|commit| roots.get(commit))
-            .and_then(|root| root.root.axes())
-            .map_or([0; 32], |axes| axes.visibility.digest());
-        if visibility != descriptor.visibility_commitment() {
-            return Err(Denial::OriginalAuthorityUnavailable);
-        }
-        Ok(axes.schema.clone())
     }
 }
 

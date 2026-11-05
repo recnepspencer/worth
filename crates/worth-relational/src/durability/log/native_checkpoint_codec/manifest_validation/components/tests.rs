@@ -118,6 +118,7 @@ fn recorded_component_checkpoint_header_tamper_refuses_without_defaults_or_forei
                 components,
                 original.schema_carrier_digest,
                 original.regions.clone(),
+                original.content.clone(),
             );
             manifest.roots = crate::durability::data::CheckpointRoots::from_ordinary(roots);
             wire.manifest = manifest.seal_ordinary();

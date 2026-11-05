@@ -302,7 +302,11 @@ where
             settled_adoption,
             settled_signal_adoption,
             successor_observation_requested,
+            current_read,
         ) = intent.into_parts();
+        if let Some(current) = &current_read {
+            self.admit_current_read_requirement(current, &expected)?;
+        }
         let resolved = match ResolvedExpectedProductHead::from_current(
             component_intent,
             expected.clone(),
@@ -323,6 +327,7 @@ where
             prepared_candidate,
             settled_adoption,
             settled_signal_adoption,
+            current_read,
         )?;
         let attempt = RuntimeWorldOwnerRoot::reserve(
             self,

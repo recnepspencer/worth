@@ -5,7 +5,7 @@ use crate::domain_computation::primary_graph::application_attempt::retained_deci
 use crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload;
 
 #[derive(Debug)]
-pub(in crate::domain_computation::primary_graph) struct PostingRebaseBasis {
+pub struct PostingRebaseBasis {
     prior: Arc<RecordedSettlementIdentity>,
     baseline: FactPayload,
     storage: PostingComputationStorage,
@@ -47,9 +47,7 @@ struct CompletedPostingRebase {
     after: PositionedRelationalSnapshot,
 }
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation::primary_graph) struct PostingContinuation(
-    Arc<CompletedPostingRebase>,
-);
+pub struct PostingContinuation(Arc<CompletedPostingRebase>);
 impl PartialEq for PostingContinuation {
     fn eq(&self, other: &Self) -> bool {
         Arc::ptr_eq(&self.0, &other.0)
@@ -171,3 +169,5 @@ fn addresses(
 
 #[cfg(test)]
 mod tests;
+
+mod court_doors_for_test;

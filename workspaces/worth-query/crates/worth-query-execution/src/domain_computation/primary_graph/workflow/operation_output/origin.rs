@@ -9,7 +9,7 @@ use crate::domain_computation::primary_graph::{
 use worth_relational::facade::identity::EntityId;
 
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation::primary_graph) struct WorkflowOperationOrigin {
+pub struct WorkflowOperationOrigin {
     instance: EntityId,
     transition: String,
     operation_receipt_identity: [u8; 32],

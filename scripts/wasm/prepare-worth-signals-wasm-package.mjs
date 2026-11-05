@@ -56,7 +56,7 @@ const preservedStageEntries = new Set([
 const packageJsonPath = path.join(pkgDir, "package.json");
 const packageJson = JSON.parse(await readFile(packageJsonPath, "utf8"));
 const cargoManifest = await readFile(cargoManifestPath, "utf8");
-const crateVersionMatch = cargoManifest.match(/^version\s*=\s*"([^"]+)"\s*$/mu);
+const crateVersionMatch = cargoManifest.match(/^(?:version|"version"|'version')\s*=\s*"([^"]+)"\s*$/mu);
 
 if (!crateVersionMatch) {
   throw new Error(`Could not determine worth-signals-wasm version from ${cargoManifestPath}`);
@@ -297,9 +297,15 @@ const normalizedRegistry = publishRegistry.endsWith("/")
 const scopeRegistryLine = !normalizedScope || publishRegistry.includes("registry.npmjs.org")
   ? ""
   : `@${normalizedScope}:registry=${normalizedRegistry}\n`;
-const npmrc = `${scopeRegistryLine}//${authHost}/:_authToken=\${NODE_AUTH_TOKEN}
-`;
-await writeFile(npmrcPath, npmrc, "utf8");
+const tokenRegistryLine = process.env.NODE_AUTH_TOKEN
+  ? `//${authHost}/:_authToken=\${NODE_AUTH_TOKEN}\n`
+  : "";
+const npmrc = `${scopeRegistryLine}${tokenRegistryLine}`;
+if (npmrc) {
+  await writeFile(npmrcPath, npmrc, "utf8");
+} else {
+  await rm(npmrcPath, { force: true });
+}
 
 await copyFile(
   packageIndexDeclarationsPath,

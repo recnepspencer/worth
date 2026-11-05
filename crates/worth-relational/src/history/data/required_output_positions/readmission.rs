@@ -96,6 +96,7 @@ fn projected_stop(
     use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal as Cause;
     match cause {
         Cause::Request(cause) => Refusal::Request(cause),
+        Cause::Content(cause) => Refusal::Content(cause),
         Cause::Frame(_)
         | Cause::PayloadDecode { .. }
         | Cause::PositionDisagreement { .. }

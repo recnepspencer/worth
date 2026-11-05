@@ -29,6 +29,8 @@ pub enum RelationalCanonicalCommitArtifactRefusal {
     },
     /// The envelope's managed field text could not be readmitted.
     FieldText(RelationalFieldTextAdmissionDenial),
+    /// Native content failed original-request admission.
+    Content(crate::content::RelationalContentDenial),
     /// The envelope failed canonical admission at its position.
     PositionAdmission(RelationalCanonicalPositionAdmissionDenial),
     /// The payload decodes to an admissible commit but is not that commit's
@@ -66,6 +68,9 @@ impl std::fmt::Display for RelationalCanonicalCommitArtifactRefusal {
                 "canonical commit artifact header commit {} disagrees with envelope commit {}",
                 header.0, envelope.0
             ),
+            Self::Content(denial) => {
+                write!(formatter, "canonical commit content refused: {denial:?}")
+            }
             Self::FieldText(denial) => write!(
                 formatter,
                 "canonical commit artifact field text refused: {denial:?}"

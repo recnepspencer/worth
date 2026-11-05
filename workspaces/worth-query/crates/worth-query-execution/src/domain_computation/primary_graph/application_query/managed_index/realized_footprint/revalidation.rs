@@ -161,7 +161,8 @@ impl<S: ApplicationSchema + 'static, I: ApplicationManagedIndexBinding<S>> Retai
         })
         .map_err(work_stop)?;
         if !controlled(execution, |control| {
-            self.candidates.matches(&root.rows, &selected, control)
+            self.candidates
+                .matches(&root.rows, &selected, execution, control)
         })
         .map_err(work_stop)?
         {

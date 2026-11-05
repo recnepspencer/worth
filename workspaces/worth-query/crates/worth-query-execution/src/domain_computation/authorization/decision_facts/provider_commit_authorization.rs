@@ -2,7 +2,7 @@
 
 use super::{WorthQueryCommitAuthorizationBasis, WorthQueryProviderAuthorizationDecisionFacts};
 
-pub(in crate::domain_computation) struct WorthQueryProviderCommitAuthorization {
+pub struct WorthQueryProviderCommitAuthorization {
     provider: Option<WorthQueryProviderAuthorizationDecisionFacts>,
     commit: WorthQueryCommitAuthorizationBasis,
     workflow_approval_authority: Option<super::super::WorthQueryWorkflowApprovalAuthorityBasis>,
@@ -87,9 +87,7 @@ impl WorthQueryProviderCommitAuthorization {
         prepared.register(staged, provider, attempt_basis, context, allocation_policy)
     }
 
-    pub(in crate::domain_computation) fn finish_registration(
-        self,
-    ) -> Option<WorthQueryRegisteredCommitAuthorization> {
+    pub fn finish_registration(self) -> Option<WorthQueryRegisteredCommitAuthorization> {
         self.provider
             .is_none()
             .then_some(WorthQueryRegisteredCommitAuthorization {
@@ -98,7 +96,7 @@ impl WorthQueryProviderCommitAuthorization {
     }
 }
 
-pub(in crate::domain_computation) struct WorthQueryRegisteredCommitAuthorization {
+pub struct WorthQueryRegisteredCommitAuthorization {
     authorization: WorthQueryProviderCommitAuthorization,
 }
 
@@ -138,3 +136,5 @@ impl WorthQueryRegisteredCommitAuthorization {
         )
     }
 }
+
+mod court_doors_for_test;

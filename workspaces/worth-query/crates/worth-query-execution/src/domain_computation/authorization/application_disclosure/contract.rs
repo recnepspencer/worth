@@ -16,7 +16,7 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout;
 use super::influence_validation::{validate_influence, GovernedInternalFieldRules};
 pub(super) mod admission;
 mod compilation;
-mod field_masks;
+pub(crate) mod field_masks;
 mod result_rules;
 pub(in crate::domain_computation) use compilation::compile_disclosure_contract;
 #[cfg(test)]
@@ -25,12 +25,12 @@ pub(super) use result_rules::selector_parts;
 mod diagnostic;
 mod history;
 mod inspection;
+pub(in crate::domain_computation) use diagnostic::compile_diagnostic_disclosure_contract;
 pub(super) use diagnostic::diagnostic_shape_supported;
-pub(in crate::domain_computation) use diagnostic::{
-    compile_diagnostic_disclosure_contract, DiagnosticContractDenial,
-};
 mod resource;
-pub(in crate::domain_computation) use history::compile_history_disclosure_contract;
+pub(in crate::domain_computation) use history::{
+    compile_document_history_disclosure_contract, compile_history_disclosure_contract,
+};
 pub(in crate::domain_computation) use inspection::compile_inspection_disclosure_contract;
 pub(in crate::domain_computation) use resource::compile_resource_disclosure_contract;
 
@@ -119,12 +119,12 @@ pub(in crate::domain_computation) enum WorthQueryAdmittedApplicationDisclosureCo
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) struct WorthQueryApplicationDisclosureContractDenial {
+pub struct WorthQueryApplicationDisclosureContractDenial {
     subject: String,
 }
 
 impl WorthQueryApplicationDisclosureContractDenial {
-    pub(in crate::domain_computation) fn subject(&self) -> &str {
+    pub fn subject(&self) -> &str {
         &self.subject
     }
 }
@@ -134,3 +134,13 @@ pub(super) fn denial(subject: impl Into<String>) -> WorthQueryApplicationDisclos
         subject: subject.into(),
     }
 }
+
+#[cfg(test)]
+mod cause_tests {
+    #[test]
+    fn diagnostic_contract_denial_survives_public_inspection() {
+        super::denial("declared diagnostic field contract").assert_inspection_contract_cause();
+    }
+}
+
+pub use diagnostic::DiagnosticContractDenial;

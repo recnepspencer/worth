@@ -166,7 +166,7 @@ fn positioned_agreement_uses_original_work_budget_and_preserves_authoritative_di
         .pop()
         .unwrap();
     let bytes_before = artifact.as_bytes().to_vec();
-    let readmitted = artifact.readmit_owned(&setup_execution).unwrap();
+    let readmitted = artifact.readmit_framed(&setup_execution).unwrap();
     let candidate = readmitted.positioned().canonical_arc();
     assert!(!std::sync::Arc::ptr_eq(original.canonical_arc(), candidate));
     let baseline = Artifact::matches_positioned_payload(&original, candidate).unwrap();
@@ -262,7 +262,7 @@ fn positioned_agreement_uses_original_work_budget_and_preserves_authoritative_di
     let expired = SerialRequest::from_policy(
         &policy(two_pass_work),
         CancellationSource::new().token(),
-        Some(std::time::Instant::now()),
+        Some(worth_execution::MonotonicClock::system().deadline_at(std::time::Instant::now())),
     );
     assert_eq!(
         Artifact::matches_positioned_payload_for_request(

@@ -21,7 +21,7 @@ use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
 
 /// What a released performed source kept. It drops after the registry lock
 /// is released.
-pub(in super::super) struct ReleasedPerformedSource {
+pub struct ReleasedPerformedSource {
     _custody: SourceCustody,
     _admitted: Vec<WorthQueryPerformedOutputDemandSource>,
 }
@@ -72,3 +72,5 @@ impl DemandRegistryState {
         }))
     }
 }
+
+mod court_doors_for_test;

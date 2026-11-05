@@ -1,13 +1,14 @@
 //! Typed progression for one owner-validated Relational commit.
 
-mod commit_execution;
-mod evidence_seal;
+pub(crate) mod commit_execution;
+pub(crate) mod evidence_seal;
 pub(in crate::domain_computation::primary_graph::provider) use commit_execution::ManagedUnpublishedAttempt;
 
 pub(in crate::domain_computation::primary_graph) use commit_execution::WorthQueryPrimaryGraphCommittedApplication;
 
+pub(in crate::domain_computation::primary_graph) use evidence_seal::RebaseVerificationFailure;
+pub use evidence_seal::{FactlessCurrentness, OwnEffectOnReads, RebaseVerificationReason};
 pub(in crate::domain_computation::primary_graph) use evidence_seal::{
-    FactlessCurrentness, OwnEffectOnReads, RebaseVerificationReason,
     WorthQueryMutationWorkCommitSeal, WorthQueryPrimaryGraphCommitEvidence,
 };
 
@@ -27,6 +28,7 @@ pub(super) fn commit_owner_validated(
     execution: worth_execution::ExecutionRequest<'_, '_>,
     provider: &WorthQueryPrimaryGraphProvider,
     prepared: WorthQueryPreparedApplicationCommit,
+    history: Option<crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerCutover<'_>>,
     allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<
     crate::domain_computation::WorthQueryProviderTerminalDescription,
@@ -38,6 +40,7 @@ pub(super) fn commit_owner_validated(
         provider,
         prepared,
         WorthQueryCommitProgressionMint::witness(),
+        history,
         allocation_policy,
     )
     .map_err(|stop| {
@@ -96,11 +99,16 @@ pub(in crate::domain_computation::primary_graph::provider) fn publish_recovered(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     provider: &WorthQueryPrimaryGraphProvider,
     mut committed: commit_execution::WorthQueryCommittedApplicationSession,
+    producer_memory: Option<Option<worth_execution::ExecutionMemoryReservation>>,
+    retain: impl FnOnce(Option<std::sync::Arc<crate::domain_computation::primary_graph::application_output_demand::RecoveredProducerOutputFacts>>),
 ) -> Result<
     crate::domain_computation::WorthQueryProviderTerminalDescription,
     crate::domain_computation::WorthQueryProviderSessionFailure,
 > {
     let evidence = evidence_seal::seal(execution, provider, &mut committed);
+    let facts =
+        producer_memory.map(|memory| committed.retain_recovered_producer_facts(&evidence, memory));
+    retain(facts);
     let mut predicate = committed.take_predicate_preparation();
     let mut retired = crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationRetirement::default();
     provider.graph.with_runtime(execution, |runtime| {

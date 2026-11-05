@@ -1,0 +1,10 @@
+#[path = "delivery_tests/mod.rs"]
+pub mod delivery_tests;
+#[path = "foreign_phase_tests/mod.rs"]
+pub mod foreign_phase_tests;
+#[path = "lifecycle/mod.rs"]
+pub mod lifecycle;
+#[path = "reservation_race_tests/mod.rs"]
+pub mod reservation_race_tests;
+#[path = "sibling_delivery_tests/mod.rs"]
+pub mod sibling_delivery_tests;

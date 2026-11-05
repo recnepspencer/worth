@@ -74,8 +74,7 @@ fn performed_mutation_attempt_report_preserves_source_custody() {
     let stopped =
         worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope::new(
             Some(std::time::Instant::now() + std::time::Duration::from_secs(30)),
-            cancellation.token(),
-        );
+            cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     cancellation.cancel();
     assert!(matches!(
         recovered.finish_unavailable(&host, &runtime.request(&principal, &stopped)),

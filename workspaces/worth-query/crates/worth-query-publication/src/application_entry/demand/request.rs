@@ -51,6 +51,8 @@ impl WorthQueryOutputDemandControls {
 /// request came from another runtime or carried no observation.
 #[derive(Debug)]
 pub enum WorthQueryApplicationOutputDemandDenial {
+    HistoryRead(worth_query_execution::publication_boundary::document_history::WorthQueryHistoryOutputReadDenial),
+    History(worth_query_execution::publication_boundary::document_history::WorthQueryHistoryOutputAdvanceDenial),
     Source(super::super::WorthQueryApplicationRequestQueryDenial),
     Demand(worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenial),
     MissingSource,

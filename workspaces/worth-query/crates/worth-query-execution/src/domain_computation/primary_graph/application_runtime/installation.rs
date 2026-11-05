@@ -228,7 +228,8 @@ where
     application.conditional_cleanup.resources = resources;
     application.managed_indexes = managed_indexes;
     conditional_operations.reconstruct_all(&application)?;
-    conditional_operations.reconcile_all(&mut application.bridge.conditional_lifecycle())?;
+    conditional_operations
+        .reconcile_all(&mut application.runtime.bridge.conditional_lifecycle())?;
     *application
         .conditional_cleanup
         .operations

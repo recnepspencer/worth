@@ -101,6 +101,7 @@ impl RelationalRegionResidency {
                 Err(Failure::StorageUnavailable(failure))
             }
             Err(Failure::Request(cause)) => Err(Failure::Request(cause)),
+            Err(Failure::Content(cause)) => Err(Failure::Content(cause)),
         }
     }
 

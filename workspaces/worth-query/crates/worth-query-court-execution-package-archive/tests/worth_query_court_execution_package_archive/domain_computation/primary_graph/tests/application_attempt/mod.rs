@@ -1,0 +1,24 @@
+#[path = "decision_adjacency/mod.rs"]
+pub mod decision_adjacency;
+#[path = "erased_core_forgery/mod.rs"]
+pub mod erased_core_forgery;
+#[path = "idempotency_behavior/mod.rs"]
+pub mod idempotency_behavior;
+#[path = "invariant_orbits/mod.rs"]
+pub mod invariant_orbits;
+#[path = "optional_output_role/mod.rs"]
+pub mod optional_output_role;
+#[path = "post_commit_recovery/mod.rs"]
+pub mod post_commit_recovery;
+#[path = "predecode_admission/mod.rs"]
+pub mod predecode_admission;
+#[path = "terminal_failures/mod.rs"]
+pub mod terminal_failures;
+#[path = "typed_invariant_refusal/mod.rs"]
+pub mod typed_invariant_refusal;
+
+pub mod cleanup_dispatch;
+
+pub mod query_preparation_refusal;
+
+pub mod recorded_recovery_status;

@@ -217,7 +217,7 @@ impl WorthQueryExternalEffectDispatch {
 }
 
 /// Dispatches one authoritative committed outbox observation through the host port.
-pub(in crate::domain_computation) fn dispatch_external_effect(
+pub fn dispatch_external_effect(
     transport: &dyn WorthQueryExternalEffectTransport,
     admitted: crate::domain_computation::primary_graph::WorthQueryAdmittedExternalDispatchAttempt,
     starting: impl FnOnce(),
@@ -245,3 +245,5 @@ pub(in crate::domain_computation) fn dispatch_external_effect(
         })
     })
 }
+
+mod court_doors_for_test;

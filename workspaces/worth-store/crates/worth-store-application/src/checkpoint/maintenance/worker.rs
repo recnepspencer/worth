@@ -155,9 +155,10 @@ impl MaintenanceWorker {
                     *outcome = Some(Err(Denial::Maintenance(Maintenance::DeadlineOverflow)));
                     return;
                 };
-                let child = self
-                    .root
-                    .controlled_child(self.cancellation.token(), Some(deadline));
+                let child = self.root.controlled_child(
+                    self.cancellation.token(),
+                    Some(worth_execution::MonotonicClock::system().deadline_at(deadline)),
+                );
                 let request = ExecutionRequest::leased(&child);
                 *outcome = Some(match purpose {
                     Purpose::Advancement => operation.after_advancement(&request),

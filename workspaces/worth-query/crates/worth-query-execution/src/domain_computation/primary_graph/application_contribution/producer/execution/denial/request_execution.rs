@@ -8,7 +8,7 @@ use crate::domain_computation::{
     WorthQueryProviderSessionDenialKind as Native,
 };
 
-pub(super) fn kind(cause: Native) -> Demand {
+pub fn kind(cause: Native) -> Demand {
     stop(Ok(cause)).unwrap_or(Demand::SourceQueryExecution(Query::ExecutionRequest(cause)))
 }
 

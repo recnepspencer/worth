@@ -39,13 +39,14 @@ where
                 DocumentRetentionSchema,
             >,
 {
+    let roster = super::auxiliary_programs::include(roster, initial.identity(), initial.revision());
     in_memory_rostered_program_from_checkpoint(
         initial,
-        roster.support(super::super::actor_generation::validated_actor_program()),
+        roster,
         DocumentRetentionSchema::declaration().expect("the document-retention schema is valid"),
         ((),),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        host_limits(),
+        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         checkpoint,
     )
 }

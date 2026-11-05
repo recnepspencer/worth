@@ -77,7 +77,7 @@ function requireApiRouteVerb(route, method) {
     return requireResourceRequestMethod(method, 'api.url(...)');
   } catch {
     throw new TypeError(
-      `api.url("${route}").verb(...) must be "GET", "POST", "PUT", or "DELETE"`,
+      `api.url("${route}").verb(...) must be "GET", "POST", "PUT", "PATCH", or "DELETE"`,
     );
   }
 }

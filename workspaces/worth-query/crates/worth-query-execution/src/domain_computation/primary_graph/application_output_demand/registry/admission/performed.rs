@@ -1,8 +1,5 @@
 //! Admitting a performed source and its required output obligation.
-
-use super::obligation_capacity::prepare_performed_obligation_slots;
 use super::*;
-
 impl WorthQueryOutputDemandRegistry {
     pub(in crate::domain_computation::primary_graph) fn admit_performed(
         &self,
@@ -15,51 +12,16 @@ impl WorthQueryOutputDemandRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let Some(custody) = state.source_custody.get(source_commit) else {
-            return Err(WorthQueryOutputDemandDenial::new(
-                WorthQueryOutputDemandDenialKind::DuplicatePerformedSource,
-                "performed source is absent or has already been consumed",
-            ));
-        };
-        if let Some(denial) = &custody.retired {
-            return Err(denial.clone());
-        }
-        if let Some(denial) = custody.source_denial(&requested_key.source) {
-            return Err(denial);
-        }
-        if !custody.available(&requested_key.source, source_scope) {
-            if custody.bound_sources.is_some() {
-                return Err(WorthQueryOutputDemandDenial::new(
-                    WorthQueryOutputDemandDenialKind::ForeignSource,
-                    "performed source identity does not match its prepared publication",
-                ));
-            }
-            return Err(WorthQueryOutputDemandDenial::new(
-                WorthQueryOutputDemandDenialKind::DuplicatePerformedSource,
-                "performed source is absent or has already been consumed",
-            ));
-        }
         let key = newest_semantic_key(&state, &requested_key, accepts_semantic_join)?
             .unwrap_or_else(|| requested_key.clone());
-
+        let join = state.prepare_performed_join(
+            &requested_key,
+            &key,
+            source_commit,
+            source_scope,
+            product_occurrence,
+        )?;
         let required_member = state.prepare_required_member(&key)?;
-
-        if let Some(record) = state.records.get(&key) {
-            if record.product_occurrence != product_occurrence
-                || record.source_scope != Some(source_scope)
-            {
-                return Err(WorthQueryOutputDemandDenial::new(
-                    WorthQueryOutputDemandDenialKind::ForeignSource,
-                    "matching output identity belongs to another source scope or occurrence",
-                ));
-            }
-            if let DemandState::Failed(denial) = &record.state {
-                return Err(denial.clone());
-            }
-        }
-
-        let prepared_obligations = prepare_performed_obligation_slots(&state, &key)?;
-
         let prepared_record = if state.records.contains_key(&key) {
             None
         } else {
@@ -71,52 +33,12 @@ impl WorthQueryOutputDemandRegistry {
                 None,
             )?)
         };
-
-        let prepared_commit_growth = state
-            .records
-            .get(&key)
-            .and_then(|record| (!record.source_commits.contains(source_commit)).then_some(record))
-            .map(|record| state.prepare_source_commit_growth(record))
-            .transpose()?
-            .flatten();
-        // A semantic join keeps the selected row's lifecycle posture. An
-        // Initial lookup must not supersede the Preserve row it just joined.
         supersede_predecessors(&mut state, &key)?;
-        let custody = state
-            .source_custody
-            .get_mut(source_commit)
-            .expect("selected custody exists");
-        let mut performed_source = custody
-            .source
-            .as_ref()
-            .expect("available custody retains source")
-            .clone();
-        performed_source.output_source_identity = Some(requested_key.source.clone());
-        custody.finish_admission(requested_key.source.clone());
         if let Some(prepared) = prepared_record {
             state.install_prepared_record(prepared);
         }
-        let mut record = state.records.get_mut(&key).expect("admitted record exists");
-        if !record.source_commits.contains(source_commit) {
-            if let Some(growth) = prepared_commit_growth {
-                growth.install(&mut record);
-            }
-            record.source_commits.push(source_commit.clone());
-        }
-        let previous = std::mem::replace(&mut record.performed_obligations, prepared_obligations);
-
-        record.performed_obligations.extend(previous);
-        record
-            .performed_obligations
-            .push(super::super::PerformedOutputObligation {
-                source_commit: source_commit.clone(),
-                source: requested_key.source.clone(),
-            });
-        if matches!(record.state, DemandState::Admitted) && record.performed_source.is_none() {
-            record.performed_source = Some(performed_source);
-        } else {
-            drop(performed_source);
-        }
+        state.install_performed_join(&key, join);
+        let mut record = state.records.get_mut(&key).expect("admitted row exists");
         record.interests = record.interests.saturating_add(1);
         record.required_interests += 1;
         let interest = interest(self, key, &record, true);
@@ -125,3 +47,5 @@ impl WorthQueryOutputDemandRegistry {
         Ok(interest)
     }
 }
+
+mod court_doors_for_test;

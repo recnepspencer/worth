@@ -185,7 +185,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
             Arc::clone(&self.runtime_binding_identity),
             product,
         )?;
-        prepared.authoritative_commit_cursor = runtime.primary_provider.graph.source_owner.invalidation_owner.latest_position();
+        prepared.authoritative_commit_cursor = runtime.runtime.primary_provider.graph.source_owner.invalidation_owner.latest_position();
         let reconstruction = super::super::temporal_reconstruction::reconstruct_temporal_intents(execution,
             runtime, &self.definition.binding, &self.definition.reconstruction, self.definition.execution.identity_field,
             product,
@@ -225,7 +225,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         >,
         truth: &WorthQueryConditionalTruthBasis,
     ) -> ErasedClockObservationOutcome {
-        let execution = match phase.execution_request_for(&runtime.product_runtime) {
+        let execution = match phase.execution_request_for(&runtime.runtime.product_runtime) {
             Ok(execution) => execution,
             Err(cause) => return ErasedClockObservationOutcome::Failed {
                 kind: super::WorthQueryConditionalClockObservationFailureKind::ExecutionRequest(

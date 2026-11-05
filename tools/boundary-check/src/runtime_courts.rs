@@ -240,6 +240,43 @@ impl Serialize for Finding {
 mod tests {
     use super::*;
     #[test]
+    fn denial_variant_is_a_value_while_runtime_type_references_still_flag() {
+        for variant in [
+            "WorthQueryApplicationOneShotDenialKind::ExecutionRequest(cause)",
+            "WorthQueryApplicationHistoryDenial::ExecutionRequest(cause)",
+        ] {
+            for actual_root in [
+                "",
+                "let _: ExecutionRequest;",
+                "ExecutionRequest::serial();",
+                "worth_execution::ExecutionRequest::leased();",
+                "let _: Option<worth_execution::ExecutionRequest>;",
+            ] {
+                let source = format!(
+                "#[cfg(test)] mod tests {{ fn case() {{ match kind {{ {variant} => (), _ => () }} {actual_root} }} }}"
+            );
+                let mut input = Inputs::fixture(
+                    &[
+                        ("crates/a/Cargo.toml", "[package]\nname='a'"),
+                        ("crates/a/src/lib.rs", &source),
+                    ],
+                    "",
+                );
+                input.files.insert(
+                    format!("{CONFIG}runtime-roots.toml"),
+                    "[[roots]]\ntype='ExecutionRequest'".into(),
+                );
+                let found = observations(&input);
+                if actual_root.is_empty() {
+                    assert!(found.is_empty());
+                } else {
+                    assert_eq!(found.len(), 1, "{actual_root}");
+                    assert_eq!(found[0].roots, ["ExecutionRequest"], "{actual_root}");
+                }
+            }
+        }
+    }
+    #[test]
     fn runtime_mentions_are_scoped_to_inline_and_mounted_test_modules() {
         let mut input = Inputs::fixture(
             &[

@@ -135,7 +135,7 @@ fn expected_candidate_adoption_refuses_a_replaced_model_slot_and_foreign_phase()
     assert_eq!(head, source);
     let (candidate, _) = failure.into_parts();
     let cancellation = WorthQueryCancellationSource::new();
-    let scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let mut candidate = Some(candidate);
     let stopped = host
         .runtime()

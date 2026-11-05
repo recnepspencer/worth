@@ -82,6 +82,19 @@ fn validate_static_authority_prefix<Schema, Principal, PrincipalIdentity, Operat
 where
     Schema: ApplicationSchema,
 {
+    if !runtime
+        .runtime
+        .authorization_clock
+        .admission_clock
+        .same_clock(principal.clock())
+    {
+        return Err(denial(
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::ForeignRuntime,
+            ),
+            principal.binding(),
+        ));
+    }
     if principal.is_expired() {
         return Err(denial(
             WorthQueryOperationAuthorizationDenialKind::Refused(
@@ -169,4 +182,28 @@ pub(super) fn denial(
     subject: impl Into<String>,
 ) -> WorthQueryOperationAuthorizationDenial {
     WorthQueryOperationAuthorizationDenial::new(kind, subject)
+}
+
+/// Clock custody is checked before any validity decision or graph work.
+pub(in crate::domain_computation::authorization) fn validate_admission_clock(
+    runtime: &crate::domain_computation::primary_graph::WorthQueryApplicationRuntimeCore,
+    principal: &worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock,
+    request: &WorthQueryRequestScope,
+    subject: &str,
+) -> Result<(), WorthQueryOperationAuthorizationDenial> {
+    if runtime
+        .authorization_clock
+        .admission_clock
+        .same_clock(principal)
+        && principal.same_clock(request.clock())
+    {
+        Ok(())
+    } else {
+        Err(denial(
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::ForeignRuntime,
+            ),
+            subject,
+        ))
+    }
 }

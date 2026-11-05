@@ -117,10 +117,6 @@ impl SparseAdjacencyTable {
         self.entries.iter()
     }
 
-    pub(crate) fn iter_mut(&mut self) -> impl Iterator<Item = (&usize, &mut AdjacencySet)> {
-        self.entries.iter_mut()
-    }
-
     pub(crate) fn into_entries(self) -> impl Iterator<Item = (usize, AdjacencySet)> {
         self.entries.into_iter()
     }

@@ -1,0 +1,253 @@
+//! Identity-world installation and authorization-world scenario entry points.
+
+use crate::domain_computation::primary_graph::tests::fixture::account_seed::bind_account;
+use crate::domain_computation::primary_graph::tests::fixture::account_seed::AccountSeedSpec;
+pub use crate::domain_computation::primary_graph::tests::fixture::authorization_world_installation::AuthorizationWorld;
+use crate::domain_computation::primary_graph::tests::fixture::authorization_world_installation::install_authorization_world;
+use crate::domain_computation::primary_graph::tests::fixture::authorization_world_installation::AuthorizationWorldSpec;
+use crate::domain_computation::primary_graph::tests::fixture::authorization_world_installation::CapabilityGrantPopulation;
+use crate::domain_computation::primary_graph::tests::fixture::*;
+
+pub const PRINCIPAL_ZERO_ACCOUNTS: &[(&str, &str)] =
+    &[("principal-0", "account-1"), ("principal-0", "account-2")];
+
+pub fn installed_world(rows: &[(&str, WorthQueryPrincipalMappingStatus)]) -> IdentityWorld {
+    installed_world_with_policy_fact(rows, false)
+}
+
+pub fn installed_world_with_policy_fact(
+    rows: &[(&str, WorthQueryPrincipalMappingStatus)],
+    include_policy_fact: bool,
+) -> IdentityWorld {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+
+        let declaration = IdentityExecutionSchema::declaration().unwrap();
+        let package = portable_package(declaration.clone());
+        let admitted = WorthQueryInstallationAdmissionProfile::new("support", "configuration")
+            .admit(package)
+            .unwrap();
+        let installation = WorthQueryExecutionRuntimeInstaller::new()
+            .install(WorthQueryInstallationGeneration::initial(), [admitted])
+            .unwrap();
+        let (runtime, authority) = installation.into_parts();
+        let schema = runtime
+            .installed_packages()
+            .bind_application_schema(declaration)
+            .unwrap();
+        let binding = schema
+            .principal_binding(IdentityBinding::reference())
+            .unwrap();
+        let mut bootstrap = authority.prepare_primary_graph(&phase.bootstrap_for_test(), &runtime, &schema, worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system())).unwrap();
+        for (ordinal, (subject, status)) in rows.iter().enumerate() {
+            bootstrap
+                .bind_principal(
+                    &binding,
+                    WorthQueryApplicationPrincipalKey::new(format!("principal-{ordinal}")).unwrap(),
+                    u64::try_from(ordinal + 1).unwrap(),
+                    external_identity(subject),
+                    *status,
+                )
+                .unwrap();
+        }
+        if include_policy_fact {
+            bind_account(
+                &mut bootstrap,
+                AccountSeedSpec {
+                    key: "account-1",
+                    status: "open",
+                    label: "primary",
+                    note: Some("reviewed"),
+                },
+            );
+            bootstrap
+                .bind_relation(WorthQueryApplicationRelationSeed::new(
+                    AccountOwner::reference(),
+                    "owner-1",
+                    WorthQueryApplicationEntityKey::new("principal-0").unwrap(),
+                    WorthQueryApplicationEntityKey::new("account-1").unwrap(),
+                ))
+                .unwrap();
+        }
+        crate::domain_computation::primary_graph::tests::fixture::handler_installation::install_fixture_handlers(&schema, &mut bootstrap);
+
+        let application = bootstrap
+            .publish_application_runtime(
+                &phase.bootstrap_for_test(),
+                runtime,
+                authority,
+                schema,
+                worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development(),
+            )
+            .unwrap();
+        IdentityWorld {
+            application,
+            binding,
+        }
+    })
+}
+
+/// Reopens an identity world from one Query application checkpoint through the
+/// same native readmission application installation uses.
+pub fn restored_world(
+    checkpoint: worth_query_execution::facade::application_installation::WorthQueryApplicationCheckpoint,
+) -> Result<
+    IdentityWorld,
+    worth_query_execution::facade::domain_computation::WorthQueryPrimaryGraphInstallationDenial,
+> {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+        let phase = &active_phase;
+
+        let declaration = IdentityExecutionSchema::declaration().unwrap();
+        let admitted = WorthQueryInstallationAdmissionProfile::new("support", "configuration")
+            .admit(portable_package(declaration.clone()))
+            .unwrap();
+        let (runtime, authority) = WorthQueryExecutionRuntimeInstaller::new()
+            .install(WorthQueryInstallationGeneration::initial(), [admitted])
+            .unwrap()
+            .into_parts();
+        let schema = runtime
+            .installed_packages()
+            .bind_application_schema(declaration)
+            .unwrap();
+        let binding = schema
+            .principal_binding(IdentityBinding::reference())
+            .unwrap();
+        let decoded = checkpoint
+            .decode_with_execution_for_test(&phase.borrowed_request_for_test())
+            .expect("the Query-issued checkpoint decodes under the original host request");
+        let mut bootstrap = authority.prepare_primary_graph_from_native_checkpoint_with_invariants(&phase.bootstrap_for_test(),
+        &runtime,
+        &schema,
+        worth_relational::facade::runtime::RelationalRuntimeApi::builder().build().expect("valid native runtime configuration"),
+        worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::resources::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()),
+        worth_query_execution::facade::application_invariants::WorthQueryApplicationInvariantFactories::for_installed_schema(&schema),
+        &decoded,
+        false,
+    )?;
+        crate::domain_computation::primary_graph::tests::fixture::handler_installation::install_fixture_handlers(&schema, &mut bootstrap);
+        let application = bootstrap
+            .publish_application_runtime(
+                &phase.bootstrap_for_test(),
+                runtime,
+                authority,
+                schema,
+                worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development(),
+            )
+            .unwrap();
+        Ok(IdentityWorld {
+            application,
+            binding,
+        })
+    })
+}
+
+pub fn installed_authorization_world(
+    include_owner_relation: bool,
+    admission_clock: worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock,
+) -> AuthorizationWorld {
+    install_authorization_world(AuthorizationWorldSpec {
+        admission_clock,
+        owner_bindings: owner_bindings(include_owner_relation),
+        ..standard_spec()
+    })
+}
+
+/// A real Native policy that permits explicit reclamation before generation reuse.
+pub fn installed_reclaiming_authorization_world() -> AuthorizationWorld {
+    crate::domain_computation::primary_graph::tests::fixture::authorization_world_installation::reclaiming::install_reclaiming_authorization_world(
+        AuthorizationWorldSpec {
+            owner_bindings: PRINCIPAL_ZERO_ACCOUNTS,
+            ..standard_spec()
+        },
+    )
+}
+
+pub fn installed_authorization_world_with_label(
+    label: &str,
+    resources: WorthQueryApplicationQueryResourceProfile,
+) -> AuthorizationWorld {
+    install_authorization_world(AuthorizationWorldSpec {
+        owner_bindings: PRINCIPAL_ZERO_ACCOUNTS,
+        primary_label: label,
+        resources,
+        ..standard_spec()
+    })
+}
+
+pub fn installed_authorization_world_with_product_resources(
+    resources: worth_query_execution::facade::integration::WorthQueryProductWorldResources,
+) -> AuthorizationWorld {
+    crate::domain_computation::primary_graph::tests::fixture::authorization_world_installation::install_authorization_world_with_product_resources(
+        AuthorizationWorldSpec {
+            owner_bindings: PRINCIPAL_ZERO_ACCOUNTS,
+            ..standard_spec()
+        },
+        resources,
+    )
+}
+
+pub fn installed_authorization_world_with_resource_profile(
+    resources: WorthQueryApplicationQueryResourceProfile,
+) -> AuthorizationWorld {
+    install_authorization_world(AuthorizationWorldSpec {
+        owner_bindings: PRINCIPAL_ZERO_ACCOUNTS,
+        resources,
+        ..standard_spec()
+    })
+}
+
+pub fn installed_two_principal_authorization_world(
+    include_owner_relation: bool,
+) -> AuthorizationWorld {
+    install_authorization_world(AuthorizationWorldSpec {
+        owner_bindings: owner_bindings(include_owner_relation),
+        principal_count: 2,
+        ..standard_spec()
+    })
+}
+
+pub fn installed_blocked_authorization_world() -> AuthorizationWorld {
+    install_authorization_world(AuthorizationWorldSpec {
+        owner_bindings: PRINCIPAL_ZERO_ACCOUNTS,
+        blocked: true,
+        ..standard_spec()
+    })
+}
+
+pub fn standard_spec<'a>() -> AuthorizationWorldSpec<'a> {
+    AuthorizationWorldSpec {
+        admission_clock:
+            worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(
+            ),
+        owner_bindings: &[],
+        blocked: false,
+        principal_count: 1,
+        primary_label: "primary",
+        resources: WorthQueryApplicationQueryResourceProfile::default(),
+        capability_grants: CapabilityGrantPopulation::None,
+    }
+}
+
+pub fn owner_bindings(include: bool) -> &'static [(&'static str, &'static str)] {
+    if include {
+        PRINCIPAL_ZERO_ACCOUNTS
+    } else {
+        &[]
+    }
+}
+
+pub fn portable_package(
+    declaration: worth_query_declaration::facade::application_schema::ApplicationSchemaDeclaration<
+        IdentityExecutionSchema,
+    >,
+) -> WorthQueryValidatedPortableDomainPackage {
+    WorthQueryPortableDomainPackage::new(WorthQueryPortableDomainIdentity::new(
+        "identity_execution_test",
+        1,
+        0,
+    ))
+    .application_schema(declaration)
+    .validate()
+    .unwrap()
+}

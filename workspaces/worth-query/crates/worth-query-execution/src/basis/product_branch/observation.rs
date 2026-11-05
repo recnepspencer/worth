@@ -42,9 +42,7 @@ impl WorthQueryProductObservationLease {
         }
     }
 
-    pub(crate) const fn observation(
-        &self,
-    ) -> &worth_runtime_world::facade::ProductBranchObservation {
+    pub const fn observation(&self) -> &worth_runtime_world::facade::ProductBranchObservation {
         &self.observation
     }
 
@@ -172,3 +170,5 @@ impl WorthQueryProductBranchLease {
         self.publication.clone()
     }
 }
+
+mod court_doors_for_test;

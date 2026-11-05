@@ -43,11 +43,12 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         ),
         RelationalExecutionDenialCause,
     > {
-        self.primary_provider
+        self.runtime
+            .primary_provider
             .graph
             .with_runtime(execution, |runtime| {
                 let branch = runtime
-                    .branch_identity(self.relational_branch_identity.branch_id())
+                    .branch_identity(self.runtime.relational_branch_identity.branch_id())
                     .expect("the inspected application branch remains registered");
                 let (_, basis) = runtime
                     .observe_branch(&branch)
@@ -86,6 +87,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         &self,
     ) -> worth_foundational::facade::RecordedProductBranchReference {
         let head = self
+            .runtime
             .product_runtime
             .owner
             .observation_port()
@@ -97,12 +99,14 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
     #[doc(hidden)]
     pub fn application_oracle_ancestry_for_test(&self) -> WorthQueryOracleHistoryPageForTest {
         let head = self
+            .runtime
             .product_runtime
             .owner
             .observation_port()
             .observe_root_product_branch()
             .expect("the inspected World remains available");
         let history = self
+            .runtime
             .product_runtime
             .owner
             .inspection_port()

@@ -211,13 +211,6 @@ impl<K: Ord + Copy, V: StoredValue> SharedMap<K, V> {
         self.iter().map(|(_, value)| value)
     }
 
-    /// Explicit full-index mutation used by cold checkpoint reconstruction.
-    pub(crate) fn iter_mut(&mut self) -> impl Iterator<Item = (&K, &mut V::Value)> {
-        let mut values = Vec::with_capacity(self.len());
-        MapNode::collect_mut(&mut self.root, &mut values);
-        values.into_iter()
-    }
-
     pub(crate) fn last_key_value(&self) -> Option<(&K, &V::Value)> {
         let mut node = self.root.as_deref()?;
         while let Some(right) = node.right.as_deref() {

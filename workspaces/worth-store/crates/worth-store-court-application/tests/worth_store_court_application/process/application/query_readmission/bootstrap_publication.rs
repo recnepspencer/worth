@@ -292,7 +292,7 @@ fn memory_multibatch_bootstrap_publishes_the_same_completion_basis_as_directory(
     .unwrap()
     .unwrap_or_else(|refused| panic!("Memory bootstrap: {refused:?}"));
     let cancellation = WorthQueryCancellationSource::new();
-    let scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     {
         let runtime = home.runtime();
         let principal = identity::inspection_authentication::authenticate(

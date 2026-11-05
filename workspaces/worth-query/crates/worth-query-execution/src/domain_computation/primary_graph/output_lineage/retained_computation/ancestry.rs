@@ -37,14 +37,12 @@ impl WorthQueryApplicationOutputLineage {
         }
     }
 
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph::output_lineage) fn fork_pins_computation(
-        &self,
-        recorded: &RecordedOutput,
-    ) -> bool {
+    pub fn fork_pins_computation(&self, recorded: &RecordedOutput) -> bool {
         let coordinate = recorded.settlement_identity.coordinate();
         self.origins.values().any(|origin| {
             origin.occurrence == coordinate.occurrence && origin.generation >= coordinate.generation
         })
     }
 }
+
+mod court_doors_for_test;

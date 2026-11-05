@@ -60,6 +60,7 @@ fn signal_movement_recovery_adopts_both_original_results_after_activation_refusa
                         ))
                     }
                 },
+                None,
             );
         let partial = match outcome {
             crate::facade::RuntimeWorldPublicationOutcome::ProductUnpublished(partial) => partial,

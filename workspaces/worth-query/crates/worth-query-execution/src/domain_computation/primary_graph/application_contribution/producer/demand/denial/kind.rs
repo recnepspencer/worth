@@ -5,6 +5,14 @@
 /// again can succeed.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryOutputDemandDenialKind {
+    /// The original unpublished record refused its native recovery visit.
+    WorldRecovery(worth_runtime_world::facade::RuntimeWorldRecoveryDenial),
+    /// The original settled effect could not publish its World successor.
+    RecoveryPublication(worth_runtime_world::facade::NoEffectCause),
+    /// A fresh admitted read could not deliver the original published receipt.
+    PublicationReceipt(crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenialKind),
+    /// The current control owner is in use. No source result was handed off.
+    CurrentControlBusy,
     ManagedIndexSourceDenied,
     /// The producer returned actual managed cleanup custody; ordinary rerun is not authorized.
     ManagedCleanupRequired(crate::domain_computation::WorthQueryMutationCleanupFailureKind),
@@ -90,6 +98,10 @@ pub enum WorthQueryOutputDemandDenialKind {
     /// A dependent output's parent settlement belongs to another program,
     /// feature, or branch position.
     ForeignSettlement,
+    /// A retained verification requirement names a fact absent from its retained body.
+    RetainedVerificationFactUnavailable(crate::domain_computation::primary_graph::provider::RebaseVerificationReason),
+    /// The exact retained provenance fact that disagrees with its real owner.
+    SettlementProvenance(super::WorthQueryOutputSettlementProvenanceDenial),
     /// A retained or restored output lacks the dependency facts needed to reuse
     /// it.
     IncompleteDependencyCoverage,

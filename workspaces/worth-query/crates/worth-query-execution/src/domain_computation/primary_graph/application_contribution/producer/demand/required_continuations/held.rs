@@ -2,8 +2,7 @@
 //! successors to registry custody on their own rows.
 
 mod local_resume;
-#[cfg(test)]
-mod state_unavailable;
+
 use super::super::progression::PerformedMembers;
 use super::*;
 use crate::domain_computation::primary_graph::application_output_demand::HeldRequiredSuccessor;
@@ -92,6 +91,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request: &WorthQueryRequestScope,
     branch: crate::basis::WorthQueryProductBranch,
+    invocation: &ProducerInvocationAuthority<'_>,
     custody: ContinuationCustody<'_, Schema>,
     key: &WorthQueryOutputDemandKey,
 
@@ -114,15 +114,20 @@ where
             custody,
             caller_contacts,
             index,
+            invocation,
             performed,
         );
     }
 
-    let Some(held) = runtime.output_demands.take_published_held_successor(key)? else {
+    let Some(held) = runtime
+        .runtime
+        .output_demands
+        .take_published_held_successor(key)?
+    else {
         return Ok(HeldUpstream::Unfinished);
     };
     resume_registry_successor(
-        phase, runtime, principal, request, branch, custody, held, performed,
+        phase, runtime, principal, request, branch, invocation, custody, held, performed,
     )
 }
 
@@ -133,6 +138,7 @@ pub(super) fn resume_registry_successor<Schema: ApplicationSchema + 'static>(
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request: &WorthQueryRequestScope,
     branch: crate::basis::WorthQueryProductBranch,
+    invocation: &ProducerInvocationAuthority<'_>,
     custody: &mut RequiredContinuations<Schema>,
     held: HeldRequiredSuccessor,
 
@@ -145,15 +151,19 @@ pub(super) fn resume_registry_successor<Schema: ApplicationSchema + 'static>(
         )
     })?;
 
-    let result = held
-        .progress
-        .resume(phase, runtime, principal, request, branch, performed);
+    let result = held.progress.resume(
+        phase, runtime, principal, request, branch, invocation, performed,
+    );
     held.progress.report_caller_contacts(None);
     let key = held.progress.interest().key();
     let ready = match result {
         Ok(Some(ready)) => ready,
         Err(stop)
-            if superseded(&stop) && runtime.output_demands.give_back_replaced_ready(key)? =>
+            if superseded(&stop)
+                && runtime
+                    .runtime
+                    .output_demands
+                    .give_back_replaced_ready(key)? =>
         {
             drop(stop);
             drop(held);
@@ -170,6 +180,7 @@ pub(super) fn resume_registry_successor<Schema: ApplicationSchema + 'static>(
             // the row has moved on meanwhile.
             drop(
                 runtime
+                    .runtime
                     .output_demands
                     .hold_required_successor(held, held_key::<Schema>),
             );
@@ -177,7 +188,7 @@ pub(super) fn resume_registry_successor<Schema: ApplicationSchema + 'static>(
         }
     };
     let HeldFrameSuccessor { progress, .. } = *held;
-    let slot = custody.prepare_slot(&runtime.output_demands)?;
+    let slot = custody.prepare_slot(&runtime.runtime.output_demands)?;
 
     slot.push(progress);
     Ok(HeldUpstream::Ready(ready))
@@ -204,10 +215,12 @@ where
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
         branch: crate::basis::WorthQueryProductBranch,
+        invocation: &ProducerInvocationAuthority<'_>,
 
         performed: &std::cell::RefCell<PerformedMembers>,
     ) -> Result<Option<SelectedReadyReadmission>, WorthQueryOutputDemandDenial> {
-        let registry = &runtime.output_demands;
+        self.authorize_current_source(phase, runtime, principal, request, invocation)?;
+        let registry = &runtime.runtime.output_demands;
         if registry
             .interest_ready_readmission(self.interest())?
             .is_some()
@@ -220,20 +233,43 @@ where
         // The required wave still proves Current after this Ready delivery.
         if !matches!(
             registry.row_stage_admitted(self.interest())?,
-            OutputRowStage::Published
+            OutputRowStage::Published | OutputRowStage::PublicationPending
         ) {
-            self.successor
-                .resume(phase, runtime, principal, request, branch, performed)?;
+            self.successor.resume(
+                phase, runtime, principal, request, branch, invocation, performed,
+            )?;
         }
         loop {
             let stage = match self.checkpoint().inspect(registry)? {
                 WaveCheckpointTurn::Current(ready) => return Ok(Some(ready.into_readmission())),
                 WaveCheckpointTurn::Awaiting(stage) => stage,
             };
-            if !stage.advance(phase, runtime, request)? {
+            if !stage.advance(phase, runtime, request, principal, invocation)? {
                 return Ok(None);
             }
         }
+    }
+}
+
+impl<Schema: ApplicationSchema + 'static> RequiredFreshProgress<Schema> {
+    pub(super) fn authorize_current_source(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        request: &WorthQueryRequestScope,
+        invocation: &ProducerInvocationAuthority<'_>,
+    ) -> Result<(), WorthQueryOutputDemandDenial> {
+        let execution = phase
+            .execution_request_for(&runtime.runtime.product_runtime)
+            .map_err(|cause| {
+                WorthQueryOutputDemandDenial::new(
+                    super::super::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
+                    "required successor source phase",
+                )
+            })?;
+        self.successor
+            .authorize_current_source(&execution, runtime, principal, request, invocation)
     }
 }
 
@@ -256,7 +292,7 @@ where
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
         branch: crate::basis::WorthQueryProductBranch,
-
+        invocation: &ProducerInvocationAuthority<'_>,
         performed: &std::cell::RefCell<PerformedMembers>,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial> {
         let demand = self.demand.as_mut().ok_or_else(|| {
@@ -278,7 +314,16 @@ where
             .commit_authority()
             .clone();
         runtime.advance_retained_with_commit_authority(
-            execution, phase, demand, principal, request, branch, authority, performed,
+            execution,
+            phase,
+            demand,
+            principal,
+            request,
+            branch,
+            invocation.for_mode(authority),
+            performed,
         )
     }
 }
+
+mod court_doors_for_test;

@@ -9,14 +9,14 @@ use worth_execution::ExecutionArrayBuilder;
 use worth_relational::facade::history::RelationalDescriptiveTouchGraph;
 
 /// Candidate-derived coverage and its allocation custody move together.
-pub(in crate::domain_computation::primary_graph) struct SelectedPostconditionRebase {
+pub struct SelectedPostconditionRebase {
     pub(in crate::domain_computation::primary_graph) ordinals: OrdSet<usize>,
     pub(in crate::domain_computation::primary_graph) basis:
         super::super::settlement::PostingRebaseBasis,
 }
 
 #[derive(Clone)]
-pub(in crate::domain_computation::primary_graph) struct PostconditionCarry {
+pub struct PostconditionCarry {
     changes: ComputationChanges,
     prefix: usize,
     fresh: Arc<ExecutionArray<usize>>,
@@ -199,3 +199,5 @@ fn visit(
         emit(key)
     })
 }
+
+mod court_doors_for_test;

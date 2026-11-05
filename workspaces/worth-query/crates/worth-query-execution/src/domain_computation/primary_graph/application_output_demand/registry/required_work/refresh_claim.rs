@@ -43,16 +43,18 @@ pub(in crate::domain_computation::primary_graph) enum RequiredRefreshAdvancement
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum RequiredRefreshCheckpoint {
     Absent,
+    PublicationPending,
     Published,
     Delivered,
     ReadyCommitted,
+    ReadyRecovered,
     ReadyStable,
     ReadyRestored,
 }
 
 /// A temporary real interest in the exact Ready row selected for a required
 /// wave. The key's owned String remains funded until its interest drops.
-pub(in crate::domain_computation::primary_graph) struct SelectedRequiredRefreshClaim {
+pub struct SelectedRequiredRefreshClaim {
     interest: super::super::WorthQueryOutputDemandInterest,
 
     selected: SelectedReadyReadmission,
@@ -160,15 +162,21 @@ impl WorthQueryOutputDemandRegistry {
         if let Some(advancement) = advancement {
             use super::super::WorthQueryAcceptedOutputAuthority as Authority;
             let checkpoint = match &output.checkpoint {
+                Some(WorthQueryOutputCheckpoint::PublicationPending { .. }) => {
+                    RequiredRefreshCheckpoint::PublicationPending
+                }
                 None => RequiredRefreshCheckpoint::Absent,
-                Some(WorthQueryOutputCheckpoint::Published { .. }) => {
-                    RequiredRefreshCheckpoint::Published
-                }
-                Some(WorthQueryOutputCheckpoint::Delivered { .. }) => {
-                    RequiredRefreshCheckpoint::Delivered
-                }
+                Some(
+                    WorthQueryOutputCheckpoint::Published { .. }
+                    | WorthQueryOutputCheckpoint::RecoveredPublished { .. },
+                ) => RequiredRefreshCheckpoint::Published,
+                Some(
+                    WorthQueryOutputCheckpoint::Delivered { .. }
+                    | WorthQueryOutputCheckpoint::RecoveredDelivered { .. },
+                ) => RequiredRefreshCheckpoint::Delivered,
                 Some(WorthQueryOutputCheckpoint::Ready(ready)) => match &ready.authority {
                     Authority::Committed(_) => RequiredRefreshCheckpoint::ReadyCommitted,
+                    Authority::Recovered(_) => RequiredRefreshCheckpoint::ReadyRecovered,
                     Authority::Stable(_) => RequiredRefreshCheckpoint::ReadyStable,
                     Authority::Restored(_) => RequiredRefreshCheckpoint::ReadyRestored,
                 },

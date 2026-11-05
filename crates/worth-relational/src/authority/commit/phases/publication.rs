@@ -41,6 +41,7 @@ pub(crate) fn enforce_patch_budget(
 
 pub(crate) fn canonical_commit_envelope(
     runtime: &crate::runtime::RelationalPreparationRuntime,
+    content: crate::content::ContentPublication,
     index_definition_delta: crate::history::data::CanonicalIndexDefinitionDelta,
     commit_reference: &RelationalCommitReceipt,
     branch_id: &BranchId,
@@ -77,6 +78,7 @@ pub(crate) fn canonical_commit_envelope(
         )));
     }
     let mut envelope = crate::history::data::CanonicalCommitEnvelopeDraft::new(
+        content,
         index_definition_delta,
         commit_reference.clone(),
         published_lineage.branch_id().clone(),

@@ -23,6 +23,7 @@ use worth_relational::facade::{
 /// material until publication releases this preparation; it grants no standalone
 /// mutation or recovery authority.
 pub struct WorthQueryPreparedCorrectionSource {
+    content: worth_relational::facade::content::RelationalContentAttachments,
     authored_identity: Option<super::authored_identity::PreparedAuthoredIdentity>,
     workflow: Option<PreparedWorkflowCorrection>,
     ancestry: ProductBranchAncestorSelection,
@@ -91,7 +92,7 @@ impl WorthQueryPreparedCorrectionSource {
             .cloned()
             .ok_or(Denial::MissingTargetParent)?;
         let execution = phase
-            .execution_request_for(&target.application().product_runtime)
+            .execution_request_for(&target.application().runtime.product_runtime)
             .map_err(|_| Denial::ForeignPhase)?;
         let authored_identity = if lineage.role() == WorthQueryAftermathCausalRole::RecordedReverse
         {
@@ -101,10 +102,26 @@ impl WorthQueryPreparedCorrectionSource {
         } else {
             None
         };
+        let mut content = match source.occurrence().commit_evidence().retained_preimage() {
+            Some(preimage) => preimage.content().clone(),
+            None => Default::default(),
+        };
+        let outputs =
+            super::material::source_outputs::SourceOutputs::<Schema, C>::new(source, execution)
+                .retained_content()
+                .map_err(Denial::SourceOutput)?;
+        content
+            .attach_retained(&execution, &outputs)
+            .map_err(|cause| {
+                Denial::SourceOutput(
+                    super::material::WorthQueryCorrectionOutputProjectionDenial::Content(cause),
+                )
+            })?;
         let intent = WorthQueryCorrectionIntent::from_disclosed_source::<Schema, C>(
             target, source, key, &lineage,
         );
         Ok(Self {
+            content,
             authored_identity,
             workflow,
             ancestry,
@@ -124,6 +141,11 @@ impl WorthQueryPreparedCorrectionSource {
         })
     }
 
+    pub(in crate::domain_computation::primary_graph) fn content(
+        &self,
+    ) -> &worth_relational::facade::content::RelationalContentAttachments {
+        &self.content
+    }
     /// The immutable descriptive command intent carried into ordinary idempotency admission.
     pub fn intent(&self) -> WorthQueryCorrectionIntent {
         self.intent
@@ -151,6 +173,33 @@ impl WorthQueryPreparedCorrectionSource {
             Some(identity) => identity.validate_candidate(roles, batch, request),
             None => Ok(()),
         }
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn authored_retirement_anchor(
+        &self,
+    ) -> Option<EntityId> {
+        self.authored_identity
+            .as_ref()
+            .and_then(|identity| identity.retirement_anchor())
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn authored_restoration_anchor<'a>(
+        &self,
+        roles: impl Iterator<Item = (&'a str, worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture, &'a str, &'a worth_relational::facade::transactions::EntityReference)> + Clone,
+        batch: &worth_relational::facade::transactions::WorkerIntentBatch,
+        request: &WorthQueryRequestScope,
+    ) -> Result<
+        Option<(
+            EntityId,
+            worth_relational::facade::transactions::CreatedEntityRef,
+        )>,
+        super::AuthoredCorrectionCandidateDenial,
+    > {
+        self.validate_authored_candidate(roles.clone(), batch, request)?;
+        Ok(self
+            .authored_identity
+            .as_ref()
+            .and_then(|identity| identity.restoration_anchor(roles)))
     }
 
     pub(crate) fn source_commit(&self) -> &RelationalCommitReceipt {

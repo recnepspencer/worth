@@ -77,7 +77,7 @@ where
         Input: ApplicationCapabilityRequest<Schema, CommandCapability>
             + ApplicationCapabilityDelegationRequest<Schema, TargetCapability>,
     {
-        let execution = match phase.execution_request_for(&self.product_runtime) {
+        let execution = match phase.execution_request_for(&self.runtime.product_runtime) {
             Ok(execution) => execution,
             Err(_) => return Err(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody")),
         };
@@ -147,6 +147,7 @@ where
                 )
             })?;
         let installed = self
+            .runtime
             .authorization
             .capability_plan(target)
             .ok_or_else(|| stale(target.contract().name()))?;

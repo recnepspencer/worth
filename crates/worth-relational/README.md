@@ -170,7 +170,7 @@ binding twice refuses and a prepared candidate cannot be rebound. Candidate
 `caller_association()` observes its retained sealed payload; the canonical
 envelope exposes the same immutable bytes. Native preserves the caller's bytes
 without interpreting them or granting completion authority. Canonical artifact
-v4 and native checkpoint CHK18 retain the field through journal and embedded or
+v5 and native checkpoint CHK18 retain the field through journal and embedded or
 cold checkpoint recovery. Older artifact and checkpoint versions refuse rather
 than acquiring the new grammar implicitly. Association bytes or successful
 artifact decoding alone establish no durable World effect or product movement.
@@ -326,6 +326,52 @@ mismatched selected material refuses. Checkpoint coverage alone grants no adopti
 The concrete Store/World recovered-adoption journey and coherent cross-owner Home
 checkpoint cut remain separate integration obligations; this Native phase alone
 grants no product movement.
+## Fork an actually retained root
+
+For a memory-only runtime, pass an original `AdmittedRelationalBranchBasis` to
+`runtime.fork_port().admit_retained_fork_source(&basis)`. Consume the returned
+move-only source with `fork_retained_branch(execution, target, source)` to create
+an independent writable branch sharing that exact immutable root. The source
+branch must remain live; its head may have advanced. The ordinary `fork_branch`
+receiver continues to require its freshly observed source to remain current.
+
+Handle `RetainedSourceDurabilityUnsupported` when a medium is attached. This
+profile records `RelationalBranchTransition::RetainedFork`; replaying its raw
+tail returns `UnsupportedRetainedForkReplay`. A checkpoint taken after creation
+captures the actual live destination root and can restore that destination.
+Retain application authorization separately from this component fork custody.
+
+## Select a retained entity payload on current truth
+
+Begin an ordinary branch-bound transaction from the actual current target basis.
+Pass that pristine transaction, an original retained basis and the full entity ID
+to `preparation_port().admit_retained_entity_selection`. Consume the returned
+selection with `prepare_retained_entity_selection(execution, selection)`, then
+publish or discard its candidate through the existing owner services.
+
+This creates a fresh commit parented by the current target. Only the selected
+entity's authoritative aspect payload comes from the retained source. Other
+records stay current, and the selected entity keeps its current identity,
+lineage and intervening record history. Equal payload values still produce
+distinct occurrences with exact historical provenance. An ordinary edit can
+continue from the resulting branch.
+
+The transaction must contain no staged reads, commands, schema/recovery work or
+savepoint history. Handle typed refusals for stale targets, foreign or retired
+sources, missing/recreated entities, changed schema and incompatible identity
+meaning. Current and historical records must share the same full identity,
+kind, schema and supported lineage/structural meaning. Installed current
+invariants judge the proposed payload against current surrounding truth.
+Application authorization and the declaration of navigable model scope remain
+separate admissions.
+
+This profile requires a memory-only runtime. An attached medium refuses with
+`DurabilityUnsupported`; raw canonical-tail recovery refuses with
+`UnsupportedRetainedEntitySelectionReplay`. The candidate retains the actual
+historical root until publication completes or the original candidate owner
+discards it. Cancellation preserves the original publication and cleanup
+posture. Canonical provenance describes the occurrence and cannot authorize
+another selection.
 
 ## Durability
 
@@ -725,3 +771,19 @@ task. It retires the external obligation and the lease's original observation
 share under the supplied request, retaining inert original allocations until
 explicit reclaim. An independently held observation keeps its genuine read
 veto. This local retirement does not establish whole-runtime or physical close.
+## Content custody and atomic scalars
+
+Native owns content identity, format/version admission, integrity, retention
+and reconstruction in its field transaction and recovery authority. A ContentRef
+is a digest, resolved only through admitted field-bound custody. Ordered
+numerical data and splines use this path at every size; above the 16 MiB frame
+limit admission returns a typed refusal before effects.
+
+`InlineBytes` remains a complete canonical atomic field value for pure scalar
+observations without a Native resolver. Its concrete consumers are generic
+certification InlineCounterBinding (including a conditional read), RatioBinding
+and a deliberately broken binary write-admission binding. Native stores their
+whole scalar. Query's installed domain-write seal admits that encoding before
+Native publication; those atoms use no content directory. Size never selects this scalar in place of
+content. Foundation owns its portable carrier. See the
+[complete consumer inventory and boundary rationale](../../docs/inline-atomic-content-boundary.md).

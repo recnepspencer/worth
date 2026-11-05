@@ -5,12 +5,15 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphInstallationDenial as Denial,
     WorthQueryPrimaryGraphInstallationDenialKind as Kind,
 };
-use std::{collections::HashMap, sync::Arc};
+use std::{
+    collections::{BTreeMap, HashMap},
+    sync::Arc,
+};
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_relational::facade::runtime::ManagedIndexSourceProgram;
 
 #[derive(Default)]
-pub(in crate::domain_computation::primary_graph) struct ManagedSourceInstallation {
+pub struct ManagedSourceInstallation {
     sources: HashMap<ManagedIndexSourceProgram, usize>,
     ordered_sources: Vec<Arc<dyn SourceService>>,
     _allocation:
@@ -36,7 +39,11 @@ impl ManagedSourceInstallation {
         ),
         Denial,
     > {
-        let mut required = HashMap::new();
+        #[expect(
+            clippy::mutable_key_type,
+            reason = "Programs compare only their immutable owner-minted order; audience custody cannot affect ordering"
+        )]
+        let mut required = BTreeMap::new();
         for source in layout.required_managed_sources() {
             let provider = providers
                 .source_factory(&source.definition)

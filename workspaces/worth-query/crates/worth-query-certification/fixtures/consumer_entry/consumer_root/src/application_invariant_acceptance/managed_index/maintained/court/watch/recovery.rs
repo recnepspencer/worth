@@ -26,7 +26,7 @@ pub(super) fn run(
         .world_operation_control_for_test()
         .pause_before_product_compare_for_test(NonZeroUsize::MIN);
     let cancellation = WorthQueryCancellationSource::new();
-    let stopped = WorthQueryRequestScope::new(None, cancellation.token());
+    let stopped = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let edit = rename("race", "recovered");
     let key = 0x9198_0400u64;
     let outcome = std::thread::scope(|threads| {

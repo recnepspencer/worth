@@ -18,7 +18,7 @@ impl WorthQueryWorkflowInstanceAdapter {
         Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
-        let phase_request = match phase.execution_request_for(&selected.application().product_runtime) {
+        let phase_request = match phase.execution_request_for(&selected.application().runtime.product_runtime) {
             Ok(request) => request,
             Err(_) => return Err(WorkflowInstancePreparationDenial::Attempt(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::ForeignPhase, "workflow-phase"))),
         };
@@ -54,7 +54,7 @@ impl WorthQueryWorkflowInstanceAdapter {
         Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
-        let phase_request = match phase.execution_request_for(&selected.application().product_runtime) {
+        let phase_request = match phase.execution_request_for(&selected.application().runtime.product_runtime) {
             Ok(request) => request,
             Err(_) => return Err(WorkflowInstancePreparationDenial::Attempt(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::ForeignPhase, "workflow-phase"))),
         };
@@ -93,7 +93,7 @@ impl WorthQueryWorkflowInstanceAdapter {
         Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
-        let phase_request = match phase.execution_request_for(&selected.application().product_runtime) {
+        let phase_request = match phase.execution_request_for(&selected.application().runtime.product_runtime) {
             Ok(request) => request,
             Err(_) => return Err(WorkflowInstancePreparationDenial::Attempt(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::ForeignPhase, "workflow-phase"))),
         };
@@ -129,7 +129,7 @@ impl WorthQueryWorkflowInstanceAdapter {
         Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
-        let phase_request = match phase.execution_request_for(&selected.application().product_runtime) {
+        let phase_request = match phase.execution_request_for(&selected.application().runtime.product_runtime) {
             Ok(request) => request,
             Err(_) => return Err(WorkflowInstancePreparationDenial::Attempt(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::ForeignPhase, "workflow-phase"))),
         };
@@ -158,7 +158,7 @@ impl WorthQueryWorkflowInstanceAdapter {
         Input: Clone + Send + Sync + 'static,
     {
         let phase_request =
-            match phase.execution_request_for(&runtime.product_runtime) {
+            match phase.execution_request_for(&runtime.runtime.product_runtime) {
                 Ok(request) => request,
                 Err(cause) => return WorkflowInstanceCancellationOutcome::Application(
                     crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(
@@ -192,7 +192,7 @@ impl WorthQueryWorkflowInstanceAdapter {
         Input: Clone + Send + Sync + 'static,
     {
         let phase_request =
-            match phase.execution_request_for(&runtime.product_runtime) {
+            match phase.execution_request_for(&runtime.runtime.product_runtime) {
                 Ok(request) => request,
                 Err(cause) => return WorkflowInstanceStartOutcome::Application(
                     crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(

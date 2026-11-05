@@ -106,6 +106,7 @@ pub(super) fn prepare_history(
         .collect::<Result<_, _>>()?;
     history.with_ledger_mut(|ledger| ledger.commit_envelopes = cells);
     let roots = root_readmission::readmit_selected_images(
+        execution,
         &history,
         checkpoint,
         &mut branch_roots,

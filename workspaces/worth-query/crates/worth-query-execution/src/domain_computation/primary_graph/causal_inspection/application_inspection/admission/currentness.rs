@@ -107,7 +107,7 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
                             execution,
                             relational,
                             snapshot,
-                            self.runtime.authorization.bridge(),
+                            self.runtime.runtime.authorization.bridge(),
                         )
                         .map_err(InspectionAdmissionDenial::CurrentAuthorization)?;
                     if let Some(source) = &self.source {
@@ -118,7 +118,7 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
                                 execution,
                                 relational,
                                 snapshot,
-                                self.runtime.authorization.bridge(),
+                                self.runtime.runtime.authorization.bridge(),
                             )
                             .map_err(InspectionAdmissionDenial::CurrentAuthorization)?;
                     }
@@ -134,7 +134,7 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
                                     execution,
                                     relational,
                                     snapshot,
-                                    self.runtime.authorization.bridge(),
+                                    self.runtime.runtime.authorization.bridge(),
                                 )
                                 .map_err(InspectionAdmissionDenial::CurrentAuthorization)?;
                         }
@@ -163,3 +163,5 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
         Ok(proof)
     }
 }
+
+mod court_doors_for_test;

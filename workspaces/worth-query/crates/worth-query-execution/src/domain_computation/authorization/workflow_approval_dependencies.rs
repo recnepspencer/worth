@@ -28,7 +28,7 @@ struct Dependencies {
 }
 
 #[derive(Clone)]
-pub(in crate::domain_computation) struct WorthQueryWorkflowApprovalDependencies {
+pub struct WorthQueryWorkflowApprovalDependencies {
     owned: Arc<OwnedDependencies>,
 }
 struct OwnedDependencies {
@@ -171,3 +171,5 @@ impl WorthQueryWorkflowApprovalDependencies {
         expected.matches_with_retained_activation(execution, &observed, runtime, snapshot)
     }
 }
+
+mod court_doors_for_test;

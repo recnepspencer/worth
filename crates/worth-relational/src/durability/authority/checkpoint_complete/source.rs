@@ -219,7 +219,7 @@ impl FrozenOriginalInputs {
                 }
                 .into());
             }
-            let readmitted = frame.readmit_owned(execution).map_err(|cause| match cause {
+            let readmitted = frame.readmit_framed(execution).map_err(|cause| match cause {
                 crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal::Request(cause) => Denial::Request(cause),
                 crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal::FieldText(cause) =>
                     capture_stop(crate::symbols::data::field_text_recovery_stop(cause)),

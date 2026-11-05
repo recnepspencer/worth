@@ -272,6 +272,7 @@ where
             None,
         )?;
         let program = WorthQueryApplicationEffectProgram {
+            content_attachments: Default::default(),
             read_set: admitted.into_read_set(),
             effects,
             conditional_definition: None,

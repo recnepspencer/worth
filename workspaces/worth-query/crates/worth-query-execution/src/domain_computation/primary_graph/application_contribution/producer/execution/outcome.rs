@@ -15,6 +15,7 @@ use graph::{
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) enum ProducerExecutionOutcome
 {
     Committed(ProducerCommitReceipt),
+    Unpublished(super::unpublished::PendingProducerPublication),
     Stable(graph::output_lineage::PublishedStableLineage),
 }
 
@@ -28,8 +29,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
 /// The commit owner distinguishes a new effect from a descriptive replay.
 /// Only this conversion constructs the fact used to mark the advance.
 #[derive(Debug)]
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) struct ProducerCommitReceipt
-{
+pub struct ProducerCommitReceipt {
     receipt: WorthQueryApplicationCommitReceipt,
 }
 
@@ -48,9 +48,6 @@ impl ProducerCommitReceipt {
         self.receipt
     }
 }
-
-#[cfg(test)]
-mod publication_record_tests;
 
 /// A successful producer returns its original pre-effect Ready storage.
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) struct PreparedProducerExecutionOutcome
@@ -113,7 +110,7 @@ where
 }
 
 /// Maps a producer commit to its receipt or to the demand denial it settles as.
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn commit_receipt(
+pub fn commit_receipt(
     identity: &str,
     outcome: WorthQueryApplicationCommitOutcome,
 ) -> Result<ProducerCommitReceipt, WorthQueryOutputDemandDenial> {
@@ -200,6 +197,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
                 &commit_denial,
                 commit_denial.unobserved_write(),
             )
+            .with_retirement_error(commit_denial.authored_retirement_error())
             .with_custom_invariant_denial(commit_denial.custom_invariant_denial().cloned())
             .with_producer_requirement_denial(requirement))
         }
@@ -292,10 +290,9 @@ fn refused_preflight(
 }
 
 #[cfg(test)]
-mod tests;
-
-#[cfg(test)]
 mod invariant_refusal_tests;
 
 #[cfg(test)]
 mod domain_denial_tests;
+
+mod court_doors_for_test;

@@ -314,28 +314,13 @@ class WorkerFirstRootImportedGraph {
     }
   }
 
-  async #refreshDiagnosticsCache() {
-    const [summaryPacket, historyPacket] = await Promise.all([
-      this.#rootSession.bridge().readDiagnosticsSummary(),
-      this.#rootSession.bridge().readDiagnosticsHistory(),
-    ]);
-    this.#cachedDiagnosticsSummary = materializeWorkerCachedValue(summaryPacket.summary);
-    this.#cachedDiagnosticsHistory = materializeWorkerCachedValue(historyPacket.history);
-  }
-
   async #refreshCaches() {
-    const [inputPacket, outputPacket] = await Promise.all([
-      this.#rootSession.bridge().readSignals({ signalIds: this.#trackedInputIds }),
-      this.#rootSession.bridge().deliverOutputs({ outputIds: this.#trackedOutputIds }),
-      this.#refreshDiagnosticsCache(),
-    ]);
-    this.#cachedInputs.clear();
-    for (const signal of inputPacket.signals) {
-      this.#cachedInputs.set(signal.id, materializeWorkerCachedValue(signal.value));
-    }
-    this.#cachedOutputs.clear();
-    for (const output of outputPacket.outputs) {
-      this.#cachedOutputs.set(output.id, materializeWorkerCachedValue(output.value));
+    const context = this.#rootSession.currentImportContext();
+    this.#cachedDiagnosticsSummary = materializeWorkerCachedValue(context.diagnosticsSummary);
+    this.#cachedDiagnosticsHistory = materializeWorkerCachedValue(context.diagnosticsHistory);
+    for (const [ids, cache] of [[this.#trackedInputIds, this.#cachedInputs], [this.#trackedOutputIds, this.#cachedOutputs]]) {
+      cache.clear();
+      for (const id of ids) cache.set(id, materializeWorkerCachedValue(context.signalValueById.get(id)));
     }
   }
 

@@ -23,7 +23,7 @@ pub use original_receipt::{
     WorthQueryRecoveredDispatchOutbox,
 };
 
-pub(super) fn resolve_at_snapshot(
+pub fn resolve_at_snapshot(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     provider: &WorthQueryPrimaryGraphProvider,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
@@ -149,13 +149,10 @@ fn read_idempotency_record(
     .ok_or(WorthQueryProviderIdempotencyResolutionDenial::Unavailable)
 }
 
-fn idempotency_read_stop(
+pub fn idempotency_read_stop(
     cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
 ) -> WorthQueryProviderIdempotencyResolutionDenial {
     WorthQueryProviderIdempotencyResolutionDenial::ExecutionDenied(
         super::super::relational_execution_denial::relational_execution_kind(cause, None),
     )
 }
-
-#[cfg(test)]
-mod counted_read_stops;

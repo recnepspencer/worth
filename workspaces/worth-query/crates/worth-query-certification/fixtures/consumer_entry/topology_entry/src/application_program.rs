@@ -230,20 +230,46 @@ impl<Schema: TopologySchemaBinding>
 {
 }
 
-#[derive(Clone)]
 pub struct PlanarOutputDemand {
     body_key: String,
+    clone_panic: Option<std::sync::Arc<std::sync::atomic::AtomicBool>>,
 }
 
 impl PlanarOutputDemand {
     pub fn new(body_key: impl Into<String>) -> Self {
         Self {
             body_key: body_key.into(),
+            clone_panic: None,
         }
     }
 
     pub fn body_key(&self) -> &str {
         &self.body_key
+    }
+
+    /// Arm only this authored demand, including its owned descendants.
+    #[doc(hidden)]
+    pub fn panic_on_next_clone_for_test(mut self) -> Self {
+        self.clone_panic = Some(std::sync::Arc::new(std::sync::atomic::AtomicBool::new(
+            true,
+        )));
+        self
+    }
+}
+
+impl Clone for PlanarOutputDemand {
+    fn clone(&self) -> Self {
+        if self
+            .clone_panic
+            .as_ref()
+            .is_some_and(|armed| armed.swap(false, std::sync::atomic::Ordering::SeqCst))
+        {
+            panic!("controlled planar output demand clone panic");
+        }
+        Self {
+            body_key: self.body_key.clone(),
+            clone_panic: self.clone_panic.clone(),
+        }
     }
 }
 

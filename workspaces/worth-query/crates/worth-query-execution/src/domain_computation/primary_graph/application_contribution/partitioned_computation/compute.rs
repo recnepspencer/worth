@@ -151,63 +151,54 @@ where
         let owner = &*self.installed.owner;
         let execution = &execution;
         let reducer = owner.reducer();
-        let compute_kernel = |partition: &Gathered<Schema, Feature, Computation, Owner>,
-                              context: &mut MapKernelContext<'_, '_>,
-                              #[cfg(test)] native: Option<
-            &worth_execution::ExecutionResourceLease<'_>,
-        >| {
-            let (computed, refused) = {
-                let context = std::cell::RefCell::new(&mut *context);
-                let mut charge = |work| {
-                    context.borrow_mut().checkpoint(work)?;
-                    Ok(())
+        let compute_kernel =
+            |partition: &Gathered<Schema, Feature, Computation, Owner>,
+             context: &mut MapKernelContext<'_, '_>,
+             native: Option<&worth_execution::ExecutionResourceLease<'_>>| {
+                let (computed, refused) = {
+                    let context = std::cell::RefCell::new(&mut *context);
+                    let mut charge = |work| {
+                        context.borrow_mut().checkpoint(work)?;
+                        Ok(())
+                    };
+                    let mut poll = || context.borrow_mut().poll();
+                    let accounted = context.borrow().has_accounting();
+                    let checkpoint = WorthQueryManagedComputationCheckpoint::for_partition(
+                        accounted.then_some(
+                            &mut charge
+                                as &mut dyn FnMut(
+                                    u64,
+                                )
+                                    -> Result<(), worth_execution::MapKernelStop>,
+                        ),
+                        &mut poll,
+                    );
+                    let checkpoint = checkpoint.with_native_lease_for_test(native);
+                    let mut checkpoint = checkpoint;
+                    let computed = checkpoint.poll().map_err(Into::into).and_then(|()| {
+                        owner.compute_partition(
+                            WorthQueryComputationPartitionView::new(partition),
+                            &mut checkpoint,
+                        )
+                    });
+                    let _ = checkpoint.poll();
+                    (computed, checkpoint.refused())
                 };
-                let mut poll = || context.borrow_mut().poll();
-                let accounted = context.borrow().has_accounting();
-                let checkpoint = WorthQueryManagedComputationCheckpoint::for_partition(
-                    accounted.then_some(
-                        &mut charge
-                            as &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
-                    ),
-                    &mut poll,
-                );
-                #[cfg(test)]
-                let checkpoint = checkpoint.with_native_lease_for_test(native);
-                let mut checkpoint = checkpoint;
-                let computed = checkpoint.poll().map_err(Into::into).and_then(|()| {
-                    owner.compute_partition(
-                        WorthQueryComputationPartitionView::new(partition),
-                        &mut checkpoint,
-                    )
-                });
-                let _ = checkpoint.poll();
-                (computed, checkpoint.refused())
+                match refused {
+                    Some(refused) => Err(kernel_failure(refused.into())),
+                    None => computed.map_err(kernel_failure),
+                }
             };
-            match refused {
-                Some(refused) => Err(kernel_failure(refused.into())),
-                None => computed.map_err(kernel_failure),
-            }
-        };
         let kernel = |partition: &Gathered<Schema, Feature, Computation, Owner>,
                       context: &mut MapKernelContext<'_, '_>| {
-            compute_kernel(
-                partition,
-                context,
-                #[cfg(test)]
-                None,
-            )
+            compute_kernel(partition, context, None)
         };
         // Certification reruns the same owner without touching request retention
         // or its memory reservations. The original native kernel alone issues receipts.
         let diagnostic_kernel =
             |partition: &Gathered<Schema, Feature, Computation, Owner>,
              context: &mut MapKernelContext<'_, '_>| {
-                compute_kernel(
-                    partition,
-                    context,
-                    #[cfg(test)]
-                    None,
-                )
+                compute_kernel(partition, context, None)
             };
         let exhausted = || {
             WorthQueryPartitionedComputationDenial::Resource(
@@ -225,7 +216,6 @@ where
                     .request
                     .dispatch()
                     .map_err(WorthQueryPartitionedComputationDenial::Resource)?;
-                #[cfg(test)]
                 let kernel = |partition: &Gathered<Schema, Feature, Computation, Owner>,
                               context: &mut MapKernelContext<'_, '_>| {
                     compute_kernel(partition, context, Some(dispatch.native_lease_for_test()))

@@ -64,6 +64,12 @@ impl<'a> WorthQueryManagedIndexControl<'a> {
         }
     }
 
+    pub(super) fn source_budget(
+        &self,
+    ) -> Option<&worth_relational::facade::runtime::CustomInvariantReadBudget<'_>> {
+        self.source
+    }
+
     pub(super) fn reserve_content_memory(
         &self,
         bytes: u64,
@@ -83,3 +89,5 @@ impl<'a> WorthQueryManagedIndexControl<'a> {
         self.first.borrow_mut().get_or_insert(cause).clone()
     }
 }
+
+mod court_doors_for_test;

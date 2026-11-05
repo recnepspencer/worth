@@ -2,12 +2,7 @@ use super::*;
 
 /// An installed scope resolved on the selected Product's exact native root.
 /// The selected operation is borrowed until the scoped Query read completes.
-pub(in crate::domain_computation) struct WorthQueryIssuedSelectedScope<
-    'selected,
-    'runtime,
-    Schema,
-    Scope,
-> {
+pub struct WorthQueryIssuedSelectedScope<'selected, 'runtime, Schema, Scope> {
     scope: WorthQueryApplicationEntityIdentity<Schema, Scope>,
     selected: &'selected WorthQuerySelectedProductOperation<'runtime, Schema>,
     request: WorthQueryRequestScope,
@@ -206,3 +201,5 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         })
     }
 }
+
+mod court_doors_for_test;

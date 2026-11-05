@@ -13,9 +13,7 @@ pub struct WorthQueryManagedComputationExecution<'request> {
 }
 
 impl<'request> WorthQueryManagedComputationExecution<'request> {
-    pub(in crate::domain_computation::primary_graph) const fn new(
-        request: &'request QueryRequestExecution<'request>,
-    ) -> Self {
+    pub const fn new(request: &'request QueryRequestExecution<'request>) -> Self {
         Self { request }
     }
 
@@ -32,12 +30,10 @@ pub struct WorthQueryManagedComputationCheckpoint<'request> {
         Option<&'request mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>>,
     pub(super) poll: &'request mut dyn FnMut() -> Result<(), worth_execution::MapKernelStop>,
     pub(super) refused: Option<WorthQueryManagedComputationCheckpointDenial>,
-    #[cfg(test)]
     pub(super) native: Option<&'request worth_execution::ExecutionResourceLease<'request>>,
 }
 
 impl<'request> WorthQueryManagedComputationCheckpoint<'request> {
-    #[cfg(test)]
     pub(in super::super) fn with_native_lease_for_test(
         mut self,
         lease: Option<&'request worth_execution::ExecutionResourceLease<'request>>,
@@ -45,8 +41,7 @@ impl<'request> WorthQueryManagedComputationCheckpoint<'request> {
         self.native = lease;
         self
     }
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn native_lease_for_test(
+    pub fn native_lease_for_test(
         &self,
     ) -> Option<&'request worth_execution::ExecutionResourceLease<'request>> {
         crate::domain_computation::execution_observation::owned_control_scope::current_id();
@@ -60,7 +55,6 @@ impl<'request> WorthQueryManagedComputationCheckpoint<'request> {
             charge,
             poll,
             refused: None,
-            #[cfg(test)]
             native: None,
         }
     }
@@ -100,3 +94,5 @@ impl<'request> WorthQueryManagedComputationCheckpoint<'request> {
         result
     }
 }
+
+mod court_doors_for_test;

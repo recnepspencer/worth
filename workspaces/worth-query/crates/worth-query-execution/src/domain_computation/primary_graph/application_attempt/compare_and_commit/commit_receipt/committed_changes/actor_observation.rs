@@ -81,7 +81,7 @@ impl WorthQueryApplicationCommittedChanges {
             ));
         };
         runtime
-            .primary_provider
+            .runtime.primary_provider
             .graph
             .with_runtime(execution, |native| {
                 use worth_relational::facade::runtime::RelationalPinnedReadAdmissionDenial as PinStop;

@@ -22,10 +22,7 @@ pub struct WorthQueryApplicationPreviewRequest {
     identity: String,
 }
 
-#[cfg(test)]
-mod counted_read_stops;
-#[cfg(test)]
-mod discard_fault;
+pub(crate) mod discard_fault;
 
 impl WorthQueryApplicationPreviewRequest {
     pub fn new(identity: impl Into<String>) -> Self {
@@ -69,7 +66,6 @@ pub struct WorthQueryApplicationPreviewSession {
     _runtime: Box<dyn PreviewRuntimeDestructionCustody>,
     runtime_authority: u64,
     source_commit: CompositeCommitIdentity,
-    #[cfg(test)]
     discard_fault: std::rc::Rc<std::cell::Cell<bool>>,
 }
 
@@ -119,7 +115,7 @@ impl WorthQueryApplicationPreviewSession {
         Program: ApplicationProgramDefinition<Schema>,
     {
         let execution = phase
-            .execution_request_for(&runtime.runtime().product_runtime)
+            .execution_request_for(&runtime.runtime().runtime.product_runtime)
             .map_err(|_| WorthQueryApplicationPreviewReadmissionDenial::ForeignPhase)?;
         if runtime.runtime().runtime.authority_identity().as_u64() != self.runtime_authority {
             return Err(WorthQueryApplicationPreviewReadmissionDenial::ForeignRuntime);
@@ -139,7 +135,7 @@ impl WorthQueryApplicationPreviewSession {
         mut self,
     ) -> Result<(), (Self, worth_runtime_bridge::facade::BridgeSpeculationError)> {
         let residue = vec![BridgePreviewResidueClass::TemporaryDiagnosticsResidue];
-        #[cfg(test)]
+        // Armed only by a court through `reject_discard_for_test`.
         let residue = if self.discard_fault.get() {
             vec![BridgePreviewResidueClass::AuthoritativeDiagnosticsResidue]
         } else {
@@ -194,7 +190,7 @@ where
     ) -> Result<WorthQueryApplicationPreviewSession, WorthQueryApplicationPreviewReadmissionDenial>
     {
         let phase_request = phase
-            .execution_request_for(&self.runtime().product_runtime)
+            .execution_request_for(&self.runtime().runtime.product_runtime)
             .map_err(|_| WorthQueryApplicationPreviewReadmissionDenial::ForeignPhase)?;
         let execution = &phase_request;
         let selected = self
@@ -239,6 +235,7 @@ where
         );
         let handle = self
             .runtime()
+            .runtime
             .bridge
             .ordinary()
             .speculate(BridgeSpeculativeSessionRequest::new(
@@ -255,8 +252,9 @@ where
             _runtime: Box::new(self.clone()),
             runtime_authority: self.runtime().runtime.authority_identity().as_u64(),
             source_commit: observation.selected_commit().clone(),
-            #[cfg(test)]
             discard_fault: Default::default(),
         })
     }
 }
+
+mod court_doors_for_test;

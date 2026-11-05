@@ -50,7 +50,7 @@ pub fn install_program<L: LawPolicy>(
         schema,
         ((),),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        host_limits(),
+        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         |_, graph, installed| {
             projection = Some(graph.retain_invariant_projection_authority());
             let binding = installed

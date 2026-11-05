@@ -220,6 +220,11 @@ pub(super) fn map_checkpoint_recovery_stop(
             WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
             format!("native checkpoint admission image refused: {cause:?}"),
         ),
+        RelationalRecoveryStop::Content(cause) => primary_graph_denial(
+            WorthQueryPrimaryGraphInstallationDenialKind::ContentAdmissionRejected,
+            "native checkpoint content refused",
+        )
+        .with_content_cause(cause),
         RelationalRecoveryStop::Durability(error) => primary_graph_denial(
             WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
             format!("native checkpoint recovery denied: {error:?}"),
@@ -369,3 +374,5 @@ mod tests {
         );
     }
 }
+
+mod court_doors_for_test;

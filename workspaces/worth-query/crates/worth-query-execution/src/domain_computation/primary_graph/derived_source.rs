@@ -9,14 +9,14 @@ use worth_relational::facade::{
 };
 mod commitment;
 mod currentness;
-mod dependencies;
+pub(crate) mod dependencies;
 mod key;
 mod read;
 pub(in crate::domain_computation::primary_graph) use dependencies::DerivedSourceDependencies;
 pub(in crate::domain_computation::primary_graph) use key::DerivedSourceKey;
 pub(in crate::domain_computation::primary_graph) use read::DerivedSourceQuery;
 
-pub(in crate::domain_computation) struct DerivedSourceObservation {
+pub struct DerivedSourceObservation {
     key: DerivedSourceKey,
     definition: DerivedRelationHandle,
     native: PinnedDerivedRelationRead,

@@ -1,7 +1,7 @@
 use std::future::Future;
 use std::pin::pin;
 use std::task::{Context, Poll, Waker};
-use std::time::{Duration, Instant, SystemTime};
+use std::time::{Duration, SystemTime};
 
 use worth_query_host::facade::{
     admission::authenticated_principal as authentication,
@@ -19,6 +19,9 @@ impl LocalCredential {
     pub(super) fn issued_for_model_owner() -> Self {
         Self("model-owner")
     }
+    pub(super) fn issued_for_sibling_owner() -> Self {
+        Self("sibling-owner")
+    }
 }
 
 impl authentication::WorthQueryAuthenticationAdapter for LocalIdentityAdapter {
@@ -34,12 +37,16 @@ impl authentication::WorthQueryAuthenticationAdapter for LocalIdentityAdapter {
         _scope: &'a authentication::WorthQueryRequestScope,
     ) -> authentication::WorthQueryAuthenticationFuture<'a> {
         Box::pin(async move {
-            if credential.0 != "model-owner" {
+            if !matches!(credential.0, "model-owner" | "sibling-owner") {
                 return Err(protocol_failure());
             }
             let now = SystemTime::now();
             authentication::WorthQueryValidatedExternalPrincipal::new(
-                external_identity(),
+                WorthQueryExternalPrincipalIdentity::new(
+                    "https://consumer.invalid/local",
+                    credential.0,
+                )
+                .map_err(|_| protocol_failure())?,
                 authentication::WorthQueryAuthenticationAudience::new("consumer-root").unwrap(),
                 authentication::WorthQueryAuthenticationMethod::new("local-credential").unwrap(),
                 now,
@@ -65,11 +72,19 @@ pub(super) fn external_identity() -> WorthQueryExternalPrincipalIdentity {
 pub(super) fn admit<Schema: ApplicationSchema>(
     schema: &WorthQueryInstalledApplicationSchema<Schema>,
 ) -> authentication::WorthQueryAdmittedAuthenticationAdapter<Schema, LocalIdentityAdapter> {
+    admit_with_clock(schema, authentication::WorthQueryAdmissionClock::system())
+}
+
+pub(super) fn admit_with_clock<Schema: ApplicationSchema>(
+    schema: &WorthQueryInstalledApplicationSchema<Schema>,
+    clock: authentication::WorthQueryAdmissionClock,
+) -> authentication::WorthQueryAdmittedAuthenticationAdapter<Schema, LocalIdentityAdapter> {
     authentication::admit_authentication_adapter(
         schema,
         authentication::WorthQueryAuthenticationAdapterAdmission::new(
             authentication::WorthQueryAuthenticationAudience::new("consumer-root").unwrap(),
             authentication::WorthQueryAuthenticationMethod::new("local-credential").unwrap(),
+            clock,
         ),
         LocalIdentityAdapter,
     )
@@ -77,10 +92,17 @@ pub(super) fn admit<Schema: ApplicationSchema>(
 }
 
 pub(super) fn request_scope() -> authentication::WorthQueryRequestScope {
+    request_scope_with_clock(authentication::WorthQueryAdmissionClock::system())
+}
+
+pub(super) fn request_scope_with_clock(
+    clock: authentication::WorthQueryAdmissionClock,
+) -> authentication::WorthQueryRequestScope {
     let cancellation = authentication::WorthQueryCancellationSource::new();
     authentication::WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(120)),
+        Some(clock.now() + Duration::from_secs(120)),
         cancellation.token(),
+        clock,
     )
 }
 

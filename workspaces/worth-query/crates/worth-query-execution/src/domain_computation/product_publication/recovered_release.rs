@@ -9,12 +9,16 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         &self, execution: &worth_execution::ExecutionRequest<'_, '_>, recovery: WorthQueryProductUnpublishedRecovery,
     ) -> Result<crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanup, WorthQueryProductUnpublishedRecoveryReleaseFailure>{
         let handle = recovery.record_handle().clone();
-        let port = self.product_runtime.owner.recovery_port();
+        let port = self.runtime.product_runtime.owner.recovery_port();
         let effects = match port.inspect_recovered_effects(&handle) {
             Ok(effects) => effects,
             Err(cause) => return Err(recovery::recovery_failure(recovery, cause.into())),
         };
-        let reservation = match self.product_runtime.reserve_owner_cleanup_for_application() {
+        let reservation = match self
+            .runtime
+            .product_runtime
+            .reserve_owner_cleanup_for_application()
+        {
             Ok(reservation) => reservation,
             Err(_) => {
                 return Err(recovery::recovery_failure(
@@ -26,11 +30,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let cause = match port.release_recovered_effects(execution, effects) {
             Outcome::Released(released) => {
                 let (original, cleanup) = released.into_parts();
-                self.primary_provider
+                self.runtime
+                    .primary_provider
                     .unpublished_idempotency_disposition()
                     .finish_recovered_release(&handle, original);
                 let identity = reservation.install_unpublished(cleanup);
-                return Ok(crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanup::new(self.product_runtime.clone(), identity));
+                return Ok(crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanup::new(self.runtime.product_runtime.clone(), identity));
             }
             Outcome::AdmissionRefused { cause, custody } => {
                 drop(custody);

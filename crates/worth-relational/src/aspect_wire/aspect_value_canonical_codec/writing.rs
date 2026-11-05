@@ -36,9 +36,8 @@ pub(crate) fn encoded_aspect_value_len(value: &AspectValue) -> Option<usize> {
         | AspectValue::UInt64(_)
         | AspectValue::Float64(_)
         | AspectValue::Time(_)
-        | AspectValue::Timestamp(_)
-        | AspectValue::Bytes(_)
-        | AspectValue::ContentRef(_) => Some(9),
+        | AspectValue::Timestamp(_) => Some(9),
+        AspectValue::ContentRef(_) => Some(33),
         AspectValue::String(InternedString::Raw(value)) => 2usize.checked_add(text(value)?),
         AspectValue::String(InternedString::Symbol(_)) => Some(6),
         AspectValue::Decimal(value) => 1usize.checked_add(text(value.as_str())?),
@@ -120,10 +119,6 @@ fn encode_aspect_value_body(bytes: &mut Vec<u8>, value: &AspectValue) {
             encode_big_int(bytes, &value.numerator);
             encode_big_int(bytes, &value.denominator);
         }
-        AspectValue::Bytes(value) => {
-            bytes.push(tags::BYTES);
-            encode_content_ref(bytes, *value);
-        }
         AspectValue::Uuid(value) => {
             bytes.push(tags::UUID);
             bytes.extend_from_slice(value);
@@ -174,7 +169,7 @@ fn encode_big_int(bytes: &mut Vec<u8>, value: &CanonicalBigInt) {
 }
 
 fn encode_content_ref(bytes: &mut Vec<u8>, value: ContentRefId) {
-    bytes.extend_from_slice(&value.0.to_le_bytes());
+    bytes.extend_from_slice(&value.0);
 }
 
 fn encode_entity_id(bytes: &mut Vec<u8>, value: EntityId) {

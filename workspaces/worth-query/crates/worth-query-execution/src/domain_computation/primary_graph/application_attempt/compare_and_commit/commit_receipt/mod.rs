@@ -1,8 +1,7 @@
 //! Closed application commit receipt.
 
-#[cfg(test)]
-mod certification;
 mod committed_changes;
+mod description;
 mod recorded_settlement;
 pub use committed_changes::WorthQueryApplicationCommittedChanges;
 #[cfg(doctest)]
@@ -28,7 +27,6 @@ use super::super::{
     WorthQueryMutationPreconditionComparisonEvidence,
 };
 
-pub(in crate::domain_computation) use pending::WorthQueryPendingApplicationCommitReceipt;
 pub(in crate::domain_computation::primary_graph) use projection::WorthQueryCommittedReceiptProjection;
 pub use publication_source::WorthQueryApplicationCommitPublicationSource;
 
@@ -200,9 +198,7 @@ impl WorthQueryApplicationCommitReceipt {
         self.output_correspondence.outputs_of()
     }
 
-    pub(in crate::domain_computation::primary_graph) fn output_correspondence(
-        &self,
-    ) -> &WorthQueryApplicationOutputCorrespondence {
+    pub fn output_correspondence(&self) -> &WorthQueryApplicationOutputCorrespondence {
         self.output_correspondence.as_ref()
     }
 
@@ -371,3 +367,7 @@ impl WorthQueryApplicationCommitReceipt {
 }
 
 pub(in crate::domain_computation::primary_graph) use committed_changes::MaterializedCommittedField;
+
+mod court_doors_for_test;
+
+pub use pending::WorthQueryPendingApplicationCommitReceipt;

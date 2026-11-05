@@ -251,10 +251,7 @@ impl WorthQueryRunningWorkflowRun {
         Ok(self.terminal(WorthQueryManagedRunTerminalKind::Completed))
     }
 
-    pub(super) fn terminal(
-        self,
-        kind: WorthQueryManagedRunTerminalKind,
-    ) -> WorthQueryWorkflowRunTerminal {
+    pub fn terminal(self, kind: WorthQueryManagedRunTerminalKind) -> WorthQueryWorkflowRunTerminal {
         WorthQueryWorkflowRunTerminal::from_running(self, kind)
     }
 
@@ -290,3 +287,5 @@ impl std::fmt::Debug for WorthQueryWorkflowRunCompletionRejection {
             .finish()
     }
 }
+
+mod court_doors_for_test;

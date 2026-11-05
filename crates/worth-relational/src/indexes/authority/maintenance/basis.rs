@@ -65,6 +65,7 @@ pub(super) fn image_stop(
     use crate::durability::checkpoint_admission::RelationalCheckpointAdmissionRefusal as Refusal;
     match cause {
         Refusal::Request(cause) => Denial::Execution(cause),
+        Refusal::Content(cause) => Denial::Execution(cause.into_execution_cause()),
         Refusal::Allocation(cause) => allocation_stop(cause),
         Refusal::Buffer(cause) => buffer_stop(cause),
         Refusal::CapacityOverflow => Denial::WorkBudgetExceeded,

@@ -10,7 +10,7 @@ use worth_relational::facade::{
     transactions::*,
 };
 use worth_testkit_relational::aspect_storage::{
-    aspect_field_locator, aspect_key, entity_field_aspect, entity_summary_struct_aspect, field_key,
+    aspect_key, entity_field_aspect, entity_summary_struct_aspect, field_key,
     optional_string_contract, publications::*, AspectSchemaFixture,
 };
 mod canonical_field_effect;

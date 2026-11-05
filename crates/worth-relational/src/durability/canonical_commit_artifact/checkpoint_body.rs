@@ -18,61 +18,6 @@ impl Artifact {
         decode(bytes, input, request, 0)
     }
 }
-impl Artifact {
-    pub(crate) fn readmit_embedded_checkpoint(
-        bytes: &[u8],
-        input: Option<ExecutionImmutableBytes>,
-        request: &ExecutionRequest<'_, '_>,
-    ) -> Result<crate::history::data::PositionedCanonicalCommit, Refusal> {
-        crate::execution::check_request(request).map_err(Refusal::Request)?;
-        require_owned_region(bytes, input.as_ref())?;
-        let mut result = None;
-        BorrowedPayload(bytes).fields(request, |variant, value| {
-            if result.is_some() {
-                return Err(super::borrowed_payload::malformed());
-            }
-            result = Some(match variant {
-                "Native" => {
-                    let mut seen = 0u8;
-                    value.fields(request, |name, _| {
-                        let bit = match name {
-                            "position" => 1,
-                            "canonical" => 2,
-                            _ => return Err(super::borrowed_payload::malformed()),
-                        };
-                        if seen & bit != 0 {
-                            return Err(super::borrowed_payload::malformed());
-                        }
-                        seen |= bit;
-                        Ok(())
-                    })?;
-                    let raw_position = decoded_quote::field(value, "position", request)?;
-                    let position = rmp_serde::from_slice::<
-                        crate::publication::patch::data::PatchStreamPosition,
-                    >(raw_position.0)
-                    .map_err(|error| Refusal::PayloadDecode {
-                        detail: error.to_string(),
-                    })?;
-                    let canonical = decoded_quote::field(value, "canonical", request)?;
-                    let envelope =
-                        Self::readmit_checkpoint_body(canonical.0, input.clone(), request)?;
-                    crate::durability::migration::ReadmittedCanonicalCommit::readmit_current(
-                        position, envelope,
-                    )
-                    .map_err(Refusal::PositionAdmission)?
-                    .into_positioned()
-                }
-                "Journal" => {
-                    let artifact = value.binary(request)?;
-                    Self::readmit_with_input(artifact, request, input.clone())?.into_positioned()
-                }
-                _ => return Err(super::borrowed_payload::malformed()),
-            });
-            Ok(())
-        })?;
-        result.ok_or_else(super::borrowed_payload::malformed)
-    }
-}
 fn require_owned_region(
     bytes: &[u8],
     input: Option<&ExecutionImmutableBytes>,

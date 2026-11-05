@@ -72,5 +72,15 @@ impl ApplicationFieldValueMeaning {
             }
         )
         .then_some(self.digest)
+        .or_else(|| {
+            matches!(
+                &self.member,
+                ApplicationSchemaMember::Field {
+                    content_format: Some(_),
+                    ..
+                }
+            )
+            .then_some(self.digest)
+        })
     }
 }

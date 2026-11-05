@@ -1,0 +1,313 @@
+//! Five-field transport/native publication, NOT workflow approval authorization.
+//! The separate public court supplies the genuine workflow/checkpoint journey.
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::product_publication::prepare_relational_mutation_on_application;
+use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::tests::fixture::commit_snapshot_closeout::release_test_commit_snapshot;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountIdentity;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountLabel;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountMembershipTag;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountStatus;
+use crate::domain_computation::primary_graph::tests::authorization::workflow_approval_revalidation::*;
+use worth_query_execution::court_doors_for_test::domain_computation::execution_runtime::product_world::publication_denial::WorthQueryProductPublicationOutcome as Publication;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::approval::workflow_approval_fields;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::approval::field_text::WorkflowApprovalFieldText;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::approval::WorkflowApprovalMeaning;
+use worth_query_execution::facade::domain_computation::WorthQueryApplicationAttemptDenialKind as AttemptKind;
+use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommittedChanges;
+use std::collections::BTreeMap;
+use worth_execution::CancellationSource;
+use worth_execution::ExecutionRequest;
+use worth_foundational::facade::AspectFieldLocator;
+use worth_foundational::facade::AspectValue;
+use worth_foundational::facade::InternedString;
+use worth_relational::facade::identity::PartitionId;
+use worth_relational::facade::symbols::ClientKey;
+use worth_relational::facade::symbols::Symbol;
+use worth_relational::facade::transactions::AspectFieldPatch;
+use worth_relational::facade::transactions::CreateIntent;
+use worth_relational::facade::transactions::CreatedEntityRef;
+use worth_relational::facade::transactions::EntitySpec;
+use worth_relational::facade::transactions::MutationIntent;
+use worth_relational::facade::transactions::WorkerIntentBatch;
+
+// Only the five actual admitted encoder outputs and native principal/grant/scope
+// are relevant. Other labels are descriptive fixture data, not a workflow hash,
+// definition, RequiredWorkflowApproval or guarded permission.
+pub fn meaning(
+    admission: &Admission,
+    execution: &ExecutionRequest<'_, '_>,
+) -> WorkflowApprovalMeaning {
+    let authority = admission
+        .workflow_approval_authority()
+        .expect("genuine capability authority");
+    WorkflowApprovalMeaning {
+        identity: authority.decision_identity,
+        identity_text: "five-field-native-transport".to_owned(),
+        instance_identity: "transport-only".to_owned(),
+        definition_content_identity: "not-a-workflow-definition".to_owned(),
+        program_revision: "transport-only".to_owned(),
+        proposal: admission.scope_entity_id(), evidence: Box::default(),
+        approval_operation: "transport-only".to_owned(),
+        target_operation: "transport-only".to_owned(),
+        installed_capability_identity: "transport-only".to_owned(),
+        approver: authority.principal, grant: authority.grant,
+        authorization_decision: authority.decision_identity,
+        authorization_request: admission.workflow_approval_request_snapshot_for_test(execution).unwrap().expect("request encoded"),
+        authorization_principal: admission.workflow_approval_principal_snapshot_for_test(execution).unwrap().expect("principal encoded"),
+        capability_authority_identity: authority.capability_authority_identity,
+        authorization_lineage: admission.workflow_approval_lineage_snapshot_for_test(execution).unwrap().expect("lineage encoded"),
+        authorization_support: admission.workflow_approval_support_snapshot_for_test(execution).unwrap().expect("support encoded"),
+        authorization_dependencies: admission.workflow_approval_dependencies_snapshot_for_test(execution).unwrap().expect("dependencies encoded"),
+        action: format!("{:?}", authority.action), purpose: format!("{:?}", authority.purpose),
+        timeline: authority.timeline.canonical_name(), sampled_value: format!("{:?}", authority.sampled_value),
+        expiry: authority.expiry, scope: admission.scope_entity_id(),
+        decision: worth_query_execution::publication_boundary::workflow_advance::WorkflowApprovalDecision::Approve,
+    }
+}
+pub fn originals(meaning: &WorkflowApprovalMeaning) -> [String; 5] {
+    [
+        &meaning.authorization_request,
+        &meaning.authorization_principal,
+        &meaning.authorization_lineage,
+        &meaning.authorization_support,
+        &meaning.authorization_dependencies,
+    ]
+    .map(|text| text.as_str_for_test().to_owned())
+}
+pub fn locators(
+    layout: &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::schema::layout::WorthQueryWorkflowLayout,
+) -> [&AspectFieldLocator; 5] {
+    [
+        &(*(*layout.approval_for_test()).authorization_request_for_test()),
+        &(*(*layout.approval_for_test()).authorization_principal_for_test()),
+        &(*(*layout.approval_for_test()).authorization_lineage_for_test()),
+        &(*(*layout.approval_for_test()).authorization_support_for_test()),
+        &(*(*layout.approval_for_test()).authorization_dependencies_for_test()),
+    ]
+}
+
+#[test]
+fn five_admitted_envelopes_publish_original_json_and_keep_payer_until_last_native_pin() {
+    let world = installed_capability_authorization_world();
+    world.authorization_time.hold(time(100));
+    const PAYLOAD_LIMIT: u64 = 64 * 1024 * 1024;
+    let request = live_scope();
+    let (pin, symbols, expected, mut probe) = world
+        .application
+        .with_host_advancement(|phase| {
+            let host = phase.test_host_request_for_test();
+            let principal = authenticated_principal(&host, &world, &request);
+            let admission = admitted_capability_operation(&host, &world, &principal, &request);
+            let payer = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::memory_child(
+                host.borrowed_request_for_test(),
+                PAYLOAD_LIMIT,
+            );
+            let execution = ExecutionRequest::leased(&payer);
+            let meaning = meaning(&admission, &execution);
+            let expected = originals(&meaning); // Oracle copies precede native admission.
+            let selected = world.selected_product(&host);
+            let (_, product, _) = selected.into_parts_for_test();
+            let basis = product.relational_basis_for_test();
+            let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
+            let handle = graph.integration_handle_for_test();
+            let retained_layout = graph.layout_for_test();
+            let layout = retained_layout.workflow();
+            let admitted_text = handle.with_runtime(&execution, |runtime| {
+                WorkflowApprovalFieldText::admit_for_test(runtime, &execution, basis, &meaning).unwrap()
+            });
+            let all_fields =
+                workflow_approval_fields(layout, &meaning, basis, &admitted_text).unwrap();
+            let locators = locators(layout);
+            // Account is the existing valid native fixture carrier. These are
+            // transport labels, never incomplete platform approval records.
+            let identity = AccountIdentity::reference();
+            let status = AccountStatus::reference();
+            let membership = AccountMembershipTag::reference();
+            let label = AccountLabel::reference();
+            let field = |entity, aspect, name| {
+                retained_layout
+                    .field_locator_for_test(entity, aspect, name)
+                    .unwrap()
+                    .clone()
+            };
+            let identity_locator = field(identity.entity(), identity.aspect(), identity.field());
+            let status_locator = field(status.entity(), status.aspect(), status.field());
+            let membership_locator =
+                field(membership.entity(), membership.aspect(), membership.field());
+            let label_locator = field(label.entity(), label.aspect(), label.field());
+            let account_kind = retained_layout.entity_kind_for_test(label.entity()).unwrap();
+            let text = |value: &str| AspectValue::String(InternedString::Raw(value.to_owned()));
+            let mut carriers = Vec::with_capacity(5);
+            let mut batch = WorkerIntentBatch::new("five-envelope-transport");
+            for (index, source_locator) in locators.iter().enumerate() {
+                let key = format!("five-envelope-transport-{index}");
+                let fields = BTreeMap::from([
+                    (identity_locator.clone(), text(&key)),
+                    (status_locator.clone(), text("active")),
+                    (membership_locator.clone(), text("open")),
+                    (
+                        label_locator.clone(),
+                        all_fields.get(*source_locator).unwrap().clone(),
+                    ),
+                ]);
+                let created = CreatedEntityRef {
+                    partition_id: PartitionId::main(),
+                    kind_id: account_kind,
+                    client_key: ClientKey::raw(key),
+                };
+                batch = batch.push(MutationIntent::Create(CreateIntent::Entity(EntitySpec {
+                    partition_id: created.partition_id,
+                    kind_id: created.kind_id,
+                    client_key: created.client_key.clone(),
+                    fields: AspectFieldPatch::from(fields),
+                })));
+                carriers.push(created);
+            }
+            let handle = (*world
+                .application
+                .runtime_for_test())
+                .primary_graph_for_test()
+                .unwrap()
+                .integration_handle_for_test();
+            let prepared = prepare_relational_mutation_on_application(
+                &execution,
+                &world.application,
+                batch,
+                &request,
+            );
+            let Ok(Publication::Performed(performed)) = prepared.execute_for_test(execution) else {
+                panic!("the real native/World transport publication must perform");
+            };
+            let commit = performed
+                .component_results()
+                .relational_commit_result()
+                .unwrap();
+            let changes = WorthQueryApplicationCommittedChanges::from_commit_for_test(commit);
+            let mut actual_entities = std::collections::BTreeSet::new();
+            let symbols = carriers
+                .iter()
+                .map(|created| {
+                    let entity = commit
+                        .created_entity(created)
+                        .expect("actual Account carrier created reference");
+                    assert!(
+                        actual_entities.insert(entity),
+                        "five distinct actual carrier records"
+                    );
+                    let actual = changes
+                        .committed_field_values_for_test(entity, &[&label_locator])
+                        .expect("actual immutable committed AccountLabel");
+                    let [AspectValue::String(InternedString::Symbol(symbol))] = actual.as_slice()
+                    else {
+                        panic!("actual committed label must be exactly one Symbol: {actual:?}");
+                    };
+                    Symbol(symbol.0)
+                })
+                .collect::<Vec<_>>();
+            assert_eq!(symbols.len(), 5);
+            let pin = handle.with_runtime_for_test(&execution, |runtime| {
+                let pin = runtime
+                    .read_truth()
+                    .pin_read_capability(&commit.snapshot, &[], &execution)
+                    .unwrap();
+                assert_eq!(pin.snapshot(), &commit.snapshot);
+                for (symbol, expected) in symbols.iter().zip(&expected) {
+                    assert_eq!(
+                        pin.symbols().resolve(*symbol).unwrap().as_bytes(),
+                        expected.as_bytes()
+                    );
+                }
+                release_test_commit_snapshot(runtime, commit);
+                pin
+            });
+            drop(changes);
+            drop(performed.consume());
+            drop(handle); // No integration/runtime owner may outlive the final pin oracle.
+            assert!(payer.charged_memory_bytes() > 0);
+            (pin, symbols, expected, payer.reserve_memory(0).unwrap())
+        })
+        .expect("genuine installed fixture host scope");
+    drop(request);
+    drop(world); // Includes actual World/application/runtime/configuration owners.
+    assert!(
+        matches!(probe.resize(PAYLOAD_LIMIT), Err(worth_execution::MemoryLimitDenial::Capacity { admitted, .. }) if admitted < PAYLOAD_LIMIT),
+        "only the real native pin retains payload custody"
+    );
+    for (symbol, expected) in symbols.iter().zip(&expected) {
+        assert_eq!(
+            pin.symbols().resolve(*symbol).unwrap().as_bytes(),
+            expected.as_bytes()
+        );
+        assert!(pin
+            .symbols()
+            .retained_text(*symbol)
+            .unwrap()
+            .charged_payload_bytes()
+            .is_some());
+    }
+    drop(pin);
+    // Equal-text interning may consolidate values; never require five charges
+    // or per-Symbol refunds. No independently owned payload remains here.
+    probe.resize(PAYLOAD_LIMIT).unwrap();
+    assert_eq!(probe.bytes(), PAYLOAD_LIMIT);
+}
+
+#[test]
+fn original_cancellation_reaches_query_native_receiving_before_any_dictionary_or_field_publication()
+{
+    let world = installed_capability_authorization_world();
+    world.authorization_time.hold(time(100));
+    let cancellation = CancellationSource::new();
+    let request = live_scope();
+    world.application.with_host_advancement(|phase| {
+        let host = phase.test_host_request_for_test();
+        let principal = authenticated_principal(&host, &world, &request);
+        let admission = admitted_capability_operation(&host, &world, &principal, &request);
+        let payer = host.borrowed_request_for_test().in_scope(|parent| parent.unwrap().controlled_child(cancellation.token(), None)).unwrap();
+        let execution = ExecutionRequest::leased(&payer);
+        let meaning = meaning(&admission, &execution);
+        let expected = originals(&meaning);
+        assert!(expected.iter().all(|text| !text.is_empty()), "ALL five original encoders succeeded before cancellation");
+        let charge = payer.charged_memory_bytes();
+        assert!(charge > 0);
+        let selected = world.selected_product(&host);
+        let (_, product, _) = selected.into_parts_for_test();
+        let basis = product.relational_basis_for_test();
+        let observer = host.borrowed_request_for_test();
+        let handle = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap().integration_handle_for_test();
+        // Open the real receiver while live. Cancellation occurs inside, with
+        // no intervening outer with_runtime check or new callback/test control.
+        handle.with_runtime_for_test(&execution, |runtime| {
+            assert!(runtime.owner_component_services().basis_port().compare_current_exact(basis).is_ok());
+            let before = runtime.snapshots().snapshot_for_observation(&basis.observation()).unwrap();
+            let before_pin = runtime.read_truth().pin_read_capability(&before, &[], &observer).unwrap();
+            cancellation.cancel();
+            let denied = match WorkflowApprovalFieldText::admit_for_test(runtime, &execution, basis, &meaning) {
+                Err(denied) => denied,
+                Ok(_) => panic!("native receive must preserve original cancellation"),
+            };
+            assert_eq!(denied.kind(), AttemptKind::Cancelled);
+            assert_eq!(denied.relational_execution_cause_for_test(), Some(worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled));
+            assert!(runtime.owner_component_services().basis_port().compare_current_exact(basis).is_ok(), "original carried basis still names the current head");
+            let after = runtime.snapshots().snapshot_for_observation(&basis.observation()).unwrap();
+            let after_pin = runtime.read_truth().pin_read_capability(&after, &[], &observer).unwrap();
+            assert_eq!(after.version_id(), before.version_id(), "no field/head publication");
+            assert_eq!(after_pin.symbols(), before_pin.symbols(), "no dictionary publication");
+            assert_eq!(originals(&meaning), expected, "original five buffers unchanged");
+            assert_eq!(payer.charged_memory_bytes(), charge, "refusal acquired no payload custody");
+            drop(before_pin);
+            drop(after_pin);
+            worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(runtime, &before);
+            worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(runtime, &after);
+            // Legal live counterpart uses the same already-paid original bytes;
+            // it does not reset the cancelled request or manufacture admission.
+            let admitted_text = WorkflowApprovalFieldText::admit_for_test(runtime, &observer, basis, &meaning).unwrap();
+            let fields = workflow_approval_fields(
+                (*world.application.runtime_for_test()).primary_graph_for_test().unwrap().layout_for_test().workflow(),
+                &meaning, basis, &admitted_text,
+            ).unwrap();
+            assert!(locators((*world.application.runtime_for_test()).primary_graph_for_test().unwrap().layout_for_test().workflow()).iter().all(|locator| {
+                matches!(fields.get(*locator), Some(AspectValue::String(InternedString::Symbol(_))))
+            }));
+        });
+    }).expect("genuine installed fixture host scope");
+}

@@ -1,10 +1,10 @@
 mod composition;
 pub(in crate::domain_computation::primary_graph) use composition::PreparedApplicationRuntimeContributions;
 mod derived_relation;
-mod native_field_contract;
+pub(crate) mod native_field_contract;
 pub use derived_relation::WorthQueryDerivedRelationCountOwner;
-pub(in crate::domain_computation::primary_graph) mod computation;
-mod conditional;
+pub(crate) mod computation;
+pub(crate) mod conditional;
 mod contracts;
 mod feature;
 pub use feature::{
@@ -13,11 +13,12 @@ pub use feature::{
     WorthQueryRequiredFeatureContract, WorthQueryRequiredFeaturePair,
 };
 pub(in crate::domain_computation) mod execution_denial;
-mod partitioned_computation;
-mod producer;
+pub(crate) mod partitioned_computation;
+pub(crate) mod producer;
 pub(in crate::domain_computation::primary_graph) use producer::OwnerPlan;
+pub use producer::PendingProducerPublication;
 pub(in crate::domain_computation::primary_graph) use producer::{CurrentBasis, CurrentProof};
-mod request_execution;
+pub(crate) mod request_execution;
 pub(in crate::domain_computation::primary_graph) use request_execution::{
     QueryMemoryReservation, QueryRequestExecution,
 };
@@ -73,11 +74,12 @@ pub use partitioned_computation::{
     WorthQueryPartitionedComputationOwner, WorthQueryPreparedPartitionedComputation,
     WorthQueryReductionInputDenial,
 };
+pub use producer::OutputSourceAddress;
 pub(in crate::domain_computation::primary_graph) use producer::{
     install_output_readiness_routes, InstalledProducerEdition, MatchedRequiredPredecessors,
-    OutputSourceAddress, PendingOutputReadiness, QualifiedOutputSource,
-    TypedPendingOutputReadiness, WorthQueryInstalledOutputProducerRoutes,
-    WorthQueryInstalledOutputReadinessRoutes, WorthQueryProducerCommitAuthority,
+    PendingOutputReadiness, QualifiedOutputSource, TypedPendingOutputReadiness,
+    WorthQueryInstalledOutputProducerRoutes, WorthQueryInstalledOutputReadinessRoutes,
+    WorthQueryProducerCommitAuthority,
 };
 pub use producer::{
     WorthQueryAdmittedOutputDemand, WorthQueryApplicationOutputDemand,
@@ -85,15 +87,16 @@ pub use producer::{
     WorthQueryDecisionContextDependencies, WorthQueryInstalledApplicationProducerRegistry,
     WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
     WorthQueryOutputDemandRecoveryPosture, WorthQueryOutputReadCleanup,
-    WorthQueryOutputReadCloseDenial, WorthQueryProducerApplicability,
-    WorthQueryProducerDenialDeclaration, WorthQueryProducerDenialDecodeDenial,
-    WorthQueryProducerDenialEncodingRefusal, WorthQueryProducerDenialProjection,
-    WorthQueryProducerDenialValue, WorthQueryProducerEvaluationIneligibility,
-    WorthQueryProducerInputReuseContract, WorthQueryProducerInvariantRequirement,
-    WorthQueryProducerLifecyclePosture, WorthQueryProducerOutputEquivalence,
-    WorthQueryProducerOutputFamily, WorthQueryProjectedProducerDenial,
-    WorthQuerySelectedApplicationProducer, WorthQueryUndeclaredProducerDenial,
-    WorthQueryWorkflowAssessmentOutputFamily, WorthQueryWorkflowAssessmentPosture,
+    WorthQueryOutputReadCloseDenial, WorthQueryOutputSettlementProvenanceDenial,
+    WorthQueryProducerApplicability, WorthQueryProducerDenialDeclaration,
+    WorthQueryProducerDenialDecodeDenial, WorthQueryProducerDenialEncodingRefusal,
+    WorthQueryProducerDenialProjection, WorthQueryProducerDenialValue,
+    WorthQueryProducerEvaluationIneligibility, WorthQueryProducerInputReuseContract,
+    WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
+    WorthQueryProducerOutputEquivalence, WorthQueryProducerOutputFamily,
+    WorthQueryProjectedProducerDenial, WorthQuerySelectedApplicationProducer,
+    WorthQueryUndeclaredProducerDenial, WorthQueryWorkflowAssessmentOutputFamily,
+    WorthQueryWorkflowAssessmentPosture,
 };
 pub use request_execution::query_test_execution_authority_for_test;
 pub use request_execution::{
@@ -108,9 +111,6 @@ pub use setup::{
     WorthQueryApplicationContributionSetup, WorthQueryManagedIndexProviderRegistration,
 };
 
-#[cfg(test)]
-pub(in crate::domain_computation::primary_graph) use partitioned_computation::sealed_run_for_lineage_test;
-
 pub(in crate::domain_computation) use partitioned_computation::observe_discarded;
 pub(in crate::domain_computation::primary_graph) use partitioned_computation::observe_published;
 
@@ -124,9 +124,8 @@ pub use request_execution::{
 };
 
 #[cfg(test)]
-pub(crate) use request_execution::{
-    with_test_advancement, with_test_bootstrap_advancement, TestHostRequest,
-};
+pub(crate) use request_execution::with_test_advancement;
+pub(crate) use request_execution::TestHostRequest;
 
 pub use request_execution::{with_bootstrap_advancement, with_bootstrap_advancement_from_request};
 
@@ -135,9 +134,7 @@ pub use request_execution::WorthQueryBootstrapAdvancementPhase;
 pub(in crate::domain_computation::primary_graph) use execution_denial::publication_execution_kind;
 pub(in crate::domain_computation::primary_graph) use request_execution::advancement::observation::application::record_commit as record_advancement_commit;
 
-#[cfg(test)]
-pub(in crate::domain_computation::primary_graph) use request_execution::test_policy;
-
+pub use producer::ProducerOutputEvaluation;
 pub(in crate::domain_computation::primary_graph) use producer::{
-    ComparedProducerOutput, ProducerOutputEvaluation, ProducerOutputEvaluationState,
+    ComparedProducerOutput, ProducerOutputEvaluationState,
 };

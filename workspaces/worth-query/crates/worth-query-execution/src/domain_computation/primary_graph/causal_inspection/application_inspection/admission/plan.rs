@@ -12,8 +12,7 @@ use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationInspectionContract,
 };
 
-pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) enum InspectionPlanDenial
-{
+pub enum InspectionPlanDenial {
     #[allow(
         dead_code,
         reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"
@@ -45,7 +44,10 @@ pub(super) fn admit<Schema: ApplicationSchema>(
         };
         admit_application_inspection_graph_work(
             contract,
-            runtime.primary_provider.application_resource_support_ref(),
+            runtime
+                .runtime
+                .primary_provider
+                .application_resource_support_ref(),
             &mut admit,
         )
         .map_err(|cause| match cause {

@@ -17,7 +17,7 @@ use crate::domain_computation::primary_graph::{
 };
 
 #[path = "assessment/evidence_budget.rs"]
-mod evidence_budget;
+pub(crate) mod evidence_budget;
 #[path = "assessment/identity.rs"]
 mod identity;
 #[path = "assessment/replay.rs"]
@@ -113,6 +113,7 @@ where
         let mut read_set = self.admitted.into_read_set();
         bind_currentness_facts(execution, &mut read_set, &currentness_facts, &node_path)?;
         let program = WorthQueryApplicationEffectProgram {
+            content_attachments: Default::default(),
             read_set,
             effects,
             conditional_definition: None,

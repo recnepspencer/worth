@@ -21,7 +21,7 @@ use crate::domain_computation::primary_graph::invariant_projection::ComputationC
 
 /// The calls, charges and partitions of one full run, recorded as it runs.
 /// A charge that did not measure leaves the run with nothing to retain.
-pub(in super::super) struct FullRecording<Key, Item> {
+pub struct FullRecording<Key, Item> {
     basis: RetainedBasisToken,
     membership: Option<(RetainedCall, Items<Item>, ItemDigests)>,
     item_keys: BTreeMap<PartitionItemId, RetainedCall>,
@@ -234,3 +234,5 @@ pub(in super::super) fn observe_unretained(
         Some(report),
     );
 }
+
+mod court_doors_for_test;

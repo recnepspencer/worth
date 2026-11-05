@@ -6,7 +6,7 @@ use worth_relational::facade::indexes::DerivedIndexId;
 /// Keeping the vocabulary inline would copy every locator through read sets,
 /// effect programs and their result variants even when no workflow is bound.
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryWorkflowLayout {
+pub struct WorthQueryWorkflowLayout {
     fields: std::sync::Arc<WorkflowLayoutFields>,
 }
 
@@ -33,10 +33,9 @@ impl std::ops::Deref for WorthQueryWorkflowLayout {
 }
 
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation::primary_graph) struct WorkflowLayoutFields {
+pub struct WorkflowLayoutFields {
     pub(in crate::domain_computation::primary_graph) captured_input: WorkflowCapturedInputLayout,
-    pub(in crate::domain_computation::primary_graph) operation_output:
-        WorkflowOperationOutputLayout,
+    pub operation_output: WorkflowOperationOutputLayout,
     pub(in crate::domain_computation::primary_graph) lineage: WorkflowLineageLayout,
     pub(in crate::domain_computation::primary_graph) definition: WorkflowDefinitionLayout,
     pub(in crate::domain_computation::primary_graph) node: WorkflowNodeLayout,
@@ -46,11 +45,9 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowLayoutFields {
     pub(in crate::domain_computation::primary_graph) proposal: WorkflowProposalLayout,
     pub(in crate::domain_computation::primary_graph) proposal_coverage:
         WorkflowProposalCoverageLayout,
-    pub(in crate::domain_computation::primary_graph) assessment_evidence:
-        WorkflowAssessmentEvidenceLayout,
+    pub assessment_evidence: WorkflowAssessmentEvidenceLayout,
     pub(in crate::domain_computation::primary_graph) approval: WorkflowApprovalLayout,
-    pub(in crate::domain_computation::primary_graph) evidence_dependency:
-        WorkflowEvidenceDependencyLayout,
+    pub evidence_dependency: WorkflowEvidenceDependencyLayout,
     pub(in crate::domain_computation::primary_graph) current_definition_relation: KindId,
     pub(in crate::domain_computation::primary_graph) lineage_definition_relation: KindId,
     pub(in crate::domain_computation::primary_graph) definition_node_relation: KindId,
@@ -99,7 +96,7 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowCapturedInputLay
 }
 
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation::primary_graph) struct WorkflowOperationOutputLayout {
+pub struct WorkflowOperationOutputLayout {
     pub(in crate::domain_computation::primary_graph) entity_kind: KindId,
     pub(in crate::domain_computation::primary_graph) role: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) entity: AspectFieldLocator,
@@ -119,7 +116,7 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowProposalCoverage
 }
 
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation::primary_graph) struct WorkflowEvidenceDependencyLayout {
+pub struct WorkflowEvidenceDependencyLayout {
     pub(in crate::domain_computation::primary_graph) entity_kind: KindId,
     pub(in crate::domain_computation::primary_graph) fact_kind: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) entity_partition: AspectFieldLocator,
@@ -136,7 +133,7 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowEvidenceDependen
 }
 
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation::primary_graph) struct WorkflowApprovalLayout {
+pub struct WorkflowApprovalLayout {
     pub(in crate::domain_computation::primary_graph) entity_kind: KindId,
     pub(in crate::domain_computation::primary_graph) identity: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) protocol_version: AspectFieldLocator,
@@ -174,7 +171,7 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowApprovalLayout {
 }
 
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation::primary_graph) struct WorkflowAssessmentEvidenceLayout {
+pub struct WorkflowAssessmentEvidenceLayout {
     pub(in crate::domain_computation::primary_graph) entity_kind: KindId,
     pub(in crate::domain_computation::primary_graph) identity: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) protocol_version: AspectFieldLocator,
@@ -203,7 +200,7 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowAssessmentEviden
 }
 
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation::primary_graph) struct WorkflowLineageLayout {
+pub struct WorkflowLineageLayout {
     pub(in crate::domain_computation::primary_graph) entity_kind: KindId,
     pub(in crate::domain_computation::primary_graph) identity: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) spec: AspectFieldLocator,
@@ -212,7 +209,7 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowLineageLayout {
 }
 
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation::primary_graph) struct WorkflowDefinitionLayout {
+pub struct WorkflowDefinitionLayout {
     pub(in crate::domain_computation::primary_graph) entity_kind: KindId,
     pub(in crate::domain_computation::primary_graph) content_identity: AspectFieldLocator,
     /// The revision the definition was published under; never rewritten.
@@ -238,7 +235,7 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowDefinitionLayout
 }
 
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation::primary_graph) struct WorkflowNodeLayout {
+pub struct WorkflowNodeLayout {
     pub(in crate::domain_computation::primary_graph) entity_kind: KindId,
     pub(in crate::domain_computation::primary_graph) path: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) kind: AspectFieldLocator,
@@ -289,7 +286,7 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowBackActionLayout
 }
 
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation::primary_graph) struct WorkflowInstanceLayout {
+pub struct WorkflowInstanceLayout {
     pub(in crate::domain_computation::primary_graph) start_advancer:
         super::super::actor::record::WorkflowActorFields,
     pub(in crate::domain_computation::primary_graph) end_advancer:
@@ -331,12 +328,11 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowInstanceLayout {
 }
 
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation::primary_graph) struct WorkflowTransitionLayout {
+pub struct WorkflowTransitionLayout {
     pub(in crate::domain_computation::primary_graph) identity_index_id: DerivedIndexId,
     pub(in crate::domain_computation::primary_graph) output_binding: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) output_count: AspectFieldLocator,
-    pub(in crate::domain_computation::primary_graph) advancer:
-        super::super::actor::record::WorkflowActorFields,
+    pub advancer: super::super::actor::record::WorkflowActorFields,
     pub(in crate::domain_computation::primary_graph) executor:
         super::super::actor::record::WorkflowActorFields,
     pub(in crate::domain_computation::primary_graph) entity_kind: KindId,
@@ -367,3 +363,5 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowProposalLayout {
     pub(in crate::domain_computation::primary_graph) coverage_count: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) identity_index_id: DerivedIndexId,
 }
+
+mod court_doors_for_test;

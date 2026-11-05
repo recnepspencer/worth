@@ -14,7 +14,7 @@ fn source_completion_retry_preserves_fresh_evidence_after_a_late_request_stop() 
         authentication::authenticate(host.installed_schema(), Actor::Author, &scope).unwrap();
     let model = Model::create(&host, &author, "model-1", 1101, 7).unwrap();
     let cancellation = WorthQueryCancellationSource::new();
-    let original_scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let original_scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let caller =
         authentication::authenticate(host.installed_schema(), Actor::Reviewer, &original_scope)
             .unwrap();

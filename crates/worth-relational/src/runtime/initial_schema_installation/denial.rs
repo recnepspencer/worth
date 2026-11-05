@@ -98,6 +98,11 @@ impl RelationalInitialSchemaInstallationDenial {
             | Cause::Native(crate::durability::data::RelationalRecoveryStop::Request(cause)) => {
                 RelationalInitialSchemaInstallationDenialKind::Request(*cause)
             }
+            Cause::Native(crate::durability::data::RelationalRecoveryStop::Content(cause)) => {
+                RelationalInitialSchemaInstallationDenialKind::Request(
+                    (*cause).into_execution_cause(),
+                )
+            }
             Cause::Native(crate::durability::data::RelationalRecoveryStop::Allocation(_)) => {
                 RelationalInitialSchemaInstallationDenialKind::Request(
                     crate::execution::RelationalExecutionDenialCause::AllocationFailed,

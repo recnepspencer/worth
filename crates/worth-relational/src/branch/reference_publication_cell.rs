@@ -38,6 +38,12 @@ impl RelationalBranchReferenceCell {
 }
 
 impl RelationalBranchPublicationCell {
+    pub(crate) fn publication_state_locked_for_test(&self) -> bool {
+        matches!(
+            self.state.try_lock(),
+            Err(std::sync::TryLockError::WouldBlock)
+        )
+    }
     pub(crate) fn identity(&self) -> &super::RelationalBranchIdentity {
         &self.identity
     }
@@ -102,6 +108,29 @@ impl RelationalBranchPublicationCell {
 }
 
 impl RelationalBranchPublicationStateGuard<'_> {
+    /// Compare against the actual admitted source while this original state
+    /// guard is held. Do not call basis.is_current(), which reacquires it.
+    pub(crate) fn matches_current_basis(
+        &self,
+        basis: &super::AdmittedRelationalBranchBasis,
+    ) -> bool {
+        if self.cell.identity() != basis.identity()
+            || self.lifecycle_posture() != super::RelationalBranchLifecyclePosture::Live
+            || self.observation() != basis.reference()
+            || self.truth_version() != basis.truth_version()
+        {
+            return false;
+        }
+        self.state.root.as_ref().is_some_and(|root| {
+            super::basis_axis_validation::require_current_descriptor_axes(
+                basis.descriptor(),
+                self.observation(),
+                self.truth_version(),
+                root,
+            )
+            .is_ok()
+        })
+    }
     pub(crate) fn selected_root(&self) -> Option<Arc<super::RelationalBranchRoot>> {
         self.state.root.as_ref().map(Arc::clone)
     }

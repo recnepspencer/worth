@@ -106,6 +106,5 @@ impl ValidatedProducerInput<'_> {
     }
 }
 
-#[cfg(test)]
 #[path = "producer_input/transport_court.rs"]
 mod transport_court;

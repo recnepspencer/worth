@@ -1,0 +1,63 @@
+use crate::domain_computation::primary_graph::tests::current_output_selection::*;
+use worth_query_execution::facade::domain_computation::WorthQueryInvariantProjectionDenialKind as Invariant;
+use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
+#[test]
+fn current_output_door_preserves_stops_at_every_consult() {
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
+    let admission = world
+        .application
+        .with_host_advancement(|phase| {
+            let (request, principal, scope, operation) =
+                admitted_touch_parts(&phase, &phase.borrowed_request_for_test(), &world);
+            world
+                .selected_product(&phase.test_host_request_for_test())
+                .authorize_operation(
+                    &phase,
+                    &principal,
+                    &scope,
+                    &operation,
+                    Default::default(),
+                    &request,
+                )
+                .unwrap()
+        })
+        .unwrap();
+    (*world.application.runtime_for_test())
+        .primary_graph_for_test()
+        .unwrap()
+        .integration_handle_for_test()
+        .output_lineage
+        .lock()
+        .unwrap()
+        .install_output_families_for_test(std::collections::BTreeMap::from([(
+            TestCurrentOutputFamily::IDENTITY.to_owned().into(),
+            Vec::new(),
+        )]));
+    worth_query_execution::test_read_stops::every_consult(
+        |execution| {
+            world
+                .invariant
+                .project_admitted_operation_with_request(
+                    execution,
+                    &admission,
+                    |reader, root| {
+                        reader
+                            .current_output::<TestCurrentOutputFamily, Account>(root)
+                            .map(|value| matches!(value, WorthQueryCurrentOutputSelection::Missing))
+                    },
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .map(|completed| completed.into_parts().0.expect("live output query"))
+                .map_err(|denial| denial.kind())
+        },
+        WorthQueryOperationProjectionDenialKind::InvariantAdmission(Invariant::ExecutionRequest(
+            Cause::Cancelled,
+        )),
+        WorthQueryOperationProjectionDenialKind::InvariantAdmission(Invariant::ExecutionRequest(
+            Cause::WorkExhausted,
+        )),
+    );
+}

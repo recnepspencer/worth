@@ -32,7 +32,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn prepare<S
     security: &worth_relational::facade::snapshots::SnapshotHandle,
     history: &WorthQueryInstalledApplicationHistoryQuery<Schema, History>,
     plan: &SubjectPlan<'_, Schema, History>,
-    metadata: &HistoryMetadataAdmission<History>,
+    metadata: &HistoryMetadataAdmission,
     disclosed: &WorthQueryApplicationDisclosedProjectionTree,
     limits: Limits,
 ) -> Result<PreparedHistoryCapture<Schema, History>, Denial>

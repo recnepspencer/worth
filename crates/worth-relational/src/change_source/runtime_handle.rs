@@ -82,6 +82,15 @@ impl RelationalRuntimeHandle {
         }
     }
 
+    /// Observe the actual shared runtime lock without acquiring it.
+    #[doc(hidden)]
+    pub fn is_locked_for_test(&self) -> bool {
+        match &self.ownership {
+            RuntimeOwnership::Immutable(_) => false,
+            RuntimeOwnership::Shared(runtime) => runtime.try_lock().is_err(),
+        }
+    }
+
     /// Observe acquisitions made through this handle and all its clones.
     /// The returned guard owns the listener; dropping it ends observation.
     #[doc(hidden)]

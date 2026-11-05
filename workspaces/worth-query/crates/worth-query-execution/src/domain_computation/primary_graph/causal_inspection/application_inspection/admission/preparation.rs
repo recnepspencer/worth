@@ -25,12 +25,7 @@ type Scope<Schema, Binding> =
     >>::Scope;
 
 #[allow(clippy::too_many_arguments)]
-pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) fn prepare<
-    'a,
-    'storage,
-    Schema,
-    Binding,
->(
+pub fn prepare<'a, 'storage, Schema, Binding>(
     runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     execution: &ExecutionRequest<'_, '_>,
     installed: &WorthQueryInstalledApplicationQueryBinding<Schema, Binding>,

@@ -135,8 +135,7 @@ fn cancellation_and_deadline_are_typed_before_projection() {
     let cancelled = BankReadControls::current(
         WorthQueryRequestScope::new(
             Some(Instant::now() + Duration::from_secs(60)),
-            cancellation.token(),
-        ),
+            cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         8,
     )
     .unwrap();
@@ -157,7 +156,7 @@ fn cancellation_and_deadline_are_typed_before_projection() {
 
     let deadline_source = WorthQueryCancellationSource::new();
     let expired = BankReadControls::current(
-        WorthQueryRequestScope::new(Some(Instant::now()), deadline_source.token()),
+        WorthQueryRequestScope::new(Some(Instant::now()), deadline_source.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         8,
     )
     .unwrap();

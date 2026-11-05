@@ -95,6 +95,7 @@ impl WorthQueryExecutionInstallationAuthority {
             installed_schema.installed_declaration(),
             installed_schema.native_contracts(),
             &relational_runtime.config().schema.registry,
+            installed_schema.value_bindings(),
         )?;
         let (registrations, managed_sources, source_initializer) = invariant_factories.lower(
             &_phase.execution_request(),

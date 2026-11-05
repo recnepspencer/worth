@@ -22,7 +22,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
 
         producer_identity: &str,
-        receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+        receipt: crate::domain_computation::primary_graph::application_output_demand::OutputPublicationView<'_>,
         delivery: Option<&worth_runtime_bridge::facade::BridgeCorrespondenceDeliveryReceipt>,
         ready: &crate::domain_computation::primary_graph::application_output_demand::PreparedReadyBacking,
     ) -> Result<
@@ -49,7 +49,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
 
         producer_identity: &str,
-        receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+        receipt: crate::domain_computation::primary_graph::application_output_demand::OutputPublicationView<'_>,
         delivery: Option<&worth_runtime_bridge::facade::BridgeCorrespondenceDeliveryReceipt>,
         ready: &crate::domain_computation::primary_graph::application_output_demand::PreparedReadyBacking,
         request: &WorthQueryRequestScope,
@@ -75,7 +75,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
 
         producer_identity: &str,
-        receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+        receipt: crate::domain_computation::primary_graph::application_output_demand::OutputPublicationView<'_>,
         delivery: Option<&worth_runtime_bridge::facade::BridgeCorrespondenceDeliveryReceipt>,
         ready: &crate::domain_computation::primary_graph::application_output_demand::PreparedReadyBacking,
 
@@ -88,6 +88,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
             check_readiness_request(request)?;
         }
         if self
+            .runtime
             .primary_provider
             .take_failed_output_readiness_evaluation()
         {
@@ -101,6 +102,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
             ));
         }
         let route = self
+            .runtime
             .output_readiness_routes
             .get(producer_identity)
             .expect("installation requires one readiness route for every output producer");
@@ -110,7 +112,11 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
             .get(producer_identity)
             .expect("readiness route must retain its installed producer");
         let source_record = producer.executor.readiness_record(receipt)?;
-        let _held_world_observations = if self.primary_provider.take_readiness_snapshot_pressure() {
+        let _held_world_observations = if self
+            .runtime
+            .primary_provider
+            .take_readiness_snapshot_pressure()
+        {
             Some(self.hold_world_snapshot_pressure_for_test(receipt.product_branch()))
         } else {
             None
@@ -137,7 +143,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         };
 
         let attempt = {
-            let update_counter = &self.next_output_producer_attempt;
+            let update_counter = &self.runtime.next_output_producer_attempt;
             let mut current = update_counter.load(std::sync::atomic::Ordering::Relaxed);
             loop {
                 let Some(updated_value) = current.checked_add(1) else {
@@ -164,7 +170,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
                 },
             )
         })?;
-        let bridge = self.bridge.conditional();
+        let bridge = self.runtime.bridge.conditional();
         let execution = super::super::evaluate_output_readiness(
             phase
                 .request_for_owner(truth.owner_identity())
@@ -202,6 +208,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
             ));
         }
         let evaluation = match self
+            .runtime
             .output_producer_routes
             .get(producer_identity)
             .and_then(|route| route.output_comparison.as_ref())
@@ -219,13 +226,13 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
                         readiness: &execution,
                         lowering: &route.lowering,
                         ordinal: route.delivery_dependency_ordinal,
-                        layout: &self.primary_provider.graph.layout,
+                        layout: &self.runtime.primary_provider.graph.layout,
                     },
                     ready,
-                    &self.next_output_producer_attempt,
+                    &self.runtime.next_output_producer_attempt,
                 )?;
                 if visit.compared_now {
-                    self.primary_provider.output_comparison_completed();
+                    self.runtime.primary_provider.output_comparison_completed();
                 }
                 Some(visit.evaluation)
             }

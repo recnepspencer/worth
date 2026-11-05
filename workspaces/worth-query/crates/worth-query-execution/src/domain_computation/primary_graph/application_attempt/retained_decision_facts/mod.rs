@@ -2,39 +2,34 @@
 use std::cell::RefCell;
 use worth_execution::{ExecutionAllocationDenial, ExecutionArray};
 
-mod canonical_key;
-mod control;
-mod directory;
+pub(crate) mod canonical_key;
+pub(crate) mod control;
+pub(crate) mod directory;
 pub(in crate::domain_computation::primary_graph) mod endpoints;
-mod fact_store;
-#[cfg(test)]
-mod handoff;
-mod run;
-mod storage;
+pub(crate) mod fact_store;
+pub(crate) mod handoff;
+pub(crate) mod run;
+pub(crate) mod storage;
 mod streaming;
-#[cfg(test)]
-mod tests;
 
 pub(in crate::domain_computation::primary_graph) use canonical_key::AdmittedFactKey;
 pub(in crate::domain_computation) use control::StorageControl;
-#[cfg(test)]
-pub(in crate::domain_computation::primary_graph) use handoff::restore_authored_order;
+
 pub(in crate::domain_computation::primary_graph) use storage::RetainedFactStore;
 
-type Slot<T> = RefCell<Option<RetainedFact<T>>>;
+pub type Slot<T> = RefCell<Option<RetainedFact<T>>>;
 
 /// Algorithmic author/merge granule, not an admission or request count limit.
-const AUTHOR_CHUNK: usize = 32;
+pub const AUTHOR_CHUNK: usize = 32;
 
-pub(in crate::domain_computation::primary_graph) struct RetainedFact<T> {
+pub struct RetainedFact<T> {
     pub(in crate::domain_computation::primary_graph) key: AdmittedFactKey,
     pub(in crate::domain_computation::primary_graph) value: T,
-    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) ordinal: usize,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) enum StoreDenial {
+pub enum StoreDenial {
     Allocation(ExecutionAllocationDenial),
     ExecutionRequest(worth_execution::WorkCeilingDenial),
     RequestInterruption(
@@ -43,7 +38,8 @@ pub(in crate::domain_computation) enum StoreDenial {
     Representability,
     PhysicalAllocation,
     ConflictingBody,
-    #[cfg(test)]
+    ContentInconsistency,
+    Content(worth_relational::facade::content::RelationalContentDenial),
     InvalidOrdinal,
 }
 
@@ -83,11 +79,15 @@ impl StoreDenial {
             WorthQueryApplicationAttemptDenial as Denial,
             WorthQueryApplicationAttemptDenialKind as Kind,
         };
+        if let Self::Content(cause) = self {
+            return Denial::relational_read_stopped(cause.into_execution_cause(), subject);
+        }
         let kind = match &self {
             Self::Allocation(_) | Self::PhysicalAllocation => Kind::AllocationDenied,
             Self::RequestInterruption(_) => Kind::CurrentAuthorityDenied,
             Self::ExecutionRequest(_) => Kind::RetainedSourceStorageDenied,
             Self::ConflictingBody => Kind::DecisionDependencyMismatch,
+            Self::ContentInconsistency => Kind::ContentInconsistency,
             _ => Kind::RetainedSourceStorageDenied,
         };
         Denial::retained_source_denied(kind, subject, self)
@@ -111,9 +111,14 @@ impl worth_execution::ChargedBytes for StoreDenial {
                 inline(cause);
                 0
             }
-            Self::Representability | Self::ConflictingBody | Self::PhysicalAllocation => 0,
-            #[cfg(test)]
+            Self::Representability
+            | Self::ConflictingBody
+            | Self::PhysicalAllocation
+            | Self::ContentInconsistency
+            | Self::Content(_) => 0,
             Self::InvalidOrdinal => 0,
         }
     }
 }
+
+mod court_doors_for_test;

@@ -82,7 +82,7 @@ Without Milestone 9:
   of typed query semantics
 - delivery metadata can drift from the actually masked/projected query meaning
   that callers saw
-- later durable artifact work in Milestone 11 would inherit policy-unsafe
+- later durable artifact work in Store Milestone 11 would inherit policy-unsafe
   semantics rather than extending one explicit artifact model
 
 Milestone 9 therefore exists to freeze:
@@ -871,9 +871,9 @@ Required policy drift dispositions:
 - restart-stable subscription metadata and durable delivery cursors
 - store-backed portability and restart parity for tenant/query artifacts
 - durable saved-query, tenant-basis, or delivery-metadata reload from
-  `worth-store`, because `worth-store` is not yet complete and Milestone 11 is
+  `worth-store`, because `worth-store` is not yet complete and Store Milestone 11 is
   the roadmap home for durable query artifacts
-- store-backed execution/historical parity, because Milestone 10 is the first
+- store-backed execution/historical parity, because Store execution/historical integration is the first
   intentionally store-gated query execution milestone
 - schema/platform authoring of the policy model itself
 - lower-runtime truth semantics for relationship proofs
@@ -1055,9 +1055,9 @@ must remain blocked until the later store-backed milestones exist.
 
 This phase must produce:
 
-- one explicit Milestone 10 handoff list for store-backed execution,
+- one explicit Store execution/historical integration handoff list for store-backed execution,
   historical restore, and runtime/store parity over policy-aware query plans
-- one explicit Milestone 11 handoff list for durable tenant/query artifacts,
+- one explicit Store Milestone 11 handoff list for durable tenant/query artifacts,
   durable saved-query reload, durable delivery cursors, and restart-stable
   subscription metadata
 - one explicit support-profile denial for any API that tries to claim durable
@@ -1068,7 +1068,7 @@ This phase must produce:
 This phase must prove:
 
 - runtime-backed policy/tenant semantics are complete enough to hand to
-  Milestone 10 without redefining masking, tenant basis, relationship-proof, or
+  Store execution/historical integration without redefining masking, tenant basis, relationship-proof, or
   delivery meaning per backend
 - durable artifacts remain extensions of Milestone 8 saved-query freeze plus
   Milestone 9 policy/tenant basis, not a second artifact model
@@ -1896,7 +1896,7 @@ consumes that closed surface; if additional identity families remain debt,
 Milestone 9 must deny or mark those combinations as debt rather than implicitly
 extending them.
 
-It must land before Milestone 10 because store-backed parity should extend one
+It must land before Store execution/historical integration because store-backed parity should extend one
 already policy-safe and tenant-safe runtime-backed query meaning instead of
 discovering policy rules per backend later.
 
@@ -1923,14 +1923,14 @@ Once policy/tenant vocabulary and denial/result families are frozen:
 - `worth-store` is not done yet, so Milestone 9 must close only the
   runtime-backed semantic surface and the handoff artifacts that let later
   milestones add durability without changing query meaning.
-- Store-backed policy-aware execution parity belongs to Milestone 10.
+- Store-backed policy-aware execution parity belongs to Store execution/historical integration.
 - Durable saved-query, tenant/query artifact, cursor, and delivery-metadata
-  reload belongs to Milestone 11.
+  reload belongs to Store Milestone 11.
 - Historical reads admitted in Milestone 9 are runtime-backed historical lanes
   over already-admitted in-memory or runtime-provided basis artifacts. They may
   carry `StoreBackedAdmission::Deferred`, but they may not perform store restore,
   snapshot-plus-tail replay, or durable historical reconstruction until
-  Milestone 10 supplies the store-backed execution surface.
+  Store execution/historical integration supplies the store-backed execution surface.
 
 ## Explicit Failure Taxonomy For Milestone 9
 

@@ -57,7 +57,8 @@ fn stopped_original_controls_refuse_completion_before_invoking_effects() {
             if cancelled {
                 cancellation.cancel();
             } else {
-                grant.deadline = Some(Instant::now());
+                grant.deadline =
+                    Some(worth_execution::MonotonicClock::system().deadline_at(Instant::now()));
             }
             on_request(leased, grant, |request| {
                 let called = Cell::new(false);
@@ -85,7 +86,8 @@ fn returned_move_only_business_custody_survives_later_cancellation_or_deadline()
             grant.cancellation = cancellation.token();
             let deadline = Instant::now() + std::time::Duration::from_secs(1);
             if !cancelled {
-                grant.deadline = Some(deadline);
+                grant.deadline =
+                    Some(worth_execution::MonotonicClock::system().deadline_at(deadline));
             }
             on_request(leased, grant, |request| {
                 let business_owner = Box::new(String::from("original accepted owner"));

@@ -1,0 +1,56 @@
+//! Stale performed postconditions cannot enter comparison or dirty clearance.
+use crate::domain_computation::primary_graph::output_lineage::own_write_fixture::*;
+
+#[test]
+fn own_write_cutoff_cannot_project_retained_facts_for_comparison() {
+    with_generated_own_write(|_, _, cell, _| {
+        let candidate =
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::input_cutoff::RetainedInputCutoffCandidate::from_exact_cell_for_test(cell);
+        assert!(
+            candidate
+                .observed_source_facts_for_test()
+                .unwrap()
+                .is_none(),
+            "postconditions of a stale computation are not comparable input facts"
+        );
+    });
+}
+
+#[test]
+fn own_write_dirty_marks_cannot_be_cleared_by_postcondition_comparison() {
+    let host_request = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    with_committed_own_write(|world, _, cell, _| {
+        let handle = (*world.application.runtime_for_test())
+            .primary_graph_for_test()
+            .unwrap()
+            .integration_handle_for_test();
+        let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
+        handle.with_runtime(execution, |runtime| {
+            let basis = runtime
+                .admit_branch_basis(&runtime.main_branch_identity())
+                .unwrap();
+            let snapshot = runtime
+                .snapshots()
+                .snapshot_for_observation(&basis.observation())
+                .unwrap();
+            let selected = runtime.read_truth().positioned_snapshot(&snapshot).unwrap();
+            let answer = owner.reverify_dirty_for_test(
+                execution,
+                runtime,
+                &snapshot,
+                &selected,
+                &(*cell.get().unwrap().settlement_identity_for_test()),
+            );
+            assert!(
+                matches!(
+                    answer,
+                    Ok(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::verification::DirtyReverification::ChangedComputation)
+                ),
+                "comparison of rebased x=2 cannot discharge a computation made from x=1"
+            );
+            runtime.snapshots().release_snapshot(&snapshot).unwrap();
+        });
+    });
+}

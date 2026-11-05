@@ -45,7 +45,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
     ) -> Result<(), QueryHomeCustodyReadmissionDenial> {
         use QueryHomeCustodyReadmissionDenial as Denial;
         let application = self.runtime.runtime();
-        let owner = &application.product_runtime.owner;
+        let owner = &application.runtime.product_runtime.owner;
         let snapshot = owner
             .inspection_port()
             .recovery_snapshot()
@@ -78,6 +78,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
                     .inspect_recovered_effects(row.handle())
                     .map_err(Denial::Recovery)?;
                 application
+                    .runtime
                     .primary_provider
                     .admit_recovered_idempotency(execution, row.handle().clone(), &effects)
                     .map_err(original_binding_denial)?;
@@ -98,6 +99,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
                 .map_err(Denial::ReleasedSource)?;
             for original in page.rows() {
                 application
+                    .runtime
                     .primary_provider
                     .admit_released_idempotency(execution, original)
                     .map_err(original_binding_denial)?;

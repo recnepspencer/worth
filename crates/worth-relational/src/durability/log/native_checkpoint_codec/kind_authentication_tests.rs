@@ -4,7 +4,10 @@ use crate::durability::data::*;
 use crate::durability::medium::*;
 use crate::identity::data::PartitionId;
 use crate::tests::support::*;
-use std::sync::Arc;
+use std::sync::{
+    atomic::{AtomicUsize, Ordering},
+    Arc,
+};
 
 #[test]
 fn checkpoint_readmission_refuses_retired_integer_array_digest_before_restore() {
@@ -94,6 +97,7 @@ fn forged_cross_region_kind_commitment_is_refused_before_member_reads() {
             original.recorded_components.clone(),
             original.schema_carrier_digest,
             regions,
+            original.content.clone(),
         ));
     }
     for leaf in &mut manifest.mirror {
@@ -107,19 +111,23 @@ fn forged_cross_region_kind_commitment_is_refused_before_member_reads() {
     wire.manifest = manifest.seal_ordinary();
     let mut bytes = CHECKPOINT_MAGIC.to_vec();
     bytes.extend(rmp_serde::to_vec_named(&wire).unwrap());
-    let source = Arc::new(member_source::InlineCheckpointSource {
-        members: {
-            let mut members = worth_execution::ExecutionOrderedMap::default();
-            for member in native.members() {
-                let RelationalCheckpointMember::New { locator, bytes } = member else {
-                    panic!("first capture owns its members")
-                };
+    let source = Arc::new(ForgedKindSource {
+        members: member_source::InlineCheckpointSource {
+            members: {
+                let mut members = worth_execution::ExecutionOrderedMap::default();
+                for member in native.members() {
+                    let RelationalCheckpointMember::New { locator, bytes } = member else {
+                        panic!("first capture owns its members")
+                    };
+                    members
+                        .insert_cloned_native_for_request(locator, bytes, execution)
+                        .unwrap();
+                }
                 members
-                    .insert_cloned_native_for_request(locator, bytes, execution)
-                    .unwrap();
-            }
-            members
+            },
         },
+        journal: attached_durable_medium(&runtime).expect("fixture owns its actual durable medium"),
+        reads: AtomicUsize::new(0),
     });
     let recovery = RelationalDurableRecoverySource::new(
         Some(RelationalDurableCheckpointSource::new(
@@ -129,7 +137,7 @@ fn forged_cross_region_kind_commitment_is_refused_before_member_reads() {
         )),
         Vec::new(),
         Vec::new(),
-        source,
+        source.clone(),
     );
     let mut receiving = durable_runtime_with_test_schema();
     let plan = receiving
@@ -144,6 +152,75 @@ fn forged_cross_region_kind_commitment_is_refused_before_member_reads() {
         .durability_recovery()
         .recover(&execution, plan)
         .unwrap_err();
+    assert_eq!(source.reads.load(Ordering::SeqCst), 0);
     assert!(matches!(failure, RelationalRecoveryStop::Durability(error)
         if error.class == RecoveryFailureClass::CorruptCheckpoint && error.detail.contains("StorageContentMismatch")));
+}
+
+#[derive(Debug)]
+struct ForgedKindSource {
+    members: member_source::InlineCheckpointSource,
+    journal: Arc<dyn RelationalDurableColdSource>,
+    reads: AtomicUsize,
+}
+impl RelationalDurableColdSource for ForgedKindSource {
+    fn checkpoint_read_protection(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        (RelationalDurableReadBounds, RelationalDurableReadPayload),
+        RelationalDurableOwnedReadRefusal,
+    > {
+        self.members.checkpoint_read_protection(request)
+    }
+    fn checkpoint_selected_read_protection(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<RelationalDurableReadPayload, RelationalDurableOwnedReadRefusal> {
+        self.members.checkpoint_selected_read_protection(request)
+    }
+    fn retain_members_for_request(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        members: &[RelationalDurableMemberLocator],
+        issuer: std::sync::Weak<dyn RelationalDurableColdSource>,
+    ) -> Result<RelationalDurableMemberCustody, RelationalDurableOwnedReadRefusal> {
+        self.members
+            .retain_members_for_request(request, members, issuer)
+    }
+    fn read_member_owned(
+        &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        original: &(dyn std::any::Any + Send + Sync),
+        locator: RelationalDurableMemberLocator,
+        limit: u64,
+    ) -> Result<worth_execution::ExecutionImmutableBytes, RelationalDurableOwnedReadRefusal> {
+        self.reads.fetch_add(1, Ordering::SeqCst);
+        self.members
+            .read_member_owned(request, original, locator, limit)
+    }
+    fn retain_members(
+        &self,
+        members: &[RelationalDurableMemberLocator],
+    ) -> Result<
+        RelationalDurableMemberCustody,
+        crate::storage::data::RelationalStorageUnavailableCause,
+    > {
+        self.members.retain_members(members)
+    }
+    fn read_member(
+        &self,
+        locator: RelationalDurableMemberLocator,
+        limit: u64,
+    ) -> Result<Vec<u8>, crate::storage::data::RelationalStorageUnavailableCause> {
+        self.reads.fetch_add(1, Ordering::SeqCst);
+        self.members.read_member(locator, limit)
+    }
+    fn read_commit(
+        &self,
+        position: crate::publication::patch::data::PatchStreamPosition,
+        limit: u64,
+    ) -> Result<Vec<u8>, crate::storage::data::RelationalStorageUnavailableCause> {
+        self.journal.read_commit(position, limit)
+    }
 }

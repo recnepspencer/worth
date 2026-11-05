@@ -9,7 +9,7 @@ mod test_support;
 #[cfg(test)]
 mod tests;
 
-use crate::transactions::data::MergedCommitPlan;
+use crate::authority::commit::semantic_plan::RelationalSemanticPlan;
 use crate::validation::data::{
     InvariantCostClass, InvariantExecutionPoint, InvariantGroupSet, InvariantPlanContract,
     InvariantRegistration,
@@ -49,7 +49,7 @@ pub(crate) struct InvariantExecutionRequest<'runtime> {
     consumed_groups: InvariantGroupSet,
     applicable_groups: InvariantGroupSet,
     plan_contract: Option<InvariantPlanContract>,
-    merged_plan: Option<&'runtime MergedCommitPlan>,
+    semantic_plan: Option<RelationalSemanticPlan<'runtime>>,
     relation_integrity_scopes: Option<PreparedRelationIntegrityScopes>,
     proposal_identity: Option<crate::mvcc::RelationalMutationProposalIdentity>,
 }
@@ -71,8 +71,8 @@ impl<'runtime> InvariantExecutionRequest<'runtime> {
         self.current_version_id
     }
 
-    pub(crate) fn merged_plan(&self) -> Option<&'runtime MergedCommitPlan> {
-        self.merged_plan
+    pub(crate) fn semantic_plan(&self) -> Option<RelationalSemanticPlan<'runtime>> {
+        self.semantic_plan
     }
 
     pub(crate) fn consumed_groups(&self) -> InvariantGroupSet {
@@ -102,7 +102,7 @@ impl<'runtime> InvariantExecutionRequest<'runtime> {
     }
 
     pub(crate) fn should_execute_anything(&self) -> bool {
-        self.merged_plan.is_none() || !self.applicable_groups.is_empty()
+        self.semantic_plan.is_none() || !self.applicable_groups.is_empty()
     }
 
     pub(crate) fn includes_registration(&self, registration: &InvariantRegistration) -> bool {

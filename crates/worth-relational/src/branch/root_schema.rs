@@ -1,4 +1,10 @@
+#[path = "root_schema/registry_rebinding.rs"]
+mod registry_rebinding;
+use registry_rebinding::registry_for_snapshot;
 use std::sync::Arc;
+#[cfg(test)]
+#[path = "root_schema_content_tests.rs"]
+mod content_tests;
 
 use worth_foundational::facade::{
     AspectContract, AspectContractRevision, AspectIdentity, AspectKey, PortableAspectContractLookup,
@@ -10,11 +16,8 @@ use crate::schema::data::{
 };
 #[path = "root_schema/recorded_image.rs"]
 mod recorded_image;
-#[path = "root_schema/registry_binding.rs"]
-mod registry_binding;
 #[path = "root_schema/snapshot_match.rs"]
 mod snapshot_match;
-use registry_binding::registry_for_snapshot;
 
 /// Immutable schema vocabulary and executable projection contracts selected
 /// by one branch root. Exact readers must not consult the live runtime schema.
@@ -277,6 +280,7 @@ fn registry_allocation_bytes(registry: &RelationalSchemaRegistry) -> usize {
     std::mem::size_of::<RelationalSchemaRegistry>()
         .saturating_add(entity_bytes)
         .saturating_add(relation_bytes)
+        .saturating_add(registry.content_formats.snapshot().owned_bytes() as usize)
 }
 
 fn declaration_allocation_bytes(

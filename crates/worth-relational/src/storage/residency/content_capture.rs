@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 #[derive(Debug)]
 pub(crate) enum RegionContentFailure {
-    Request(crate::execution::RelationalExecutionDenialCause),
+    Execution(crate::execution::RelationalExecutionDenialCause),
     Content(PartitionContentDigestError),
     Adjacency,
     Storage(RelationalStorageUnavailable),

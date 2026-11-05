@@ -71,10 +71,10 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Binding: ApplicationMutationBinding<Schema>,
     {
         let execution = phase
-            .execution_for(&self.product_runtime)
+            .execution_for(&self.runtime.product_runtime)
             .map_err(WorthQueryOperationBodyAssessmentDenial::Phase)?;
         let request = phase
-            .execution_request_for(&self.product_runtime)
+            .execution_request_for(&self.runtime.product_runtime)
             .map_err(WorthQueryOperationBodyAssessmentDenial::Phase)?;
         self.validate_projected_source_facts(&request, admission)
             .map_err(WorthQueryOperationBodyAssessmentDenial::Source)?;
@@ -92,6 +92,4 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     }
 }
 
-#[cfg(test)]
-#[path = "assessment/tests.rs"]
-mod tests;
+mod court_doors_for_test;

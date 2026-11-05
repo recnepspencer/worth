@@ -7,6 +7,9 @@ pub enum WorthQueryApplicationNoEffectCause {
     DurableOpenRequired,
     ExecutionRequest(worth_execution::WorkCeilingDenial),
     OwnerDeniedBeforeEffect,
+    /// The current control input failed its pre-effect condition; the write
+    /// target did not become stale merely because this input changed.
+    CurrentReadDependency(worth_runtime_world::facade::CurrentProductReadDependencyDenial),
     CorrespondenceRebindRequired,
     ReferenceGenerationExhausted,
     CapacityExhausted,
@@ -64,7 +67,7 @@ impl WorthQueryApplicationStaleAttempt {
     }
 }
 
-mod denial;
+pub(crate) mod denial;
 pub(in crate::domain_computation::primary_graph) use denial::WorthQueryProgramActivationUnresolved;
 pub use denial::{
     WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitDenialKind,
@@ -316,3 +319,5 @@ impl WorthQueryApplicationUnresolvedCommitEvidence {
         &self.detail
     }
 }
+
+mod court_doors_for_test;

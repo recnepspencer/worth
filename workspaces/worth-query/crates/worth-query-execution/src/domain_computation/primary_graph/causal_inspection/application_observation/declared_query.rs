@@ -62,5 +62,4 @@ impl std::fmt::Debug for WorthQueryApplicationQueryObservation {
     }
 }
 
-#[cfg(test)]
-mod tests;
+mod court_doors_for_test;

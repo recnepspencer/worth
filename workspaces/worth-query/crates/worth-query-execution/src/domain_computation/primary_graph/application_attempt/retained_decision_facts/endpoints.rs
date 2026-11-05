@@ -174,10 +174,7 @@ impl AdmittedAdjacencyEndpoints {
             sorted_unique: true,
         })
     }
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn charged_payload_bytes(
-        &self,
-    ) -> Option<u64> {
+    pub fn charged_payload_bytes(&self) -> Option<u64> {
         self.storage
             .as_ref()
             .and_then(|storage| storage.charged_payload_bytes())
@@ -273,3 +270,5 @@ impl AsRef<[EntityId]> for AdmittedAdjacencyEndpoints {
             .map_or(&[], |storage| storage.elements())
     }
 }
+
+mod court_doors_for_test;

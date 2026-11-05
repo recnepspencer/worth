@@ -4,7 +4,7 @@ pub use super::*;
 pub fn run() {
     let host = published();
     let cancelled = WorthQueryCancellationSource::new();
-    let original = WorthQueryRequestScope::new(None, cancelled.token());
+    let original = WorthQueryRequestScope::new(None, cancelled.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let actor = host::authenticate(&host, 1, &original);
     cancelled.cancel();
     let before = host.contacts.resource.counts();
@@ -22,7 +22,7 @@ pub fn run() {
     assert_eq!(host.contacts.resource.counts(), before);
 
     let after_contact = WorthQueryCancellationSource::new();
-    let original = WorthQueryRequestScope::new(None, after_contact.token());
+    let original = WorthQueryRequestScope::new(None, after_contact.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let actor = host::authenticate(&host, 1, &original);
     *host.contacts.resource.cancel_on_start.lock().unwrap() = Some(after_contact);
     host.contacts.resource_clock.milliseconds(10);

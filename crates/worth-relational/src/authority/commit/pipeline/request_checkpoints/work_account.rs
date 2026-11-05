@@ -164,6 +164,41 @@ fn one_work_account_bounds_each_entry_with_its_original_canonical_evidence() {
 }
 
 #[test]
+fn one_work_account_bounds_the_same_proposal_on_every_entry() {
+    // The SDK report includes native evidence work outside the packet recorder.
+    let (reference, required_work) = commit(Entry::Ordinary, FUNDED_WORK_CEILING, true, false);
+    reference.unwrap();
+    assert!(required_work > 0 && required_work < FUNDED_WORK_CEILING);
+    let (unwrapped, recorded) = commit(Entry::Ordinary, FUNDED_WORK_CEILING, false, false);
+    unwrapped.unwrap();
+    eprintln!("native commit work invoice: actual={required_work} settled={recorded}");
+    assert_eq!(
+        recorded, required_work,
+        "the authoritative account settles all SDK work"
+    );
+    let completed = ENTRIES.map(|entry| {
+        let (outcome, charged) = commit(entry, required_work, true, false);
+        outcome.unwrap();
+        charged
+    });
+    assert_eq!(
+        completed,
+        [required_work; ENTRIES.len()],
+        "the same proposal pays the same full work through every entry"
+    );
+    // No enclosing account may make an internally reset allowance look sound.
+    let outcomes = ENTRIES.map(|entry| commit(entry, required_work - 1, false, false).0);
+    let refused = outcomes.each_ref().map(|outcome| {
+        matches!(outcome, Err(TransactionCommitError::Execution { denial, .. })
+            if denial.kind == CommitExecutionDenialKind::Cause(crate::execution::RelationalExecutionDenialCause::WorkExhausted))
+    });
+    assert_eq!(
+        refused, [true; 5],
+        "all entries spend one ceiling below {required_work}"
+    );
+}
+
+#[test]
 fn a_cancelled_authoritative_commit_keeps_its_typed_stop_and_head() {
     for entry in ENTRIES {
         let (outcome, _) = commit(entry, FUNDED_WORK_CEILING, false, true);

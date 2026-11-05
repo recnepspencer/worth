@@ -50,12 +50,24 @@ fn ambiguous_enum_owner_or_shadowing_alias_keeps_conservative_runtime_finding() 
         "struct WorthQueryApplicationRequestQueryDenial;",
         "type WorthQueryApplicationRequestQueryDenial = Other;",
         "use other::Value as WorthQueryApplicationRequestQueryDenial;",
-        "enum WorthQueryApplicationRequestQueryDenial { ExecutionRequest }",
         "fn source<WorthQueryApplicationRequestQueryDenial>() {}",
         "struct Source<WorthQueryApplicationRequestQueryDenial>(());",
         "impl<WorthQueryApplicationRequestQueryDenial> Source {}",
     ] {
         assert!(!check(&fixture(code, extra)).is_empty(), "{extra}");
+    }
+}
+
+#[test]
+fn same_named_enums_in_separate_audiences_keep_actual_variant_vocabulary() {
+    let code = "fn test() { WorthQueryApplicationRequestQueryDenial::ExecutionRequest(()); }";
+    for extra in [
+        "enum WorthQueryApplicationRequestQueryDenial { ExecutionRequest }",
+        "enum WorthQueryApplicationRequestQueryDenial { Other }",
+    ] {
+        assert!(check(&fixture(code, extra)).is_empty(), "{extra}");
+        let payload = "fn test() { WorthQueryApplicationRequestQueryDenial::ExecutionRequest(ExecutionRequest::serial(&source)); }";
+        assert!(!check(&fixture(payload, extra)).is_empty(), "{extra}");
     }
 }
 

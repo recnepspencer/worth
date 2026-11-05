@@ -131,7 +131,10 @@ fn unleased_builds_keep_cancellation_and_deadline_without_publishing() {
             let host = SerialRequest::from_memory(
                 SerialMemoryBudget::new(None),
                 source.token(),
-                expired.then(std::time::Instant::now),
+                expired.then(|| {
+                    let clock = worth_execution::MonotonicClock::system();
+                    clock.deadline_at(clock.now())
+                }),
             );
             let execution = ExecutionRequest::serial(&host);
             let outcome = if exact {

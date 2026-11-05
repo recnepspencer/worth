@@ -11,8 +11,13 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     NativeInitialPublicationBusy,
     NativeInitialPublicationRefused,
     NativeInitialPublicationUnresolved,
+    AdmissionClockMismatch,
+    /// An opted-in producer's source is shared, contextual or not its exact entity scope.
+    ProducerOwnershipRequiresEntitySourceScope,
+    ProducerFamilyOwnershipMismatch,
     /// Typed readiness declaration or installed field meaning was refused.
     ReadinessContractRejected,
+    ContentAdmissionRejected,
     /// A binding or input belongs to a different runtime.
     ForeignRuntime,
     /// The application's contributions differ from the installed contribution
@@ -141,6 +146,8 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     InvariantFactoryMeaningMismatch,
     UnsupportedInvariantSource,
     UnsupportedManagedSource,
+    /// The Native binding owner exhausted its in-memory Source program identities.
+    SourceProgramIdentityExhausted,
     ManagedSourceInstallationReceiptMismatch,
     /// An invariant factory rejected installation.
     InvariantFactoryRejected,
@@ -230,6 +237,7 @@ enum InstallationDenialCause {
     NativeInitialization(
         worth_relational::facade::runtime::RelationalInitialSchemaInstallationDenial,
     ),
+    Content(worth_relational::facade::content::RelationalContentDenial),
     Readiness(super::application_contribution::WorthQueryOutputReadinessContractDenial),
     NativeValidation(crate::domain_computation::WorthQueryInvariantExecutionFailure),
 }
@@ -241,6 +249,7 @@ impl WorthQueryPrimaryGraphInstallationDenial {
         match self.cause.as_deref()? {
             InstallationDenialCause::NativeInitialization(cause) => Some(cause),
             InstallationDenialCause::Readiness(_)
+            | InstallationDenialCause::Content(_)
             | InstallationDenialCause::NativeValidation(_) => None,
         }
     }
@@ -251,6 +260,21 @@ impl WorthQueryPrimaryGraphInstallationDenial {
         self.cause = Some(Box::new(InstallationDenialCause::NativeInitialization(
             cause,
         )));
+        self
+    }
+    pub fn content_cause(
+        &self,
+    ) -> Option<&worth_relational::facade::content::RelationalContentDenial> {
+        match self.cause.as_deref() {
+            Some(InstallationDenialCause::Content(cause)) => Some(cause),
+            _ => None,
+        }
+    }
+    pub(in crate::domain_computation::primary_graph) fn with_content_cause(
+        mut self,
+        cause: worth_relational::facade::content::RelationalContentDenial,
+    ) -> Self {
+        self.cause = Some(Box::new(InstallationDenialCause::Content(cause)));
         self
     }
     /// A complete feature's typed handler slot was left unconfigured.

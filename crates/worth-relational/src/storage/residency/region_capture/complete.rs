@@ -35,7 +35,7 @@ fn invalid(detail: &'static str) -> Stop {
 }
 fn preparation(cause: RegionContentFailure) -> Stop {
     match cause {
-        RegionContentFailure::Request(cause) => Stop::Request(cause),
+        RegionContentFailure::Execution(cause) => Stop::Request(cause),
         RegionContentFailure::Content(
             crate::storage::overlay::PartitionContentDigestError::Request(cause),
         ) => Stop::Request(cause),

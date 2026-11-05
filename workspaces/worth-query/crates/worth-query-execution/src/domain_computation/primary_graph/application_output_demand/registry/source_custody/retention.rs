@@ -210,3 +210,5 @@ fn source_capacity_denial() -> WorthQueryOutputDemandDenial {
         "performed source custody storage cannot be allocated",
     )
 }
+
+mod court_doors_for_test;

@@ -229,7 +229,7 @@ fn registered_disposal_uses_owned_custody_after_storage_has_really_retired() {
     let cleanup = refused.into_cleanup();
     assert_eq!(cleanup.pending_work(), pending);
     let cancellation = WorthQueryCancellationSource::new();
-    let interrupted = WorthQueryRequestScope::new(None, cancellation.token());
+    let interrupted = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let mut attempted = None;
     let handoff = host.with_application_advancement(&interrupted, |phase| {
         cancellation.cancel();
@@ -300,7 +300,7 @@ fn cancelled_disposal_preserves_an_unexecuted_owner_for_a_fresh_scope() {
     let before = describe(&host, &author, storage.branch());
     progress(model.accept(&storage, &author, &loaded, 983));
     let cancellation = WorthQueryCancellationSource::new();
-    let cancelled_scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let cancelled_scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let cancelled =
         authentication::authenticate(host.installed_schema(), Actor::Reviewer, &cancelled_scope)
             .unwrap();

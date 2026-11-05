@@ -52,7 +52,7 @@ pub(in crate::domain_computation::primary_graph::application_query::managed_inde
     WorthQueryManagedIndexReadSession::start(
         execution,
         parent,
-        &application.product_runtime,
+        &application.runtime.product_runtime,
         request,
         association.clone(),
         source,

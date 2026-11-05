@@ -9,7 +9,7 @@ use crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxO
 
 /// Why this application runtime could not admit a physical dispatch attempt.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) enum WorthQueryExternalDispatchAdmissionDenial {
+pub enum WorthQueryExternalDispatchAdmissionDenial {
     ForeignRelationalRuntime,
     ForeignProductWorld,
     PublicationCommitMismatch,
@@ -50,7 +50,6 @@ impl WorthQueryExternalDispatchAttemptOrdinal {
         self.0
     }
 
-    #[cfg(test)]
     pub(in crate::domain_computation) const fn value_for_test(&self) -> u64 {
         self.0
     }
@@ -64,8 +63,11 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
         committed: WorthQueryCommittedDispatchOutboxObservation,
     ) -> Result<WorthQueryAdmittedExternalDispatchAttempt, WorthQueryExternalDispatchAdmissionDenial>
     {
-        self.primary_provider.observe_external_dispatch_admission();
+        self.runtime
+            .primary_provider
+            .observe_external_dispatch_admission();
         let relational_runtime = self
+            .runtime
             .product_runtime
             .source()
             .authoritative_source_profile()
@@ -77,7 +79,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
             .committed_product_publication()
             .product_branch()
             .owner_identity()
-            != self.product_runtime.owner.owner_identity()
+            != self.runtime.product_runtime.owner.owner_identity()
         {
             return Err(WorthQueryExternalDispatchAdmissionDenial::ForeignProductWorld);
         }
@@ -102,7 +104,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
         self.refuse_completed_external_effect(committed.record())?;
         let ordinal = WorthQueryExternalDispatchAttemptOrdinal::mint(
             {
-                let update_counter = &self.next_external_dispatch_attempt;
+                let update_counter = &self.runtime.next_external_dispatch_attempt;
                 let mut current = update_counter.load(std::sync::atomic::Ordering::Acquire);
                 loop {
                     let Some(updated_value) = current.checked_add(1) else {
@@ -125,7 +127,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
             committed,
             self.runtime.authority_identity(),
             ordinal,
-            Arc::clone(&self.authorization_clock),
+            Arc::clone(&self.runtime.authorization_clock),
         ))
     }
 
@@ -141,6 +143,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
         record: &WorthQueryDispatchOutboxRecord,
     ) -> Result<(), WorthQueryTerminalEffectRefusal> {
         if self
+            .runtime
             .inbound_custody
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
@@ -153,6 +156,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
             return Ok(());
         }
         match self
+            .runtime
             .primary_provider
             .lookup_completed_inbound(record.correlation())
         {
@@ -162,3 +166,5 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
         }
     }
 }
+
+mod court_doors_for_test;

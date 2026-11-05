@@ -23,8 +23,7 @@ async fn revoked_viewer_cannot_replay_cached_activity_pages() {
         let cancellation = WorthQueryCancellationSource::new();
         WorthQueryRequestScope::new(
             Some(std::time::Instant::now() + Duration::from_secs(5)),
-            cancellation.token(),
-        )
+            cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
     };
     let owner = application.authenticate(&fresh_scope()).await;
     let viewer_id = BankPrincipalId::new(2).unwrap();

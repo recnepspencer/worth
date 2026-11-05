@@ -9,6 +9,8 @@ use super::{
 use crate::publication::patch::data::PatchStreamPosition;
 use std::io::{self, Write};
 use worth_execution::{ExecutionRequest, ExecutionRequestArrayBuilder};
+#[cfg(test)]
+mod size_tests;
 
 impl Artifact {
     /// The position is reserved producer DATA. This issues bytes, not performed proof.
@@ -27,9 +29,7 @@ impl Artifact {
         let result = rmp_serde::encode::write_named(&mut count, &payload);
         settle(result, count.failure.take())?;
         let payload_len = count.length;
-        let frame_len = HEADER_LEN
-            .checked_add(payload_len)
-            .ok_or(Denial::FrameSizeOverflow)?;
+        let frame_len = bounded_frame_len(payload_len)?;
         let header = CanonicalCommitArtifactHeader {
             position,
             commit_id: envelope.commit.commit_id,
@@ -56,7 +56,9 @@ impl Artifact {
         // owner whose two leaves were prepared, with count/emission agreement.
         // External bytes still pass the full frame verification door.
         let artifact = Self { bytes, header };
-        request.consult().map_err(Denial::Request)?;
+        request
+            .consult()
+            .map_err(|cause| Denial::Request(cause.into()))?;
         Ok(artifact)
     }
 }
@@ -78,9 +80,13 @@ impl Write for Sizing<'_, '_> {
                 return Err(stopped());
             }
         };
+        if let Err(cause) = bounded_frame_len(next) {
+            self.failure = Some(cause);
+            return Err(stopped());
+        }
         for _ in bytes.chunks(64 * 1024) {
             if let Err(cause) = self.request.consult() {
-                self.failure = Some(Denial::Request(cause));
+                self.failure = Some(Denial::Request(cause.into()));
                 return Err(stopped());
             }
         }
@@ -122,4 +128,17 @@ fn settle(
 }
 fn stopped() -> io::Error {
     io::Error::other("original Memory artifact emission stopped")
+}
+
+fn bounded_frame_len(payload: usize) -> Result<usize, Denial> {
+    let observed = HEADER_LEN
+        .checked_add(payload)
+        .ok_or(Denial::FrameSizeOverflow)?;
+    if observed > super::MAXIMUM_ARTIFACT_BYTES {
+        return Err(Denial::SizeLimit {
+            observed,
+            maximum: super::MAXIMUM_ARTIFACT_BYTES,
+        });
+    }
+    Ok(observed)
 }

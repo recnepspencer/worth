@@ -24,6 +24,14 @@ pub(in crate::domain_computation::primary_graph) fn preflight_home_application<
     ),
     WorthQueryPrimaryGraphInstallationDenial,
 > {
+    if !bootstrap.product_world_resources.admits_clock(
+        &worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    ) {
+        return Err(WorthQueryPrimaryGraphInstallationDenial::new(
+            WorthQueryPrimaryGraphInstallationDenialKind::AdmissionClockMismatch,
+            "Home Product World and admission require the same monotonic clock",
+        ));
+    }
     validate_application_schema(runtime, installed)?;
     bootstrap.resources.validate_complete(installed)?;
     let handlers = bootstrap

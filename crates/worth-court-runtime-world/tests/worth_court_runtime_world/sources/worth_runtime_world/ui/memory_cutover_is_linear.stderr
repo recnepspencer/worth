@@ -1,0 +1,9 @@
+error[E0382]: use of moved value: `cutover`
+ --> tests/worth_court_runtime_world/sources/worth_runtime_world/ui/memory_cutover_is_linear.rs:5:5
+  |
+3 | fn reuse(cutover: PreparedWorldRelationalCutover<'_, '_, '_, '_>) {
+  |          ------- move occurs because `cutover` has type `PreparedWorldRelationalCutover<'_, '_, '_, '_>`, which does not implement the `Copy` trait
+4 |     cutover.perform_before(std::time::Instant::now());
+  |     ------- value moved here
+5 |     cutover.perform();
+  |     ^^^^^^^ value used here after move

@@ -35,7 +35,12 @@ where
                 custody: prepared.cancel(),
             };
         }
-        let outcome = owner.execute_without_signal(execution, prepared.prepared, cancellation);
+        let outcome = owner.execute_without_signal_with_cutover(
+            execution,
+            prepared.prepared,
+            cancellation,
+            None,
+        );
         owner.finish_durable_publication(&execution, outcome, cancellation)
     }
 }

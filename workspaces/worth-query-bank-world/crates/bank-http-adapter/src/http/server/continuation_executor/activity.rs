@@ -9,7 +9,7 @@ where
     A: BankHttpApplicationAuthenticator,
 {
     let request = &job.request;
-    let scope = WorthQueryRequestScope::new(Some(request.deadline), job.cancellation.token());
+    let scope = WorthQueryRequestScope::new(Some(request.deadline), job.cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let principal = match application
         .authenticate(request.credential.clone(), &scope)
         .await
@@ -85,7 +85,7 @@ where
     A: BankHttpApplicationAuthenticator,
 {
     let request = &job.request.page;
-    let scope = WorthQueryRequestScope::new(Some(request.deadline), job.cancellation.token());
+    let scope = WorthQueryRequestScope::new(Some(request.deadline), job.cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let principal = match application
         .authenticate(request.credential.clone(), &scope)
         .await

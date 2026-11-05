@@ -83,7 +83,7 @@ fn controlled_resident_cell_refuses_exact_control_before_any_new_arc() {
         PartitionContentCommitment::default(),
         &ExecutionRequest::serial(&host),
     );
-    let Err(RegionContentFailure::Request(cause)) = result else {
+    let Err(RegionContentFailure::Execution(cause)) = result else {
         panic!("entered actual control admission must refuse");
     };
     match cause {
@@ -108,7 +108,7 @@ fn controlled_resident_cell_refuses_exact_control_before_any_new_arc() {
             PartitionContentCommitment::default(),
             &ExecutionRequest::serial(&host)
         ),
-        Err(RegionContentFailure::Request(_))
+        Err(RegionContentFailure::Execution(_))
     ));
     assert_eq!(budget.charged_memory_bytes(), 0);
 }

@@ -1,5 +1,5 @@
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryRuntimeSourceIdentity([u8; 32]);
+pub struct WorthQueryRuntimeSourceIdentity([u8; 32]);
 
 impl WorthQueryRuntimeSourceIdentity {
     pub(in crate::domain_computation::primary_graph) const fn new(identity: [u8; 32]) -> Self {
@@ -12,9 +12,7 @@ impl WorthQueryRuntimeSourceIdentity {
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryCheckpointSourceIdentity(
-    [u8; 32],
-);
+pub struct WorthQueryCheckpointSourceIdentity([u8; 32]);
 
 impl WorthQueryCheckpointSourceIdentity {
     pub(in crate::domain_computation::primary_graph) const fn new(identity: [u8; 32]) -> Self {
@@ -30,9 +28,7 @@ impl<Query> super::super::WorthQueryObservedSource<Query> {
     /// Runtime-local source commitment retained from the immutable basis.
     /// Branch occurrence remains part of ordinary output lineage; checkpoint
     /// recovery uses the separate portable checkpoint identity.
-    pub(in crate::domain_computation::primary_graph) fn idempotency_identity(
-        &self,
-    ) -> WorthQueryRuntimeSourceIdentity {
+    pub fn idempotency_identity(&self) -> WorthQueryRuntimeSourceIdentity {
         self.source_meaning.runtime_idempotency_identity()
     }
 
@@ -42,3 +38,5 @@ impl<Query> super::super::WorthQueryObservedSource<Query> {
         self.source_meaning.checkpoint_identity()
     }
 }
+
+mod court_doors_for_test;

@@ -48,6 +48,15 @@ macro_rules! primitive_binding {
 }
 
 primitive_binding!(
+    ContentRefApplicationValueBinding,
+    worth_foundational::facade::ContentRefId,
+    "worth.native.content-ref.v1",
+    ContentRef,
+    ContentRef,
+    ApplicationValueIsNotIdentity,
+    ApplicationValueSignedAggregateUnavailable
+);
+primitive_binding!(
     BoolApplicationValueBinding,
     bool,
     "worth.rust.bool",
@@ -112,6 +121,7 @@ macro_rules! readable_copy_binding {
     };
 }
 
+readable_copy_binding!(ContentRefApplicationValueBinding, ContentRef);
 readable_copy_binding!(BoolApplicationValueBinding, Bool);
 readable_copy_binding!(I64ApplicationValueBinding, Int64);
 readable_copy_binding!(U64ApplicationValueBinding, UInt64);

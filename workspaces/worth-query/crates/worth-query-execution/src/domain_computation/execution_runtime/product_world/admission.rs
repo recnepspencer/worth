@@ -59,6 +59,19 @@ impl WorthQueryProductRuntime {
         gate.with_admission(|| self.lease_from_observation(observation))
     }
 
+    /// Admit the original occurrence's lifecycle without treating its retained
+    /// data as current. The observed live head is not replacement source truth.
+    pub(crate) fn require_live_product_occurrence(
+        &self,
+        occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
+    ) -> Result<(), WorthQueryProductBranchAdmissionDenial> {
+        self.owner
+            .observation_port()
+            .observe_product_branch_occurrence(occurrence)
+            .map(|_| ())
+            .map_err(map_world_denial)
+    }
+
     #[doc(hidden)]
     pub fn integration_admit_product_branch(
         &self,
@@ -67,7 +80,6 @@ impl WorthQueryProductRuntime {
         self.admit_product_occurrence(branch.occurrence())
     }
 
-    #[cfg(test)]
     pub(crate) fn admit_product_branch(
         &self,
         identity: &worth_runtime_world::facade::ProductBranchIdentity,
@@ -192,8 +204,12 @@ pub(super) fn map_world_denial(
         RuntimeWorldServiceDenial::Denied(
             RuntimeWorldBranchAdmissionDenial::DuplicateName
             | RuntimeWorldBranchAdmissionDenial::PlansOmitted
+            | RuntimeWorldBranchAdmissionDenial::UnsupportedRetainedSourcePlan
+            | RuntimeWorldBranchAdmissionDenial::RetainedSourceDurabilityUnsupported
             | RuntimeWorldBranchAdmissionDenial::ForkSourceChanged
             | RuntimeWorldBranchAdmissionDenial::HistoryEntryUnavailable,
         ) => WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::ObservationRejected),
     }
 }
+
+mod court_doors_for_test;

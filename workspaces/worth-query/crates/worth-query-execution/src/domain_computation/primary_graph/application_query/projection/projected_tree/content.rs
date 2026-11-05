@@ -4,7 +4,7 @@ use super::*;
 use sha2::{Digest, Sha256};
 use worth_foundational::facade::{write_aspect_value_identity_material, CanonicalMaterialSink};
 
-pub(in crate::domain_computation::primary_graph::application_query) struct ContentWriter<'a, E> {
+pub struct ContentWriter<'a, E> {
     digest: Sha256,
     admit: &'a mut dyn FnMut(u64) -> Result<(), E>,
     overflow: &'a dyn Fn() -> E,
@@ -20,10 +20,7 @@ impl<'a, E> ContentWriter<'a, E> {
             overflow,
         }
     }
-    pub(in crate::domain_computation::primary_graph::application_query) fn bytes(
-        &mut self,
-        value: &[u8],
-    ) -> Result<(), E> {
+    pub fn bytes(&mut self, value: &[u8]) -> Result<(), E> {
         // No concatenated text or unmetered sizing pass. Chunk boundaries are
         // framed for structural data; scalar canonical material has its own hash.
         (self.admit)(8)?;
@@ -34,23 +31,15 @@ impl<'a, E> ContentWriter<'a, E> {
         }
         Ok(())
     }
-    pub(in crate::domain_computation::primary_graph::application_query) fn number(
-        &mut self,
-        value: u64,
-    ) -> Result<(), E> {
+    pub fn number(&mut self, value: u64) -> Result<(), E> {
         self.bytes(&value.to_be_bytes())
     }
-    pub(in crate::domain_computation::primary_graph::application_query) fn entity(
-        &mut self,
-        value: EntityId,
-    ) -> Result<(), E> {
+    pub fn entity(&mut self, value: EntityId) -> Result<(), E> {
         self.number(value.partition_value_u64())?;
         self.number(value.local_slot_value())?;
         self.number(u64::from(value.generation_value()))
     }
-    pub(in crate::domain_computation::primary_graph::application_query) fn finish(
-        self,
-    ) -> [u8; 32] {
+    pub fn finish(self) -> [u8; 32] {
         self.digest.finalize().into()
     }
     fn scalar(&mut self, value: &AspectValue) -> Result<(), E> {
@@ -107,9 +96,7 @@ impl<E> CanonicalMaterialSink for ScalarWriter<'_, E> {
     }
 }
 impl WorthQueryApplicationDisclosedProjectionTree {
-    pub(in crate::domain_computation::primary_graph::application_query) fn append_one_hop_content<
-        E,
-    >(
+    pub fn append_one_hop_content<E>(
         &self,
         writer: &mut ContentWriter<'_, E>,
         unsupported: impl Fn() -> E,
@@ -148,3 +135,5 @@ impl WorthQueryApplicationDisclosedProjectionTree {
 
 #[cfg(test)]
 mod tests;
+
+mod court_doors_for_test;

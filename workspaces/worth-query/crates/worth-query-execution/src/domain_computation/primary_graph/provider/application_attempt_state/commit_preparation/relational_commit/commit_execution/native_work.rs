@@ -78,7 +78,6 @@ pub(super) fn prepare_native_candidate(
     query: &mut QueryPreparingApplicationCommit,
 ) -> Result<(), Denial> {
     assert!(matches!(query.native, QueryNativeCustody::Proposal(_)));
-    #[cfg(test)]
     provider.fault_port.candidate_ready_for_native_preparation();
     let QueryNativeCustody::Proposal(proposal) =
         std::mem::replace(&mut query.native, QueryNativeCustody::OwnerCallInProgress)
@@ -130,7 +129,6 @@ pub(super) fn prepare_candidate_support(
         ),
     )).map_err(Denial::SourceFacts)?);
     let budget = crate::domain_computation::primary_graph::index_maintenance_budget::ordinary_index_maintenance_budget();
-    #[cfg(test)]
     let budget = if provider.take_tight_index_maintenance_budget() {
         worth_relational::facade::indexes::DerivedIndexMaintenanceBudget {
             maximum_work_units: Some(1),

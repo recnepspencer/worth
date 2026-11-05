@@ -55,15 +55,16 @@ fn replay_validation_keeps_normalized_copy_after_inputs_drop() {
             proposal
                 .state
                 .prepared
-                .merged_plan
-                .plan()
+                .plan
+                .view()
+                .commands()
                 .merged_intents
                 .len(),
             original.intents.len()
         );
         // Move the SAME whole owner. All other proposal/prepared/index owners
         // die at this lexical boundary and cannot mask a missing plan bill.
-        proposal.state.prepared.merged_plan
+        normalized_commands(proposal.into_state().prepared.plan)
     };
     assert!(
         budget.charged_memory_bytes() > 0,
@@ -106,8 +107,13 @@ fn normalized_small_output_does_not_retain_large_input_bill() {
     let input_charge = budget.charged_memory_bytes();
     let normalized = {
         let proposal = transaction.validate(&request, &runtime).unwrap();
-        let MutationIntent::Create(CreateIntent::Entity(entity)) =
-            &proposal.state.prepared.merged_plan.plan().merged_intents[0]
+        let MutationIntent::Create(CreateIntent::Entity(entity)) = &proposal
+            .state
+            .prepared
+            .plan
+            .view()
+            .commands()
+            .merged_intents[0]
         else {
             panic!("accepted create")
         };
@@ -117,7 +123,7 @@ fn normalized_small_output_does_not_retain_large_input_bill() {
         );
         // The claim concerns the normalized plan, not the independently
         // charged fixed proposal backing or its other accepted state.
-        proposal.into_state().prepared.merged_plan
+        normalized_commands(proposal.into_state().prepared.plan)
     };
     assert!(
         budget.charged_memory_bytes() < input_charge,
@@ -242,4 +248,13 @@ fn merge_copy_funds_headers_without_rebilling_shared_leaves() {
     );
     drop(copied);
     assert_eq!(budget.charged_memory_bytes(), 0);
+}
+
+fn normalized_commands(
+    plan: crate::authority::commit::semantic_plan::PreparedRelationalCommitPlan,
+) -> crate::mvcc::OwnedNormalizedPlan {
+    match plan {
+        crate::authority::commit::semantic_plan::PreparedRelationalCommitPlan::Mutation(commands) => commands,
+        crate::authority::commit::semantic_plan::PreparedRelationalCommitPlan::RetainedEntitySelection { .. } => panic!("the staged authored mutations produce the ordinary command plan"),
+    }
 }

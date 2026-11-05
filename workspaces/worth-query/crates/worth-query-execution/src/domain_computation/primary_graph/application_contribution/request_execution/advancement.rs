@@ -60,6 +60,7 @@ impl WorthQueryAdvancementDenial {
                 | Resource::WorkLimit
                 | Resource::NestedLeaseMisuse
                 | Resource::NestedAdvancementOpening
+                | Resource::ForeignAdmissionClock
                 | Resource::ForeignAdvancementPhase
                 | Resource::NoActiveExecutionScope
                 | Resource::EquivalenceContractUnavailable,
@@ -76,21 +77,18 @@ impl WorthQueryAdvancementDenial {
 }
 
 mod phase_custody;
-use phase_custody::ActiveAdvancement;
+pub(crate) mod runner;
 pub use phase_custody::{WorthQueryAdvancementPhase, WorthQueryForeignAdvancementPhase};
 mod bootstrap_opening;
 pub use bootstrap_opening::with_bootstrap_advancement_from_request;
 mod bootstrap_custody;
 pub use bootstrap_custody::WorthQueryBootstrapAdvancementPhase;
-mod admitted_execution;
 mod directory_completion;
-mod opening_custody;
+pub(crate) mod opening_custody;
 use opening_custody::OpeningCustody;
 
 impl QueryRequestExecution<'_> {
-    pub(in crate::domain_computation::primary_graph) fn execution_request(
-        &self,
-    ) -> Result<ExecutionRequest<'_, '_>, Resource> {
+    pub fn execution_request(&self) -> Result<ExecutionRequest<'_, '_>, Resource> {
         match &self.form {
             Form::Leased { lease, .. } | Form::Serial { lease, .. } => lease
                 .as_ref()
@@ -115,16 +113,32 @@ impl QueryRequestExecution<'_> {
         maintenance: Option<&dyn crate::domain_computation::execution_runtime::product_world::WorthQueryHomeMaintenance>,
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
-        let posture = match &self.form {
-            Form::Leased { lease, policy } | Form::Serial { lease, policy } => lease
-                .as_ref()
-                .map(|lease| lease.resolved_posture())
-                .unwrap_or(policy.posture()),
-        };
-        observation::begin(posture, self.has_accounting());
-        let result = self.run_admitted_advancement(owner, source_instance, maintenance, body);
-        observation::record_result(&result);
-        result
+        let pending = std::cell::RefCell::new(Some(body));
+        let result = std::cell::RefCell::new(None);
+        runner::run_advancement(
+            self,
+            owner,
+            source_instance,
+            maintenance,
+            &mut |phase| {
+                let body = pending
+                    .borrow_mut()
+                    .take()
+                    .expect("an advancement invokes its body once");
+                let value = body(phase);
+                *result.borrow_mut() = Some(value);
+            },
+            &mut || {
+                // End both borrows before arbitrary callback/result destruction.
+                let pending = pending.borrow_mut().take();
+                let value = result.borrow_mut().take();
+                drop(pending);
+                drop(value);
+            },
+        )?;
+        Ok(result
+            .into_inner()
+            .expect("a completed advancement has its body result"))
     }
 }
 
@@ -235,12 +249,11 @@ pub use observation::{
     WorthQueryAdvancementObservationForTest,
 };
 
-#[cfg(test)]
-pub(crate) fn with_test_advancement<R>(
+pub fn with_test_advancement<R>(
     body: impl for<'scope> FnOnce(test_host_policy::TestHostRequest<'scope>) -> R,
 ) -> R {
     let policy =
-        crate::domain_computation::execution_runtime::product_world::test_product_world_resources()
+        crate::domain_computation::execution_runtime::product_world::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system())
             .execution_policy();
     with_owned_bootstrap_advancement(policy, |phase| {
         body(test_host_policy::TestHostRequest::new(phase.active))
@@ -248,12 +261,8 @@ pub(crate) fn with_test_advancement<R>(
     .expect("the declared fixture policy admits its host call")
 }
 
-#[cfg(test)]
-mod standalone_test_custody;
-
 /// Positive fixture authoring has its own finite allowance, outside measured host calls.
-#[cfg(test)]
-pub(crate) fn with_test_bootstrap_advancement<R>(
+pub fn with_test_bootstrap_advancement<R>(
     work: u64,
     body: impl for<'scope> FnOnce(test_host_policy::TestHostRequest<'scope>) -> R,
 ) -> R {
@@ -268,12 +277,9 @@ pub(crate) fn with_test_bootstrap_advancement<R>(
     .expect("the declared fixture bootstrap allowance admits authoring")
 }
 
-#[cfg(test)]
-mod tests;
-
 pub(in crate::domain_computation::primary_graph) use observation::record_caller_pass_for_test;
 
-#[cfg(test)]
-mod test_host_policy;
-#[cfg(test)]
+pub(crate) mod test_host_policy;
 pub(crate) use test_host_policy::TestHostRequest;
+
+mod court_doors_for_test;

@@ -109,6 +109,10 @@ impl CanonicalAuthoredIndexWrites {
         backing.memory = memory;
         Ok(())
     }
+    /// The canonical omitted tail means unavailable, never complete-empty.
+    pub(super) fn unavailable() -> Self {
+        Self(None)
+    }
 
     pub(crate) fn is_unavailable(&self) -> bool {
         self.0.is_none()

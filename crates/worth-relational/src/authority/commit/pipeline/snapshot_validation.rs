@@ -98,7 +98,8 @@ fn enforce_snapshot_invariant(
         .map(|admission| &admission.plan);
     let prevalidated_snapshot_publication = admitted.take_prevalidated_snapshot_publication();
     let (_, _, merged_plan, _, commit_log, phase_timing) = admitted.phase_view().into_parts();
-    let merged_plan = aggregate_plan.unwrap_or(merged_plan);
+    let merged_plan =
+        aggregate_plan.map_or(merged_plan, |commands| merged_plan.with_commands(commands));
     let (final_mutation, invariant, accepted_log, accepted_timing) =
         crate::storage::residency::probe_head(
             execution,

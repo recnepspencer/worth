@@ -1,6 +1,6 @@
 //! Reader projection of claims whose physical transfer is still noted.
-mod incoming;
-mod visibility;
+pub(crate) mod incoming;
+pub(crate) mod visibility;
 use super::DemandRecord;
 use super::DemandRegistryState;
 use super::WorthQueryOutputDemandKey;
@@ -47,3 +47,5 @@ impl DemandRegistryState {
 }
 
 pub(super) type OwnerState = Mutex<ClaimOwnerState>;
+
+mod court_doors_for_test;

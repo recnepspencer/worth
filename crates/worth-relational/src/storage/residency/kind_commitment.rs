@@ -14,13 +14,7 @@ pub(crate) struct RelationalRegionKindCommitment {
 pub(super) fn digest(
     projection: &[RegionRelationProjection],
 ) -> Result<worth_foundational::CanonicalDigestId, Cause> {
-    let mut hash = Sha256::new();
-    hash.update(b"worth.relational.region-kind-authority.v2\0");
-    rmp_serde::encode::write(&mut KindHashWriter(&mut hash), projection)
-        .map_err(|_| Cause::Damaged)?;
-    Ok(worth_foundational::CanonicalDigestId::new(
-        hash.finalize().into(),
-    ))
+    digest_controlled(projection, &mut |_, _| Ok(()))
 }
 
 struct KindHashWriter<'a>(&'a mut Sha256);
@@ -47,7 +41,7 @@ pub(super) fn digest_full(
     hash.update(b"worth.relational.region-kind-authority.v2\0");
     let result = rmp_serde::encode::write(&mut KindHashWriter(&mut hash), &encoding);
     if let Some(cause) = encoding.stopped.take() {
-        return Err(super::RegionContentFailure::Request(cause));
+        return Err(super::RegionContentFailure::Execution(cause));
     }
     result.map_err(|_| super::RegionContentFailure::Adjacency)?;
     Ok(worth_foundational::CanonicalDigestId::new(
@@ -166,6 +160,54 @@ impl Serialize for SlotsEncoding<'_, '_, '_> {
             start = slot.checked_add(1);
         }
         sequence.end()
+    }
+}
+
+pub(super) fn digest_controlled(
+    projection: &[RegionRelationProjection],
+    checkpoint: &mut super::kind_projection::ProjectionCheckpoint<'_>,
+) -> Result<worth_foundational::CanonicalDigestId, Cause> {
+    let mut hash = Sha256::new();
+    hash.update(b"worth.relational.region-kind-authority.v2\0");
+    // Stream the same MessagePack representation; no unbounded serialized Vec.
+    let mut writer = ProjectionHashWriter {
+        hash: &mut hash,
+        checkpoint,
+        stopped: None,
+    };
+    let encoded = projection.serialize(&mut rmp_serde::Serializer::new(&mut writer));
+    if let Some(cause) = writer.stopped {
+        return Err(cause);
+    }
+    encoded.map_err(|_| Cause::Damaged)?;
+    Ok(worth_foundational::CanonicalDigestId::new(
+        hash.finalize().into(),
+    ))
+}
+
+struct ProjectionHashWriter<'borrow, 'control> {
+    hash: &'borrow mut Sha256,
+    checkpoint: &'borrow mut super::kind_projection::ProjectionCheckpoint<'control>,
+    stopped: Option<Cause>,
+}
+impl std::io::Write for ProjectionHashWriter<'_, '_> {
+    fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+        for chunk in bytes.chunks(4096) {
+            if self.stopped.is_some() {
+                return Err(std::io::Error::other(
+                    "projection admission already stopped",
+                ));
+            }
+            if let Err(cause) = (self.checkpoint)(chunk.len() as u64, 0) {
+                self.stopped = Some(cause);
+                return Err(std::io::Error::other("projection admission stopped"));
+            }
+            self.hash.update(chunk);
+        }
+        Ok(bytes.len())
+    }
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
     }
 }
 

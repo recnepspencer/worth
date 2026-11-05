@@ -1,6 +1,5 @@
 //! Public conventional mutation authority on one issued selected Product.
 
-use std::marker::PhantomData;
 use std::sync::Arc;
 
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption;
@@ -16,10 +15,12 @@ use worth_query_installation::facade::WorthQueryCanonicalWorkPhases;
 use worth_query_installation::facade::WorthQueryCurrentRetainedMutationBinding;
 use worth_query_installation::facade::WorthQueryInstalledApplicationOperationAuthorization;
 
+use super::brand_tag::BrandTag;
 use super::identity_admitted::mint_operation_identity_admitted;
 use super::identity_admitted::AdmittedOperationIdentityStop;
+use super::ErasedAuthorizationBasis;
 use super::WorthQueryAdmittedApplicationOperation;
-use super::WorthQueryOperationAuthorizationBasis;
+use super::WorthQueryAdmittedOperation;
 use crate::domain_computation::authorization::admission::validate_static_authority_retained;
 use crate::domain_computation::authorization::admission::WorthQueryRetainedMutationStaticStop;
 use crate::domain_computation::authorization::start_selected_operation_graph_work_admitted;
@@ -34,6 +35,24 @@ use crate::domain_computation::primary_graph::WorthQueryIssuedSelectedPrincipal;
 use crate::domain_computation::primary_graph::WorthQueryIssuedSelectedScope;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::provider_session::WorthQueryGraphWorkAccessContextAffinity;
+
+#[path = "selected_conventional/current_control.rs"]
+mod current_control;
+#[path = "selected_conventional/ordinary.rs"]
+mod ordinary;
+pub(in crate::domain_computation) use current_control::authorize_current_control_mutation_on_selected;
+pub(in crate::domain_computation) use ordinary::authorize_public_mutation_on_selected;
+
+struct SelectedMutationProducts<'selected, 'runtime, Schema: ApplicationSchema> {
+    mutation: &'selected SharedSelectedProductOperation<'runtime, Schema>,
+    control: Option<&'selected SharedSelectedProductOperation<'runtime, Schema>>,
+}
+
+impl<Schema: ApplicationSchema> SelectedMutationProducts<'_, '_, Schema> {
+    fn security(&self) -> &SharedSelectedProductOperation<'_, Schema> {
+        self.control.unwrap_or(self.mutation)
+    }
+}
 
 pub(in crate::domain_computation) enum SelectedConventionalAdmissionStop {
     ForeignIssuedSource,
@@ -50,10 +69,10 @@ pub(in crate::domain_computation) enum SelectedConventionalAdmissionStop {
 }
 
 #[allow(clippy::too_many_arguments)]
-pub(in crate::domain_computation) fn authorize_public_mutation_on_selected<Schema, Binding, Scope>(
+fn authorize_mutation_products<Schema, Binding, Scope>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    shared: &SharedSelectedProductOperation<'_, Schema>,
+    products: SelectedMutationProducts<'_, '_, Schema>,
     current: &WorthQueryCurrentRetainedMutationBinding<'_, Schema, Binding>,
     prepared: &WorthQueryPreparedApplicationOperationGraphWork,
     principal: &WorthQueryIssuedSelectedPrincipal<
@@ -77,8 +96,8 @@ where
 {
     use SelectedConventionalAdmissionStop as Stop;
 
-    if !std::ptr::eq(principal.selected(), shared.selected())
-        || !std::ptr::eq(scope.selected(), shared.selected())
+    if !std::ptr::eq(principal.selected(), products.security().selected())
+        || !std::ptr::eq(scope.selected(), products.security().selected())
         || !principal.request().same_request(request)
         || !scope.request().same_request(request)
     {
@@ -91,6 +110,13 @@ where
         return Err(Stop::Interrupted(interruption));
     }
     let operation = current.operation();
+    crate::domain_computation::authorization::admission::validate_admission_clock(
+        &runtime.runtime,
+        principal.principal().clock(),
+        request,
+        operation.operation(),
+    )
+    .map_err(SelectedConventionalAdmissionStop::Authorization)?;
     validate_static_authority_retained(runtime, principal.principal(), scope.scope(), current)
         .map_err(|stop| match stop {
             WorthQueryRetainedMutationStaticStop::Authorization(denial) => {
@@ -123,7 +149,14 @@ where
 
     let mut graph_work = start_selected_operation_graph_work_admitted(
         runtime,
-        shared,
+        products.mutation,
+        products.control.map(|control| {
+            control
+                .selected()
+                .product()
+                .read_lease_ref()
+                .retained_clone()
+        }),
         current,
         prepared,
         &resource_binding_identity,
@@ -175,7 +208,14 @@ where
     // the last safe-point checks now and run them after construction, before
     // handing authority to the executor.
 
-    let admitted = WorthQueryAdmittedApplicationOperation {
+    let tag = BrandTag::new(
+        runtime.runtime.authority_identity(),
+        operation.authority_identity_bytes(),
+        operation.definition_identity_bytes(),
+        operation.operation_type_id(),
+        operation.input_type_id(),
+    );
+    let core = WorthQueryAdmittedOperation {
         runtime_authority: runtime.runtime.authority_identity(),
         binding_identity: operation.binding_identity().clone(),
         operation: operation.operation().to_owned(),
@@ -209,15 +249,16 @@ where
         governed_input_identity: None,
         original_input: None,
         original_inspection_disclosure: None,
-        authorization_basis: WorthQueryOperationAuthorizationBasis::Conventional,
+        authorization_basis: ErasedAuthorizationBasis::Conventional,
         graph_work,
         source_partition_identity: None,
         source_expectation_kind: None,
         source_facts: Vec::new(),
         query_context: None,
         required_output_demand: None,
-        _marker: PhantomData,
     };
+    let admitted = WorthQueryAdmittedApplicationOperation::mint(core, tag, None)
+        .map_err(Stop::Authorization)?;
     if let Some(interruption) = request.interruption() {
         return Err(Stop::Interrupted(interruption));
     }

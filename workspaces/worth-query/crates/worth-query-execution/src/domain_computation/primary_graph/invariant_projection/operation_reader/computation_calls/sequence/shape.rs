@@ -1,34 +1,25 @@
 //! Persistent canonical order; ranks are views, never stored suffix positions.
 use super::*;
 use worth_execution::ExecutionOrderedMap;
-pub(in crate::domain_computation::primary_graph) struct CallShape {
+pub struct CallShape {
     pub(super) order: ExecutionOrderedMap<ComputationRead, ()>,
     pub(super) prefix: usize,
     pub(super) _memory: Option<QueryMemoryReservation>,
 }
 impl CallShape {
-    #[cfg(test)]
     pub(super) fn bytes(&self) -> Option<u64> {
         self._memory
             .as_ref()?
             .bytes()
             .checked_add(self.order.accounted_bytes()?)
     }
-    pub(in crate::domain_computation::primary_graph) fn calls(
-        &self,
-    ) -> impl Iterator<Item = ComputationRead> + '_ {
+    pub fn calls(&self) -> impl Iterator<Item = ComputationRead> + '_ {
         self.order.keys().copied()
     }
-    pub(in crate::domain_computation::primary_graph) fn ordinal(
-        &self,
-        read: ComputationRead,
-    ) -> Option<usize> {
+    pub fn ordinal(&self, read: ComputationRead) -> Option<usize> {
         self.order.rank_of(&read)
     }
-    pub(in crate::domain_computation::primary_graph) fn call_at(
-        &self,
-        ordinal: usize,
-    ) -> Option<ComputationRead> {
+    pub fn call_at(&self, ordinal: usize) -> Option<ComputationRead> {
         self.order.entry_at(ordinal).map(|(read, _)| *read)
     }
     pub(in crate::domain_computation::primary_graph) fn len(&self) -> usize {
@@ -115,7 +106,7 @@ impl CallShape {
 }
 /// Issued only by the sequence's checked edits. It describes correspondence;
 /// the native prior and successful completed run must independently bind it.
-pub(in crate::domain_computation::primary_graph) struct CallShapeTransition {
+pub struct CallShapeTransition {
     pub(super) prior: Arc<CallShape>,
     pub(super) target: Arc<CallShape>,
     pub(super) inserted: ExecutionOrderedMap<ComputationRead, ()>,
@@ -123,10 +114,7 @@ pub(in crate::domain_computation::primary_graph) struct CallShapeTransition {
     pub(super) _memory: Option<QueryMemoryReservation>,
 }
 impl CallShapeTransition {
-    pub(in crate::domain_computation::primary_graph) fn matches_prior(
-        &self,
-        shape: &Arc<CallShape>,
-    ) -> bool {
+    pub fn matches_prior(&self, shape: &Arc<CallShape>) -> bool {
         Arc::ptr_eq(&self.prior, shape)
     }
     pub(in crate::domain_computation::primary_graph) fn target(&self) -> &Arc<CallShape> {
@@ -142,18 +130,11 @@ impl CallShapeTransition {
     ) -> impl Iterator<Item = ComputationRead> + '_ {
         self.retired.keys().copied()
     }
-    pub(in crate::domain_computation::primary_graph) fn closes_fresh(
-        &self,
-        fresh: &BTreeSet<ComputationRead>,
-    ) -> bool {
+    pub fn closes_fresh(&self, fresh: &BTreeSet<ComputationRead>) -> bool {
         self.inserted().all(|read| fresh.contains(&read))
             && self.retired().all(|read| !fresh.contains(&read))
     }
-    pub(in crate::domain_computation::primary_graph) fn maps(
-        &self,
-        prior: Range<usize>,
-        target: Range<usize>,
-    ) -> bool {
+    pub fn maps(&self, prior: Range<usize>, target: Range<usize>) -> bool {
         if prior.start >= prior.end
             || target.start >= target.end
             || prior.end > self.prior.len()
@@ -177,3 +158,5 @@ impl CallShapeTransition {
         true
     }
 }
+
+mod court_doors_for_test;

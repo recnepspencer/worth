@@ -1,5 +1,5 @@
 mod discovery;
-mod read_close;
+mod owner_close;
 mod recovered_release;
 mod recovery;
 mod stale;

@@ -101,7 +101,13 @@ pub(super) fn expand(
         let partition_image_digest = branch_root_partition_image_digest(&partition_images)
             .map_err(|error| corrupt(error.to_string()))?;
         let format_version = DurableBranchRootImage::CURRENT_FORMAT_VERSION;
+        let content_records = crate::durability::checkpoints::content::read_records(
+            execution,
+            &root.content,
+            source.as_ref(),
+        )?;
         branch_roots.push(DurableBranchRootImage {
+            content_records: content_records.clone(),
             format_version,
             commit_id: root.commit_id,
             partition_images,
@@ -112,6 +118,7 @@ pub(super) fn expand(
                 root.commit_id,
                 partition_image_digest,
                 root.schema_carrier_digest,
+                &content_records,
             ),
         });
     }

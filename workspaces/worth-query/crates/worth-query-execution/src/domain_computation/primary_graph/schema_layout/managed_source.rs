@@ -104,7 +104,7 @@ pub(super) fn lower(
             .ok_or_else(|| unsupported(source_name))?;
         let program = registry
             .bind_managed_index_source(&handle, projection, routes)
-            .map_err(|_| unsupported(source_name))?;
+            .map_err(|cause| source_binding_denial(cause, source_name))?;
         programs.insert(
             definition.parts().name.clone(),
             ManagedSource {
@@ -122,6 +122,40 @@ fn unsupported(name: &str) -> Denial {
         super::super::WorthQueryPrimaryGraphInstallationDenialKind::UnsupportedManagedSource,
         name,
     )
+}
+
+fn source_binding_denial(
+    cause: worth_relational::facade::schema::DerivedRelationDenial,
+    name: &str,
+) -> Denial {
+    if cause
+        == worth_relational::facade::schema::DerivedRelationDenial::SourceProgramIdentityExhausted
+    {
+        Denial::new(
+            super::super::WorthQueryPrimaryGraphInstallationDenialKind::SourceProgramIdentityExhausted,
+            name,
+        )
+    } else {
+        unsupported(name)
+    }
+}
+
+#[test]
+fn source_program_identity_exhaustion_is_preserved_at_installation() {
+    use super::super::WorthQueryPrimaryGraphInstallationDenialKind as Kind;
+    use worth_relational::facade::schema::DerivedRelationDenial as Native;
+    for (cause, expected) in [
+        (
+            Native::SourceProgramIdentityExhausted,
+            Kind::SourceProgramIdentityExhausted,
+        ),
+        (Native::ForeignDefinition, Kind::UnsupportedManagedSource),
+    ] {
+        assert_eq!(
+            source_binding_denial(cause, "bounded-source").kind(),
+            expected
+        );
+    }
 }
 
 impl super::WorthQueryPrimaryGraphLayout {

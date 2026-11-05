@@ -18,7 +18,7 @@ pub struct WorthQueryExecutionProviderSession {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) struct WorthQueryExecutionProviderSessionIdentity(Arc<str>);
+pub struct WorthQueryExecutionProviderSessionIdentity(Arc<str>);
 
 impl WorthQueryExecutionProviderSession {
     pub(super) fn mint(

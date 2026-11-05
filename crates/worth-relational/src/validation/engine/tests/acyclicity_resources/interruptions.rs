@@ -18,7 +18,8 @@ fn native_validation_preserves_original_cancellation_and_deadline() {
             let serial = worth_execution::SerialRequest::from_policy(
                 lease.policy(),
                 cancellation.token(),
-                deadline,
+                deadline
+                    .map(|instant| worth_execution::MonotonicClock::system().deadline_at(instant)),
             );
             let original = if leased {
                 ExecutionRequest::leased(&lease)

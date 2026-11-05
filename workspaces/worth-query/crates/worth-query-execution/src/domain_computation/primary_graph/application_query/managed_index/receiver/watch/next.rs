@@ -20,7 +20,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         ResultValue<S, B>: WorthQueryApplicationProjection<S, B::Query>,
     {
         let execution = phase
-            .execution_request_for(&self.product_runtime)
+            .execution_request_for(&self.runtime.product_runtime)
             .map_err(|_| Denial::new(ReceiverCause::Refused(Refusal::ForeignPhase), None))?;
         let allocation = SourceFactsAllocation::open(&execution)
             .map_err(|cause| Denial::new(ReceiverCause::Execution(cause), None))?;
@@ -39,11 +39,16 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             let Some(state) = watch.state.as_mut() else {
                 return Ok(WorthQueryManagedIndexWatchOutcome::Closed);
             };
-            let source = &self.primary_provider.live_delivery;
+            let source = &self.runtime.primary_provider.live_delivery;
             if !source.admits_predicate_occurrence(
                 state.queue.subscription(),
                 context.selected.product().observation(),
             ) || Audience::of(&plan.graph_work)? != state.audience
+                || !state
+                    .selection
+                    .association
+                    .same_association(&context.association)
+                || state.selection.scope != state.audience.scope
                 || plan.controls.maximum_result_count() != state.maximum_results
                 || !state.probe.matches_parameters(
                     &execution,

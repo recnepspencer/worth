@@ -30,7 +30,7 @@ where
         Result<(), TransactionCommitError>,
         crate::domain_computation::primary_graph::WorthQueryForeignAdvancementPhase,
     > {
-        let execution = phase.execution_request_for(&self.product_runtime)?;
+        let execution = phase.execution_request_for(&self.runtime.product_runtime)?;
         let selected = self
             .on_branch(instance.branch())
             .select(phase)
@@ -85,7 +85,7 @@ where
         Result<(), TransactionCommitError>,
         crate::domain_computation::primary_graph::WorthQueryForeignAdvancementPhase,
     > {
-        let execution = phase.execution_request_for(&self.product_runtime)?;
+        let execution = phase.execution_request_for(&self.runtime.product_runtime)?;
         let selected = self
             .on_branch(instance.branch())
             .select(phase)

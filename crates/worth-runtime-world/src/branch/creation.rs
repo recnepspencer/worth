@@ -3,6 +3,9 @@ mod plan;
 
 #[path = "creation/lowered.rs"]
 mod lowered;
+mod retained_source;
+pub(crate) use retained_source::BranchCreationSourceKind;
+pub use retained_source::RetainedProductBranchCreationSource;
 
 pub use plan::{
     ProductBranchCreationPlans, RelationalBranchCreationPlan, SignalBranchCreationPlan,

@@ -6,7 +6,8 @@ crate::needs_os_threads! {
 #[test]
 fn shipped_dispatch_releases_descendant_markers_before_another_dispatch() {
     let _exclusive = TEST_LOCK.lock().unwrap();
-    let lease = authority().request_lease(request(4, 2000, 100)).unwrap();
+    // Marker cleanup must reach the panic boundary regardless of retained layout.
+    let lease = authority().request_lease(accounted_request(4, 100)).unwrap();
     assert!(lease.pool().broadcast(|_| ExecutionOwnerContext::is_active()).iter().all(|active| !active), "pool workers begin without an owner");
     let entered = Mutex::new(Vec::new());
     let gate = Overlap::new(4);

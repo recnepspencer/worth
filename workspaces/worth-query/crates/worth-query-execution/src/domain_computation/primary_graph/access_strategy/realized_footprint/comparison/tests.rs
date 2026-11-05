@@ -32,7 +32,7 @@ fn final_poll_can_refuse_an_otherwise_equal_or_different_comparison() {
 #[test]
 fn swallowed_resource_refusals_preserve_first_cause_for_both_boolean_results() {
     use super::with_resources;
-    use crate::domain_computation::primary_graph::application_query::ProjectionContentStorageFault as Fault;
+    use crate::domain_computation::primary_graph::application_query::ProjectionContentComparisonFault as Fault;
     use std::cell::Cell;
     for first in 0..3 {
         for equal in [false, true] {
@@ -64,6 +64,7 @@ fn swallowed_resource_refusals_preserve_first_cause_for_both_boolean_results() {
                     (scratch.fault)(Fault::CapacityOverflow);
                     equal // all original callbacks are now fenced
                 },
+                &mut |_, _| panic!("scalar fixture has no Native frames"),
             );
             assert_eq!(
                 result,
@@ -89,8 +90,46 @@ fn successful_resource_bridge_requires_original_final_poll_for_true_and_false() 
                     assert!((scratch.reserve)(32).is_ok());
                     equal
                 },
+                &mut |_, _| panic!("scalar fixture has no Native frames"),
             ),
             Err("final")
         );
+    }
+}
+
+#[test]
+fn erased_comparison_latches_literal_native_refusals_before_hostile_boolean_results() {
+    use std::cell::Cell;
+    use worth_relational::facade::{
+        content::RelationalContentDenial as Denial,
+        transactions::RelationalExecutionDenialCause as Cause,
+    };
+    for cause in [
+        Denial::Execution(Cause::Cancelled),
+        Denial::Execution(Cause::WorkExhausted),
+        Denial::ContentIdentityConflict,
+        Denial::SizeLimit {
+            observed: 97,
+            maximum: 31,
+        },
+    ] {
+        for equal in [false, true] {
+            let failure = super::FirstFailure::new();
+            let contacts = Cell::new(0);
+            for _ in 0..2 {
+                assert_eq!(
+                    failure.run(|| {
+                        contacts.set(contacts.get() + 1);
+                        Err::<bool, _>(cause)
+                    }),
+                    Err(())
+                );
+            }
+            assert_eq!(
+                failure.finish(equal, &mut |_| panic!("no poll after refusal")),
+                Err(cause)
+            );
+            assert_eq!(contacts.get(), 1);
+        }
     }
 }

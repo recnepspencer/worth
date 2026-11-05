@@ -230,3 +230,5 @@ impl ConsumedOutputEvidence {
         Ok(ConsumedOutputVerification::Current)
     }
 }
+
+mod court_doors_for_test;

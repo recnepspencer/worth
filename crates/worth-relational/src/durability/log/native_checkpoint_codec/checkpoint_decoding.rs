@@ -73,7 +73,9 @@ fn decode(
             (),
         >::default();
         for (locator, bytes) in wire.members {
-            if super::member_frame::locator(bytes.0) != locator
+            if super::member_frame::locator_for_request(execution, bytes.0)
+                .map_err(RelationalRecoveryStop::Request)?
+                != locator
                 || members.contains_key(&locator)
                 || external_members.contains_key(&locator)
             {
@@ -98,11 +100,10 @@ fn decode(
                     crate::durability::checkpoint_history::capture::array_capture_stop(cause),
                 )
             })?;
-            owned.extend_from_slice(bytes.0).map_err(|cause| {
-                RelationalRecoveryStop::from(
-                    crate::durability::checkpoint_history::capture::array_capture_stop(cause),
-                )
-            })?;
+            for chunk in bytes.0.chunks(4096) {
+                crate::content::charge_bytes(execution, chunk.len())?;
+                owned.extend_from_slice(chunk).map_err(inline_allocation)?;
+            }
             let owned = owned
                 .seal()
                 .map_err(|cause| {
@@ -129,4 +130,19 @@ fn decode(
         super::cold_checkpoint::readmit(execution, manifest, source, facts, image)?
     };
     Ok(DecodedNativeCheckpoint { checkpoint })
+}
+
+fn inline_allocation(
+    cause: worth_execution::ExecutionRequestArrayDenial,
+) -> RelationalRecoveryStop {
+    use worth_execution::ExecutionRequestArrayDenial as Denial;
+    match cause {
+        Denial::Request(cause) => RelationalRecoveryStop::Request(cause.into()),
+        Denial::Allocation(cause) => RelationalRecoveryStop::Request(match cause.classify() {
+            worth_execution::ExecutionAllocationDenialClass::Request(cause) => cause.into(),
+            worth_execution::ExecutionAllocationDenialClass::Physical(_) => {
+                crate::execution::RelationalExecutionDenialCause::AllocationFailed
+            }
+        }),
+    }
 }

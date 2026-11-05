@@ -10,7 +10,7 @@ use super::runtime::WorthQueryProductRootIdentity;
 /// One admitted product occurrence carried into a provider attempt. The weak
 /// ports cannot extend the root's admission lifetime or choose a different head.
 #[derive(Clone)]
-pub(crate) struct WorthQueryProductPublicationBinding {
+pub struct WorthQueryProductPublicationBinding {
     pub(super) adoption_preparation: Arc<super::adoption_preparation::AdoptionPreparationControl>,
     observation: ProductBranchObservation,
     publication: RuntimeWorldPublicationPort<(), (), (), (), ()>,
@@ -61,10 +61,17 @@ impl WorthQueryProductPublicationBinding {
         Arc::clone(&self.root_identity)
     }
 
+    pub(super) fn admits_clock(
+        &self,
+        clock: &worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock,
+    ) -> bool {
+        self.clock.admission_clock.same_clock(clock)
+    }
+
     pub(crate) fn deadline(
         &self,
-        deadline: std::time::Instant,
-    ) -> worth_runtime_world::facade::RuntimeWorldInstant {
+        deadline: worth_execution::MonotonicDeadline,
+    ) -> Option<worth_runtime_world::facade::RuntimeWorldInstant> {
         self.clock.deadline(deadline)
     }
 }
@@ -85,3 +92,5 @@ impl super::WorthQueryProductRuntime {
         )
     }
 }
+
+mod court_doors_for_test;

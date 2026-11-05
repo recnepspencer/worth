@@ -4,10 +4,7 @@ use std::cell::{Cell, RefCell};
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, ExecutionWorkCeiling};
 use worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog;
 
-#[cfg(test)]
-mod tests;
-
-pub(in crate::domain_computation::primary_graph) struct ValueDecodeState {
+pub struct ValueDecodeState {
     pub(super) bindings: WorthQueryInstalledApplicationValueBindingCatalog,
     pub(super) memory: RefCell<Option<ExecutionMemoryReservation>>,
     first: Cell<Option<Stop>>,
@@ -15,9 +12,7 @@ pub(in crate::domain_computation::primary_graph) struct ValueDecodeState {
 }
 
 impl ValueDecodeState {
-    pub(in crate::domain_computation::primary_graph) fn new(
-        bindings: WorthQueryInstalledApplicationValueBindingCatalog,
-    ) -> Self {
+    pub fn new(bindings: WorthQueryInstalledApplicationValueBindingCatalog) -> Self {
         Self {
             bindings,
             memory: RefCell::new(None),
@@ -140,3 +135,5 @@ impl ValueDecodeState {
         }
     }
 }
+
+mod court_doors_for_test;

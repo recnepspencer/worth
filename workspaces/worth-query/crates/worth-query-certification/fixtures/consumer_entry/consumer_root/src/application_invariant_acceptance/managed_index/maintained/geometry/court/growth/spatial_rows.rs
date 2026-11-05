@@ -17,6 +17,7 @@ fn rows(count: u32) {
         prefixes.clone(),
         Arc::new(prefix_rule::Calls::new(prefixes)),
         Configuration::new(calls.clone()),
+        worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     let scope = authentication::request_scope();
     let principal = authenticate(&world, &scope);

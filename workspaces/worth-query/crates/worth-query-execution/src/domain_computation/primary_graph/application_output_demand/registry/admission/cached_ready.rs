@@ -98,8 +98,7 @@ fn committed_ready<'a>(
     let Some(WorthQueryOutputCheckpoint::Ready(completion)) = &output.checkpoint else {
         return None;
     };
-    let super::super::WorthQueryAcceptedOutputAuthority::Committed(receipt) = &completion.authority
-    else {
+    let Some(receipt) = completion.authority.publication_view() else {
         return None;
     };
     (receipt.idempotency_binding().key_identity() == idempotency_key

@@ -100,9 +100,7 @@ impl RuntimeCore {
         let evaluator = self.evaluator();
         let _ = self
             .runtime
-            .targets(nodes)
-            .on_demand()
-            .read_many(&self.store, &evaluator)
+            .read_many(&nodes, &self.store, &evaluator)
             .map_err(WorthSignalJsError::from)?;
         self.runtime.clear_live_branch_mutation_residue();
         self.apply_pending_callback_dependency_patches()?;

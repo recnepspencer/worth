@@ -13,7 +13,7 @@ use worth_relational::facade::branch::RelationalBranchRetentionLease;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 use worth_relational::facade::snapshots::SnapshotHandle;
 
-pub(crate) struct WorthQueryApplicationBasisLease {
+pub struct WorthQueryApplicationBasisLease {
     identity: WorthQueryApplicationBasisIdentity,
     custody: BasisCustody,
 }
@@ -95,9 +95,7 @@ impl WorthQueryApplicationBasisLease {
         Ok(())
     }
 
-    pub(in crate::domain_computation::primary_graph) fn retain_shared(
-        &self,
-    ) -> Result<Self, CompanionPreflightStop> {
+    pub fn retain_shared(&self) -> Result<Self, CompanionPreflightStop> {
         let BasisCustody::Shared(core) = &self.custody else {
             return Err(CompanionPreflightStop::SelectedSourceMismatch);
         };

@@ -43,7 +43,7 @@ pub(in super::super) fn canonical(
     let mut result = DecodedQuote::default();
     result.control = crate::history::data::CanonicalEnvelopeControlAllocation::allocation_bytes()
         .ok_or_else(malformed)?;
-    let mut seen = 0_u32;
+    let mut seen = 0_u64;
     value.fields(request, |field, value| {
         let Some(index) = FIELDS.iter().position(|expected| *expected == field) else {
             // The old checkpoint wire ignored unknown fields. Its slice-backed
@@ -55,12 +55,27 @@ pub(in super::super) fn canonical(
             }
             return Err(Refusal::NonCanonicalPayload);
         };
-        let bit = 1_u32 << index;
+        let bit = 1_u64 << index;
         if seen & bit != 0 {
             return Err(Refusal::NonCanonicalPayload);
         }
         seen |= bit;
         match field {
+            // Content's controlled seed admits its own original allocations.
+            "content" => {}
+            "producer_cascade_retirement" => add(
+                &mut result.cascades,
+                super::cascades::producer(value, request)?,
+            )?,
+            "authored_cascade_retirement" => add(
+                &mut result.cascades,
+                super::cascades::authored(value, request)?,
+            )?,
+            "authored_cascade_restoration" => add(
+                &mut result.cascades,
+                super::cascades::restoration(value, request)?,
+            )?,
+            "authority_kind" => result.selection = super::cascades::authority(value, request)?,
             "semantic_result" => result.semantic = super::semantic::quote(value, request)?,
             "index_definition_delta" => result.index_delta = super::indexes::delta(value, request)?,
             "authored_index_writes" => {
@@ -160,7 +175,11 @@ fn require_empty(
         Ok(())
     })
 }
-const FIELDS: [&str; 30] = [
+const FIELDS: [&str; 34] = [
+    "content",
+    "producer_cascade_retirement",
+    "authored_cascade_retirement",
+    "authored_cascade_restoration",
     "caller_association",
     "index_definition_delta",
     "semantic_result",

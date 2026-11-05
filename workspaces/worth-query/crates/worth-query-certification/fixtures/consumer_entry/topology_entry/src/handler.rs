@@ -47,17 +47,30 @@ pub(crate) mod checkpoint_polling;
 trait PlanarHandlerBinding<Schema: TopologySchemaBinding>:
     worth_query_decl::facade::application_operation::ApplicationMutationBinding<
     Schema,
-    Input = PlanarMutation,
     Decision = (),
     Result = PlanarAdjustmentResult,
     Denial = PlanarMutationDenial,
     Output = PlanarOutputs,
 >
 {
+    fn planar_input(input: &Self::Input) -> &PlanarMutation;
 }
 
-impl<Schema: TopologySchemaBinding> PlanarHandlerBinding<Schema> for PlanarMutationBinding<Schema> {}
-impl<Schema: TopologySchemaBinding> PlanarHandlerBinding<Schema> for PlanarEditBinding<Schema> {}
+impl<Schema: TopologySchemaBinding> PlanarHandlerBinding<Schema> for PlanarMutationBinding<Schema> {
+    fn planar_input(input: &Self::Input) -> &PlanarMutation {
+        input
+    }
+}
+impl<Schema: TopologySchemaBinding> PlanarHandlerBinding<Schema> for PlanarEditBinding<Schema> {
+    fn planar_input(input: &Self::Input) -> &PlanarMutation {
+        input
+    }
+}
+impl<Schema: TopologySchemaBinding> PlanarHandlerBinding<Schema> for EscapingPlanarBinding<Schema> {
+    fn planar_input(input: &Self::Input) -> &PlanarMutation {
+        &input.0
+    }
+}
 
 impl<Schema: TopologySchemaBinding, Binding: PlanarHandlerBinding<Schema>>
     OperationHandler<Schema, Binding> for PlanarHandler
@@ -73,9 +86,10 @@ where
 {
     fn decide(
         &self,
-        input: &PlanarMutation,
+        input: &Binding::Input,
         reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>,
     ) -> HandlerResult<(), PlanarMutationDenial> {
+        let input = Binding::planar_input(input);
         // This consumer deliberately leaves interruption enforcement to the owner.
         let _ = reader.checkpoint();
         #[cfg(test)]
@@ -231,13 +245,13 @@ where
 
     fn build_candidate(
         &self,
-        input: &PlanarMutation,
+        input: &Binding::Input,
         _: (),
         writer: &mut CandidateWriter<'_, Schema, Binding>,
     ) -> HandlerResult<PlanarAdjustmentResult, PlanarMutationDenial> {
         #[cfg(test)]
         checkpoint_polling::candidate_started();
-        match author(input, writer) {
+        match author(Binding::planar_input(input), writer) {
             Ok(changed_vertices) => {
                 HandlerResult::Completed(PlanarAdjustmentResult { changed_vertices })
             }

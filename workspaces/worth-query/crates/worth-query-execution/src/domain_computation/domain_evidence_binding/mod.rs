@@ -1,6 +1,6 @@
 mod binding;
 mod candidate_occurrence;
-mod execution_snapshot;
+pub(crate) mod execution_snapshot;
 
 pub(crate) use binding::WorthQueryConvergenceDomainEvidenceBinding;
 pub use binding::WorthQueryConvergenceDomainEvidenceBindingDenial;

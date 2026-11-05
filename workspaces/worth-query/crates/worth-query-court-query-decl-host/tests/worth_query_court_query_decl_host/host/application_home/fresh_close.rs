@@ -27,8 +27,7 @@ pub(super) fn verify(
         let cancellation = WorthQueryCancellationSource::new();
         let scope = WorthQueryRequestScope::new(
             Some(Instant::now() + Duration::from_secs(60)),
-            cancellation.token(),
-        );
+            cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
         let principal = identity::inspection_authentication::authenticate(
             retained_runtime.runtime().installed_schema(),
             &scope,

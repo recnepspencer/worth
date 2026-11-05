@@ -19,7 +19,7 @@ impl WorthQueryArtifactProductionGeneration {
     }
 }
 
-pub(crate) struct WorthQueryArtifactProductionGenerationPending {
+pub struct WorthQueryArtifactProductionGenerationPending {
     pub(super) registry: Arc<WorthQueryWorkflowArtifactRegistry>,
     pub(super) prior: WorthQueryArtifactProductionGeneration,
     pub(super) next: WorthQueryArtifactProductionGeneration,
@@ -122,3 +122,5 @@ impl WorthQueryArtifactProductionGenerationCommitted {
         self.prior
     }
 }
+
+mod court_doors_for_test;

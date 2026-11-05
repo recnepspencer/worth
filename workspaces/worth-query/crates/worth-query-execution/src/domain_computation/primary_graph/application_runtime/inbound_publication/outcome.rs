@@ -7,7 +7,7 @@ use crate::domain_computation::execution_runtime::product_world::WorthQueryProdu
 use crate::domain_computation::WorthQueryProductUnpublishedApplication;
 
 /// The only completion posture that may seal terminal owner truth.
-pub(in crate::domain_computation) struct WorthQueryPerformedInboundCompletion {
+pub struct WorthQueryPerformedInboundCompletion {
     accepted: Arc<WorthQueryAcceptedInboundOccurrence>,
     original_incarnation: ProductBranchIncarnation,
     publication: WorthQueryProductPublicationReceipt,
@@ -46,7 +46,7 @@ impl WorthQueryPerformedInboundCompletion {
 /// World owns any Relational effects that escaped without a product transition.
 /// Retaining the accepted occurrence ties recovery to its exact source meaning.
 #[must_use = "retain unpublished completion and accepted evidence for recovery"]
-pub(in crate::domain_computation) struct WorthQueryUnpublishedInboundCompletion {
+pub struct WorthQueryUnpublishedInboundCompletion {
     accepted: Arc<WorthQueryAcceptedInboundOccurrence>,
     unpublished: WorthQueryProductUnpublishedApplication,
 }
@@ -73,7 +73,7 @@ impl WorthQueryUnpublishedInboundCompletion {
 }
 
 #[derive(Debug)]
-pub(in crate::domain_computation) enum WorthQueryInboundPublicationDenial {
+pub enum WorthQueryInboundPublicationDenial {
     ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
     ForeignRelationalRuntime,
     ForeignProductWorld,
@@ -85,7 +85,7 @@ pub(in crate::domain_computation) enum WorthQueryInboundPublicationDenial {
 }
 
 #[must_use = "retain World completion outcome until terminal custody is settled"]
-pub(in crate::domain_computation) enum WorthQueryInboundPublicationOutcome {
+pub enum WorthQueryInboundPublicationOutcome {
     AlreadyCompleted,
     Performed(WorthQueryPerformedInboundCompletion),
     NoEffect,

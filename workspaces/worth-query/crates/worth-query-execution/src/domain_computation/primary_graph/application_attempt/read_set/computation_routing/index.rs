@@ -3,7 +3,7 @@ use super::super::super::retained_decision_facts::StoreDenial;
 use super::*;
 use worth_execution::{ExecutionAllocationPolicy, ExecutionOrderedMap};
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) struct ComputationFactIndex {
+pub struct ComputationFactIndex {
     pub(super) ordinals: std::sync::Arc<ExecutionOrderedMap<usize, WorthQueryApplicationFactKey>>,
     pub(super) calls: ExecutionOrderedMap<ComputationRead, Vec<WorthQueryApplicationFactKey>>,
     pub(super) observation_work: Option<u64>,
@@ -59,3 +59,5 @@ impl ComputationFactIndex {
         self.calls.get(&read).into_iter().flatten()
     }
 }
+
+mod court_doors_for_test;

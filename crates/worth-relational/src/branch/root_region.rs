@@ -165,7 +165,9 @@ pub(super) fn capture_failure(
     failure: RegionContentFailure,
 ) -> RelationalBranchRootCaptureDenial {
     match failure {
-        RegionContentFailure::Request(cause) => RelationalBranchRootCaptureDenial::Request(cause),
+        RegionContentFailure::Execution(cause) => {
+            RelationalBranchRootCaptureDenial::Execution(cause)
+        }
         RegionContentFailure::Content(
             crate::storage::overlay::PartitionContentDigestError::Request(cause),
         ) => RelationalBranchRootCaptureDenial::Request(cause),

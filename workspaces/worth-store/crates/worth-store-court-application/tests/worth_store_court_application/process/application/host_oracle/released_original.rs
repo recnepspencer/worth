@@ -133,7 +133,7 @@ pub(super) fn assert_retry_refused(home: &OracleHome, key: u64, value: u64) {
     use worth_query_testkit_host::facade::host::{
         application_home as fixture, application_runtime_surface as identity,
     };
-    let scope = WorthQueryRequestScope::new(None, WorthQueryCancellationSource::new().token());
+    let scope = WorthQueryRequestScope::new(None, WorthQueryCancellationSource::new().token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let principal = identity::inspection_authentication::authenticate(
         home.runtime().runtime().installed_schema(),
         &scope,

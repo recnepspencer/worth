@@ -19,9 +19,50 @@ pub struct WorthQueryApplicationReadObservation {
     product: WorthQueryProductObservationLease,
     producer:
         Option<Arc<super::super::application_output_demand::OriginalSettledProducerObservation>>,
+    _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
 impl WorthQueryApplicationReadObservation {
+    pub(in crate::domain_computation::primary_graph) fn with_original_producer(
+        &self,
+        producer: Arc<super::super::application_output_demand::OriginalSettledProducerObservation>,
+    ) -> Arc<Self> {
+        Arc::new(Self {
+            runtime_authority: self.runtime_authority,
+            schema_binding: self.schema_binding.clone(),
+            product: self.product.retained_clone(),
+            producer: Some(producer),
+            _memory: None,
+        })
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn original_settled_producer(
+        &self,
+    ) -> Option<&super::super::application_output_demand::OriginalSettledProducerObservation> {
+        self.producer.as_deref()
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn retained_product_lease(
+        &self,
+    ) -> WorthQueryProductObservationLease {
+        self.product.retained_clone()
+    }
+    pub(in crate::domain_computation::primary_graph) fn product_observation(
+        &self,
+    ) -> &worth_runtime_world::facade::ProductBranchObservation {
+        self.product.observation()
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn same_application_occurrence(
+        &self,
+        other: &Self,
+    ) -> bool {
+        self.runtime_authority == other.runtime_authority
+            && self.schema_binding == other.schema_binding
+            && self.branch_identity() == other.branch_identity()
+            && self.branch_incarnation() == other.branch_incarnation()
+    }
+
     pub(in crate::domain_computation::primary_graph) fn from_product<Schema>(
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         product: WorthQueryProductObservationLease,
@@ -29,11 +70,22 @@ impl WorthQueryApplicationReadObservation {
     where
         Schema: ApplicationSchema,
     {
+        Self::from_product_with_memory(runtime, product, None)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn from_product_with_memory<
+        Schema: ApplicationSchema,
+    >(
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        product: WorthQueryProductObservationLease,
+        memory: Option<worth_execution::ExecutionMemoryReservation>,
+    ) -> Arc<Self> {
         Arc::new(Self {
             runtime_authority: runtime.runtime.authority_identity().as_u64(),
             schema_binding: runtime.installed_schema.binding_identity(),
             product,
             producer: None,
+            _memory: memory,
         })
     }
 
@@ -55,6 +107,7 @@ impl WorthQueryApplicationReadObservation {
                 .matches(runtime, product.observation())
                 .then_some(producer),
             product,
+            _memory: None,
         })
     }
 
@@ -119,7 +172,7 @@ where
         WorthQuerySelectedProductOperation<'_, Schema>,
         WorthQueryProductBranchAdmissionDenial,
     > {
-        let execution = match phase.execution_request_for(&self.product_runtime) {
+        let execution = match phase.execution_request_for(&self.runtime.product_runtime) {
             Ok(execution) => execution,
             Err(_) => {
                 return Err(WorthQueryProductBranchAdmissionDenial::Refused(
@@ -146,9 +199,12 @@ where
             ));
         }
         let product = self
+            .runtime
             .product_runtime
             .lease_from_observation(observation.product.observation().clone())?;
         self.on_product(execution, product)
             .map(|selected| selected.with_original_settled_producer(observation.producer.clone()))
     }
 }
+
+mod court_doors_for_test;

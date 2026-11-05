@@ -14,6 +14,8 @@ const ordinaryForm = signals.form({
 });
 
 ordinaryForm.fields.title.set("Publish docs");
+ordinaryForm.setFields({ title: "Publish docs", done: true });
+ordinaryForm.setFields({}, { clearDraft: ["title", "done"] });
 ordinaryForm.fields.title.sourceValue();
 ordinaryForm.fields.title.draftValue();
 ordinaryForm.fields.title.value();

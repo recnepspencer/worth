@@ -11,7 +11,6 @@ pub(super) fn digest_shape_name(shape: CanonicalDigestAspectShapeKind) -> &'stat
         CanonicalDigestAspectShapeKind::Struct => "struct",
         CanonicalDigestAspectShapeKind::Opaque => "opaque",
         CanonicalDigestAspectShapeKind::Reference => "reference",
-        CanonicalDigestAspectShapeKind::Content => "content",
     }
 }
 
@@ -41,7 +40,6 @@ pub(super) fn scalar_aspect_type_name(value: ScalarAspectType) -> &'static str {
         ScalarAspectType::BigInt => "big_int",
         ScalarAspectType::Rational => "rational",
         ScalarAspectType::String => "string",
-        ScalarAspectType::Bytes => "bytes",
         ScalarAspectType::Uuid => "uuid",
         ScalarAspectType::Date => "date",
         ScalarAspectType::Time => "time",

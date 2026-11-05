@@ -69,10 +69,17 @@ where
                 | WorthQueryApplicationProgramOutputProgress::Progressed,
             ) => Advance::Pending(self),
             Ok(WorthQueryApplicationProgramOutputProgress::Settled(settlement)) => {
+                let source = self
+                    .core
+                    .custody
+                    .basis
+                    .take()
+                    .expect("settled tree owns its original read source");
                 Advance::Settled(WorthQuerySettledProgramOutputOperation {
                     custody: self.core.custody,
                     delivery: ProgramOutputDeliveryCore {
                         settlement,
+                        source,
                         branch: self.core.branch,
                         runtime: self.core.runtime,
                     },

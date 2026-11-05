@@ -65,8 +65,7 @@ impl BankHttpProcessConfiguration {
         let cancellation = WorthQueryCancellationSource::new();
         let scope = WorthQueryRequestScope::new(
             Some(Instant::now() + Duration::from_secs(300)),
-            cancellation.token(),
-        );
+            cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
         let identity = install_identity(oidc, world, self.cold_certification, &scope).await?;
         if let Some(address) = external_rail {
             identity

@@ -102,3 +102,5 @@ impl SealedComputationFacts {
         self.layout = super::layout::SealedReadLayout::OwnerFixture;
     }
 }
+
+mod court_doors_for_test;

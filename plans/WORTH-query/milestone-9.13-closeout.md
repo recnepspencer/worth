@@ -237,12 +237,12 @@ This closeout does not claim:
 - a general ordinary collection page-size/cursor continuation API
 - durable cursor persistence
 - blob-backed delivery
-- completion of Milestones 10, 11, 12, or 13
+- completion of Store integration or unrelated capability qualification
 
 Runtime-backed cursor substrate and graph-access streaming cursors exist, but
 the ordinary read/count journey does not currently expose a general paged
-collection continuation contract. Store-backed parity belongs to Milestone 10;
-durable artifacts and continuations belong to Milestone 11.
+collection continuation contract. Store-backed parity belongs to Store execution/historical integration;
+durable artifacts and continuations belong to Store Milestone 11.
 
 ## Discovery Contract
 

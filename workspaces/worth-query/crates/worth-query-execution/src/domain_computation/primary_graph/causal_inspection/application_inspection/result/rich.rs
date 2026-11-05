@@ -51,7 +51,7 @@ impl<'o> WorthQueryMaterializedApplicationInspection<'o> {
         drop(self)
     }
 }
-pub(in super::super) struct PreparedRichInspection<'o> {
+pub struct PreparedRichInspection<'o> {
     original: &'o WorthQueryApplicationQueryObservation,
     report: InspectionReportPayload,
     materialization: WorthQueryApplicationRichMaterialization,
@@ -105,3 +105,5 @@ impl<'o> PreparedRichInspection<'o> {
         }
     }
 }
+
+mod court_doors_for_test;

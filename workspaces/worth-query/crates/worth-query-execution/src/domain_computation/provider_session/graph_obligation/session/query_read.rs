@@ -203,12 +203,6 @@ impl WorthQueryManagedGraphWorkSession {
             .plan
             .complete_application_query()
             .ok_or(WorthQueryManagedGraphReadDenial::MutationSession)?;
-        if release.scope()
-            != worth_query_admission::integration::WorthQueryExecutionCapacityReservationScope::GraphWork
-            || release.released_reservation_count() != 1
-        {
-            return Err(WorthQueryManagedGraphReadDenial::TerminalReleaseMismatch);
-        }
         Ok(WorthQueryGraphReadCompletion::new(
             WorthQueryGraphReadCompletionParts {
                 session,

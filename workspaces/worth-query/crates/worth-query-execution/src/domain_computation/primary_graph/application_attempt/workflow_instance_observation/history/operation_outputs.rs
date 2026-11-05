@@ -15,11 +15,8 @@ use worth_relational::facade::{
     runtime::RelationalRuntime,
     snapshots::SnapshotHandle,
 };
-#[cfg(test)]
-mod tests;
 
-pub(in crate::domain_computation::primary_graph::application_attempt) struct ObservedOperationOutputs
-{
+pub struct ObservedOperationOutputs {
     pub(in crate::domain_computation::primary_graph::application_attempt) binding: String,
     pub(in crate::domain_computation::primary_graph::application_attempt) entries:
         BTreeMap<String, ObservedOperationOutput>,
@@ -31,7 +28,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) struct Obs
     pub(in crate::domain_computation::primary_graph::application_attempt) target: EntityId,
 }
 
-pub(super) fn observe(
+pub fn observe(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,
@@ -187,7 +184,7 @@ impl OutputContextReader<'_, '_, '_> {
     }
 }
 
-fn text(
+pub fn text(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,

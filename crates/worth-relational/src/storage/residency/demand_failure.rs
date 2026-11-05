@@ -6,6 +6,7 @@ use crate::storage::data::RelationalStorageUnavailable;
 pub(crate) enum RelationalResidencyDemandFailure {
     StorageUnavailable(RelationalStorageUnavailable),
     Request(crate::execution::RelationalExecutionDenialCause),
+    Content(crate::content::RelationalContentDenial),
 }
 
 impl From<RelationalStorageUnavailable> for RelationalResidencyDemandFailure {
@@ -21,6 +22,7 @@ impl From<RelationalResidencyDemandFailure> for crate::execution::RelationalExec
                 Self::StorageUnavailable(failure)
             }
             RelationalResidencyDemandFailure::Request(cause) => cause,
+            RelationalResidencyDemandFailure::Content(cause) => cause.into_execution_cause(),
         }
     }
 }
@@ -30,6 +32,7 @@ impl From<RelationalResidencyDemandFailure> for crate::durability::data::Relatio
         match failure {
             RelationalResidencyDemandFailure::StorageUnavailable(failure) => failure.into(),
             RelationalResidencyDemandFailure::Request(cause) => Self::Request(cause),
+            RelationalResidencyDemandFailure::Content(cause) => cause.into(),
         }
     }
 }

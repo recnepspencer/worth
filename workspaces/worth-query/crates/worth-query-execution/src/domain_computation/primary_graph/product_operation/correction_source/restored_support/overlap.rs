@@ -15,14 +15,14 @@ use worth_relational::facade::transactions::RecordRef;
 mod aspect;
 mod source_authorization;
 
-pub(super) struct Selection {
+pub struct Selection {
     pub(super) keys: ExecutionArray<Key>,
     pub(super) managed: ExecutionArray<RelationalAuthoredManagedSourceSelector>,
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
 /// Project every eligible captured fact or refuse the whole selection.
-pub(super) fn select(
+pub fn select(
     execution: ExecutionRequest<'_, '_>,
     facts: &FactPayload,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
@@ -368,3 +368,5 @@ fn unsupported(reason: &'static str, fact: &Fact) -> Stop {
     );
     Stop::UnsupportedFact
 }
+
+mod court_doors_for_test;

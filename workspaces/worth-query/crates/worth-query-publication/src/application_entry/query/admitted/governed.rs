@@ -19,7 +19,7 @@ where
         <Intent::Binding as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
     >,
 {
-    pub(in crate::application_entry::query) fn with_admitted_governed_query<
+    pub(in crate::application_entry) fn with_admitted_governed_query<
         Capability,
         Operation,
         Input,
@@ -27,6 +27,37 @@ where
     >(
         self,
         phase: &AdvancementPhase<'_>,
+        approved: Option<&WorthQueryApprovedElevation>,
+        capability: ApplicationCapabilityRef<Schema, Capability>,
+        operation: ApplicationOperationRef<Schema, Operation, Input>,
+        input: Input,
+        perform: impl FnOnce(
+            &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+            &WorthQueryInstalledApplicationQueryBinding<Schema, Intent::Binding>,
+            &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+            RequestPlan<'_, Schema, Intent::Binding>,
+        ) -> Result<T, WorthQueryApplicationRequestQueryDenial>,
+    ) -> Result<T, WorthQueryApplicationRequestQueryDenial>
+    where
+        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+        Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
+        Input: ApplicationCapabilityRequest<Schema, Capability, Scope = ScopeEntity<Schema, Intent>>
+            + 'static,
+    {
+        self.with_admitted_governed_preview_query(
+            phase, None, approved, capability, operation, input, perform,
+        )
+    }
+
+    pub(in crate::application_entry) fn with_admitted_governed_preview_query<
+        Capability,
+        Operation,
+        Input,
+        T,
+    >(
+        self,
+        phase: &AdvancementPhase<'_>,
+        preview: Option<&WorthQueryHistoryPreviewReadAdmission<'_, '_>>,
         approved: Option<&WorthQueryApprovedElevation>,
         capability: ApplicationCapabilityRef<Schema, Capability>,
         operation: ApplicationOperationRef<Schema, Operation, Input>,
@@ -125,8 +156,18 @@ where
             limits.maximum_results().min(query_maximum),
             self.scope,
         );
-        let plan = match retained {
-            Some(retained) => selected.admit_retained_governed_application_query(
+        let plan = match (preview, retained) {
+            (Some(preview), None) => selected.admit_document_preview_governed_application_query(
+                phase,
+                preview,
+                binding.query(),
+                &access,
+                capability_access,
+                parameters,
+                controls,
+            ),
+            (Some(_), Some(_)) => return Err(WorthQueryApplicationRequestQueryDenial::RequestMode),
+            (None, Some(retained)) => selected.admit_retained_governed_application_query(
                 phase,
                 retained,
                 binding.query(),
@@ -135,7 +176,7 @@ where
                 parameters,
                 controls,
             ),
-            None => selected.admit_governed_application_query(
+            (None, None) => selected.admit_governed_application_query(
                 phase,
                 binding.query(),
                 &access,

@@ -11,6 +11,6 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         &self,
     ) -> Result<WorthQueryManagedCleanupScheduleForTest, WorthQueryManagedCleanupRegistrationDenial>
     {
-        self.primary_provider.managed_cleanup_control.arm()
+        self.runtime.primary_provider.managed_cleanup_control.arm()
     }
 }

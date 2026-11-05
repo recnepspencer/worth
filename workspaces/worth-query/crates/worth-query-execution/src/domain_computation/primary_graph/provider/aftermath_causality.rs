@@ -12,8 +12,8 @@ use worth_relational::facade::transactions::{
 };
 
 use super::WorthQueryPrimaryGraphProvider;
-mod canonical_record;
-mod correction_history;
+pub(crate) mod canonical_record;
+pub(crate) mod correction_history;
 mod lineage_fields;
 mod original_row;
 mod restored_witness;
@@ -344,7 +344,7 @@ fn as_u64(value: &AspectValue) -> Option<u64> {
     }
 }
 
-fn aftermath_read_stop(
+pub fn aftermath_read_stop(
     cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
 ) -> WorthQueryAftermathCausalityReadDenial {
     WorthQueryAftermathCausalityReadDenial::ExecutionDenied(
@@ -352,5 +352,4 @@ fn aftermath_read_stop(
     )
 }
 
-#[cfg(test)]
-mod counted_read_stops;
+mod court_doors_for_test;

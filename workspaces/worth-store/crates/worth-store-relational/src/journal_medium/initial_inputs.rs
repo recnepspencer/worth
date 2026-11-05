@@ -30,10 +30,7 @@ impl StoreJournalMedium {
             }
         };
         let milliseconds = request.deadline().map_or(30_000, |deadline| {
-            deadline
-                .saturating_duration_since(std::time::Instant::now())
-                .as_millis()
-                .min(30_000) as u64
+            deadline.remaining().as_millis().min(30_000) as u64
         });
         let Some(deadline) = PhysicalMutationDeadline::after_milliseconds(milliseconds) else {
             return Fate::ProvenNoEffect {

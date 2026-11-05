@@ -34,6 +34,12 @@ pub(super) fn stopped(
             None => failed(identity, detail),
         },
         (Some((_, cause)), _) => commit_execution_stopped(identity, detail, cause),
+        (None, Kind::Content(cause)) => {
+            commit_execution_stopped(identity, detail, Ok(Native::Content(cause)))
+        }
+        (None, Kind::ContentInconsistency) => {
+            commit_execution_stopped(identity, detail, Ok(Native::ContentInconsistency))
+        }
         (None, Kind::StorageUnavailable(failure)) => {
             commit_execution_stopped(identity, detail, Ok(Native::StorageUnavailable(failure)))
         }

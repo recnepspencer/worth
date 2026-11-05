@@ -18,10 +18,12 @@ where
 {
     let product = product.publication_binding();
     let command_lane = application
+        .runtime
         .primary_provider
         .correction_commit_lane(&idempotency);
     let _command = command_lane.as_ref().map(|lane| lane.enter());
     let commit_lane = application
+        .runtime
         .primary_provider
         .application_branch_commit_lane(product.observation());
 
@@ -38,6 +40,7 @@ where
         };
     match proof.govern((), |()| {
         application
+            .runtime
             .primary_provider
             .resolve_idempotency_binding_at_product(execution, idempotency, &product)
     }) {
@@ -78,6 +81,7 @@ where
             Some(
                 WorthQueryApplicationCommitOutcome::ProductPreparationPending(
                     application
+                        .runtime
                         .primary_provider
                         .preparation_pending(&product, handle, stage),
                 ),
@@ -85,6 +89,7 @@ where
         }
         Ok(Ok(WorthQueryProviderIdempotencyResolution::RecoveredUnpublished { handle })) => Some(
             match application
+                .runtime
                 .primary_provider
                 .recovered_unpublished_application(&product, handle)
             {

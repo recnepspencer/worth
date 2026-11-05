@@ -269,12 +269,21 @@ fn reversed_completion_still_applies_canonical_effects_and_receipts() {
     // The independent owner quote funds this successful journey. Work refusal
     // has its own finite-boundary court.
     probe.take_computes();
-    let expected = observe(request_execution, 29, None, Policy::width(0), &probe);
+    let (expected, report) = worth_execution::ExecutionWorkCeiling::new(None)
+        .run_serial(&host_request, || {
+            observe(request_execution, 29, None, funded(0), &probe)
+        })
+        .unwrap();
+    assert_eq!(
+        report.charged_work(),
+        1_992,
+        "complete original SDK invoice"
+    );
     // Reset observations between runs: any purity mutant must prove order
     // dependence, not simply a counter carried over from a previous run.
     probe.take_computes();
     assert_eq!(expected.0.outcome, None);
-    let repeated = observe(request_execution, 29, None, Policy::width(0), &probe);
+    let repeated = observe(request_execution, 29, None, funded(0), &probe);
     assert_eq!(repeated.0.outcome, None);
     assert_eq!(repeated, expected, "two reset serial runs agree");
     assert_eq!(
@@ -290,15 +299,15 @@ fn reversed_completion_still_applies_canonical_effects_and_receipts() {
     for workers in [1, 2] {
         probe.take_computes();
         assert_eq!(
-            observe(request_execution, 29, None, Policy::width(workers), &probe),
+            observe(request_execution, 29, None, funded(workers), &probe),
             expected,
-            "default finite grant at width {workers}"
+            "funded original grant at width {workers}"
         );
     }
 
     probe.take_computes();
     probe.reorder();
-    let actual = observe(request_execution, 29, None, Policy::width(4), &probe);
+    let actual = observe(request_execution, 29, None, funded(4), &probe);
     assert_eq!(actual.0.outcome, None);
     probe.assert_schedule_completed();
     assert_eq!(actual, expected);

@@ -53,12 +53,13 @@ impl<Schema: ApplicationSchema + 'static> RegistryDelivery<Schema> {
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
         branch: crate::basis::WorthQueryProductBranch,
+        invocation: &ProducerInvocationAuthority<'_>,
         custody: &mut RequiredContinuations<Schema>,
 
         performed: &std::cell::RefCell<PerformedMembers>,
     ) -> Result<Option<DeliveredAwaited>, WorthQueryOutputDemandDenial> {
         match held::resume_registry_successor(
-            phase, runtime, principal, request, branch, custody, self.held, performed,
+            phase, runtime, principal, request, branch, invocation, custody, self.held, performed,
         )? {
             HeldUpstream::Ready(ready) => Ok(Some(DeliveredAwaited::from_delivery(ready))),
             HeldUpstream::Unfinished | HeldUpstream::GaveBack => Ok(None),

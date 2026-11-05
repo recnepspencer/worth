@@ -7,6 +7,7 @@ fn consumer_specs_with_source(source: ApplicationFeatureSpec) -> Vec<Application
         ApplicationFeatureSpec::root::<ConsumerSchema, PlanarOutputFeature>()
             .provides::<PlanarDerivedBodyOutput>()
             .conditional_operation::<MutatePlanar>()
+            .conditional_operation::<worth_query_topology_entry::EscapePlanar>()
             .finish(),
         ApplicationFeatureSpec::root::<ConsumerSchema, PlanarFinalOutputFeature>()
             .provides::<PlanarFinalBodyOutput>()

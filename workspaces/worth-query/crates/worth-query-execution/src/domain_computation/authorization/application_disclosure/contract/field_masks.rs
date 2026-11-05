@@ -24,8 +24,7 @@ pub(super) fn admit_field_masks<E>(
     })
 }
 
-#[cfg(test)]
-pub(in crate::domain_computation) fn admit_field_mask_categories(
+pub fn admit_field_mask_categories(
     layout: &WorthQueryPrimaryGraphLayout,
     selector: &ApplicationQueryDisclosureSelector,
     field: (&str, &str, &str),

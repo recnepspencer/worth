@@ -1,0 +1,152 @@
+use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::conditional_operation::application_operation_reentry::sealed_commit::denial::tests::execution_cases;
+
+use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
+use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitDenial as Denial;
+use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitDenialKind as Kind;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::conditional_operation::application_operation_reentry::WorthQueryTemporalReentryOutcome as Outcome;
+use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationResourceDenial as Resource;
+use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionDenialKind as Session;
+use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitDenialStage as Stage;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::conditional_operation::application_operation_reentry::WorthQueryTemporalTerminalFailure as Terminal;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::conditional_operation::application_operation_reentry::sealed_commit::denial::classify_denial;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::conditional_operation::application_operation_reentry::sealed_commit::denial::classify_kind;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_compare_denial::control_stopped_outcome;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_session_denied;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_session_execution_denied;
+#[test]
+fn every_head_reachable_preparation_category_retries_without_folding() {
+    for (session, _) in execution_cases() {
+        let denial = provider_session_denied(
+            worth_query_execution::facade::domain_computation::WorthQueryProviderSessionFailure::new(
+                session,
+                worth_query_execution::facade::domain_computation::WorthQueryProviderSessionProtocolStage::Commit,
+                "owner refusal",
+                Default::default(),
+            ),
+        );
+        assert!(
+            matches!(classify_denial(&denial), Outcome::RetryableCommitFailure(kind) if kind == denial.kind()),
+            "{session:?}"
+        );
+    }
+}
+#[test]
+fn unreachable_child_policy_causes_and_non_relational_retained_state_stay_terminal() {
+    for denial in [
+        Resource::WorkerLimit,
+        Resource::PolicyMemoryLimit,
+        Resource::WorkLimit,
+        Resource::EquivalenceContractUnavailable,
+        Resource::RetainedBytesExhausted,
+    ] {
+        let kind = Kind::ExecutionResource {
+            denial,
+            partition_identity: Some(7),
+            policy_ancestor: None,
+        };
+        assert!(
+            matches!(classify_kind(kind), Outcome::TerminalFailure(Terminal::ApplicationCommit(observed)) if observed == kind)
+        );
+    }
+}
+#[test]
+fn pending_and_invariant_resources_keep_category_stage_and_terminal_posture() {
+    for stage in [Stage::Idempotency, Stage::InvariantExecution] {
+        for (kind, expected) in execution_cases() {
+            let denial =
+                provider_session_execution_denied(Ok(kind), stage, "owner supplied detail");
+            assert_eq!(denial.kind(), expected);
+            assert_eq!(denial.stage(), stage);
+            assert_eq!(denial.detail(), Some("owner supplied detail"));
+            assert_eq!(denial.execution_denial_cause(), Some(Ok(kind)));
+            assert!(
+                matches!(classify_denial(&denial), Outcome::TerminalFailure(Terminal::ApplicationExecution { stage: observed, cause: Ok(cause) }) if observed == stage && cause == kind)
+            );
+        }
+    }
+}
+#[test]
+fn invariant_execution_control_stops_keep_stage_cause_and_terminal_posture() {
+    use worth_query_execution::facade::domain_computation::WorthQueryInvariantExecutionDenialKind as Invariant;
+    use worth_query_execution::facade::domain_computation::WorthQueryInvariantExecutionFailure as Failure;
+    use worth_relational::facade::mvcc::RelationalOperationInterruption as Interruption;
+
+    for (stop, control) in [
+        (Interruption::Cancelled, Control::Cancelled),
+        (Interruption::TimedOut, Control::TimedOut),
+    ] {
+        let denial = Denial::invariant_execution_denied_for_test(
+            Stage::InvariantExecution,
+            Failure::new(
+                Invariant::RequestInterrupted(stop),
+                "invariant request stopped",
+            ),
+        );
+        assert_eq!(denial.kind(), Kind::ProviderRejected);
+        assert_eq!(denial.stage(), Stage::InvariantExecution);
+        assert_eq!(denial.execution_denial_cause(), Some(Err(control)));
+        let Outcome::TerminalFailure(Terminal::ApplicationExecution { stage, cause }) =
+            classify_denial(&denial)
+        else {
+            panic!("invariant control stop lost its terminal execution posture");
+        };
+        assert_eq!(stage, Stage::InvariantExecution);
+        assert_eq!(cause, Err(control));
+    }
+}
+#[test]
+fn preparation_control_stops_retry_at_provider_commit() {
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::outcome::WorthQueryProviderProgressionOutcome as Progression;
+    use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionCommitControlStopped as Stopped;
+    for kind in [Control::Cancelled, Control::TimedOut] {
+        let Progression::Denied(denial) = control_stopped_outcome(
+            Stopped::execution_preparation_for_test(kind, "owner control stop"),
+        ) else {
+            panic!("preparation control lost its denial");
+        };
+        assert_eq!(denial.stage(), Stage::ProviderCommit);
+        assert_eq!(denial.kind(), Kind::ProviderRejected);
+        assert_eq!(denial.execution_denial_cause(), Some(Err(kind)));
+        assert!(
+            matches!(classify_denial(&denial), Outcome::RetryableExecutionControlStopped(observed) if observed == kind)
+        );
+    }
+}
+#[test]
+fn custody_faults_never_retry_through_either_projection() {
+    use worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial as Opening;
+    for (opening, resource) in [
+        (Opening::NestedOpening, Resource::NestedAdvancementOpening),
+        (
+            Opening::Resource(Resource::ForeignAdvancementPhase),
+            Resource::ForeignAdvancementPhase,
+        ),
+    ] {
+        assert!(!opening.is_transient());
+        assert!(!Opening::Resource(resource).is_transient());
+        let outcome = opening.into_commit_outcome();
+        let worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitOutcome::Denied(
+            direct,
+        ) = outcome
+        else {
+            panic!("opening custody fault must be denied");
+        };
+        assert!(matches!(
+            classify_denial(&direct),
+            Outcome::TerminalFailure(_)
+        ));
+        let provider = provider_session_execution_denied(
+            Ok(Session::ExecutionResource {
+                denial: resource,
+                partition_identity: None,
+                policy_ancestor: None,
+            }),
+            Stage::ProviderCommit,
+            "custody fault through the provider",
+        );
+        assert!(matches!(
+            classify_denial(&provider),
+            Outcome::TerminalFailure(_)
+        ));
+    }
+}

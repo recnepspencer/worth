@@ -4,6 +4,8 @@ use std::sync::Arc;
 mod codec_correspondence;
 mod construction;
 mod inbound;
+mod view;
+pub use view::InstalledSchemaView;
 
 use super::contribution::WorthQueryInstalledApplicationContributionCatalog;
 use super::invariant::{
@@ -48,6 +50,7 @@ use worth_query_declaration::facade::application_schema::{
 /// Opaque proof that one typed schema declaration belongs to an exact
 /// installed package, runtime, and generation.
 pub struct WorthQueryInstalledApplicationSchema<Schema> {
+    pub(crate) operation_catalog: Arc<crate::application_operation::InstalledOperationCatalog>,
     pub(crate) package_authority: WorthQueryInstalledPackageAuthority,
     pub(crate) schema_name: String,
     pub(crate) schema_identity: CanonicalDigestId,
@@ -62,6 +65,8 @@ pub struct WorthQueryInstalledApplicationSchema<Schema> {
     installation_canonical_work: WorthQueryCanonicalWorkEvidence,
     pub(crate) query_catalog: WorthQueryInstalledApplicationQueryCatalog,
     pub(crate) mutation_catalog: WorthQueryInstalledApplicationMutationCatalog,
+    pub(crate) document_history_catalog:
+        crate::application_history::WorthQueryInstalledApplicationHistoryCatalog,
     pub(crate) resource_catalog:
         crate::application_resource::WorthQueryInstalledApplicationResourceCatalog,
     invariant_catalog: WorthQueryInstalledApplicationInvariantCatalog,
@@ -168,6 +173,15 @@ where
         &self,
     ) -> impl ExactSizeIterator<Item = &ApplicationMutationBindingDescriptor> {
         self.mutation_catalog.descriptors()
+    }
+
+    /// The installed descriptor of one mutation binding, by its identity.
+    #[doc(hidden)]
+    pub fn installed_mutation_binding_descriptor(
+        &self,
+        identity: &str,
+    ) -> Option<&ApplicationMutationBindingDescriptor> {
+        self.mutation_catalog.descriptor(identity)
     }
 
     pub(crate) fn retain_native_contracts(

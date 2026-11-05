@@ -34,11 +34,8 @@ struct Descriptor {
 enum Child {
     Empty,
     Bound(ManagedIndexSourceContextShare<round::Round>),
-    #[allow(
-        dead_code,
-        reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"
-    )]
-    Refused(round::Round),
+    // Returned opaque Native round closes only after the caller leaves validation.
+    Refused { round_custody: round::Round },
 }
 struct RoundLink {
     child: Child,
@@ -204,7 +201,9 @@ impl ManagedIndexSourceContextFactory for PredicatePreparationFactory {
             }
             Err((cause, refused)) => {
                 // Never drop the returned opaque value under Native validation.
-                link.child = Child::Refused(refused);
+                link.child = Child::Refused {
+                    round_custody: refused,
+                };
                 Err(storage(cause))
             }
         };

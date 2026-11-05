@@ -1,7 +1,7 @@
 error[E0277]: the trait bound `ReceiptCategory: worth_foundational::boundary_artifacts::roles::FoundationalDerivedProjectionCategory` is not satisfied
- --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/boundary_artifacts/role_legality/receipt_cannot_claim_derived_projection.rs
+ --> $WORKSPACE/crates/worth-testkit-foundational/assets/ui/boundary_artifacts/role_legality/receipt_cannot_claim_derived_projection.rs:7:55
   |
-  |     let _ = claim_derived_projection_boundary_surface(receipt);
+7 |     let _ = claim_derived_projection_boundary_surface(receipt);
   |             ----------------------------------------- ^^^^^^^ the trait `worth_foundational::boundary_artifacts::roles::FoundationalDerivedProjectionCategory` is not implemented for `ReceiptCategory`
   |             |
   |             required by a bound introduced by this call

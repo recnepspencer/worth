@@ -10,7 +10,7 @@ mod checkpoint;
 mod storage;
 use storage::CorrespondenceStorage;
 
-mod candidate;
+pub(crate) mod candidate;
 pub(in crate::domain_computation::primary_graph::application_attempt) use candidate::WorthQueryApplicationOutputCorrespondenceCandidate;
 
 mod family_entry;
@@ -20,14 +20,11 @@ mod projection;
 pub use projection::WorthQueryApplicationOutputEntity;
 pub use projection::WorthQueryApplicationOutputProjectionDenial;
 
-mod role_use;
+pub(crate) mod role_use;
 pub(in crate::domain_computation::primary_graph) use role_use::OutputRoleUse;
 
 mod typed;
 pub use typed::WorthQueryApplicationTypedOutputCorrespondence;
-
-#[cfg(test)]
-mod tests;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 struct CommittedOutputBinding {
@@ -38,7 +35,7 @@ struct CommittedOutputBinding {
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryCheckpointOutputRole {
+pub struct WorthQueryCheckpointOutputRole {
     pub(in crate::domain_computation::primary_graph) role: String,
     pub(in crate::domain_computation::primary_graph) posture: WorthQueryApplicationOutputPosture,
     pub(in crate::domain_computation::primary_graph) entity_name: String,
@@ -52,7 +49,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryCheckpointOutp
 /// [`WorthQueryApplicationTypedOutputCorrespondence`], which checks the
 /// contract once and then checks every role read at compile time.
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationOutputCorrespondence {
+pub struct WorthQueryApplicationOutputCorrespondence {
     binding_type: Option<TypeId>,
     contract_type: Option<TypeId>,
     storage: std::sync::Arc<CorrespondenceStorage>,
@@ -126,15 +123,11 @@ impl WorthQueryApplicationOutputCorrespondence {
         Ok(WorthQueryApplicationTypedOutputCorrespondence::new(self))
     }
 
-    pub(in crate::domain_computation::primary_graph) const fn binding_type(
-        &self,
-    ) -> Option<TypeId> {
+    pub const fn binding_type(&self) -> Option<TypeId> {
         self.binding_type
     }
 
-    pub(in crate::domain_computation::primary_graph) fn created_entity_ids(
-        &self,
-    ) -> impl Iterator<Item = EntityId> + '_ {
+    pub fn created_entity_ids(&self) -> impl Iterator<Item = EntityId> + '_ {
         self.storage
             .roles
             .iter()
@@ -146,9 +139,7 @@ impl WorthQueryApplicationOutputCorrespondence {
     }
 
     /// Only completed Retire bindings whose actual delete effects were validated.
-    pub(in crate::domain_computation::primary_graph) fn retired_entity_ids(
-        &self,
-    ) -> impl Iterator<Item = EntityId> + '_ {
+    pub fn retired_entity_ids(&self) -> impl Iterator<Item = EntityId> + '_ {
         self.storage
             .roles
             .iter()
@@ -304,3 +295,5 @@ impl WorthQueryApplicationOutputCorrespondence {
             }))
     }
 }
+
+mod court_doors_for_test;

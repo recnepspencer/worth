@@ -18,14 +18,14 @@ use super::owner::SourceInvalidationOwner;
 /// The records a reader watches. Conditional source records are entities;
 /// `every_commit` covers whole-graph dependencies and bootstrap catch-up.
 #[derive(Clone, Copy)]
-pub(in crate::domain_computation::primary_graph) struct CommitTouchInterest<'a> {
+pub struct CommitTouchInterest<'a> {
     pub(in crate::domain_computation::primary_graph) entities: CommitTouchEntities<'a>,
     pub(in crate::domain_computation::primary_graph) every_commit: bool,
 }
 
 /// Borrowed interest uses the same canonical touch stream for sets and bounded read dependencies.
 #[derive(Clone, Copy)]
-pub(in crate::domain_computation::primary_graph) enum CommitTouchEntities<'a> {
+pub enum CommitTouchEntities<'a> {
     Set(&'a BTreeSet<EntityId>),
     Slice(&'a [EntityId]),
 }
@@ -48,7 +48,7 @@ impl CommitTouchEntities<'_> {
     }
 }
 /// One relevant commit on the branch and the watched entities it touched.
-pub(in crate::domain_computation::primary_graph) struct TouchedCommit {
+pub struct TouchedCommit {
     pub(in crate::domain_computation::primary_graph) position: PatchStreamPosition,
     pub(in crate::domain_computation::primary_graph) commit: CommitId,
     /// `None` when exact touches were unavailable for the commit.
@@ -64,7 +64,7 @@ impl TouchedCommit {
     }
 }
 
-pub(in crate::domain_computation::primary_graph) struct TouchedCommits {
+pub struct TouchedCommits {
     pub(in crate::domain_computation::primary_graph) commits: Vec<TouchedCommit>,
     pub(in crate::domain_computation::primary_graph) next_cursor: Option<PatchStreamPosition>,
     pub(in crate::domain_computation::primary_graph) work_remaining: bool,
@@ -250,3 +250,5 @@ mod relation_interest_tests {
         assert!(watched_entities(&[membership], CommitTouchEntities::Slice(&recycled)).is_empty());
     }
 }
+
+mod court_doors_for_test;

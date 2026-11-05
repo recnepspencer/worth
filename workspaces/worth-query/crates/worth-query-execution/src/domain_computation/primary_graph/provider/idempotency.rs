@@ -2,15 +2,15 @@ use super::WorthQueryPrimaryGraphProvider;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding;
 
 mod lookup_key;
-mod product_affinity;
+pub(crate) mod product_affinity;
 pub(in crate::domain_computation::primary_graph) use lookup_key::WorthQueryIdempotencyLookupKey;
 pub(in crate::domain_computation::primary_graph) use product_affinity::WorthQueryProductIdempotencyAffinity;
 pub(super) mod recorded_origin;
 mod registration;
 pub(super) mod released_original;
-pub(super) use registration::idempotency_create_intent;
+pub use registration::idempotency_create_intent;
 pub use released_original::WorthQueryReleasedApplicationEffect;
-pub(super) mod snapshot_resolution;
+pub(crate) mod snapshot_resolution;
 use snapshot_resolution::resolve_at_snapshot;
 pub use snapshot_resolution::{
     WorthQueryRecoveredAftermathCausality, WorthQueryRecoveredApplicationCommitReceipt,
@@ -18,7 +18,7 @@ pub use snapshot_resolution::{
 };
 
 #[derive(Debug)]
-pub(in crate::domain_computation::primary_graph) enum WorthQueryProviderIdempotencyResolution {
+pub enum WorthQueryProviderIdempotencyResolution {
     ReleasedOriginal(WorthQueryReleasedApplicationEffect),
     PreparationBusy,
     RecoveredUnpublished {
@@ -46,8 +46,7 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryProviderGuardedW
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum WorthQueryProviderIdempotencyResolutionDenial
-{
+pub enum WorthQueryProviderIdempotencyResolutionDenial {
     ForeignAffinity,
     PreparationBusy,
     ActiveSnapshotCapacityExhausted {
@@ -298,6 +297,8 @@ fn pending_publication_denial(
         }
         kind @ (Kind::ProjectionContract { .. }
         | Kind::HistoricalVisibility { .. }
+        | Kind::ContentInconsistency
+        | Kind::Content(_)
         | Kind::StorageUnavailable(_)
         | Kind::ExecutionResource { .. }
         | Kind::ExecutionNestedPatternStopped { .. }

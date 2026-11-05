@@ -196,9 +196,9 @@ where
                 WorthQueryApplicationCommitDenial::idempotency_intent_drift(),
             ))
         }
-        Ok(Ok(WorthQueryProviderIdempotencyResolution::PreparationPending { handle, stage })) => Some(Progression::ProductPreparationPending(authority.application().primary_provider.preparation_pending(&authority.product.publication_binding(), handle, stage))),
+        Ok(Ok(WorthQueryProviderIdempotencyResolution::PreparationPending { handle, stage })) => Some(Progression::ProductPreparationPending(authority.application().runtime.primary_provider.preparation_pending(&authority.product.publication_binding(), handle, stage))),
         Ok(Ok(WorthQueryProviderIdempotencyResolution::RecoveredUnpublished { handle })) => Some(
-            match authority.application().primary_provider.recovered_unpublished_application(&authority.product.publication_binding(), handle) {
+            match authority.application().runtime.primary_provider.recovered_unpublished_application(&authority.product.publication_binding(), handle) {
                 Ok(effects) => Progression::ProductUnpublished(effects),
                 Err(_) => Progression::Denied(WorthQueryApplicationCommitDenial::idempotency_preparation_busy()),
             }

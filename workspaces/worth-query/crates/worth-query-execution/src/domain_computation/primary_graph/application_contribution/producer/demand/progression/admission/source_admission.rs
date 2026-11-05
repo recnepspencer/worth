@@ -35,7 +35,7 @@ where
         let selected_product = source_selection.selected_product();
         let limits = self.output_demand_resource_profile().constrain(limits);
 
-        let observed_source = self.output_demands.retain_readmission_source(
+        let observed_source = self.runtime.output_demands.retain_readmission_source(
             observed_source,
             limits,
             retained_program_basis.clone(),
@@ -121,13 +121,14 @@ where
         };
         if let Some(readmitted) = restored {
             let restored = &readmitted.restored;
-            let (interest, newly_adopted) = self.output_demands.admit_restored(
+            let (interest, newly_adopted) = self.runtime.output_demands.admit_restored(
                 key,
                 source_scope,
                 product_occurrence,
                 admission_kind,
                 restored.clone(),
                 &readmitted.settlement,
+                performed_source.as_ref(),
             )?;
             if newly_adopted {
                 self.record_restored_output(execution, source_scope, &readmitted)?;
@@ -156,7 +157,7 @@ where
         }
         let (interest, join_pause) = match performed_source {
             Some(source_commit) => (
-                self.output_demands.admit_performed(
+                self.runtime.output_demands.admit_performed(
                     key,
                     &source_commit,
                     source_scope,
@@ -164,7 +165,7 @@ where
                 )?,
                 None,
             ),
-            None => self.output_demands.admit(
+            None => self.runtime.output_demands.admit(
                 key,
                 Some(SelectedOutputAdmission::new(
                     observed_source.selected_product_commit().ok_or_else(|| {

@@ -23,6 +23,13 @@ impl WorthQueryOutputDemandSettlement {
                     receipt.retain_output_correspondence(),
                     None,
                 ),
+                WorthQueryAcceptedOutputAuthority::Recovered(publication) => (
+                    WorthQueryOutputSettlementPosture::RecoveredPerformed,
+                    Some(SettlementReceiptCustody::Ready(completion.clone())),
+                    None,
+                    publication.view().retain_output_correspondence(),
+                    None,
+                ),
                 WorthQueryAcceptedOutputAuthority::Stable(stable) => (
                     WorthQueryOutputSettlementPosture::StableReused,
                     None,
@@ -37,7 +44,7 @@ impl WorthQueryOutputDemandSettlement {
                     None,
                     None,
                     Arc::clone(&restored.correspondence),
-                    Some(WorthQueryRestoredOutputSource::from(restored)),
+                    Some(restored.clone()),
                 ),
             };
         let readiness_delivery = restored_source

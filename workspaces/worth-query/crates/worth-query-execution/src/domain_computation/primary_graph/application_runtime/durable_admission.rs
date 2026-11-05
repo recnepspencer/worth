@@ -12,11 +12,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     >(
         &self,
     ) -> Result<(), Denial> {
-        if !self.product_runtime.is_directory_home() {
+        if !self.runtime.product_runtime.is_directory_home() {
             return Ok(());
         }
         let require = |family| {
-            self.product_runtime
+            self.runtime
+                .product_runtime
                 .admit_directory_family(family)
                 .map_err(Denial::DurableStateAdmission)
         };
@@ -38,7 +39,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 DurableDenial::UndeclaredSupplierCapabilities,
             ))?;
         let require_capability = |capability| {
-            self.product_runtime
+            self.runtime
+                .product_runtime
                 .admit_directory_capability(capability)
                 .map_err(Denial::DurableStateAdmission)
         };

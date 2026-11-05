@@ -74,6 +74,7 @@ fn fixture() -> (Body, Vec<Member>) {
         },
         Member::Field {
             canonical: None,
+            content_format: None,
             entity: "Supersession".into(),
             aspect: "Facts".into(),
             field: "Record".into(),
@@ -214,6 +215,7 @@ fn self_mutation_and_wrong_consequence_shapes_fail_cold() {
     let mut writable_members = members.clone();
     let Member::Field {
         canonical: None,
+        content_format: None,
         writable,
         ..
     } = &mut writable_members[1]
@@ -225,6 +227,7 @@ fn self_mutation_and_wrong_consequence_shapes_fail_cold() {
     let mut malformed = members;
     let Member::Field {
         canonical: None,
+        content_format: None,
         presence,
         ..
     } = &mut malformed[1]

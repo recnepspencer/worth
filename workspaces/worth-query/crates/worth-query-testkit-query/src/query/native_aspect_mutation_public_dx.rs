@@ -2,8 +2,8 @@ pub use worth_foundational::facade::{
     AbsenceLaw, AspectContract, AspectContractRevision, AspectEvolutionPolicy, AspectIdentity,
     AspectKey, AspectValue, CanonicalBigInt, CanonicalDate, CanonicalDecimal, CanonicalF32,
     CanonicalF64, CanonicalFieldPath, CanonicalRational, CanonicalTime, CanonicalTimestamp,
-    CanonicalTimestampTz, ContentRefId, FieldDeclaration, FieldKey, FieldRequirement,
-    InternedString, PartitionId, ScalarAspectType, StructAspectShape, StructAspectValue, Symbol,
+    CanonicalTimestampTz, FieldDeclaration, FieldKey, FieldRequirement, InternedString,
+    PartitionId, ScalarAspectType, StructAspectShape, StructAspectValue, Symbol,
 };
 pub use worth_query::facade::consumer_kit::{in_memory_test_runtime, WorthQueryTestBackendSchema};
 pub use worth_query::facade::foundation::AspectFieldKey;
@@ -125,7 +125,6 @@ pub fn scalar_samples() -> Vec<AspectValue> {
         ),
         AspectValue::String(InternedString::Raw("alpha".to_string())),
         AspectValue::String(InternedString::Symbol(Symbol(17))),
-        AspectValue::Bytes(ContentRefId(41)),
         AspectValue::Uuid([7; 16]),
         AspectValue::Date(CanonicalDate {
             days_from_unix_epoch: 20_000,
@@ -143,6 +142,5 @@ pub fn scalar_samples() -> Vec<AspectValue> {
             10,
             11,
         )),
-        AspectValue::ContentRef(ContentRefId(42)),
     ]
 }

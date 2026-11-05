@@ -41,7 +41,10 @@ fn carried_request_deadline_stays_distinct_from_cancellation() {
     let request = SerialRequest::from_memory(
         SerialMemoryBudget::from_policy(&owner.state.execution.request_policy()),
         CancellationToken::new(),
-        Some(std::time::Instant::now() - std::time::Duration::from_secs(1)),
+        Some(
+            worth_execution::MonotonicClock::system()
+                .deadline_at(std::time::Instant::now() - std::time::Duration::from_secs(1)),
+        ),
     );
     let outcome = execute_without_signal(ExecutionRequest::serial(&request), &owner, prepared);
     let OwnerExecutionOutcome::NoEffect(refused) = outcome else {

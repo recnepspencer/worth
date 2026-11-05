@@ -1,13 +1,13 @@
 //! Malformed twins start from actual native Create artifacts; none mints custody.
 use super::*;
-use crate::history::data::CanonicalCommitEnvelope;
+use crate::history::data::CanonicalCommitEnvelopeBody;
 use crate::identity::data::KindId;
 use crate::tests::support::*;
 use worth_execution::{ExecutionRequest, ExecutionWorkCeiling};
 
 fn validate(
     execution: &ExecutionRequest<'_, '_>,
-    envelope: &CanonicalCommitEnvelope,
+    envelope: &CanonicalCommitEnvelopeBody,
     id: EntityId,
     plan: &LoweredAspectContractPlan,
     payload: Option<&AuthoritativeRecordAspectState>,

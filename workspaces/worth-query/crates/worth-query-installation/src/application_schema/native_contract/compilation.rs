@@ -186,6 +186,7 @@ pub(super) fn collect_declared_fields(
             presence,
             scalar_family,
             canonical,
+            content_format,
             ..
         } = member
         else {
@@ -200,7 +201,7 @@ pub(super) fn collect_declared_fields(
             .ok_or_else(|| denial(DenialKind::FieldWithoutAspect, field))?;
         let field_key = FieldKey::new(field.clone())
             .ok_or_else(|| denial(DenialKind::InvalidFieldKey, field))?;
-        let codec = if canonical.is_some() {
+        let codec = if canonical.is_some() || content_format.is_some() {
             Some(
                 ApplicationFieldValueMeaning::from_member(member)
                     .map_err(|_| denial(DenialKind::CanonicalContractRejected, field))?

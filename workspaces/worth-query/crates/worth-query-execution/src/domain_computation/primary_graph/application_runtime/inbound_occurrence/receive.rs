@@ -18,7 +18,7 @@ use crate::domain_computation::application_aftermath::{
 };
 use crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxReadDenial;
 
-pub(in crate::domain_computation) enum WorthQueryInboundAdmission {
+pub enum WorthQueryInboundAdmission {
     New(Arc<WorthQueryAcceptedInboundOccurrence>, bool),
     Duplicate(
         Arc<WorthQueryAcceptedInboundOccurrence>,
@@ -215,6 +215,7 @@ where
             Ok(posture) => {
                 let unpublished = posture == WorthQueryInboundReceiptPosture::AcceptedPending
                     && self
+                        .runtime
                         .inbound_custody
                         .lock()
                         .unwrap_or_else(|poisoned| poisoned.into_inner())
@@ -243,6 +244,7 @@ where
         denial: WorthQueryInboundAdmissionDenial,
     ) -> Result<WorthQueryInboundReceipt, WorthQueryInboundAdmissionDenial> {
         let retained = self
+            .runtime
             .inbound_custody
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())

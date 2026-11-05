@@ -234,9 +234,9 @@ fn serial_delivery_preserves_elapsed_deadline_as_its_own_cause() {
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut request = serial_request(4096);
-    request = request.with_deadline(Some(
-        std::time::Instant::now() - std::time::Duration::from_secs(1),
-    ));
+    let time = worth_execution::MonotonicTimeController::new().unwrap();
+    let held = time.hold();
+    request = request.with_deadline(Some(time.clock().deadline_at(held)));
     assert_eq!(
         serial_delivery(&request, resource_request).kind(),
         BridgeDeliveryErrorKind::ExecutionDenied(BridgeExecutionDenial::DeadlineElapsed)

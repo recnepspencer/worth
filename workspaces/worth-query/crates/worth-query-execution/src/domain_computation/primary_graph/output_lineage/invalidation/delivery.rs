@@ -15,7 +15,7 @@ use std::sync::Arc;
 use worth_relational::facade::history::CommitId;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 use worth_relational::facade::mvcc::PublicationCompanionPreflight;
-pub(super) mod affected;
+pub(crate) mod affected;
 pub(super) use affected::mark_keys;
 pub(super) use affected::propagate;
 pub(super) fn selectors(

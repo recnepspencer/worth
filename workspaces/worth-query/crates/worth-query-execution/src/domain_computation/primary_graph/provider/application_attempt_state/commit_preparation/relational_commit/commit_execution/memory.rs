@@ -6,6 +6,7 @@ pub(super) fn commit(
     provider: &WorthQueryPrimaryGraphProvider,
     mut query: durable_custody::QueryPreparingApplicationCommit,
     mint: super::super::WorthQueryCommitProgressionMint,
+    history: Option<crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerCutover<'_>>,
     allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<
     WorthQueryCommittedApplicationSession,
@@ -20,5 +21,5 @@ pub(super) fn commit(
     {
         return Err(native_work::memory_stop(cause, &query.attempt));
     }
-    publication::publish(execution, provider, query)
+    publication::publish(execution, provider, query, history)
 }

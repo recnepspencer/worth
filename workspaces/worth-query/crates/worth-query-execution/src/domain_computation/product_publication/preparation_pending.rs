@@ -95,6 +95,8 @@ impl std::fmt::Debug for WorthQueryProductPreparationPending {
 /// blocked while the carrier is held. That is not an idempotency key fence.
 #[derive(Debug)]
 pub enum WorthQueryProductPreparationRefusal {
+    RequestClockMismatch,
+    CurrentReadDependency(worth_runtime_world::facade::CurrentProductReadDependencyDenial),
     World(WorldOpenAttemptRefusal),
     QuerySuccessorObservation(&'static str),
     QuerySuccessorObservationRequest(

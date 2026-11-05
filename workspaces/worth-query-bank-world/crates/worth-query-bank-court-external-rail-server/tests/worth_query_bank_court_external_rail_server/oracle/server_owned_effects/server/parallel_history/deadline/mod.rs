@@ -12,7 +12,7 @@ fn present_deadlines_run_in_both_bank_histories() {
             place(std::num::NonZeroUsize::new(width).map_or(Placement::World, Placement::Leased));
         let cancellation = WorthQueryCancellationSource::new();
         let expired =
-            WorthQueryRequestScope::new(Some(std::time::Instant::now()), cancellation.token());
+            WorthQueryRequestScope::new(Some(std::time::Instant::now()), cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
         observations();
         let outcome = world
             .world
@@ -26,7 +26,7 @@ fn present_deadlines_run_in_both_bank_histories() {
             ))
             .as_principal(&actor)
             .controls(bank_server::BankMutationControls::new(
-                WorthQueryRequestScope::new(None, cancellation.token()),
+                WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
                 super::seeded_world::key(900),
             ))
             .retain_operation()

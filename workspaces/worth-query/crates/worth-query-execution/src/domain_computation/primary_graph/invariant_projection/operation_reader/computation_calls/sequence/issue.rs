@@ -93,7 +93,6 @@ impl ComputationCallSequence {
             .has_accounting()
             .then(|| execution.reserve((size_of::<Self>() + 2 * size_of::<usize>()) as u64))
             .transpose()?;
-        #[cfg(test)]
         let bytes = memory.as_ref().and_then(|memory| {
             memory
                 .bytes()
@@ -105,9 +104,10 @@ impl ComputationCallSequence {
             shape,
             root,
             reached,
-            #[cfg(test)]
             bytes,
             _memory: memory,
         }))
     }
 }
+
+mod court_doors_for_test;

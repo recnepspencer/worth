@@ -26,6 +26,7 @@ where
     Operation: ApplicationOperationMarkerIdentity<Schema>,
 {
     let Some((capability, command_capability, role)) = runtime
+        .runtime
         .authorization
         .elevation_lifecycle_operation::<Schema, Operation>(
             operation.operation(),
@@ -39,6 +40,7 @@ where
         return Err(role_mismatch(operation.operation()));
     }
     let installed = runtime
+        .runtime
         .authorization
         .capability_plan_by_identity(&capability)
         .filter(|plan| plan.elevation().is_some())

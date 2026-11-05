@@ -1,0 +1,155 @@
+//! Equal field writes preserve native stamps and the installed actor's marks.
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
+
+use crate::domain_computation::primary_graph::output_lineage::invalidation::native_journey_tests::*;
+
+#[test]
+fn equal_native_field_write_keeps_revision_and_downstream_clean_until_a_real_change() {
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
+    let selected = world
+        .application
+        .with_host_advancement(|phase| {
+            world.selected_product(&(phase).test_host_request_for_test())
+        })
+        .expect("the fixture read owns its installed host call");
+    let entity = world
+        .application
+        .with_host_advancement(|phase| {
+            selected
+                .resolve_entity(
+                    &phase,
+                    AccountStatus::reference(),
+                    "open".to_owned(),
+                    &live_scope(),
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+                .entity_id_for_test()
+        })
+        .expect("the fixture read owns its installed host call");
+    let (_, product, _) = selected.into_parts_for_test();
+    let coordinate = ProductCoordinate::new_for_test(
+        product.observation_for_test().lifecycle_incarnation(),
+        product.observation_for_test().reference_generation().get(),
+    );
+    let graph = (*world.application.runtime_for_test())
+        .primary_graph_for_test()
+        .unwrap();
+    let handle = graph.integration_handle_for_test();
+    let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
+    let status_ref = AccountStatus::reference();
+    let status = graph
+        .layout_for_test()
+        .field_locator_for_test(status_ref.entity(), status_ref.aspect(), status_ref.field())
+        .unwrap()
+        .clone();
+    let label_ref = AccountLabel::reference();
+    let label = graph
+        .layout_for_test()
+        .field_locator_for_test(label_ref.entity(), label_ref.aspect(), label_ref.field())
+        .unwrap()
+        .clone();
+    let source = |output_binding| {
+        SemanticSource::new_for_test((*world.application.runtime_for_test()).authority_identity_for_test().as_u64(), (*world.application.installed_schema_for_test()).binding_identity(), worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(entity), output_binding)
+    };
+    let output = RecordedSettlementIdentity::retain_for_test(
+        &source(OutputBindingIdentity::declared_for_test("StatusOutput")),
+        coordinate,
+        0,
+    );
+    let downstream = RecordedSettlementIdentity::retain_for_test(
+        &source(OutputBindingIdentity::declared_for_test("DownstreamOutput")),
+        coordinate,
+        0,
+    );
+
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request_for_test();
+            let request_execution = &host_custody.borrowed_request_for_test();
+            handle.with_runtime_for_test(request_execution, |runtime| {
+                write_field(request_execution, runtime, entity, label, "prime");
+                let (before_handle, before) = snapshot(runtime);
+                let before_fact = field_fact(
+                    &host_custody.borrowed_request_for_test(),
+                    runtime,
+                    &before_handle,
+                    entity,
+                    status.clone(),
+                );
+                register(
+                    owner,
+                    Arc::clone(&output),
+                    Arc::from([before_fact.clone()]),
+                    &before,
+                    OrdSet::new(),
+                );
+                register(
+                    owner,
+                    Arc::clone(&downstream),
+                    Arc::from([]),
+                    &before,
+                    OrdSet::unit(Arc::clone(&output)),
+                );
+
+                write_field(request_execution, runtime, entity, status.clone(), "open");
+                let (equal_handle, equal) = snapshot(runtime);
+                let equal_fact = field_fact(
+                    &host_custody.borrowed_request_for_test(),
+                    runtime,
+                    &equal_handle,
+                    entity,
+                    status.clone(),
+                );
+                assert_eq!(revision(&equal_fact), revision(&before_fact));
+                assert!(matches!(
+                    currentness(owner, &equal, &output),
+                    SourceSettlementCurrentness::Clean
+                ));
+                assert!(matches!(
+                    currentness(owner, &equal, &downstream),
+                    SourceSettlementCurrentness::Clean
+                ));
+
+                write_field(request_execution, runtime, entity, status.clone(), "closed");
+                let (changed_handle, changed) = snapshot(runtime);
+                let changed_fact = field_fact(
+                    &host_custody.borrowed_request_for_test(),
+                    runtime,
+                    &changed_handle,
+                    entity,
+                    status,
+                );
+                assert_ne!(revision(&changed_fact), revision(&equal_fact));
+                assert!(matches!(
+                    currentness(owner, &changed, &output),
+                    SourceSettlementCurrentness::Dirty(_)
+                ));
+                match currentness(owner, &changed, &downstream) {
+                    SourceSettlementCurrentness::PendingUpstream(upstream) => {
+                        assert_eq!(upstream, OrdSet::unit(output))
+                    }
+                    _ => panic!("a real native field change must mark the actual downstream"),
+                }
+                for snapshot in [before_handle, equal_handle, changed_handle] {
+                    runtime.snapshots().release_snapshot(&snapshot).unwrap();
+                }
+            })
+        })
+        .expect("the fixture read owns its installed host call");
+}
+
+pub fn revision(
+    fact: &WorthQueryApplicationObservedFact,
+) -> worth_relational::facade::runtime::RelationalFieldRevision {
+    match fact {
+        WorthQueryApplicationObservedFact::SourceFieldRevision {
+            native_revision, ..
+        } => native_revision.expect("the actual native snapshot must issue a field revision"),
+        _ => panic!("the real field reader must issue a field revision"),
+    }
+}

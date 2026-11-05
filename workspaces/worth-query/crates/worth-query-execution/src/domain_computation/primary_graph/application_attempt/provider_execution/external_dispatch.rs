@@ -13,7 +13,7 @@
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 
 mod cleanup_dispatch;
-mod denial;
+pub(crate) mod denial;
 enum OriginalDispatchObservation<'a> {
     Starting,
     Observed(&'a WorthQueryExternalEffectDispatch),
@@ -89,14 +89,15 @@ where
         &self,
         transport: Arc<dyn WorthQueryExternalEffectTransport>,
     ) -> Result<(), WorthQueryExternalTransportInstallationDenial> {
-        self.external_effect_transport
+        self.runtime
+            .external_effect_transport
             .set(transport)
             .map_err(|_| WorthQueryExternalTransportInstallationDenial::AlreadyInstalled)
     }
 
     /// True when this runtime can carry a declared effect out to its rail.
     pub fn has_external_effect_transport(&self) -> bool {
-        self.external_effect_transport.get().is_some()
+        self.runtime.external_effect_transport.get().is_some()
     }
 
     /// Re-dispatch the handle binding's co-committed outbox through the transport.
@@ -114,7 +115,7 @@ where
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     ) -> Result<WorthQueryPerformedExternalRedispatch, WorthQueryExternalRedispatchDenial> {
         let request = phase
-            .execution_request_for(&self.product_runtime)
+            .execution_request_for(&self.runtime.product_runtime)
             .map_err(|cause| {
                 WorthQueryExternalRedispatchDenial::CompletionExecutionRequest(cause.into())
             })?;
@@ -128,6 +129,15 @@ where
         ) {
             return Err(WorthQueryExternalRedispatchDenial::RecoveryNotAdmitted);
         }
+        if !admission.belongs_to(
+            self.runtime.authority_identity(),
+            &self.installed_schema.binding_identity(),
+        ) {
+            return Err(WorthQueryExternalRedispatchDenial::ForeignAdmission);
+        }
+        admission
+            .validate_installed_operation(&self.runtime.installed_operations)
+            .map_err(WorthQueryExternalRedispatchDenial::from_admission_authorization)?;
         if let Some(lapse) = admission.current_authority_lapse() {
             return Err(match lapse {
                 WorthQueryAdmissionLapse::Cancelled => {
@@ -140,12 +150,6 @@ where
                     WorthQueryExternalRedispatchDenial::AdmissionAuthenticationExpired
                 }
             });
-        }
-        if !admission.belongs_to(
-            self.runtime.authority_identity(),
-            &self.installed_schema.binding_identity(),
-        ) {
-            return Err(WorthQueryExternalRedispatchDenial::ForeignAdmission);
         }
         let Some(record) = handle.binding().dispatch_outbox() else {
             return Err(WorthQueryExternalRedispatchDenial::BindingOutboxMissing);
@@ -162,10 +166,11 @@ where
                 }
             })?;
         let committed = self
+            .runtime
             .primary_provider
             .committed_dispatch_outbox_for_binding(execution, handle.binding())
             .map_err(WorthQueryExternalRedispatchDenial::OwnerReadDenied)?;
-        let Some(transport) = self.external_effect_transport.get() else {
+        let Some(transport) = self.runtime.external_effect_transport.get() else {
             return Err(WorthQueryExternalRedispatchDenial::TransportNotInstalled);
         };
         let dispatch = self
@@ -201,7 +206,7 @@ where
         if receipt.dispatch_outbox().is_none() {
             return WorthQueryApplicationCommitOutcome::Committed(receipt);
         }
-        let Some(transport) = self.external_effect_transport.get() else {
+        let Some(transport) = self.runtime.external_effect_transport.get() else {
             return WorthQueryApplicationCommitOutcome::Committed(receipt);
         };
         let committed =
@@ -274,6 +279,7 @@ where
             .admit_external_dispatch_attempt(committed)
             .map_err(denial::from_attempt_admission)?;
         let in_flight = self
+            .runtime
             .primary_provider
             .begin_external_dispatch_in_flight(&completion_owner)
             .map_err(denial::from_in_flight)?;
@@ -318,13 +324,4 @@ where
     }
 }
 
-#[cfg(test)]
-mod composite_dispatch_tests;
-#[cfg(test)]
-mod redispatch_denial_tests;
-#[cfg(test)]
-mod safe_retry_affinity_tests;
-
-#[cfg(test)]
-#[path = "external_dispatch/production_tests.rs"]
-mod tests;
+mod court_doors_for_test;

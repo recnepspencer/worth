@@ -4,7 +4,8 @@ pub(super) fn registry_meaning_matches(
     source: &RelationalSchemaRegistry,
     target: &RelationalSchemaRegistry,
 ) -> bool {
-    if source.derived_parts() != target.derived_parts()
+    if source.content_formats.snapshot() != target.content_formats.snapshot()
+        || source.derived_parts() != target.derived_parts()
         || source.entity_kinds.len() != target.entity_kinds.len()
         || source.relation_kinds.len() != target.relation_kinds.len()
     {

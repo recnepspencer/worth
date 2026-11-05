@@ -73,6 +73,7 @@ impl PreparedResidentRegion {
     }
 
     pub(crate) fn incremental(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         basis: RegionCaptureBasis<'_>,
         overlay: &PartitionState,
         journal: &PartitionMutationJournal,
@@ -93,21 +94,18 @@ impl PreparedResidentRegion {
         let prior_commitment = previous.commitment.as_ref().ok_or_else(absent)?;
         let mut partition = previous.partition.clone();
         let copied_truth_bytes = partition.merge_overlay_from_owned(&mut overlay.clone(), journal);
-        let kind_commitment = if journal.relation_slots.is_empty()
-            && journal.adjacency_slots.is_empty()
+        let kind_commitment = if journal.adjacency_slots.is_empty()
             && journal.reverse_adjacency_slots.is_empty()
+            && journal.relation_slots.is_empty()
         {
-            // Relation history also contributes kind claims when both
-            // endpoints are remote and there are no local incidence writes.
-            // All three unchanged axes preserve the prior kind commitment.
-            // merge_adjacency_from therefore preserves the prior authenticated
-            // projections, including omitted Head history and peer claims.
+            // Historical kind meaning includes locally owned relation rows
+            // and history, even when no endpoint incidence changes. Reuse
+            // requires all three inputs to be unchanged; scalar entity edits
+            // still preserve authenticated Head history and peer claims.
             partition.clear_runtime_pin_counters();
             basis.kind_commitment
         } else {
-            normalize(&mut partition)?;
-            RelationalRegionKindCommitment::capture(&partition)
-                .map_err(|_| RegionContentFailure::Adjacency)?
+            super::kind_admission::normalize(execution, &mut partition)?
         };
         let (commitment, content_values_hashed) = PartitionContentCommitment::capture(
             &partition,

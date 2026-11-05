@@ -15,7 +15,7 @@ use worth_query_installation::facade::{
     WorthQueryNamedClockSource, WorthQueryPortableApplicationConditionalOperationBinding,
     WorthQueryTemporalIntentProjector, WritableCapability, WritePosture,
 };
-mod clock_handle;
+pub(crate) mod clock_handle;
 pub(in crate::domain_computation::primary_graph) use clock_handle::ConditionalClockLease;
 pub use clock_handle::WorthQueryConditionalClockHandle;
 mod denial;

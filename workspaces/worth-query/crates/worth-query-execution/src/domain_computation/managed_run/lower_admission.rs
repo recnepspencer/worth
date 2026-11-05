@@ -12,7 +12,7 @@ use worth_runtime_bridge::facade::{
 use super::WorthQueryManagedRelationalObservation;
 use super::WorthQueryManagedTruthReadRequest;
 
-pub(in crate::domain_computation) struct WorthQueryManagedLowerExecutionBasis {
+pub struct WorthQueryManagedLowerExecutionBasis {
     pub bridge: BridgeBoundExecutionBasis,
     pub relational: WorthQueryManagedRelationalObservation,
     pub product_observation: Option<worth_runtime_world::facade::ProductBranchObservation>,

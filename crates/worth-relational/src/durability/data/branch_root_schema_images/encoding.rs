@@ -1,4 +1,4 @@
-//! Conditional durable tails keep the old carrier struct shape byte-exact.
+//! Required content authority fixes every preceding durable tail slot.
 use super::DurableBranchRootSchemaImage;
 use serde::ser::SerializeStruct;
 use serde::{Serialize, Serializer};
@@ -9,7 +9,7 @@ impl Serialize for DurableBranchRootSchemaImage {
         let derived = domains || !self.0.derived_relations.is_empty();
         let mut output = serializer.serialize_struct(
             "DurableBranchRootSchemaImage",
-            7 + usize::from(derived) + usize::from(domains),
+            8 + usize::from(derived) + usize::from(domains),
         )?;
         output.serialize_field("format_version", &self.0.format_version)?;
         output.serialize_field("carrier_digest", &self.0.carrier_digest)?;
@@ -30,6 +30,7 @@ impl Serialize for DurableBranchRootSchemaImage {
         if domains {
             output.serialize_field("projected_member_domains", &self.0.projected_member_domains)?;
         }
+        output.serialize_field("content_formats", &self.0.content_formats)?;
         output.end()
     }
 }

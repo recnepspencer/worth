@@ -21,7 +21,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
         Input: Clone + Send + Sync + 'static,
     {
         let phase_request =
-            match phase.execution_request_for(&runtime.product_runtime) {
+            match phase.execution_request_for(&runtime.runtime.product_runtime) {
                 Ok(request) => request,
                 Err(cause) => return Ok(WorkflowProgressOutcome::Application(
                     crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(
@@ -34,7 +34,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
             };
         let execution = &phase_request;
 
-        if let Err(cause) = phase.execution_request_for(&runtime.product_runtime) {
+        if let Err(cause) = phase.execution_request_for(&runtime.runtime.product_runtime) {
             let uncommitted =
                 crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(cause)
                     .into_commit_outcome()
@@ -65,7 +65,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
         Input: Clone + Send + Sync + 'static,
     {
         let phase_request =
-            match phase.execution_request_for(&runtime.product_runtime) {
+            match phase.execution_request_for(&runtime.runtime.product_runtime) {
                 Ok(request) => request,
                 Err(cause) => return Ok(WorkflowProgressOutcome::Application(
                     crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(
@@ -78,7 +78,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
             };
         let execution = &phase_request;
 
-        if let Err(cause) = phase.execution_request_for(&runtime.product_runtime) {
+        if let Err(cause) = phase.execution_request_for(&runtime.runtime.product_runtime) {
             let uncommitted =
                 crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(cause)
                     .into_commit_outcome()
@@ -126,7 +126,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
         EffectInput: Clone + Send + Sync + 'static,
     {
         let phase_request =
-            match phase.execution_request_for(&runtime.product_runtime) {
+            match phase.execution_request_for(&runtime.runtime.product_runtime) {
                 Ok(request) => request,
                 Err(cause) => return Ok(WorkflowProgressOutcome::Application(
                     crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(
@@ -139,7 +139,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
             };
         let execution = &phase_request;
 
-        if let Err(cause) = phase.execution_request_for(&runtime.product_runtime) {
+        if let Err(cause) = phase.execution_request_for(&runtime.runtime.product_runtime) {
             let uncommitted =
                 crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(cause)
                     .into_commit_outcome()
@@ -186,7 +186,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
         Input: Clone + Send + Sync + 'static,
     {
         let phase_request =
-            match phase.execution_request_for(&runtime.product_runtime) {
+            match phase.execution_request_for(&runtime.runtime.product_runtime) {
                 Ok(request) => request,
                 Err(cause) => return WorkflowProgressOutcome::Application(
                     crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(

@@ -22,10 +22,10 @@ use crate::transactions::data::{
 
 mod authored_index_writes;
 mod index_catalog;
+mod live_managed_source_history;
 pub(crate) use authored_index_writes::{CanonicalAuthoredIndexWrite, CanonicalAuthoredIndexWrites};
 pub(crate) use index_catalog::CanonicalIndexDefinitionDelta;
 mod descriptive_decode;
-mod live_managed_source_history;
 mod original_inputs;
 pub(crate) use live_managed_source_history::LiveManagedSourceHistory;
 mod authoritative_artifact_encoding;
@@ -33,12 +33,15 @@ mod authoritative_payload;
 mod control_allocation;
 #[cfg(test)]
 mod embedded_checkpoint;
+mod lineage_projection;
 mod payload_digest;
+mod retained_entity_selection;
 mod shared;
 pub(crate) use authoritative_artifact_encoding::AuthoritativeArtifactEnvelopeRef;
 pub(crate) use control_allocation::CanonicalEnvelopeControlAllocation;
 #[cfg(test)]
 pub(crate) use embedded_checkpoint::EmbeddedCheckpointEnvelopeRef;
+pub use retained_entity_selection::CanonicalRetainedEntitySelection;
 pub use shared::SharedCanonicalCommitEnvelope;
 #[path = "canonical_commit_envelope/descriptive_touches.rs"]
 mod descriptive_touches;
@@ -55,8 +58,10 @@ pub(crate) use required_output_codec_retirement::{
 pub(crate) use required_output_materialization::{
     CanonicalRequiredOutputMaterialization, CanonicalRequiredOutputMaterializationRecord,
 };
+pub(crate) use required_output_origin::validate_authored_restoration_candidate;
 pub(crate) use required_output_origin::{
-    CanonicalOutputMember, CanonicalOutputPublication, CanonicalRequiredOutputOrigin,
+    CanonicalAuthoredRestoration, CanonicalAuthoredRetirement, CanonicalOutputMember,
+    CanonicalOutputPublication, CanonicalProducerRetirement, CanonicalRequiredOutputOrigin,
     CanonicalRequiredOutputRelation,
 };
 
@@ -92,6 +97,7 @@ pub struct CanonicalCommitEnvelope {
     original_inputs: std::sync::OnceLock<
         Option<crate::durability::source_initial_inputs::recorded::RecordedCanonicalInputs>,
     >,
+    /// Live exact-envelope acceleration; deep Clone and all codecs omit it.
     pub(crate) live_managed_source_history: LiveManagedSourceHistory,
     body: CanonicalCommitEnvelopeBody,
     semantic_result: std::sync::Arc<crate::transactions::data::RelationalCommitSemanticResult>,
@@ -149,12 +155,17 @@ impl CanonicalCommitEnvelope {
 
 #[derive(Debug, PartialEq, Eq, Deserialize)]
 pub struct CanonicalCommitEnvelopeBody {
+    pub(crate) content: crate::content::ContentPublication,
     pub(crate) index_definition_delta: CanonicalIndexDefinitionDelta,
     pub(crate) caller_association: Option<super::RelationalCallerAssociation>,
     pub(crate) required_output_codec_retirements:
         Vec<std::sync::Arc<CanonicalRequiredOutputCodecRetirement>>,
     #[serde(default)]
     pub(crate) required_output_origin: Option<std::sync::Arc<CanonicalRequiredOutputOrigin>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) producer_cascade_retirement: Option<std::sync::Arc<CanonicalProducerRetirement>>,
+    pub(crate) authored_cascade_retirement: Option<std::sync::Arc<CanonicalAuthoredRetirement>>,
+    pub(crate) authored_cascade_restoration: Option<std::sync::Arc<CanonicalAuthoredRestoration>>,
     #[serde(default)]
     pub(crate) required_output_materialization:
         Option<std::sync::Arc<CanonicalRequiredOutputMaterialization>>,
@@ -195,13 +206,31 @@ pub struct CanonicalCommitEnvelopeBody {
     pub descriptor_semantics_version: DescriptorSemanticsVersion,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum CanonicalCommitAuthorityKind {
     VersionedTransaction,
     /// A canonical branch-reference movement that carries no new relational
     /// version. Recovery may readmit legacy metadata publications here after
     /// translating their obsolete lineage vocabulary.
     BranchReferenceMovement,
+    /// A fresh version selecting one retained authoritative entity payload.
+    RetainedEntitySelection(std::sync::Arc<CanonicalRetainedEntitySelection>),
+}
+
+impl CanonicalCommitAuthorityKind {
+    pub fn advances_version(&self) -> bool {
+        match self {
+            Self::VersionedTransaction | Self::RetainedEntitySelection(_) => true,
+            Self::BranchReferenceMovement => false,
+        }
+    }
+
+    pub fn retained_entity_selection(&self) -> Option<&CanonicalRetainedEntitySelection> {
+        match self {
+            Self::RetainedEntitySelection(selection) => Some(selection),
+            Self::VersionedTransaction | Self::BranchReferenceMovement => None,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -233,37 +262,8 @@ impl CanonicalCommitEnvelopeBody {
     pub(crate) fn record_allocations(&self) -> &[crate::history::data::CanonicalRecordAllocation] {
         &self.record_allocations
     }
-    pub fn lineage_events(&self) -> &[LineageEventRecord] {
-        self.lineage.lineage_events()
-    }
-    pub fn lineage_decision_log(&self) -> &[LineageDecisionRecord] {
-        self.lineage.lineage_decision_log()
-    }
-    pub fn lineage_decisions_for_event_id(&self, event_id: u64) -> Vec<&LineageDecisionRecord> {
-        self.lineage.decisions_for_event_id(event_id).collect()
-    }
-
-    pub fn lineage_digest_basis(&self) -> &LineageDigestBasis {
-        self.lineage.digest_basis()
-    }
-    pub fn event_batch_digest_basis(&self) -> &LineageEventBatchDigestBasis {
-        self.lineage.event_batch_digest_basis()
-    }
-
-    pub fn decision_log_digest_basis(&self) -> &LineageDecisionLogDigestBasis {
-        self.lineage.decision_log_digest_basis()
-    }
-
-    pub fn lineage_artifact_counters(&self) -> LineageArtifactCounters {
-        self.lineage.counters()
-    }
-
-    pub fn has_lineage_authority(&self) -> bool {
-        self.lineage.has_authority_content()
-    }
-
     pub fn authority_kind(&self) -> CanonicalCommitAuthorityKind {
-        self.authority_kind
+        self.authority_kind.clone()
     }
 
     pub(crate) fn published_lineage(&self) -> &PublishedLineageArtifact {
@@ -286,7 +286,25 @@ impl CanonicalCommitEnvelopeBody {
                 touched.insert(target);
             }
         }
+        if let Some(selection) = self.authority_kind.retained_entity_selection() {
+            touched.insert(RecordRef::Entity(selection.entity()));
+        }
         touched
+    }
+
+    /// Borrow authored targets too: an equal-valued authored update can have
+    /// no surviving field patch and still be a distinct record occurrence.
+    pub(crate) fn authored_intent_targets(&self) -> impl Iterator<Item = Option<RecordRef>> + '_ {
+        self.authority_kind
+            .retained_entity_selection()
+            .map(|selection| Some(RecordRef::Entity(selection.entity())))
+            .into_iter()
+            .chain(
+                self.merged_plan
+                    .merged_intents
+                    .iter()
+                    .map(intent_record_ref),
+            )
     }
 
     pub(crate) fn committed_record_changes(
@@ -354,6 +372,6 @@ pub struct RelationalReplayRecord {
 mod tests;
 #[path = "canonical_commit_envelope/text_wire.rs"]
 mod text_wire;
-pub(crate) use text_wire::CanonicalEnvelopeWire;
+pub(crate) use text_wire::{CanonicalEnvelopeSeed, CanonicalEnvelopeWire};
 #[cfg(test)]
 mod semantic_patch_fixture;

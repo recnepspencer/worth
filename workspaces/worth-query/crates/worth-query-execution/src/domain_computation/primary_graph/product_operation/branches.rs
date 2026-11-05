@@ -11,6 +11,7 @@ use worth_runtime_world::facade::{
 use super::WorthQueryApplicationProductBranchCleanup;
 mod expected_basis;
 mod expected_source;
+mod owned_head;
 use super::{
     WorthQueryOrderedProgramAdoptionCoverage, WorthQueryProgramAdoptionCoverage,
     WorthQueryProgramAdoptionCoverageDenial,
@@ -26,6 +27,7 @@ pub use expected_source::{
     WorthQueryExpectedProductBranchAdoptionFailure, WorthQueryExpectedProductBranchCloseFailure,
     WorthQueryExpectedProductBranchFork,
 };
+pub use owned_head::{WorthQueryOwnedProductHead, WorthQueryOwnedProductHeadCloseFailure};
 
 /// The product branch lifecycle of one application runtime: fork branches,
 /// issue program adoption coverage, page through recovery, and find pending
@@ -40,12 +42,12 @@ pub struct WorthQueryApplicationProductBranches<'runtime, Schema> {
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub fn current_world(&self) -> WorthQueryProductBranch {
-        self.product_runtime.root_product_branch()
+        self.runtime.product_runtime.root_product_branch()
     }
 
     pub fn branches(&self) -> WorthQueryApplicationProductBranches<'_, Schema> {
         WorthQueryApplicationProductBranches {
-            branches: self.product_runtime.product_branches(),
+            branches: self.runtime.product_runtime.product_branches(),
             application: self,
         }
     }
@@ -82,6 +84,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
         let coverage = WorthQueryProgramAdoptionCoverage::issue(branches, maximum_targets)?;
         let unadmitted = self
             .application
+            .runtime
             .product_runtime
             .activations
             .first_unadmitted_live_occurrence(
@@ -117,8 +120,15 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
 
     pub fn fork(self, source: WorthQueryProductBranch) -> WorthQueryProductBranchFork<'runtime> {
         self.branches.fork(source).with_application_lifecycle(
-            std::sync::Arc::clone(&self.application.primary_provider.graph.output_lineage),
-            &self.application.primary_provider,
+            std::sync::Arc::clone(
+                &self
+                    .application
+                    .runtime
+                    .primary_provider
+                    .graph
+                    .output_lineage,
+            ),
+            &self.application.runtime.primary_provider,
             self.application,
         )
     }
@@ -145,21 +155,25 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
     pub fn pending_cleanup(&self) -> Vec<WorthQueryApplicationProductBranchCleanup> {
         for occurrence in self
             .application
+            .runtime
             .product_runtime
             .pending_application_retired_product_occurrences()
         {
             self.application
+                .runtime
                 .output_demands
                 .release_product_occurrence(occurrence.incarnation());
             self.application
+                .runtime
                 .primary_provider
                 .release_product_occurrence_retention(
                     occurrence.branch(),
                     occurrence.incarnation(),
                 );
         }
-        let conditional = self.application.bridge.conditional_operations();
+        let conditional = self.application.runtime.bridge.conditional_operations();
         self.application
+            .runtime
             .product_runtime
             .pending_owner_cleanup()
             .into_iter()

@@ -17,7 +17,7 @@ use super::{
 
 /// Private proof that the legacy managed-run engine is a worker of one exact
 /// graph-work session rather than a second application-mutation authority.
-pub(in crate::domain_computation) struct WorthQueryMutationRunBinding {
+pub struct WorthQueryMutationRunBinding {
     session: WorthQueryGraphWorkSessionIdentity,
     managed_run: WorthQueryGraphWorkManagedRunIdentity,
     plan: WorthQueryGraphWorkPlanIdentity,
@@ -33,7 +33,7 @@ pub(in crate::domain_computation) struct WorthQueryMutationRunBinding {
 
 /// Cleanup owner after the exact live provider session has been associated
 /// with the admitted mutation run.
-pub(in crate::domain_computation) struct WorthQueryProviderSessionBoundMutationRun {
+pub struct WorthQueryProviderSessionBoundMutationRun {
     run: WorthQueryMutationRunBinding,
     provider_session: super::super::WorthQueryProviderSessionTerminalBinding,
 }
@@ -234,3 +234,5 @@ impl WorthQueryMutationGraphWorkCompletion {
         self.attempt_resources_released
     }
 }
+
+mod court_doors_for_test;

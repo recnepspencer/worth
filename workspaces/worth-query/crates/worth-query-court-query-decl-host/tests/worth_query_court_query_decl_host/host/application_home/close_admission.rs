@@ -51,8 +51,7 @@ fn active_installed_call_refuses_before_world_seal_and_resumes_the_same_home() {
         let cancellation = WorthQueryCancellationSource::new();
         let scope = WorthQueryRequestScope::new(
             Some(Instant::now() + Duration::from_secs(60)),
-            cancellation.token(),
-        );
+            cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
         let runtime = home.runtime();
         let principal = identity::inspection_authentication::authenticate(
             runtime.runtime().installed_schema(),

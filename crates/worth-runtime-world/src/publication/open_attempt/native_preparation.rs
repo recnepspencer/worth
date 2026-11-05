@@ -187,6 +187,7 @@ impl WorldOpenedPublicationAttempt {
             Some(candidate),
             None,
             None,
+            None,
         ) {
             Ok(plan) => plan,
             Err(cause) => {

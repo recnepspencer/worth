@@ -1,8 +1,6 @@
-use super::WorthQueryAdmittedApplicationOperation;
+use super::WorthQueryAdmittedOperation;
 
-impl<Schema, Operation, Input, Scope>
-    WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>
-{
+impl WorthQueryAdmittedOperation {
     pub(in crate::domain_computation) const fn operation_authority_identity_bytes(
         &self,
     ) -> &[u8; 32] {

@@ -1,12 +1,10 @@
-use super::WorthQueryAdmittedApplicationOperation;
+use super::WorthQueryAdmittedOperation;
 use crate::domain_computation::primary_graph::{
     application_attempt::CompletedHandlerFactBoundary, ComputationPrior,
     RequiredOutputDemandContext, SealedComputationRetention,
 };
 
-impl<Schema, Operation, Input, Scope>
-    WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>
-{
+impl WorthQueryAdmittedOperation {
     pub(in crate::domain_computation) fn record_decision_context_use(
         &mut self,
         use_mask: crate::domain_computation::primary_graph::DecisionContextUse,
@@ -46,7 +44,6 @@ impl<Schema, Operation, Input, Scope>
             context.record_completed_handler_facts(boundary, computation);
         } else {
             crate::domain_computation::primary_graph::observe_discarded(&computation);
-            #[cfg(test)]
             crate::domain_computation::primary_graph::SealedComputationRun::keep_in_test(
                 match computation {
                     SealedComputationRetention::Produced(run) => Some(run),
@@ -63,7 +60,6 @@ impl<Schema, Operation, Input, Scope>
             .required_output_demand
             .as_ref()
             .and_then(RequiredOutputDemandContext::computation_prior);
-        #[cfg(test)]
         let prior = prior.or_else(ComputationPrior::handed_in_test);
         prior
     }

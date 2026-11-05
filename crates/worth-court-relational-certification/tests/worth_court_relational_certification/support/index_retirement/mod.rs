@@ -1,7 +1,6 @@
 //! Ordinary index publication actions over the shared aspect-storage schema.
 pub(crate) use worth_relational::facade::{
-    history::BranchId, identity::*, indexes::*, runtime::RelationalRuntime,
-    transactions::CommitResult,
+    history::BranchId, indexes::*, runtime::RelationalRuntime, transactions::CommitResult,
 };
 pub(crate) use worth_testkit_relational::aspect_storage::publications::release_test_commit_snapshot;
 pub(crate) use worth_testkit_relational::aspect_storage::{

@@ -17,7 +17,9 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> ManagedIndexSta
         {
             return Err(Denial::ForeignAssociation);
         }
-        let image = RetainedIndexImage::Maintained(observation);
+        let image = RetainedIndexImage::Maintained {
+            native_custody: observation,
+        };
         let mut state = self
             .retained
             .lock()
@@ -84,7 +86,9 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> ManagedIndexSta
         epoch: u64,
         observation: ManagedIndexSourceObservation,
     ) {
-        let image = RetainedIndexImage::Maintained(observation);
+        let image = RetainedIndexImage::Maintained {
+            native_custody: observation,
+        };
         let mut state = self
             .retained
             .lock()

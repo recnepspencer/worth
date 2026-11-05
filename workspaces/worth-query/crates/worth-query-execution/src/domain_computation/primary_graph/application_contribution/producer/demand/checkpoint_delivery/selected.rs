@@ -1,8 +1,8 @@
 //! Reenter the real Published/Delivered checkpoint under the required meter.
 
 use super::*;
+use crate::domain_computation::primary_graph::application_output_demand::CheckpointFinishStop;
 use crate::domain_computation::primary_graph::application_output_demand::PreparedSelectedCheckpointFinish;
-use crate::domain_computation::primary_graph::application_output_demand::SelectedCheckpointFinishStop;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
@@ -25,8 +25,23 @@ where
         request_scope: &WorthQueryRequestScope,
         returned: &mut Option<Checkpoint>,
         finish: PreparedSelectedCheckpointFinish<'_>,
+        principal: &worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        invocation: &super::super::super::ProducerInvocationAuthority<'_>,
     ) -> Result<bool, WorthQueryOutputDemandDenial> {
         match checkpoint {
+            Checkpoint::PublicationPending {
+                owner,
+                ready_backing,
+            } => self.advance_unpublished_checkpoint(
+                phase,
+                producer_identity,
+                principal,
+                request_scope,
+                invocation,
+                owner,
+                ready_backing,
+                |checkpoint| finish_selected(finish, claim, checkpoint, None, returned).map(|_| ()),
+            ),
             Checkpoint::Published {
                 receipt,
                 delivery,
@@ -35,23 +50,24 @@ where
                 // These are Query owner visits. Bridge/Signal delivery keeps
                 // its installed serial admission class.
 
-                let prepared = match self.prepare_selected_delivery(producer_identity, &receipt) {
-                    Ok(prepared) => prepared,
-                    Err(cause) => {
-                        finish_selected(
-                            finish,
-                            claim,
-                            Checkpoint::Published {
-                                receipt,
-                                delivery,
-                                ready_backing,
-                            },
-                            Some(cause),
-                            returned,
-                        )?;
-                        return Ok(false);
-                    }
-                };
+                let prepared =
+                    match self.prepare_selected_delivery(producer_identity, (&receipt).into()) {
+                        Ok(prepared) => prepared,
+                        Err(cause) => {
+                            finish_selected(
+                                finish,
+                                claim,
+                                Checkpoint::Published {
+                                    receipt,
+                                    delivery,
+                                    ready_backing,
+                                },
+                                Some(cause),
+                                returned,
+                            )?;
+                            return Ok(false);
+                        }
+                    };
                 if let Err(cause) = check_request(request_scope) {
                     finish_selected(
                         finish,
@@ -70,7 +86,7 @@ where
                 self.deliver_output_checkpoint_with_finish(
                     phase,
                     producer_identity,
-                    receipt,
+                    receipt.into(),
                     delivery,
                     ready_backing,
                     true,
@@ -93,7 +109,7 @@ where
                     execution,
                     phase,
                     producer_identity,
-                    &receipt,
+                    (&receipt).into(),
                     delivery.as_ref(),
                     &ready_backing,
                     request_scope,
@@ -123,16 +139,26 @@ where
                 finish_selected(finish, claim, Checkpoint::Ready(completion), None, returned)?;
                 Ok(true)
             }
+            checkpoint @ (Checkpoint::RecoveredPublished { .. }
+            | Checkpoint::RecoveredDelivered { .. }) => self.advance_recovered_checkpoint(
+                execution,
+                phase,
+                producer_identity,
+                checkpoint,
+                Some(request_scope),
+                |checkpoint, denial| finish_selected(finish, claim, checkpoint, denial, returned),
+            ),
             Checkpoint::Ready(_) => unreachable!("ready output opens without a checkpoint claim"),
         }
     }
 
-    fn prepare_selected_delivery<'a>(
+    pub(super) fn prepare_selected_delivery<'a>(
         &'a self,
         producer_identity: &str,
-        receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+        receipt: crate::domain_computation::primary_graph::application_output_demand::OutputPublicationView<'_>,
     ) -> Result<PreparedSelectedDelivery<'a>, WorthQueryOutputDemandDenial> {
         let route = self
+            .runtime
             .output_readiness_routes
             .get(producer_identity)
             .expect("installation retains one readiness route per producer");
@@ -162,8 +188,8 @@ fn finish_selected(
             Some(denial) => Err(denial),
             None => Ok(WorthQueryOutputDemandAdvance::Pending),
         },
-        Err(SelectedCheckpointFinishStop::Restored(denial)) => Err(denial),
-        Err(SelectedCheckpointFinishStop::Returned(denial, checkpoint)) => {
+        Err(CheckpointFinishStop::Restored(denial)) => Err(denial),
+        Err(CheckpointFinishStop::Returned(denial, checkpoint)) => {
             assert!(returned.is_none(), "one selected checkpoint owner");
             *returned = Some(checkpoint);
             Err(denial)
@@ -171,7 +197,9 @@ fn finish_selected(
     }
 }
 
-fn check_request(request: &WorthQueryRequestScope) -> Result<(), WorthQueryOutputDemandDenial> {
+pub(super) fn check_request(
+    request: &WorthQueryRequestScope,
+) -> Result<(), WorthQueryOutputDemandDenial> {
     match request.interruption() {
         Some(WorthQueryRequestInterruption::Cancelled) => {
             Err(denial(WorthQueryOutputDemandDenialKind::Cancelled, ""))

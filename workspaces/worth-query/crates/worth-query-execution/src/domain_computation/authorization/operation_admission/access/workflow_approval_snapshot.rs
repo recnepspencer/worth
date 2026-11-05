@@ -6,9 +6,7 @@ use crate::domain_computation::authorization::{
 };
 use crate::domain_computation::primary_graph::workflow::actor::encoding::{self, FundedActorText};
 
-impl<Schema, Operation, Input, Scope>
-    WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>
-{
+impl WorthQueryAdmittedOperation {
     /// Original live native admission identity, across ordinary and capability lanes.
     pub(in crate::domain_computation) fn signed_creation_principal(
         &self,

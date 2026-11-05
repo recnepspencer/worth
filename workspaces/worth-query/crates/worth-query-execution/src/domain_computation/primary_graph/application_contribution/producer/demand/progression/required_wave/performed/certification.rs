@@ -1,7 +1,8 @@
 //! Native certification issues the sole consuming key for a Current result.
 use super::super::*;
 use super::PerformedMembers;
-mod current_basis;
+use crate::domain_computation::primary_graph::application_contribution::producer::ProducerInvocationAuthority;
+pub(crate) mod current_basis;
 pub(in crate::domain_computation::primary_graph) use current_basis::CurrentBasis;
 
 impl PerformedMembers {
@@ -20,7 +21,7 @@ impl PerformedMembers {
 }
 
 /// A move-only key to acknowledgement, caller acceptance or requested return.
-pub(in crate::domain_computation::primary_graph) struct CurrentProof<T> {
+pub struct CurrentProof<T> {
     value: T,
     basis: CurrentBasis,
     record: Arc<
@@ -57,12 +58,14 @@ pub(in super::super) fn certify_required_ready<'owner, Schema>(
     resolved: Option<&ResolvedRequiredPredecessors<'_, Schema>>,
     producer_contacts_in_this_demand: usize,
     refresh_permission: Result<(), WorthQueryOutputDemandDenial>,
+    invocation: ProducerInvocationAuthority<'owner>,
     performed: &'owner std::cell::RefCell<performed::PerformedMembers>,
 ) -> Result<RequiredWaveStep<'owner, Schema>, WorthQueryOutputDemandDenial>
 where
     Schema: ApplicationSchema + 'static,
 {
     let candidate = runtime
+        .runtime
         .primary_provider
         .graph
         .output_lineage
@@ -102,6 +105,7 @@ where
             wave.branch,
             producer_contacts_in_this_demand,
             refresh_permission,
+            invocation,
             performed,
         )
         .map_err(|stop| match stop {
@@ -123,6 +127,7 @@ where
         }
         RequiredCueProgress::PendingExact(pending) => {
             let upstream = runtime
+                .runtime
                 .output_demands
                 .pending_exact_ready_readmission(&pending, &wave.positioned)?;
             Ok(match upstream {
@@ -136,8 +141,6 @@ where
     }
 }
 
-#[cfg(test)]
-mod acknowledgement_basis;
 /// Frozen permits own-row truth and the native required-upstream resume.
 /// Thaw follows the successor's custody: its caller's continuation, or a
 /// registry frame moved to the advance that requires it. No global sweep runs.
@@ -149,6 +152,7 @@ pub(in super::super) fn certify_frozen_ready<'call, Schema: ApplicationSchema + 
     request: &WorthQueryRequestScope,
     wave: &RequiredWaveSelection<'_, Schema>,
     caller: FrozenCaller<'_, Schema>,
+    invocation: &ProducerInvocationAuthority<'call>,
     performed: &std::cell::RefCell<PerformedMembers>,
 ) -> Result<FrozenCallerInspection<Schema>, WorthQueryOutputDemandDenial> {
     let FrozenCaller {
@@ -158,6 +162,7 @@ pub(in super::super) fn certify_frozen_ready<'call, Schema: ApplicationSchema + 
     } = caller;
 
     let candidate = runtime
+        .runtime
         .primary_provider
         .graph
         .output_lineage
@@ -174,7 +179,7 @@ pub(in super::super) fn certify_frozen_ready<'call, Schema: ApplicationSchema + 
     let candidate = candidate.ok().flatten();
     let result = installed.executor.inspect_frozen_ready(crate::domain_computation::primary_graph::application_contribution::producer::execution::FrozenInspection {
             execution, runtime, principal, request, shared: &wave.shared, positioned: &wave.positioned,
-            selected, candidate: candidate.as_ref(), contacts,
+            selected, candidate: candidate.as_ref(), contacts, invocation: invocation.clone(),
         })
         .map_err(|stop| match stop {
             ProducerExecutionStop::RequestAdmissionDenied(rejection) => rejection.into_denial(),
@@ -186,14 +191,14 @@ pub(in super::super) fn certify_frozen_ready<'call, Schema: ApplicationSchema + 
         crate::domain_computation::primary_graph::application_contribution::producer::execution::FrozenCurrentInspection::Current(value) =>
             FrozenCallerInspection::Current(performed.borrow().current(value, CurrentBasis::of(wave.shared.selected().product().observation()), selected.certify_current_record(CurrentBasis::of(wave.shared.selected().product().observation())))),
         crate::domain_computation::primary_graph::application_contribution::producer::execution::FrozenCurrentInspection::PendingExact(pending) => {
-            match super::super::super::super::required_continuations::RegistryDelivery::from_pending(&pending, &wave.positioned, &runtime.output_demands)? {
+            match super::super::super::super::required_continuations::RegistryDelivery::from_pending(&pending, &wave.positioned, &runtime.runtime.output_demands)? {
                 super::super::super::super::required_continuations::RequiredDelivery::Delivery(delivery) => FrozenCallerInspection::RegistryDelivery(delivery),
                 super::super::super::super::required_continuations::RequiredDelivery::Ready(ready) => FrozenCallerInspection::Upstream(ready),
                 super::super::super::super::required_continuations::RequiredDelivery::Unavailable => FrozenCallerInspection::NotCurrent,
             }
         }
         crate::domain_computation::primary_graph::application_contribution::producer::execution::FrozenCurrentInspection::NotCurrent => {
-            match super::super::super::super::required_continuations::RegistryDelivery::from_required_claim(selected, &runtime.output_demands)? {
+            match super::super::super::super::required_continuations::RegistryDelivery::from_required_claim(selected, &runtime.runtime.output_demands)? {
                 Some(delivery) => FrozenCallerInspection::RegistryDelivery(delivery),
                 None => FrozenCallerInspection::NotCurrent,
             }
@@ -212,3 +217,5 @@ pub(in super::super) struct FrozenCaller<'a, Schema: ApplicationSchema> {
     pub installed: &'a InstalledProducerProvider<Schema>,
     pub contacts: usize,
 }
+
+mod court_doors_for_test;

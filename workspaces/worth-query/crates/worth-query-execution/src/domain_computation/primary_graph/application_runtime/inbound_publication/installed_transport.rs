@@ -12,13 +12,13 @@ use worth_runtime_world::facade::ProductBranchIncarnation;
 
 /// A completed physical attempt paired with its exact committed outbox owner.
 /// The transport observation carries no inbound signature or verifier claim.
-pub(in crate::domain_computation::primary_graph) struct InstalledTransportCompletion {
+pub struct InstalledTransportCompletion {
     committed: WorthQueryCommittedDispatchOutboxObservation,
     dispatch: WorthQueryExternalEffectDispatch,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum InstalledTransportCompletionDenial {
+pub enum InstalledTransportCompletionDenial {
     NotCompleted,
     CorrelationMismatch,
     CausalMismatch,
@@ -71,7 +71,7 @@ impl InstalledTransportCompletion {
 }
 
 /// A World-performed terminal from an actual installed transport completion.
-pub(in crate::domain_computation::primary_graph) struct PerformedInstalledTransportCompletion {
+pub struct PerformedInstalledTransportCompletion {
     evidence: Arc<InstalledTransportCompletion>,
     binding: WorthQueryInstalledTransportCompletionBinding,
     original_incarnation: ProductBranchIncarnation,
@@ -137,7 +137,7 @@ impl PerformedInstalledTransportCompletion {
 /// A completed transport attempt whose Relational owner effect escaped before
 /// a World product transition. It must remain in managed recovery custody.
 #[must_use = "retain unpublished installed transport completion for recovery"]
-pub(in crate::domain_computation::primary_graph) struct UnpublishedInstalledTransportCompletion {
+pub struct UnpublishedInstalledTransportCompletion {
     evidence: Arc<InstalledTransportCompletion>,
     unpublished: WorthQueryProductUnpublishedApplication,
 }
@@ -163,7 +163,7 @@ impl UnpublishedInstalledTransportCompletion {
 }
 
 #[derive(Debug)]
-pub(in crate::domain_computation::primary_graph) enum InstalledTransportPublicationDenial {
+pub enum InstalledTransportPublicationDenial {
     ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
     ForeignRelationalRuntime,
     ForeignProductWorld,
@@ -177,7 +177,7 @@ pub(in crate::domain_computation::primary_graph) enum InstalledTransportPublicat
 }
 
 #[must_use = "retain actual dispatch evidence and any World recovery custody"]
-pub(in crate::domain_computation::primary_graph) enum InstalledTransportPublicationOutcome {
+pub enum InstalledTransportPublicationOutcome {
     AlreadyCompleted,
     Performed(PerformedInstalledTransportCompletion),
     ProductUnpublished(UnpublishedInstalledTransportCompletion),
@@ -187,3 +187,5 @@ pub(in crate::domain_computation::primary_graph) enum InstalledTransportPublicat
         InstalledTransportPublicationDenial,
     ),
 }
+
+mod court_doors_for_test;

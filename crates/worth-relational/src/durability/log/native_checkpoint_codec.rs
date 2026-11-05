@@ -22,9 +22,9 @@ mod member_sequence;
 mod member_source;
 pub(crate) use checkpoint_decoding::decode_checkpoint_with_image;
 pub(crate) use checkpoint_decoding::{decode_checkpoint, decode_checkpoint_from_source};
-pub(crate) use checkpoint_encoding::encode_captured;
 #[cfg(test)]
 pub(crate) use checkpoint_encoding::encode_checkpoint;
+pub(crate) use checkpoint_encoding::{encode_captured, CheckpointEncodingControl};
 pub(crate) use manifest_capture::CapturedManifest;
 
 /// A checkpoint decoded from native bytes. Decoding readmits managed text and

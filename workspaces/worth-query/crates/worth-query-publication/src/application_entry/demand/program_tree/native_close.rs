@@ -21,19 +21,7 @@ where
                 request
                     .application
                     .with_application_advancement(request.scope, |phase| {
-                        phase
-                            .checked_execution_request_for(request.application.product_runtime())
-                            .map_err(Denial::Execution)?;
-                        if let Some(cleanup) = self.cleanup.as_mut() {
-                            cleanup
-                                .close_in_advancement(&phase, request.application)
-                                .map_err(Denial::Native)?;
-                        }
-                        if let Some(tree) = self.tree.as_mut() {
-                            tree.close_read_request(&phase, runtime, branch)
-                                .map_err(Denial::Native)?;
-                        }
-                        Ok(())
+                        self.discharge_in_advancement(runtime, branch, &phase)
                     })
                     .map_err(Denial::Execution)
                     .and_then(|result| result)
@@ -42,5 +30,39 @@ where
         Ok(WorthQueryClosedProgramOutputRequest::from_cleanup(
             self.cleanup.take(),
         ))
+    }
+
+    pub(super) fn close_native_in_advancement(
+        &mut self,
+        runtime: &WorthQueryProgramApplicationRuntime<S, P>,
+        branch: WorthQueryProductBranch,
+        phase: &WorthQueryAdvancementPhase<'_>,
+    ) -> Result<WorthQueryClosedProgramOutputRequest, WorthQueryProgramOutputCloseDenial> {
+        self.discharge_in_advancement(runtime, branch, phase)?;
+        Ok(WorthQueryClosedProgramOutputRequest::from_cleanup(
+            self.cleanup.take(),
+        ))
+    }
+
+    fn discharge_in_advancement(
+        &mut self,
+        runtime: &WorthQueryProgramApplicationRuntime<S, P>,
+        branch: WorthQueryProductBranch,
+        phase: &WorthQueryAdvancementPhase<'_>,
+    ) -> Result<(), WorthQueryProgramOutputCloseDenial> {
+        use WorthQueryProgramOutputCloseDenial as Denial;
+        phase
+            .check_live_for(runtime.runtime().product_runtime())
+            .map_err(Denial::Execution)?;
+        if let Some(cleanup) = self.cleanup.as_mut() {
+            cleanup
+                .close_in_advancement(phase, runtime.runtime())
+                .map_err(Denial::Native)?;
+        }
+        if let Some(tree) = self.tree.as_mut() {
+            tree.close_read_request(phase, runtime, branch)
+                .map_err(Denial::Native)?;
+        }
+        Ok(())
     }
 }

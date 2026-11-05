@@ -29,10 +29,10 @@ impl RelationalRegionResidency {
             .ok_or_else(overflow)?;
         let memory = request
             .reserve_retained_memory(region_bytes)
-            .map_err(|cause| RegionContentFailure::Request(cause.into()))?;
+            .map_err(|cause| RegionContentFailure::Execution(cause.into()))?;
         let control_memory = request
             .reserve_retained_memory(control_bytes)
-            .map_err(|cause| RegionContentFailure::Request(cause.into()))?;
+            .map_err(|cause| RegionContentFailure::Execution(cause.into()))?;
         let control_memory = control_memory.map(Arc::new);
         let region = Arc::new(ResidentRegion {
             partition,

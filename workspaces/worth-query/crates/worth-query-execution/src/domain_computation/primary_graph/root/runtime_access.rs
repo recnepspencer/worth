@@ -24,3 +24,5 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
             .with_runtime(execution, |runtime| read(runtime, &self.layout))
     }
 }
+
+mod court_doors_for_test;

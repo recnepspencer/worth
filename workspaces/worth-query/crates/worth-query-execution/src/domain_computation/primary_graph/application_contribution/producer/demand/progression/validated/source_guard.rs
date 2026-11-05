@@ -46,7 +46,7 @@ where
             return Ok(false);
         }
         Ok(matches!(
-            self.output_demands.row_stage_admitted(interest)?,
+            self.runtime.output_demands.row_stage_admitted(interest)?,
             OutputRowStage::BeforeReady
         ))
     }
@@ -119,13 +119,14 @@ where
             .as_ref()
             .expect("progression entry checked live Interest");
         let end_row = || {
-            self.output_demands
+            self.runtime
+                .output_demands
                 .finish_superseded(interest, Family::IDENTITY)
         };
         if selected {
             return Err(end_row()?);
         }
-        let ready = match self.output_demands.row_stage(interest) {
+        let ready = match self.runtime.output_demands.row_stage(interest) {
             OutputRowStage::Driven => {
                 return Ok(OwnStages::Answer(WorthQueryOutputDemandAdvance::Pending))
             }
@@ -138,15 +139,23 @@ where
             OutputRowStage::Ready(completion) => Some(completion),
             OutputRowStage::Stopped(_)
             | OutputRowStage::BeforeReady
-            | OutputRowStage::Published => None,
+            | OutputRowStage::Published
+            | OutputRowStage::PublicationPending => None,
         };
         let held = ready.as_ref().map(|completion| &completion.authority);
         // A changed source at the Ready's own publication is born stale:
         // this demand must refresh to the lasting result of that source.
         // An unrelated later publication still supersedes an unsettled caller.
-        let own_publication = matches!(held, Some(Authority::Committed(receipt))
-            if disclosure.source().selected_product_commit()
-                == Some(receipt.committed_product_publication().composite_commit()));
+        let own_publication =
+            held.and_then(Authority::publication_view)
+                .is_some_and(|publication| {
+                    disclosure.source().selected_product_commit()
+                        == Some(
+                            publication
+                                .committed_product_publication()
+                                .composite_commit(),
+                        )
+                });
         if !demand.settled
             && !own_publication
             && !matches!(held, Some(Authority::Stable(_) | Authority::Restored(_)))

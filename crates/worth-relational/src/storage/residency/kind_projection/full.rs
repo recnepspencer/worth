@@ -28,7 +28,7 @@ impl FullKindProjection {
     ) -> Result<(), Failure> {
         request
             .consult()
-            .map_err(|cause| Failure::Request(cause.into()))?;
+            .map_err(|cause| Failure::Execution(cause.into()))?;
         if let Some((key, prior)) = self.rows.lower_bound(&(relation, false, 0))
             && key.0 == relation
             && *prior != kind.0
@@ -39,7 +39,7 @@ impl FullKindProjection {
         if !self.rows.contains_key(&key) {
             self.rows
                 .insert_for_request(key, kind.0, request)
-                .map_err(Failure::Request)?;
+                .map_err(Failure::Execution)?;
         }
         Ok(())
     }
@@ -57,7 +57,7 @@ impl FullKindProjection {
             for (&slot, adjacency) in table.iter() {
                 request
                     .consult()
-                    .map_err(|cause| Failure::Request(cause.into()))?;
+                    .map_err(|cause| Failure::Execution(cause.into()))?;
                 for (kind, relation) in adjacency.kind_memberships(basis) {
                     result.insert(relation, kind, incoming, slot, request)?;
                 }
@@ -83,7 +83,7 @@ impl FullKindProjection {
         for slot in partition.relation_arena.occupied_slots_iter() {
             request
                 .consult()
-                .map_err(|cause| Failure::Request(cause.into()))?;
+                .map_err(|cause| Failure::Execution(cause.into()))?;
             for metadata in partition
                 .relation_arena
                 .metadata_history_at(slot)
@@ -167,9 +167,9 @@ impl FullKindProjection {
             for (&slot, _) in original.iter() {
                 let adjacency = table
                     .get_mut_for_request(slot, request)
-                    .map_err(Failure::Request)?
+                    .map_err(Failure::Execution)?
                     .ok_or(Failure::Adjacency)?;
-                adjacency.reset_historical_kind_buckets();
+                adjacency.reset_historical_kind_buckets_with_custody(None);
             }
             for (&(relation, side, slot), &kind) in self.rows.iter() {
                 if side != incoming {
@@ -177,11 +177,11 @@ impl FullKindProjection {
                 }
                 let adjacency = table
                     .get_mut_for_request(slot, request)
-                    .map_err(Failure::Request)?
+                    .map_err(Failure::Execution)?
                     .ok_or(Failure::Adjacency)?;
                 adjacency
                     .index_historical_kind_for_request(KindId(kind), relation, request)
-                    .map_err(Failure::Request)?;
+                    .map_err(Failure::Execution)?;
             }
         }
         Ok(())

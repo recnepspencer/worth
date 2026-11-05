@@ -6,7 +6,7 @@ pub(super) fn rule_matches_plan_scope(
     request: &InvariantExecutionRequest<'_>,
     rule: &InvariantRule,
 ) -> bool {
-    let Some(_merged_plan) = request.merged_plan() else {
+    let Some(_semantic_plan) = request.semantic_plan() else {
         return true;
     };
     let Some(relation_kind_id) = super::relation_kind_scope(rule) else {

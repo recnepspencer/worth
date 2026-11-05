@@ -23,7 +23,7 @@ pub(super) struct Projection<'a, 'kernel, 'controls, 'request, 'authority> {
 impl Projection<'_, '_, '_, '_, '_> {
     pub(super) fn project(
         &mut self,
-        plan: &MergedCommitPlan,
+        plan: RelationalSemanticPlan<'_>,
         allocations: &[crate::history::data::CanonicalRecordAllocation],
     ) -> Result<(), Denial> {
         for allocation in allocations {
@@ -32,7 +32,11 @@ impl Projection<'_, '_, '_, '_, '_> {
                 self.record(*entity, None)?;
             }
         }
-        for intent in &plan.merged_intents {
+        if let Some(selection) = plan.selection() {
+            work(self.context, 1)?;
+            self.record(selection.entity(), None)?;
+        }
+        for intent in &plan.commands().merged_intents {
             work(self.context, 1)?;
             match intent {
                 MutationIntent::Entity(Entity::UpdateFields(intent)) => {

@@ -1,4 +1,6 @@
 use std::sync::Arc;
+mod source_scope_retirement;
+pub use source_scope_retirement::AdmittedProducerOutputRetirement;
 
 /// The installed application owner retained by the runtime that selects producers.
 /// A fresh occurrence cannot satisfy a native binding issued for another owner.
@@ -27,6 +29,7 @@ pub struct AdmittedRequiredOutputPublication {
 pub struct RequiredOutputPublicationAuthority {
     occurrence: Arc<()>,
     publication: u64,
+    ordinal: usize,
 }
 
 #[derive(Debug)]
@@ -39,7 +42,7 @@ pub struct AdmittedRequiredOutputSuccession {
 /// This is not a running producer and carries no producer dependency claim.
 #[derive(Debug)]
 pub struct AdmittedAuthoredOutputRetirement {
-    predecessor: RequiredOutputPublicationAuthority,
+    predecessors: Vec<RequiredOutputPublicationAuthority>,
 }
 
 /// Admission issued only after the installed owner authenticates its recovered
@@ -57,9 +60,26 @@ impl InstalledApplicationPublicationOwner {
     ) -> Option<AdmittedAuthoredOutputRetirement> {
         Arc::ptr_eq(&self.occurrence, &predecessor.occurrence).then(|| {
             AdmittedAuthoredOutputRetirement {
-                predecessor: predecessor.clone(),
+                predecessors: vec![predecessor.clone()],
             }
         })
+    }
+    pub fn admit_authored_output_retirements<'a>(
+        &self,
+        predecessors: impl IntoIterator<Item = &'a RequiredOutputPublicationAuthority>,
+    ) -> Option<AdmittedAuthoredOutputRetirement> {
+        let predecessors: Vec<_> = predecessors.into_iter().cloned().collect();
+        if predecessors.is_empty()
+            || predecessors.iter().enumerate().any(|(index, prior)| {
+                !Arc::ptr_eq(&self.occurrence, &prior.occurrence)
+                    || predecessors[..index].iter().any(|other| {
+                        other.publication == prior.publication && other.ordinal == prior.ordinal
+                    })
+            })
+        {
+            return None;
+        }
+        Some(AdmittedAuthoredOutputRetirement { predecessors })
     }
     pub fn admit_required_output_succession(
         &self,
@@ -108,6 +128,27 @@ impl InstalledApplicationPublicationOwner {
     }
 }
 
+impl AdmittedAuthoredOutputRetirement {
+    pub fn publication_count(&self) -> usize {
+        self.predecessors.len()
+    }
+    pub fn for_publication(
+        &self,
+        publication: &RequiredOutputPublicationAuthority,
+    ) -> Option<Self> {
+        self.predecessors
+            .iter()
+            .any(|prior| {
+                Arc::ptr_eq(&prior.occurrence, &publication.occurrence)
+                    && prior.publication == publication.publication
+                    && prior.ordinal == publication.ordinal
+            })
+            .then(|| Self {
+                predecessors: vec![publication.clone()],
+            })
+    }
+}
+
 impl AdmittedCheckpointProgramActivation {
     pub fn activation_commitment(&self) -> &[u8; 32] {
         &self.commitment
@@ -121,8 +162,11 @@ impl InstalledApplicationPublicationAuthority {
         predecessor: &RequiredOutputPublicationAuthority,
     ) -> bool {
         Arc::ptr_eq(&self.occurrence, &predecessor.occurrence)
-            && Arc::ptr_eq(&self.occurrence, &proof.predecessor.occurrence)
-            && predecessor.publication == proof.predecessor.publication
+            && proof.predecessors.iter().any(|prior| {
+                Arc::ptr_eq(&self.occurrence, &prior.occurrence)
+                    && predecessor.publication == prior.publication
+                    && predecessor.ordinal == prior.ordinal
+            })
     }
     pub fn same_publication_owner(&self, other: &Self) -> bool {
         Arc::ptr_eq(&self.occurrence, &other.occurrence)
@@ -132,9 +176,18 @@ impl InstalledApplicationPublicationAuthority {
         &self,
         publication: u64,
     ) -> RequiredOutputPublicationAuthority {
+        self.seal_required_output_publication_at(publication, 0)
+    }
+
+    pub fn seal_required_output_publication_at(
+        &self,
+        publication: u64,
+        ordinal: usize,
+    ) -> RequiredOutputPublicationAuthority {
         RequiredOutputPublicationAuthority {
             occurrence: Arc::clone(&self.occurrence),
             publication,
+            ordinal,
         }
     }
 
@@ -147,6 +200,7 @@ impl InstalledApplicationPublicationAuthority {
             && Arc::ptr_eq(&self.occurrence, &predecessor.occurrence)
             && Arc::ptr_eq(&self.occurrence, &proof.predecessor.occurrence)
             && predecessor.publication == proof.predecessor.publication
+            && predecessor.ordinal == proof.predecessor.ordinal
     }
     pub fn admits_checkpoint_program_activation(
         &self,
@@ -177,6 +231,43 @@ impl AdmittedRequiredOutputPublication {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn atomic_retirement_seals_distinct_publications_at_the_same_commit() {
+        let owner = InstalledApplicationPublicationOwner::fresh();
+        let foreign = InstalledApplicationPublicationOwner::fresh();
+        let first = owner.authority().seal_required_output_publication_at(9, 0);
+        let second = owner.authority().seal_required_output_publication_at(9, 1);
+        let stranger = foreign
+            .authority()
+            .seal_required_output_publication_at(9, 1);
+        assert!(owner
+            .admit_authored_output_retirements(std::iter::empty())
+            .is_none());
+        assert!(owner
+            .admit_authored_output_retirements([&first, &first])
+            .is_none());
+        assert!(owner
+            .admit_authored_output_retirements([&first, &stranger])
+            .is_none());
+        let proof = owner
+            .admit_authored_output_retirements([&first, &second])
+            .unwrap();
+        assert_eq!(proof.publication_count(), 2);
+        let projected = proof.for_publication(&second).unwrap();
+        assert!(owner
+            .authority()
+            .admits_authored_output_retirement(&projected, &second));
+        assert!(!owner
+            .authority()
+            .admits_authored_output_retirement(&projected, &first));
+        let succession = owner
+            .admit_required_output_succession(owner.admit_required_output("next", [1; 32]), &first)
+            .unwrap();
+        assert!(!owner
+            .authority()
+            .admits_required_output_succession(&succession, &second));
+    }
 
     #[test]
     fn succession_requires_original_installed_owner_and_exact_predecessor_publication() {

@@ -1,4 +1,4 @@
-//! Only actual unambiguous enum declarations classify a qualified variant as value.
+//! Actual enum variants are values; non-enum shadowing stays conservative.
 use super::*;
 use crate::lexical::{enum_variants, generic_end};
 pub(super) struct Vocabulary(BTreeMap<String, BTreeSet<String>>);
@@ -19,7 +19,7 @@ impl Vocabulary {
             }
         }
         let owners: BTreeSet<_> = pairs.iter().map(|(owner, _)| owner.as_str()).collect();
-        let mut declarations: BTreeMap<String, usize> = BTreeMap::new();
+        let mut shadowed = BTreeSet::new();
         for (path, source) in &input.files {
             if !path.ends_with(".rs") || !owners.iter().any(|owner| source.contains(owner)) {
                 continue;
@@ -28,21 +28,22 @@ impl Vocabulary {
             for pair in tokens.windows(2) {
                 // A conflicting type/module declaration or alias is ambiguous.
                 // Keep the original conservative runtime finding in that case.
-                if ["enum", "struct", "trait", "type", "union", "mod", "as"].contains(&pair[0].text)
+                // Same-named enums in different audiences still name values.
+                if ["struct", "trait", "type", "union", "mod", "as"].contains(&pair[0].text)
                     && owners.contains(pair[1].text)
                 {
-                    *declarations.entry(pair[1].text.to_owned()).or_default() += 1;
+                    shadowed.insert(pair[1].text.to_owned());
                 }
             }
             for name in type_parameters(&tokens) {
                 if owners.contains(name) {
-                    *declarations.entry(name.to_owned()).or_default() += 1;
+                    shadowed.insert(name.to_owned());
                 }
             }
         }
         let mut known: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
         for (owner, variant) in pairs {
-            if declarations.get(&owner) == Some(&1) {
+            if !shadowed.contains(&owner) {
                 known.entry(owner).or_default().insert(variant);
             }
         }

@@ -1,4 +1,5 @@
 //! Current capability re-admission at privileged transitions.
+mod active_currentness;
 mod denial;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use denial::{denial, inconsistent_refresh};
@@ -216,76 +217,32 @@ where
             .with_runtime(execution, |runtime| {
                 let snapshot = security.snapshot_handle();
 
-                self.validate_active_capability_currentness(
-                    execution,
-                    runtime,
-                    snapshot,
-                    authorization,
-                    refresh,
-                )
-                .and_then(|()| {
-                    WorthQueryCapabilityRevalidationObservation::new(
-                        refresh.session,
+                self.runtime
+                    .validate_active_capability_currentness(
+                        execution,
                         runtime,
                         snapshot,
-                        self.authorization.bridge(),
-                        refresh.installed,
-                        authorization.request(),
-                        &refresh.sample,
+                        authorization,
+                        refresh,
                     )
-                    .observe_active_capability(
-                        execution,
-                        Some(authorization.grant()),
-                        Some(authorization.decision()),
-                    )
-                })
+                    .and_then(|()| {
+                        WorthQueryCapabilityRevalidationObservation::new(
+                            refresh.session,
+                            runtime,
+                            snapshot,
+                            self.runtime.authorization.bridge(),
+                            refresh.installed,
+                            authorization.request(),
+                            &refresh.sample,
+                        )
+                        .observe_active_capability(
+                            execution,
+                            Some(authorization.grant()),
+                            Some(authorization.decision()),
+                        )
+                    })
             })?;
         Ok(observed)
-    }
-
-    fn validate_active_capability_currentness(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &worth_relational::facade::runtime::RelationalRuntime,
-        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-        authorization: &WorthQueryRetainedCapabilityAuthorization,
-        refresh: &WorthQueryCapabilityRefresh<'_>,
-    ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
-        if snapshot.branch_id() != refresh.product.relational_basis().identity().branch_id() {
-            return Err(inconsistent_refresh(refresh));
-        }
-        if !authorization
-            .principal()
-            .remains_current_in(execution, runtime, snapshot)
-            .map_err(|kind| {
-                WorthQueryOperationAuthorizationDenial::new(kind, "principal currentness")
-            })?
-        {
-            return Err(denial(
-                WorthQueryOperationAuthorizationDenialKind::Refused(
-                    AuthorizationRefusal::StalePrincipal,
-                ),
-                refresh.installed.contract().name(),
-            ));
-        }
-        if !authorization
-            .decision()
-            .remains_current_in(execution, runtime, snapshot, self.authorization.bridge())
-            .map_err(|cause| {
-                crate::domain_computation::authorization::denial::relational_read_denial(
-                    cause,
-                    "authorization currentness",
-                )
-            })?
-        {
-            return Err(denial(
-                WorthQueryOperationAuthorizationDenialKind::Refused(
-                    AuthorizationRefusal::StaleAuthorization,
-                ),
-                refresh.installed.contract().name(),
-            ));
-        }
-        Ok(())
     }
 
     fn replace_active_capability_decision(
@@ -383,7 +340,7 @@ where
                     refresh.session,
                     runtime,
                     snapshot,
-                    self.authorization.bridge(),
+                    self.runtime.authorization.bridge(),
                     refresh.installed,
                     supporting.request(),
                     &refresh.sample,

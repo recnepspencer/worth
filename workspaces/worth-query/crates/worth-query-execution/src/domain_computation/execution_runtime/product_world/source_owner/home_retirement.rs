@@ -25,9 +25,7 @@ pub(in crate::domain_computation) struct RetiringRelationalSource {
 struct SourceOwnerAllocation {
     _runtime_instance_id: u64,
     _invalidation: Arc<crate::domain_computation::primary_graph::SourceInvalidationOwner>,
-    #[cfg(test)]
     _reads: Arc<std::sync::atomic::AtomicU64>,
-    #[cfg(test)]
     _observers: Arc<Mutex<Vec<RelationalRuntimeLockObservationForTest>>>,
 }
 
@@ -55,9 +53,7 @@ impl WorthQueryRelationalSourceOwner {
             bridge_head,
             invalidation_owner,
             canonical_subscription,
-            #[cfg(test)]
             read_acquisitions,
-            #[cfg(test)]
             _bridge_lock_observations,
         } = self;
         RetiringRelationalSource {
@@ -74,9 +70,7 @@ impl WorthQueryRelationalSourceOwner {
             _allocation: SourceOwnerAllocation {
                 _runtime_instance_id: runtime_instance_id,
                 _invalidation: invalidation_owner,
-                #[cfg(test)]
                 _reads: read_acquisitions,
-                #[cfg(test)]
                 _observers: _bridge_lock_observations,
             },
         }

@@ -5,8 +5,7 @@ use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationCommitDenial, WorthQueryApplicationIdempotencyBinding,
 };
 use crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture;
-pub(in crate::domain_computation::primary_graph::application_attempt) struct LocalActionSettlementProof
-{
+pub struct LocalActionSettlementProof {
     binding: String,
     input: [u8; 32],
     transition: [u8; 32],

@@ -2,8 +2,7 @@
 use super::{
     WorthQueryApplicationInvariantEntity as Entity, WorthQueryApplicationInvariantReadView as View,
 };
-#[cfg(test)]
-mod native_audience;
+
 use crate::domain_computation::primary_graph::application_invariant::{
     WorthQueryApplicationInvariantDerivedRelationBinding as Binding,
     WorthQueryInvariantAccessDenial as Denial, WorthQueryInvariantAccessDenialKind as Kind,
@@ -134,6 +133,7 @@ pub(in crate::domain_computation::primary_graph::application_invariant) fn nativ
                 }
                 Definition::InvalidGraphLaws => Kind::RelationNotInstalled,
                 Definition::InvalidEventChain => Kind::InvalidEventChain,
+                Definition::SourceProgramIdentityExhausted => Kind::SourceProgramIdentityExhausted,
             };
             Denial::new(kind, format!("derived relation read: {cause:?}"))
         }
@@ -142,10 +142,6 @@ pub(in crate::domain_computation::primary_graph::application_invariant) fn nativ
 
 #[cfg(test)]
 use worth_testkit_relational::derived_relation as native_fixture;
-#[cfg(test)]
-mod native_snapshot;
-#[cfg(test)]
-mod native_source_shapes;
 
 #[test]
 fn malformed_event_chain_preserves_its_typed_query_denial() {
@@ -153,4 +149,12 @@ fn malformed_event_chain_preserves_its_typed_query_denial() {
         worth_relational::facade::schema::DerivedRelationDenial::InvalidEventChain,
     ));
     assert_eq!(denial.kind(), Kind::InvalidEventChain);
+}
+
+#[test]
+fn source_program_identity_exhaustion_preserves_its_typed_query_denial() {
+    let denial = native_denial(NativeDenial::Definition(
+        worth_relational::facade::schema::DerivedRelationDenial::SourceProgramIdentityExhausted,
+    ));
+    assert_eq!(denial.kind(), Kind::SourceProgramIdentityExhausted);
 }

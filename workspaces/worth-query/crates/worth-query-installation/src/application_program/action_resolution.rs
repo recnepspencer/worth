@@ -36,6 +36,11 @@ impl<Schema, Program> WorthQueryInstalledApplicationProgram<Schema, Program> {
     }
 }
 impl<'installed> WorthQueryInstalledActionInventory<'installed> {
+    /// Borrow the original installed declarations. This inventory grants no
+    /// action, output, query or mutation permission.
+    pub fn declarations(&self) -> &'installed [ApplicationActionDeclaration] {
+        self.actions
+    }
     /// Resolve a binding only when exactly one installed feature occurrence owns it.
     /// Callers retaining a declaration can subsequently resolve that complete meaning.
     #[expect(

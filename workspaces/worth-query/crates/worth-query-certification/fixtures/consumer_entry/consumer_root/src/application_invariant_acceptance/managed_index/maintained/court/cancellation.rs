@@ -7,7 +7,7 @@ pub(super) fn run(
     rules: &Arc<rule::Calls>,
 ) {
     let cancellation = WorthQueryCancellationSource::new();
-    let stopped = WorthQueryRequestScope::new(None, cancellation.token());
+    let stopped = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let request = world
         .runtime()
         .request(principal, &stopped)

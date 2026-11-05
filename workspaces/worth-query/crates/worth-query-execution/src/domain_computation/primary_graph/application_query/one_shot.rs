@@ -16,14 +16,14 @@ mod batch;
 pub use batch::WorthQueryApplicationBatchReadDenial;
 pub use batch::WorthQueryApplicationBatchResult;
 
-mod denial;
+pub(crate) mod denial;
 pub(super) mod outcome;
 pub(super) mod plan_admission;
 use plan_admission::admit_request;
 use plan_admission::validate_authentication_lifetime;
 use plan_admission::validate_basis_lifetime;
 use plan_admission::validate_one_shot_plan;
-pub(super) mod pair_plans;
+pub(crate) mod pair_plans;
 mod result;
 pub use pair_plans::WorthQueryDerivedPairReadPlans;
 
@@ -64,7 +64,7 @@ pub struct WorthQueryApplicationOneShotResult<Query, QueryResult> {
 /// The admitted read keeps its original semantic denial and accounts for
 /// newly performed Query execution work on either outcome.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum WorthQueryAdmittedOneShotStop {
+pub enum WorthQueryAdmittedOneShotStop {
     Admission(CompanionPreflightStop),
 
     WorkCounterOverflow,
@@ -103,7 +103,7 @@ where
     where
         QueryResult: WorthQueryApplicationProjection<Schema, Query>,
     {
-        let request = match phase.execution_request_for(&self.product_runtime) {
+        let request = match phase.execution_request_for(&self.runtime.product_runtime) {
             Ok(request) => request,
             Err(_) => return Err(authorization_denial(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody"), plan.query.name())),
         };
@@ -182,7 +182,7 @@ where
     }
 }
 
-pub(super) fn map_authorized_read_denial(
+pub fn map_authorized_read_denial(
     denial_value: WorthQueryAuthorizedApplicationReadDenial,
     query: &str,
 ) -> WorthQueryApplicationOneShotDenial {
@@ -201,6 +201,9 @@ pub(super) fn map_authorized_read_denial(
         }
         WorthQueryAuthorizedApplicationReadDenial::Read(read) => {
             let kind = match read.kind() {
+                WorthQueryApplicationReadExecutionDenialKind::Content(cause) => {
+                    WorthQueryApplicationOneShotDenialKind::Content(cause)
+                }
                 WorthQueryApplicationReadExecutionDenialKind::ExecutionRequest(kind) => {
                     WorthQueryApplicationOneShotDenialKind::ExecutionRequest(kind)
                 }
@@ -250,3 +253,5 @@ pub(super) fn map_authorized_read_denial(
     };
     denial(kind, query, subject)
 }
+
+mod court_doors_for_test;

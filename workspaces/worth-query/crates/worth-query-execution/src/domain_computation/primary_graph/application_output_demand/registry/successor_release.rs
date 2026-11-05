@@ -29,7 +29,7 @@ impl WorthQueryOutputDemandInterest {
                 DeliveryOwner::None => {
                     let cleanup = state.records.get_mut(&interest.key).and_then(|mut record| {
                         let DemandState::Output(output) = &mut record.state else { return None; };
-                        if !matches!(output.checkpoint, Some(WorthQueryOutputCheckpoint::Published { .. })) {
+                        if !matches!(output.checkpoint, Some(WorthQueryOutputCheckpoint::Published { .. } | WorthQueryOutputCheckpoint::RecoveredPublished { .. })) {
                             return None;
                         }
                         output.stop(WorthQueryOutputDemandDenial::new(

@@ -2,7 +2,9 @@
 //! authoritative envelope projection. Emission borrows the live envelope;
 //! decoding borrows the payload bytes and grants nothing until readmission.
 
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
+mod seed;
+pub(super) use seed::decode_payload;
 
 use crate::history::data::{
     AuthoritativeArtifactEnvelopeRef, CanonicalCommitEnvelope, CanonicalEnvelopeWire,
@@ -30,22 +32,9 @@ impl<'a> ArtifactPayloadRef<'a> {
     }
 }
 
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
 pub(super) struct ArtifactPayloadWire<'a> {
     pub(super) position: PatchStreamPosition,
-    #[serde(borrow)]
     pub(super) canonical: CanonicalEnvelopeWire<crate::symbols::data::SymbolSnapshotWire<'a>>,
-    #[serde(deserialize_with = "required_original_inputs")]
     pub(super) original_inputs:
         Option<crate::durability::source_initial_inputs::recorded::RecordedCanonicalInputs>,
-}
-
-fn required_original_inputs<'de, D: serde::Deserializer<'de>>(
-    deserializer: D,
-) -> Result<
-    Option<crate::durability::source_initial_inputs::recorded::RecordedCanonicalInputs>,
-    D::Error,
-> {
-    Option::deserialize(deserializer)
 }

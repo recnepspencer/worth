@@ -41,7 +41,7 @@ pub fn install(fault: Fault, hashes: Hashes) -> Host {
         Schema::declaration().unwrap(),
         (Configuration { fault, hashes },),
         ApplicationBuildIdentity::parse("919b0000-0000-0000-0000-000000000003").unwrap(),
-        host_limits(),
+        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
         |_, graph, installed| {
             graph.bind_principal(
                 &installed.principal_binding(Actor::reference()).unwrap(),

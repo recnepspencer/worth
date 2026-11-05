@@ -19,7 +19,6 @@ use worth_execution::{
     compare_canonical_values, CanonicalBits, ExecutionMap, ExecutionResourceLease,
     MapKernelContext, MapKernelFailure, ReduceCertificationFailure,
 };
-#[cfg(test)]
 use worth_execution::{ChargedBytes, ReductionTree};
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionReport, ExecutionRequestPolicy,
@@ -45,8 +44,8 @@ use crate::domain_computation::execution_observation::owned_control_scope;
 thread_local! {
     static PLACEMENT_OWNER: Cell<u64> = const { Cell::new(0) };
     static BUDGET_OWNER: Cell<u64> = const { Cell::new(0) };
-    static REQUEST_BUDGET: Cell<Option<ExecutionBudget>> = const { Cell::new(None) };
-    static PLACEMENT: Cell<WorthQueryExecutionPlacementForTest> =
+    pub static REQUEST_BUDGET: Cell<Option<ExecutionBudget>> = const { Cell::new(None) };
+    pub static PLACEMENT: Cell<WorthQueryExecutionPlacementForTest> =
         const { Cell::new(WorthQueryExecutionPlacementForTest::World) };
 }
 
@@ -77,11 +76,7 @@ pub fn place_managed_computations_on_this_thread_for_test(
 
 /// A canonical, automatic policy of `workers` and `memory`, with no work
 /// limit beyond each computation's own.
-#[cfg(test)]
-pub(in crate::domain_computation::primary_graph) fn test_policy(
-    workers: NonZeroUsize,
-    memory: Option<u64>,
-) -> ExecutionRequestPolicy {
+pub fn test_policy(workers: NonZeroUsize, memory: Option<u64>) -> ExecutionRequestPolicy {
     ExecutionRequestPolicy::new(
         ExecutionPosture::Automatic,
         DeterminismContract::CanonicalBitwise,
@@ -153,8 +148,7 @@ pub(super) fn certifying() -> Option<u64> {
 /// ceiling, and must agree with each other and with the run on the result's
 /// bits and the charged work. A disagreement panics.
 #[allow(clippy::too_many_arguments)]
-#[cfg(test)]
-pub(super) fn certify<T, K, R, E, Kernel, Combine>(
+pub fn certify<T, K, R, E, Kernel, Combine>(
     map: &ExecutionMap<T, K>,
     lease: &ExecutionResourceLease<'_>,
     seed: u64,
@@ -240,7 +234,7 @@ where
     Ok(())
 }
 
-fn certification_failure<E>(
+pub fn certification_failure<E>(
     lease: &ExecutionResourceLease<'_>,
     seed: u64,
     failure: ReduceCertificationFailure<E>,
@@ -327,18 +321,14 @@ pub fn bound_advancement_requests_on_this_thread_for_test(
 }
 
 /// The host call uses exactly the computation fixture's declared budget.
-#[cfg(test)]
-pub(in crate::domain_computation::primary_graph) struct FixturePlacement {
+pub struct FixturePlacement {
     _observation: crate::domain_computation::execution_observation::WorthQueryExecutionObservation,
     placement: WorthQueryExecutionPlacementForTest,
     budget: Option<worth_foundational::ExecutionBudget>,
 }
 
-#[cfg(test)]
 impl FixturePlacement {
-    pub(in crate::domain_computation::primary_graph) fn enter(
-        placement: RuntimeWorldExecutionPlacement<'_>,
-    ) -> Self {
+    pub fn enter(placement: RuntimeWorldExecutionPlacement<'_>) -> Self {
         use self::{
             bound_advancement_requests_on_this_thread_for_test as bound,
             place_managed_computations_on_this_thread_for_test as place,
@@ -363,7 +353,6 @@ impl FixturePlacement {
     }
 }
 
-#[cfg(test)]
 impl Drop for FixturePlacement {
     fn drop(&mut self) {
         use self::{
@@ -374,9 +363,3 @@ impl Drop for FixturePlacement {
         place(self.placement);
     }
 }
-
-#[cfg(test)]
-mod scope_tests;
-
-#[cfg(test)]
-mod certification_tests;

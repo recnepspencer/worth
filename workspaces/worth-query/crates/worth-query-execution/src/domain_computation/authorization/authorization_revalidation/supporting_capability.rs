@@ -93,7 +93,12 @@ where
             != installed.capability_authority_identity().as_ref()
             || !supporting
                 .decision()
-                .remains_current_in(execution, runtime, snapshot, self.authorization.bridge())
+                .remains_current_in(
+                    execution,
+                    runtime,
+                    snapshot,
+                    self.runtime.authorization.bridge(),
+                )
                 .map_err(|cause| {
                     crate::domain_computation::authorization::denial::relational_read_denial(
                         cause,
@@ -109,7 +114,7 @@ where
                 session: supporting.decision().session_identity(),
                 relational: runtime,
                 snapshot,
-                bridge: self.authorization.bridge(),
+                bridge: self.runtime.authorization.bridge(),
                 installed,
                 request: supporting.request(),
                 sample: &sample,

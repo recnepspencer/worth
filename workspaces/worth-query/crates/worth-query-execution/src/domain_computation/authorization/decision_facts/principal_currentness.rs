@@ -5,7 +5,7 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryPrincipalBindingL
 use crate::domain_computation::primary_graph::WorthQueryPrincipalFreshnessEvidence;
 
 #[derive(Clone)]
-pub(in crate::domain_computation) struct WorthQueryPrincipalCurrentnessDependency {
+pub struct WorthQueryPrincipalCurrentnessDependency {
     session_identity:
         crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
     binding: Arc<str>,
@@ -87,3 +87,5 @@ impl WorthQueryPrincipalCurrentnessDependency {
             .map_err(super::super::denial::principal_currentness)
     }
 }
+
+mod court_doors_for_test;

@@ -40,8 +40,7 @@ fn fresh_directory_home_journey() {
         let cancellation = WorthQueryCancellationSource::new();
         let scope = WorthQueryRequestScope::new(
             Some(Instant::now() + Duration::from_secs(60)),
-            cancellation.token(),
-        );
+            cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
         let runtime = home.runtime();
         let principal = identity::inspection_authentication::authenticate(
             runtime.runtime().installed_schema(),

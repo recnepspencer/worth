@@ -1,7 +1,7 @@
 //! Actual retained-fact and computation handoff work, apart from request billing.
 use std::cell::{Cell, RefCell};
-pub(super) mod input_cutoff;
-mod registry_custody;
+pub(crate) mod input_cutoff;
+pub(crate) mod registry_custody;
 pub use input_cutoff::{
     WorthQueryInputCutoffCandidateForTest, WorthQueryInputCutoffForTest,
     WorthQueryInputCutoffGateForTest, WorthQueryInputCutoffNativeBasisForTest,

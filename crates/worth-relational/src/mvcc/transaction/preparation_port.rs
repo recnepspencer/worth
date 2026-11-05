@@ -1,5 +1,9 @@
 use crate::runtime::{RelationalPreparationOwnerBinding, RelationalPreparationRuntime};
 use crate::transactions::data::TransactionCommitError;
+#[path = "preparation_port/selection_admission.rs"]
+mod selection_admission;
+#[path = "preparation_port/selection_preparation.rs"]
+mod selection_preparation;
 
 /// Cloneable transaction-preparation service bound to one live relational
 /// runtime owner.

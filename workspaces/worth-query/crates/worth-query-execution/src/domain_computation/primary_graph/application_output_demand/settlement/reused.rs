@@ -13,6 +13,7 @@ impl WorthQueryOutputDemandSettlement {
         Schema: worth_query_installation::facade::ApplicationSchema,
     {
         let authority = runtime
+            .runtime
             .product_runtime
             .recovered_root_authority
             .as_ref()
@@ -24,6 +25,7 @@ impl WorthQueryOutputDemandSettlement {
                 )
             })?;
         let product = runtime
+            .runtime
             .product_runtime
             .lease_from_observation(authority.product_branch().clone())
             .map_err(|error| {
@@ -41,7 +43,7 @@ impl WorthQueryOutputDemandSettlement {
             receipt: None,
             stable: None,
             output_correspondence: Arc::clone(&restored.correspondence),
-            restored_source: Some(restored.into()),
+            restored_source: Some(restored.clone()),
             readiness_delivery: None,
             producer_contacts_in_this_demand,
             observation: WorthQueryApplicationReadObservation::from_settled_product(

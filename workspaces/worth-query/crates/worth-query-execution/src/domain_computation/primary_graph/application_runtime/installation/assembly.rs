@@ -2,7 +2,6 @@ use super::super::mutation_partition::ApplicationMutationPartitions;
 use super::PublishedApplicationGraph;
 use crate::domain_computation::authorization::WorthQueryInstalledAuthorizationRegistry;
 use crate::domain_computation::authorization::WorthQueryRuntimeClock;
-use crate::domain_computation::primary_graph::authentication_clock::WorthQueryAuthenticationClock;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind;
@@ -39,6 +38,15 @@ where
             ApplicationMutationPartitions::readmit(native, &execution)
         })
         .map_err(super::super::super::bootstrap::request_read_denial::read)?;
+    if !graph
+        .product_world_resources
+        .admits_clock(&authorization_clock.admission_clock)
+    {
+        return Err(WorthQueryPrimaryGraphInstallationDenial::new(
+            WorthQueryPrimaryGraphInstallationDenialKind::AdmissionClockMismatch,
+            "Product World and admission require the same monotonic clock",
+        ));
+    }
     let product_runtime = crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime::install(
         graph.primary_provider.graph.prepare_product_source(&phase.execution_request(), &graph.relational_branch_identity)
             .map_err(|denial| WorthQueryPrimaryGraphInstallationDenial::new(
@@ -128,54 +136,59 @@ where
             std::sync::Arc::clone(&authorization_clock),
         ),
     );
+    let installed_operations = installed_schema.installed_view().retain_operation_catalog();
     WorthQueryPrimaryGraphApplicationRuntime {
         conditional_cleanup: super::super::conditional_cleanup::ConditionalRuntimeCleanup::new(
-            conditional_cleanup_owner,
-            conditional_operations,
+            conditional_cleanup_owner, conditional_operations,
         ),
-        runtime: graph.runtime,
         installed_schema,
-        application_readiness_schema_token,
-        publication: graph.publication,
-        checkpoint_restore_work: graph.checkpoint_restore_work,
-        authorization: std::sync::Arc::new(authorization),
-        authorization_clock,
-        authentication_clock: WorthQueryAuthenticationClock::system(),
-        relational_branch_identity: graph.relational_branch_identity,
-        bridge: graph.bridge,
-        product_runtime,
-        granular_invalidation,
-        primary_provider: super::super::super::provider::PrimaryProviderCustody::new(graph.primary_provider),
-        primary_graph_authority: super::super::home_retirement::PrimaryGraphParticipationCustody::new(graph.primary_graph_authority),
-
-        source_meanings: crate::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceMeaningRegistry::new(
-            runtime_authority,
-        ),
-        recovered_program_source_delivery: Default::default(),
-        basis_leases: Default::default(),
-        next_external_dispatch_attempt: std::sync::atomic::AtomicU64::new(1),
-        external_effect_transport: std::sync::OnceLock::new(),
-        inbound_verifiers: std::sync::Mutex::new(std::collections::BTreeMap::new()),
-        inbound_custody: std::sync::Arc::new(std::sync::Mutex::new(Default::default())),
-        transport_completion_custody: std::sync::Mutex::new(Default::default()),
-        inbound_maintenance_turn: std::sync::atomic::AtomicU64::new(0),
-        recovery_handles,
         mutation_handlers,
         mutation_projection,
         installed_producers: Default::default(),
-        output_producer_routes,
-        output_readiness_routes,
-        next_output_producer_attempt: std::sync::atomic::AtomicU64::new(1),
-        mutation_partitions,
-        output_demands: super::super::super::application_output_demand::WorthQueryOutputDemandRegistry::default(),
-        recovered_outputs: Default::default(),
+        post_conditional_teardown: Default::default(),
+        output_teardown: Default::default(),
+        workflow_teardown: Default::default(),
         program_required_bindings,
         program_required_operations,
         workflow_guarded_operations,
         program_support: None,
         installed_conditionals: Default::default(),
         managed_indexes: Default::default(),
+        signing_owners: Default::default(),
+        runtime: super::super::WorthQueryApplicationRuntimeCore {
+            execution: Some(graph.runtime),
+            application_readiness_schema_token,
+            publication: graph.publication,
+            checkpoint_restore_work: graph.checkpoint_restore_work,
+            authorization: std::sync::Arc::new(authorization),
+            authorization_clock,
+            relational_branch_identity: graph.relational_branch_identity,
+            bridge: graph.bridge,
+            product_runtime,
+            granular_invalidation,
+            primary_provider: super::super::super::provider::PrimaryProviderCustody::new(graph.primary_provider),
+            primary_graph_authority: Some(super::super::home_retirement::PrimaryGraphParticipationCustody::new(graph.primary_graph_authority)),
+
+            source_meanings: Some(crate::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceMeaningRegistry::new(
+                runtime_authority,
+            )),
+            recovered_program_source_delivery: Default::default(),
+            basis_leases: Default::default(),
+            next_external_dispatch_attempt: std::sync::atomic::AtomicU64::new(1),
+            external_effect_transport: std::sync::OnceLock::new(),
+            inbound_verifiers: std::sync::Mutex::new(std::collections::BTreeMap::new()),
+            inbound_custody: std::sync::Arc::new(std::sync::Mutex::new(Default::default())),
+            transport_completion_custody: std::sync::Mutex::new(Default::default()),
+            inbound_maintenance_turn: std::sync::atomic::AtomicU64::new(0),
+            recovery_handles,
+            output_producer_routes,
+            output_readiness_routes,
+            next_output_producer_attempt: std::sync::atomic::AtomicU64::new(1),
+            mutation_partitions,
+            output_demands: super::super::super::application_output_demand::WorthQueryOutputDemandRegistry::default(),
+            recovered_outputs: Default::default(),
             workflow_coverage: Default::default(),
-            signing_owners: Default::default(),
+            installed_operations,
+        },
     }
 }

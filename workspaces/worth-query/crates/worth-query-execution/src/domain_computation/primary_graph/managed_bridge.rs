@@ -53,7 +53,7 @@ impl WorthQueryApplicationBridgeInstallation {
     }
 }
 
-pub(crate) struct WorthQueryInstalledApplicationBridge {
+pub struct WorthQueryInstalledApplicationBridge {
     ordinary: Option<RuntimeBridge>,
     conditional: Option<std::sync::Arc<std::sync::RwLock<BridgeSealedRuntimeAssembly>>>,
     retiring_ordinary: Option<worth_runtime_bridge::facade::RetiringRuntimeBridge>,
@@ -79,9 +79,7 @@ impl WorthQueryInstalledApplicationBridge {
             .expect("retired Query exposes no ordinary Bridge")
     }
 
-    pub(crate) fn conditional(
-        &self,
-    ) -> std::sync::RwLockReadGuard<'_, BridgeSealedRuntimeAssembly> {
+    pub fn conditional(&self) -> std::sync::RwLockReadGuard<'_, BridgeSealedRuntimeAssembly> {
         self.conditional
             .as_ref()
             .expect("retired Query exposes no conditional Bridge")
@@ -255,3 +253,5 @@ fn bridge_denial(subject: impl Into<String>) -> WorthQueryPrimaryGraphInstallati
         subject,
     )
 }
+
+mod court_doors_for_test;

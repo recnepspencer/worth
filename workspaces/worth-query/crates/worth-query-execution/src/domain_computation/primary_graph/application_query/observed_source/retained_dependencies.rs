@@ -14,7 +14,6 @@ mod comparison;
 mod coverage;
 use coverage::RetainedQuerySource;
 
-#[cfg(test)]
 mod storage_court;
 
 /// Move-only native ownership of all original set and row dependency descriptors.
@@ -94,7 +93,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         source: &WorthQueryApplicationOutputDemandSource<Query, Value>,
     ) -> Result<WorthQueryRetainedQueryDependencies, WorthQueryRequiredSetCurrentnessDenial> {
         let execution = phase
-            .checked_execution_request_for(&self.application().product_runtime)
+            .checked_execution_request_for(&self.application().runtime.product_runtime)
             .map_err(execution_denial)?;
         let set = source.result_set_observation().ok_or_else(|| {
             source_denial(WorthQuerySourceExpectationDenialKind::MissingExpectation)
@@ -132,6 +131,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             }
         }
         self.application()
+            .runtime
             .primary_provider
             .graph
             .with_runtime(&execution, |relational| {
@@ -156,7 +156,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         I: Iterator<Item = &'a WorthQueryRetainedQueryDependencies> + Clone,
     {
         let execution = phase
-            .checked_execution_request_for(&self.application().product_runtime)
+            .checked_execution_request_for(&self.application().runtime.product_runtime)
             .map_err(execution_denial)?;
 
         let count = parts.clone().try_fold(0usize, |count, part| {

@@ -63,7 +63,19 @@ where
     // contact is charged before it, not after the fork returns: a denial from
     // any of this leg's port calls still cost the owner one contact.
     attempt.counters_mut().record_relational_owner_contact();
-    let source = observe_exact_fork_source(owner, attempt)?;
+    let retained = match attempt.plan().source_kind() {
+        crate::branch::BranchCreationSourceKind::Current => None,
+        crate::branch::BranchCreationSourceKind::Retained => Some(
+            attempt
+                .take_retained_native()
+                .expect("one retained source is consumed by its owner leg"),
+        ),
+    };
+    let source = if retained.is_none() {
+        Some(observe_exact_fork_source(owner, attempt)?)
+    } else {
+        None
+    };
     let custody = attempt.take_relational_custody().ok_or(ForkFailure {
         denial: RuntimeWorldBranchAdmissionDenial::CustodyCapacityExhausted,
     })?;
@@ -71,9 +83,17 @@ where
     let reservation = fork_port
         .reserve_fork_target(target.clone())
         .map_err(|denial| relational_fork_failure(&denial))?;
-    let (fork, target_basis) = fork_port
-        .fork_reserved_with_basis(execution, reservation, source)
-        .map_err(relational_fork_stop)?;
+    let (fork, target_basis) = match retained {
+        Some(retained) => {
+            fork_port.fork_reserved_retained_with_basis(execution, reservation, retained)
+        }
+        None => fork_port.fork_reserved_with_basis(
+            execution,
+            reservation,
+            source.expect("current receiver observed its exact source"),
+        ),
+    }
+    .map_err(relational_fork_stop)?;
     let target_identity = fork.target_identity().clone();
     let progress = RelationalAttemptProgress::forked(fork, target_basis);
     attempt.record_progress(&crate::publication::CompositeAttemptProgress::new(
@@ -263,6 +283,9 @@ fn relational_fork_stop(
 
 fn relational_fork_failure(denial: &RelationalForkDenial) -> ForkFailure {
     let denial = match denial {
+        RelationalForkDenial::RetainedSourceDurabilityUnsupported => {
+            RuntimeWorldBranchAdmissionDenial::RetainedSourceDurabilityUnsupported
+        }
         RelationalForkDenial::RetentionCapacityExhausted
         | RelationalForkDenial::RetentionIdentityExhausted => {
             RuntimeWorldBranchAdmissionDenial::CapacityExhausted
@@ -290,45 +313,52 @@ fn signal_fork_failure(
 fn original_input_denial(
     stop: worth_relational::facade::durability::RelationalRecoveryStop,
 ) -> RuntimeWorldBranchAdmissionDenial {
-    use worth_relational::facade::{
-        durability::RelationalRecoveryStop as Stop,
-        transactions::RelationalExecutionDenialCause as Cause,
-    };
+    use worth_relational::facade::durability::RelationalRecoveryStop as Stop;
     match stop {
         Stop::Allocation(_) => RuntimeWorldBranchAdmissionDenial::CapacityExhausted,
         Stop::Durability(_) | Stop::AdmissionImage(_) => {
             RuntimeWorldBranchAdmissionDenial::OwnerUnavailable
         }
-        Stop::Request(cause) => match cause {
-            Cause::DeadlineElapsed => RuntimeWorldBranchAdmissionDenial::DeadlineBeforeEffect,
-            Cause::Cancelled | Cause::NestedStopped => {
-                RuntimeWorldBranchAdmissionDenial::CancelledBeforeEffect
-            }
-            Cause::PolicyMemoryExhausted { .. }
-            | Cause::ProcessMemoryExhausted { .. }
-            | Cause::DeclaredMemoryExhausted { .. }
-            | Cause::ChargedBytesOverflow
-            | Cause::ResultCapacityExceeded
-            | Cause::AllocationFailed
-            | Cause::ScratchCapacityExceeded
-            | Cause::MemoryOverflow => RuntimeWorldBranchAdmissionDenial::CapacityExhausted,
-            Cause::HistoricalVisibility(_)
-            | Cause::ProjectionContract(_)
-            | Cause::StorageUnavailable(_)
-            | Cause::WorkerLimitExceedsParent
-            | Cause::MemoryLimitExceedsParent
-            | Cause::WorkLimitExceedsParent
-            | Cause::UnrelatedNestedLease
-            | Cause::NoActiveExecutionScope
-            | Cause::EquivalenceContractUnavailable
-            | Cause::WorkCounterOverflow
-            | Cause::AccountingUnavailable
-            | Cause::WorkExhausted
-            | Cause::WorkerFailed
-            | Cause::UncheckedCustomKernel
-            | Cause::ExpectedIdentitiesNotCanonical => {
-                RuntimeWorldBranchAdmissionDenial::OwnerUnavailable
-            }
-        },
+        Stop::Request(cause) => original_request_denial(cause),
+        Stop::Content(cause) => original_request_denial(cause.into_execution_cause()),
+    }
+}
+
+fn original_request_denial(
+    cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
+) -> RuntimeWorldBranchAdmissionDenial {
+    use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
+    match cause {
+        Cause::DeadlineElapsed => RuntimeWorldBranchAdmissionDenial::DeadlineBeforeEffect,
+        Cause::Cancelled | Cause::NestedStopped => {
+            RuntimeWorldBranchAdmissionDenial::CancelledBeforeEffect
+        }
+        Cause::PolicyMemoryExhausted { .. }
+        | Cause::ProcessMemoryExhausted { .. }
+        | Cause::DeclaredMemoryExhausted { .. }
+        | Cause::ChargedBytesOverflow
+        | Cause::ResultCapacityExceeded
+        | Cause::AllocationFailed
+        | Cause::ScratchCapacityExceeded
+        | Cause::MemoryOverflow => RuntimeWorldBranchAdmissionDenial::CapacityExhausted,
+        Cause::Content(_)
+        | Cause::ContentInconsistency
+        | Cause::HistoricalVisibility(_)
+        | Cause::ProjectionContract(_)
+        | Cause::StorageUnavailable(_)
+        | Cause::WorkerLimitExceedsParent
+        | Cause::MemoryLimitExceedsParent
+        | Cause::WorkLimitExceedsParent
+        | Cause::UnrelatedNestedLease
+        | Cause::NoActiveExecutionScope
+        | Cause::EquivalenceContractUnavailable
+        | Cause::WorkCounterOverflow
+        | Cause::AccountingUnavailable
+        | Cause::WorkExhausted
+        | Cause::WorkerFailed
+        | Cause::UncheckedCustomKernel
+        | Cause::ExpectedIdentitiesNotCanonical => {
+            RuntimeWorldBranchAdmissionDenial::OwnerUnavailable
+        }
     }
 }

@@ -1,0 +1,162 @@
+//! Answers and work at real read/reconstruction doors, also run on master.
+use crate::domain_computation::primary_graph::application_query::derived_view::registration::collection::pair::reconstruct_parallel::read_ceiling_tests::*;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::authorized_read::WorthQueryAuthorizedApplicationReadDenial;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::one_shot::map_authorized_read_denial;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::read_execution::read_bounded_root_rows;
+use worth_query_execution::facade::domain_computation::WorthQueryApplicationOneShotDenialKind as OneShot;
+
+#[test]
+fn unavailable_predicate_snapshot_keeps_masters_kind_and_query_subject() {
+    let _observation =
+        worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
+    let scope = live_scope();
+    let external = world.authenticate("alice", Duration::from_secs(60), &scope);
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host = phase.test_host_request_for_test();
+            let request = host.borrowed_request_for_test();
+            let selected = world.selected_product(&host);
+            let principal = selected
+                .resolve_authenticated_principal(
+                    &phase,
+                    &world.binding,
+                    &external,
+                    &scope,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap();
+            let root = selected
+                .resolve_entity(
+                    &phase,
+                    AccountIdentity::reference(),
+                    "account-1".into(),
+                    &scope,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap();
+            let access = WorthQueryApplicationQueryAccessContext::new(&principal, &root);
+            let query = world
+                .application
+                .installed_schema()
+                .certification_query(LiveAccountActivityQuery::reference())
+                .unwrap();
+            let plan = selected
+                .retain_selection_for_test(&request)
+                .unwrap()
+                .admit_application_query(
+                    &phase,
+                    &query,
+                    &access,
+                    live_account_parameters("account-1"),
+                    current_controls(&scope),
+                )
+                .unwrap();
+            let runtime = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
+                .build()
+                .expect("valid native runtime configuration");
+
+            let read = match read_bounded_root_rows(
+                &runtime,
+                &request,
+                &(*(*(*(*world.application.runtime_for_test()).primary_provider_for_test())
+                    .graph_for_test())
+                .layout_for_test()),
+                &plan,
+                None,
+            ) {
+                Err(denial) => denial,
+                Ok(_) => panic!("foreign snapshot unexpectedly read"),
+            };
+            let outer = map_authorized_read_denial(
+                WorthQueryAuthorizedApplicationReadDenial::Read(read),
+                query.name(),
+            );
+            // A one-predicate read selects its root without an index, so the
+            // foreign snapshot is the query's projection, not a predicate.
+            assert_eq!(outer.kind(), OneShot::ProjectionUnavailable);
+            assert_eq!(outer.subject(), query.name());
+        })
+        .unwrap();
+}
+
+#[test]
+fn unavailable_root_path_snapshot_keeps_masters_kind_and_query_subject() {
+    let _observation =
+        worth_query_execution::facade::domain_computation::WorthQueryExecutionObservation::install_on_this_thread();
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
+    let scope = live_scope();
+    let external = world.authenticate("alice", Duration::from_secs(60), &scope);
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host = phase.test_host_request_for_test();
+            let request = host.borrowed_request_for_test();
+            let selected = world.selected_product(&host);
+            let principal = selected
+                .resolve_authenticated_principal(
+                    &phase,
+                    &world.binding,
+                    &external,
+                    &scope,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap();
+            let root = selected
+                .resolve_entity(
+                    &phase,
+                    AccountIdentity::reference(),
+                    "account-1".into(),
+                    &scope,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap();
+            let access = WorthQueryApplicationQueryAccessContext::new(&principal, &root);
+            let query = world
+                .application
+                .installed_schema()
+                .certification_query(CrossRootQuery::reference())
+                .unwrap();
+            let plan = selected
+                .retain_selection_for_test(&request)
+                .unwrap()
+                .admit_application_query(
+                    &phase,
+                    &query,
+                    &access,
+                    ApplicationQueryParameterSet::new(),
+                    current_controls(&scope),
+                )
+                .unwrap();
+            let runtime = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
+                .build()
+                .expect("valid native runtime configuration");
+
+            let read = match read_bounded_root_rows(
+                &runtime,
+                &request,
+                &(*(*(*(*world.application.runtime_for_test()).primary_provider_for_test())
+                    .graph_for_test())
+                .layout_for_test()),
+                &plan,
+                None,
+            ) {
+                Err(denial) => denial,
+                Ok(_) => panic!("foreign snapshot unexpectedly read"),
+            };
+            let outer = map_authorized_read_denial(
+                WorthQueryAuthorizedApplicationReadDenial::Read(read),
+                query.name(),
+            );
+            assert_eq!(outer.kind(), OneShot::TraversalUnavailable);
+            assert_eq!(outer.subject(), query.name());
+        })
+        .unwrap();
+}

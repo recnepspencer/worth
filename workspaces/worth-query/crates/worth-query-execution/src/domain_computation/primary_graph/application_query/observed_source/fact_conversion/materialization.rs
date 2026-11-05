@@ -79,11 +79,15 @@ impl<Query> PreparedSourceFactMaterialization<'_, '_, '_, Query> {
     }
 }
 
-pub(super) fn merge_facts(
+pub fn merge_facts(
     facts: Vec<Fact>,
     control: SourceFactExpansionControl<'_, '_>,
     subject: &str,
 ) -> Result<Vec<Fact>, WorthQuerySourceExpectationDenial> {
+    #[expect(
+        clippy::mutable_key_type,
+        reason = "Source fact locators compare immutable coordinates; retained allocation tickets never participate in ordering"
+    )]
     let mut seen = std::collections::BTreeMap::new();
     let mut unique = reserve_facts(facts.len(), subject)?;
     for fact in facts {

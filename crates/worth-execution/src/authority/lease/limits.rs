@@ -1,4 +1,4 @@
-use std::{sync::Arc, time::Instant};
+use std::sync::Arc;
 
 use worth_foundational::{ExecutionFallbackCause, ExecutionPosture, ExecutionRequestPolicy};
 
@@ -56,7 +56,7 @@ impl<'a> ExecutionResourceLease<'a> {
     pub fn controlled_child(
         &self,
         cancellation: CancellationToken,
-        deadline: Option<Instant>,
+        deadline: Option<crate::MonotonicDeadline>,
     ) -> Self {
         let active = self.current_descendant();
         let parent = active.as_ref().unwrap_or(self);
@@ -90,8 +90,8 @@ impl<'a> ExecutionResourceLease<'a> {
                     .policy
                     .accounting()
                     .and_then(|budget| budget.charged_memory_bytes()),
-                deadline: match (self.node.deadline, request.deadline) {
-                    (Some(parent), Some(child)) => Some(parent.min(child)),
+                deadline: match (self.node.deadline.clone(), request.deadline) {
+                    (Some(parent), Some(child)) => Some(parent.meet(child)),
                     (Some(parent), None) => Some(parent),
                     (None, child) => child,
                 },
@@ -155,11 +155,12 @@ impl<'a> ExecutionResourceLease<'a> {
     pub fn deadline_elapsed(&self) -> bool {
         self.node
             .deadline
-            .is_some_and(|deadline| Instant::now() >= deadline)
+            .as_ref()
+            .is_some_and(|deadline| deadline.is_elapsed())
     }
 
-    pub(crate) fn deadline(&self) -> Option<Instant> {
-        self.node.deadline
+    pub(crate) fn deadline(&self) -> Option<crate::MonotonicDeadline> {
+        self.node.deadline.clone()
     }
 
     pub(crate) fn cancellation_lineage(&self) -> impl Iterator<Item = CancellationToken> + '_ {
@@ -194,6 +195,7 @@ impl ExecutionLeaseStatus {
     pub fn deadline_elapsed(&self) -> bool {
         self.node
             .deadline
-            .is_some_and(|deadline| Instant::now() >= deadline)
+            .as_ref()
+            .is_some_and(|deadline| deadline.is_elapsed())
     }
 }

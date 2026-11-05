@@ -42,7 +42,7 @@ substrate.
   convenience API may hide rediscovery or broadening cost.
 - `WORTH_query_roadmap.md` protects one declared query meaning across runtime,
   store, live, and durable paths; it requires the runtime-backed public
-  authority surface to close before Milestone 10 adds store-backed execution.
+  authority surface to close before Store execution/historical integration adds store-backed execution.
 
 ## Adversarial Constraint
 
@@ -667,7 +667,7 @@ pressure.
 - Certification must use public consumer-shaped code, not privileged internal
   test assembly.
 - Store-backed extension points must be typed and fail closed without claiming
-  Milestone 10 behavior early.
+  Store execution/historical integration behavior early.
 
 **Test requirements**
 
@@ -767,7 +767,7 @@ Closed on 2026-07-13 with the following repository evidence:
 
 This milestone is not blocked on `worth-store`. Store-backed source admission,
 durable identity reload, persisted inspection artifacts, and restart-stable
-subscription or preview continuation remain Milestones 10 and 11 scope. Those
+subscription or preview continuation remain Store execution and durable-artifact integration scope. Those
 milestones must extend the sealed capability types and may not restore raw
 constructors or parallel lifecycle entrypoints.
 
@@ -776,7 +776,7 @@ constructors or parallel lifecycle entrypoints.
 This milestone belongs immediately after Milestone 9.11 because 9.11 proves
 the canonical downstream authority product while 9.12 removes remaining Query
 facade paths capable of bypassing that product or recreating authority by
-representation. It belongs before Milestone 10 because store-backed execution
+representation. It belongs before Store execution/historical integration because store-backed execution
 must inherit one sealed runtime-backed authority surface rather than multiply
 legacy and canonical paths across two substrates.
 

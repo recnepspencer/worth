@@ -1,0 +1,30 @@
+{
+ "authority_doors": [],
+ "constructor_doors": [],
+ "field_doors": [
+  "domain_computation::execution_runtime::product_world::runtime::WorthQueryProductRuntime.owner",
+  "domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::retained::RetainedComputation.facts",
+  "domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutput.settlement_identity",
+  "domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider.graph"
+ ],
+ "method_doors": [
+  "basis::product_branch::observation::WorthQueryProductBranchLease::observation",
+  "domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'scope>::phase_for_application",
+  "domain_computation::primary_graph::application_contribution::request_execution::advancement::test_host_policy::TestHostRequest<'scope>::test_host_request",
+  "domain_computation::primary_graph::entity_resolution::resolved::WorthQueryApplicationEntityIdentity<Schema, Entity>::entity_id",
+  "domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation<'runtime, Schema>::into_parts",
+  "domain_computation::primary_graph::program_occurrence::WorthQueryInstalledProgramSupport<Schema>::present",
+  "domain_computation::primary_graph::provider::completed_observation::WorthQueryPrimaryGraphProvider::observe_completed_application",
+  "domain_computation::primary_graph::provider::decision_facts::comparison::WorthQueryPrimaryGraphProvider::capture_application_read_set",
+  "domain_computation::primary_graph::provider::decision_facts::comparison::WorthQueryPrimaryGraphProvider::compare_application_read_set",
+  "domain_computation::primary_graph::root::WorthQueryPrimaryGraph::integration_handle",
+  "domain_computation::primary_graph::root::WorthQueryPrimaryGraph::layout",
+  "domain_computation::provider_session::graph_provider::bounded_step::provider_anchor::WorthQueryGraphProviderAnchor::discard_provisional_overlay",
+  "domain_computation::provider_session::graph_provider::bounded_step::provider_anchor::WorthQueryGraphProviderAnchor::stage_provisional_overlay"
+ ],
+ "unplaced": [
+  "associated function `of` is private",
+  "method `bind_source_partition` is private",
+  "method `record_restoration` is private"
+ ]
+}

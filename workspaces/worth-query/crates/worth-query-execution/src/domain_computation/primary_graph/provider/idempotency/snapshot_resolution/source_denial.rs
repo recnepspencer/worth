@@ -6,6 +6,7 @@ use worth_relational::facade::durability::{
 
 pub(super) fn native(cause: Native) -> Denial {
     match cause {
+        Native::Recovery(RelationalRecoveryStop::Content(cause)) => content(cause),
         Native::Recovery(RelationalRecoveryStop::Request(cause)) => idempotency_read_stop(cause),
         Native::Recovery(RelationalRecoveryStop::Allocation(cause)) => allocation(cause),
         Native::OwnerUnavailable
@@ -28,6 +29,7 @@ pub(super) fn component(
         Component::Request(cause) | Component::Source(RelationalRecoveryStop::Request(cause)) => {
             idempotency_read_stop(cause)
         }
+        Component::Source(RelationalRecoveryStop::Content(cause)) => content(cause),
         Component::Source(RelationalRecoveryStop::Allocation(cause)) => allocation(cause),
         Component::Basis(_)
         | Component::Frame(_)
@@ -73,6 +75,7 @@ fn world_source(cause: worth_runtime_world::facade::WorldReadmissionDenial) -> D
         Source::NativeFreshSource(RelationalRecoveryStop::Request(cause)) => {
             idempotency_read_stop(cause)
         }
+        Source::NativeFreshSource(RelationalRecoveryStop::Content(cause)) => content(cause),
         Source::NativeFreshSource(RelationalRecoveryStop::Allocation(cause)) => allocation(cause),
         Source::NativeFreshSource(RelationalRecoveryStop::Durability(_))
         | Source::NativeFreshSource(RelationalRecoveryStop::AdmissionImage(_))
@@ -210,5 +213,28 @@ mod tests {
         assert_eq!(source(WorldDurableMediumDenial::BridgeDescription(
             worth_runtime_bridge::facade::RuntimeWorldBaselineRefusal::Request(WorkCeilingDenial::Stopped(KernelStop::WorkCeiling)))),
             idempotency_read_stop(worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkExhausted));
+    }
+}
+
+fn content(cause: worth_relational::facade::content::RelationalContentDenial) -> Denial {
+    use worth_relational::facade::content::RelationalContentDenial as Content;
+    match cause {
+        Content::Execution(cause) => idempotency_read_stop(cause),
+        Content::MissingContent
+        | Content::BackingUnavailable { .. }
+        | Content::FormatBindingMissing
+        | Content::FormatMismatch
+        | Content::UnsupportedVersion
+        | Content::InvalidFormat
+        | Content::NonCanonicalContent
+        | Content::IntegrityMismatch
+        | Content::ContentIdentityConflict
+        | Content::EncodingInconsistency
+        | Content::InputTypeMismatch
+        | Content::DuplicateContentFormat
+        | Content::SizeLimit { .. }
+        | Content::ArithmeticOverflow
+        | Content::HistoryNotResident
+        | Content::UnreferencedAttachment { .. } => Denial::Unavailable,
     }
 }

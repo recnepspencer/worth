@@ -17,6 +17,7 @@ fn journey(vertices: u32) {
         prefixes.clone(),
         Arc::new(prefix_rule::Calls::new(prefixes)),
         config,
+        worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system(),
     );
     let scope = authentication::request_scope();
     let principal = authentication::block_on(

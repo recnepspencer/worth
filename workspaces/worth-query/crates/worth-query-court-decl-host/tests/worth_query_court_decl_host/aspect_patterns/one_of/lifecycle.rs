@@ -4,7 +4,7 @@ fn original_cancellation_after_candidate_build_prevents_publication() {
     let cancellation = WorthQueryCancellationSource::new();
     let host = world::install_with_control(Some(cancellation.clone()));
     let before = world::pin(&host);
-    let scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let result = host
         .runtime()
@@ -118,8 +118,7 @@ fn original_expired_deadline_refuses_before_any_publication() {
     let principal = authenticate_operator(host.installed_schema(), &fresh);
     let scope = WorthQueryRequestScope::new(
         Some(std::time::Instant::now()),
-        WorthQueryCancellationSource::new().token(),
-    );
+        WorthQueryCancellationSource::new().token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let outcome = host
         .runtime()
         .request(&principal, &scope)

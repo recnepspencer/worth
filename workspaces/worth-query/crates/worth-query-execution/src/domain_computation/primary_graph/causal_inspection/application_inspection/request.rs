@@ -16,7 +16,7 @@ mod changed;
 pub use changed::{
     WorthQueryChangedInspectionRequest, WorthQueryChangedReferenceOnlyInspectionRequest,
 };
-pub(super) mod binding;
+pub(crate) mod binding;
 mod governed;
 mod rich;
 use super::super::WorthQueryApplicationQueryObservation;
@@ -33,6 +33,20 @@ use worth_query_admission::facade::authenticated_principal::{
 };
 use worth_query_declaration::facade::application_query::ApplicationQueryBinding;
 use worth_query_installation::facade::ApplicationSchema;
+
+type PendingInspectionPolicy<'a, Schema, Binding> = dyn FnMut(
+        &ExecutionRequest<'_, '_>,
+        &worth_query_installation::facade::WorthQueryInstalledApplicationQueryBinding<Schema, Binding>,
+        worth_relational::facade::identity::EntityId,
+        worth_relational::facade::identity::EntityId,
+        &mut Option<ExecutionMemoryReservation>,
+    ) -> Result<
+        (
+            Option<crate::domain_computation::authorization::application_disclosure::WorthQueryPendingApplicationQueryGovernance>,
+            Option<crate::domain_computation::authorization::application_disclosure::WorthQueryPendingApplicationQueryGovernance>,
+        ),
+        InspectionCause,
+    > + 'a;
 
 /// Borrowed original observation and fresh request; construction reads no graph.
 pub struct WorthQueryApplicationInspectionRequest<'a, 'p, 'r, 'o, Schema, Binding> {

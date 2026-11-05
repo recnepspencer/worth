@@ -4,7 +4,7 @@ use super::{
 };
 use worth_execution::{ExecutionArray, ExecutionArrayBuilder};
 
-pub(in crate::domain_computation::primary_graph) struct RetainedFactStore<T> {
+pub struct RetainedFactStore<T> {
     seed: Option<Run<T>>,
     chunk: Option<Run<T>>,
     directory: Option<RunDirectory<T>>,
@@ -12,9 +12,7 @@ pub(in crate::domain_computation::primary_graph) struct RetainedFactStore<T> {
     failure: Option<StoreDenial>,
 }
 impl<T> RetainedFactStore<T> {
-    pub(in crate::domain_computation::primary_graph) fn new(
-        policy: super::StorageControl<'_, '_>,
-    ) -> Result<Self, StoreDenial> {
+    pub fn new(policy: super::StorageControl<'_, '_>) -> Result<Self, StoreDenial> {
         policy.check_live()?;
         Ok(Self::vacant())
     }
@@ -113,7 +111,6 @@ impl<T> RetainedFactStore<T> {
         let record = RetainedFact {
             key,
             value,
-            #[cfg(test)]
             ordinal: self.count,
         };
         let chunk = self.chunk.as_mut().unwrap();
@@ -326,3 +323,5 @@ enum Head {
     Chunk,
     Directory(usize),
 }
+
+mod court_doors_for_test;

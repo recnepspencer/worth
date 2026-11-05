@@ -73,7 +73,7 @@ fn journey(
     if cancel_decision {
         let cancellation = authentication::WorthQueryCancellationSource::new();
         let cancelled_scope =
-            authentication::WorthQueryRequestScope::new(None, cancellation.token());
+            authentication::WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
         super::super::binding::cancel_during_next_decision("diamond-join", cancellation);
         let cancelled = application.request(&principal, &cancelled_scope);
         let stopped = join.settle(&cancelled);

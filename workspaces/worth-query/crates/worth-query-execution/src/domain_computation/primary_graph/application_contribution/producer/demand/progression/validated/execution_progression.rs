@@ -17,7 +17,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             FamilySourceValue<Schema, Family>,
         >,
         entry: &InstalledProducerProvider<Schema>,
-        commit_authority: WorthQueryProducerCommitAuthority,
+        commit_authority: ProducerInvocationAuthority<'owner>,
         schedule_progression: ScheduleProgression<'owner, '_, '_, Schema>,
 
         performed: &'owner std::cell::RefCell<PerformedMembers>,
@@ -37,6 +37,8 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         let prepared = self.prepare_running_output_with_schedule(
             phase,
             demand,
+            principal,
+            request_scope,
             delivery_branch,
             disclosure,
             entry,

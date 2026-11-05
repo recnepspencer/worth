@@ -302,7 +302,7 @@ pub fn every_advancement_consult_with_door<T: Eq + Debug, E: Eq + Debug>(
         ));
         with_door(&|door| {
             let source = WorthQueryCancellationSource::new();
-            let request = WorthQueryRequestScope::new(None, source.token());
+            let request = WorthQueryRequestScope::new(None, source.token(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
             let (answer, count) = with_request_consult_observer_for_test(
                 move |at| {
                     if Some(at) == k {

@@ -31,7 +31,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
         producer: ProducerQualification,
     ) {
-        let graph = &self.primary_provider.graph;
+        let graph = &self.runtime.primary_provider.graph;
         let owner = &graph.source_owner.invalidation_owner;
 
         let sealed = graph.with_runtime(execution, |runtime| {
@@ -136,5 +136,4 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     }
 }
 
-#[cfg(test)]
-mod own_write;
+mod court_doors_for_test;

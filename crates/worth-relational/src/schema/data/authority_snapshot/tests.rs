@@ -16,6 +16,7 @@ fn digest_distinguishes_variable_length_registry_boundaries() {
     boundary_name.extend_from_slice(b"b");
     let boundary_name = String::from_utf8(boundary_name).expect("test bytes are UTF-8");
     let one_kind = SchemaAuthoritySnapshot {
+        content_formats: Default::default(),
         primary_schema_id: Some(SchemaId("s".to_owned())),
         primary_schema_version_id: Some(SchemaVersionId(0)),
         entity_kinds: vec![kind(1, &boundary_name)],
@@ -24,6 +25,7 @@ fn digest_distinguishes_variable_length_registry_boundaries() {
         projected_member_domains: Vec::new(),
     };
     let two_kinds = SchemaAuthoritySnapshot {
+        content_formats: Default::default(),
         primary_schema_id: Some(SchemaId("s".to_owned())),
         primary_schema_version_id: Some(SchemaVersionId(0)),
         entity_kinds: vec![kind(1, "a"), kind(2, "b")],
@@ -228,6 +230,7 @@ fn relation(
 
 fn snapshot_with_relation(relation: SchemaAuthorityRelationSnapshot) -> SchemaAuthoritySnapshot {
     SchemaAuthoritySnapshot {
+        content_formats: Default::default(),
         primary_schema_id: Some(SchemaId("s".to_owned())),
         primary_schema_version_id: Some(SchemaVersionId(0)),
         entity_kinds: Vec::new(),

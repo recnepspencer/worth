@@ -17,17 +17,18 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
-        let execution =
-            match phase.execution_request_for(&self.runtime.backing.runtime().product_runtime) {
-                Ok(execution) => execution,
-                Err(cause) => {
-                    return self
-                        .runtime
-                        .backing
-                        .runtime()
-                        .refuse_mandatory_review(program, cause.into())
-                }
-            };
+        let execution = match phase
+            .execution_request_for(&self.runtime.backing.runtime().runtime.product_runtime)
+        {
+            Ok(execution) => execution,
+            Err(cause) => {
+                return self
+                    .runtime
+                    .backing
+                    .runtime()
+                    .refuse_mandatory_review(program, cause.into())
+            }
+        };
         self.compare_and_commit_mandatory_review_in_advancement_with_request(
             &execution,
             phase,
@@ -72,7 +73,7 @@ where
         Input: Clone + Send + Sync + 'static,
     {
         let execution = match phase
-            .execution_request_for(&self.runtime.backing.runtime().product_runtime)
+            .execution_request_for(&self.runtime.backing.runtime().runtime.product_runtime)
         {
             Ok(execution) => execution,
             Err(cause) => {
@@ -125,7 +126,7 @@ where
         Input: Clone + Send + Sync + 'static,
     {
         let execution = match phase
-            .execution_request_for(&self.runtime.backing.runtime().product_runtime)
+            .execution_request_for(&self.runtime.backing.runtime().runtime.product_runtime)
         {
             Ok(execution) => execution,
             Err(cause) => {

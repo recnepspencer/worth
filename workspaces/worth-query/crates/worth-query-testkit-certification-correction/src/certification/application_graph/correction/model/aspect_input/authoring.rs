@@ -106,10 +106,10 @@ impl OperationHandler<NumericSchema, Binding> for Handler {
         if let Err(error) = reader.field(&root, Bias::reference()) {
             return HandlerResult::ExecutionDenied(error);
         }
-        if !matches!(input.action, Action::IncompleteRemoval) {
-            if let Err(error) = reader.field(&root, Sibling::reference()) {
-                return HandlerResult::ExecutionDenied(error);
-            }
+        if !matches!(input.action, Action::IncompleteRemoval)
+            && let Err(error) = reader.field(&root, Sibling::reference())
+        {
+            return HandlerResult::ExecutionDenied(error);
         }
         match reader.mutation_target(&root) {
             Ok(target) => HandlerResult::Completed(target),

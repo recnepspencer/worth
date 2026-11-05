@@ -1,0 +1,149 @@
+use std::collections::BTreeMap;
+use std::sync::Arc;
+
+use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::yield_fixture::YieldProvider;
+use crate::process::domain_computation::managed_run::tests::*;
+
+#[test]
+fn over_ceiling_workflow_artifacts_deny_yield_without_consuming_the_run() {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
+        let phase = &active_phase;
+        let execution = phase;
+
+        let installer = WorthQueryExecutionRuntimeInstaller::new();
+        let provider_anchor = Arc::new(
+        worth_query_execution::facade::integration::WorthQueryGraphProviderAnchor::install::<ManagedGraph, _>(
+            YieldProvider::installed(7),
+        ),
+    );
+        let provider_support = provider_anchor.resource_support().clone();
+        let graph = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::workflow_provider_steps::installed_graph(
+            &installer,
+            "workflow-yield-ceiling-graph",
+            provider_anchor,
+        );
+        let runtime =
+            worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::workflow_provider_steps::installed_runtime(installer, "workflow yield ceiling");
+        let operation_resources = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::provider_session::tests::admitted_yield_plan(
+            "workflow-yield-ceiling",
+            8,
+        );
+        let stage_resources = admitted_plan_with_graph_support(
+            "workflow-yield-ceiling:producer",
+            8,
+            graph.role(),
+            provider_support,
+        );
+        let resources = WorthQueryAdmittedWorkflowResourcePlan::assemble(
+            operation_resources,
+            BTreeMap::from([("producer".to_owned(), stage_resources)]),
+        );
+        let output =
+            worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::artifact_owner::authority_affinity_tests::installed_artifact_contract_for_managed_run(
+            );
+        let operation = workflow_authority_with_stage_graph_and_output_artifact(
+            &runtime,
+            &resources,
+            "producer",
+            &graph,
+            WorthQueryOperationGraphAccess::Observe,
+            output,
+        );
+        let running = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::workflow_provider_steps::admitted_workflow(
+            &runtime,
+            &operation,
+            resources,
+            resource_request,
+        );
+        let installed_running_phase = execution.phase_for_workflow_for_test(&running);
+
+        let production = running
+            .artifacts()
+            .production_authority("producer")
+            .unwrap()
+            .expect("producer output should install");
+        let admission =
+            worth_query_execution::facade::domain_computation::WorthQueryArtifactProductionAuthority::admit(
+                &production,
+                WorthQueryArtifactProductionEvidence::new(
+                    "over-ceiling-provenance",
+                    "over-ceiling-dependency",
+                ),
+            );
+        let handle =
+        worth_query_execution::facade::domain_computation::WorthQueryArtifactProductionAuthority::register_exact(
+            &production,
+            admission,
+            OverCeilingArtifact,
+        )
+        .expect("exact artifact owner should register");
+        let active = running
+            .begin_stage_graph_execution(
+                &installed_running_phase,
+                "producer",
+                &graph,
+                WorthQueryManagedGraphCallRequest::new(
+                    WorthQueryGraphProviderCallKind::Observe,
+                    "workflow-yield-ceiling",
+                ),
+            )
+            .unwrap();
+        let paused = match active.advance(&installed_running_phase) {
+            WorthQueryWorkflowGraphStepOutcome::Continue(paused) => paused,
+            _ => panic!("workflow provider did not pause"),
+        };
+        let denied = match paused.yield_run() {
+            worth_query_execution::facade::domain_computation::WorthQueryWorkflowYieldOutcome::Denied(denied) => denied,
+            _ => panic!("over-ceiling workflow artifacts did not deny before transition"),
+        };
+        assert_eq!(
+            denied.kind(),
+            worth_query_execution::facade::domain_computation::WorthQueryWorkflowYieldDenialKind::RetainedBytesExceeded
+        );
+        let resumed_admission =
+            worth_query_execution::facade::domain_computation::WorthQueryArtifactProductionAuthority::admit(
+                &production,
+                WorthQueryArtifactProductionEvidence::new(
+                    "post-denial-provenance",
+                    "post-denial-dependency",
+                ),
+            );
+        let post_denial_handle =
+        worth_query_execution::facade::domain_computation::WorthQueryArtifactProductionAuthority::register_exact(
+            &production,
+            resumed_admission,
+            OverCeilingArtifact,
+        )
+        .expect("denied yield must restore the active artifact production generation");
+        drop(post_denial_handle);
+        drop(handle);
+        let completion = match denied.into_paused().advance(&installed_running_phase) {
+            WorthQueryWorkflowGraphStepOutcome::Completed(completion) => completion,
+            _ => panic!("retained-memory denial consumed the paused workflow"),
+        };
+        let terminal = completion.into_running().completed().unwrap();
+        match terminal.cleanup() {
+            WorthQueryWorkflowRunCleanupOutcome::Complete(_) => {}
+            _ => panic!("released over-ceiling artifact prevented workflow cleanup"),
+        }
+    });
+}
+
+pub struct OverCeilingArtifact;
+
+impl WorthQueryArtifactProviderResource for OverCeilingArtifact {
+    const PROVIDER_FAMILY: &'static str = "WORTH.tests.affinity.provider";
+
+    fn canonical_semantic_projection(&self) -> Vec<u8> {
+        b"over-ceiling-yield-artifact".to_vec()
+    }
+
+    fn retained_bytes(&self) -> usize {
+        4_096
+    }
+
+    fn dispose(&mut self) {}
+}

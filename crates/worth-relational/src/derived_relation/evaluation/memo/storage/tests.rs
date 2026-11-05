@@ -167,6 +167,10 @@ fn sparse_pages_preserve_boundaries_direction_and_absent_no_allocation() {
     let page = root_pages::PAGE_NODES;
     let mut actual = MemoValues::default();
     let mut control = Control::default();
+    #[expect(
+        clippy::mutable_key_type,
+        reason = "Key orders immutable declared identity, node, member and direction; its retained binding cache is excluded"
+    )]
     let mut reference = BTreeMap::new();
     // Numeric container mechanics only: no Source read or registered-node grant.
     let nodes = [0, page - 1, page, page + 1, usize::MAX / 2, usize::MAX];

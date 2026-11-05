@@ -1,6 +1,10 @@
 //! One live Source audience per declared recipe in the actual schema registry.
 use super::*;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Mutex, Weak};
+
+static NEXT_PROGRAM_ORDER: AtomicU64 = AtomicU64::new(0);
+
 #[derive(Debug, Default)]
 pub(crate) struct SourceBindingCache(Mutex<Weak<SourceProgram>>);
 // Memoized handles do not change RelationalSchemaRegistry's descriptive
@@ -32,9 +36,11 @@ impl SourceBindingCache {
             }
             return Ok(ManagedIndexSourceProgram(previous));
         }
+        let order = mint_program_order(&NEXT_PROGRAM_ORDER)?;
         let issuer = ManagedIndexSourceAudienceIssuer::fresh();
         let authority = issuer.authority();
         let program = Arc::new(SourceProgram {
+            order,
             path: path.clone(),
             fields: fields.into(),
             routes: routes.into(),
@@ -45,6 +51,19 @@ impl SourceBindingCache {
         // accumulates names or weak buckets after independent schema cloning.
         *bindings = Arc::downgrade(&program);
         Ok(ManagedIndexSourceProgram(program))
+    }
+}
+
+fn mint_program_order(counter: &AtomicU64) -> Result<u64, Denial> {
+    let mut current = counter.load(Ordering::Relaxed);
+    loop {
+        let next = current
+            .checked_add(1)
+            .ok_or(Denial::SourceProgramIdentityExhausted)?;
+        match counter.compare_exchange_weak(current, next, Ordering::Relaxed, Ordering::Relaxed) {
+            Ok(_) => return Ok(current),
+            Err(observed) => current = observed,
+        }
     }
 }
 

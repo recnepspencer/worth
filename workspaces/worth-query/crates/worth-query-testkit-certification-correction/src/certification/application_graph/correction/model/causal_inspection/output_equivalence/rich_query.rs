@@ -122,7 +122,7 @@ pub fn rich_original_query_survives_head_change_and_private_assembly_cancellatio
     let observation_identity = reference.observation_identity().to_owned();
     let reference_identity = reference.report_identity().to_owned();
     reference.close();
-    let cancelled = WorthQueryRequestScope::new(None, cancellation.token());
+    let cancelled = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let authority = ExecutionAuthority::serial();
     let lease = authority
         .request_lease(LeaseRequest {

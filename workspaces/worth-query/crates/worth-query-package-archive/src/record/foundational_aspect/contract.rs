@@ -40,7 +40,6 @@ pub(in super::super) fn write_aspect_contract(
         }
         AspectShape::Opaque(OpaqueAspectType::Token) => output.u16(3),
         AspectShape::Reference(ReferenceAspectType::Entity) => output.u16(4),
-        AspectShape::Content => output.u16(5),
     }
 }
 
@@ -106,17 +105,6 @@ pub(in super::super) fn decode_aspect_contract(
             equivalence,
             evolution,
         ),
-        5 => {
-            let contract = builder.content_ref();
-            if contract.absence() != absence
-                || contract.evolution() != evolution
-                || contract.equivalence() != equivalence
-                || contract.masks() != &masks
-            {
-                return Err(Denial::new(Kind::UnsupportedRecordVariant));
-            }
-            contract
-        }
         _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
     })
 }

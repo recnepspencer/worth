@@ -25,7 +25,7 @@ where
         SourceValue<Schema, Demand>: 'static,
         SourceQuery<Schema, Demand>: 'static,
     {
-        let phase_request = match phase.execution_request_for(&self.backing.runtime().product_runtime) {
+        let phase_request = match phase.execution_request_for(&self.backing.runtime().runtime.product_runtime) {
             Ok(request) => request,
             Err(cause) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "output-demand-phase")),
         };
@@ -54,6 +54,9 @@ where
                     WorthQueryProgramOutputAdvance::Progressed
                 }
                 WorthQueryOutputDemandAdvance::Settled(retained) => {
+                    if let Some(completion) = &demand.original_root_completion {
+                        completion.completed(&retained);
+                    }
                     WorthQueryProgramOutputAdvance::Settled(WorthQuerySettledProgramOutput {
                         retained,
                         target_feature: demand.target_feature,

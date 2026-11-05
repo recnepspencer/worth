@@ -122,3 +122,5 @@ impl PreparedPrerequisiteClaims {
         super::super::SupersededSettlements::new(owner, Arc::clone(self.context.key_arc()))
     }
 }
+
+mod court_doors_for_test;

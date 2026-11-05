@@ -6,8 +6,7 @@ mod durable;
 mod durable_custody;
 mod memory;
 mod native_work;
-#[cfg(test)]
-mod tests;
+mod preparation_reservation_control;
 pub(in crate::domain_computation) use durable_custody::QueryPreparingApplicationCommit;
 pub(in crate::domain_computation::primary_graph::provider) use durable_custody::RetainedQueryDurablePreparation;
 
@@ -16,17 +15,17 @@ mod managed_source;
 mod managed_unpublished;
 mod managed_views;
 pub(in crate::domain_computation::primary_graph::provider) use managed_unpublished::ManagedUnpublishedAttempt;
-mod precommit_snapshot;
+pub(crate) mod precommit_snapshot;
 mod product_publication;
 mod required_origin;
-mod stops;
-mod touched_records;
+pub(crate) mod stops;
+pub(crate) mod touched_records;
 use stops::failure;
 use stops::index_preparation_stop;
 use stops::native_output_witness_stop;
 use stops::transaction_commit_stop;
 pub(in crate::domain_computation::primary_graph::provider) use touched_records::PreparedTouchedRecords;
-mod publication;
+pub(crate) mod publication;
 pub(in crate::domain_computation::primary_graph) use publication::WorthQueryPrimaryGraphCommittedApplication;
 
 use super::super::WorthQueryPreparedApplicationCommit;
@@ -74,6 +73,7 @@ pub(super) fn commit(
     provider: &WorthQueryPrimaryGraphProvider,
     prepared: WorthQueryPreparedApplicationCommit,
     mint: super::WorthQueryCommitProgressionMint,
+    history: Option<crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerCutover<'_>>,
     allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<
     WorthQueryCommittedApplicationSession,
@@ -82,17 +82,22 @@ pub(super) fn commit(
     // The actual weak owner validates the expected owner before selecting the
     // ordinary algorithm. Unavailability never selects memory publication.
     let query = native_work::prepare_before_native(&execution, provider, prepared)?;
-    #[cfg(test)]
     if provider.take_fault(crate::domain_computation::primary_graph::provider::fault_port::WorthQueryPrimaryGraphFault::DuplicateQueryPreparationSlot) {
-        return tests::refuse_duplicate_before_world(execution, provider, query, allocation_policy);
+        return preparation_reservation_control::refuse_duplicate_before_world_for_test(execution, provider, query, allocation_policy);
     }
     let product = query.attempt.affinity().product_publication().clone();
     match product
         .publication()
         .query_publication_home_binding(product.observation())
     {
-        Ok(None) => memory::commit(execution, provider, query, mint, allocation_policy),
-        Ok(Some(_)) => durable::commit(execution, provider, query, allocation_policy),
+        Ok(None) => memory::commit(execution, provider, query, mint, history, allocation_policy),
+        Ok(Some(_)) => match history {
+            None => durable::commit(execution, provider, query, allocation_policy),
+            Some(_) => Err(crate::domain_computation::WorthQueryProviderSessionCommitStop::ProductPreparationRefused(
+                crate::domain_computation::WorthQueryProductPreparationRefused::new(
+                    crate::domain_computation::WorthQueryProductPreparationRefusal::CurrentReadDependency(
+                        worth_runtime_world::facade::CurrentProductReadDependencyDenial::DurabilityUnsupported), query))),
+        },
         Err(cause) => Err(durable::refused_before_open(query, cause)),
     }
 }
@@ -138,6 +143,7 @@ fn world_no_effect(
         NoEffectCause::DurableOpenRequired
         | NoEffectCause::ExecutionRequest(_)
         | NoEffectCause::OwnerDeniedBeforeEffect
+        | NoEffectCause::CurrentReadDependency(_)
         | NoEffectCause::CorrespondenceRebindRequired
         | NoEffectCause::ReferenceGenerationExhausted
         | NoEffectCause::CapacityExhausted
@@ -147,6 +153,25 @@ fn world_no_effect(
     }
 }
 impl WorthQueryCommittedApplicationSession {
+    pub(super) fn retain_recovered_producer_facts(
+        &self,
+        evidence: &super::WorthQueryPrimaryGraphCommitEvidence,
+        memory: Option<worth_execution::ExecutionMemoryReservation>,
+    ) -> std::sync::Arc<crate::domain_computation::primary_graph::application_output_demand::RecoveredProducerOutputFacts>{
+        use crate::domain_computation::primary_graph::application_output_demand::RecoveredProducerOutputFacts;
+        std::sync::Arc::new(RecoveredProducerOutputFacts {
+            publication: crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication::from_receipt(self.product_publication.clone()),
+            changes: evidence.committed_changes().clone(),
+            outcome: self.attempt.outcome_identity(),
+            correspondence: evidence.retain_output_correspondence(),
+            authority: evidence.retain_original_authority(),
+            inputs: evidence.performed_input_facts().cloned(),
+            fields: evidence.performed_output_fields().cloned(),
+            unrebased_own_effect: evidence.rebased_source_facts().err().map(|failure| failure.own_effect),
+            settlement: self.prepared_lineage_slot.as_ref().map(|slot| slot.identity().clone()),
+            _memory: memory,
+        })
+    }
     pub(super) fn take_predicate_preparation(&mut self) -> Option<crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationOwner>{
         self.predicate.take()
     }

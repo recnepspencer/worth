@@ -1,14 +1,14 @@
 //! Discardable execution meaning reconstructed from performed definition facts.
 
-mod plan;
-mod publication_binding;
-mod reconstruction;
+pub(crate) mod plan;
+pub(crate) mod publication_binding;
+pub(crate) mod reconstruction;
 mod reuse;
 
+pub use plan::CompiledWorkflowAssessmentApplicability;
 pub(in crate::domain_computation::primary_graph) use plan::{
-    CompiledWorkflowAssessmentApplicability, CompiledWorkflowConnection,
-    CompiledWorkflowConnectionKind, CompiledWorkflowDefinition, CompiledWorkflowNode,
-    CompiledWorkflowNodeKind,
+    CompiledWorkflowConnection, CompiledWorkflowConnectionKind, CompiledWorkflowDefinition,
+    CompiledWorkflowNode, CompiledWorkflowNodeKind,
 };
 pub(in crate::domain_computation::primary_graph) use reconstruction::WorkflowDefinitionCompilationPosture;
 pub(in crate::domain_computation::primary_graph) use reconstruction::{

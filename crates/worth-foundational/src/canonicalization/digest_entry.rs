@@ -11,7 +11,6 @@ pub enum CanonicalDigestAspectShapeKind {
     Struct,
     Opaque,
     Reference,
-    Content,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]

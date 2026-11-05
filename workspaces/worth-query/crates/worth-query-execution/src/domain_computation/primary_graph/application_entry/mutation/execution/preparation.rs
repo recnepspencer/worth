@@ -70,7 +70,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     where
         Binding: ApplicationMutationBinding<Schema>,
     {
-        let execution = match phase.execution_for(&self.product_runtime) {
+        let execution = match phase.execution_for(&self.runtime.product_runtime) {
             Ok(execution) => execution,
             Err(cause) => {
                 return Err(WorthQueryMutationHandlerExecutionReport::new(
@@ -81,6 +81,16 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 ))
             }
         };
+        if let Err(denial) = admission.validate_mutation_entry(
+            self.runtime.authority_identity(),
+            &self.installed_schema.binding_identity(),
+            &self.runtime.installed_operations,
+        ) {
+            return Err(WorthQueryMutationHandlerExecutionReport::new(
+                Err(denial),
+                WorthQueryMutationHandlerWork::NotStarted,
+            ));
+        }
         if admission
             .governed_input_identity()
             .is_some_and(|admitted| admitted != identities.input_identity())
@@ -105,6 +115,17 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 ))
             }
         };
+        // The handler is found but never called unless the brand was minted
+        // for this installed binding's operation and input types.
+        if let Err(denial) = admission.validate_installed_mutation_binding(
+            self.installed_schema
+                .installed_mutation_binding_descriptor(Binding::IDENTITY),
+        ) {
+            return Err(WorthQueryMutationHandlerExecutionReport::new(
+                Err(denial),
+                WorthQueryMutationHandlerWork::NotStarted,
+            ));
+        }
 
         let input = identities.mutation_input();
         let request = admission.publication_request();
@@ -118,7 +139,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         );
         let interruption = std::cell::Cell::new(None);
         let mut handler_contacted = false;
-        let phase_request = match phase.execution_request_for(&self.product_runtime) {
+        let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
             Ok(request) => request,
             Err(cause) => {
                 return Err(WorthQueryMutationHandlerExecutionReport::new(

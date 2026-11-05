@@ -54,10 +54,12 @@ pub(crate) fn capture(
             return Err(corrupt("original canonical artifact differs from captured index").into());
         }
         let bytes = artifact.into_bytes();
-        let member = crate::durability::medium::RelationalDurableMemberLocator {
-            sha256: <sha2::Sha256 as sha2::Digest>::digest(bytes.bytes()).into(),
-            length: bytes.len() as u64,
-        };
+        let member =
+            crate::durability::log::native_checkpoint_codec::member_frame::locator_for_request(
+                request,
+                bytes.bytes(),
+            )
+            .map_err(RelationalNativeCheckpointCaptureDenial::Request)?;
         rows.push(CanonicalCheckpointMember {
             position: entry.position,
             member,
@@ -127,6 +129,7 @@ pub(crate) fn capture_stop(
     stop: RelationalRecoveryStop,
 ) -> RelationalNativeCheckpointCaptureDenial {
     match stop {
+        RelationalRecoveryStop::Content(cause) => cause.into(),
         RelationalRecoveryStop::AdmissionImage(cause) => {
             RelationalNativeCheckpointCaptureDenial::AdmissionImage(cause)
         }

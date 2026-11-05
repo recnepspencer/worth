@@ -13,7 +13,7 @@ use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 
 #[derive(Clone)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryRestoredAcceptedOutput {
+pub struct WorthQueryRestoredAcceptedOutput {
     pub(in crate::domain_computation::primary_graph) checkpoint:
         super::WorthQueryAcceptedOutputCheckpointIdentity,
     pub(in crate::domain_computation::primary_graph) correspondence: std::sync::Arc<
@@ -35,6 +35,19 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryRestoredAccept
 }
 
 impl WorthQueryRestoredAcceptedOutput {
+    pub(in crate::domain_computation::primary_graph) fn same_authority(
+        &self,
+        other: &Self,
+    ) -> bool {
+        self.checkpoint == other.checkpoint
+            && std::sync::Arc::ptr_eq(&self.correspondence, &other.correspondence)
+            && self.observation == other.observation
+            && self.source_scope == other.source_scope
+            && self.source_identity == other.source_identity
+            && self
+                .observed_source_facts
+                .same_backing(&other.observed_source_facts)
+    }
     pub(in crate::domain_computation::primary_graph) fn settlement_posture(
         &self,
     ) -> crate::domain_computation::primary_graph::WorthQueryOutputSettlementPosture {
@@ -59,6 +72,7 @@ impl WorthQueryOutputDemandRegistry {
         admission_kind: super::DemandAdmissionKind,
         restored: super::WorthQueryRestoredAcceptedOutput,
         settlement: &std::sync::Arc<RecordedSettlementIdentity>,
+        performed_source: Option<&worth_runtime_world::facade::CompositeCommitIdentity>,
     ) -> Result<(WorthQueryOutputDemandInterest, bool), WorthQueryOutputDemandDenial> {
         let mut state = self
             .state
@@ -66,6 +80,17 @@ impl WorthQueryOutputDemandRegistry {
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         let key = newest_semantic_key(&state, &requested_key, accepts_semantic_join)?
             .unwrap_or_else(|| requested_key.clone());
+        let performed = performed_source
+            .map(|commit| {
+                state.prepare_performed_join(
+                    &requested_key,
+                    &key,
+                    commit,
+                    source_scope,
+                    product_occurrence,
+                )
+            })
+            .transpose()?;
 
         let required_member = state.prepare_required_member(&key)?;
 
@@ -98,13 +123,21 @@ impl WorthQueryOutputDemandRegistry {
             });
         if let Some(existing) = existing {
             let interest = existing?;
+            if let Some(join) = performed {
+                state.install_performed_join(&interest.key, join);
+            }
             state.install_required_member(required_member);
             return Ok((interest, false));
         }
         let key = existing_key.expect("a new row still owns its key");
         let prepared_ready = PreparedReadyBacking::new();
-        let mut prepared_record =
-            state.prepare_new_record(&key, None, product_occurrence, source_scope, None)?;
+        let mut prepared_record = state.prepare_new_record(
+            &key,
+            performed_source,
+            product_occurrence,
+            source_scope,
+            None,
+        )?;
         let posting = state.prepare_restored_posting(settlement)?;
         if let Err(denial) = supersede_predecessors(&mut state, &requested_key) {
             state.defer_cancelled_settlement_vacancy(posting.cleanup);
@@ -121,6 +154,9 @@ impl WorthQueryOutputDemandRegistry {
         );
         prepared_record.record.settlements = posting.settlements;
         state.install_prepared_record(prepared_record);
+        if let Some(join) = performed {
+            state.install_performed_join(&key, join);
+        }
 
         super::settlement_index::SettlementIndex::fill_prepared(
             &posting.posting,
@@ -170,3 +206,5 @@ impl super::DemandRegistryState {
         })
     }
 }
+
+mod court_doors_for_test;

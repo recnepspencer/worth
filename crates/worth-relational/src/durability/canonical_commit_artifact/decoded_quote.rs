@@ -9,6 +9,7 @@ pub(super) use admission::admit_canonical;
 pub(crate) use checkpoint_effect::{decode_checkpoint_effect, CheckpointEffectData};
 mod aspects;
 mod branches;
+mod cascades;
 pub(super) mod codec_retirements;
 mod contracts;
 mod diagnostics;
@@ -80,6 +81,8 @@ pub(super) struct DecodedQuote {
     pub(super) index_delta: OwnerAllocation,
     pub(super) index_writes: OwnerAllocation,
     pub(super) origin: OwnerAllocation,
+    pub(super) cascades: OwnerAllocation,
+    pub(super) selection: OwnerAllocation,
 }
 fn add(total: &mut OwnerAllocation, bytes: impl Into<OwnerAllocation>) -> Result<(), Refusal> {
     *total = total.checked_add(bytes).ok_or_else(malformed)?;

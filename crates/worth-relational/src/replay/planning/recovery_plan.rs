@@ -111,8 +111,10 @@ fn replay_fork_transitions(
         .into_iter()
         .rev()
         .filter_map(|transition| {
-            if let crate::branch::RelationalBranchTransition::Fork { target, source, .. } =
-                transition.transition()
+            if let crate::branch::RelationalBranchTransition::Fork { target, source, .. }
+            | crate::branch::RelationalBranchTransition::RetainedFork {
+                target, source, ..
+            } = transition.transition()
                 && needed.contains(target)
             {
                 needed.insert(source.clone());

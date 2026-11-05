@@ -192,7 +192,6 @@ impl WorthQueryGraphProviderAnchor {
         self.session_lifecycle.is_some()
     }
 
-    #[cfg(test)]
     pub(crate) fn retains_convergence_and_phase_seven_through_ten(&self) -> bool {
         self.convergence_provider.is_some()
             && self.session_lifecycle.is_some()
@@ -345,3 +344,5 @@ impl WorthQueryGraphProviderAnchor {
             .abort(session)
     }
 }
+
+mod court_doors_for_test;

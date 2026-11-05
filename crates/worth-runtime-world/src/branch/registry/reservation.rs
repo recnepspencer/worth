@@ -162,8 +162,36 @@ impl ProductBranchRegistryReservation {
         cell: &mut Option<ProductBranchReferenceCell>,
         cancellation: &crate::publication::RuntimeWorldCancellationToken,
     ) -> Result<(), ProductBranchSourceInstallFailure> {
-        let result =
-            self.install_from_source_borrowed(source, branch, lifecycle, cell, cancellation);
+        let result = self.install_from_source_borrowed(
+            source,
+            branch,
+            lifecycle,
+            cell,
+            cancellation,
+            crate::branch::BranchCreationSourceKind::Current,
+        );
+        result.map_err(|denial| ProductBranchSourceInstallFailure {
+            reservation: self,
+            denial,
+        })
+    }
+
+    pub(crate) fn install_from_retained_source(
+        mut self,
+        source: &ProductBranchObservation,
+        branch: ProductBranchIdentity,
+        lifecycle: ProductBranchIncarnation,
+        cell: &mut Option<ProductBranchReferenceCell>,
+        cancellation: &crate::publication::RuntimeWorldCancellationToken,
+    ) -> Result<(), ProductBranchSourceInstallFailure> {
+        let result = self.install_from_source_borrowed(
+            source,
+            branch,
+            lifecycle,
+            cell,
+            cancellation,
+            crate::branch::BranchCreationSourceKind::Retained,
+        );
         result.map_err(|denial| ProductBranchSourceInstallFailure {
             reservation: self,
             denial,
@@ -177,6 +205,7 @@ impl ProductBranchRegistryReservation {
         lifecycle: ProductBranchIncarnation,
         cell: &mut Option<ProductBranchReferenceCell>,
         cancellation: &crate::publication::RuntimeWorldCancellationToken,
+        source_kind: crate::branch::BranchCreationSourceKind,
     ) -> Result<(), ProductBranchSourceInstallDenial> {
         let name = self
             .name
@@ -205,6 +234,22 @@ impl ProductBranchRegistryReservation {
             .get(source.branch_identity())
             .map(|entry| entry.cell.clone())
             .ok_or(ProductBranchSourceInstallDenial::SourceRetired)?;
+        if source_kind == crate::branch::BranchCreationSourceKind::Retained {
+            // Registry custody excludes retirement across insertion. The two
+            // independently forked destination components no longer depend on
+            // the source's mutable head, but its exact occurrence must live.
+            if source_cell.atomic_snapshot().lifecycle_incarnation()
+                != source.lifecycle_incarnation()
+            {
+                return Err(ProductBranchSourceInstallDenial::SourceRetired);
+            }
+            if cancellation.is_cancelled() {
+                return Err(ProductBranchSourceInstallDenial::Cancelled);
+            }
+            return self
+                .insert_installed(&mut state, &mut installed)
+                .map_err(ProductBranchSourceInstallDenial::Registry);
+        }
         match source_cell.while_current(source, &mut installed, |installed| {
             if cancellation.is_cancelled() {
                 return Err(ProductBranchSourceInstallDenial::Cancelled);

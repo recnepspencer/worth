@@ -25,6 +25,7 @@ pub(in crate::domain_computation::primary_graph::application_query) mod material
 pub(in crate::domain_computation::primary_graph::application_query) use completed::CompletedOneShotRead;
 mod decode_denial;
 mod result_set_footprint;
+mod source_meanings;
 pub(in crate::domain_computation::primary_graph::application_query) mod source_storage;
 pub(in crate::domain_computation::primary_graph::application_query) use decode_denial::value_decode_denial;
 use result_set_footprint::ResultSetFootprint;
@@ -95,14 +96,7 @@ where
     let material = allocation
         .as_ref()
         .map(|allocation| material::MaterialCompletion::new(execution, allocation));
-    let material_failure = |cause| {
-        super::map_authorized_read_denial(
-            super::super::authorized_read::WorthQueryAuthorizedApplicationReadDenial::Read(
-                super::super::read_execution::relational_read_denial(cause, plan.query.name()),
-            ),
-            plan.query.name(),
-        )
-    };
+    let material_failure = |cause| source_meanings::denied(cause, plan.query.name());
     if let Some(material) = &material {
         if plan.retain_expression_context {
             return Err(denial(
@@ -182,67 +176,17 @@ where
     let invocation_source_authorization = result_set_footprint.source_authorization().cloned();
     let branch = std::sync::Arc::new(basis_identity.branch_id().clone());
     let mut source_comparisons = crate::domain_computation::primary_graph::source_read_equivalence::SourceReadEquivalence::default();
-    let source_control = || {
-        match request.interruption() {
-        None => Ok(()),
-        Some(worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption::Cancelled) => Err(worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled),
-        Some(worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption::DeadlineExceeded) => Err(worth_relational::facade::transactions::RelationalExecutionDenialCause::DeadlineElapsed),
-    }
+    let meanings = source_meanings::SourceMeanings {
+        execution,
+        registry: application.runtime.source_meanings(),
+        query: plan.query.identity().as_bytes(),
+        parameters: parameter_binding_identity.bytes(),
+        selection: basis_identity.selection(),
+        allocation: allocation.as_ref(),
+        request,
+        query_name: plan.query.name(),
     };
-    let mut compare_source =
-        |left: &super::super::observed_source::WorthQueryObservedSourceFootprint,
-         right: &super::super::observed_source::WorthQueryObservedSourceFootprint| {
-            super::super::observed_source::comparison::equal(
-                left,
-                right,
-                &mut source_comparisons,
-                execution,
-                &source_control,
-            )
-            .map_err(material_failure)
-        };
-    let mut row_meanings = worth_execution::ExecutionRequestArrayBuilder::allocate(
-        *execution,
-        source_footprints.len(),
-    )
-    .map_err(|cause| source_storage::denied(cause, plan.query.name()))?;
-    for footprint in source_footprints {
-        admit_request(request, plan.query.name())?;
-        let selection = basis_identity.selection().clone();
-        let source_meaning = if let Some(allocation) = &allocation {
-            application.source_meanings.intern_material_compared(
-                plan.query.identity().as_bytes(),
-                parameter_binding_identity.bytes(),
-                footprint,
-                &selection,
-                &mut compare_source,
-                execution,
-                allocation,
-                &mut |cause| material_failure(cause),
-            )
-        } else {
-            application.source_meanings.intern_compared(
-                plan.query.identity().as_bytes(),
-                parameter_binding_identity.bytes(),
-                footprint,
-                &selection,
-                &mut compare_source,
-            )
-        }?
-        .ok_or_else(|| {
-            denial(
-                WorthQueryApplicationOneShotDenialKind::SourceIdentityExhausted,
-                plan.query.name(),
-                plan.query.name(),
-            )
-        })?;
-        row_meanings
-            .push(source_meaning)
-            .map_err(|cause| source_storage::denied(cause, plan.query.name()))?;
-    }
-    let row_meanings = row_meanings
-        .seal()
-        .map_err(|cause| source_storage::denied(cause, plan.query.name()))?;
+    let row_meanings = meanings.rows(source_footprints, &mut source_comparisons)?;
     let source_parameters = std::sync::Arc::new(
         super::super::observed_source::WorthQueryRetainedObservedParameters::new(
             plan.parameters,
@@ -281,35 +225,7 @@ where
             _marker: PhantomData,
         });
     }
-    let result_set_meaning = if let Some(allocation) = &allocation {
-        application
-            .source_meanings
-            .intern_material_result_set_compared(
-                plan.query.identity().as_bytes(),
-                parameter_binding_identity.bytes(),
-                result_set_footprint,
-                basis_identity.selection(),
-                &mut compare_source,
-                execution,
-                allocation,
-                &mut |cause| material_failure(cause),
-            )
-    } else {
-        application.source_meanings.intern_result_set_compared(
-            plan.query.identity().as_bytes(),
-            parameter_binding_identity.bytes(),
-            result_set_footprint,
-            basis_identity.selection(),
-            &mut compare_source,
-        )
-    }?
-    .ok_or_else(|| {
-        denial(
-            WorthQueryApplicationOneShotDenialKind::SourceIdentityExhausted,
-            plan.query.name(),
-            plan.query.name(),
-        )
-    })?;
+    let result_set_meaning = meanings.result_set(result_set_footprint, &mut source_comparisons)?;
     let result_set_observation =
         super::super::WorthQueryObservedResultSet::new(super::super::WorthQueryObservedSource {
             expression_context,

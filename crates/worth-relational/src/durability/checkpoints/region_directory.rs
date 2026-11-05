@@ -55,6 +55,7 @@ impl ReadmittedRegionDirectory {
         directory: Arc<RelationalCheckpointDirectory>,
         symbols: crate::runtime::RuntimeSymbolTable,
         request: &ExecutionRequest<'_, '_>,
+        content_formats: &crate::content::RelationalContentFormatRegistry,
     ) -> Result<Self, RelationalRecoveryStop> {
         if let Some(catalog) = directory.source_schemas.get() {
             let schemas = ReadmittedSchemas::Source(catalog.clone());
@@ -73,7 +74,11 @@ impl ReadmittedRegionDirectory {
         }
         let mut schemas = BTreeMap::new();
         for (index, image) in directory.manifest.schemas.iter().enumerate() {
-            let (registry, contracts) = image.readmit_registry().map_err(corrupt)?;
+            let (mut registry, contracts) = image.readmit_registry().map_err(corrupt)?;
+            registry.content_formats = registry
+                .content_formats
+                .bind_recorded(content_formats)
+                .map_err(RelationalRecoveryStop::from)?;
             let expected = registry.authority_snapshot();
             let authority = RelationalBranchRootSchemaAuthority::readmit_exact(
                 index as u64 + 1,

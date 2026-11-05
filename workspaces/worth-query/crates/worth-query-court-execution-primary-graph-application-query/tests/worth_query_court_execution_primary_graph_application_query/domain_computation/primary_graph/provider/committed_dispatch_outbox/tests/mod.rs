@@ -1,0 +1,312 @@
+pub use worth_foundational::facade::AspectValue;
+
+pub use worth_relational::facade::history::BranchId;
+pub use worth_relational::facade::history::CommitId;
+pub use worth_relational::facade::identity::VersionId;
+pub use worth_relational::facade::mvcc::BranchBoundRelationalTransaction;
+pub use worth_relational::facade::transactions::AspectFieldPatch;
+pub use worth_relational::facade::transactions::DeleteEntityIntent;
+pub use worth_relational::facade::transactions::EntityMutationIntent;
+pub use worth_relational::facade::transactions::MutationIntent;
+pub use worth_relational::facade::transactions::UpdateEntityFieldsIntent;
+pub use worth_relational::facade::transactions::WorkerIntentBatch;
+
+pub use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::provider::committed_dispatch_outbox::owner_test_support::commit_record;
+pub use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::provider::committed_dispatch_outbox::owner_test_support::record_for;
+pub use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::provider::committed_dispatch_outbox::owner_test_support::release_commit_snapshot;
+pub use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::provider::committed_dispatch_outbox::owner_test_support::retain_commit_basis;
+pub use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::provider::committed_dispatch_outbox::owner_test_support::string;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::committed_dispatch_outbox::restoration::hex_bytes;
+pub use worth_query_execution::facade::primary_graph::WorthQueryCommittedDispatchOutboxReadDenial as Denial;
+pub use worth_relational::facade::transactions::RecordRef;
+pub use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::outbox::WorthQueryDispatchOutboxLayout;
+pub use worth_query_execution::facade::domain_computation::WorthQueryDispatchOutboxRecord;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider;
+pub use crate::domain_computation::primary_graph::provider::committed_dispatch_outbox::tests;
+pub use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::outbox::dispatch_outbox_create_intent;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::session_commit::outbox_commit::WorthQueryCommittedDispatchOutboxBindingDenial;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_branch::primary_relational_branch_id;
+pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::session_commit::outbox_commit::WorthQueryCommittedDispatchOutboxBinding;
+
+#[test]
+fn owner_read_denies_missing_foreign_and_every_commit_affinity_substitution() {
+    let host_request = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
+    let provider = &(*(*world.application.runtime_for_test()).primary_provider_for_test());
+    let (binding, commit, runtime_id) = commit_record(execution, provider, 1);
+    let record = binding.record_for_test().clone();
+    assert_eq!(
+        provider
+            .observe_expected_for_test(execution, &binding, &commit, runtime_id)
+            .unwrap()
+            .record(),
+        &record
+    );
+
+    let absent = WorthQueryCommittedDispatchOutboxBinding::fixture(
+        record_for(2),
+        RecordRef::Entity(worth_relational::facade::identity::EntityId::new(
+            worth_relational::facade::identity::PartitionId::main(),
+            u64::MAX,
+            1,
+        )),
+    );
+    assert_eq!(
+        provider.observe_expected_for_test(execution, &absent, &commit, runtime_id),
+        Err(Denial::Missing)
+    );
+    assert_eq!(
+        provider.observe_expected_for_test(execution, &binding, &commit, runtime_id + 1),
+        Err(Denial::ForeignRuntime)
+    );
+    assert_commit_affinity_substitutions(execution, provider, &binding, commit, runtime_id);
+}
+
+pub fn assert_commit_affinity_substitutions(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    provider: &WorthQueryPrimaryGraphProvider,
+    binding: &WorthQueryCommittedDispatchOutboxBinding,
+    commit: worth_relational::facade::history::RelationalCommitReceipt,
+    runtime_id: u64,
+) {
+    let mut wrong_commit_id = commit.clone();
+    wrong_commit_id.commit_id = CommitId(commit.commit_id.0.saturating_sub(1));
+    assert_eq!(
+        provider.observe_expected_for_test(execution, binding, &wrong_commit_id, runtime_id),
+        Err(Denial::ExactCommitUnavailable)
+    );
+    let mut wrong_version = commit.clone();
+    wrong_version.version_id = VersionId(commit.version_id.0.saturating_sub(1));
+    assert_eq!(
+        provider.observe_expected_for_test(execution, binding, &wrong_version, runtime_id),
+        Err(Denial::CommitMismatch)
+    );
+    let feature = BranchId("committed-outbox-feature".to_owned());
+    (*provider.graph_for_test()).with_runtime_for_test(execution, |runtime| {
+        let (_, basis) = runtime.observe_fork_source(&commit.branch_id).unwrap();
+        runtime
+            .fork_branch(execution, feature.clone(), basis)
+            .unwrap();
+        let feature_record = record_for(99);
+        let mut transaction = {
+            let identity = runtime
+                .branch_identity(&feature)
+                .expect("feature branch identity");
+            let transaction_validation_input = runtime
+                .admit_branch_basis(&identity)
+                .expect("feature branch binding");
+            runtime
+                .begin_branch_transaction(
+                    &transaction_validation_input,
+                    worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+                )
+                .expect("owner-admitted transaction context")
+        };
+        transaction
+            .push_batch(
+                WorkerIntentBatch::new("feature-outbox-head").push(
+                    dispatch_outbox_create_intent(
+                        Some(
+                            (*(*provider.graph_for_test()).layout_for_test())
+                                .provider_dispatch_outbox_for_test(),
+                        ),
+                        Some(&feature_record),
+                    )
+                    .unwrap(),
+                ),
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .expect("test staging stays within configured resource budgets");
+        let committed = transaction.commit(execution, runtime).unwrap();
+        retain_commit_basis(provider, runtime, &committed);
+        release_commit_snapshot(runtime, &committed);
+    });
+    let mut wrong_branch = commit;
+    wrong_branch.branch_id = feature;
+    assert_eq!(
+        provider.observe_expected_for_test(execution, binding, &wrong_branch, runtime_id),
+        Err(Denial::CommitMismatch)
+    );
+}
+
+#[test]
+fn fresh_later_head_still_reports_the_rows_exact_creation_commit() {
+    let host_request = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
+    let provider = &(*(*world.application.runtime_for_test()).primary_provider_for_test());
+    let (first_binding, first_commit, runtime_id) = commit_record(execution, provider, 3);
+    let first = first_binding.record_for_test().clone();
+    let (_, later_commit, _) = commit_record(execution, provider, 4);
+    assert_ne!(first_commit, later_commit);
+
+    let observed = provider
+        .observe_expected_for_test(execution, &first_binding, &first_commit, runtime_id)
+        .expect("the current snapshot retains the older live outbox row");
+    assert_eq!(observed.commit_reference(), &first_commit);
+    assert_eq!(observed.record(), &first);
+    assert_eq!(observed.work().exact_commit_snapshots(), 1);
+    assert_eq!(observed.work().canonical_version_probes(), 1);
+    assert_eq!(observed.work().projection_views(), 1);
+    assert_eq!(observed.work().examined_index_entries(), 0);
+    assert_eq!(observed.work().direct_record_probes(), 1);
+    assert_eq!(observed.work().projected_records(), 1);
+    assert_eq!(observed.work().projected_fields(), 9);
+    assert_eq!(observed.work().reconstruction_requests(), 0);
+}
+
+#[test]
+fn every_later_valid_field_substitution_leaves_exact_commit_truth_unchanged() {
+    let host_request = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    for (field, replacement) in valid_later_field_substitutions() {
+        let world = installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
+        let provider = &(*(*world.application.runtime_for_test()).primary_provider_for_test());
+        let (binding, commit, runtime_id) = commit_record(execution, provider, 31);
+        let record = binding.record_for_test().clone();
+        let observed = provider
+            .observe_expected_for_test(execution, &binding, &commit, runtime_id)
+            .expect("original exact-commit row");
+        let RecordRef::Entity(entity_id) = observed.record_ref() else {
+            panic!("dispatch outbox is an entity record");
+        };
+        (*provider.graph_for_test()).with_runtime_for_test(execution, |runtime| {
+            let locator = outbox_field_locator(
+                (*(*provider.graph_for_test()).layout_for_test())
+                    .provider_dispatch_outbox_for_test(),
+                field,
+            );
+            let mut transaction = {
+                let transaction_validation_input = runtime
+                    .admit_branch_basis(&runtime.main_branch_identity())
+                    .expect("main branch binding");
+                runtime
+                    .begin_branch_transaction(
+                        &transaction_validation_input,
+                        worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+                    )
+                    .expect("owner-admitted transaction context")
+            };
+            transaction
+                .push_batch(
+                    WorkerIntentBatch::new("later-valid-outbox-substitution").push(
+                        MutationIntent::Entity(EntityMutationIntent::UpdateFields(
+                            UpdateEntityFieldsIntent {
+                                entity_id: *entity_id,
+                                fields: AspectFieldPatch::from_locator(locator, replacement),
+                            },
+                        )),
+                    ),
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .expect("test staging stays within configured resource budgets");
+            let committed = transaction.commit(execution, runtime).unwrap();
+            retain_commit_basis(provider, runtime, &committed);
+            release_commit_snapshot(runtime, &committed);
+        });
+
+        let exact = provider
+            .observe_expected_for_test(execution, &binding, &commit, runtime_id)
+            .expect("later head cannot replace exact-commit truth");
+        assert_eq!(exact.record(), &record);
+        assert_eq!(exact.commit_reference(), &commit);
+    }
+}
+
+#[test]
+fn later_deletion_cannot_erase_exact_commit_truth() {
+    let host_request = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let world = installed_authorization_world(
+        true,
+        worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
+    );
+    let provider = &(*(*world.application.runtime_for_test()).primary_provider_for_test());
+    let (binding, commit, runtime_id) = commit_record(execution, provider, 32);
+    let record = binding.record_for_test().clone();
+    let observed = provider
+        .observe_expected_for_test(execution, &binding, &commit, runtime_id)
+        .expect("original exact-commit row");
+    let RecordRef::Entity(entity_id) = observed.record_ref() else {
+        panic!("dispatch outbox is an entity record");
+    };
+    (*provider.graph_for_test()).with_runtime_for_test(execution, |runtime| {
+        let mut transaction = {
+            let transaction_validation_input = runtime
+                .admit_branch_basis(&runtime.main_branch_identity())
+                .expect("main branch binding");
+            runtime
+                .begin_branch_transaction(
+                    &transaction_validation_input,
+                    worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+                )
+                .expect("owner-admitted transaction context")
+        };
+        transaction
+            .push_batch(
+                WorkerIntentBatch::new("later-outbox-deletion").push(MutationIntent::Entity(
+                    EntityMutationIntent::Delete(DeleteEntityIntent {
+                        entity_id: *entity_id,
+                    }),
+                )),
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .expect("test staging stays within configured resource budgets");
+        let committed = transaction.commit(execution, runtime).unwrap();
+        retain_commit_basis(provider, runtime, &committed);
+        release_commit_snapshot(runtime, &committed);
+    });
+
+    let exact = provider
+        .observe_expected_for_test(execution, &binding, &commit, runtime_id)
+        .expect("later deletion cannot erase retained exact-commit truth");
+    assert_eq!(exact.record(), &record);
+}
+
+pub fn valid_later_field_substitutions() -> Vec<(usize, AspectValue)> {
+    vec![
+        (0, string(hex_bytes(&[9; 32]))),
+        (1, string("later-family".to_owned())),
+        (2, string("later-effect".to_owned())),
+        (3, string("test.owner.later".to_owned())),
+        (4, AspectValue::UInt64(2)),
+        (5, AspectValue::UInt64(25)),
+        (6, string("ff".to_owned())),
+        (7, AspectValue::UInt64(99)),
+    ]
+}
+
+pub fn outbox_field_locator(
+    layout: &WorthQueryDispatchOutboxLayout,
+    field: usize,
+) -> worth_foundational::facade::AspectFieldLocator {
+    [
+        &layout.correlation_locator,
+        &layout.family_locator,
+        &layout.effect_locator,
+        &layout.protocol_identity_locator,
+        &layout.protocol_version_locator,
+        &layout.maximum_payload_bytes_locator,
+        &layout.payload_locator,
+        &layout.outcome_identity_locator,
+        &layout.operation_slot_locator,
+    ][field]
+        .clone()
+}
+
+#[path = "record_identity/mod.rs"]
+pub mod record_identity;
+#[path = "work_scale/mod.rs"]
+pub mod work_scale;

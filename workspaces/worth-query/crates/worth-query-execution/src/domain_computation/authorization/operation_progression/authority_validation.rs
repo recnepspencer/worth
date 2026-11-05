@@ -16,7 +16,7 @@ use crate::domain_computation::primary_graph::{
 
 use super::WorthQueryCapabilityOperationProgression;
 
-mod precondition_binding;
+pub(crate) mod precondition_binding;
 pub use precondition_binding::WorthQueryAdmittedApplicationCapabilityAccess;
 pub use precondition_binding::WorthQueryAdmittedApplicationOperation;
 pub(in crate::domain_computation) use precondition_binding::WorthQueryOperationAdmissionIdentity;
@@ -24,7 +24,8 @@ pub(in crate::domain_computation) use precondition_binding::{
     admit_capability_access, admit_encoded_capability_access,
 };
 pub(in crate::domain_computation) use precondition_binding::{
-    authorize_public_mutation_on_selected, SelectedConventionalAdmissionStop,
+    authorize_current_control_mutation_on_selected, authorize_public_mutation_on_selected,
+    SelectedConventionalAdmissionStop,
 };
 pub(super) use precondition_binding::{
     bind_capability_preconditions, bind_conventional_preconditions,
@@ -83,6 +84,12 @@ pub(super) fn validate_conventional_operation<
 where
     Schema: ApplicationSchema,
 {
+    crate::domain_computation::authorization::admission::validate_admission_clock(
+        &runtime.runtime,
+        principal.clock(),
+        request,
+        operation.operation(),
+    )?;
     crate::domain_computation::authorization::admission::admit_request(
         request,
         operation.operation(),
@@ -141,3 +148,7 @@ where
         operation,
     })
 }
+
+pub(in crate::domain_computation) use precondition_binding::{
+    BrandTag, ReadCompletionAdmission, WorthQueryAdmittedOperation,
+};

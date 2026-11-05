@@ -6,7 +6,7 @@ use crate::domain_computation::primary_graph::{
 
 /// Descriptive original evidence only: no receipt authority, Ready cell or reader.
 /// No link to another publication is retained.
-pub(in crate::domain_computation::primary_graph) struct OriginalProducingPublication {
+pub struct OriginalProducingPublication {
     pub(in crate::domain_computation::primary_graph) changes: WorthQueryApplicationCommittedChanges,
     pub(in crate::domain_computation::primary_graph) inputs: FactPayload,
     pub(in crate::domain_computation::primary_graph) correspondence:
@@ -27,7 +27,7 @@ impl OriginalProducingPublication {
         if let Some(original) = completion.original_producing_publication() {
             return Ok(Some(Arc::clone(original)));
         }
-        let WorthQueryAcceptedOutputAuthority::Committed(receipt) = &completion.authority else {
+        let Some(receipt) = completion.authority.publication_view() else {
             return Ok(None);
         };
         let Some(inputs) = receipt.performed_input_facts() else {
@@ -67,7 +67,7 @@ impl OriginalProducingPublication {
     pub(in crate::domain_computation::primary_graph) fn for_successor(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         original: Option<Arc<Self>>,
-        receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+        receipt: crate::domain_computation::primary_graph::application_output_demand::OutputPublicationView<'_>,
     ) -> Result<Option<Arc<Self>>, WorthQueryOutputDemandDenial> {
         let Some(original) = original else {
             return Ok(None);
@@ -129,3 +129,5 @@ fn checked(
         )
     })
 }
+
+mod court_doors_for_test;

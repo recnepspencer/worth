@@ -1,0 +1,329 @@
+pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::idempotency;
+pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::capability_status_mutation::revoke_current_capability;
+pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::capability_elevation_seed::CapabilityElevationScenario;
+pub use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::capability::elevated::CapabilityElevationStatus;
+pub use crate::domain_computation::primary_graph::tests::authorization::capability_progression::time;
+pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitDenialKind;
+pub use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitDenialStage;
+pub use worth_query_execution::facade::domain_computation::WorthQueryElevationApprovalOutcome;
+pub use worth_query_execution::facade::domain_computation::WorthQueryOperationAuthorizationDenialKind;
+pub use worth_query_execution::facade::domain_computation::WorthQueryRequestedElevation;
+
+#[test]
+fn exact_support_revocation_after_materialization_denies_provider_commit() {
+    let (world, request, requested) =
+        crate::domain_computation::primary_graph::tests::authorization::capability_elevation::approval_transition::requested_world(CapabilityElevationScenario::Active);
+    let approver = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request_for_test();
+            crate::domain_computation::primary_graph::tests::authorization::capability_elevation::approval_transition::authenticated(&host_custody, &world, "bob", &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let program = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request_for_test();
+            crate::domain_computation::primary_graph::tests::authorization::capability_elevation::approval_transition::materialize_exact_approval(
+                &host_custody,
+                &world,
+                &request,
+                requested,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request_for_test();
+            revoke_current_capability(
+                &host_custody,
+                &host_custody.borrowed_request_for_test(),
+                &world,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+
+    let WorthQueryElevationApprovalOutcome::Denied(denial, requested) = world
+        .application
+        .compare_and_commit_elevation_approval(program, idempotency(175, 175))
+    else {
+        panic!("support loss after materialization must deny before approval effects");
+    };
+
+    assert_eq!(
+        denial.kind(),
+        WorthQueryApplicationCommitDenialKind::ProviderRejected
+    );
+    assert_eq!(
+        denial.stage(),
+        WorthQueryApplicationCommitDenialStage::DecisionReadSet
+    );
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request_for_test();
+            assert_requested_without_approval(
+                &host_custody.phase_for_application_for_test(&world.application),
+                &host_custody.borrowed_request_for_test(),
+                &world,
+                &requested,
+                approver.principal_entity_id_for_test(),
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+}
+
+#[test]
+fn unrelated_published_lifecycle_drift_stales_the_selected_product_mutation() {
+    let (world, request, requested) =
+        crate::domain_computation::primary_graph::tests::authorization::capability_elevation::approval_transition::requested_world(CapabilityElevationScenario::Active);
+    let program = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request_for_test();
+            crate::domain_computation::primary_graph::tests::authorization::capability_elevation::approval_transition::materialize_exact_approval(
+                &host_custody,
+                &world,
+                &request,
+                requested,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request_for_test();
+            crate::domain_computation::primary_graph::tests::authorization::capability_elevation::mutation::set_status(
+                &host_custody,
+                &host_custody.borrowed_request_for_test(),
+                &world,
+                "elevation-1",
+                CapabilityElevationStatus::Revoked,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+
+    let outcome = world
+        .application
+        .compare_and_commit_elevation_approval(program, idempotency(176, 176));
+    let WorthQueryElevationApprovalOutcome::Denied(denial, _requested) = outcome else {
+        panic!("the mutation bound to the older product must deny before effects: {outcome:?}");
+    };
+    assert_eq!(
+        denial.kind(),
+        WorthQueryApplicationCommitDenialKind::ProductBasisStale
+    );
+    assert_eq!(
+        denial.stage(),
+        WorthQueryApplicationCommitDenialStage::InvariantExecution
+    );
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request_for_test();
+            assert_eq!(
+                crate::domain_computation::primary_graph::tests::authorization::capability_elevation::terminal_state::elevation_status(
+                    &(host_custody.phase_for_application_for_test(&world.application)).test_host_request_for_test(),
+                    &host_custody.borrowed_request_for_test(),
+                    &world
+                ),
+                CapabilityElevationStatus::Requested
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+}
+
+#[test]
+fn request_expiry_after_approval_materialization_denies_provider_commit() {
+    let (world, request, requested) =
+        crate::domain_computation::primary_graph::tests::authorization::capability_elevation::approval_transition::requested_world(CapabilityElevationScenario::Active);
+    let approver = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request_for_test();
+            crate::domain_computation::primary_graph::tests::authorization::capability_elevation::approval_transition::authenticated(&host_custody, &world, "bob", &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let program = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request_for_test();
+            crate::domain_computation::primary_graph::tests::authorization::capability_elevation::approval_transition::materialize_exact_approval(
+                &host_custody,
+                &world,
+                &request,
+                requested,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    world
+        .authorization_time
+        .script(std::iter::repeat_n(time(106), 4));
+
+    let WorthQueryElevationApprovalOutcome::Denied(denial, requested) = world
+        .application
+        .compare_and_commit_elevation_approval(program, idempotency(177, 177))
+    else {
+        panic!("a request that expired after materialization must not commit approval effects");
+    };
+
+    assert_eq!(
+        denial.kind(),
+        WorthQueryApplicationCommitDenialKind::ProviderRejected
+    );
+    assert_eq!(
+        denial.stage(),
+        WorthQueryApplicationCommitDenialStage::DecisionReadSet
+    );
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request_for_test();
+            assert_requested_without_approval(
+                &host_custody.phase_for_application_for_test(&world.application),
+                &host_custody.borrowed_request_for_test(),
+                &world,
+                &requested,
+                approver.principal_entity_id_for_test(),
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+}
+
+#[test]
+fn exact_approval_authorization_carries_three_graph_facts_and_derive_only_the_governed_input() {
+    let (world, request, requested) =
+        crate::domain_computation::primary_graph::tests::authorization::capability_elevation::approval_transition::requested_world(CapabilityElevationScenario::Active);
+    let approver = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request_for_test();
+            crate::domain_computation::primary_graph::tests::authorization::capability_elevation::approval_transition::authenticated(&host_custody, &world, "bob", &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let access = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request_for_test();
+            crate::domain_computation::primary_graph::tests::authorization::capability_elevation::approval_transition::approval_access(&host_custody, &world, &approver, &request)
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
+    let admission = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request_for_test();
+            world
+                .application
+                .authorize_elevation_approval(
+                    &host_custody.phase_for_application_for_test(&world.application),
+                    requested,
+                    access,
+                    &crate::domain_computation::primary_graph::tests::authorization::capability_elevation::approval_transition::approval_operation(&world),
+                    Default::default(),
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
+
+    assert_eq!(admission.authorization_decision_fact_count(), 3);
+    assert_eq!(admission.graph_work_decision_fact_count_for_test(), 3);
+    let work = admission.canonical_work().admission();
+    // The one canonical derivation is the governed input the admission encoded.
+    assert_eq!(work.basis_preparations(), 0);
+    assert_eq!(work.digest_derivations(), 1);
+    assert_eq!(work.canonical_encoded_bytes(), 68);
+    assert_eq!(work.sha256_input_bytes(), 157);
+    assert_eq!(work.sha256_compression_blocks(), 3);
+    assert_eq!(work.digest_text_materializations(), 0);
+}
+
+#[test]
+fn request_command_resource_can_differ_from_the_governed_resource_it_progresses() {
+    let mut input = crate::domain_computation::primary_graph::tests::authorization::capability_elevation::request_transition::honest_input();
+    input.account = "account-2".to_owned();
+    assert_eq!(input.target_account, "account-1");
+    assert_eq!(input.grant, "capability-1");
+    let (world, request, requested) = crate::domain_computation::primary_graph::tests::authorization::capability_elevation::approval_transition::requested_world_with_input(
+        CapabilityElevationScenario::DistinctCommandResource,
+        input,
+    );
+    let approver = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request_for_test();
+            crate::domain_computation::primary_graph::tests::authorization::capability_elevation::approval_transition::authenticated(&host_custody, &world, "bob", &request)
+        })
+        .expect("the fixture read owns its installed host call");
+
+    let approved = crate::domain_computation::primary_graph::tests::authorization::capability_elevation::approval_transition::approve_exact_request(&world, &request, requested);
+
+    assert_eq!(approved.approver(), approver.principal_entity_id_for_test());
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request_for_test();
+            assert_eq!(
+                crate::domain_computation::primary_graph::tests::authorization::capability_elevation::terminal_state::elevation_status(
+                    &host_custody,
+                    &host_custody.borrowed_request_for_test(),
+                    &world
+                ),
+                CapabilityElevationStatus::Approved
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request_for_test();
+            let borrowed_execution = host_custody.borrowed_request_for_test();
+            let execution = &borrowed_execution;
+            assert!(crate::domain_computation::primary_graph::tests::authorization::capability_elevation::terminal_state::has_exact_approver(
+                &host_custody,
+                execution,
+                &world,
+                approver.principal_entity_id_for_test()
+            ))
+        })
+        .expect("the fixture read owns its installed host call");
+}
+
+pub fn assert_requested_without_approval(
+    phase_custody: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    world: &crate::domain_computation::primary_graph::tests::authorization::capability_elevation::approval_transition::World,
+    requested: &WorthQueryRequestedElevation,
+    approver: worth_relational::facade::identity::EntityId,
+) {
+    assert_eq!(
+        requested.elevation_identity(),
+        &worth_foundational::facade::AspectValue::String(
+            worth_foundational::facade::InternedString::from("elevation-2"),
+        )
+    );
+    assert_eq!(
+        crate::domain_computation::primary_graph::tests::authorization::capability_elevation::terminal_state::elevation_status(
+            &(phase_custody).test_host_request_for_test(),
+            execution,
+            world
+        ),
+        CapabilityElevationStatus::Requested
+    );
+    assert!(!crate::domain_computation::primary_graph::tests::authorization::capability_elevation::terminal_state::has_exact_approver(
+        &(phase_custody).test_host_request_for_test(),
+        execution,
+        world,
+        approver
+    ));
+}
+
+#[path = "current_policy_support/mod.rs"]
+pub mod current_policy_support;
+#[path = "replacement_policy_path_for_the_same_grant_cannot_launder_reques/mod.rs"]
+pub mod replacement_policy_path_for_the_same_grant_cannot_launder_reques;
+#[path = "retained_approval_support/mod.rs"]
+pub mod retained_approval_support;
+#[path = "support_expiry_denies_approval_while_the_request_lifecycle_is_cu/mod.rs"]
+pub mod support_expiry_denies_approval_while_the_request_lifecycle_is_cu;

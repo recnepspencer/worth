@@ -10,6 +10,7 @@ mod admission;
 mod application_ability;
 mod application_aftermath;
 mod application_capability;
+mod application_history;
 mod application_home;
 mod application_operation;
 mod application_principal_binding;
@@ -82,20 +83,33 @@ mod package_validation_tests;
 /// Inspection accessors describe retained installed meaning; they do not grant
 /// execution, correction, recovery, or external-effect authority.
 pub mod facade {
+    pub use crate::application_history::{
+        WorthQueryDocumentHistoryInstallationDenial,
+        WorthQueryDocumentHistoryInstallationDenialKind, WorthQueryInstalledDocumentHistory,
+    };
     pub use crate::application_home::{
         WorthQueryHomeBindingAdmission, WorthQueryHomeBindingDenial,
     };
+    #[doc(hidden)]
+    pub use crate::application_operation::{
+        InstalledOperationCatalog, InstalledOperationSource, InstalledOperationView,
+    };
+    #[doc(hidden)]
+    pub use crate::application_query::InstalledQueryView;
     pub use crate::application_resource::{
         WorthQueryApplicationResourceInstallationDenial,
         WorthQueryApplicationResourceInstallationDenialKind,
         WorthQueryInstalledApplicationResource, WorthQueryInstalledResourceAccessContract,
         WorthQueryResourceAccessPurpose,
     };
+    #[doc(hidden)]
+    pub use crate::application_schema::InstalledSchemaView;
     pub use worth_foundational::facade::{
         AbsenceLaw, AspectBinding, AspectContract, AspectContractRevision, AspectEvolutionPolicy,
         AspectIdentity, AspectKey, AspectMask, AspectValue, AuthoritativeAspectChangeKind,
-        CanonicalFieldPath, ContractValidatedAspectValueView, FieldDeclaration, FieldKey,
-        FieldRequirement, InternedString, ProjectionMask, ScalarAspectType, StructAspectShape,
+        CanonicalDigestDerivationDenial, CanonicalFieldPath, ContractValidatedAspectValueView,
+        FieldDeclaration, FieldKey, FieldRequirement, InternedString, ProjectionMask,
+        ScalarAspectType, StructAspectShape,
     };
     pub use worth_query_declaration::facade::application_capability::{
         ApplicationCapabilityRef, ErasedApplicationCapabilityContract,

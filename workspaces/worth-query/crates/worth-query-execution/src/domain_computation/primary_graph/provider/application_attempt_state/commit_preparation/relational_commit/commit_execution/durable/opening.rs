@@ -13,7 +13,13 @@ pub(super) fn prepare(
         )));
     }
     let product = query.attempt.affinity().product_publication().clone();
-    let control = product.request_control(query.attempt.affinity().publication_request());
+    let Some(control) = product.request_control(query.attempt.affinity().publication_request())
+    else {
+        return Err(Stop::ProductPreparationRefused(Refused::new(
+            Refusal::RequestClockMismatch,
+            query,
+        )));
+    };
     let reservation =
         match provider.reserve_query_before_world(&product, query.attempt.idempotency()) {
             Ok(reservation) => reservation,

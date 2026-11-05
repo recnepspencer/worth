@@ -15,12 +15,12 @@ impl<'a> QueryRequestExecution<'a> {
     pub(super) fn under_lease(
         lease: &ExecutionResourceLease<'a>,
         cancellation: worth_execution::CancellationToken,
-        deadline: Option<std::time::Instant>,
+        deadline: Option<worth_execution::MonotonicDeadline>,
     ) -> Self {
         let policy = *lease.policy();
         Self {
             cancellation: cancellation.clone(),
-            deadline,
+            deadline: deadline.clone(),
             declared_work: policy.work_ceiling(),
             certified_seed: super::test_placement::certifying(),
             form: Form::Leased {
@@ -44,7 +44,8 @@ impl<'a> QueryRequestExecution<'a> {
             Some(WorthQueryManagedComputationInterruption::Cancelled)
         } else if self
             .deadline
-            .is_some_and(|deadline| std::time::Instant::now() >= deadline)
+            .as_ref()
+            .is_some_and(|deadline| deadline.is_elapsed())
             || lease.is_some_and(ExecutionResourceLease::deadline_elapsed)
         {
             Some(WorthQueryManagedComputationInterruption::DeadlineExceeded)

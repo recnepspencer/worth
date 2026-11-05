@@ -10,7 +10,7 @@ use super::*;
 
 /// Scheduling custody from one exact required record. The selected Product,
 /// source permission, lineage row, and native actor still need authentication.
-pub(in crate::domain_computation::primary_graph) struct SelectedReadyReadmission {
+pub struct SelectedReadyReadmission {
     pub(super) completion: ReadyCompletion,
     pub(super) readmission: Arc<super::super::source_readmission::RequiredOutputReadmission>,
     pub(super) membership: Arc<RequiredWorkMembership>,
@@ -123,7 +123,6 @@ impl WorthQueryOutputDemandRegistry {
 
     /// Pops only a selected required-work hint. The registry key and native
     /// settlement remain descriptive until the caller authenticates them.
-    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn next_required_work(
         &self,
         source_owner: &SourceInvalidationOwner,
@@ -208,3 +207,5 @@ fn native_denial(
     };
     WorthQueryOutputDemandDenial::new(kind, "selected installed discontinuity cannot be observed")
 }
+
+mod court_doors_for_test;

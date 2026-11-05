@@ -7,7 +7,7 @@
 //! the instance on its own branch is untouched.
 use crate::domain_computation::primary_graph::application_attempt::check_request_live;
 
-mod lineage;
+pub(crate) mod lineage;
 
 use worth_foundational::facade::AspectValue;
 use worth_query_declaration::facade::{
@@ -317,6 +317,7 @@ where
                 retain_client_observation: false,
                 producer_required_invariants: &[],
                 output_currentness_facts: None,
+            content_attachments: Default::default(),
             },
         })
     }

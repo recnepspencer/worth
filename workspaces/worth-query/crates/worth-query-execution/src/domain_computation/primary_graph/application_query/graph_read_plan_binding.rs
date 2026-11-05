@@ -42,8 +42,7 @@ pub struct WorthQueryAdmittedApplicationQueryPlan<
     pub(super) provider_identity: String,
     pub(super) query:
         &'a WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
-    pub(super) principal:
-        &'a WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
+    pub principal: &'a WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
     pub(super) scope: &'a WorthQueryApplicationEntityIdentity<Schema, Scope>,
     pub(super) parameters: WorthQueryAdmittedApplicationQueryParameters,
     pub(super) controls: WorthQueryAdmittedApplicationQueryControls<'a>,
@@ -53,8 +52,8 @@ pub struct WorthQueryAdmittedApplicationQueryPlan<
     pub(super) basis: WorthQueryApplicationQueryBasisCustody,
     pub(super) index_posture: WorthQueryQueryIndexPosture,
     pub(super) security_product: crate::basis::WorthQueryProductObservationLease,
-    pub(super) graph_work:
-        crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
+    pub(super) security_basis: Option<super::basis::WorthQueryApplicationQueryBasisCustody>,
+    pub graph_work: crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
     pub(super) authorization:
         crate::domain_computation::authorization::WorthQueryRetainedAuthorizationDecisionFacts,
     pub(super) authorization_work: super::WorthQueryApplicationAuthorizationWorkEvidence,
@@ -62,6 +61,7 @@ pub struct WorthQueryAdmittedApplicationQueryPlan<
         super::admission::SelectedIssuedAccessRoot<'a, Schema, Principal, PrincipalIdentity, Scope>,
     >,
     pub(super) governance: super::disclosure::WorthQueryApplicationQueryGovernance,
+    pub(super) history_metadata: Option<super::history::HistoryMetadataAdmission>,
 }
 
 pub(super) struct WorthQueryAdmittedContinuationState {
@@ -213,3 +213,5 @@ impl<'a, Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, S
         )
     }
 }
+
+mod court_doors_for_test;

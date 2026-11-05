@@ -2,6 +2,515 @@
   "incoming": "f7aacfe3d3d8692df1efaf34e91f4cff94788140",
   "audits": [
     {
+      "constructors": [
+        "worth_execution::ExecutionRequest::<factory>",
+        "worth_execution::ExecutionRequest::serial",
+        "worth_execution::SerialRequest::<factory>",
+        "worth_execution::SerialRequest::from_memory",
+        "worth_relational::RelationalRuntime::<factory>",
+        "worth_runtime_bridge::RuntimeBridge::<factory>",
+        "worth_runtime_bridge::RuntimeBridgeRelationalSource::<factory>",
+        "worth_runtime_bridge::facade::RuntimeBridgeRelationalSource::for_graph_role",
+        "worth_signal::SignalGraph::<factory>",
+        "worth_signal::facade::SignalGraph::new"
+      ],
+      "source": "crates/worth-runtime-world/src/lifecycle/owner/branch_service/currentness_pair_tests.rs",
+      "test": "lifecycle::owner::branch_service::currentness_pair_tests::pair_currentness_locks_both_retirement_cells_only_through_installation",
+      "audit": "Coordinator exact incoming-World private-owner placement ruling, 2026-10-30; minimal unit-owner tests retain their actual setup factory roots only.",
+      "private_subject": "Private branch-cell writer exclusion in both lock orders and duplicate-cell case, original custody address, lifecycle ordinal, and active-operation last-release count; no public test door added."
+    },
+    {
+      "constructors": [
+        "worth_execution::ExecutionRequest::<factory>",
+        "worth_execution::ExecutionRequest::serial",
+        "worth_execution::SerialRequest::<factory>",
+        "worth_execution::SerialRequest::from_memory",
+        "worth_relational::RelationalRuntime::<factory>",
+        "worth_runtime_bridge::RuntimeBridge::<factory>",
+        "worth_runtime_bridge::RuntimeBridgeRelationalSource::<factory>",
+        "worth_runtime_bridge::facade::RuntimeBridgeRelationalSource::for_graph_role",
+        "worth_signal::SignalGraph::<factory>",
+        "worth_signal::facade::SignalGraph::new"
+      ],
+      "source": "crates/worth-runtime-world/src/lifecycle/owner/branch_service/currentness_pair_tests.rs",
+      "test": "lifecycle::owner::branch_service::currentness_pair_tests::pair_currentness_returns_identical_custody_when_candidate_retires_after_admission",
+      "audit": "Coordinator exact incoming-World private-owner placement ruling, 2026-10-30; minimal unit-owner tests retain their actual setup factory roots only.",
+      "private_subject": "Private branch-cell writer exclusion in both lock orders and duplicate-cell case, original custody address, lifecycle ordinal, and active-operation last-release count; no public test door added."
+    },
+    {
+      "constructors": [
+        "worth_execution::ExecutionRequest::<factory>",
+        "worth_execution::ExecutionRequest::serial",
+        "worth_execution::SerialRequest::<factory>",
+        "worth_execution::SerialRequest::from_memory",
+        "worth_relational::RelationalRuntime::<factory>",
+        "worth_runtime_bridge::RuntimeBridge::<factory>",
+        "worth_runtime_bridge::RuntimeBridgeRelationalSource::<factory>",
+        "worth_runtime_bridge::facade::RuntimeBridgeRelationalSource::for_graph_role",
+        "worth_signal::SignalGraph::<factory>",
+        "worth_signal::facade::SignalGraph::new"
+      ],
+      "source": "crates/worth-runtime-world/src/lifecycle/owner/branch_service/reference_description_tests.rs",
+      "test": "lifecycle::owner::branch_service::reference_description_tests::stored_reference_description_refuses_retirement_and_same_name_recreation",
+      "audit": "Coordinator exact incoming-World private-owner placement ruling, 2026-10-30; minimal unit-owner tests retain their actual setup factory roots only.",
+      "private_subject": "Private branch-cell writer exclusion in both lock orders and duplicate-cell case, original custody address, lifecycle ordinal, and active-operation last-release count; no public test door added."
+    },
+    {
+      "constructors": [
+        "ExecutionAuthority"
+      ],
+      "source": "crates/worth-execution/src/authority/lease/idle_backing_tests.rs",
+      "test": "authority::lease::idle_backing_tests::retained_root_survives_child_churn_until_the_final_hold_releases_backing",
+      "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
+      "private_subject": "Private actual ledger/tombstone allocation, original reservation retention, live worker and last-release counters."
+    },
+    {
+      "constructors": [
+        "ExecutionAuthority"
+      ],
+      "source": "crates/worth-execution/src/authority/lease/idle_backing_tests.rs",
+      "test": "authority::lease::idle_backing_tests::zero_rebind_releases_only_idle_backing_and_preserves_live_workers",
+      "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
+      "private_subject": "Private actual ledger/tombstone allocation, original reservation retention, live worker and last-release counters."
+    },
+    {
+      "constructors": [
+        "ExecutionAuthority"
+      ],
+      "source": "crates/worth-execution/src/authority/lease/idle_backing_tests.rs",
+      "test": "authority::lease::idle_backing_tests::an_empty_tombstone_table_retires_even_when_reported_capacity_is_zero",
+      "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
+      "private_subject": "Private actual ledger/tombstone allocation, original reservation retention, live worker and last-release counters."
+    },
+    {
+      "constructors": [
+        "ExecutionRequest",
+        "SerialRequest"
+      ],
+      "source": "crates/worth-execution/src/backend/meter/work_loan/tests.rs",
+      "test": "backend::meter::work_loan::tests::work_loan_charges_current_descendant_once_and_closes_at_scope_exit",
+      "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
+      "private_subject": "Private saved RunLimits and closed issuing affinity, original current descendant meter, overflow and cancellation stops."
+    },
+    {
+      "constructors": [
+        "ExecutionRequest",
+        "SerialRequest"
+      ],
+      "source": "crates/worth-execution/src/backend/meter/work_loan/tests.rs",
+      "test": "backend::meter::work_loan::tests::work_loan_uses_genuine_framework_worker_lineage_and_original_limits",
+      "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
+      "private_subject": "Private saved RunLimits and closed issuing affinity, original current descendant meter, overflow and cancellation stops."
+    },
+    {
+      "constructors": [
+        "ExecutionRequest",
+        "SerialRequest"
+      ],
+      "source": "crates/worth-execution/src/backend/meter/work_loan/tests.rs",
+      "test": "backend::meter::work_loan::tests::work_loan_preserves_mixed_ceiling_overflow_and_parent_cancellation",
+      "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
+      "private_subject": "Private saved RunLimits and closed issuing affinity, original current descendant meter, overflow and cancellation stops."
+    },
+    {
+      "constructors": [
+        "ExecutionRequest",
+        "SerialRequest"
+      ],
+      "source": "crates/worth-relational/src/branch/coordination/managed_fork_cleanup.rs",
+      "test": "managed_fork_refusal_and_success_drop_lookup_outside_native_coordination",
+      "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
+      "private_subject": "Private Native coordination guard exclusion and actual fork lookup destruction on refusal/success."
+    },
+    {
+      "constructors": [
+        "ExecutionRequest",
+        "SerialRequest"
+      ],
+      "source": "crates/worth-relational/src/mvcc/publication/companion/cell/managed_source/cache_retirement.rs",
+      "test": "managed_cache_retirement_defers_last_opaque_drop_beyond_native_guards",
+      "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
+      "private_subject": "Private cell/core lock exclusion and last opaque payload destruction during retirement/stale replacement refusal."
+    },
+    {
+      "constructors": [
+        "ExecutionRequest",
+        "SerialRequest"
+      ],
+      "source": "crates/worth-relational/src/mvcc/publication/companion/cell/managed_source/cache_retirement.rs",
+      "test": "managed_cache_rebuild_stale_entry_refuses_without_dropping_candidate_under_guards",
+      "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
+      "private_subject": "Private cell/core lock exclusion and last opaque payload destruction during retirement/stale replacement refusal."
+    },
+    {
+      "constructors": [
+        "ExecutionRequest",
+        "SerialRequest"
+      ],
+      "source": "crates/worth-relational/src/mvcc/publication/companion/cell/managed_source/cache_retirement/retained_affinity.rs",
+      "test": "managed_cache_retained_affinity_survives_deleted_branch_cell_without_currentness",
+      "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
+      "private_subject": "Private retained cell/root custody after actual Native branch deletion, distinct from currentness."
+    },
+    {
+      "constructors": [
+        "ExecutionRequest",
+        "SerialRequest"
+      ],
+      "source": "crates/worth-relational/src/mvcc/publication/companion/cell/managed_source/correspondence/tests.rs",
+      "test": "managed_source_correspondence_receiver_binds_exact_selected_image_and_unavailable_payload",
+      "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
+      "private_subject": "Private correspondence binding to actual basis.inner.root and registration; unavailable payload retains exact selected image."
+    },
+    {
+      "constructors": [
+        "ExecutionRequest",
+        "RelationalRuntime",
+        "SerialRequest"
+      ],
+      "source": "crates/worth-relational/src/mvcc/publication/companion/cell/public_cache/tests.rs",
+      "test": "public_cache_cancelled_preflight_preserves_old_material_and_successful_twin_is_cold",
+      "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
+      "private_subject": "Private per-image cache directory/core/epoch and opaque payload final destruction outside Native guards."
+    },
+    {
+      "constructors": [
+        "ExecutionRequest",
+        "RelationalRuntime",
+        "SerialRequest"
+      ],
+      "source": "crates/worth-relational/src/mvcc/publication/companion/cell/public_cache/tests.rs",
+      "test": "public_cache_native_successor_is_cold_and_selected_predecessor_keeps_its_own_slot",
+      "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
+      "private_subject": "Private per-image cache directory/core/epoch and opaque payload final destruction outside Native guards."
+    },
+    {
+      "constructors": [
+        "ExecutionRequest",
+        "RelationalRuntime",
+        "SerialRequest"
+      ],
+      "source": "crates/worth-relational/src/mvcc/publication/companion/cell/public_cache/tests.rs",
+      "test": "public_cache_retirement_defers_opaque_drop_and_releases_original_backing",
+      "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
+      "private_subject": "Private per-image cache directory/core/epoch and opaque payload final destruction outside Native guards."
+    },
+    {
+      "constructors": [
+        "ExecutionRequest",
+        "SerialRequest"
+      ],
+      "source": "crates/worth-relational/src/validation/candidate_source/image/eviction/tests.rs",
+      "test": "managed_cache_retirement_defers_last_opaque_drop_beyond_directory_guard",
+      "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
+      "private_subject": "Private roots.try_lock exclusion during final opaque value destruction."
+    },
+    {
+      "constructors": [
+        "SerialRequest"
+      ],
+      "source": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/lifecycle/registration.rs",
+      "test": "retained_registrations_have_indexed_query_and_repeated_open_work",
+      "audit": "Query 9.19 master alignment external-consumer-fixture placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
+      "private_subject": "Established external leaf consumer-entry/compiled-example owner, public integration evidence (not private logic): Public indexed registration work and distinct installed Parent association, with original SDK invoices."
+    },
+    {
+      "constructors": [
+        "SerialRequest"
+      ],
+      "source": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/lifecycle/registration.rs",
+      "test": "distinct_parent_bindings_to_one_query_keep_independent_registrations",
+      "audit": "Query 9.19 master alignment external-consumer-fixture placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
+      "private_subject": "Established external leaf consumer-entry/compiled-example owner, public integration evidence (not private logic): Public indexed registration work and distinct installed Parent association, with original SDK invoices."
+    },
+    {
+      "constructors": [
+        "ExecutionResourceLease"
+      ],
+      "source": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/court.rs",
+      "test": "public_maintained_prefix_prepares_unopened_scope_before_rule_and_publishes_matching_roots",
+      "audit": "Query 9.19 master alignment external-consumer-fixture placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
+      "private_subject": "Established external leaf consumer-entry/compiled-example owner, public integration evidence (not private logic): Public installed maintained-prefix refusal/publication/retained aliases under the original lease."
+    },
+    {
+      "constructors": [
+        "SerialRequest"
+      ],
+      "source": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/geometry/court/growth.rs",
+      "test": "geometry_chain_growth_uses_real_source_and_original_sdk_invoice",
+      "audit": "Query 9.19 master alignment external-consumer-fixture placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
+      "private_subject": "Established external leaf consumer-entry/compiled-example owner, public integration evidence (not private logic): Public actual 1k/2k/50k geometry Source cost qualification with whole original SDK invoices."
+    },
+    {
+      "constructors": [
+        "WorthQueryProgramApplicationRuntime"
+      ],
+      "source": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/host.rs",
+      "test": "module_setup",
+      "audit": "Query 9.19 master alignment external-consumer-fixture placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
+      "private_subject": "Established external leaf consumer-entry/compiled-example owner, public integration evidence (not private logic): Compiled consumer contribution/install root for genuine maintained Source programs."
+    },
+    {
+      "constructors": [
+        "WorthQueryProgramApplicationRuntime"
+      ],
+      "source": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/refusing/host.rs",
+      "test": "module_setup",
+      "audit": "Query 9.19 master alignment external-consumer-fixture placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
+      "private_subject": "Established external leaf consumer-entry/compiled-example owner, public integration evidence (not private logic): Compiled consumer contribution/install root for explicit refusal of cold Source reconstruction."
+    },
+    {
+      "constructors": [
+        "ExecutionRequest",
+        "SerialRequest"
+      ],
+      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/derived_view/registry/managed_source/fork/tests.rs",
+      "test": "managed_fork_cancelled_lookup_releases_the_actual_registry_entry",
+      "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
+      "private_subject": "Private actual source_branches entry and Weak allocation retirement after real Native fork cancellation."
+    },
+    {
+      "constructors": [
+        "ExecutionRequest",
+        "SerialRequest"
+      ],
+      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/managed_index/nodes/pages/tests.rs",
+      "test": "isolated_node_pages_share_unchanged_backing_and_release_staged_edits",
+      "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
+      "private_subject": "Private physical page lineage, unchanged backing pointer identity, staged-page last release and original controlled stop; no graph authority synthesized."
+    },
+    {
+      "constructors": [
+        "ExecutionRequest",
+        "SerialRequest"
+      ],
+      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/managed_index/nodes/pages/tests.rs",
+      "test": "original_request_stop_refuses_node_page_handoff_and_releases_staged_pages",
+      "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
+      "private_subject": "Private physical page lineage, unchanged backing pointer identity, staged-page last release and original controlled stop; no graph authority synthesized."
+    },
+    {
+      "constructors": [
+        "ExecutionRequest",
+        "SerialRequest"
+      ],
+      "source": "workspaces/worth-query/crates/worth-query-publication/src/application_entry/query/managed_index/completion/tests.rs",
+      "test": "managed_lifecycle_completed_cleanup_survives_the_actual_final_request_poll",
+      "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
+      "private_subject": "Private completed-effect merger preserves actual SDK final poll and distinguishes pre-effect refusal from completed cleanup."
+    },
+    {
+      "constructors": [
+        "ExecutionRequest",
+        "SerialRequest"
+      ],
+      "source": "workspaces/worth-query/crates/worth-query-publication/src/application_entry/query/managed_index/completion/tests.rs",
+      "test": "managed_lifecycle_pre_effect_interruption_never_becomes_completed_success",
+      "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
+      "private_subject": "Private completed-effect merger preserves actual SDK final poll and distinguishes pre-effect refusal from completed cleanup."
+    },
+    {
+      "source": "crates/worth-relational/src/tests/durability/contracts/derived_index_checkpoint/artifact_affinity.rs",
+      "test": "tests::durability::contracts::derived_index_checkpoint::artifact_affinity::legacy_index_affinity_is_checked_before_replacing_a_live_recovery_target",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "durable_runtime_with_test_schema"
+      ],
+      "audit": "Exact private-owner source placement reviewed under all three QA skills; public journeys migrated to existing courts, 2026-10-30.",
+      "private_subject": "Private derived-index checkpoint transport/readmission: exact legacy index affinity before replacing a live target, and admitted envelope artifacts before installation. Public retirement journeys have moved to their court."
+    },
+    {
+      "source": "crates/worth-relational/src/tests/durability/contracts/derived_index_checkpoint/artifact_affinity.rs",
+      "test": "tests::durability::contracts::derived_index_checkpoint::artifact_affinity::envelope_index_affinity_requires_admission_before_installation",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "durable_runtime_with_test_schema"
+      ],
+      "audit": "Exact private-owner source placement reviewed under all three QA skills; public journeys migrated to existing courts, 2026-10-30.",
+      "private_subject": "Private derived-index checkpoint transport/readmission: exact legacy index affinity before replacing a live target, and admitted envelope artifacts before installation. Public retirement journeys have moved to their court."
+    },
+    {
+      "source": "workspaces/worth-query/crates/worth-query-installation/src/application_operation/contracts/graph_touches/tests.rs",
+      "test": "application_operation::contracts::graph_touches::tests::installed_parent_removal_readmission_requires_complete_same_binding_native_reads",
+      "constructors": [
+        "WorthQueryInstalledPackageIndex::build"
+      ],
+      "audit": "Exact private-owner source placement reviewed under all three QA skills; public journeys migrated to existing courts, 2026-10-30.",
+      "private_subject": "Private install_portable_graph_touches readmission checks complete same-binding Native reads, real RemoveAspect and NotRequired/foreign binding counterexamples."
+    },
+    {
+      "source": "workspaces/worth-query/crates/worth-query-installation/src/application_schema/native_contract/compilation/scalar_aspect/tests/installed_read_scope.rs",
+      "test": "application_schema::native_contract::compilation::scalar_aspect::tests::explicit_scalar_storage_preserves_binding_and_refuses_extra_or_optional_children",
+      "constructors": [
+        "WorthQueryInstalledPackageIndex::build"
+      ],
+      "audit": "Exact private-owner source placement reviewed under all three QA skills; public journeys migrated to existing courts, 2026-10-30.",
+      "private_subject": "Private portable native-contract and operation-contract compilation: scalar whole-mask versus struct exact field, and exact compiled operation projection scope."
+    },
+    {
+      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/admitted_capture/retained_stage/tests.rs",
+      "test": "domain_computation::primary_graph::admitted_capture::retained_stage::tests::original_retained_capture_preserves_live_backing_through_success_and_refusal",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "worth_execution::SerialRequest::from_memory"
+      ],
+      "audit": "Exact private-owner source placement reviewed under all three QA skills; public journeys migrated to existing courts, 2026-10-30.",
+      "private_subject": "Private retained capture phase with real request/frame/two-copy reservations: second-copy refusal must precede clone and preserve live original backing; no installed application world."
+    },
+    {
+      "source": "crates/worth-runtime-bridge/src/builder/tests/correspondence/conditional_compatibility/source_packet_affinity/causal_retention.rs",
+      "test": "builder::tests::correspondence::conditional_compatibility::source_packet_affinity::causal_retention::envelope_private_associations_retain_only_the_original_native_observation",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "RuntimeBridgeBuilder::build"
+      ],
+      "audit": "Exact private-owner source placement reviewed under all three QA skills; public journeys migrated to existing courts, 2026-10-30.",
+      "private_subject": "Private destructive performed-receipt consumption is single-use and preserves exact executed Signal target; Bridge-owned external evidence associations admit genuine original envelopes and reject foreign/native-less/mismatched association substitutions. Ordinary reentry and reader lifecycle moved to public court."
+    },
+    {
+      "source": "crates/worth-runtime-bridge/src/builder/tests/correspondence/conditional_compatibility/source_packet_affinity/causal_retention/envelope.rs",
+      "test": "builder::tests::correspondence::conditional_compatibility::source_packet_affinity::causal_retention::envelope_private_associations_retain_only_the_original_native_observation",
+      "constructors": [
+        "RuntimeBridgeBuilder::build"
+      ],
+      "audit": "Exact private-owner source placement reviewed under all three QA skills; public journeys migrated to existing courts, 2026-10-30.",
+      "private_subject": "Exact private envelope helper: BridgeIdentityEvidence owner-only factories and query reference associations; malformed association and projection-only counterexamples cannot be constructed via consumer facades."
+    },
+    {
+      "source": "crates/worth-runtime-bridge/src/builder/tests/correspondence/conditional_compatibility/source_packet_affinity/causal_retention/history.rs",
+      "test": "builder::tests::correspondence::conditional_compatibility::source_packet_affinity::causal_retention::history::real_optional_capacity_denial_is_tolerated_but_request_stop_is_preserved",
+      "constructors": [
+        "worth_execution::ExecutionRequest::serial",
+        "worth_execution::SerialRequest::from_policy"
+      ],
+      "audit": "Exact private-owner source placement reviewed under all three QA skills; public journeys migrated to existing courts, 2026-10-30.",
+      "private_subject": "Direct private ConditionalExecutionHistory::capture consumes genuine executed Signal evidence; real optional capacity refusal is tolerated while cancellation remains a request stop. Ordinary eviction and owner-close journeys moved to public court."
+    },
+    {
+      "constructors": [
+        "ExecutionRequest",
+        "SerialRequest"
+      ],
+      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/managed_index/nodes/pages/edit/tests.rs",
+      "test": "working_page_reuses_initialized_allocation_and_preserves_tombstones",
+      "audit": "Query 9.19 working-page cache private-owner placement ruling by independent qa-tests reviewer, 2026-10-30; plans/WORTH-query/milestone-9.19-phase3-working-pages-plan.md.",
+      "private_subject": "Private actual WorkingPage allocation identity, one touched page, tombstone precedence, consuming seal, unchanged sibling page and final original grant release; no Source or audience authority synthesized."
+    },
+    {
+      "constructors": [
+        "ExecutionRequest",
+        "SerialRequest"
+      ],
+      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/managed_index/nodes/pages/edit/tests.rs",
+      "test": "working_page_original_invoice_tracks_touched_pages_instead_of_copying_every_write",
+      "audit": "Query 9.19 working-page cache private-owner placement ruling by independent qa-tests reviewer, 2026-10-30; plans/WORTH-query/milestone-9.19-phase3-working-pages-plan.md.",
+      "private_subject": "Actual private PageEdit original SDK work for repeated writes versus distinct touched physical pages; no semantic Source or graph authority synthesized."
+    },
+    {
+      "constructors": [
+        "SerialRequest"
+      ],
+      "source": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/geometry/court/growth/work_attribution.rs",
+      "test": "invoice",
+      "audit": "Query 9.19 original-work diagnostic external-consumer-fixture placement ruling by independent qa-tests reviewer, 2026-10-30; plans/WORTH-query/milestone-9.19-phase3-work-attribution-plan.md.",
+      "private_subject": "Established external leaf consumer-entry owner, public integration evidence, not private logic: same actual original SDK mutation invoice plus root-qualified raw required-work callback windows and separate accepted total. No synthetic Source, graph or authority."
+    },
+    {
+      "constructors": [
+        "SerialRequest"
+      ],
+      "source": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/court/summary_support.rs",
+      "test": "checked_summary_confines_row_resolution_to_the_actual_region",
+      "audit": "Exact Query 9.19 public repeated-extrema invoice placement approved by independent qa-tests reviewer, 2026-10-30; plans/WORTH-query/milestone-9.19-summary-ancestry-reuse-plan.md.",
+      "private_subject": "No private runtime subject or synthetic Source artifact: original SDK work-meter root around genuine installed public queries, with32/64 repeated summary operations within each actual Source8 query. Same supported integration observation pattern as geometry growth."
+    },
+    {
+      "constructors": [
+        "SerialRequest"
+      ],
+      "source": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/court/prefix_growth.rs",
+      "test": "real_prefix_width_small_batches_and_sparse_queries_preserve_both_roots",
+      "audit": "Exact Query 9.19 public prefix-width invoice placement approved by independent qa-tests reviewer, 2026-10-30; plans/WORTH-query/milestone-9.19-prefix-width-qualification-plan.md.",
+      "private_subject": "No private runtime subject or synthetic Source: original SDK work meter around actual installed batch authoring, cold rebuild, public queries and two-scope candidate refusal/publication. Authored independent census and sparse oracle; separate accepted reports, no reconstructed cost ledger."
+    },
+    {
+      "constructors": [
+        "SerialRequest"
+      ],
+      "source": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/court/prefix_growth.rs",
+      "test": "prefix_width_growth_keeps_local_edits_bounded_beside_unrelated_source_names",
+      "audit": "Exact Query 9.19 public prefix-width invoice placement approved by independent qa-tests reviewer, 2026-10-30; plans/WORTH-query/milestone-9.19-prefix-width-qualification-plan.md.",
+      "private_subject": "No private runtime subject or synthetic Source: original SDK work meter around actual installed batch authoring, cold rebuild, public queries and two-scope candidate refusal/publication. Authored independent census and sparse oracle; separate accepted reports, no reconstructed cost ledger."
+    },
+    {
+      "constructors": [
+        "ExecutionRequest",
+        "SerialRequest"
+      ],
+      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/managed_index/source_structure/ancestry/tests.rs",
+      "test": "summary_membership_cache_reuses_region_facts_with_bounded_original_scratch",
+      "audit": "Exact Query 9.19 bounded region-membership owner placement approved by independent qa-tests reviewer, 2026-10-31; plans/WORTH-query/milestone-9.19-summary-membership-cost-repair-plan.md.",
+      "private_subject": "Numeric immutable parent relations and actual original SDK controls only; facts obtained by the real bounded helper, no fabricated SourceTree, Slot, Native identity or cached membership. Fixed4KiB scratch, distinct receiver/eviction behavior, actual miss/hit stops and same-graph fresh retry replace retired Ready/jump ownership claims."
+    },
+    {
+      "constructors": [
+        "ExecutionRequest",
+        "SerialRequest"
+      ],
+      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/managed_index/source_structure/ancestry/tests.rs",
+      "test": "summary_membership_cache_separates_regions_and_keeps_saturated_fallback_lawful",
+      "audit": "Exact Query 9.19 bounded region-membership owner placement approved by independent qa-tests reviewer, 2026-10-31; plans/WORTH-query/milestone-9.19-summary-membership-cost-repair-plan.md.",
+      "private_subject": "Numeric immutable parent relations and actual original SDK controls only; facts obtained by the real bounded helper, no fabricated SourceTree, Slot, Native identity or cached membership. Fixed4KiB scratch, distinct receiver/eviction behavior, actual miss/hit stops and same-graph fresh retry replace retired Ready/jump ownership claims."
+    },
+    {
+      "constructors": [
+        "ExecutionRequest",
+        "SerialRequest"
+      ],
+      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/managed_index/source_structure/ancestry/tests.rs",
+      "test": "summary_membership_cache_hits_honor_original_stops_and_same_graph_retries",
+      "audit": "Exact Query 9.19 bounded region-membership owner placement approved by independent qa-tests reviewer, 2026-10-31; plans/WORTH-query/milestone-9.19-summary-membership-cost-repair-plan.md.",
+      "private_subject": "Numeric immutable parent relations and actual original SDK controls only; facts obtained by the real bounded helper, no fabricated SourceTree, Slot, Native identity or cached membership. Fixed4KiB scratch, distinct receiver/eviction behavior, actual miss/hit stops and same-graph fresh retry replace retired Ready/jump ownership claims."
+    },
+    {
+      "constructors": [
+        "ExecutionRequest",
+        "SerialRequest"
+      ],
+      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/managed_index/nodes/pages/edit/tests.rs",
+      "test": "working_page_batch_seals_shared_directory_ancestors_once",
+      "audit": "Query 9.19 directory-batch private-owner placement ruling by independent qa-tests reviewer, 2026-10-31; plans/WORTH-query/milestone-9.19-directory-batch-plan.md.",
+      "private_subject": "Actual private PageEdit dense/sparse union-of-path allocation counts, original SDK seal invoices, untouched Arc cells, tombstones, empty growth and old/sibling isolation; no Source, graph identity or read authority synthesized."
+    },
+    {
+      "constructors": [
+        "ExecutionRequest",
+        "SerialRequest"
+      ],
+      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/managed_index/nodes/pages/edit/tests.rs",
+      "test": "working_page_batch_refusal_preserves_predecessor_and_releases_partial_seal",
+      "audit": "Query 9.19 directory-batch private-owner placement ruling by independent qa-tests reviewer, 2026-10-31; plans/WORTH-query/milestone-9.19-directory-batch-plan.md.",
+      "private_subject": "Original SDK work refusal after actual partial PageEdit seal progress, unchanged predecessor/sibling, scratch-grant release and funded same-data fresh-request retry; no synthetic Source or publication authority."
+    },
+    {
+      "constructors": [
+        "ExecutionRequest"
+      ],
+      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/managed_index/nodes/pages/tests/churn.rs",
+      "test": "compressed_live_pages_skip_historical_coordinate_gaps_and_collapse_retirements",
+      "audit": "Query 9.19 live-directory private-owner placement approved by independent qa-tests reviewer, 2026-10-31; plans/WORTH-query/milestone-9.19-live-directory-plan.md.",
+      "private_subject": "Physical compressed-directory fixed-live-page gap invoices/memory, maximum/nonzero page prefixes, retirement collapse, missing-page rejection and paid old/sibling Arc isolation; no Source or qualified root."
+    },
+    {
+      "constructors": [
+        "ExecutionRequest"
+      ],
+      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/managed_index/nodes/pages/tests/churn.rs",
+      "test": "genuine_node_churn_keeps_live_backing_bounded_without_reusing_issued_ids",
+      "audit": "Query 9.19 live-directory private-owner placement approved by independent qa-tests reviewer, 2026-10-31; plans/WORTH-query/milestone-9.19-live-directory-plan.md.",
+      "private_subject": "Actual descriptive NodeLineage/NodeWriter4096-issue churn with two live nodes, old and sibling IDs, original SDK final lookup/edit work and grant release; existing parent reserves namespace, no Source/read authority synthesized."
+    },
+    {
       "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_installation/home_preparation/world/tests.rs",
       "test": "domain_computation::primary_graph::application_installation::home_preparation::world::tests::refused_home_world_attachment_retains_nonempty_provider_instances",
       "constructors": [
@@ -350,230 +859,6 @@
       "private_subject": "Uses pub(crate) rollback_created_nodes to prove that a graph returned to empty still lacks untouched producer origin; seals via pub(crate) owner_port_slots and invokes the existing private advance_exact helper on the original owner cell to prove stale recorded-root refusal. Exporting these mutations or replacing them with public descriptor comparisons would weaken the owner proof."
     },
     {
-      "constructors": [
-        "worth_execution::ExecutionRequest::<factory>",
-        "worth_execution::ExecutionRequest::serial",
-        "worth_execution::SerialRequest::<factory>",
-        "worth_execution::SerialRequest::from_memory",
-        "worth_relational::RelationalRuntime::<factory>",
-        "worth_runtime_bridge::RuntimeBridge::<factory>",
-        "worth_runtime_bridge::RuntimeBridgeRelationalSource::<factory>",
-        "worth_runtime_bridge::facade::RuntimeBridgeRelationalSource::for_graph_role",
-        "worth_signal::SignalGraph::<factory>",
-        "worth_signal::facade::SignalGraph::new"
-      ],
-      "source": "crates/worth-runtime-world/src/lifecycle/owner/branch_service/currentness_pair_tests.rs",
-      "test": "lifecycle::owner::branch_service::currentness_pair_tests::pair_currentness_locks_both_retirement_cells_only_through_installation",
-      "audit": "Coordinator exact incoming-World private-owner placement ruling, 2026-10-30; minimal unit-owner tests retain their actual setup factory roots only.",
-      "private_subject": "Private branch-cell writer exclusion in both lock orders and duplicate-cell case, original custody address, lifecycle ordinal, and active-operation last-release count; no public test door added."
-    },
-    {
-      "constructors": [
-        "worth_execution::ExecutionRequest::<factory>",
-        "worth_execution::ExecutionRequest::serial",
-        "worth_execution::SerialRequest::<factory>",
-        "worth_execution::SerialRequest::from_memory",
-        "worth_relational::RelationalRuntime::<factory>",
-        "worth_runtime_bridge::RuntimeBridge::<factory>",
-        "worth_runtime_bridge::RuntimeBridgeRelationalSource::<factory>",
-        "worth_runtime_bridge::facade::RuntimeBridgeRelationalSource::for_graph_role",
-        "worth_signal::SignalGraph::<factory>",
-        "worth_signal::facade::SignalGraph::new"
-      ],
-      "source": "crates/worth-runtime-world/src/lifecycle/owner/branch_service/currentness_pair_tests.rs",
-      "test": "lifecycle::owner::branch_service::currentness_pair_tests::pair_currentness_returns_identical_custody_when_candidate_retires_after_admission",
-      "audit": "Coordinator exact incoming-World private-owner placement ruling, 2026-10-30; minimal unit-owner tests retain their actual setup factory roots only.",
-      "private_subject": "Private branch-cell writer exclusion in both lock orders and duplicate-cell case, original custody address, lifecycle ordinal, and active-operation last-release count; no public test door added."
-    },
-    {
-      "constructors": [
-        "worth_execution::ExecutionRequest::<factory>",
-        "worth_execution::ExecutionRequest::serial",
-        "worth_execution::SerialRequest::<factory>",
-        "worth_execution::SerialRequest::from_memory",
-        "worth_relational::RelationalRuntime::<factory>",
-        "worth_runtime_bridge::RuntimeBridge::<factory>",
-        "worth_runtime_bridge::RuntimeBridgeRelationalSource::<factory>",
-        "worth_runtime_bridge::facade::RuntimeBridgeRelationalSource::for_graph_role",
-        "worth_signal::SignalGraph::<factory>",
-        "worth_signal::facade::SignalGraph::new"
-      ],
-      "source": "crates/worth-runtime-world/src/lifecycle/owner/branch_service/reference_description_tests.rs",
-      "test": "lifecycle::owner::branch_service::reference_description_tests::stored_reference_description_refuses_retirement_and_same_name_recreation",
-      "audit": "Coordinator exact incoming-World private-owner placement ruling, 2026-10-30; minimal unit-owner tests retain their actual setup factory roots only.",
-      "private_subject": "Private branch-cell writer exclusion in both lock orders and duplicate-cell case, original custody address, lifecycle ordinal, and active-operation last-release count; no public test door added."
-    },
-    {
-      "constructors": [
-        "worth_execution::ExecutionRequest::<factory>",
-        "worth_execution::ExecutionRequest::serial",
-        "worth_execution::SerialRequest::<factory>",
-        "worth_execution::SerialRequest::from_memory"
-      ],
-      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/product_branch_creation_recovery/creation_release.rs",
-      "test": "domain_computation::primary_graph::tests::product_branch_creation_recovery::creation_release::creation_release_retains_live_recovery_and_defers_actual_owner_cleanup",
-      "audit": "Private-logic source audit under the existing ratchet rule, 2026-10-30; only the newly observed original Execution request constructors are admitted.",
-      "private_subject": "Creation recovery wrapper and genuine deferred owner cleanup: reaches the private installed primary graph/integration runtime to hold an actual fork operation, then proves the native cleanup receipt and last release. Moving it would require exposing private runtime access or weakening the control observation."
-    },
-    {
-      "source": "crates/worth-relational/src/tests/durability/contracts/derived_index_checkpoint/artifact_affinity.rs",
-      "test": "tests::durability::contracts::derived_index_checkpoint::artifact_affinity::legacy_index_affinity_is_checked_before_replacing_a_live_recovery_target",
-      "constructors": [
-        "worth_execution::ExecutionRequest::serial",
-        "durable_runtime_with_test_schema"
-      ],
-      "audit": "Exact private-owner source placement reviewed under all three QA skills; public journeys migrated to existing courts, 2026-10-30.",
-      "private_subject": "Private derived-index checkpoint transport/readmission: exact legacy index affinity before replacing a live target, and admitted envelope artifacts before installation. Public retirement journeys have moved to their court."
-    },
-    {
-      "source": "crates/worth-relational/src/tests/durability/contracts/derived_index_checkpoint/artifact_affinity.rs",
-      "test": "tests::durability::contracts::derived_index_checkpoint::artifact_affinity::envelope_index_affinity_requires_admission_before_installation",
-      "constructors": [
-        "worth_execution::ExecutionRequest::serial",
-        "durable_runtime_with_test_schema"
-      ],
-      "audit": "Exact private-owner source placement reviewed under all three QA skills; public journeys migrated to existing courts, 2026-10-30.",
-      "private_subject": "Private derived-index checkpoint transport/readmission: exact legacy index affinity before replacing a live target, and admitted envelope artifacts before installation. Public retirement journeys have moved to their court."
-    },
-    {
-      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/conditional/output_readiness_contract/typed/tests/scalar.rs",
-      "test": "domain_computation::primary_graph::application_contribution::conditional::output_readiness_contract::typed::tests::scalar::scalar_readiness_uses_exact_declared_and_installed_binding",
-      "constructors": [
-        "WorthQueryInstalledPackageIndex::build"
-      ],
-      "audit": "Exact private-owner source placement reviewed under all three QA skills; public journeys migrated to existing courts, 2026-10-30.",
-      "private_subject": "Private FieldExpectation declaration and seal, exact aspect/native binding, and delivery ordinal; public readback cannot construct substituted owner fields."
-    },
-    {
-      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/registry/tests/output_equivalence.rs",
-      "test": "domain_computation::primary_graph::application_contribution::producer::registry::tests::output_equivalence::installed_output_equivalence_binds_field_shape_revision_role_and_opt_in",
-      "constructors": [
-        "WorthQueryInstalledPackageIndex::build"
-      ],
-      "audit": "Exact private-owner source placement reviewed under all three QA skills; public journeys migrated to existing courts, 2026-10-30.",
-      "private_subject": "Private DeclaredProducerBinding and InstalledProducerEdition seals: shape/revision/role opt-in identity, missing sibling field, and unsealed/substituted equivalence. Uses installed declarations as setup, not a consumer journey."
-    },
-    {
-      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/registry/tests/output_equivalence.rs",
-      "test": "domain_computation::primary_graph::application_contribution::producer::registry::tests::output_equivalence::missing_output_field_refuses_instead_of_substituting_its_sibling",
-      "constructors": [
-        "WorthQueryInstalledPackageIndex::build"
-      ],
-      "audit": "Exact private-owner source placement reviewed under all three QA skills; public journeys migrated to existing courts, 2026-10-30.",
-      "private_subject": "Private DeclaredProducerBinding and InstalledProducerEdition seals: shape/revision/role opt-in identity, missing sibling field, and unsealed/substituted equivalence. Uses installed declarations as setup, not a consumer journey."
-    },
-    {
-      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/registry/tests/output_equivalence.rs",
-      "test": "domain_computation::primary_graph::application_contribution::producer::registry::tests::output_equivalence::edition_refuses_unsealed_or_substituted_output_equivalence",
-      "constructors": [
-        "WorthQueryInstalledPackageIndex::build"
-      ],
-      "audit": "Exact private-owner source placement reviewed under all three QA skills; public journeys migrated to existing courts, 2026-10-30.",
-      "private_subject": "Private DeclaredProducerBinding and InstalledProducerEdition seals: shape/revision/role opt-in identity, missing sibling field, and unsealed/substituted equivalence. Uses installed declarations as setup, not a consumer journey."
-    },
-    {
-      "source": "workspaces/worth-query/crates/worth-query-installation/src/application_operation/contracts/graph_touches/tests.rs",
-      "test": "application_operation::contracts::graph_touches::tests::installed_parent_removal_readmission_requires_complete_same_binding_native_reads",
-      "constructors": [
-        "WorthQueryInstalledPackageIndex::build"
-      ],
-      "audit": "Exact private-owner source placement reviewed under all three QA skills; public journeys migrated to existing courts, 2026-10-30.",
-      "private_subject": "Private install_portable_graph_touches readmission checks complete same-binding Native reads, real RemoveAspect and NotRequired/foreign binding counterexamples."
-    },
-    {
-      "source": "workspaces/worth-query/crates/worth-query-installation/src/application_schema/native_contract/compilation/scalar_aspect/tests/installed_read_scope.rs",
-      "test": "application_schema::native_contract::compilation::scalar_aspect::tests::explicit_scalar_storage_preserves_binding_and_refuses_extra_or_optional_children",
-      "constructors": [
-        "WorthQueryInstalledPackageIndex::build"
-      ],
-      "audit": "Exact private-owner source placement reviewed under all three QA skills; public journeys migrated to existing courts, 2026-10-30.",
-      "private_subject": "Private portable native-contract and operation-contract compilation: scalar whole-mask versus struct exact field, and exact compiled operation projection scope."
-    },
-    {
-      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/admitted_capture/retained_stage/tests.rs",
-      "test": "domain_computation::primary_graph::admitted_capture::retained_stage::tests::original_retained_capture_preserves_live_backing_through_success_and_refusal",
-      "constructors": [
-        "worth_execution::ExecutionRequest::serial",
-        "worth_execution::SerialRequest::from_memory"
-      ],
-      "audit": "Exact private-owner source placement reviewed under all three QA skills; public journeys migrated to existing courts, 2026-10-30.",
-      "private_subject": "Private retained capture phase with real request/frame/two-copy reservations: second-copy refusal must precede clone and preserve live original backing; no installed application world."
-    },
-    {
-      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/causal_inspection/application_inspection/admission/materialization/tests.rs",
-      "test": "domain_computation::primary_graph::causal_inspection::application_inspection::admission::materialization::tests::real_report_refusal_preserves_original_payer_until_owned_denial_closes",
-      "constructors": [
-        "worth_execution::ExecutionAuthority::serial"
-      ],
-      "audit": "Exact private-owner source placement reviewed under all three QA skills; public journeys migrated to existing courts, 2026-10-30.",
-      "private_subject": "Private post-check materialization boundary: fill the actual original lease after read.check, refuse report allocation, and keep the original payer until owned denial closes."
-    },
-    {
-      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/causal_inspection/application_inspection/admission/publication_tests.rs",
-      "test": "domain_computation::primary_graph::causal_inspection::application_inspection::admission::publication_tests::cancelled_after_consuming_completion_cannot_publish_and_keeps_original_payer",
-      "constructors": [
-        "worth_execution::ExecutionAuthority::serial"
-      ],
-      "audit": "Exact private-owner source placement reviewed under all three QA skills; public journeys migrated to existing courts, 2026-10-30.",
-      "private_subject": "Private consuming terminal completion followed by cancellation before publication; receiver scope/subject/governance affinity and exact payer release require owner-only phase values."
-    },
-    {
-      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/causal_inspection/application_inspection/admission/publication_tests/affinity.rs",
-      "test": "domain_computation::primary_graph::causal_inspection::application_inspection::admission::publication_tests::cancelled_after_consuming_completion_cannot_publish_and_keeps_original_payer",
-      "constructors": [
-        "borrowed original &worth_execution::ExecutionRequest; no new request factory"
-      ],
-      "audit": "Exact private-owner source placement reviewed under all three QA skills; public journeys migrated to existing courts, 2026-10-30.",
-      "private_subject": "Exact helper for the private post-completion publication test: session target, subject and governance affinity. No public test door or ordinary consumer case is retained."
-    },
-    {
-      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/causal_inspection/application_inspection/admission/rich/tests.rs",
-      "test": "domain_computation::primary_graph::causal_inspection::application_inspection::admission::rich::tests::separately_admitted_rich_body_cannot_replace_scope_or_requested_families",
-      "constructors": [
-        "installed_inspection_capability_world"
-      ],
-      "audit": "Exact private-owner source placement reviewed under all three QA skills; public journeys migrated to existing courts, 2026-10-30.",
-      "private_subject": "Private rich-body and family seals from two independently admitted sessions: substitution must be rejected by the completed receiver. Public rich journeys live in courts."
-    },
-    {
-      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/causal_inspection/application_inspection/tests/scope_replacement.rs",
-      "test": "domain_computation::primary_graph::causal_inspection::application_inspection::scope_replacement::same_scope_reused_slot_cannot_inherit_original_observation_generation",
-      "constructors": [
-        "installed_authorization_world"
-      ],
-      "audit": "Exact private-owner source placement reviewed under all three QA skills; public journeys migrated to existing courts, 2026-10-30.",
-      "private_subject": "Private reclamation setup forces the identical physical storage slot with a strictly newer generation, then checks old-original denial and fresh-original success. The public full-ID replacement journey cannot force or certify actual slot reuse."
-    },
-    {
-      "source": "crates/worth-runtime-bridge/src/builder/tests/correspondence/conditional_compatibility/source_packet_affinity/causal_retention.rs",
-      "test": "builder::tests::correspondence::conditional_compatibility::source_packet_affinity::causal_retention::envelope_private_associations_retain_only_the_original_native_observation",
-      "constructors": [
-        "worth_execution::ExecutionRequest::serial",
-        "RuntimeBridgeBuilder::build"
-      ],
-      "audit": "Exact private-owner source placement reviewed under all three QA skills; public journeys migrated to existing courts, 2026-10-30.",
-      "private_subject": "Private destructive performed-receipt consumption is single-use and preserves exact executed Signal target; Bridge-owned external evidence associations admit genuine original envelopes and reject foreign/native-less/mismatched association substitutions. Ordinary reentry and reader lifecycle moved to public court."
-    },
-    {
-      "source": "crates/worth-runtime-bridge/src/builder/tests/correspondence/conditional_compatibility/source_packet_affinity/causal_retention/envelope.rs",
-      "test": "builder::tests::correspondence::conditional_compatibility::source_packet_affinity::causal_retention::envelope_private_associations_retain_only_the_original_native_observation",
-      "constructors": [
-        "RuntimeBridgeBuilder::build"
-      ],
-      "audit": "Exact private-owner source placement reviewed under all three QA skills; public journeys migrated to existing courts, 2026-10-30.",
-      "private_subject": "Exact private envelope helper: BridgeIdentityEvidence owner-only factories and query reference associations; malformed association and projection-only counterexamples cannot be constructed via consumer facades."
-    },
-    {
-      "source": "crates/worth-runtime-bridge/src/builder/tests/correspondence/conditional_compatibility/source_packet_affinity/causal_retention/history.rs",
-      "test": "builder::tests::correspondence::conditional_compatibility::source_packet_affinity::causal_retention::history::real_optional_capacity_denial_is_tolerated_but_request_stop_is_preserved",
-      "constructors": [
-        "worth_execution::ExecutionRequest::serial",
-        "worth_execution::SerialRequest::from_policy"
-      ],
-      "audit": "Exact private-owner source placement reviewed under all three QA skills; public journeys migrated to existing courts, 2026-10-30.",
-      "private_subject": "Direct private ConditionalExecutionHistory::capture consumes genuine executed Signal evidence; real optional capacity refusal is tolerated while cancellation remains a request stop. Ordinary eviction and owner-close journeys moved to public court."
-    },
-    {
       "source": "crates/worth-relational/src/branch/basis_registry/retirement_tests.rs",
       "test": "branch::basis_registry::retirement_tests::result_snapshot_cleanup_basis_registry_contention_keeps_original_lease",
       "constructors": [
@@ -849,19 +1134,6 @@
       ],
       "audit": "Coordinator exact private-owner placement against the fresh directory_query_preparation_source_review and query_preparation_pending_boundary_review approvals, 2026-10-31; only this helper and its one named authentic driver are admitted. The single baseline row is the actual observed ExecutionRequest class.",
       "private_subject": "Consumes the SAME genuine unprepared Query produced by the ordinary installed/authenticated program pipeline after the existing per-runtime cfg(test) fault is taken. Stages a real competing entry, invokes the production durable helper with that original work, and proves exact neutral refusal before any World constructor, winner Busy/Drift precedence and loser noninterference. The exact winning guard is disposed once before returning the opaque losing refusal. The changed intent is descriptive negative-test data, never authority. This is Memory owner-local early-admission evidence, not Directory publication or a general held-resource retry guarantee."
-    },
-    {
-      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/query_preparation_refusal.rs",
-      "test": "domain_computation::primary_graph::tests::application_attempt::query_preparation_refusal::genuine_unprepared_refusal_preserves_winner_and_allows_fresh_same_key",
-      "constructors": [
-        "installed_authorization_world(true)",
-        "authenticated_principal",
-        "resolved_account",
-        "admitted_program",
-        "compare_and_commit_application"
-      ],
-      "audit": "Coordinator exact private-owner placement against fresh reviewed Query proof source, 2026-10-31; existing installation, schema/bootstrap, authentication and real application operation admission produce the original Query. No new seed delegate, fixture visibility, production door or factory audience is added.",
-      "private_subject": "Schedules the existing cfg(test) DuplicateQueryPreparationSlot fault and observes its actual opaque terminal refusal, then retains it while a fresh same-key Memory operation commits one actual effect and an equivalent prepared replay returns the original result. Exact competing-store assertions stay in the private owner helper. Programs are genuinely admitted at their lawful pre-commit basis. The proof covers refusal before successor reservations; later retained physical reservations can still deny resources until disposal."
     },
     {
       "source": "workspaces/worth-store/crates/worth-store-application/src/tests/world_section/readmission.rs",
@@ -1374,455 +1646,6 @@
       ],
       "audit": "Root exact owner-child ruling: reuses the existing genuine durable Native fixture and original request. Private root/schema pointer and producer-input observations cannot be moved to an external court without adding authority/observer reach. No new Runtime factory, source replacement, recovered-authority constructor, Complete promotion or physical Closed claim. Real filesystem Store/Host composition is proved separately.",
       "private_subject": "Real selected Empty checkpoint is not fresh source evidence even with no canonical/transition tail."
-    },
-    {
-      "constructors": [
-        "ExecutionAuthority"
-      ],
-      "source": "crates/worth-execution/src/authority/lease/idle_backing_tests.rs",
-      "test": "authority::lease::idle_backing_tests::an_empty_tombstone_table_retires_even_when_reported_capacity_is_zero",
-      "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
-      "private_subject": "Private actual ledger/tombstone allocation, original reservation retention, live worker and last-release counters."
-    },
-    {
-      "constructors": [
-        "ExecutionAuthority"
-      ],
-      "source": "crates/worth-execution/src/authority/lease/idle_backing_tests.rs",
-      "test": "authority::lease::idle_backing_tests::retained_root_survives_child_churn_until_the_final_hold_releases_backing",
-      "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
-      "private_subject": "Private actual ledger/tombstone allocation, original reservation retention, live worker and last-release counters."
-    },
-    {
-      "constructors": [
-        "ExecutionAuthority"
-      ],
-      "source": "crates/worth-execution/src/authority/lease/idle_backing_tests.rs",
-      "test": "authority::lease::idle_backing_tests::zero_rebind_releases_only_idle_backing_and_preserves_live_workers",
-      "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
-      "private_subject": "Private actual ledger/tombstone allocation, original reservation retention, live worker and last-release counters."
-    },
-    {
-      "constructors": [
-        "ExecutionRequest",
-        "SerialRequest"
-      ],
-      "source": "crates/worth-execution/src/backend/meter/work_loan/tests.rs",
-      "test": "backend::meter::work_loan::tests::work_loan_charges_current_descendant_once_and_closes_at_scope_exit",
-      "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
-      "private_subject": "Private saved RunLimits and closed issuing affinity, original current descendant meter, overflow and cancellation stops."
-    },
-    {
-      "constructors": [
-        "ExecutionRequest",
-        "SerialRequest"
-      ],
-      "source": "crates/worth-execution/src/backend/meter/work_loan/tests.rs",
-      "test": "backend::meter::work_loan::tests::work_loan_preserves_mixed_ceiling_overflow_and_parent_cancellation",
-      "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
-      "private_subject": "Private saved RunLimits and closed issuing affinity, original current descendant meter, overflow and cancellation stops."
-    },
-    {
-      "constructors": [
-        "ExecutionRequest",
-        "SerialRequest"
-      ],
-      "source": "crates/worth-execution/src/backend/meter/work_loan/tests.rs",
-      "test": "backend::meter::work_loan::tests::work_loan_uses_genuine_framework_worker_lineage_and_original_limits",
-      "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
-      "private_subject": "Private saved RunLimits and closed issuing affinity, original current descendant meter, overflow and cancellation stops."
-    },
-    {
-      "constructors": [
-        "ExecutionRequest",
-        "SerialRequest"
-      ],
-      "source": "crates/worth-relational/src/branch/coordination/managed_fork_cleanup.rs",
-      "test": "managed_fork_refusal_and_success_drop_lookup_outside_native_coordination",
-      "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
-      "private_subject": "Private Native coordination guard exclusion and actual fork lookup destruction on refusal/success."
-    },
-    {
-      "constructors": [
-        "ExecutionRequest",
-        "SerialRequest"
-      ],
-      "source": "crates/worth-relational/src/mvcc/publication/companion/cell/managed_source/cache_retirement.rs",
-      "test": "managed_cache_rebuild_stale_entry_refuses_without_dropping_candidate_under_guards",
-      "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
-      "private_subject": "Private cell/core lock exclusion and last opaque payload destruction during retirement/stale replacement refusal."
-    },
-    {
-      "constructors": [
-        "ExecutionRequest",
-        "SerialRequest"
-      ],
-      "source": "crates/worth-relational/src/mvcc/publication/companion/cell/managed_source/cache_retirement.rs",
-      "test": "managed_cache_retirement_defers_last_opaque_drop_beyond_native_guards",
-      "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
-      "private_subject": "Private cell/core lock exclusion and last opaque payload destruction during retirement/stale replacement refusal."
-    },
-    {
-      "constructors": [
-        "ExecutionRequest",
-        "SerialRequest"
-      ],
-      "source": "crates/worth-relational/src/mvcc/publication/companion/cell/managed_source/cache_retirement/retained_affinity.rs",
-      "test": "managed_cache_retained_affinity_survives_deleted_branch_cell_without_currentness",
-      "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
-      "private_subject": "Private retained cell/root custody after actual Native branch deletion, distinct from currentness."
-    },
-    {
-      "constructors": [
-        "ExecutionRequest",
-        "SerialRequest"
-      ],
-      "source": "crates/worth-relational/src/mvcc/publication/companion/cell/managed_source/correspondence/tests.rs",
-      "test": "managed_source_correspondence_receiver_binds_exact_selected_image_and_unavailable_payload",
-      "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
-      "private_subject": "Private correspondence binding to actual basis.inner.root and registration; unavailable payload retains exact selected image."
-    },
-    {
-      "constructors": [
-        "ExecutionRequest",
-        "RelationalRuntime",
-        "SerialRequest"
-      ],
-      "source": "crates/worth-relational/src/mvcc/publication/companion/cell/public_cache/tests.rs",
-      "test": "public_cache_cancelled_preflight_preserves_old_material_and_successful_twin_is_cold",
-      "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
-      "private_subject": "Private per-image cache directory/core/epoch and opaque payload final destruction outside Native guards."
-    },
-    {
-      "constructors": [
-        "ExecutionRequest",
-        "RelationalRuntime",
-        "SerialRequest"
-      ],
-      "source": "crates/worth-relational/src/mvcc/publication/companion/cell/public_cache/tests.rs",
-      "test": "public_cache_native_successor_is_cold_and_selected_predecessor_keeps_its_own_slot",
-      "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
-      "private_subject": "Private per-image cache directory/core/epoch and opaque payload final destruction outside Native guards."
-    },
-    {
-      "constructors": [
-        "ExecutionRequest",
-        "RelationalRuntime",
-        "SerialRequest"
-      ],
-      "source": "crates/worth-relational/src/mvcc/publication/companion/cell/public_cache/tests.rs",
-      "test": "public_cache_retirement_defers_opaque_drop_and_releases_original_backing",
-      "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
-      "private_subject": "Private per-image cache directory/core/epoch and opaque payload final destruction outside Native guards."
-    },
-    {
-      "constructors": [
-        "ExecutionRequest",
-        "SerialRequest"
-      ],
-      "source": "crates/worth-relational/src/validation/candidate_source/image/eviction/tests.rs",
-      "test": "managed_cache_retirement_defers_last_opaque_drop_beyond_directory_guard",
-      "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
-      "private_subject": "Private roots.try_lock exclusion during final opaque value destruction."
-    },
-    {
-      "constructors": [
-        "SerialRequest"
-      ],
-      "source": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/lifecycle/registration.rs",
-      "test": "distinct_parent_bindings_to_one_query_keep_independent_registrations",
-      "audit": "Query 9.19 master alignment external-consumer-fixture placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
-      "private_subject": "Established external leaf consumer-entry/compiled-example owner, public integration evidence (not private logic): Public indexed registration work and distinct installed Parent association, with original SDK invoices."
-    },
-    {
-      "constructors": [
-        "SerialRequest"
-      ],
-      "source": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/lifecycle/registration.rs",
-      "test": "retained_registrations_have_indexed_query_and_repeated_open_work",
-      "audit": "Query 9.19 master alignment external-consumer-fixture placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
-      "private_subject": "Established external leaf consumer-entry/compiled-example owner, public integration evidence (not private logic): Public indexed registration work and distinct installed Parent association, with original SDK invoices."
-    },
-    {
-      "constructors": [
-        "ExecutionResourceLease"
-      ],
-      "source": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/court.rs",
-      "test": "public_maintained_prefix_prepares_unopened_scope_before_rule_and_publishes_matching_roots",
-      "audit": "Query 9.19 master alignment external-consumer-fixture placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
-      "private_subject": "Established external leaf consumer-entry/compiled-example owner, public integration evidence (not private logic): Public installed maintained-prefix refusal/publication/retained aliases under the original lease."
-    },
-    {
-      "constructors": [
-        "SerialRequest"
-      ],
-      "source": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/court/prefix_growth.rs",
-      "test": "prefix_width_growth_keeps_local_edits_bounded_beside_unrelated_source_names",
-      "audit": "Exact Query 9.19 public prefix-width invoice placement approved by independent qa-tests reviewer, 2026-10-30; plans/WORTH-query/milestone-9.19-prefix-width-qualification-plan.md.",
-      "private_subject": "No private runtime subject or synthetic Source: original SDK work meter around actual installed batch authoring, cold rebuild, public queries and two-scope candidate refusal/publication. Authored independent census and sparse oracle; separate accepted reports, no reconstructed cost ledger."
-    },
-    {
-      "constructors": [
-        "SerialRequest"
-      ],
-      "source": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/court/prefix_growth.rs",
-      "test": "real_prefix_width_small_batches_and_sparse_queries_preserve_both_roots",
-      "audit": "Exact Query 9.19 public prefix-width invoice placement approved by independent qa-tests reviewer, 2026-10-30; plans/WORTH-query/milestone-9.19-prefix-width-qualification-plan.md.",
-      "private_subject": "No private runtime subject or synthetic Source: original SDK work meter around actual installed batch authoring, cold rebuild, public queries and two-scope candidate refusal/publication. Authored independent census and sparse oracle; separate accepted reports, no reconstructed cost ledger."
-    },
-    {
-      "constructors": [
-        "SerialRequest"
-      ],
-      "source": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/court/summary_support.rs",
-      "test": "checked_summary_confines_row_resolution_to_the_actual_region",
-      "audit": "Exact Query 9.19 public repeated-extrema invoice placement approved by independent qa-tests reviewer, 2026-10-30; plans/WORTH-query/milestone-9.19-summary-ancestry-reuse-plan.md.",
-      "private_subject": "No private runtime subject or synthetic Source artifact: original SDK work-meter root around genuine installed public queries, with32/64 repeated summary operations within each actual Source8 query. Same supported integration observation pattern as geometry growth."
-    },
-    {
-      "constructors": [
-        "SerialRequest"
-      ],
-      "source": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/geometry/court/growth.rs",
-      "test": "geometry_chain_growth_uses_real_source_and_original_sdk_invoice",
-      "audit": "Query 9.19 master alignment external-consumer-fixture placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
-      "private_subject": "Established external leaf consumer-entry/compiled-example owner, public integration evidence (not private logic): Public actual 1k/2k/50k geometry Source cost qualification with whole original SDK invoices."
-    },
-    {
-      "constructors": [
-        "SerialRequest"
-      ],
-      "source": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/geometry/court/growth/work_attribution.rs",
-      "test": "invoice",
-      "audit": "Query 9.19 original-work diagnostic external-consumer-fixture placement ruling by independent qa-tests reviewer, 2026-10-30; plans/WORTH-query/milestone-9.19-phase3-work-attribution-plan.md.",
-      "private_subject": "Established external leaf consumer-entry owner, public integration evidence, not private logic: same actual original SDK mutation invoice plus root-qualified raw required-work callback windows and separate accepted total. No synthetic Source, graph or authority."
-    },
-    {
-      "constructors": [
-        "WorthQueryProgramApplicationRuntime"
-      ],
-      "source": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/maintained/host.rs",
-      "test": "module_setup",
-      "audit": "Query 9.19 master alignment external-consumer-fixture placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
-      "private_subject": "Established external leaf consumer-entry/compiled-example owner, public integration evidence (not private logic): Compiled consumer contribution/install root for genuine maintained Source programs."
-    },
-    {
-      "constructors": [
-        "WorthQueryProgramApplicationRuntime"
-      ],
-      "source": "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/refusing/host.rs",
-      "test": "module_setup",
-      "audit": "Query 9.19 master alignment external-consumer-fixture placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
-      "private_subject": "Established external leaf consumer-entry/compiled-example owner, public integration evidence (not private logic): Compiled consumer contribution/install root for explicit refusal of cold Source reconstruction."
-    },
-    {
-      "constructors": [
-        "ExecutionRequest",
-        "SerialRequest",
-        "WorthQueryProductRuntime"
-      ],
-      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/execution_runtime/product_world/owner_cleanup/registry/retirement_tests.rs",
-      "test": "managed_source_retirement_completed_cleanup_survives_actual_final_poll_stop",
-      "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
-      "private_subject": "Private cleanup record and outer/entry guard exclusion, final request poll after irreversible cleanup."
-    },
-    {
-      "constructors": [
-        "ExecutionRequest",
-        "SerialRequest",
-        "WorthQueryProductRuntime"
-      ],
-      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/execution_runtime/product_world/owner_cleanup/registry/retirement_tests.rs",
-      "test": "managed_source_retirement_partial_failure_notifies_only_beyond_outer_and_entry_guards",
-      "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
-      "private_subject": "Private cleanup record and outer/entry guard exclusion, final request poll after irreversible cleanup."
-    },
-    {
-      "constructors": [
-        "ExecutionRequest",
-        "SerialRequest"
-      ],
-      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/derived_view/registry/index_directory/tests.rs",
-      "test": "domain_computation::primary_graph::application_query::derived_view::registry::index_directory::tests::registration_memory_refusal_preserves_old_pair_and_funded_retry_releases_backing",
-      "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
-      "private_subject": "Private paired route/id maps, zero-memory admission before mutation, original payer and backing-last-release; installed fixture only issues genuine routing identities."
-    },
-    {
-      "constructors": [
-        "ExecutionRequest",
-        "SerialRequest"
-      ],
-      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/derived_view/registry/managed_source/fork/tests.rs",
-      "test": "managed_fork_cancelled_lookup_releases_the_actual_registry_entry",
-      "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
-      "private_subject": "Private actual source_branches entry and Weak allocation retirement after real Native fork cancellation."
-    },
-    {
-      "constructors": [
-        "ExecutionRequest",
-        "SerialRequest"
-      ],
-      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/managed_index/nodes/pages/edit/tests.rs",
-      "test": "working_page_batch_refusal_preserves_predecessor_and_releases_partial_seal",
-      "audit": "Query 9.19 directory-batch private-owner placement ruling by independent qa-tests reviewer, 2026-10-31; plans/WORTH-query/milestone-9.19-directory-batch-plan.md.",
-      "private_subject": "Original SDK work refusal after actual partial PageEdit seal progress, unchanged predecessor/sibling, scratch-grant release and funded same-data fresh-request retry; no synthetic Source or publication authority."
-    },
-    {
-      "constructors": [
-        "ExecutionRequest",
-        "SerialRequest"
-      ],
-      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/managed_index/nodes/pages/edit/tests.rs",
-      "test": "working_page_batch_seals_shared_directory_ancestors_once",
-      "audit": "Query 9.19 directory-batch private-owner placement ruling by independent qa-tests reviewer, 2026-10-31; plans/WORTH-query/milestone-9.19-directory-batch-plan.md.",
-      "private_subject": "Actual private PageEdit dense/sparse union-of-path allocation counts, original SDK seal invoices, untouched Arc cells, tombstones, empty growth and old/sibling isolation; no Source, graph identity or read authority synthesized."
-    },
-    {
-      "constructors": [
-        "ExecutionRequest",
-        "SerialRequest"
-      ],
-      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/managed_index/nodes/pages/edit/tests.rs",
-      "test": "working_page_original_invoice_tracks_touched_pages_instead_of_copying_every_write",
-      "audit": "Query 9.19 working-page cache private-owner placement ruling by independent qa-tests reviewer, 2026-10-30; plans/WORTH-query/milestone-9.19-phase3-working-pages-plan.md.",
-      "private_subject": "Actual private PageEdit original SDK work for repeated writes versus distinct touched physical pages; no semantic Source or graph authority synthesized."
-    },
-    {
-      "constructors": [
-        "ExecutionRequest",
-        "SerialRequest"
-      ],
-      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/managed_index/nodes/pages/edit/tests.rs",
-      "test": "working_page_reuses_initialized_allocation_and_preserves_tombstones",
-      "audit": "Query 9.19 working-page cache private-owner placement ruling by independent qa-tests reviewer, 2026-10-30; plans/WORTH-query/milestone-9.19-phase3-working-pages-plan.md.",
-      "private_subject": "Private actual WorkingPage allocation identity, one touched page, tombstone precedence, consuming seal, unchanged sibling page and final original grant release; no Source or audience authority synthesized."
-    },
-    {
-      "constructors": [
-        "ExecutionRequest",
-        "SerialRequest"
-      ],
-      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/managed_index/nodes/pages/tests.rs",
-      "test": "isolated_node_pages_share_unchanged_backing_and_release_staged_edits",
-      "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
-      "private_subject": "Private physical page lineage, unchanged backing pointer identity, staged-page last release and original controlled stop; no graph authority synthesized."
-    },
-    {
-      "constructors": [
-        "ExecutionRequest",
-        "SerialRequest"
-      ],
-      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/managed_index/nodes/pages/tests.rs",
-      "test": "original_request_stop_refuses_node_page_handoff_and_releases_staged_pages",
-      "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
-      "private_subject": "Private physical page lineage, unchanged backing pointer identity, staged-page last release and original controlled stop; no graph authority synthesized."
-    },
-    {
-      "constructors": [
-        "ExecutionRequest"
-      ],
-      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/managed_index/nodes/pages/tests/churn.rs",
-      "test": "compressed_live_pages_skip_historical_coordinate_gaps_and_collapse_retirements",
-      "audit": "Query 9.19 live-directory private-owner placement approved by independent qa-tests reviewer, 2026-10-31; plans/WORTH-query/milestone-9.19-live-directory-plan.md.",
-      "private_subject": "Physical compressed-directory fixed-live-page gap invoices/memory, maximum/nonzero page prefixes, retirement collapse, missing-page rejection and paid old/sibling Arc isolation; no Source or qualified root."
-    },
-    {
-      "constructors": [
-        "ExecutionRequest"
-      ],
-      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/managed_index/nodes/pages/tests/churn.rs",
-      "test": "genuine_node_churn_keeps_live_backing_bounded_without_reusing_issued_ids",
-      "audit": "Query 9.19 live-directory private-owner placement approved by independent qa-tests reviewer, 2026-10-31; plans/WORTH-query/milestone-9.19-live-directory-plan.md.",
-      "private_subject": "Actual descriptive NodeLineage/NodeWriter4096-issue churn with two live nodes, old and sibling IDs, original SDK final lookup/edit work and grant release; existing parent reserves namespace, no Source/read authority synthesized."
-    },
-    {
-      "constructors": [
-        "ExecutionRequest",
-        "SerialRequest"
-      ],
-      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/managed_index/source_structure/ancestry/tests.rs",
-      "test": "summary_membership_cache_hits_honor_original_stops_and_same_graph_retries",
-      "audit": "Exact Query 9.19 bounded region-membership owner placement approved by independent qa-tests reviewer, 2026-10-31; plans/WORTH-query/milestone-9.19-summary-membership-cost-repair-plan.md.",
-      "private_subject": "Numeric immutable parent relations and actual original SDK controls only; facts obtained by the real bounded helper, no fabricated SourceTree, Slot, Native identity or cached membership. Fixed4KiB scratch, distinct receiver/eviction behavior, actual miss/hit stops and same-graph fresh retry replace retired Ready/jump ownership claims."
-    },
-    {
-      "constructors": [
-        "ExecutionRequest",
-        "SerialRequest"
-      ],
-      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/managed_index/source_structure/ancestry/tests.rs",
-      "test": "summary_membership_cache_reuses_region_facts_with_bounded_original_scratch",
-      "audit": "Exact Query 9.19 bounded region-membership owner placement approved by independent qa-tests reviewer, 2026-10-31; plans/WORTH-query/milestone-9.19-summary-membership-cost-repair-plan.md.",
-      "private_subject": "Numeric immutable parent relations and actual original SDK controls only; facts obtained by the real bounded helper, no fabricated SourceTree, Slot, Native identity or cached membership. Fixed4KiB scratch, distinct receiver/eviction behavior, actual miss/hit stops and same-graph fresh retry replace retired Ready/jump ownership claims."
-    },
-    {
-      "constructors": [
-        "ExecutionRequest",
-        "SerialRequest"
-      ],
-      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/managed_index/source_structure/ancestry/tests.rs",
-      "test": "summary_membership_cache_separates_regions_and_keeps_saturated_fallback_lawful",
-      "audit": "Exact Query 9.19 bounded region-membership owner placement approved by independent qa-tests reviewer, 2026-10-31; plans/WORTH-query/milestone-9.19-summary-membership-cost-repair-plan.md.",
-      "private_subject": "Numeric immutable parent relations and actual original SDK controls only; facts obtained by the real bounded helper, no fabricated SourceTree, Slot, Native identity or cached membership. Fixed4KiB scratch, distinct receiver/eviction behavior, actual miss/hit stops and same-graph fresh retry replace retired Ready/jump ownership claims."
-    },
-    {
-      "constructors": [
-        "ExecutionRequest",
-        "SerialRequest"
-      ],
-      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/managed_index/source_structure/cold/tests.rs",
-      "test": "cold_parent_dfs_refuses_self_and_disconnected_cycles",
-      "audit": "Exact Query 9.19 private cold-traversal owner placement approved by independent qa-tests reviewer, 2026-10-30; plans/WORTH-query/milestone-9.19-cold-validation-plan.md.",
-      "private_subject": "Descriptive integer parent topology and actual traversal callback counts through the private DFS with original SDK control/map funding. No SourceTree, SourceSlot, Native identity or qualified-root witness is fabricated; real public courts verify their actual adapter and publication boundaries."
-    },
-    {
-      "constructors": [
-        "ExecutionRequest",
-        "SerialRequest"
-      ],
-      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/managed_index/source_structure/cold/tests.rs",
-      "test": "cold_parent_dfs_releases_stopped_scratch_and_retries_with_fresh_request",
-      "audit": "Exact Query 9.19 private cold-traversal owner placement approved by independent qa-tests reviewer, 2026-10-30; plans/WORTH-query/milestone-9.19-cold-validation-plan.md.",
-      "private_subject": "Descriptive integer parent topology and actual traversal callback counts through the private DFS with original SDK control/map funding. No SourceTree, SourceSlot, Native identity or qualified-root witness is fabricated; real public courts verify their actual adapter and publication boundaries."
-    },
-    {
-      "constructors": [
-        "ExecutionRequest",
-        "SerialRequest"
-      ],
-      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/managed_index/source_structure/cold/tests.rs",
-      "test": "cold_parent_dfs_visits_sparse_chains_with_bounded_original_work",
-      "audit": "Exact Query 9.19 private cold-traversal owner placement approved by independent qa-tests reviewer, 2026-10-30; plans/WORTH-query/milestone-9.19-cold-validation-plan.md.",
-      "private_subject": "Descriptive integer parent topology and actual traversal callback counts through the private DFS with original SDK control/map funding. No SourceTree, SourceSlot, Native identity or qualified-root witness is fabricated; real public courts verify their actual adapter and publication boundaries."
-    },
-    {
-      "constructors": [
-        "ExecutionRequest"
-      ],
-      "source": "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/invariant_installation/schema_resolver/tests.rs",
-      "test": "typed_component_factory_requires_member_and_all_sources_in_reads_and_applicability",
-      "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
-      "private_subject": "Private typed resolver/lower scheduling and Source-read grant rejection; actual original request now supplied to lowering."
-    },
-    {
-      "constructors": [
-        "ExecutionRequest",
-        "SerialRequest"
-      ],
-      "source": "workspaces/worth-query/crates/worth-query-publication/src/application_entry/query/managed_index/completion/tests.rs",
-      "test": "managed_lifecycle_completed_cleanup_survives_the_actual_final_request_poll",
-      "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
-      "private_subject": "Private completed-effect merger preserves actual SDK final poll and distinguishes pre-effect refusal from completed cleanup."
-    },
-    {
-      "constructors": [
-        "ExecutionRequest",
-        "SerialRequest"
-      ],
-      "source": "workspaces/worth-query/crates/worth-query-publication/src/application_entry/query/managed_index/completion/tests.rs",
-      "test": "managed_lifecycle_pre_effect_interruption_never_becomes_completed_success",
-      "audit": "Query 9.19 master alignment private-owner placement ruling, 2026-10-30; plans/WORTH-query/milestone-9.19-master-alignment-plan.md.",
-      "private_subject": "Private completed-effect merger preserves actual SDK final poll and distinguishes pre-effect refusal from completed cleanup."
     }
   ]
 }

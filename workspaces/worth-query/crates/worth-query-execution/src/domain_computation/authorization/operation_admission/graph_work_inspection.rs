@@ -1,8 +1,6 @@
-use super::WorthQueryAdmittedApplicationOperation;
+use super::WorthQueryAdmittedOperation;
 
-impl<Schema, Operation, Input, Scope>
-    WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>
-{
+impl WorthQueryAdmittedOperation {
     pub(in crate::domain_computation) fn graph_work_session_identity(
         &self,
     ) -> crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity {
@@ -25,31 +23,24 @@ impl<Schema, Operation, Input, Scope>
         self.graph_work.retained_decision_facts()
     }
 
-    #[cfg(test)]
     pub(in crate::domain_computation) fn graph_work_runtime_ordinal(&self) -> u64 {
         self.graph_work.runtime_ordinal()
     }
 
-    #[cfg(test)]
-    pub(in crate::domain_computation) fn graph_work_principal_entity_id(
-        &self,
-    ) -> worth_relational::facade::identity::EntityId {
+    pub fn graph_work_principal_entity_id(&self) -> worth_relational::facade::identity::EntityId {
         self.graph_work.principal()
     }
 
-    #[cfg(test)]
     pub(in crate::domain_computation) fn graph_work_scope_entity_id(
         &self,
     ) -> Option<worth_relational::facade::identity::EntityId> {
         self.graph_work.entity_access_context()
     }
 
-    #[cfg(test)]
     pub(in crate::domain_computation) fn graph_work_capability_identity(&self) -> Option<[u8; 32]> {
         self.graph_work.capability_access_context()
     }
 
-    #[cfg(test)]
     pub(in crate::domain_computation) fn graph_work_provider(&self) -> &str {
         self.graph_work.provider()
     }

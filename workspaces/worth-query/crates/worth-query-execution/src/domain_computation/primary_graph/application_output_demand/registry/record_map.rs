@@ -5,7 +5,7 @@ use std::collections::BTreeMap;
 use std::ops::Bound::Excluded;
 use std::ops::Bound::Included;
 use std::ops::Bound::Unbounded;
-mod mutation;
+pub(crate) mod mutation;
 pub(super) use mutation::RecordMutation;
 // The two maps are private: insert/From populate both, remove/retain erase both,
 // and mutable row guards never expose keys or index membership. Thus every
@@ -13,19 +13,17 @@ pub(super) use mutation::RecordMutation;
 // coordinate. An iterator borrows the owner, excluding structural mutation.
 type Map = BTreeMap<WorthQueryOutputDemandKey, DemandRecord>;
 #[derive(Default)]
-pub(super) struct DemandRecords(Map, BTreeMap<
+pub struct DemandRecords(Map, BTreeMap<
     crate::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceCoordinate,
     std::collections::BTreeSet<WorthQueryOutputDemandKey>>,
     super::cleanup::ClosedCleanupQueue,
     super::publication_head::PublicationHeads,
-    #[cfg(test)] std::cell::Cell<u64>,
+    std::cell::Cell<u64>,
 );
 
 thread_local! { static WHOLE_ROWS: std::cell::Cell<Option<u64>> = const { std::cell::Cell::new(Some(0)) }; }
-#[cfg(test)]
 thread_local! { static OCCURRENCE_ROWS: std::cell::Cell<u64> = const { std::cell::Cell::new(0) }; }
-#[cfg(test)]
-pub(super) fn occurrence_rows_visited() -> u64 {
+pub fn occurrence_rows_visited() -> u64 {
     OCCURRENCE_ROWS.with(std::cell::Cell::get)
 }
 fn observe_row() {
@@ -37,12 +35,11 @@ fn observe_row() {
     }
     WHOLE_ROWS.with(|count| count.set(count.get().and_then(|prior| prior.checked_add(1))));
 }
-pub(super) fn whole_rows() -> Option<u64> {
+pub fn whole_rows() -> Option<u64> {
     WHOLE_ROWS.with(std::cell::Cell::get)
 }
 impl DemandRecords {
-    #[cfg(test)]
-    pub(super) fn occurrence_visits_for_test(&self) -> u64 {
+    pub fn occurrence_visits_for_test(&self) -> u64 {
         self.4.get()
     }
 
@@ -68,7 +65,6 @@ impl DemandRecords {
             keep
         });
     }
-    #[cfg(test)]
     pub(super) fn extend(
         &mut self,
         rows: impl IntoIterator<Item = (WorthQueryOutputDemandKey, DemandRecord)>,
@@ -83,11 +79,9 @@ impl DemandRecords {
             Default::default(),
             queue,
             Default::default(),
-            #[cfg(test)]
             Default::default(),
         )
     }
-    #[cfg(test)]
     pub(super) fn new() -> Self {
         Self::default()
     }
@@ -105,10 +99,7 @@ impl DemandRecords {
     pub(super) fn get(&self, key: &WorthQueryOutputDemandKey) -> Option<&DemandRecord> {
         self.0.get(key)
     }
-    pub(super) fn get_mut(
-        &mut self,
-        key: &WorthQueryOutputDemandKey,
-    ) -> Option<RecordMutation<'_>> {
+    pub fn get_mut(&mut self, key: &WorthQueryOutputDemandKey) -> Option<RecordMutation<'_>> {
         self.0.get_mut(key).map(RecordMutation::new)
     }
     pub(super) fn contains_key(&self, key: &WorthQueryOutputDemandKey) -> bool {
@@ -144,7 +135,6 @@ impl DemandRecords {
         }
         Some(row)
     }
-    #[cfg(test)]
     pub(super) fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
@@ -167,7 +157,6 @@ impl DemandRecords {
             .range((Included(key), Unbounded))
             .take_while(move |(other, _)| other.same_occurrence(key));
         let rows = before.chain(from);
-        #[cfg(test)]
         let rows = rows.inspect(|_| {
             self.4.set(self.4.get() + 1);
             OCCURRENCE_ROWS.with(|count| count.set(count.get() + 1));
@@ -229,7 +218,8 @@ mod observation {
     {
         #[doc(hidden)]
         pub fn registry_row_count_for_test(&self) -> usize {
-            self.output_demands
+            self.runtime
+                .output_demands
                 .state
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner)
@@ -243,9 +233,7 @@ mod observation {
     }
 
     impl DemandRecords {
-        pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn publication_count_for_test(
-            &self,
-        ) -> usize {
+        pub fn publication_count_for_test(&self) -> usize {
             self.3
                  .0
                 .values()
@@ -255,7 +243,7 @@ mod observation {
     }
 }
 
-pub(super) struct ObservedRows<I>(I);
+pub struct ObservedRows<I>(I);
 impl<I: Iterator> Iterator for ObservedRows<I> {
     type Item = I::Item;
     fn next(&mut self) -> Option<Self::Item> {
@@ -289,7 +277,7 @@ impl<'a> IntoIterator for &'a mut DemandRecords {
     }
 }
 
-pub(super) struct MutRows<I>(I);
+pub struct MutRows<I>(I);
 impl<'a, I: Iterator<Item = (&'a WorthQueryOutputDemandKey, &'a mut DemandRecord)>> Iterator
     for MutRows<I>
 {
@@ -347,3 +335,5 @@ mod observation_overflow_tests {
         assert_eq!(whole_rows(), Some(0));
     }
 }
+
+mod court_doors_for_test;

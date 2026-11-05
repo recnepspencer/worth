@@ -14,10 +14,12 @@ mod proposal_invariants;
 #[path = "validation/proposal_revalidation.rs"]
 mod proposal_revalidation;
 mod proposal_round;
+mod proposal_source;
 #[path = "validation/proposal_touches.rs"]
 mod proposal_touches;
 #[path = "validation/proposal_validation.rs"]
 mod proposal_validation;
+pub(in crate::mvcc) use proposal_validation::require_not_interrupted;
 #[path = "validation/validated_proposal.rs"]
 mod validated_proposal;
 
@@ -41,6 +43,7 @@ use crate::schema::data::{ProposedSchemaTransition, SchemaReconciliationPolicy};
 
 #[derive(Debug)]
 pub(crate) struct RelationalTransactionValidationInput {
+    content: crate::content::RelationalContentAttachments,
     basis: AdmittedRelationalBranchBasis,
     intent: crate::mvcc::RelationalTransactionIntent,
     merge_parent_bases: Vec<AdmittedRelationalBranchBasis>,
@@ -56,7 +59,8 @@ pub(crate) struct RelationalTransactionValidationInput {
 
 impl PartialEq for RelationalTransactionValidationInput {
     fn eq(&self, other: &Self) -> bool {
-        self.basis == other.basis
+        self.content.same_staging(&other.content)
+            && self.basis == other.basis
             && self.intent == other.intent
             && self.merge_parent_bases == other.merge_parent_bases
             && self.schema_authority_input == other.schema_authority_input
@@ -73,6 +77,7 @@ impl RelationalTransactionValidationInput {
         transaction: &crate::mvcc::BranchBoundRelationalTransaction,
     ) -> Self {
         Self {
+            content: transaction.content.clone(),
             basis: transaction.basis.clone(),
             intent: transaction.intent.clone(),
             merge_parent_bases: transaction.merge_parent_bases.clone(),
@@ -89,6 +94,7 @@ impl RelationalTransactionValidationInput {
 
     pub(crate) fn for_owner_basis(basis: &AdmittedRelationalBranchBasis) -> Self {
         Self {
+            content: Default::default(),
             basis: basis.clone(),
             intent: crate::mvcc::RelationalTransactionIntent::ordinary(),
             merge_parent_bases: Vec::new(),
@@ -99,6 +105,17 @@ impl RelationalTransactionValidationInput {
             retention: None,
             control: crate::mvcc::RelationalOperationControl::uninterrupted(),
         }
+    }
+
+    pub(crate) fn with_recovered_content(
+        mut self,
+        content: crate::content::RelationalContentAttachments,
+    ) -> Self {
+        self.content = content;
+        self
+    }
+    pub(crate) fn content(&self) -> &crate::content::RelationalContentAttachments {
+        &self.content
     }
 
     pub(crate) fn basis(&self) -> &AdmittedRelationalBranchBasis {
@@ -201,6 +218,7 @@ impl RelationalTransactionValidationInput {
             transaction.intent,
             self.intent
         );
+        transaction.content = self.content;
         transaction.merge_parent_bases = self.merge_parent_bases;
         transaction.schema_authority_input = self.schema_authority_input;
         transaction.recovered_codec_publication_custody = self.recovered_codec_publication_custody;

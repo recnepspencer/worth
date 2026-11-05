@@ -59,7 +59,7 @@ impl<'a, S, FQ, FP, FR, SQ, SP, SR, A, I, C>
 
 /// Owner-held pins for the fixed first/second query contracts of one map.
 #[derive(Default)]
-pub(in crate::domain_computation::primary_graph::application_query) struct WorthQueryPairReadPins {
+pub struct WorthQueryPairReadPins {
     pub(in crate::domain_computation::primary_graph::application_query) first: Option<
         std::sync::Arc<crate::domain_computation::provider_session::WorthQueryPreparedQueryPin>,
     >,

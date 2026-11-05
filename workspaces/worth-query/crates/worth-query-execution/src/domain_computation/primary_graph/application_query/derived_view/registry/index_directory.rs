@@ -6,21 +6,18 @@ use worth_relational::facade::transactions::RelationalExecutionDenialCause as Ca
 
 const BTREE_MAXIMUM_NODE_COMPARISONS: u64 = 11;
 
-#[cfg(test)]
-mod tests;
-
 #[derive(Default)]
-pub(super) struct ManagedIndexDirectory {
+pub struct ManagedIndexDirectory {
     routes: BTreeMap<Key, u64>,
     owned: BTreeMap<u64, RegisteredIndex>,
 }
-pub(super) struct RegisteredIndex {
+pub struct RegisteredIndex {
     pub(super) key: Key,
     pub(super) state: Arc<dyn Any + Send + Sync>,
     cleanup: Arc<dyn RegisteredManagedIndex>,
     _memory: Option<ExecutionMemoryReservation>,
 }
-pub(super) struct RetiredIndex {
+pub struct RetiredIndex {
     // Both real backings close before the last original registration grant.
     _empty_routes: Option<BTreeMap<Key, u64>>,
     _empty_owned: Option<BTreeMap<u64, RegisteredIndex>>,
@@ -103,3 +100,5 @@ impl ManagedIndexDirectory {
         }
     }
 }
+
+mod court_doors_for_test;

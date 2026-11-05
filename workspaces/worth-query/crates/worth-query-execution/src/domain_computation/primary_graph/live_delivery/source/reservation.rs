@@ -19,10 +19,10 @@ pub(super) fn admit_storage(
         .try_reserve_exact(capacity)
         .map_err(|_| Cause::AllocationFailed)?;
     Ok(AdmittedStorage {
-        slot: Some(Arc::new(WorthQueryLiveCommitBatchCell(
-            OnceLock::new(),
-            cell_allocation,
-        ))),
+        slot: Some(Arc::new(WorthQueryLiveCommitBatchCell {
+            batch: OnceLock::new(),
+            allocation_custody: Some(cell_allocation),
+        })),
         retired_batches,
         allocation: Some(scratch_allocation),
     })

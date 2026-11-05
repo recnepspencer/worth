@@ -67,6 +67,7 @@ impl RecoveredRootInventory {
                 directory.clone(),
                 runtime.services.symbols.clone(),
                 execution,
+                &runtime.config.schema.registry.content_formats,
             )?;
         let root = match recorded.target() {
             Target::Empty => {
@@ -115,6 +116,11 @@ impl RecoveredRootInventory {
                     .ok_or_else(|| corrupt("recorded canonical schema unavailable"))?;
                 let leaves =
                     regions.regions(header.schema_carrier_digest, &header.regions, execution)?;
+                let content_records = crate::durability::checkpoints::content::read_records(
+                    execution,
+                    &header.content,
+                    directory.source.as_ref(),
+                )?;
                 let root = if directory.admission_image.is_some() {
                     let commit = runtime
                         .durability
@@ -122,14 +128,19 @@ impl RecoveredRootInventory {
                         .admitted_commit(&entry)
                         .map_err(RelationalRecoveryStop::AdmissionImage)?
                         .ok_or_else(|| corrupt("recorded root has no admitted checkpoint row"))?;
-                    runtime
-                        .history
-                        .readmit_checkpoint_region_directory(leaves, commit, execution)
+                    runtime.history.readmit_checkpoint_region_directory(
+                        leaves,
+                        commit,
+                        &content_records,
+                        execution,
+                    )
                 } else {
                     let positioned = artifact
                         .envelope_residency()
                         .demand_positioned(execution, 1 << 30)?;
                     runtime.history.readmit_branch_region_directory(
+                        execution,
+                        &content_records,
                         leaves,
                         positioned.canonical_arc().clone(),
                         entry.root.clone(),

@@ -3,7 +3,7 @@ use super::super::RecordedSettlementIdentity;
 use super::super::RetainedSourceFacts;
 use super::source_alignment::SnapshotAlignedMarkState;
 use super::SourceInvalidationOwner;
-mod postcondition_carry;
+pub(crate) mod postcondition_carry;
 use im::OrdSet;
 pub(in crate::domain_computation::primary_graph) use postcondition_carry::PostconditionCarry;
 use std::sync::Arc;
@@ -13,14 +13,14 @@ use worth_relational::facade::snapshots::SnapshotHandle;
 
 /// Only a performed record that actually retained a computation requests tracking.
 #[derive(Clone, Copy)]
-pub(in crate::domain_computation::primary_graph) struct ComputationRegistration(());
+pub struct ComputationRegistration(());
 impl ComputationRegistration {
     pub(in crate::domain_computation::primary_graph::output_lineage) fn retained() -> Self {
         Self(())
     }
 }
 #[derive(Clone)]
-pub(in crate::domain_computation::primary_graph) struct ComputationChanges {
+pub struct ComputationChanges {
     pub(in crate::domain_computation::primary_graph::output_lineage) identity:
         Arc<RecordedSettlementIdentity>,
     selected: worth_relational::facade::runtime::PositionedRelationalSnapshot,
@@ -143,3 +143,5 @@ impl SourceInvalidationOwner {
         }))
     }
 }
+
+mod court_doors_for_test;

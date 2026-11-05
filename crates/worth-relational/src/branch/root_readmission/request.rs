@@ -8,6 +8,7 @@ impl RelationalBranchRoot {
     pub(crate) fn readmit_for_request(
         issuer: &RelationalBranchRootIdentityIssuer,
         partitions: &SharedMap<PartitionId, PartitionState>,
+        prior_content: &crate::content::ContentDirectory,
         envelope: Arc<CanonicalCommitEnvelope>,
         descriptor: RelationalBranchRootDescriptor,
         schema: Arc<super::super::RelationalBranchRootSchemaAuthority>,
@@ -78,6 +79,7 @@ impl RelationalBranchRoot {
             positions,
             execution,
             memory,
+            prior_content,
         )?;
         Ok(root)
     }
@@ -107,7 +109,14 @@ impl RelationalBranchRoot {
             },
         };
         bind_original(
-            prepared, envelope, descriptor, schema, positions, execution, memory,
+            prepared,
+            envelope,
+            descriptor,
+            schema,
+            positions,
+            execution,
+            memory,
+            previous.retained_content(),
         )
     }
 }
@@ -120,6 +129,7 @@ fn bind_original(
     positions: RequiredOutputPublicationPositions,
     execution: &ExecutionRequest<'_, '_>,
     memory: Option<worth_execution::ExecutionMemoryReservation>,
+    prior_content: &crate::content::ContentDirectory,
 ) -> Result<Arc<RelationalBranchRoot>, RelationalBranchRootCaptureDenial> {
     validate_schema_root(&envelope, &descriptor)?;
     let (storage_root, content_accumulator) = axes::storage_root_for(&prepared.regions);
@@ -137,7 +147,9 @@ fn bind_original(
     crate::execution::check_request(execution)
         .map_err(RelationalBranchRootCaptureDenial::Request)?;
     let storage_version = envelope.commit.version_id.0;
-    Ok(Arc::new(RelationalBranchRoot {
+    let incoming = envelope.content.records().clone();
+    let mut root = RelationalBranchRoot {
+        content: Default::default(),
         id: prepared.root_id,
         managed_source_image: Default::default(),
         regions: prepared.regions,
@@ -159,5 +171,15 @@ fn bind_original(
             publication_cost: prepared.publication_cost,
         }),
         _memory: memory,
-    }))
+    };
+    root.content = prior_content
+        .reconstruct_original(
+            execution,
+            root.schema_authority.registry(),
+            &incoming,
+            &root,
+            crate::identity::data::VersionId(storage_version),
+        )
+        .map_err(RelationalBranchRootCaptureDenial::Content)?;
+    Ok(Arc::new(root))
 }

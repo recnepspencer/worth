@@ -200,7 +200,7 @@ Forbidden in `worth-query`:
 - encoding admitted, advisory, denied, and deferred effect posture as one
   universal token with optional fields
 - claiming durable replay, store-backed execution parity, or restart-stable
-  effect envelopes before Milestones 10 and 11
+  effect envelopes before Store execution and durable-artifact integration
 
 ## Existing Effect Surfaces To Consolidate
 
@@ -1469,7 +1469,7 @@ The following remain deferred:
 - restart-stable effect envelopes
 - portable effect receipt import/export
 
-Those belong to Milestones 10 and 11 or later follow-on work.
+Those belong to Store execution and durable-artifact integration or later follow-on work.
 
 ## Sequencing Notes
 

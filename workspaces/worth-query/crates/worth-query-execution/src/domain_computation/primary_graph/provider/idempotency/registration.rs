@@ -10,7 +10,7 @@ use worth_relational::facade::transactions::{
     AspectFieldPatch, CreateIntent, EntitySpec, MutationIntent,
 };
 
-pub(in crate::domain_computation::primary_graph::provider) fn idempotency_create_intent(
+pub fn idempotency_create_intent(
     layout: &WorthQueryProviderIdempotencyLayout,
     binding: WorthQueryApplicationIdempotencyBinding,
     outcome_identity: WorthQueryApplicationCommitOutcomeIdentity,

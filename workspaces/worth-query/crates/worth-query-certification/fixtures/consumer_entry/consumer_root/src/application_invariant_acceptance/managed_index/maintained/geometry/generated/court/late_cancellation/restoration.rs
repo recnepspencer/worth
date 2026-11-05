@@ -53,7 +53,7 @@ pub(super) fn run(
         assert_eq!(effects.expected_product().selected_commit(), &before);
     }
     let cancellation = WorthQueryCancellationSource::new();
-    let adoption_scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let adoption_scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let observed = Arc::new(Mutex::new(None));
     let recorded = observed.clone();
     let control = world.world_operation_control_for_test();
@@ -143,7 +143,7 @@ fn pending(
         .world_operation_control_for_test()
         .pause_before_product_compare_for_test(NonZeroUsize::MIN);
     let cancellation = WorthQueryCancellationSource::new();
-    let original_scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let original_scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let outcome = std::thread::scope(|threads| {
         let inspector = threads.spawn(move || {
             let pause = pause;

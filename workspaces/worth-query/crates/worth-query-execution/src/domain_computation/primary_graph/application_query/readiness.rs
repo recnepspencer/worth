@@ -39,7 +39,7 @@ where
         let basis_identity = self.application_basis().identity().clone();
         let schema_binding = application.installed_schema().binding_identity();
         let basis_token = basis_token(
-            &application.application_readiness_schema_token,
+            &application.runtime.application_readiness_schema_token,
             basis_identity.runtime_instance_id(),
             basis_identity.descriptor(),
         );
@@ -67,7 +67,7 @@ where
             "application query basis",
         )?;
         Ok(basis_token(
-            &self.application_readiness_schema_token,
+            &self.runtime.application_readiness_schema_token,
             basis.runtime_instance_id(),
             basis.descriptor(),
         ))
@@ -86,7 +86,7 @@ where
             "application commit basis",
         )?;
         Ok(basis_token(
-            &self.application_readiness_schema_token,
+            &self.runtime.application_readiness_schema_token,
             receipt.provider_runtime_instance_id(),
             descriptor,
         ))
@@ -98,8 +98,12 @@ where
         branch_id: &worth_relational::facade::history::BranchId,
         subject: &str,
     ) -> Result<(), WorthQueryApplicationQueryAdmissionDenial> {
-        if runtime_instance_id != self.relational_branch_identity.runtime_instance_id()
-            || branch_id != self.relational_branch_identity.branch_id()
+        if runtime_instance_id
+            != self
+                .runtime
+                .relational_branch_identity
+                .runtime_instance_id()
+            || branch_id != self.runtime.relational_branch_identity.branch_id()
         {
             return Err(WorthQueryApplicationQueryAdmissionDenial::new(
                 WorthQueryApplicationQueryAdmissionDenialKind::ForeignBasis,

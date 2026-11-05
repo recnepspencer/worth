@@ -10,6 +10,7 @@ use super::WorthQueryInstalledApplicationValueBinding;
 /// Immutable installed bindings indexed by their exact field locus.
 #[derive(Clone, Debug, Default)]
 pub struct WorthQueryInstalledApplicationValueBindingCatalog {
+    content_formats: Arc<super::content::Formats>,
     bindings: Arc<
         BTreeMap<ApplicationFieldBindingLocus, Arc<WorthQueryInstalledApplicationValueBinding>>,
     >,
@@ -29,15 +30,18 @@ impl WorthQueryInstalledApplicationValueBindingCatalog {
     /// authority.
     pub fn same_installation_as(&self, other: &Self) -> bool {
         Arc::ptr_eq(&self.bindings, &other.bindings)
+            && Arc::ptr_eq(&self.content_formats, &other.content_formats)
     }
 
     pub(crate) fn new(
+        content_formats: super::content::Formats,
         bindings: BTreeMap<
             ApplicationFieldBindingLocus,
             WorthQueryInstalledApplicationValueBinding,
         >,
     ) -> Self {
         Self {
+            content_formats: Arc::new(content_formats),
             bindings: Arc::new(
                 bindings
                     .into_iter()
@@ -204,6 +208,9 @@ impl WorthQueryInstalledApplicationValueBindingCatalog {
         Ok(self.bindings.get(&locus))
     }
 
+    pub fn content_formats(&self) -> impl ExactSizeIterator<Item = &worth_query_declaration::facade::application_schema::ApplicationContentBindingRecipe>{
+        self.content_formats.values().map(Arc::as_ref)
+    }
     pub fn bindings(
         &self,
     ) -> impl ExactSizeIterator<Item = &WorthQueryInstalledApplicationValueBinding> {

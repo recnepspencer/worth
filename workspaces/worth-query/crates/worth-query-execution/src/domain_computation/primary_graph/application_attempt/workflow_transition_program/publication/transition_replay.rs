@@ -278,6 +278,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
             .expect("one operation replay binding returns one resolution");
         let project_original = |receipt| {
             runtime
+                .runtime
                 .primary_provider
                 .graph
                 .with_runtime(execution, |relational| {

@@ -1,3 +1,4 @@
+mod seal;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
@@ -43,6 +44,7 @@ impl CapturedManifest {
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
         prior: Option<&RelationalCheckpointManifest>,
         journal_index: Vec<crate::history::RelationalCommitIndexEntry>,
+        control: &mut super::CheckpointEncodingControl<'_, '_, '_, '_, '_>,
         original_digest: impl Fn(
             crate::publication::patch::data::PatchStreamPosition,
         ) -> Result<[u8; 32], RelationalNativeCheckpointCaptureDenial>,
@@ -63,7 +65,7 @@ impl CapturedManifest {
             }
         }
         for positioned in &checkpoint.envelopes {
-            policy.check_live()?;
+            control.checkpoint(0)?;
             let envelope = positioned.envelope();
             let root = checkpoint
                 .commit_descriptors
@@ -188,8 +190,13 @@ impl CapturedManifest {
     ) -> Result<Self, RelationalNativeCheckpointCaptureDenial> {
         // These four hostile-fixture callers intentionally encode changed producer DATA.
         // The production capture callback only observes its retained original frame.
-        let mut captured =
-            Self::capture_metadata(checkpoint, policy, None, Vec::new(), |position| {
+        let mut captured = Self::capture_metadata(
+            checkpoint,
+            policy,
+            None,
+            Vec::new(),
+            &mut super::CheckpointEncodingControl::Policy(policy),
+            |position| {
                 let positioned = checkpoint
                     .envelopes
                     .iter()
@@ -197,7 +204,8 @@ impl CapturedManifest {
                     .ok_or_else(|| corrupt("fixture canonical position unavailable"))?;
                 RelationalCanonicalCommitArtifact::positioned_payload_digest(positioned)
                     .map_err(|error| corrupt(format!("fixture canonical digest: {error}")).into())
-            })?;
+            },
+        )?;
         let rows = checkpoint
             .envelopes
             .iter()
@@ -258,6 +266,22 @@ impl CapturedManifest {
                     .ok_or_else(|| corrupt("root lacks component observations"))?,
                 root.schema_carrier_digest,
                 regions,
+                root.content_records
+                    .records()
+                    .map(|record| {
+                        let member = add(
+                            &mut members,
+                            (
+                                member_frame::locator(record.bytes()),
+                                record.bytes().to_vec(),
+                            ),
+                        );
+                        RelationalCheckpointContent {
+                            identity: record.identity(),
+                            member,
+                        }
+                    })
+                    .collect(),
             ));
         }
         let mirror = if checkpoint.partition_images.is_empty() {
@@ -364,21 +388,4 @@ pub(super) fn add(
 
 pub(super) fn corrupt(detail: impl Into<String>) -> DurabilityError {
     DurabilityError::new(RecoveryFailureClass::CorruptCheckpoint, detail)
-}
-
-impl CapturedManifest {
-    pub(crate) fn seal_ordinary(self) -> CapturedManifest<RelationalCheckpointManifest> {
-        CapturedManifest {
-            manifest: self.manifest.seal_ordinary(),
-            component_holds: self.component_holds,
-            members: self.members,
-            canonical_publication: self.canonical_publication,
-            canonical_payloads: self.canonical_payloads,
-            envelope_cells: self.envelope_cells,
-            publications: self.publications,
-            cold_source: self.cold_source,
-            guarded_members: self.guarded_members,
-            history_members: self.history_members,
-        }
-    }
 }

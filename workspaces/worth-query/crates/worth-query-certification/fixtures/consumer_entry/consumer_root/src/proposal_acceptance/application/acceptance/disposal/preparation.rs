@@ -1,6 +1,7 @@
 //! Explicit creation release retains native recovery and cleanup failures across typed handoffs.
 use super::*;
 use crate::proposal_acceptance::application::candidate::{PreparationFailure, PreparationRefusal};
+use worth_query_host::facade::application_contribution::WorthQueryAdvancementPhase;
 use WorthQueryProductBranchCreationRecoveryReleaseFailure as ReleaseFailure;
 
 pub(in crate::proposal_acceptance::application::acceptance) struct Owner {
@@ -29,21 +30,18 @@ impl Owner {
     }
 }
 impl Stage {
-    fn advance(
-        self,
-        phase: &worth_query_host::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
-    ) -> Result<Released, ReleaseFailure> {
+    fn advance(self, phase: &WorthQueryAdvancementPhase<'_>) -> Result<Released, ReleaseFailure> {
         match self {
             Self::Pending(owner) => owner
-                .release_obligations(phase, 0)
+                .release_obligations_in_advancement(phase, 0)
                 .map(|receipt| Released::Creation { _receipt: receipt }),
             Self::Refused(ReleaseFailure::Recovery(failure)) => failure
                 .into_recovery()
-                .release_obligations(phase, 0)
+                .release_obligations_in_advancement(phase, 0)
                 .map(|receipt| Released::Creation { _receipt: receipt }),
             Self::Refused(ReleaseFailure::OwnerCleanup(failure)) => failure
                 .into_cleanup()
-                .retry()
+                .retry_in_advancement(phase)
                 .map(|receipt| Released::Cleanup { _receipt: receipt })
                 .map_err(ReleaseFailure::OwnerCleanup),
         }

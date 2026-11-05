@@ -9,7 +9,7 @@ use worth_relational::facade::runtime::RelationalRuntime;
 use super::super::schema_layout::WorthQueryPrimaryGraphLayout;
 
 #[derive(Clone, Copy)]
-pub(in crate::domain_computation::primary_graph) enum IndexInstallationPosture {
+pub enum IndexInstallationPosture {
     Register,
     RequireRecovered,
 }
@@ -50,7 +50,7 @@ impl<'runtime> IndexInstallation<'runtime> {
     }
 }
 
-pub(in crate::domain_computation::primary_graph) fn register_primary_graph_indexes(
+pub fn register_primary_graph_indexes(
     layout: &mut WorthQueryPrimaryGraphLayout,
     runtime: &RelationalRuntime,
     posture: IndexInstallationPosture,
@@ -212,7 +212,3 @@ pub(in crate::domain_computation::primary_graph) fn primary_index_inventory(
         .collect::<Vec<_>>()
         .into()
 }
-
-#[cfg(test)]
-#[path = "index_installation_tests.rs"]
-mod tests;

@@ -21,6 +21,7 @@ fn request_readmission_matches_real_root_and_keeps_only_actual_retained_owners()
     let reconstructed = super::super::RelationalBranchRoot::readmit_for_request(
         &issuer,
         &partitions,
+        original.retained_content(),
         original.canonical_envelope().unwrap().clone(),
         original.descriptor().unwrap().clone(),
         original.retained_schema_authority(),

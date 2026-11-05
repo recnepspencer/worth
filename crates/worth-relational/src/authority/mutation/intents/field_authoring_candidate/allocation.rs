@@ -92,10 +92,22 @@ pub(in crate::authority::mutation::intents) fn admit_readmission(
     candidate: &PortableRecordAspectPatch,
     plan: Option<&LoweredAspectContractPlan>,
 ) -> Result<(), Cause> {
+    let bytes = readmission_bytes(
+        memory.as_ref().map_or(0, ExecutionMemoryReservation::bytes),
+        candidate,
+        plan,
+    )?;
+    resize(request, memory, bytes)
+}
+pub(in crate::authority::mutation::intents) fn readmission_bytes(
+    prior_bytes: u64,
+    candidate: &PortableRecordAspectPatch,
+    plan: Option<&LoweredAspectContractPlan>,
+) -> Result<u64, Cause> {
     let bounds = candidate
         .readmission_storage_bounds()
         .ok_or(Cause::ChargedBytesOverflow)?;
-    let mut bytes = memory.as_ref().map_or(0, ExecutionMemoryReservation::bytes);
+    let mut bytes = prior_bytes;
     nested(&mut bytes, bounds.retained_bytes)?;
     nested(&mut bytes, bounds.transient_bytes)?;
     let mut lookup_peak = 0;
@@ -129,7 +141,7 @@ pub(in crate::authority::mutation::intents) fn admit_readmission(
         }
     }
     nested(&mut bytes, lookup_peak)?;
-    resize(request, memory, bytes)
+    Ok(bytes)
 }
 /// Actual retained output only: all dead candidate/admission scratch is refunded.
 pub(in crate::authority::mutation::intents) fn retained_patch_bytes(

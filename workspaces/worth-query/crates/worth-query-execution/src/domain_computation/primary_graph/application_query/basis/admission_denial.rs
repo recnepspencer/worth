@@ -2,7 +2,6 @@ use super::super::{
     WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryAdmissionDenialKind,
 };
 
-#[cfg(test)]
 pub(in crate::domain_computation::primary_graph::application_query) fn map_basis_denial(
     denial: worth_relational::facade::branch::RelationalBranchBasisDenial,
 ) -> WorthQueryApplicationQueryAdmissionDenial {
@@ -87,7 +86,6 @@ pub(in crate::domain_computation::primary_graph::application_query) fn admission
     WorthQueryApplicationQueryAdmissionDenial::new(kind, subject)
 }
 
-#[cfg(test)]
 pub(in crate::domain_computation::primary_graph::application_query) fn map_registration_denial(
     denial: super::super::resource_lifecycle::WorthQueryApplicationBasisRegistrationDenial,
 ) -> WorthQueryApplicationQueryAdmissionDenial {

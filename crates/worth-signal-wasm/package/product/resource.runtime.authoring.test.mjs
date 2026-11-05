@@ -50,6 +50,7 @@ import "./resource_runtime/authoring/external_definition_compatibility.test.mjs"
 import "./resource_runtime/authoring/family_identity_equivalence.test.mjs";
 import "./resource_runtime/authoring/line_facade_stability.test.mjs";
 import "./resource_runtime/authoring/line_view_ownership.test.mjs";
+import "./resource_runtime/authoring/resource_computed_dependency_capture.test.mjs";
 import "./resource_runtime/authoring/resource_react_summary_signal_boundary.test.mjs";
 import "./resource_runtime/authoring/phase1_surface_convergence.test.mjs";
 import "./resource_runtime/requests/continuation_parity_closeout.test.mjs";
@@ -58,3 +59,5 @@ import "./resource_runtime/requests/api_scoped_defaults.test.mjs";
 import "./resource_runtime/requests/request_posture_closeout.test.mjs";
 import "./resource_runtime/requests/request_posture.test.mjs";
 import "./resource_runtime/requests/api_effect_profiles.test.mjs";
+
+import "./resource_runtime/authoring/api_route/api_patch_request_method.test.mjs";

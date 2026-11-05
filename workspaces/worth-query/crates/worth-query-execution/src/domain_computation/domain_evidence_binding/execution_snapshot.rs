@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) struct WorthQueryBoundExecutionSnapshotIdentity(Arc<str>);
+pub struct WorthQueryBoundExecutionSnapshotIdentity(Arc<str>);
 
 impl WorthQueryBoundExecutionSnapshotIdentity {
     pub(in crate::domain_computation) fn capture(identity: Arc<str>) -> Self {
@@ -16,3 +16,5 @@ impl WorthQueryBoundExecutionSnapshotIdentity {
         Arc::clone(&self.0)
     }
 }
+
+mod court_doors_for_test;

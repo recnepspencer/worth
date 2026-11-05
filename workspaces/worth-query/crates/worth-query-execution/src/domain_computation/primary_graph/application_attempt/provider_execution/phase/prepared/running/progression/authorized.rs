@@ -164,7 +164,19 @@ where
                 dispatch_outbox,
                 provider_session,
             );
-            let compared = candidate.compare_and_commit_with(control.policy(), |read_authority, fresh| {
+            let compared = candidate.compare_and_commit_with(|prepared| {
+                match authority.history {
+                    Some(history) => {
+                        let request = authority.admission().retain_admitted_request();
+                        prepared.commit_using(|_provider, session| {
+                            authority.provider().commit_prepared_application_in_history(
+                                session, history.bind_producer_request(&request), control.policy(),
+                            )
+                        })
+                    }
+                    None => prepared.commit(control.policy()),
+                }
+            }, |read_authority, fresh| {
                 authority.provider().recompare_application_read_set(execution,
                     read_authority, fresh,
                     crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(
@@ -199,6 +211,7 @@ where
             WorthQueryProviderProgressionOutcome::ProductPreparationPending(
                 authority
                     .application()
+                    .runtime
                     .primary_provider
                     .preparation_pending(&authority.product.publication_binding(), handle, stage),
             )
@@ -207,6 +220,7 @@ where
             candidate.discard();
             match authority
                 .application()
+                .runtime
                 .primary_provider
                 .recovered_unpublished_application(&authority.product.publication_binding(), handle)
             {

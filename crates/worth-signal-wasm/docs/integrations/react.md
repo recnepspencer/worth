@@ -47,6 +47,17 @@ root.render(
 The store adapts subscriptions and transactions. `signals` remains the state
 runtime.
 
+The first signal subscription revalidates the snapshot read during render, so
+a write before subscription attachment is visible without waiting for another
+write. An unchanged value retains its snapshot reference. Worker readback also
+preserves a newer host projection while its input writes await acknowledgement;
+older worker replies cannot replace that newer visible value.
+
+Measure action-to-DOM delivery, worker acknowledgement, and startup separately.
+Worker messaging can cost more than a small synchronous computation, even when
+the host projection makes its visible update sooner. Placement is not a promise
+that every operation completes faster.
+
 ## Read And Write A Signal
 
 ```tsx

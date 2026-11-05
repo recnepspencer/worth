@@ -1,0 +1,152 @@
+use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::yield_fixture::YieldProvider;
+use crate::process::domain_computation::managed_run::tests::*;
+
+#[test]
+fn dropping_yielded_workflow_closes_artifacts_despite_surviving_production_authority() {
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::advancement::with_test_advancement(|active_phase| {
+        let bootstrap = active_phase.bootstrap_for_test();
+        let resource_request = bootstrap.execution_request();
+
+        let phase = &active_phase;
+        let execution = phase;
+
+        let installer = WorthQueryExecutionRuntimeInstaller::new();
+        let provider_anchor = Arc::new(
+        worth_query_execution::facade::integration::WorthQueryGraphProviderAnchor::install::<ManagedGraph, _>(
+            YieldProvider::installed(5),
+        ),
+    );
+        let provider_support = provider_anchor.resource_support().clone();
+        let graph = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::workflow_provider_steps::installed_graph(
+            &installer,
+            "yield-abandonment-graph",
+            provider_anchor,
+        );
+        let runtime =
+            worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::workflow_provider_steps::installed_runtime(installer, "yield abandonment");
+        let operation_resources = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::provider_session::tests::admitted_yield_plan(
+            "yield-abandonment",
+            8,
+        );
+        let stage_resources = admitted_plan_with_graph_support(
+            "yield-abandonment:producer",
+            8,
+            graph.role(),
+            provider_support,
+        );
+        let resources = WorthQueryAdmittedWorkflowResourcePlan::assemble(
+            operation_resources,
+            BTreeMap::from([("producer".to_owned(), stage_resources)]),
+        );
+        let output =
+            worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::artifact_owner::authority_affinity_tests::installed_artifact_contract_for_managed_run(
+            );
+        let operation = workflow_authority_with_stage_graph_and_output_artifact(
+            &runtime,
+            &resources,
+            "producer",
+            &graph,
+            WorthQueryOperationGraphAccess::Observe,
+            output,
+        );
+        let running = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::managed_run::tests::workflow_provider_steps::admitted_workflow(
+            &runtime,
+            &operation,
+            resources,
+            resource_request,
+        );
+        let installed_running_phase = execution.phase_for_workflow_for_test(&running);
+
+        let production = running
+            .artifacts()
+            .production_authority("producer")
+            .unwrap()
+            .expect("producer output artifact should install");
+        let disposals = Arc::new(AtomicUsize::new(0));
+        let handle = register_abandonment_artifact(&production, "retained", Arc::clone(&disposals))
+            .expect("pre-yield artifact should register");
+        let active = running
+            .begin_stage_graph_execution(
+                &installed_running_phase,
+                "producer",
+                &graph,
+                WorthQueryManagedGraphCallRequest::new(
+                    WorthQueryGraphProviderCallKind::Observe,
+                    "yield-abandonment",
+                ),
+            )
+            .unwrap();
+        let paused = match active.advance(&installed_running_phase) {
+            WorthQueryWorkflowGraphStepOutcome::Continue(paused) => paused,
+            _ => panic!("yield abandonment provider did not pause"),
+        };
+        let yielded = match paused.yield_run() {
+            worth_query_execution::facade::domain_computation::WorthQueryWorkflowYieldOutcome::Yielded(yielded) => yielded,
+            _ => panic!("eligible workflow did not yield"),
+        };
+        assert_eq!(disposals.load(Ordering::Acquire), 0);
+
+        drop(yielded);
+
+        assert_eq!(disposals.load(Ordering::Acquire), 1);
+        assert!(handle.owner_snapshot().is_disposed());
+        let rejected_disposals = Arc::new(AtomicUsize::new(0));
+        let denial = register_abandonment_artifact(
+            &production,
+            "post-abandonment",
+            Arc::clone(&rejected_disposals),
+        )
+        .expect_err("abandoned yielded workflow retained production authority");
+        assert_eq!(
+            denial.kind(),
+            worth_query_execution::facade::domain_computation::WorthQueryArtifactDenialKind::AlreadyDisposed
+        );
+        assert_eq!(rejected_disposals.load(Ordering::Acquire), 1);
+        drop(handle);
+        assert_eq!(disposals.load(Ordering::Acquire), 1);
+    });
+}
+
+pub fn register_abandonment_artifact(
+    production: &Arc<
+        worth_query_execution::facade::domain_computation::WorthQueryArtifactProductionAuthority,
+    >,
+    label: &str,
+    disposals: Arc<AtomicUsize>,
+) -> Result<
+    worth_query_execution::facade::domain_computation::WorthQueryMoveOnlyArtifactHandle,
+    worth_query_execution::facade::domain_computation::WorthQueryArtifactDenial,
+> {
+    let admission =
+        worth_query_execution::facade::domain_computation::WorthQueryArtifactProductionAuthority::admit(
+            production,
+            WorthQueryArtifactProductionEvidence::new(
+                format!("{label}-provenance"),
+                format!("{label}-dependency"),
+            ),
+        );
+    worth_query_execution::facade::domain_computation::WorthQueryArtifactProductionAuthority::register_exact(
+        production,
+        admission,
+        AbandonmentArtifact(disposals),
+    )
+}
+
+#[derive(Debug)]
+pub struct AbandonmentArtifact(Arc<AtomicUsize>);
+
+impl WorthQueryArtifactProviderResource for AbandonmentArtifact {
+    const PROVIDER_FAMILY: &'static str = "WORTH.tests.affinity.provider";
+
+    fn canonical_semantic_projection(&self) -> Vec<u8> {
+        b"yield-abandonment-artifact".to_vec()
+    }
+
+    fn retained_bytes(&self) -> usize {
+        48
+    }
+
+    fn dispose(&mut self) {
+        self.0.fetch_add(1, Ordering::AcqRel);
+    }
+}

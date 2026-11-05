@@ -236,7 +236,7 @@ where
                 session: prepared.graph_work().identity(),
                 relational,
                 snapshot: &snapshot,
-                bridge: prepared.runtime().authorization.bridge(),
+                bridge: prepared.runtime().runtime.authorization.bridge(),
                 installed: prepared.installed(),
                 request: &revalidation,
                 sample: prepared.sample(),

@@ -92,7 +92,7 @@ fn refuse_then_dispose(restored: bool) {
     assert!(matches!(refused.cause, ModelCloseRefusal::Pending));
     let mut model = refused.model;
     let cancellation = WorthQueryCancellationSource::new();
-    let cancelled_scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let cancelled_scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let cancelled =
         authentication::authenticate(host.installed_schema(), Actor::Reviewer, &cancelled_scope)
             .unwrap();

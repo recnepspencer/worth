@@ -218,6 +218,7 @@ where
             ),
         );
         application
+            .runtime
             .primary_provider
             .graph
             .output_lineage

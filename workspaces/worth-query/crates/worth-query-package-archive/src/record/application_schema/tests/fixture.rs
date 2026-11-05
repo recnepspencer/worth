@@ -59,6 +59,7 @@ fn members(projection_work: Option<usize>) -> Vec<ApplicationSchemaMember> {
             revision: AspectContractRevision(3),
         },
         ApplicationSchemaMember::Field {
+            content_format: None,
             entity: text("Entity"),
             aspect: text("Aspect"),
             field: text("field"),

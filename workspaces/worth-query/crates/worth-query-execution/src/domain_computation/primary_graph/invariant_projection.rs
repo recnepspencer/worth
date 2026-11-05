@@ -11,12 +11,12 @@ mod component;
 mod graph_member;
 mod logical_projection;
 pub use component::WorthQueryInvariantProjectionComponent;
-pub(in crate::domain_computation::primary_graph) mod consumed_output;
+pub(crate) mod consumed_output;
 mod entity_resident;
 #[path = "invariant_projection/field_projection.rs"]
 mod field_projection;
 mod identity_encoding;
-mod pending_output_read;
+pub(crate) mod pending_output_read;
 pub(in crate::domain_computation::primary_graph) use pending_output_read::RequestedOutputRead;
 mod inventory;
 mod lineage;
@@ -24,7 +24,8 @@ mod orbit;
 pub use orbit::WorthQueryInvariantProjectionOrbit;
 mod locked_reader;
 mod operation_projection_denial;
-mod operation_reader;
+pub(crate) mod operation_reader;
+pub(in crate::domain_computation::primary_graph) use operation_reader::native_index_decision_cause;
 pub(in crate::domain_computation::primary_graph) use operation_reader::BorrowedOperationProjection;
 pub use operation_reader::{
     WorthQueryInvariantDerivedMemberRelation, WorthQueryInvariantDerivedRelation,
@@ -33,13 +34,13 @@ pub use operation_reader::{
     WorthQueryObservedOutputAvailability, WorthQueryOutputAvailabilityDenial,
     WorthQueryOutputAvailabilityState,
 };
-mod realized_scope;
+pub(crate) mod realized_scope;
 mod relation_field;
 mod relation_identity;
 pub use relation_identity::WorthQueryInvariantRelation;
 mod traversal;
 mod walk;
-mod work;
+pub(crate) mod work;
 pub(in crate::domain_computation::primary_graph) use consumed_output::EvidenceView;
 pub use walk::{
     WorthQueryInvariantProjectionWalk, WorthQueryInvariantProjectionWalkIter,
@@ -74,10 +75,11 @@ pub use aggregate::{
     WorthQueryInvariantAggregate, WorthQueryInvariantAggregateDenial,
     WorthQueryInvariantAggregateDenialKind,
 };
+pub use consumed_output::SelectedPendingConsumedOutput;
 pub use consumed_output::VerificationCapacityStop;
 pub(in crate::domain_computation::primary_graph) use consumed_output::{
     ConsumedOutputEvidence, ConsumedOutputVerification, ConsumedOutputVerificationStop,
-    PublicationRecoveryStop, SelectedPendingConsumedOutput,
+    PublicationRecoveryStop,
 };
 pub use field_projection::WorthQueryRetainedSnapshotRead;
 pub use locked_reader::{
@@ -112,6 +114,7 @@ static NEXT_INVARIANT_PROJECTION_AUTHORITY: std::sync::atomic::AtomicU64 =
 /// move-only primary-graph bootstrap. Ordinary consumers cannot construct it
 /// from runtime identities or application admissions.
 pub struct WorthQueryApplicationInvariantProjectionAuthority<Schema> {
+    installed_operations: Arc<worth_query_installation::facade::InstalledOperationCatalog>,
     graph: WorthQueryPrimaryGraphIntegrationHandle,
     layout: Arc<WorthQueryPrimaryGraphLayout>,
     runtime_authority: WorthQueryRuntimeAuthorityIdentity,
@@ -187,7 +190,6 @@ where
         self.runtime_authority == runtime_authority && &self.binding_identity == binding_identity
     }
 
-    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn active_snapshot_count(
         &self,
         request_execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -376,3 +378,5 @@ impl<Schema> Drop for WorthQueryApplicationInvariantProjectionSnapshot<Schema> {
         }
     }
 }
+
+mod court_doors_for_test;

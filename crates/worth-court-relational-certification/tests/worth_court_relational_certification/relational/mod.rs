@@ -1,3 +1,4 @@
+mod authored_retirement;
 mod cold_index_refresh;
 mod durable_publication;
 #[path = "leased_preparation/mod.rs"]

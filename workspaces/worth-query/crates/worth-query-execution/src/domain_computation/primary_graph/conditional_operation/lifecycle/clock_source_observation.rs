@@ -2,9 +2,7 @@ use worth_query_installation::facade::WorthQueryNamedClockFailureKind;
 
 use super::{ErasedClockObservationOutcome, WorthQueryConditionalClockObservationFailureKind};
 
-pub(in crate::domain_computation::primary_graph::conditional_operation) fn isolate_clock_source<
-    Observation,
->(
+pub fn isolate_clock_source<Observation>(
     observe: impl FnOnce() -> Result<
         Observation,
         worth_query_installation::facade::WorthQueryNamedClockFailure,

@@ -290,7 +290,7 @@ loose words. Each term names a different authority boundary.
   happen only after admission selects that posture.
 - **Persistent index requirement**: a typed requirement that a reusable family
   needs persistent support. It is not a promise that durable store-backed
-  persistence exists before Milestone `10`/`11`.
+  persistence exists before Store execution/durability integration.
 - **Store-owned index capability**: a requirement row whose realization belongs
   to `worth-store` or another lower runtime. Query records the required
   capability and owner; Query does not fake the support.
@@ -1662,7 +1662,7 @@ persistent requirements must remain support-row honest.
 **Engineering decisions**
 - Runtime-backed persistent requirements can resolve to existing runtime indexes
   or produce `RequiresPersistentIndex`.
-- Durable persistence of indexes remains Milestone `10`/`11` scope unless
+- Durable persistence of indexes remains Store execution/durability integration scope unless
   `worth-store` supplies the admitted row.
 
 **Open questions**
@@ -2160,7 +2160,7 @@ docs/support agreement.
 - Indexes, access plans, materializations, and receipts are derived from
   authoritative truth and must be rebuildable.
 - Store-backed durable indexes and restart-stable access artifacts are explicit
-  Milestone `10`/`11` capability requirements until the owning milestones admit
+  Store execution/durability integration capability requirements until the owning milestones admit
   them.
 - Graph touch obligation authority from Milestone `9.9` remains separate from
   graph read access planning; the former decides which obligations fire, while
@@ -2200,11 +2200,11 @@ docs/support agreement.
 - This milestone belongs after Milestone `9.9` because it consumes graph read
   shape and obligation-envelope vocabulary without overloading obligation
   dispatch with access-path planning.
-- This milestone belongs before Milestone `10` because store-backed execution
+- This milestone belongs before Store execution/historical integration because store-backed execution
   and pushdown should inherit a complete runtime-backed access-plan contract,
   not discover N+1 prevention, memory budgets, and index posture later.
-- Milestone `10` may later add store-backed persistent index realization and
+- Store execution/historical integration may later add store-backed persistent index realization and
   pushdown parity, but it should not redefine the access-shape, budget, denial,
   and receipt model established here.
-- Milestone `11` may later make saved access artifacts durable, but restart-
+- Store Milestone 11 may later make saved access artifacts durable, but restart-
   stable persistence is not required for runtime-backed closure here.

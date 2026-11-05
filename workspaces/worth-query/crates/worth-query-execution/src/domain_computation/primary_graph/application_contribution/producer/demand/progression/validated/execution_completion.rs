@@ -49,6 +49,17 @@ pub(super) fn finish(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<CheckpointProgress, CompletionRefusal> {
     let receipt = match result.map(|prepared| prepared.into_parts()) {
+        Ok((execution::ProducerExecutionOutcome::Unpublished(mut owner), ready_backing)) => {
+            owner.retain_original_publication(original_publication);
+            let checkpoint = WorthQueryOutputCheckpoint::PublicationPending {
+                owner,
+                ready_backing,
+            };
+            if let Err((denial, checkpoint)) = selected_execution_finish.publish(checkpoint) {
+                return Err(CompletionRefusal::unpublished(denial, checkpoint));
+            }
+            return Ok(CheckpointProgress::Advanced);
+        }
         Ok((execution::ProducerExecutionOutcome::Committed(receipt), ready_backing)) => {
             (receipt, ready_backing)
         }
@@ -96,7 +107,7 @@ pub(super) fn finish(
     let receipt = receipt.into_receipt();
     drop(record);
     let retained = crate::domain_computation::primary_graph::application_output_demand::OriginalProducingPublication::for_successor(
-        execution, original_publication, &receipt,
+        execution, original_publication, (&receipt).into(),
     );
     let (original_publication, continuation_denial) = match retained {
         Ok(original) => (original, None),
@@ -106,7 +117,6 @@ pub(super) fn finish(
         receipt,
         ready_backing.bind_original_producing_publication(original_publication),
     );
-    #[cfg(test)]
     own_effect_observation::record(Stage::Published);
     let publication = OwnPublication(receipt.0.committed_product_publication().clone());
     let delivery = receipt.0

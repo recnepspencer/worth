@@ -154,7 +154,7 @@ Milestone 8 therefore exists to freeze:
 - `worth_query_roadmap.md`: Milestone 8 must prove view-shape-specific live
   semantics for at least table/detail plus one grouped or temporal view. It
   must also establish scopes, templates, and saved-query semantics now while
-  keeping durable reload explicitly deferred to Milestone 11.
+  keeping durable reload explicitly deferred to Store Milestone 11.
 - `test-requirements.md`: the `Scope / Template / View-Shape Semantic Parity
   Test` is the closeout proof. It requires scope composition and template
   instantiation to preserve canonical meaning and requires shipped view shapes
@@ -897,7 +897,7 @@ Milestone 8 must next ship:
 This phase leaves the system in a coherent state where:
 
 - saved-query semantics exist as query-owned artifacts
-- later Milestone 11 durability work can extend the same artifact model
+- later Store Milestone 11 durability work can extend the same artifact model
   instead of replacing host-local conventions
 - ephemeral artifact mode remains explicit debt, not implied product
   completeness
@@ -1446,7 +1446,7 @@ Required cross-feature rows:
   - Milestone 9 tenant/schema variation must route through saved-query
     equivalence and rebinding law rather than host-local "same query" guesses
 - `future-durable-artifact-extension`
-  - Milestone 11 durability may extend `SavedQueryArtifact` but may not replace
+  - Store Milestone 11 durability may extend `SavedQueryArtifact` but may not replace
     it with a second portable artifact model
 
 Implementation instructions:
@@ -1606,7 +1606,7 @@ It must land before Milestone 9 because policy masking and tenant schema
 variation should apply to already-canonical scopes/templates/saved artifacts
 and already-explicit view families rather than to host-defined helper paths.
 
-It must land before Milestone 11 because durable saved-query support should
+It must land before Store Milestone 11 because durable saved-query support should
 extend one frozen saved-artifact model, not introduce a different one after the
 fact.
 

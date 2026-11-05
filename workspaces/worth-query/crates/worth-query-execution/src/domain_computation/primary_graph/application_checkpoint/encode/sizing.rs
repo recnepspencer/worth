@@ -7,7 +7,7 @@ use super::super::{
 };
 
 /// Proof that the complete frame and every contained wire length fit this host.
-pub(super) struct ValidatedCheckpointSize {
+pub struct ValidatedCheckpointSize {
     total: usize,
     accepted: usize,
 }
@@ -84,3 +84,5 @@ fn size_overflow() -> DurabilityError {
         "Query application checkpoint size exceeds this host or wire format",
     )
 }
+
+mod court_doors_for_test;

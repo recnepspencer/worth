@@ -72,7 +72,7 @@ fn cancelled_build() {
     let calls = Arc::new(prefix::Calls::default());
     let world = host::install(Arc::clone(&calls));
     let cancellation = WorthQueryCancellationSource::new();
-    let scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let principal = authenticate(&world, &scope);
     let request = world
         .runtime()
@@ -93,6 +93,20 @@ fn cancelled_build() {
     assert_eq!(source.rows().len(), 7);
     let reached = Arc::new(Mutex::new(None));
     let observation = Arc::clone(&reached);
+    // The retained handle, cancellation wait list and fixture observers outlive
+    // this build. Initialize their lazy pthread Mutex backing before measuring
+    // only the build's Source/node/scratch ownership; the index is still cold.
+    assert_eq!(index.lifecycle(), WorthQueryManagedIndexLifecycle::Created);
+    drop(scope.cancellation().cancelled());
+    assert!(!scope.cancellation().is_cancelled());
+    drop(reached.lock().unwrap());
+    drop(calls.after_first_node.lock().unwrap());
+    drop(calls.canonical_coordinates.lock().unwrap());
+    #[cfg(test)]
+    {
+        drop(calls.first_source.lock().unwrap());
+        drop(calls.structure_fault.lock().unwrap());
+    }
     let region = Region::new(ALLOCATOR);
     *calls.after_first_node.lock().unwrap() = Some(Box::new(move || {
         // This runs after NodeWriter::push succeeds, not at admission or capacity.

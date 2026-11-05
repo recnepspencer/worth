@@ -14,7 +14,8 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         correlations: &[ExternalEffectCorrelationIdentity],
         now_unix_seconds: u64,
     ) -> Result<(), Denial> {
-        self.primary_provider
+        self.runtime
+            .primary_provider
             .verify_completed_inbound_for_cleanup(correlations, now_unix_seconds)
     }
 }
@@ -81,3 +82,5 @@ fn matches_receipt(
         && identity.version_id() == receipt.version_id
         && identity.authoring_branch() == &receipt.branch_id
 }
+
+mod court_doors_for_test;

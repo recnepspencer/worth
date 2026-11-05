@@ -2,9 +2,6 @@
 
 use super::*;
 
-#[cfg(test)]
-mod tests;
-
 impl FullVerificationImage<'_> {
     pub(super) fn root_source_is_current(
         &self,
@@ -56,3 +53,5 @@ impl FullVerificationImage<'_> {
         Ok(())
     }
 }
+
+mod court_doors_for_test;

@@ -37,11 +37,14 @@ mod progress;
 mod promotion;
 mod read_close;
 mod slot_preparation;
+mod source_authorization;
 mod successor_release;
+mod typed_checkpoint;
 mod unavailable;
 mod wave_checkpoint;
 mod wave_preparation;
 use crate::domain_computation::primary_graph::application_contribution::producer::registry::InstalledProducerProvider;
+use crate::domain_computation::primary_graph::application_contribution::producer::ProducerInvocationAuthority;
 use crate::domain_computation::primary_graph::application_output_demand::RequestedOutputReadClaims;
 
 use crate::domain_computation::primary_graph::application_output_demand::SelectedReadyReadmission;
@@ -68,7 +71,7 @@ pub(in crate::domain_computation::primary_graph) enum RequiredFreshOutcome {
 
 /// This trait is private to the admitted-demand owner. The erased value is
 /// always an actual typed admitted demand, with its original real interest.
-trait ErasedRequiredSuccessor<Schema: ApplicationSchema>: Send + Sync {
+trait ErasedRequiredSuccessor<Schema: ApplicationSchema>: Send {
     fn close_read_request(
         &mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -85,6 +88,14 @@ trait ErasedRequiredSuccessor<Schema: ApplicationSchema>: Send + Sync {
     fn predecessor(&self) -> &SelectedReadyReadmission;
     fn producer_contacts(&self) -> usize;
     fn continuations_empty(&self) -> bool;
+    fn authorize_current_source(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        request: &WorthQueryRequestScope,
+        invocation: &ProducerInvocationAuthority<'_>,
+    ) -> Result<(), WorthQueryOutputDemandDenial>;
     fn retain_requested(&mut self, claims: &mut RequestedOutputReadClaims);
     /// Move to the newest row of the occurrence once this one is superseded.
     fn follow_refresh(
@@ -97,6 +108,8 @@ trait ErasedRequiredSuccessor<Schema: ApplicationSchema>: Send + Sync {
 
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         request: &WorthQueryRequestScope,
+        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        invocation: &ProducerInvocationAuthority<'_>,
     ) -> Result<bool, WorthQueryOutputDemandDenial>;
     /// Run the successor's own row again under the authority that issued it.
     fn resume(
@@ -107,13 +120,13 @@ trait ErasedRequiredSuccessor<Schema: ApplicationSchema>: Send + Sync {
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
         branch: crate::basis::WorthQueryProductBranch,
-
+        invocation: &ProducerInvocationAuthority<'_>,
         performed: &std::cell::RefCell<PerformedMembers>,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>;
     fn into_any(self: Box<Self>) -> Box<dyn Any>;
 }
 
-struct TypedRequiredSuccessor<Schema, Family>
+pub struct TypedRequiredSuccessor<Schema, Family>
 where
     Schema: ApplicationSchema,
     Family: WorthQueryProducerOutputFamily<Schema>,
@@ -128,11 +141,24 @@ impl<Schema, Family> ErasedRequiredSuccessor<Schema> for TypedRequiredSuccessor<
 where
     Schema: ApplicationSchema + 'static,
     Family: WorthQueryProducerOutputFamily<Schema> + 'static,
-    WorthQueryAdmittedOutputDemand<Schema, Family>: Send + Sync,
+    WorthQueryAdmittedOutputDemand<Schema, Family>: Send,
     FamilySourceValue<Schema, Family>:
         WorthQueryApplicationProjection<Schema, FamilySourceQuery<Schema, Family>> + 'static,
     FamilySourceQuery<Schema, Family>: 'static,
 {
+    fn authorize_current_source(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        request: &WorthQueryRequestScope,
+        invocation: &ProducerInvocationAuthority<'_>,
+    ) -> Result<(), WorthQueryOutputDemandDenial> {
+        self.authorize_source_in_current_invocation(
+            execution, runtime, principal, request, invocation,
+        )
+    }
+
     fn close_read_request(
         &mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -235,42 +261,10 @@ where
 
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         request: &WorthQueryRequestScope,
+        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        invocation: &ProducerInvocationAuthority<'_>,
     ) -> Result<bool, WorthQueryOutputDemandDenial> {
-        let execution = phase
-            .execution_request_for(&runtime.product_runtime)
-            .map_err(|cause| {
-                WorthQueryOutputDemandDenial::new(
-                    super::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
-                    "required-checkpoint-phase",
-                )
-            })?;
-        let demand = self
-            .demand
-            .as_mut()
-            .expect("installed successor retains its typed demand");
-        if demand.unpublished_selected_checkpoint.is_some() {
-            return Ok(false);
-        }
-        let interest = demand
-            .interest
-            .as_ref()
-            .expect("installed successor retains its real Interest");
-        let prepared = runtime
-            .output_demands
-            .prepare_selected_checkpoint_finish(interest)?;
-        let Some((finish, claim, checkpoint)) = prepared.claim()? else {
-            return Ok(false);
-        };
-        runtime.advance_selected_output_checkpoint(
-            &execution,
-            phase,
-            &demand.selected.identity,
-            claim,
-            checkpoint,
-            request,
-            &mut demand.unpublished_selected_checkpoint,
-            finish,
-        )
+        self.advance_original_checkpoint(phase, runtime, request, principal, invocation)
     }
 
     fn resume(
@@ -281,11 +275,11 @@ where
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
         branch: crate::basis::WorthQueryProductBranch,
-
+        invocation: &ProducerInvocationAuthority<'_>,
         performed: &std::cell::RefCell<PerformedMembers>,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial> {
         let execution = phase
-            .execution_request_for(&runtime.product_runtime)
+            .execution_request_for(&runtime.runtime.product_runtime)
             .map_err(|cause| {
                 WorthQueryOutputDemandDenial::new(
                     super::super::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
@@ -293,7 +287,7 @@ where
                 )
             })?;
         self.run_again(
-            &execution, phase, runtime, principal, request, branch, performed,
+            &execution, phase, runtime, principal, request, branch, invocation, performed,
         )
     }
 
@@ -327,7 +321,7 @@ where
 
 /// One caller's actual unresolved dependent work. The Vec backing has its
 /// own final-owner ticket; each entry separately funds its erased Box.
-pub(super) struct RequiredContinuations<Schema>
+pub struct RequiredContinuations<Schema>
 where
     Schema: ApplicationSchema,
 {
@@ -372,3 +366,5 @@ fn capacity_denial() -> WorthQueryOutputDemandDenial {
         "required continuation exceeds retained capacity",
     )
 }
+
+mod court_doors_for_test;

@@ -152,6 +152,10 @@ where
                 self.authorization_denied_outcome(authorization)
             }
             WorthQueryAuthorizedApplicationReadDenial::Read(read) => match read.kind() {
+                WorthQueryApplicationReadExecutionDenialKind::Content(cause) => self
+                    .acknowledge_cause_denial(WorthQueryApplicationLiveCauseDenialKind::Content(
+                        cause,
+                    )),
                 WorthQueryApplicationReadExecutionDenialKind::ExecutionRequest(kind) => {
                     self.execution_denied_outcome(kind)
                 }
@@ -265,3 +269,5 @@ where
         self.termination_failed
     }
 }
+
+mod court_doors_for_test;

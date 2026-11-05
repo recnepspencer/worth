@@ -122,17 +122,10 @@ where
         F: for<'ctx> Fn(&mut EvaluationContext<'ctx, Ctx>) -> Result<O, SignalError> + Sync,
         O: IntoEvaluationOutput,
     {
-        let pending = self
-            .targets
-            .iter()
-            .copied()
-            .filter(|node| {
-                !matches!(
-                    self.tx.graph.get_state(*node),
-                    Ok(crate::data::node::NodeState::Clean)
-                )
-            })
-            .collect::<Vec<_>>();
+        let pending = crate::logic::planner::plan_builder::targets_requiring_settlement(
+            self.tx.graph,
+            &self.targets,
+        )?;
         if !pending.is_empty() {
             self.tx.execute_evaluation(
                 TransactionExecutionIntent::Targets {

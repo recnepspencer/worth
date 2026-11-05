@@ -7,8 +7,11 @@ impl DerivedIndexCheckpointArtifacts {
         match self.readmit_controlled(&mut IndexDecodeBudget::default()) {
             Ok(generations) => Ok(generations),
             Err(Stop::Durability(cause)) => Err(cause),
-            Err(Stop::Request(_)) | Err(Stop::Allocation(_)) | Err(Stop::AdmissionImage(_)) => {
-                unreachable!("uncontrolled index decode has no request, allocation or admission-image issuer")
+            Err(Stop::Content(_))
+            | Err(Stop::Request(_))
+            | Err(Stop::Allocation(_))
+            | Err(Stop::AdmissionImage(_)) => {
+                unreachable!("uncontrolled index decode has no request, allocation, content or admission-image issuer")
             }
         }
     }

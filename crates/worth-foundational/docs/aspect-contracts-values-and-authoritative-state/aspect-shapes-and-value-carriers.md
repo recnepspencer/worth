@@ -15,7 +15,7 @@ authoring and validation. It covers `AspectShape`, `ScalarAspectType`,
 - Use this when you need to choose the correct raw value carrier before calling
   validation.
 - Use this when contract shape and value shape are easy to confuse, especially
-  for `Bytes`, `ContentRef`, `EntityRef`, and opaque aspects.
+  for `InlineBytes`, `ContentRef`, `EntityRef`, and opaque aspects.
 - Use this when you want a stable API reference for the exact Milestone 1 value
   types instead of inferring them from tests.
 
@@ -70,7 +70,6 @@ The carrier matrix for Milestone 1 looks like this:
 - `AspectShape::Struct(StructAspectShape)` accepts raw `StructAspectValue`
 - `AspectShape::Reference(ReferenceAspectType::Entity)` accepts
   `AspectValue::EntityRef(EntityId)`
-- `AspectShape::Content` accepts `AspectValue::ContentRef(ContentRefId)`
 - `AspectShape::Opaque(OpaqueAspectType::Token)` has a contract shape, but no
   public raw `AspectValue::Opaque(...)` variant
 
@@ -80,9 +79,10 @@ value constructor in Milestone 1.
 `AspectValue` itself is also more specific than it may look at first glance:
 
 - `AspectValue::String(...)` holds `InternedString`, not a plain `String`
-- `AspectValue::Bytes(...)` holds `ContentRefId`, not an inline byte buffer
-- `AspectValue::ContentRef(...)` also holds `ContentRefId`, but it means
-  "content reference as content identity" rather than "bytes-like payload slot"
+- `AspectValue::InlineBytes(...)` carries a complete opaque inline atom
+- `AspectValue::ContentRef(...)` holds a descriptive 32-byte `ContentRefId`
+- Native content references occupy format-bound fields of a flat Struct aspect;
+  there is no standalone content shape
 - `AspectValue::EntityRef(...)` holds `EntityId`
 
 So the API is not "generic primitive values." It is a typed carrier set with a
@@ -101,7 +101,7 @@ The normal flow is:
 
 In concrete terms:
 
-1. scalar, reference, and content shapes start from `AspectValue`
+1. scalar and entity-reference shapes start from `AspectValue`
 2. struct shapes start from `StructAspectValue`
 3. opaque shapes are contract-declared but not raw-authored through a public
    `AspectValue` variant
@@ -146,16 +146,24 @@ let validated_entity = validate_aspect_value(
     AspectValue::EntityRef(EntityId::new(PartitionId::main(), 1, 0)).into(),
 );
 
-let content_contract = AspectContract::content_ref(
+let content_contract = AspectContract::struct_aspect(
     aspects().vocabulary().key("blob.preview")?,
     aspects().vocabulary().identity(31),
     aspects().vocabulary().revision(1),
+    aspects()
+        .struct_fields()
+        .required("payload", ScalarAspectType::ContentRef)
+        .finish()?,
 );
+let content_value = aspects()
+    .vocabulary()
+    .struct_value()
+    .with_field("payload", AspectValue::ContentRef(ContentRefId([9; 32])))
+    .finish()?;
 
-let validated_content = validate_aspect_value(
-    &content_contract,
-    AspectValue::ContentRef(ContentRefId(9)).into(),
-);
+// This validates field shape only. Native installation must bind the payload
+// field to its format/version; Native admission must resolve and certify bytes.
+let validated_content = validate_aspect_value(&content_contract, content_value.into());
 
 let struct_value = aspects()
     .vocabulary()
@@ -182,14 +190,10 @@ What is authoritative here is never the raw `AspectValue` or
 `StructAspectValue`. Those are caller-side carriers. The authoritative boundary
 starts only after validation succeeds.
 
-The other important thing to notice is that `ContentRefId` appears in two raw
-lanes:
-
-- `AspectValue::Bytes(ContentRefId)`
-- `AspectValue::ContentRef(ContentRefId)`
-
-Those are not interchangeable. The first is a bytes-family scalar value. The
-second is the content contract lane.
+`ContentRefId` appears as `AspectValue::ContentRef(ContentRefId)`. Pure scalar
+value plumbing may describe this digest, but it grants no byte custody. Native
+admits it only through a format-bound Struct field and the controlled content
+door. See the [content capability](../../../../docs/capability-index.md).
 
 ## How It Relates To Other Features
 
@@ -212,7 +216,7 @@ Inspect these first:
 - `AspectValue::value_family()` when a scalar-like value is rejected
 - `ContractValidationDenial` when a reference, content, or struct value fails
   to cross the validation boundary
-- the exact `AspectValue` variant when `Bytes` and `ContentRef` are easy to
+- the exact `AspectValue` variant when `InlineBytes` and `ContentRef` are easy to
   confuse
 
 If a struct contract rejects your input, confirm you built `StructAspectValue`
@@ -225,8 +229,8 @@ public API does not expose a raw opaque value constructor.
 
 - Do not treat `AspectShape` as if it were the same thing as a raw value.
 - Do not assume every contract shape has a direct `AspectValue` variant.
-- Do not treat `Bytes(ContentRefId)` and `ContentRef(ContentRefId)` as the same
-  semantic lane.
+- Do not treat inline atomic bytes and a content digest as the same semantic
+  lane, or treat a digest as proof that bytes were admitted.
 - Do not let raw `AspectValue` skip validation and enter authoritative state
   directly.
 
@@ -236,8 +240,8 @@ public API does not expose a raw opaque value constructor.
   `AspectValue::Opaque(...)` constructor.
 - Struct values are still scalar-field structs, not arbitrary nested object
   graphs.
-- JSON compatibility lowering admits scalar, entity-reference, content, and
-  struct shapes, but not opaque shapes.
+- JSON compatibility lowering admits scalar, entity-reference and struct
+  shapes, but not opaque shapes. Lowering a content digest does not resolve it.
 
 ## Related Docs
 

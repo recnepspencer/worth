@@ -40,9 +40,9 @@ fn every_native_scalar_uses_one_foundational_basis_across_query_identity_context
         projection_identities.insert(projection);
     }
 
-    assert_eq!(mutation_identities.len(), 25);
-    assert_eq!(retained_identities.len(), 25);
-    assert_eq!(projection_identities.len(), 25);
+    assert_eq!(mutation_identities.len(), 24);
+    assert_eq!(retained_identities.len(), 24);
+    assert_eq!(projection_identities.len(), 24);
 }
 
 #[test]
@@ -72,8 +72,8 @@ fn width_reference_and_interning_distinctions_survive_every_query_identity_conte
         (AspectValue::Int32(7), AspectValue::Int64(7)),
         (AspectValue::UInt32(7), AspectValue::Int32(7)),
         (
-            AspectValue::Bytes(ContentRefId(7)),
-            AspectValue::ContentRef(ContentRefId(7)),
+            AspectValue::ContentRef(ContentRefId([7; 32])),
+            AspectValue::UInt64(7),
         ),
         (
             AspectValue::String(InternedString::Raw("7".into())),
@@ -216,7 +216,6 @@ fn scalar_samples() -> Vec<AspectValue> {
         ),
         AspectValue::String(InternedString::Raw("alpha".into())),
         AspectValue::String(InternedString::Symbol(Symbol(17))),
-        AspectValue::Bytes(ContentRefId(41)),
         AspectValue::Uuid([7; 16]),
         AspectValue::Date(CanonicalDate {
             days_from_unix_epoch: 20_000,
@@ -230,6 +229,9 @@ fn scalar_samples() -> Vec<AspectValue> {
             offset_minutes: -360,
         }),
         AspectValue::EntityRef(EntityId::new(PartitionId(9), 10, 11)),
-        AspectValue::ContentRef(ContentRefId(42)),
+        AspectValue::ContentRef(ContentRefId([
+            42, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0,
+        ])),
     ]
 }

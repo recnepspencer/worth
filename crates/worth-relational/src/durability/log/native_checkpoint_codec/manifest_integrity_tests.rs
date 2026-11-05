@@ -60,6 +60,7 @@ fn shared_members_with_inconsistent_leaf_facts_refuse_the_manifest() {
             original.recorded_components.clone(),
             original.schema_carrier_digest,
             regions,
+            original.content.clone(),
         );
         forged.roots = crate::durability::data::CheckpointRoots::from_ordinary(roots);
         let failure = validate(&forged.seal_ordinary()).unwrap_err();

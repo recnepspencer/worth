@@ -17,7 +17,7 @@ fn discovered_ordinary_stopped_source_and_output_handoffs_keep_original_owner() 
     .unwrap();
     let request = runtime.request(&principal, &scope);
     let cancellation = WorthQueryCancellationSource::new();
-    let stopped = WorthQueryRequestScope::new(None, cancellation.token());
+    let stopped = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let stopped_principal = authentication::block_on(adapter.authenticate(
         authentication::LocalCredential::issued_for_model_owner(),
         &stopped,
