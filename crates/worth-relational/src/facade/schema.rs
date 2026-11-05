@@ -12,15 +12,17 @@ pub use crate::projected_member_domain::{
 pub use crate::schema::aggregate_identity::{
     register_aggregate_identity_storage, register_aggregate_membership,
 };
+pub use crate::schema::current_publication_ownership::register_current_publication_storage;
 pub use crate::schema::data::{
     AcyclicityContractDeclaration, AggregateIdentityContractDeclaration, AggregateIdentitySource,
     AggregateIdentityStorage, AggregateProjectedMemberStorage, AllowedCycleClass, AspectBinding,
     AspectContractPlanRevision, AspectDeclarationTrace, AspectDeclarationTraceRow,
     AspectLoweringTrace, AspectLoweringTraceRow, CardinalityContractDeclaration,
     ConnectivityMinimumContractDeclaration, ConnectivityMinimumEnforcement, ContractId,
-    DeclaredAspectContractBinding, DescriptorCanonicalBasisSupportPolicy,
-    DescriptorCanonicalBasisVersion, DescriptorSemanticsSupportPolicy, DescriptorSemanticsVersion,
-    DirectedTraversalKind, EndpointDeletionIntegrityDeclaration, EndpointDeletionIntegrityMode,
+    CurrentPublicationStorage, DeclaredAspectContractBinding,
+    DescriptorCanonicalBasisSupportPolicy, DescriptorCanonicalBasisVersion,
+    DescriptorSemanticsSupportPolicy, DescriptorSemanticsVersion, DirectedTraversalKind,
+    EndpointDeletionIntegrityDeclaration, EndpointDeletionIntegrityMode,
     EndpointKindContractDeclaration, EntityKindRegistration, FreeFormSchemaDiffIntent,
     HistoricalInterpretationSensitivity, KindAspectContractDeclarations, KindResolution,
     LoweredAcyclicityContract, LoweredAspectContractBinding, LoweredAspectContractPlan,

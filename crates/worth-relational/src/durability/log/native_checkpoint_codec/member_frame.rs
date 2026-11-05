@@ -46,22 +46,7 @@ pub(crate) fn locator_for_request(
     let mut answer = None;
     let handoff = crate::execution::request_stage::optional_stage(
         execution,
-        |context, _| {
-            answer = Some((|| {
-                let mut digest = Sha256::new();
-                for chunk in bytes.chunks(4096) {
-                    crate::execution::request_stage::checkpoint(context, chunk.len() as u64)
-                        .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
-                    digest.update(chunk);
-                }
-                crate::execution::request_stage::checkpoint(context, 0)
-                    .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
-                Ok(RelationalDurableMemberLocator {
-                    sha256: digest.finalize().into(),
-                    length: bytes.len() as u64,
-                })
-            })());
-        },
+        |context, _| answer = Some(locator_in_stage(context, bytes)),
         |_| 0,
     );
     match handoff {
@@ -71,6 +56,25 @@ pub(crate) fn locator_for_request(
             _ => Err(cause),
         },
     }
+}
+
+/// Hash inside the caller's stage, one unit per hashed byte; opens no scope.
+pub(crate) fn locator_in_stage(
+    context: &mut worth_execution::MapKernelContext<'_, '_>,
+    bytes: &[u8],
+) -> Result<RelationalDurableMemberLocator, crate::execution::RelationalExecutionDenialCause> {
+    let mut digest = Sha256::new();
+    for chunk in bytes.chunks(4096) {
+        crate::execution::request_stage::checkpoint(context, chunk.len() as u64)
+            .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
+        digest.update(chunk);
+    }
+    crate::execution::request_stage::checkpoint(context, 0)
+        .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
+    Ok(RelationalDurableMemberLocator {
+        sha256: digest.finalize().into(),
+        length: bytes.len() as u64,
+    })
 }
 
 pub(crate) fn decode(

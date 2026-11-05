@@ -17,7 +17,6 @@ pub(super) struct CompletedReadFacts {
     pub(super) content: Option<super::super::FactContent>,
     pub(super) postcondition_carry:
         Option<super::super::super::output_lineage::invalidation::PostconditionCarry>,
-    #[cfg(test)]
     pub(super) computation_facts: Option<SealedComputationFacts>,
     pub(super) computation_fact_ordinals: Arc<[usize]>,
 }

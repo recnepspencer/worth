@@ -6,7 +6,7 @@ use super::*;
 use crate::domain_computation::primary_graph::application_query::WorthQueryObservedSourceEpoch;
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 use std::cmp::Ordering;
-pub(in super::super) fn retire_stale_records(
+pub fn retire_stale_records(
     state: &mut DemandRegistryState,
     occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
     scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
@@ -20,7 +20,6 @@ pub(in super::super) fn retire_stale_records(
     // physical removal occurs only in the second pass, once for each unique key.
     let keys = super::super::refreshed_rejoin::source_rows(&state.records, successor)
         .filter(|(key, record)| {
-            #[cfg(test)]
             super::retirement_observation::record_sweep_contact();
             record.product_occurrence == occurrence
                 && record.source_scope == Some(scope)
@@ -64,45 +63,6 @@ pub(in super::super) fn retire_stale_records(
         {
             state.remove_record(&key);
             state.required_keys.take(&key);
-        }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::super::super::tests::key;
-    use super::super::super::tests::record;
-    use super::*;
-    #[test]
-    fn source_retirement_closes_all_producers_and_preserves_custody() {
-        let receipt = crate::domain_computation::primary_graph::tests::recoverable_commit_support::
-            committed_recoverable_application();
-        let scope = receipt.principal_scope().scope();
-        let occurrence = receipt.product_branch().occurrence();
-        let receipts = super::super::super::tests::walk_bounds::receipt_batch();
-        for producers in [1, 3, 7] {
-            let mut state = DemandRegistryState::default();
-            for producer in 0..producers {
-                let mut row = record(occurrence, DemandState::Admitted, 1);
-                row.source_scope = Some(scope);
-                state
-                    .records
-                    .insert(key(&format!("source-owner-{producer}"), 1, 1), row);
-            }
-            super::super::super::tests::walk_bounds::add_custody(&mut state, &receipts, 3);
-            retire_stale_records(&mut state, occurrence, scope, &key("unused", 2, 1).source);
-            let selected = key("unused", 2, 1);
-            let selected_rows = state
-                .records
-                .source_occurrence_rows(&selected.source)
-                .collect::<Vec<_>>();
-            assert_eq!(selected_rows.len(), producers);
-            assert!(selected_rows.iter().all(|(_, row)| row.terminal()));
-            assert_eq!(
-                state.records.values().filter(|row| !row.terminal()).count(),
-                receipts.len() * 3
-            );
-            assert_eq!(state.source_custody.len(), receipts.len());
         }
     }
 }

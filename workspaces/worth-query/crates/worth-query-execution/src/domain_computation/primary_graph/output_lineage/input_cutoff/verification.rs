@@ -3,7 +3,7 @@
 use crate::domain_computation::primary_graph::fact_verification_observation::input_cutoff as observation;
 use crate::domain_computation::primary_graph::fact_verification_observation::input_cutoff::Gate;
 mod owned;
-mod refusal;
+pub(crate) mod refusal;
 pub(in crate::domain_computation::primary_graph) use owned::OwnedInputCutoffDecision;
 pub(in crate::domain_computation::primary_graph) use refusal::InputCutoffVerificationStop;
 
@@ -41,7 +41,7 @@ pub(in crate::domain_computation::primary_graph) fn cutoff_declines(
 
 /// A prior performed record and the exact native read basis checked for reuse.
 /// Only the output-lineage owner can consume this at publication.
-pub(in crate::domain_computation::primary_graph) struct VerifiedInputCutoff<'selected> {
+pub struct VerifiedInputCutoff<'selected> {
     _computation: super::super::CurrentComputation,
     pub(super) candidate: RetainedInputCutoffCandidate,
     pub(super) selected: &'selected PositionedRelationalSnapshot,
@@ -51,7 +51,7 @@ pub(in crate::domain_computation::primary_graph) struct VerifiedInputCutoff<'sel
     pub(super) verified_consumed: Option<std::sync::Arc<[ConsumedOutputEvidence]>>,
 }
 
-pub(in crate::domain_computation::primary_graph) enum InputCutoffDecision<'selected> {
+pub enum InputCutoffDecision<'selected> {
     Fresh {
         key: PreparedInputReuseKey,
         context: PreparedDecisionReuseContext,
@@ -59,7 +59,7 @@ pub(in crate::domain_computation::primary_graph) enum InputCutoffDecision<'selec
     Reuse(VerifiedInputCutoff<'selected>),
 }
 
-struct VerifiedDependencies {
+pub struct VerifiedDependencies {
     facts: super::super::ComparableSourceFacts,
     consumed: Option<std::sync::Arc<[ConsumedOutputEvidence]>>,
 }
@@ -344,10 +344,10 @@ impl RetainedInputCutoffCandidate {
 }
 
 mod matched_roots;
-mod pending_upstream;
-#[cfg(test)]
-mod tests;
+pub(crate) mod pending_upstream;
 
-mod source_facts;
+pub(crate) mod source_facts;
 use source_facts::facts_are_current;
 use source_facts::marked_facts_permit_reuse;
+
+mod court_doors_for_test;

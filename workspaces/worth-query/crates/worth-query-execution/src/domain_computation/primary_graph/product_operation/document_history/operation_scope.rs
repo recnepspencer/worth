@@ -49,7 +49,6 @@ impl HistoryOperationScope {
             && self.runtime == receipt.authority_binding().runtime_authority()
             && &self.binding == receipt.principal_scope().binding_identity()
     }
-    #[cfg(test)]
     pub(super) fn from_resolved<S, E>(
         resolved: &crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity<
             S,

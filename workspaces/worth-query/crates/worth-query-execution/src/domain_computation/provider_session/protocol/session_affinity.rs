@@ -2,8 +2,9 @@ use std::sync::Arc;
 
 use super::{
     WorthQueryGraphProviderAnchor, WorthQueryProviderExecutionPlanContract,
-    WorthQueryProviderProductAffinity, WorthQueryProviderRunBorrow, WorthQueryProviderSessionLease,
-    WorthQueryProviderSessionToken, WorthQueryProviderSessionView, WorthQuerySessionBinding,
+    WorthQueryProviderProductAffinity, WorthQueryProviderRunCustody,
+    WorthQueryProviderSessionLease, WorthQueryProviderSessionToken, WorthQueryProviderSessionView,
+    WorthQuerySessionBinding,
 };
 
 /// The live, inseparable authority for one admitted provider session.
@@ -13,7 +14,7 @@ use super::{
 /// phases can advance the same authority, but cannot copy or reassemble its
 /// run, plan, token, and binding axes.
 pub(crate) struct WorthQueryProviderSessionAffinity<'run> {
-    _run: WorthQueryProviderRunBorrow<'run>,
+    _run: WorthQueryProviderRunCustody<'run>,
     contract: WorthQueryProviderExecutionPlanContract,
     product: WorthQueryProviderProductAffinity,
     session: WorthQueryProviderSessionLease<'run>,
@@ -21,7 +22,7 @@ pub(crate) struct WorthQueryProviderSessionAffinity<'run> {
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub(in crate::domain_computation) struct WorthQueryProviderSessionAffinityIdentity(u64);
+pub struct WorthQueryProviderSessionAffinityIdentity(u64);
 
 impl WorthQueryProviderSessionAffinityIdentity {
     pub(super) fn from_token(token: &WorthQueryProviderSessionToken) -> Self {
@@ -30,7 +31,7 @@ impl WorthQueryProviderSessionAffinityIdentity {
 }
 
 #[derive(Clone, Copy)]
-pub(in crate::domain_computation) struct WorthQueryProviderSessionAffinityView<'session> {
+pub struct WorthQueryProviderSessionAffinityView<'session> {
     #[allow(dead_code)]
     identity: WorthQueryProviderSessionAffinityIdentity,
     #[allow(dead_code)]
@@ -40,7 +41,7 @@ pub(in crate::domain_computation) struct WorthQueryProviderSessionAffinityView<'
 impl<'run> WorthQueryProviderSessionAffinity<'run> {
     pub(super) fn mint(
         request: worth_execution::ExecutionRequest<'run, 'run>,
-        run: WorthQueryProviderRunBorrow<'run>,
+        run: WorthQueryProviderRunCustody<'run>,
         contract: WorthQueryProviderExecutionPlanContract,
         product: WorthQueryProviderProductAffinity,
         provider: Arc<WorthQueryGraphProviderAnchor>,
@@ -108,16 +109,12 @@ impl<'run> WorthQueryProviderSessionAffinity<'run> {
 
 impl<'session> WorthQueryProviderSessionAffinityView<'session> {
     #[allow(dead_code)]
-    pub(in crate::domain_computation) const fn identity(
-        self,
-    ) -> WorthQueryProviderSessionAffinityIdentity {
+    pub const fn identity(self) -> WorthQueryProviderSessionAffinityIdentity {
         self.identity
     }
 
     #[allow(dead_code)]
-    pub(in crate::domain_computation) fn plan(
-        self,
-    ) -> &'session WorthQueryProviderExecutionPlanContract {
+    pub fn plan(self) -> &'session WorthQueryProviderExecutionPlanContract {
         self.plan
     }
 }

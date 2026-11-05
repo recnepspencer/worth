@@ -16,7 +16,7 @@ use worth_query_declaration::facade::application_operation::{
 use worth_query_declaration::facade::application_schema::ApplicationEntityMarkerIdentity;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) struct OutputRoleUse {
+pub struct OutputRoleUse {
     pub(in crate::domain_computation::primary_graph) name: String,
     pub(in crate::domain_computation::primary_graph) posture: ApplicationMutationOutputPosture,
     pub(in crate::domain_computation::primary_graph) cardinality:
@@ -80,3 +80,5 @@ where
         panic!("the output-role family does not admit this posture");
     }
 }
+
+mod court_doors_for_test;

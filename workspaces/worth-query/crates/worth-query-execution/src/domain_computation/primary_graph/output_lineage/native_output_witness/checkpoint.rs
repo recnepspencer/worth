@@ -5,8 +5,7 @@ use super::*;
 use crate::domain_computation::primary_graph::application_attempt::Movement;
 
 mod fact_index;
-#[cfg(test)]
-mod tests;
+
 use fact_index::CheckpointRoleIndex;
 
 impl SealedNativeOutputWitness {
@@ -115,3 +114,5 @@ impl SealedNativeOutputWitness {
         Ok(Some(cell))
     }
 }
+
+mod court_doors_for_test;

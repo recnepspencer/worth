@@ -15,9 +15,6 @@ use worth_execution::ExecutionRequest;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::runtime::RelationalRuntime;
 
-#[cfg(test)]
-mod retirement;
-
 pub(in crate::domain_computation::primary_graph::product_operation::correction_source) fn require<
     Schema: ApplicationSchema,
 >(
@@ -142,7 +139,7 @@ fn with_support_snapshots<T>(
     result
 }
 
-fn compare(
+pub fn compare(
     runtime: &RelationalRuntime,
     execution: ExecutionRequest<'_, '_>,
     original: &worth_relational::facade::snapshots::SnapshotHandle,

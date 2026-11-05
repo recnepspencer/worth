@@ -1,0 +1,120 @@
+//! Installs the capability fixture's grant relations and grant facts.
+use super::*;
+
+pub fn install_grant_facts(
+    schema: ApplicationSchemaDeclarationBuilder<IdentityExecutionSchema>,
+) -> ApplicationSchemaDeclarationBuilder<IdentityExecutionSchema> {
+    schema
+        .entity(CapabilityGrant::reference())
+        .aspect(CapabilityGrant::reference(), CapabilityFacts::reference())
+        .field(
+            CapabilityGrant::reference(),
+            CapabilityIdentity::reference(),
+        )
+        .field(
+            CapabilityGrant::reference(),
+            CapabilityActionField::reference(),
+        )
+        .field(
+            CapabilityGrant::reference(),
+            CapabilityPurposeField::reference(),
+        )
+        .field(
+            CapabilityGrant::reference(),
+            CapabilityDisclosureField::reference(),
+        )
+        .field(
+            CapabilityGrant::reference(),
+            CapabilityAmountField::reference(),
+        )
+        .field(
+            CapabilityGrant::reference(),
+            CapabilityStatusField::reference(),
+        )
+        .field(
+            CapabilityGrant::reference(),
+            CapabilityWorkflowField::reference(),
+        )
+        .field(
+            CapabilityGrant::reference(),
+            CapabilityNotBeforeField::reference(),
+        )
+        .field(
+            CapabilityGrant::reference(),
+            CapabilityNotAfterField::reference(),
+        )
+        .field(
+            CapabilityGrant::reference(),
+            CapabilityDelegationLimitField::reference(),
+        )
+        .entity(CapabilityActionRecord::reference())
+        .aspect(
+            CapabilityActionRecord::reference(),
+            CapabilityActionRecordFacts::reference(),
+        )
+        .field(
+            CapabilityActionRecord::reference(),
+            CapabilityActionRecordIdentity::reference(),
+        )
+}
+
+pub fn install_grant_relations(
+    schema: ApplicationSchemaDeclarationBuilder<IdentityExecutionSchema>,
+) -> ApplicationSchemaDeclarationBuilder<IdentityExecutionSchema> {
+    schema
+        .relation(
+            CapabilityGrantee::reference(),
+            Principal::reference(),
+            CapabilityGrant::reference(),
+        )
+        .relation(
+            CapabilityGrantor::reference(),
+            Principal::reference(),
+            CapabilityGrant::reference(),
+        )
+        .relation(
+            CapabilityCustodian::reference(),
+            Principal::reference(),
+            CapabilityGrant::reference(),
+        )
+        .relation(
+            CapabilityResource::reference(),
+            CapabilityGrant::reference(),
+            Account::reference(),
+        )
+        .relation(
+            CapabilityRelated::reference(),
+            CapabilityGrant::reference(),
+            Account::reference(),
+        )
+        .relation(
+            CapabilityParent::reference(),
+            CapabilityGrant::reference(),
+            CapabilityGrant::reference(),
+        )
+        .relation(
+            CapabilityExplicitDeny::reference(),
+            Principal::reference(),
+            Account::reference(),
+        )
+        .relation(
+            CapabilityConflictingBeneficiary::reference(),
+            Principal::reference(),
+            Account::reference(),
+        )
+        .relation(
+            CapabilityRequestActor::reference(),
+            Principal::reference(),
+            CapabilityActionRecord::reference(),
+        )
+        .relation(
+            CapabilityPriorActor::reference(),
+            Principal::reference(),
+            CapabilityActionRecord::reference(),
+        )
+        .relation(
+            CapabilityActionResource::reference(),
+            CapabilityActionRecord::reference(),
+            Account::reference(),
+        )
+}

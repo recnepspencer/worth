@@ -11,7 +11,7 @@ use worth_relational::facade::{
 };
 
 /// Exact query meaning, not an admission or permission to manufacture evidence.
-pub(in crate::domain_computation::primary_graph) struct StructuralWalkQuery<'a> {
+pub struct StructuralWalkQuery<'a> {
     pub(in crate::domain_computation::primary_graph) relation: &'a str,
     pub(in crate::domain_computation::primary_graph) roots: &'a [EntityId],
     pub(in crate::domain_computation::primary_graph) entity_kind: KindId,
@@ -25,6 +25,15 @@ pub(in crate::domain_computation::primary_graph) struct StructuralWalkQuery<'a> 
 impl StructuralWalkObservation {
     pub(in crate::domain_computation::primary_graph) fn read(
         pin: &RelationalPinnedRead,
+        execution: &ExecutionRequest<'_, '_>,
+        query: StructuralWalkQuery<'_>,
+        context: &mut MapKernelContext<'_, '_>,
+    ) -> Result<Arc<Self>, PinnedStructuralWalkDenial> {
+        Self::read_projected(pin, crate::domain_computation::primary_graph::projection_read_origin::ProjectionReadOriginRef::Committed(pin.snapshot()), execution, query, context)
+    }
+    pub(in crate::domain_computation::primary_graph) fn read_projected<Phase>(
+        pin: &RelationalPinnedRead<Phase>,
+        origin: crate::domain_computation::primary_graph::projection_read_origin::ProjectionReadOriginRef<'_>,
         execution: &ExecutionRequest<'_, '_>,
         query: StructuralWalkQuery<'_>,
         context: &mut MapKernelContext<'_, '_>,
@@ -43,7 +52,7 @@ impl StructuralWalkObservation {
         // These observations survive any later header or final-handoff failure.
         let reads = native.reads();
         let work = native.work_units();
-        Self::retain(native, pin.snapshot(), execution, &query, context).map_err(|cause| {
+        Self::retain(native, origin, execution, &query, context).map_err(|cause| {
             PinnedStructuralWalkDenial {
                 kind: PinnedStructuralWalkDenialKind::Read(cause),
                 reads,
@@ -52,11 +61,32 @@ impl StructuralWalkObservation {
         })
     }
 
+    pub(in crate::domain_computation::primary_graph) fn refresh_at(
+        &self,
+        pin: &RelationalPinnedRead,
+        execution: &ExecutionRequest<'_, '_>,
+        context: &mut MapKernelContext<'_, '_>,
+    ) -> Result<Arc<Self>, PinnedStructuralWalkDenial> {
+        Self::read(
+            pin,
+            execution,
+            StructuralWalkQuery {
+                relation: self.query.relation(),
+                roots: self.query.roots(),
+                entity_kind: self.query.entity_kind(),
+                relation_kind: self.query.relation_kind(),
+                direction: self.query.direction(),
+                maximum_work: None,
+                control: None,
+            },
+            context,
+        )
+    }
     // The only constructor is private to the actual-read owner. It accepts only
     // the successful Native body from read(), never caller-supplied evidence.
     fn retain(
         native: PinnedStructuralWalk,
-        snapshot: &SnapshotHandle,
+        origin: crate::domain_computation::primary_graph::projection_read_origin::ProjectionReadOriginRef<'_>,
         execution: &ExecutionRequest<'_, '_>,
         query: &StructuralWalkQuery<'_>,
         context: &mut MapKernelContext<'_, '_>,
@@ -104,7 +134,13 @@ impl StructuralWalkObservation {
             context.has_accounting(),
             u64::try_from(size_of::<Self>() + 2 * size_of::<usize>())
                 .ok()
-                .and_then(|n| n.checked_add(snapshot.branch_id().0.len() as u64))
+                .and_then(|n| {
+                    n.checked_add(
+                        origin
+                            .committed_snapshot()
+                            .map_or(0, |snapshot| snapshot.branch_id().0.len() as u64),
+                    )
+                })
                 .ok_or(Cause::ChargedBytesOverflow)?,
         )?;
         Self::checkpoint(context)?;
@@ -116,8 +152,10 @@ impl StructuralWalkObservation {
             query,
             native,
             commitment,
-            snapshot: snapshot.clone(),
+            snapshot: origin.retained(),
             _memory: memory,
         }))
     }
 }
+
+mod court_doors_for_test;

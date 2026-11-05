@@ -52,7 +52,6 @@ fn unique_successor_node<'compiled>(
     Ok(target)
 }
 
-#[cfg(test)]
 fn unique_successor_entity(
     targets: impl IntoIterator<Item = EntityId>,
 ) -> Result<EntityId, WorthQueryApplicationAttemptDenial> {

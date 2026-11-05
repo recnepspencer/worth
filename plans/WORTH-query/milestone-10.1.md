@@ -52,6 +52,8 @@ runtime affinity and native unwind/disposal custody, not an application marker
 trait or an implementation for arbitrary `()`. Its implementations bind existing
 native/operation owners. No stopped outcome may substitute a fresh request or suppress the original
 latched cause. Distinguish a concrete inner denial from a generic nested stop.
+The stop half of `WorthQueryAdvancementDenial` is [10.6](milestone-10.6.md)'s
+carried `RequestStop`; owner denials stay separate and are never merged into it.
 
 Unwind remains a programmer-defect path: preserve registered native effects,
 restore borrowed custody and resume the original panic. Do not invent a handler

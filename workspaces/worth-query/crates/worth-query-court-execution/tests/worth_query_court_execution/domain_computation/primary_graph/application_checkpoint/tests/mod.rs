@@ -1,0 +1,310 @@
+use sha2::Digest;
+use sha2::Sha256;
+
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::capture::merge_accepted_outputs;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::BODY_PREFIX_BYTES;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::CHECKSUM_BYTES;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::FORMAT_VERSION;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::MAGIC;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::MAXIMUM_ENTITY_NAME_BYTES;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::MAXIMUM_PRODUCER_IDENTITY_BYTES;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::MAXIMUM_ROLE_IDENTITY_BYTES;
+use worth_query_execution::facade::application_installation::WorthQueryApplicationCheckpoint;
+
+#[test]
+fn current_output_replaces_its_recovered_slot_without_checkpoint_growth() {
+    let scope = worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application()
+        .principal_scope()
+        .scope();
+    let checkpoint = |source, partition| {
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointIdentity::new_for_test(worth_relational::facade::mvcc::RequiredOutputProducingImplementation::from_checkpoint([0x11; 16], [0x22; 32]).unwrap(), ("producer".to_owned()).into(), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture::Performed, source, scope, partition, None, source, (Vec::new()).into(), None, 0, None)
+    };
+    let stale = checkpoint([1; 32], [7; 32]);
+    let sibling = checkpoint([2; 32], [8; 32]);
+    let current = checkpoint([3; 32], [7; 32]);
+
+    let first = merge_accepted_outputs(vec![current.clone()], vec![stale.clone(), sibling.clone()]);
+    let second = merge_accepted_outputs(first.clone(), vec![stale, sibling.clone()]);
+
+    assert_eq!(first, vec![sibling, current]);
+    assert_eq!(second, first);
+}
+
+#[test]
+fn accepted_output_count_is_bounded_before_allocation() {
+    let body = checkpoint_body(1, Vec::new());
+    assert_denied(body, "accepted-output count exceeds its payload");
+}
+
+#[test]
+fn producer_identity_length_and_utf8_are_guarded() {
+    let mut zero = 0_u64.to_be_bytes().to_vec();
+    zero.resize(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::MINIMUM_ACCEPTED_OUTPUT_BYTES, 0);
+    assert_denied(
+        checkpoint_body(1, zero),
+        "producer identity length is invalid",
+    );
+
+    let mut oversized = ((MAXIMUM_PRODUCER_IDENTITY_BYTES + 1) as u64)
+        .to_be_bytes()
+        .to_vec();
+    oversized.resize(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::MINIMUM_ACCEPTED_OUTPUT_BYTES, 0);
+    assert_denied(
+        checkpoint_body(1, oversized),
+        "producer identity length is invalid",
+    );
+
+    assert_denied(
+        checkpoint_body(1, padded(accepted_prefix(&[0xff], 0, [0; 32]))),
+        "producer identity is not UTF-8",
+    );
+}
+
+#[test]
+fn missing_original_build_identity_cannot_default_to_the_current_build() {
+    let mut accepted = accepted_without_roles(b"producer", 0);
+    let build_at = 8 + b"producer".len() + 1;
+    accepted[build_at..build_at + 16].fill(0);
+    assert_denied(
+        checkpoint_body(1, accepted),
+        "required output has no producing build identity",
+    );
+}
+
+#[test]
+fn dependency_posture_and_absent_padding_are_guarded() {
+    assert_denied(
+        checkpoint_body(1, padded(accepted_prefix(b"producer", 0, [1; 32]))),
+        "absent producer dependency contains data",
+    );
+    assert_denied(
+        checkpoint_body(1, padded(accepted_prefix(b"producer", 7, [0; 32]))),
+        "producer dependency posture is invalid",
+    );
+}
+
+#[test]
+fn role_count_is_bounded_before_allocation() {
+    let mut accepted = accepted_prefix(b"producer", 0, [0; 32]);
+    accepted.extend_from_slice(&2_u64.to_be_bytes());
+    accepted.extend_from_slice(&[0; 32]);
+    assert_denied(
+        checkpoint_body(1, accepted),
+        "output-role count exceeds its payload",
+    );
+}
+
+#[test]
+fn role_identity_length_and_utf8_are_guarded() {
+    for (role, expected) in [
+        (Vec::new(), "output-role identity length is invalid"),
+        (
+            vec![b'x'; MAXIMUM_ROLE_IDENTITY_BYTES + 1],
+            "output-role identity length is invalid",
+        ),
+        (vec![0xff], "output-role identity is not UTF-8"),
+    ] {
+        let accepted = accepted_with_raw_role(&role, 0, b"entity", entity_bytes());
+        assert_denied(checkpoint_body(1, accepted), expected);
+    }
+}
+
+#[test]
+fn role_posture_is_closed() {
+    assert_denied(
+        checkpoint_body(
+            1,
+            accepted_with_raw_role(b"role", 7, b"entity", entity_bytes()),
+        ),
+        "output-role posture is invalid",
+    );
+}
+
+#[test]
+fn role_entity_name_length_and_utf8_are_guarded() {
+    for (entity_name, expected) in [
+        (Vec::new(), "output-role entity name length is invalid"),
+        (
+            vec![b'x'; MAXIMUM_ENTITY_NAME_BYTES + 1],
+            "output-role entity name length is invalid",
+        ),
+        (vec![0xff], "output-role entity name is not UTF-8"),
+    ] {
+        let accepted = accepted_with_raw_role(b"role", 0, &entity_name, entity_bytes());
+        assert_denied(checkpoint_body(1, accepted), expected);
+    }
+}
+
+#[test]
+fn roles_and_accepted_outputs_require_canonical_order() {
+    let mut duplicate_roles = accepted_without_roles(b"producer", 2);
+    duplicate_roles.extend_from_slice(&role(b"same", b"entity"));
+    duplicate_roles.extend_from_slice(&role(b"same", b"entity"));
+    duplicate_roles.extend_from_slice(&0_u64.to_be_bytes());
+    assert_denied(
+        checkpoint_body(1, duplicate_roles),
+        "output roles are duplicated or non-canonical",
+    );
+
+    let accepted = accepted_with_raw_role(b"role", 0, b"entity", entity_bytes());
+    let mut duplicate_outputs = accepted.clone();
+    duplicate_outputs.extend_from_slice(&accepted);
+    assert_denied(
+        checkpoint_body(2, duplicate_outputs),
+        "accepted outputs are duplicated or non-canonical",
+    );
+}
+
+#[test]
+fn duplicate_slot_and_copied_fact_payload_cannot_form_two_recovered_candidates() {
+    let first = accepted_without_roles(b"producer", 0);
+    let mut changed_source = first.clone();
+    // Producer length, name, posture, and original implementation precede source.
+    let source_offset = 8 + b"producer".len() + 1 + 16 + 32;
+    changed_source[source_offset] = 2;
+    let mut two_slots = first.clone();
+    two_slots.extend_from_slice(&changed_source);
+    assert_denied(checkpoint_body(2, two_slots), "output slots are duplicated");
+
+    let mut copied_facts = first.clone();
+    copied_facts.truncate(copied_facts.len() - 8);
+    copied_facts.truncate(copied_facts.len() - 2);
+    let fact = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::encode(&[
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact::SourceEntity {
+            entity_id: worth_relational::facade::identity::EntityId::new(
+                worth_relational::facade::identity::PartitionId(1), 3, 1,
+            ),
+        },
+    ]).unwrap();
+    copied_facts.extend_from_slice(&worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::WIRE_VERSION.to_be_bytes());
+    copied_facts.extend_from_slice(&(fact.len() as u64).to_be_bytes());
+    copied_facts.extend_from_slice(&fact);
+    let mut duplicate_identity = first;
+    duplicate_identity.extend_from_slice(&copied_facts);
+    assert_denied(
+        checkpoint_body(2, duplicate_identity),
+        "accepted outputs are duplicated or non-canonical",
+    );
+}
+
+#[test]
+fn trailing_and_truncated_payloads_are_rejected() {
+    let mut trailing = checkpoint_body(0, Vec::new());
+    trailing.push(1);
+    assert_denied(trailing, "payload length differs");
+
+    let mut accepted = accepted_without_roles(b"producer", 1);
+    accepted.extend_from_slice(&32_u64.to_be_bytes());
+    accepted.extend_from_slice(&[b'r'; 25]);
+    assert_denied(checkpoint_body(1, accepted), "payload is truncated");
+}
+
+pub fn checkpoint_body(accepted_count: u64, accepted: Vec<u8>) -> Vec<u8> {
+    let mut body = Vec::with_capacity(BODY_PREFIX_BYTES + accepted.len());
+    body.extend_from_slice(&FORMAT_VERSION.to_be_bytes());
+    body.extend_from_slice(&worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::WORKFLOW_FACTS.to_be_bytes());
+    body.extend_from_slice(&worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::WORKFLOW_INSTANCES.to_be_bytes());
+    body.extend_from_slice(&1_u64.to_be_bytes());
+    body.extend_from_slice(&0_u64.to_be_bytes());
+    body.extend_from_slice(&accepted_count.to_be_bytes());
+    body.extend_from_slice(&accepted);
+    body
+}
+
+pub fn accepted_prefix(producer: &[u8], dependency_posture: u8, dependency: [u8; 32]) -> Vec<u8> {
+    let mut accepted = Vec::new();
+    accepted.extend_from_slice(&(producer.len() as u64).to_be_bytes());
+    accepted.extend_from_slice(producer);
+    accepted.push(0); // Performed, followed by mandatory original producing association.
+    accepted.extend_from_slice(&[0x11; 16]);
+    accepted.extend_from_slice(&[0x22; 32]);
+    accepted.extend_from_slice(&[1; 32]);
+    accepted.extend_from_slice(&entity_bytes());
+    accepted.extend_from_slice(&[2; 32]);
+    accepted.push(dependency_posture);
+    accepted.extend_from_slice(&dependency);
+    accepted.extend_from_slice(&[3; 32]);
+    accepted
+}
+
+pub fn accepted_without_roles(producer: &[u8], role_count: u64) -> Vec<u8> {
+    let mut accepted = accepted_prefix(producer, 0, [0; 32]);
+    accepted.extend_from_slice(&role_count.to_be_bytes());
+    if role_count == 0 {
+        accepted.extend_from_slice(&0_u16.to_be_bytes());
+        accepted.extend_from_slice(&0_u64.to_be_bytes());
+    }
+    accepted
+}
+
+pub fn accepted_with_raw_role(
+    role_identity: &[u8],
+    posture: u8,
+    entity_name: &[u8],
+    entity: [u8; 16],
+) -> Vec<u8> {
+    let mut accepted = accepted_without_roles(b"producer", 1);
+    accepted.extend_from_slice(&(role_identity.len() as u64).to_be_bytes());
+    accepted.extend_from_slice(role_identity);
+    accepted.push(posture);
+    accepted.extend_from_slice(&(entity_name.len() as u64).to_be_bytes());
+    accepted.extend_from_slice(entity_name);
+    accepted.extend_from_slice(&entity);
+    accepted.extend_from_slice(&0_u16.to_be_bytes());
+    accepted.extend_from_slice(&0_u64.to_be_bytes());
+    accepted
+}
+
+pub fn role(identity: &[u8], entity_name: &[u8]) -> Vec<u8> {
+    let mut encoded = Vec::new();
+    encoded.extend_from_slice(&(identity.len() as u64).to_be_bytes());
+    encoded.extend_from_slice(identity);
+    encoded.push(0);
+    encoded.extend_from_slice(&(entity_name.len() as u64).to_be_bytes());
+    encoded.extend_from_slice(entity_name);
+    encoded.extend_from_slice(&entity_bytes());
+    encoded
+}
+
+pub fn entity_bytes() -> [u8; 16] {
+    let mut entity = [0_u8; 16];
+    entity[3] = 1;
+    entity[11] = 1;
+    entity[15] = 1;
+    entity
+}
+
+pub fn padded(mut accepted: Vec<u8>) -> Vec<u8> {
+    accepted.resize(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::MINIMUM_ACCEPTED_OUTPUT_BYTES, 0);
+    accepted
+}
+
+pub fn assert_denied(body: Vec<u8>, expected: &str) {
+    let checkpoint = checkpoint_from_body(body);
+    let denial = match checkpoint.decode_for_test() {
+        Err(denial) => denial,
+        Ok(_) => panic!("hostile checkpoint payload must fail closed"),
+    };
+    assert!(
+        denial.contains(expected),
+        "expected `{expected}` denial, got `{denial}`"
+    );
+}
+
+pub fn checkpoint_from_body(body: Vec<u8>) -> WorthQueryApplicationCheckpoint {
+    let checksum = Sha256::digest(&body);
+    let mut bytes = Vec::with_capacity(MAGIC.len() + CHECKSUM_BYTES + body.len());
+    bytes.extend_from_slice(MAGIC);
+    bytes.extend_from_slice(&checksum);
+    bytes.extend_from_slice(&body);
+    WorthQueryApplicationCheckpoint::from_untrusted_bytes(bytes.into_boxed_slice())
+}
+
+#[path = "backing/mod.rs"]
+pub mod backing;
+#[path = "compatibility/mod.rs"]
+pub mod compatibility;
+#[path = "fact_versions/mod.rs"]
+pub mod fact_versions;
+#[path = "readmission_resources/mod.rs"]
+pub mod readmission_resources;

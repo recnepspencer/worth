@@ -57,7 +57,15 @@ impl<S: ApplicationSchema> WorthQueryInstalledApplicationProducerRegistry<S> {
     }
 }
 
-pub(super) fn require_family_agreement(
+impl<S: ApplicationSchema> PendingProducerRegistry<S> {
+    pub(in crate::domain_computation::primary_graph) fn owns_source_scopes(&self) -> bool {
+        self.declared
+            .values()
+            .any(|entry| entry.owned_scope_entity.is_some())
+    }
+}
+
+pub fn require_family_agreement(
     declarations: &std::collections::BTreeMap<String, DeclaredProducerBinding>,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
     let mut families = std::collections::BTreeMap::new();

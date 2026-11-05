@@ -15,15 +15,20 @@ use crate::domain_computation::{
     WorthQueryFreshDecisionReadSet, WorthQueryProviderSessionView,
 };
 
-mod indexed;
+pub(crate) mod indexed;
 use indexed::PreparedSelections;
 
-pub(in crate::domain_computation) struct PrimaryDecisionReadSetComparison<'provider> {
+pub struct PrimaryDecisionReadSetComparison<'provider> {
     provider: &'provider WorthQueryPrimaryGraphProvider,
     facts: Arc<crate::domain_computation::primary_graph::ApplicationFactTable>,
     registration: crate::domain_computation::primary_graph::RegisteredPrimaryRead,
     snapshot: Option<SnapshotHandle>,
     selections: PreparedSelections,
+    applied: Option<
+        worth_relational::facade::runtime::RelationalPinnedRead<
+            worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+        >,
+    >,
 }
 
 impl WorthQueryPrimaryGraphProvider {
@@ -69,6 +74,47 @@ impl WorthQueryPrimaryGraphProvider {
         authority.compare_primary_read_set(execution, receipt, &mut comparison, control)
     }
 
+    pub(in crate::domain_computation::primary_graph) fn compare_application_read_set_in_applied(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        authority: &WorthQuerySessionReadAuthority<'_>,
+        receipt: WorthQueryCompleteDecisionReadSetReceipt,
+        candidate: &worth_relational::facade::runtime::RelationalPinnedRead<
+            worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+        >,
+        control: StorageControl<'_, '_>,
+    ) -> Result<WorthQueryDecisionReadSetFreshnessOutcome, WorthQueryDecisionReadSetFailure> {
+        authority.validate_decision_read_set_receipt(&receipt)?;
+        let mut comparison = PrimaryDecisionReadSetComparison::acquire_on_image(
+            execution,
+            self,
+            authority.session(),
+            control,
+            Some(candidate.clone()),
+        )?;
+        authority.compare_primary_read_set(execution, receipt, &mut comparison, control)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn capture_and_compare_application_read_set(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        authority: &WorthQuerySessionReadAuthority<'_>,
+        candidate: Option<
+            &worth_relational::facade::runtime::RelationalPinnedRead<
+                worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+            >,
+        >,
+        control: StorageControl<'_, '_>,
+    ) -> Result<WorthQueryDecisionReadSetFreshnessOutcome, WorthQueryDecisionReadSetFailure> {
+        let receipt = self.capture_application_read_set(execution, authority, control)?;
+        match candidate {
+            None => self.compare_application_read_set(execution, authority, receipt, control),
+            Some(candidate) => self.compare_application_read_set_in_applied(
+                execution, authority, receipt, candidate, control,
+            ),
+        }
+    }
+
     pub(in crate::domain_computation::primary_graph) fn recompare_application_read_set(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -76,12 +122,27 @@ impl WorthQueryPrimaryGraphProvider {
         fresh: WorthQueryFreshDecisionReadSet,
         control: StorageControl<'_, '_>,
     ) -> Result<WorthQueryDecisionReadSetFreshnessOutcome, WorthQueryDecisionReadSetFailure> {
+        self.recompare_application_read_set_on_image(execution, authority, fresh, None, control)
+    }
+    pub(in crate::domain_computation::primary_graph) fn recompare_application_read_set_on_image(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        authority: &WorthQuerySessionReadAuthority<'_>,
+        fresh: WorthQueryFreshDecisionReadSet,
+        applied: Option<
+            &worth_relational::facade::runtime::RelationalPinnedRead<
+                worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+            >,
+        >,
+        control: StorageControl<'_, '_>,
+    ) -> Result<WorthQueryDecisionReadSetFreshnessOutcome, WorthQueryDecisionReadSetFailure> {
         authority.validate_fresh_decision_read_set(&fresh)?;
-        let mut comparison = PrimaryDecisionReadSetComparison::acquire(
+        let mut comparison = PrimaryDecisionReadSetComparison::acquire_on_image(
             execution,
             self,
             authority.session(),
             control,
+            applied.cloned(),
         )?;
         authority.recompare_primary_read_set(execution, fresh, &mut comparison, control)
     }
@@ -130,6 +191,11 @@ impl<'provider> PrimaryDecisionReadSetComparison<'provider> {
         {
             return Ok(false);
         }
+        if let Some(candidate) = &self.applied {
+            return original
+                .matches_applied_source(candidate, control)
+                .map_err(super::storage_read_set_failure);
+        }
         let snapshot = self.snapshot.as_ref().expect("genuine comparison observer");
         let same = self
             .provider
@@ -146,6 +212,19 @@ impl<'provider> PrimaryDecisionReadSetComparison<'provider> {
         provider: &'provider WorthQueryPrimaryGraphProvider,
         session: WorthQueryProviderSessionView<'_>,
         control: StorageControl<'_, '_>,
+    ) -> Result<Self, WorthQueryDecisionReadSetFailure> {
+        Self::acquire_on_image(execution, provider, session, control, None)
+    }
+    fn acquire_on_image(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        provider: &'provider WorthQueryPrimaryGraphProvider,
+        session: WorthQueryProviderSessionView<'_>,
+        control: StorageControl<'_, '_>,
+        applied: Option<
+            worth_relational::facade::runtime::RelationalPinnedRead<
+                worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+            >,
+        >,
     ) -> Result<Self, WorthQueryDecisionReadSetFailure> {
         check_control(control)?;
         let (registration, product) = {
@@ -170,6 +249,7 @@ impl<'provider> PrimaryDecisionReadSetComparison<'provider> {
             registration,
             snapshot: Some(snapshot),
             selections: PreparedSelections::new(),
+            applied,
         };
         check_control(control)?;
         Ok(comparison)
@@ -204,9 +284,14 @@ impl<'provider> PrimaryDecisionReadSetComparison<'provider> {
                 | WorthQueryPrimaryGraphApplicationDecisionFact::ApplicationObservedSource {
                     fact,
                     ..
-                } => self
-                    .selections
-                    .remains_equal(execution, fact, runtime, snapshot, control),
+                } => self.selections.remains_equal(
+                    execution,
+                    fact,
+                    runtime,
+                    snapshot,
+                    self.applied.as_ref(),
+                    control,
+                ),
                 _ => fact
                     .remains_equal_in(execution, runtime, snapshot)
                     .map_err(super::fact_read_set_failure),
@@ -244,5 +329,4 @@ fn check_control(control: StorageControl<'_, '_>) -> Result<(), WorthQueryDecisi
         .map_err(WorthQueryDecisionReadSetFailure::allocation_denied)
 }
 
-#[cfg(test)]
-mod tests;
+mod court_doors_for_test;

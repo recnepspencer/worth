@@ -165,6 +165,20 @@ where
                 )
             })?
             .is_some();
+        let available = if !available && self.native.candidate_identity().is_some() {
+            // The authored prefix can retire an endpoint before its admitted
+            // producer removes the edge. Read exact retirement metadata only;
+            // this does not make its payload live or enable equality lookup.
+            if !self.work_budget.consume(1) {
+                return Err(work_budget_exceeded(entity));
+            }
+            self.work.record_endpoint();
+            view.read_entity_retirement(execution, entity_id)
+                .map_err(|cause| self.walk_stop(cause, entity))?
+                .is_some_and(|retired| retired.kind_id() == expected_kind)
+        } else {
+            available
+        };
         if !available {
             return Err(endpoint_unavailable(entity));
         }
@@ -173,6 +187,10 @@ where
             kind: expected_kind,
             entity: Arc::from(entity),
             authority_identity: self.authority_identity,
+            phase: self
+                .native
+                .candidate_identity()
+                .map(|id| id.qualification()),
             _marker: PhantomData,
         })
     }
@@ -183,9 +201,8 @@ where
         &self,
         subject: &str,
     ) -> Result<VisibilityProjectionView, WorthQueryInvariantProjectionTraversalDenial> {
-        self.runtime
-            .read_truth()
-            .project_snapshot(self.snapshot)
+        self.native
+            .projection(self.snapshot)
             .ok_or_else(|| endpoint_unavailable(subject))
     }
 
@@ -198,6 +215,7 @@ where
             kind: identity.kind,
             entity: Arc::clone(&identity.entity),
             authority_identity: identity.authority_identity,
+            phase: identity.phase,
             _marker: PhantomData,
         }
     }
@@ -224,7 +242,6 @@ fn work_budget_exceeded(relation: &str) -> WorthQueryInvariantProjectionTraversa
     )
 }
 
-#[cfg(test)]
-mod tests;
-
 mod adjacency;
+
+mod court_doors_for_test;

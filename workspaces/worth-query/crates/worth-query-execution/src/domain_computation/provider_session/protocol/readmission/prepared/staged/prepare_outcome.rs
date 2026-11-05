@@ -61,6 +61,12 @@ impl<'run> WorthQuerySessionBoundReadsAndEffects<'run> {
 }
 
 impl WorthQuerySessionPrepareOutcome<'_> {
+    pub(in crate::domain_computation) fn terminal_binding(
+        &self,
+    ) -> super::super::super::super::WorthQueryProviderSessionTerminalBinding {
+        self.affinity.terminal_binding()
+    }
+
     pub fn plan_identity(&self) -> &str {
         self.affinity.plan().identity()
     }
@@ -168,3 +174,5 @@ impl WorthQuerySessionPrepareOutcome<'_> {
         }
     }
 }
+
+mod court_doors_for_test;

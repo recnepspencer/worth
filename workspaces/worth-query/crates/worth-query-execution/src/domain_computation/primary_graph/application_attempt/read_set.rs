@@ -23,11 +23,11 @@ use crate::domain_computation::primary_graph::{
 };
 mod fact_routes;
 pub(in crate::domain_computation::primary_graph) use fact_routes::FactRoutes;
-mod application_projection;
+pub(crate) mod application_projection;
 pub(in crate::domain_computation) use application_projection::CompletedFactProjection;
-mod original_read;
+pub(crate) mod original_read;
 pub(in crate::domain_computation) use original_read::CompletedOriginalRead;
-mod admitted_arrays;
+pub(crate) mod admitted_arrays;
 mod completed_facts;
 pub(in crate::domain_computation::primary_graph::application_attempt) use completed_facts::admit_completed_facts;
 mod authority_facts;
@@ -35,11 +35,10 @@ mod binding_proof;
 mod complete_read_set_core;
 mod completion;
 mod completion_brand;
-mod computation_routing;
+pub(crate) mod computation_routing;
 mod mutation_read_attempt_core;
 mod native_completion;
 mod value_decode;
-#[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use computation_routing::ComputationFactReaders;
 pub(in crate::domain_computation::primary_graph) use computation_routing::{
     CheckedCallShape, ComputationFactAttribution, ComputationFactIndex, ComputationRead,
@@ -47,29 +46,30 @@ pub(in crate::domain_computation::primary_graph) use computation_routing::{
 };
 pub(in crate::domain_computation::primary_graph) mod request_liveness;
 mod retained_facts;
-mod scope_bindings;
+pub(crate) mod scope_bindings;
 pub(in crate::domain_computation::primary_graph::application_attempt) use admitted_arrays::admit_array;
 pub(in crate::domain_computation::primary_graph) use scope_bindings::{
     CompletedReadScopes, InstalledScopePosition,
 };
-mod decision_reuse;
-mod fact_observation;
+pub(crate) mod decision_reuse;
+pub(crate) mod fact_observation;
 pub(in crate::domain_computation::primary_graph) use decision_reuse::{
     CompletedDecisionReuseProof, PreparedDecisionReuseContext,
 };
 pub(in crate::domain_computation::primary_graph) use fact_observation::observe_admitted_fact;
-mod handler_fact_boundary;
+pub(crate) mod handler_fact_boundary;
 pub(in crate::domain_computation) use handler_fact_boundary::CompletedHandlerFactBoundary;
-mod aggregate;
+pub(crate) mod aggregate;
 mod components;
 mod observation_admission;
 mod observations;
+mod projected_admission;
 mod projected_completion;
 mod projected_extension;
 mod relation_observation;
-mod source_facts;
-mod structural_walk;
-mod unique_write_dependencies;
+pub(crate) mod source_facts;
+pub(crate) mod structural_walk;
+pub(crate) mod unique_write_dependencies;
 
 pub(super) use binding_proof::{MutationHandlerBindingProof, WorkflowOperationBindingProof};
 pub use relation_observation::WorthQueryObservedApplicationRelation;
@@ -145,7 +145,6 @@ pub struct WorthQueryCompleteApplicationReadSet<
     pub(super) consumed_outputs: Vec<super::super::invariant_projection::ConsumedOutputEvidence>,
     /// The facts the owner calls read, when the handler ran one partitioned
     /// computation.
-    #[cfg(test)]
     pub(super) computation_facts: Option<SealedComputationFacts>,
     /// The ordinals in `facts`, ascending, of the facts an owner call read.
     pub(super) computation_fact_ordinals: Arc<[usize]>,
@@ -316,18 +315,6 @@ where
         >,
         WorthQueryApplicationAttemptDenial,
     > {
-        if !admission.belongs_to(
-            self.runtime.authority_identity(),
-            &self.installed_schema.binding_identity(),
-        ) {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::ForeignApplication,
-                admission.operation(),
-            ));
-        }
-        admission
-            .validate_installed_operation(&self.runtime.installed_operations)
-            .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)?;
         if !projection.belongs_to(
             self.runtime.authority_identity(),
             &self.installed_schema.binding_identity(),
@@ -338,63 +325,22 @@ where
                 admission.operation(),
             ));
         }
-        admission
-            .validate_current_authority()
-            .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)?;
-        let graph = self.runtime.primary_graph().ok_or_else(|| {
-            denial(
-                WorthQueryApplicationAttemptDenialKind::ForeignApplication,
-                admission.operation(),
-            )
-        })?;
-        let root = admission.scope_entity_id();
-        let (lease, projected_scope, decision_reads, dependent_source_facts, consumed_outputs) =
-            projection.into_lease_and_realized_scope();
-        // A read whose failure the decision swallowed left an outcome its fact
-        // does not hold, so no fact can stand for it.
-        let (expected_facts, computation_reads) = decision_reads
-            .into_expected(execution)
-            .map_err(|failed| failed.into_attempt_denial(admission.operation()))?;
-        let mut admission = admission;
-        let admitted_source_facts = validate_source_facts(execution, &mut admission, &lease)?;
-        let source_facts = merge_source_facts(
-            admitted_source_facts,
-            dependent_source_facts,
-            admission.operation(),
-            super::retained_decision_facts::StorageControl::new(
-                allocation_policy,
-                Some(admission.publication_request()),
-            )
-            .with_execution(*execution),
-        )?;
-        let layout = Arc::clone(&lease.layout);
-        Ok(WorthQueryApplicationReadAttempt {
-            execution: *execution,
-            value_decode: super::super::value_decode::ValueDecodeState::new(
-                self.installed_schema.value_bindings().clone(),
-            ),
+        self.begin_projected_read_parts(
+            execution,
             admission,
-            lease,
-            layout,
-            entity_resolution: graph.retain_entity_resolution_context(),
-            read_scope: WorthQueryApplicationReadScope::projected(root, projected_scope),
-            expected_facts: Some(expected_facts),
-            computation_reads,
-            installed_read_scopes: BTreeMap::new(),
-            facts: BTreeMap::new(),
-            source_facts,
-            consumed_outputs,
-            native_completion: None,
-            _phase: PhantomData,
-        })
+            projected_admission::ProjectedReadParts::from_projection(projection),
+            allocation_policy,
+        )
     }
 }
 mod entity_resolution;
 mod workflow_actor;
 
-fn denial(
+pub fn denial(
     kind: WorthQueryApplicationAttemptDenialKind,
     subject: impl Into<String>,
 ) -> WorthQueryApplicationAttemptDenial {
     WorthQueryApplicationAttemptDenial::new(kind, subject)
 }
+
+mod court_doors_for_test;

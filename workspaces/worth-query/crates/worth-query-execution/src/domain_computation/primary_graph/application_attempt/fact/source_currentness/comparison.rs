@@ -9,6 +9,24 @@ impl WorthQueryApplicationObservedFact {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     ) -> Result<bool, WorthQuerySourceCurrentnessFailure> {
+        self.comparison_in_image(runtime, execution, snapshot, None)
+    }
+    pub(in crate::domain_computation::primary_graph) fn comparison_in_image(
+        &self,
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+        applied: Option<
+            &worth_relational::facade::runtime::RelationalPinnedRead<
+                worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+            >,
+        >,
+    ) -> Result<bool, WorthQuerySourceCurrentnessFailure> {
+        let image = super::super::image::FactReadImage {
+            runtime,
+            before: snapshot,
+            applied,
+        };
         match self {
             Self::SourceReadAuthorization { observation } => observation
                 .validate_current(runtime, execution, snapshot)
@@ -39,9 +57,8 @@ impl WorthQueryApplicationObservedFact {
                 deleted_at,
                 ..
             } => Ok(super::super::retirement_equality::remains_equal(
-                runtime,
+                image.view().as_ref(),
                 execution,
-                snapshot,
                 *entity_id,
                 *kind,
                 *created_at,
@@ -49,9 +66,8 @@ impl WorthQueryApplicationObservedFact {
             )
             .map_err(WorthQuerySourceCurrentnessFailure::Execution)?),
             Self::SourceEntity { entity_id } => {
-                let view = runtime
-                    .read_truth()
-                    .project_snapshot(snapshot)
+                let view = image
+                    .view()
                     .ok_or(WorthQuerySourceCurrentnessFailure::Unavailable)?;
                 Ok(view
                     .entity_record_with_projection_scope(
@@ -71,10 +87,9 @@ impl WorthQueryApplicationObservedFact {
                 kind,
                 aspect,
                 present,
-            } => Ok(super::super::super::observation::observe_aspect_presence(
-                runtime, execution, snapshot, *entity_id, *kind, aspect,
-            )
-            .map_err(WorthQuerySourceCurrentnessFailure::Execution)?
+            } => Ok(image
+                .aspect_presence(execution, *entity_id, *kind, aspect)
+                .map_err(WorthQuerySourceCurrentnessFailure::Execution)?
                 == Some(*present)),
             Self::SourceAspectRevision {
                 entity_id,
@@ -83,14 +98,16 @@ impl WorthQueryApplicationObservedFact {
             } => {
                 // The native symbol lookup hashes initialized aspect text.
                 // Admit it before borrowing the exact selected root.
-                let Some(current) = runtime
-                    .read_truth()
-                    .read_exact_snapshot_entity_aspect_version(
-                        execution, snapshot, *entity_id, aspect,
-                    )
-                    .map_err(WorthQuerySourceCurrentnessFailure::Execution)?
+                let Some(current) = image
+                    .aspect_revision(execution, *entity_id, aspect)
+                    .map_err(|cause| {
+                        cause.relational_execution_cause().map_or(
+                            WorthQuerySourceCurrentnessFailure::Unavailable,
+                            WorthQuerySourceCurrentnessFailure::Execution,
+                        )
+                    })?
                 else {
-                    return unanswered_probe(runtime, execution, snapshot, *entity_id);
+                    return unanswered_probe(&image, execution, *entity_id);
                 };
                 Ok(current == *native_revision)
             }
@@ -101,15 +118,14 @@ impl WorthQueryApplicationObservedFact {
             } => {
                 let expected =
                     native_revision.ok_or(WorthQuerySourceCurrentnessFailure::Unavailable)?;
-                let Some(current) = runtime
-                    .read_truth()
-                    .project_snapshot(snapshot)
+                let Some(current) = image
+                    .view()
                     .map(|view| view.entity_field_revision(execution, *entity_id, locator))
                     .transpose()
                     .map_err(WorthQuerySourceCurrentnessFailure::Execution)?
                     .flatten()
                 else {
-                    return unanswered_probe(runtime, execution, snapshot, *entity_id);
+                    return unanswered_probe(&image, execution, *entity_id);
                 };
                 Ok(current == expected)
             }
@@ -121,9 +137,8 @@ impl WorthQueryApplicationObservedFact {
                 comparison_work_limit,
                 ..
             } => {
-                let view = runtime
-                    .read_truth()
-                    .project_snapshot(snapshot)
+                let view = image
+                    .view()
                     .ok_or(WorthQuerySourceCurrentnessFailure::Unavailable)?;
                 // The owner-index lookup costs one unit whatever the fact's
                 // recorded limit.
@@ -139,7 +154,7 @@ impl WorthQueryApplicationObservedFact {
                         Err(WorthQuerySourceCurrentnessFailure::Execution(cause))
                     }
                     Err(AdjacencyStructuralRevisionDenial::AnchorUnavailable) => {
-                        unanswered_probe(runtime, execution, snapshot, *anchor)
+                        unanswered_probe(&image, execution, *anchor)
                     }
                     Err(AdjacencyStructuralRevisionDenial::WorkBudgetExceeded) => {
                         Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded)
@@ -149,9 +164,8 @@ impl WorthQueryApplicationObservedFact {
                     }
                 }
             }
-            Self::Entity { entity_id, kind } => Ok(runtime
-                .read_truth()
-                .read_exact_snapshot_live_entity_kind_status(execution, snapshot, *entity_id)
+            Self::Entity { entity_id, kind } => Ok(image
+                .live_kind(execution, *entity_id)
                 .map_err(WorthQuerySourceCurrentnessFailure::Execution)?
                 .ok_or(WorthQuerySourceCurrentnessFailure::Unavailable)?
                 == Some(*kind)),
@@ -281,14 +295,12 @@ impl WorthQueryApplicationObservedFact {
 /// is a snapshot that could not be read.
 // A selected fixed-key read still admits its region and preserves storage failure.
 fn unanswered_probe(
-    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    image: &super::super::image::FactReadImage<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     entity: worth_relational::facade::identity::EntityId,
 ) -> Result<bool, WorthQuerySourceCurrentnessFailure> {
-    match runtime
-        .read_truth()
-        .read_exact_snapshot_live_entity_kind_status(execution, snapshot, entity)
+    match image
+        .live_kind(execution, entity)
         .map_err(WorthQuerySourceCurrentnessFailure::Execution)?
     {
         Some(None) => Ok(false),

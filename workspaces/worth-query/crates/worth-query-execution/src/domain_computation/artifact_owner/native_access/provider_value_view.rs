@@ -105,5 +105,4 @@ impl WorthQueryArtifactProviderValueView<'_> {
     }
 }
 
-#[cfg(test)]
-mod tests;
+mod court_doors_for_test;

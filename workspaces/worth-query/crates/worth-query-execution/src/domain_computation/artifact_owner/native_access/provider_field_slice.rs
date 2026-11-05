@@ -189,3 +189,5 @@ fn nested_bytes<T>(values: &[T], nested: impl Fn(&T) -> usize) -> usize {
             total.saturating_add(nested(value))
         })
 }
+
+mod court_doors_for_test;

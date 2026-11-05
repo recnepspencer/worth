@@ -34,6 +34,12 @@ pub enum WorthQueryCustomInvariantDenial {
 pub enum WorthQueryInvariantExecutionDenialKind {
     /// The existing Live occurrence cannot fence this candidate preparation.
     ManagedPredicatePreparationUnavailable,
+    /// A Native participant has no retained Query settlement session.
+    CoupledSettlementMissing,
+    CoupledReadSupportChanged,
+    CoupledReadSupportUnavailable {
+        cause: crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind,
+    },
     /// Validation was refused by the execution owner before effects.
     ExecutionDenied(crate::domain_computation::WorthQueryProviderSessionDenialKind),
     /// Validation was stopped by cancellation or its deadline.
@@ -136,9 +142,44 @@ pub struct WorthQueryInvariantExecutionFailure {
     detail: Arc<str>,
     custom_invariant: Option<WorthQueryCustomInvariantDenial>,
     native: Option<NativeDenial>,
+    affected_records: Option<Arc<[worth_relational::facade::transactions::RecordRef]>>,
 }
 
 impl WorthQueryInvariantExecutionFailure {
+    pub(crate) fn coupled_read_support(
+        source: worth_relational::facade::identity::EntityId,
+        cause: Option<
+            crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind,
+        >,
+        detail: impl Into<Arc<str>>,
+    ) -> Self {
+        let kind = cause.map_or(
+            WorthQueryInvariantExecutionDenialKind::CoupledReadSupportChanged,
+            |cause| WorthQueryInvariantExecutionDenialKind::CoupledReadSupportUnavailable { cause },
+        );
+        let mut failure = Self::new(kind, detail);
+        failure.affected_records = Some(Arc::from([
+            worth_relational::facade::transactions::RecordRef::Entity(source),
+        ]));
+        failure
+    }
+    pub(crate) fn missing_coupled_settlement(
+        source: worth_relational::facade::identity::EntityId,
+    ) -> Self {
+        let mut denied = Self::new(
+            WorthQueryInvariantExecutionDenialKind::CoupledSettlementMissing,
+            "Native participant has no retained Query settlement session",
+        );
+        denied.affected_records = Some(Arc::from([
+            worth_relational::facade::transactions::RecordRef::Entity(source),
+        ]));
+        denied
+    }
+    /// Exact records whose Query settlement could not be admitted.
+    pub fn affected_records(&self) -> &[worth_relational::facade::transactions::RecordRef] {
+        self.affected_records.as_deref().unwrap_or(&[])
+    }
+
     /// A failure with the `Denied` posture.
     pub fn new(kind: WorthQueryInvariantExecutionDenialKind, detail: impl Into<Arc<str>>) -> Self {
         Self {
@@ -147,6 +188,7 @@ impl WorthQueryInvariantExecutionFailure {
             detail: detail.into(),
             custom_invariant: None,
             native: None,
+            affected_records: None,
         }
     }
 
@@ -160,6 +202,7 @@ impl WorthQueryInvariantExecutionFailure {
             detail: detail.into(),
             custom_invariant: None,
             native: None,
+            affected_records: None,
         }
     }
 
@@ -173,6 +216,7 @@ impl WorthQueryInvariantExecutionFailure {
             detail: detail.into(),
             custom_invariant: Some(custom_invariant),
             native: None,
+            affected_records: None,
         }
     }
 
@@ -256,6 +300,7 @@ impl WorthQueryInvariantExecutionFailure {
             detail: detail.into(),
             custom_invariant: None,
             native: Some(native),
+            affected_records: None,
         }
     }
     /// Exact physical owner cause, including its original checked quote.

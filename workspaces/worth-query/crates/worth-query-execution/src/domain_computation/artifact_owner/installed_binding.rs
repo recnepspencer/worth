@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 #[derive(Clone, Debug)]
-pub(crate) struct WorthQueryInstalledWorkflowArtifactContracts {
+pub struct WorthQueryInstalledWorkflowArtifactContracts {
     input:
         Option<Arc<worth_query_installation::facade::WorthQueryInstalledArtifactContractAuthority>>,
     output:
@@ -12,7 +12,6 @@ pub(crate) struct WorthQueryInstalledWorkflowArtifactContracts {
 }
 
 impl WorthQueryInstalledWorkflowArtifactContracts {
-    #[cfg(test)]
     pub(crate) const fn empty() -> Self {
         Self {
             input: None,
@@ -21,7 +20,6 @@ impl WorthQueryInstalledWorkflowArtifactContracts {
         }
     }
 
-    #[cfg(test)]
     pub(crate) fn with_output(
         output: Arc<worth_query_installation::facade::WorthQueryInstalledArtifactContractAuthority>,
     ) -> Self {
@@ -146,3 +144,5 @@ fn installed_reference(
         .expect("newly minted workflow artifact authority must validate");
     Arc::new(authority)
 }
+
+mod court_doors_for_test;

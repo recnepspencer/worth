@@ -20,11 +20,38 @@ pub(super) struct PreparedAuthoredIdentity {
     original: EntityId,
     locator: AspectFieldLocator,
     key: AspectValue,
+    co_anchors: Vec<PreparedAuthoredIdentity>,
 }
 
 impl PreparedAuthoredIdentity {
     pub(super) fn retirement_anchor(&self) -> Option<EntityId> {
         (self.declaration.parts().source_posture == Posture::Create).then_some(self.original)
+    }
+
+    pub(super) fn retirement_co_anchors(&self) -> Vec<EntityId> {
+        self.co_anchors
+            .iter()
+            .filter_map(Self::retirement_anchor)
+            .collect()
+    }
+    pub(super) fn restoration_co_anchors<'a>(
+        &self,
+        roles: impl Iterator<
+                Item = (
+                    &'a str,
+                    Posture,
+                    &'a str,
+                    &'a worth_relational::facade::transactions::EntityReference,
+                ),
+            > + Clone,
+    ) -> Vec<(
+        EntityId,
+        worth_relational::facade::transactions::CreatedEntityRef,
+    )> {
+        self.co_anchors
+            .iter()
+            .filter_map(|anchor| anchor.restoration_anchor(roles.clone()))
+            .collect()
     }
 
     pub(super) fn restoration_anchor<'a>(
@@ -63,6 +90,14 @@ impl PreparedAuthoredIdentity {
             return Ok(None);
         };
         let declaration = identity.into_declaration();
+        Self::prepare_identity::<S, C>(source, request, declaration)
+    }
+
+    fn prepare_identity<S: ApplicationSchema, C: ApplicationCorrectionBinding<S>>(
+        source: &WorthQuerySelectedCorrectionSource<'_, S>,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        declaration: DeclaredAuthoredCorrection,
+    ) -> Result<Option<Self>, Denial> {
         let parts = declaration.parts();
         let ApplicationSchemaMember::Field {
             entity,
@@ -87,8 +122,14 @@ impl PreparedAuthoredIdentity {
             .find_map(|(name, posture, kind, id)| {
                 (name == parts.source_role && posture == parts.source_posture && kind == entity)
                     .then_some(id)
-            })
-            .ok_or(Denial::UnsupportedSourceMeaning)?;
+            });
+        let Some(original) = original else {
+            return if declaration.is_optional() {
+                Ok(None)
+            } else {
+                Err(Denial::UnsupportedSourceMeaning)
+            };
+        };
         let locator = AspectFieldLocator::new(
             LocatorAuthority::Planned,
             AspectKey::new(aspect).ok_or(Denial::UnsupportedSourceMeaning)?,
@@ -125,7 +166,15 @@ impl PreparedAuthoredIdentity {
             }
             Posture::Preserve => return Err(Denial::UnsupportedSourceMeaning),
         };
+        let mut co_anchors = Vec::with_capacity(declaration.co_anchors().len());
+        for declared in declaration.co_anchors() {
+            if let Some(anchor) = Self::prepare_identity::<S, C>(source, request, declared.clone())?
+            {
+                co_anchors.push(anchor);
+            }
+        }
         Ok(Some(Self {
+            co_anchors,
             declaration,
             original,
             locator,

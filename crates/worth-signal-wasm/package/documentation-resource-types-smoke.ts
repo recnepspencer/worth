@@ -107,3 +107,11 @@ const rawDetail = signals.resource.detail({
 rawDetail.line({ tenantId: "tenant-1", documentId: "document-1" }).summary();
 
 signals.free();
+
+
+function patchTransportExample(signals: import("./index.js").CallableSignals) {
+  return signals.api({}).url("/files/:id").mutation<{ id: string; name: string }, { name: string }, "update">({
+    semantics: "update", method: "PATCH", load: async ({ id, body }: { id: string | number; body: { name: string } }) => ({ id: String(id), name: body.name }),
+  });
+}
+void patchTransportExample;

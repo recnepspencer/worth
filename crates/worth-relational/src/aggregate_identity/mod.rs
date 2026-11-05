@@ -1,5 +1,7 @@
 //! One owner for committed aggregate naming and occurrence-qualified lineage.
+mod candidate_read;
 mod changes;
+pub(crate) use candidate_read::AggregateCandidateRead;
 mod cohorts;
 mod consequence_plan;
 mod derived_source;
@@ -15,7 +17,9 @@ pub(crate) mod projected_storage;
 mod projection;
 mod proposal;
 mod read;
+mod restoration;
 mod retention_extent;
+pub(crate) use restoration::RestoredMembership;
 mod selection;
 mod stored_lineage;
 mod stored_read;

@@ -19,7 +19,7 @@ use worth_relational::facade::{
 
 // This directory is call-local and descriptive; its map backing is not charged
 // as ExecutionArray payload. Every value is the native owner's exact-root token.
-pub(super) struct PreparedSelections {
+pub struct PreparedSelections {
     pub(super) selectors:
         BTreeMap<(DerivedIndexId, KindId, AspectFieldLocator), PreparedEntityFieldLookup>,
 }
@@ -39,6 +39,11 @@ impl PreparedSelections {
         fact: &WorthQueryApplicationObservedFact,
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
+        applied: Option<
+            &worth_relational::facade::runtime::RelationalPinnedRead<
+                worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+            >,
+        >,
         control: StorageControl<'_, '_>,
     ) -> Result<bool, WorthQueryDecisionReadSetFailure> {
         super::check_control(control)?;
@@ -55,7 +60,7 @@ impl PreparedSelections {
         } = fact
         else {
             return fact
-                .remains_equal_in(runtime, execution, snapshot)
+                .remains_equal_in_image(runtime, execution, snapshot, applied)
                 .map_err(super::super::fact_read_set_failure);
         };
         // Preserve scalar malformed-limit refusal before index admission.
@@ -89,6 +94,19 @@ impl PreparedSelections {
             self.selectors.insert(key.clone(), prepared);
         }
         let prepared = &self.selectors[&key];
+        if let Some(candidate) = applied {
+            return match candidate.lookup_applied_entity_field(execution, prepared, value, BoundedIndexParityMode::Production, *candidate_limit) {
+                Ok(current) => Ok(!current.overflowed()
+                    && prepared.retain_definition().as_ref() == definition.as_ref()
+                    && current.candidate_entity_ids() == candidates),
+                Err(worth_relational::facade::indexes::AppliedEntityFieldLookupDenial::Execution(cause)) => Err(super::super::fact_read_set_failure(
+                    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::relational_read_stopped(cause, "applied indexed comparison"))),
+                Err(worth_relational::facade::indexes::AppliedEntityFieldLookupDenial::PredecessorIndex(cause)) => comparison_stop(BoundedEntityFieldLookupAdmissionStop::Lookup(cause)),
+                Err(worth_relational::facade::indexes::AppliedEntityFieldLookupDenial::InvalidCandidateLimit
+                    | worth_relational::facade::indexes::AppliedEntityFieldLookupDenial::ForeignPredecessor
+                    | worth_relational::facade::indexes::AppliedEntityFieldLookupDenial::ExactBasisRequired) => Ok(false),
+            };
+        }
         let current = runtime.index_access().execute_prepared_entity_field_lookup(
             prepared,
             value,
@@ -106,7 +124,7 @@ impl PreparedSelections {
     }
 }
 
-fn comparison_stop(
+pub fn comparison_stop(
     stop: BoundedEntityFieldLookupAdmissionStop<WorthQueryDecisionReadSetFailure>,
 ) -> Result<bool, WorthQueryDecisionReadSetFailure> {
     match stop {
@@ -121,19 +139,4 @@ fn comparison_stop(
     }
 }
 
-#[cfg(test)]
-mod read_fold_tests {
-    use super::*;
-    #[test]
-    fn read_fold_index_accounting_overflow_is_a_request_stop() {
-        let denied = comparison_stop(BoundedEntityFieldLookupAdmissionStop::AccountingOverflow)
-            .expect_err("accounting overflow cannot answer not equal");
-        assert_eq!(denied.kind(), crate::domain_computation::WorthQueryDecisionReadSetDenialKind::ExecutionRequest(crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionResource {
-            denial: crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::WorkCounterOverflow,
-            partition_identity: None, policy_ancestor: None,
-        }));
-        assert!(
-            !comparison_stop(BoundedEntityFieldLookupAdmissionStop::ExactBasisRequired).unwrap()
-        );
-    }
-}
+mod court_doors_for_test;

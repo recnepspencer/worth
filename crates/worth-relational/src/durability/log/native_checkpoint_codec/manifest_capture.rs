@@ -2,14 +2,10 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use super::member_frame::{self, MemberKind};
-use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact;
-#[cfg(test)]
 use crate::durability::checkpoints::aspect_state_images::CheckpointAspectContractCatalog;
-#[cfg(test)]
 use crate::durability::checkpoints::images::partition_from_image;
 use crate::durability::data::*;
 use crate::durability::medium::RelationalDurableMemberLocator;
-#[cfg(test)]
 use crate::storage::overlay::{PartitionContentCommitment, PartitionState};
 
 pub(crate) struct CapturedManifest {
@@ -40,7 +36,7 @@ impl CapturedManifest {
         prior: Option<&RelationalCheckpointManifest>,
         placement: &RelationalCheckpointArtifactPolicy<'_>,
         journal_index: Vec<crate::history::RelationalCommitIndexEntry>,
-        control: super::checkpoint_encoding::CheckpointEncodingControl<'_, '_>,
+        control: &mut super::checkpoint_encoding::CheckpointEncodingControl<'_, '_, '_, '_, '_>,
     ) -> Result<Self, RelationalNativeCheckpointCaptureDenial> {
         let mut members = BTreeMap::new();
         let mut commits = BTreeMap::new();
@@ -76,21 +72,7 @@ impl CapturedManifest {
                     );
                 }
             } else {
-                let payload_digest = match control {
-                    super::checkpoint_encoding::CheckpointEncodingControl::Original(execution) => {
-                        RelationalCanonicalCommitArtifact::positioned_payload_digest_original(
-                            positioned, &execution,
-                        )
-                        .map_err(RelationalNativeCheckpointCaptureDenial::from)?
-                    }
-                    #[cfg(test)]
-                    super::checkpoint_encoding::CheckpointEncodingControl::Policy(_) => {
-                        RelationalCanonicalCommitArtifact::positioned_payload_digest(positioned)
-                            .map_err(|error| {
-                                corrupt(format!("canonical checkpoint digest: {error}"))
-                            })?
-                    }
-                };
+                let payload_digest = control.payload_digest(positioned)?;
                 commits.insert(
                     positioned.position(),
                     crate::history::RelationalCommitIndexEntry {
@@ -199,13 +181,24 @@ impl CapturedManifest {
         checkpoint: &DurableCheckpoint,
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<Self, RelationalNativeCheckpointCaptureDenial> {
+        Self::capture_expanded(
+            checkpoint,
+            policy,
+            &mut super::checkpoint_encoding::CheckpointEncodingControl::Policy(policy),
+        )
+    }
+    pub(crate) fn capture_expanded(
+        checkpoint: &DurableCheckpoint,
+        policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+        control: &mut super::checkpoint_encoding::CheckpointEncodingControl<'_, '_, '_, '_, '_>,
+    ) -> Result<Self, RelationalNativeCheckpointCaptureDenial> {
         let mut captured = Self::capture_metadata(
             checkpoint,
             policy,
             None,
             &RelationalCheckpointArtifactPolicy::Embedded,
             Vec::new(),
-            super::checkpoint_encoding::CheckpointEncodingControl::Policy(policy),
+            control,
         )?;
         let rows = checkpoint
             .envelopes
@@ -309,7 +302,6 @@ impl CapturedManifest {
     }
 }
 
-#[cfg(test)]
 fn restore_images(
     images: &[PartitionCheckpointImage],
     schema: &crate::branch::RelationalBranchRootSchemaAuthority,
@@ -333,7 +325,6 @@ fn restore_images(
     Ok(partitions)
 }
 
-#[cfg(test)]
 fn capture_partitions(
     partitions: &BTreeMap<crate::identity::data::PartitionId, PartitionState>,
     schema: &crate::branch::RelationalBranchRootSchemaAuthority,

@@ -49,7 +49,14 @@ pub fn declare(
             Node::reference(),
             Node::reference(),
         )
+        .application_query(route_query::definition())
+        .application_query_binding::<route_query::Binding>()
         .application_query(query::definition())
         .application_query_binding::<ReadBinding>();
-    realization::declare(schema)
+    let schema = realization::declare(schema);
+    if super::PRIVATE_AGGREGATES {
+        aggregate_schema::declare(schema)
+    } else {
+        schema
+    }
 }

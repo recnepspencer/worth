@@ -24,7 +24,18 @@ impl SourceReadVerification<'_> {
                 }
                 *equal
             } else {
-                let equal = body.remains_equal_at(&self.pin, execution, context, control)?;
+                let equal = match &self.pin {
+                    image::VerificationImage::Committed(pin) => {
+                        body.remains_equal_at(pin, execution, context, control)
+                    }
+                    image::VerificationImage::Applied { pin, .. } => body.remains_equal_on_pin(
+                        pin,
+                        self.pin.origin(),
+                        execution,
+                        context,
+                        control,
+                    ),
+                }?;
                 memory::grow_tree::<(usize, (Arc<DerivedSourceObservation>, bool))>(
                     &mut self._memory,
                     &mut self.bytes,

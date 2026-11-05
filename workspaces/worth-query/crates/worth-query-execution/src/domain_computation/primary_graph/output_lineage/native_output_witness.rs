@@ -23,11 +23,11 @@ mod equality;
 mod fact_coverage;
 mod fact_projection;
 mod preparation;
-mod retirement;
+pub(crate) mod retirement;
 use retirement::RetirementMetadata;
 
 #[derive(Debug)]
-struct RoleProbe {
+pub struct RoleProbe {
     role: String,
     entity_name: String,
     kind: KindId,
@@ -48,7 +48,7 @@ struct AspectProbe {
 /// Prepared role and aspect probes are constructed before the native commit.
 /// Their storage never authorizes a write.
 #[must_use = "the prepared output witness must be sealed or dropped"]
-pub(in crate::domain_computation::primary_graph) struct PreparedNativeOutputWitness {
+pub struct PreparedNativeOutputWitness {
     cell: Arc<OnceLock<SealedNativeOutputWitness>>,
     roles: Vec<RoleProbe>,
     aspects: Vec<AspectProbe>,
@@ -58,7 +58,7 @@ pub(in crate::domain_computation::primary_graph) struct PreparedNativeOutputWitn
 /// proves that the previously performed output has not changed. A revision
 /// change conservatively requests ordinary producer execution, even for ABA.
 #[derive(Debug)]
-pub(in crate::domain_computation::primary_graph) struct SealedNativeOutputWitness {
+pub struct SealedNativeOutputWitness {
     roles: Vec<RoleProbe>,
     aspects: Vec<AspectProbe>,
 }
@@ -66,7 +66,7 @@ pub(in crate::domain_computation::primary_graph) struct SealedNativeOutputWitnes
 /// A checked projection of the sealed performed roles into ordinary observed
 /// facts. It borrows the witness so the installed aspect list remains the only
 /// source of this output dependency footprint.
-pub(in crate::domain_computation::primary_graph) struct PreparedNativeOutputFacts<'a> {
+pub struct PreparedNativeOutputFacts<'a> {
     witness: &'a SealedNativeOutputWitness,
     count: usize,
     retained_payload_bytes: u64,
@@ -275,3 +275,5 @@ impl RoleProbe {
             == Some(self.kind))
     }
 }
+
+mod court_doors_for_test;

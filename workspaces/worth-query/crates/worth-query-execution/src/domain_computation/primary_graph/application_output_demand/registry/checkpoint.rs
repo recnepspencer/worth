@@ -6,12 +6,12 @@ use worth_runtime_world::facade::CompositeCommitIdentity;
 
 use super::ReadyCompletion;
 
-pub(in crate::domain_computation::primary_graph) enum WorthQueryPendingOutputDelivery {
+pub enum WorthQueryPendingOutputDelivery {
     Change(WorthQueryPerformedRelationalProductChange),
     NoChange,
 }
 
-pub(in crate::domain_computation::primary_graph) enum WorthQueryOutputCheckpoint {
+pub enum WorthQueryOutputCheckpoint {
     PublicationPending {
         owner: crate::domain_computation::primary_graph::application_contribution::PendingProducerPublication,
         ready_backing: super::PreparedReadyBacking,
@@ -30,9 +30,7 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryOutputCheckpoint
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryOutputClaimIdentity(
-    pub(super) u64,
-);
+pub struct WorthQueryOutputClaimIdentity(pub u64);
 
 impl WorthQueryOutputCheckpoint {
     fn generation(&self) -> super::ready_backing::OutputCheckpointGeneration {
@@ -60,9 +58,7 @@ impl WorthQueryOutputCheckpoint {
             || matches!(self, Self::PublicationPending { owner, .. }
                 if !owner.is_closed() && owner.publication().is_some())
     }
-    pub(in crate::domain_computation::primary_graph) fn receipt(
-        &self,
-    ) -> Option<&WorthQueryApplicationCommitReceipt> {
+    pub fn receipt(&self) -> Option<&WorthQueryApplicationCommitReceipt> {
         match self {
             Self::PublicationPending { .. } => None,
             Self::Published { receipt, .. } | Self::Delivered { receipt, .. } => Some(receipt),
@@ -75,7 +71,7 @@ impl WorthQueryOutputCheckpoint {
     }
 }
 
-pub(super) enum WorthQueryOutputAdvancement {
+pub enum WorthQueryOutputAdvancement {
     Idle,
     Claimed(WorthQueryOutputClaimIdentity),
     Stopped {
@@ -84,7 +80,7 @@ pub(super) enum WorthQueryOutputAdvancement {
     },
 }
 
-pub(super) struct WorthQueryOutputProgress {
+pub struct WorthQueryOutputProgress {
     generation: Option<super::ready_backing::OutputCheckpointGeneration>,
     undelivered: Option<super::publication_head::UndeliveredPublication>,
     publication_head: Option<std::sync::Arc<std::sync::atomic::AtomicUsize>>,
@@ -98,7 +94,6 @@ pub(super) struct WorthQueryOutputProgress {
 }
 
 impl WorthQueryOutputProgress {
-    #[cfg(test)]
     pub(super) fn new(checkpoint: WorthQueryOutputCheckpoint) -> Self {
         let (output, retired_observation) = Self::new_with_detached_observation(checkpoint);
         drop(retired_observation);
@@ -147,7 +142,6 @@ impl WorthQueryOutputProgress {
         }
     }
 
-    #[cfg(test)]
     pub(super) fn stopped_without_checkpoint(denial: WorthQueryOutputDemandDenial) -> Self {
         let mut output = Self {
             generation: None,
@@ -269,3 +263,5 @@ impl WorthQueryOutputProgress {
         self.checkpoint = Some(checkpoint);
     }
 }
+
+mod court_doors_for_test;

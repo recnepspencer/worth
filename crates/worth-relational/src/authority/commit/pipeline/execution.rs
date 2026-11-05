@@ -61,12 +61,29 @@ pub(crate) fn prepare_consulted_authoritative_commit(
         })?
         .publication_cell();
     let diagnostic_capture = runtime.diagnostics.begin_operation_capture();
+    let coupled_read = context
+        .validation_input
+        .coupled_proposal()
+        .cloned()
+        .map(|proposal| (context.validation_input.basis().clone(), proposal));
     let history_bound = prepare_bound_history(execution, runtime, context, &scope_control)?;
     let final_runtime = runtime.with_candidate_symbols(history_bound.candidate_symbols());
     let runtime = &final_runtime;
     let snapshot_validated =
         validate_snapshot_publication(execution, runtime, history_bound, &scope_control)?;
-    let assembled = assemble_commit_artifacts(execution, runtime, snapshot_validated)?;
+    let defer_publication_lineage = (required_output_publication.is_some()
+        || snapshot_validated.has_codec_publication())
+        && expected_root
+            .schema_authority()
+            .registry()
+            .current_publication_storage
+            .is_some();
+    let assembled = assemble_commit_artifacts(
+        execution,
+        runtime,
+        snapshot_validated,
+        defer_publication_lineage,
+    )?;
     let mut prepared = prepare_commit_publication_execution(
         execution,
         runtime,
@@ -139,7 +156,7 @@ pub(crate) fn prepare_consulted_authoritative_commit(
         return Err(TransactionCommitError::interrupted(interruption));
     }
     prepared.release_transaction_retention();
-    let candidate = crate::mvcc::PreparedRelationalCommitCandidate::new(
+    let mut candidate = crate::mvcc::PreparedRelationalCommitCandidate::new(
         runtime_instance_id,
         runtime.schema_contract_runtime.custom_invariant_generation,
         publication_binding,
@@ -167,6 +184,9 @@ pub(crate) fn prepare_consulted_authoritative_commit(
             TransactionCommitError::publication_failed(failure)
         }
     })?;
+    if let Some((before, proposal)) = coupled_read {
+        candidate.retain_coupled_read(runtime, before, proposal);
+    }
     runtime
         .history
         .record_candidate_preparation(candidate.branch());

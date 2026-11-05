@@ -70,8 +70,7 @@ impl<Schema, Operation, Input, Scope>
 impl<Schema, Operation, Input, Scope>
     WorthQueryElevationRequestProgram<Schema, Operation, Input, Scope>
 {
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn forge_installed_seal_for_test(
+    pub fn forge_installed_seal_for_test(
         &mut self,
         donor: worth_query_installation::facade::InstalledOperationView<'_>,
     ) {

@@ -38,6 +38,8 @@ pub(super) fn reject(cause: Cause, id: EntityId) -> TransactionCommitError {
 #[allow(clippy::too_many_arguments)]
 pub(super) fn prepare(
     candidate: &CanonicalCommitEnvelope,
+    execution: &ExecutionRequest<'_, '_>,
+    basis: &AdmittedRelationalBranchBasis,
     runtime: &crate::runtime::RelationalPreparationRuntime,
     installed: &crate::mvcc::RelationalInstalledApplicationPublicationAuthority,
     prior: &CanonicalRequiredOutputOrigin,
@@ -53,18 +55,35 @@ pub(super) fn prepare(
         return Ok(None);
     };
     let anchors = removal.anchors;
-    let latest = source_scope_closure::current(
-        candidate.commit.parents.first().copied(),
-        runtime.history.canonical_catalog_len(),
+    let closure = source_scope_closure::current(
+        execution,
+        basis,
         Some(installed),
-        &mut |commit| runtime.history.canonical_envelope(commit),
-        &mut |envelope, context| {
-            source_scope_closure::validate_preparation_history(envelope, &runtime.history, context)
-                .map_err(Into::into)
-        },
+        &anchors
+            .iter()
+            .copied()
+            .map(RecordRef::Entity)
+            .collect::<Vec<_>>(),
         context,
-    )
-    .map_err(|failure| typed_corruption(relation_stop(failure.stop), anchors[0]))?;
+    )?;
+    let mut latest = source_scope_closure::from_current(
+        Arc::clone(runtime.current_ownership.as_ref().ok_or_else(|| {
+            crate::mvcc::origin_denial("producer cascade requires current Native ownership")
+        })?),
+        Some(installed),
+        context,
+    )?;
+    for publication in closure {
+        context
+            .checkpoint(latest.len() as u64 + 1)
+            .map_err(origin_request)?;
+        if !latest
+            .iter()
+            .any(|p| p.origin.same_publication(&publication.origin))
+        {
+            latest.push(publication);
+        }
+    }
     let selected =
         source_scope_closure::select(&anchors, &latest, context).map_err(relation_stop)?;
     if selected.is_empty() {
@@ -170,7 +189,7 @@ impl CanonicalCommitEnvelope {
             // Native constructs custody only for the exact canonical selection, never a caller roster.
             let predecessor = crate::mvcc::RelationalRequiredOutputPublication {
                 runtime_instance_id: runtime.runtime_instance_id(),
-                envelope: selected.envelope,
+                evidence: selected.evidence,
                 origin: Arc::clone(origin),
                 authority: installed.authority.seal_required_output_publication_at(
                     origin.commit.commit_id.0,
@@ -218,6 +237,7 @@ impl CanonicalCommitEnvelope {
                 state,
                 installed,
                 RouteCompletion {
+                    contribution_records: None,
                     producer: &origin.producer,
                     dependency_identity: origin.dependency_identity,
                     meaning: &origin.meaning,

@@ -126,7 +126,7 @@ trait ErasedRequiredSuccessor<Schema: ApplicationSchema>: Send + Sync {
     fn into_any(self: Box<Self>) -> Box<dyn Any>;
 }
 
-struct TypedRequiredSuccessor<Schema, Family>
+pub struct TypedRequiredSuccessor<Schema, Family>
 where
     Schema: ApplicationSchema,
     Family: WorthQueryProducerOutputFamily<Schema>,
@@ -321,7 +321,7 @@ where
 
 /// One caller's actual unresolved dependent work. The Vec backing has its
 /// own final-owner ticket; each entry separately funds its erased Box.
-pub(super) struct RequiredContinuations<Schema>
+pub struct RequiredContinuations<Schema>
 where
     Schema: ApplicationSchema,
 {
@@ -366,3 +366,5 @@ fn capacity_denial() -> WorthQueryOutputDemandDenial {
         "required continuation exceeds retained capacity",
     )
 }
+
+mod court_doors_for_test;

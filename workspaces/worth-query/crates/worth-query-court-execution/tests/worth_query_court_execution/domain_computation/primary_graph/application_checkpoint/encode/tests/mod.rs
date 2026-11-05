@@ -1,0 +1,257 @@
+//! Formatter proofs. The literal native payload below is not native admission
+//! evidence; real captured producer readmission is covered by certification.
+
+use sha2::Digest;
+use sha2::Sha256;
+use worth_relational::facade::durability::RecoveryFailureClass;
+use worth_relational::facade::durability::RelationalNativeCheckpoint;
+use worth_relational::facade::errors::ErrorOperation;
+use worth_relational::facade::errors::RelationalSubsystem;
+use worth_relational::facade::identity::EntityId;
+use worth_relational::facade::identity::PartitionId;
+
+use worth_query_execution::facade::application_installation::WorthQueryCheckpointCaptureDenial;
+use worth_execution::ExecutionAllocationPolicy as CapturePolicy;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::encode::reserve_buffer;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::encode::sizing::ValidatedCheckpointSize;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryCheckpointOutputRole;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointIdentity;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture;
+use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support::recoverable_application_world;
+use worth_query_execution::facade::application_installation::WorthQueryApplicationCheckpoint;
+use worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture as WorthQueryApplicationOutputPosture;
+
+#[test]
+fn checkpoint_one_buffer_matches_independent_v13_grammar_and_sections() {
+    let (world, receipt) = recoverable_application_world(141, "checkpoint-wire-proof");
+    let scope = receipt.principal_scope().scope();
+    let facts = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::encode(&[WorthQueryApplicationObservedFact::SourceEntity {
+        entity_id: entity(9),
+    }])
+    .unwrap();
+    let rows = vec![
+        WorthQueryAcceptedOutputCheckpointIdentity::new_for_test(worth_relational::facade::mvcc::RequiredOutputProducingImplementation::from_checkpoint([0x11; 16], [0x22; 32]).unwrap(), ("producer-a".to_owned()).into(), WorthQueryAcceptedOutputCheckpointPosture::Performed, [1; 32], scope, [2; 32], Some([3; 32]), [4; 32], (vec![
+                role(
+                    "a",
+                    WorthQueryApplicationOutputPosture::Preserve,
+                    "alpha",
+                    5,
+                ),
+                role("b", WorthQueryApplicationOutputPosture::Create, "beta", 6),
+                role("c", WorthQueryApplicationOutputPosture::Retire, "gamma", 7),
+            ])
+            .into(), Some(std::sync::Arc::new(facts.clone())), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::facts::WIRE_VERSION, None),
+        WorthQueryAcceptedOutputCheckpointIdentity::new_for_test(worth_relational::facade::mvcc::RequiredOutputProducingImplementation::from_checkpoint([0x11; 16], [0x22; 32]).unwrap(), ("producer-b".to_owned()).into(), WorthQueryAcceptedOutputCheckpointPosture::StableReused, [11; 32], scope, [12; 32], None, [14; 32], (Vec::new()).into(), None, 0, None),
+    ];
+    let native = b"literal-native-formatter-payload";
+    let mut scope_wire = Vec::new();
+    scope_wire.extend_from_slice(&scope.partition_id().to_be_bytes());
+    scope_wire.extend_from_slice(&scope.local_slot().to_be_bytes());
+    scope_wire.extend_from_slice(&scope.generation().to_be_bytes());
+    let expected = independent_v13(
+        world
+            .application
+            .publication()
+            .bootstrap_commit_id_for_test()
+            .0,
+        &scope_wire,
+        native,
+        &facts,
+    );
+    let (checkpoint, sections) = WorthQueryApplicationCheckpoint::encode_for_test(
+        RelationalNativeCheckpoint::from_untrusted_bytes(native.to_vec().into_boxed_slice()),
+        world.application.publication(),
+        &rows,
+        CapturePolicy::SystemAllocation,
+    )
+    .unwrap();
+    assert_eq!(checkpoint.bytes(), expected);
+    assert_eq!(sections.framing_bytes(), 70);
+    assert_eq!(sections.native_bytes(), native.len());
+    assert_eq!(sections.accepted_output_count(), 2);
+    // Two fixed rows, literal text widths, three 33-byte role frames,
+    // and the independently encoded fact payload. No production size helper.
+    let fixed_row_bytes = 8 + 1 + 48 + 32 + 16 + 32 + 1 + 32 + 32 + 8 + 2 + 8;
+    let expected_rows = 2 * fixed_row_bytes + 20 + 3 * 33 + 3 + 14 + facts.len();
+    assert_eq!(sections.accepted_output_bytes(), expected_rows);
+    assert_eq!(sections.total_bytes(), 70 + native.len() + expected_rows);
+    assert_eq!(sections.total_bytes(), checkpoint.bytes().len());
+    assert_eq!(sections.native_sections(), None);
+
+    // Observe the byte owner's actual capacity without growth or conversion.
+    let size =
+        ValidatedCheckpointSize::new_for_test(native.len(), &rows, CapturePolicy::SystemAllocation)
+            .unwrap();
+    let mut buffer =
+        reserve_buffer(size.total_for_test(), CapturePolicy::SystemAllocation).unwrap();
+    let capacity = buffer.capacity();
+    assert_eq!(capacity, expected.len());
+    buffer.extend_from_slice(b"WQAPCP01").unwrap();
+    buffer.extend_from_slice(&[0; 32]).unwrap();
+    worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::encode::body::write(
+        &mut buffer,
+        native,
+        world.application.publication(),
+        &rows,
+        &size,
+    )
+    .unwrap();
+    assert_eq!(buffer.len(), expected.len());
+    assert_eq!(buffer.capacity(), capacity);
+
+    // A stale size witness cannot permit even one byte beyond its prepared
+    // frame. Exercise the real writer guard rather than allocator injection.
+    let short_size =
+        ValidatedCheckpointSize::new_for_test(3, &[], CapturePolicy::SystemAllocation).unwrap();
+    let mut short_buffer =
+        reserve_buffer(short_size.total_for_test(), CapturePolicy::SystemAllocation).unwrap();
+    let short_capacity = short_buffer.capacity();
+    short_buffer.extend_from_slice(b"WQAPCP01").unwrap();
+    short_buffer.extend_from_slice(&[0; 32]).unwrap();
+    let denial = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_checkpoint::encode::body::write(
+        &mut short_buffer,
+        b"abcd",
+        world.application.publication(),
+        &[],
+        &short_size,
+    )
+    .unwrap_err();
+    assert_eq!(
+        durability(&denial).class,
+        RecoveryFailureClass::CheckpointFrameSizeMismatch
+    );
+    assert_capture_context(&denial);
+    assert!(short_buffer.len() <= short_size.total_for_test());
+    assert_eq!(short_buffer.capacity(), short_capacity);
+}
+
+#[test]
+fn checkpoint_impossible_payload_layout_is_a_typed_allocation_refusal() {
+    // The actual Layout overflow guard refuses before host allocation.
+    let denial = reserve_buffer(usize::MAX, CapturePolicy::SystemAllocation).unwrap_err();
+    let WorthQueryCheckpointCaptureDenial::Allocation(denial) = denial else {
+        panic!("exact lower allocation refusal must survive");
+    };
+    assert_eq!(
+        denial.classify(),
+        worth_execution::ExecutionAllocationDenialClass::Physical(
+            worth_execution::ExecutionPhysicalAllocationDenialKind::Layout
+        )
+    );
+    assert_eq!(denial.requested_payload_bytes(), None);
+}
+
+#[test]
+fn checkpoint_native_length_overflow_is_a_typed_sizing_refusal() {
+    for native_len in [usize::MAX, isize::MAX as usize] {
+        let denial = match ValidatedCheckpointSize::new_for_test(
+            native_len,
+            &[],
+            CapturePolicy::SystemAllocation,
+        ) {
+            Ok(_) => panic!("framing cannot fit beside this native length"),
+            Err(denial) => denial,
+        };
+        assert_eq!(
+            durability(&denial).class,
+            RecoveryFailureClass::CheckpointSizeOverflow
+        );
+        assert_capture_context(&denial);
+    }
+}
+
+pub fn durability(
+    denial: &WorthQueryCheckpointCaptureDenial,
+) -> &worth_relational::facade::durability::DurabilityError {
+    let WorthQueryCheckpointCaptureDenial::Durability(denial) = denial else {
+        panic!("wire framing must retain the native durability class");
+    };
+    denial
+}
+
+pub fn assert_capture_context(denial: &WorthQueryCheckpointCaptureDenial) {
+    let denial = durability(denial);
+    assert_eq!(denial.context.subsystem, RelationalSubsystem::Durability);
+    assert_eq!(denial.context.operation, ErrorOperation::WriteDurableStore);
+    assert_eq!(denial.context.suggested_fix, None);
+}
+
+pub fn entity(slot: u64) -> EntityId {
+    EntityId::new(PartitionId(17), slot, 3)
+}
+
+pub fn role(
+    name: &str,
+    posture: WorthQueryApplicationOutputPosture,
+    entity_name: &str,
+    slot: u64,
+) -> WorthQueryCheckpointOutputRole {
+    WorthQueryCheckpointOutputRole::new_for_test(
+        name.to_owned(),
+        posture,
+        entity_name.to_owned(),
+        entity(slot),
+    )
+}
+
+/// Independent current v13 grammar with literal fixture branch choices.
+/// It does not call the production body writer, or size helper.
+pub fn independent_v13(bootstrap: u64, scope: &[u8], native: &[u8], facts: &[u8]) -> Vec<u8> {
+    let mut body = Vec::new();
+    body.extend_from_slice(&13_u16.to_be_bytes());
+    body.extend_from_slice(&2_u16.to_be_bytes());
+    body.extend_from_slice(&4_u16.to_be_bytes());
+    body.extend_from_slice(&bootstrap.to_be_bytes());
+    body.extend_from_slice(&(native.len() as u64).to_be_bytes());
+    body.extend_from_slice(&2_u64.to_be_bytes());
+    body.extend_from_slice(native);
+    text(&mut body, b"producer-a");
+    body.push(0);
+    body.extend_from_slice(&[0x11; 16]);
+    body.extend_from_slice(&[0x22; 32]);
+    body.extend_from_slice(&[1; 32]);
+    body.extend_from_slice(scope);
+    body.extend_from_slice(&[2; 32]);
+    body.push(1);
+    body.extend_from_slice(&[3; 32]);
+    body.extend_from_slice(&[4; 32]);
+    body.extend_from_slice(&3_u64.to_be_bytes());
+    for (name, posture, entity_name, slot) in [
+        (b"a".as_slice(), 0, b"alpha".as_slice(), 5_u64),
+        (b"b".as_slice(), 1, b"beta".as_slice(), 6),
+        (b"c".as_slice(), 2, b"gamma".as_slice(), 7),
+    ] {
+        text(&mut body, name);
+        body.push(posture);
+        text(&mut body, entity_name);
+        body.extend_from_slice(&17_u32.to_be_bytes());
+        body.extend_from_slice(&slot.to_be_bytes());
+        body.extend_from_slice(&3_u32.to_be_bytes());
+    }
+    body.extend_from_slice(&12_u16.to_be_bytes());
+    body.extend_from_slice(&(facts.len() as u64).to_be_bytes());
+    body.extend_from_slice(facts);
+    text(&mut body, b"producer-b");
+    body.push(1);
+    body.extend_from_slice(&[0x11; 16]);
+    body.extend_from_slice(&[0x22; 32]);
+    body.extend_from_slice(&[11; 32]);
+    body.extend_from_slice(scope);
+    body.extend_from_slice(&[12; 32]);
+    body.push(0);
+    body.extend_from_slice(&[0; 32]);
+    body.extend_from_slice(&[14; 32]);
+    body.extend_from_slice(&0_u64.to_be_bytes());
+    body.extend_from_slice(&0_u16.to_be_bytes());
+    body.extend_from_slice(&0_u64.to_be_bytes());
+    let mut bytes = b"WQAPCP01".to_vec();
+    bytes.extend_from_slice(&Sha256::digest(&body));
+    bytes.extend_from_slice(&body);
+    bytes
+}
+
+pub fn text(output: &mut Vec<u8>, value: &[u8]) {
+    output.extend_from_slice(&(value.len() as u64).to_be_bytes());
+    output.extend_from_slice(value);
+}

@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { createRealRequestRuntime } from "../../../../resource_runtime/runtime_fixture/real_request_runtime.mjs";
-import { createRealResourceTestRuntime } from "../../../../resource_runtime/runtime_fixture/real_resource_runtime.mjs";
 import { createBranchHead } from "../../../../resource_runtime/runtime_fixture/real_resource_signals.mjs";
 
 test("signals.form projects resource merge conflicts into fields sections messages readiness and verification", async () => {
@@ -41,7 +40,7 @@ test("signals.form projects resource merge conflicts into fields sections messag
     restoreResource = () => {
       signals.resource = originalResource;
     };
-    signals.resource = resourceWithConflictHistory;
+    signals.resource = { ...originalResource, branch: resourceWithConflictHistory.branch };
 
     const preview = form.previewResourceMerge({
       source_branch_id: effect.optimistic.branchId,
@@ -95,10 +94,10 @@ test("signals.form projects resource merge conflicts into fields sections messag
 });
 
 test("signals.form projects mapping-unavailable resource merge posture without inventing field conflicts", async () => {
-  const runtime = await createRealResourceTestRuntime();
+  const runtime = await createRealRequestRuntime();
   let restoreResource = null;
   try {
-    const { signals, mod } = runtime;
+    const { signals, signalsMod: mod } = runtime;
     createBranchHead(signals, "forms-resource-merge-mapping");
     const line = createUnmappedCollectionLine(runtime);
     const form = signals.form({
@@ -131,7 +130,7 @@ test("signals.form projects mapping-unavailable resource merge posture without i
     restoreResource = () => {
       signals.resource = originalResource;
     };
-    signals.resource = resourceWithConflictHistory;
+    signals.resource = { ...originalResource, branch: resourceWithConflictHistory.branch };
 
     const preview = form.previewResourceMerge({
       source_branch_id: effect.optimistic.branchId,
@@ -280,7 +279,7 @@ test("signals.form verification stays bounded across repeated resource merge pre
     restoreResource = () => {
       signals.resource = originalResource;
     };
-    signals.resource = resourceWithConflictHistory;
+    signals.resource = { ...originalResource, branch: resourceWithConflictHistory.branch };
 
     for (let iteration = 0; iteration < 24; iteration += 1) {
       const preview = form.previewResourceMerge({
@@ -317,7 +316,8 @@ function createDetailFieldLine(signals) {
 }
 
 function createUnmappedCollectionLine(runtime) {
-  const { mod, resource } = runtime;
+  const { signals, signalsMod: mod } = runtime;
+  const resource = signals.resource;
   const family = resource.collection({
     params: mod.resourceParams(),
     normalizeParams: ({ workspaceId }) =>
@@ -327,7 +327,7 @@ function createUnmappedCollectionLine(runtime) {
       branchId: "branch-demo",
       basisId: "basis-1",
     }),
-    effects: mod.resourceEffects.branchNative(),
+    effects: resource.effects.branchNative(),
     itemIdentity: (item) => item.id,
     reconcile: mod.resourceCollectionShape({
       items: (value) => value.items,

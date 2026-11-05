@@ -9,6 +9,7 @@ use super::{
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub struct ApplicationMutationDescription {
     parts: ApplicationMutationDescriptionParts,
+    coupled_outputs: Vec<crate::application_program::DeclaredCoupledOutputConnection>,
 }
 
 /// Untrusted transport fields, validated when their schema declaration is admitted.
@@ -52,7 +53,25 @@ pub struct ApplicationMutationOutputRoleFamilyDescription {
 
 impl ApplicationMutationDescription {
     pub fn from_untrusted_parts(parts: ApplicationMutationDescriptionParts) -> Self {
-        Self { parts }
+        Self {
+            parts,
+            coupled_outputs: Vec::new(),
+        }
+    }
+
+    pub fn with_coupled_outputs(
+        mut self,
+        mut connections: Vec<crate::application_program::DeclaredCoupledOutputConnection>,
+    ) -> Self {
+        connections.sort();
+        self.coupled_outputs = connections;
+        self
+    }
+
+    pub fn coupled_outputs(
+        &self,
+    ) -> &[crate::application_program::DeclaredCoupledOutputConnection] {
+        &self.coupled_outputs
     }
 
     pub fn parts(&self) -> &ApplicationMutationDescriptionParts {

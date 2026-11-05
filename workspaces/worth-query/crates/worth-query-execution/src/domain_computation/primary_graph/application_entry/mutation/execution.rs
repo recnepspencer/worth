@@ -9,6 +9,7 @@ mod completion;
 mod decision_query;
 pub(super) use decision_query::native_decision_cause;
 mod preparation;
+mod projection;
 pub(in crate::domain_computation::primary_graph) use candidate::build_handler_candidate;
 pub(in crate::domain_computation::primary_graph) use completion::PreparedMutationHandler;
 
@@ -145,9 +146,7 @@ where
         )
     }
 
-    pub(in crate::domain_computation::primary_graph) fn execute_mutation_handler_report_observing_contact<
-        Binding,
-    >(
+    pub fn execute_mutation_handler_report_observing_contact<Binding>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         identities: &ApplicationMutationIdentities<'_, Schema, Binding>,

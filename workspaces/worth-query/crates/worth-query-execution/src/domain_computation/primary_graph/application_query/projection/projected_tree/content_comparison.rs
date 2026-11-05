@@ -1,16 +1,14 @@
 //! Exact Source support equality; disclosed-row equality has different meaning.
 use super::*;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum ProjectionContentComparisonFault {
+pub enum ProjectionContentComparisonFault {
     CapacityOverflow,
     AllocationFailed,
     ContentInconsistency,
 }
 
 impl WorthQueryApplicationDisclosedProjectionTree {
-    pub(in crate::domain_computation::primary_graph::application_query) fn same_one_hop_content<
-        E,
-    >(
+    pub fn same_one_hop_content<E>(
         &self,
         other: &Self,
         admit: &mut impl FnMut(u64) -> Result<(), E>,
@@ -152,7 +150,7 @@ fn same_row<E>(
     Ok(true)
 }
 
-fn same_value<E>(
+pub fn same_value<E>(
     left: &AspectValue,
     right: &AspectValue,
     admit: &mut impl FnMut(u64) -> Result<(), E>,
@@ -174,7 +172,7 @@ fn same_text<E>(
     Ok(left == right)
 }
 
-fn admit_pair_width<E>(
+pub fn admit_pair_width<E>(
     left: usize,
     right: usize,
     admit: &mut impl FnMut(u64) -> Result<(), E>,
@@ -185,8 +183,6 @@ fn admit_pair_width<E>(
     admit(right as u64)
 }
 
-#[cfg(test)]
-mod tests;
 mod traversal;
 
 impl ProjectionContentComparisonFault {

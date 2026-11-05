@@ -261,7 +261,7 @@ fn read_complete_mutation_batch(
     Ok(batch)
 }
 
-fn patch_read_denial(
+pub fn patch_read_denial(
     previous: Option<&RelationalCommitReceipt>,
     latest: Option<&RelationalCommitReceipt>,
     requested: usize,
@@ -347,7 +347,3 @@ fn maintenance_denial(
     }
     refusal
 }
-
-#[cfg(test)]
-#[path = "index_refresh/read_denial_tests.rs"]
-mod read_denial_tests;

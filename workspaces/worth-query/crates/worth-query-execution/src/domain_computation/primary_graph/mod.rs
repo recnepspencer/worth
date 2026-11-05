@@ -8,12 +8,13 @@ mod access_strategy;
 mod facade;
 pub use facade::*;
 mod aggregate_identity;
-mod aggregate_observation;
-mod aggregate_projection;
+pub(crate) mod aggregate_observation;
+pub(crate) mod aggregate_projection;
 pub(crate) mod application_attempt;
-mod application_branch;
-mod application_checkpoint;
-pub(in crate::domain_computation) mod application_contribution;
+pub(crate) mod application_branch;
+pub(crate) mod application_checkpoint;
+pub(crate) mod application_contribution;
+pub(crate) mod projection_read_origin;
 pub(in crate::domain_computation) use application_contribution::ComputationPrior;
 pub(in crate::domain_computation) use application_contribution::SealedComputationRetention;
 pub(crate) mod application_discovery;
@@ -21,7 +22,7 @@ mod application_entry;
 pub(crate) mod application_installation;
 pub(crate) mod application_invariant;
 mod application_invariant_preparation;
-mod application_output_demand;
+pub(crate) mod application_output_demand;
 pub(in crate::domain_computation::primary_graph) use application_output_demand::PreparedPrerequisiteClaims;
 pub(in crate::domain_computation) use application_output_demand::RequiredOutputDemandContext;
 pub(in crate::domain_computation) use application_output_demand::RequiredOutputExecution;
@@ -34,60 +35,60 @@ pub use application_output_demand::{
 mod application_program;
 pub(crate) mod application_query;
 pub(crate) mod application_resource;
-mod application_runtime;
+pub(crate) mod application_runtime;
 pub(in crate::domain_computation) use application_runtime::WorthQueryApplicationRuntimeCore;
 pub(crate) mod authenticated_principal;
 mod bootstrap;
-mod bootstrap_publication;
-mod conditional_operation;
+pub(crate) mod bootstrap_publication;
+pub(crate) mod conditional_operation;
 pub(crate) mod publication_request_denial;
 pub(crate) use conditional_operation::classify_bridge_signal;
 pub use conditional_operation::conditional_intent_read_is_active_for_test;
 mod denial;
-mod entity_key;
-mod entity_resolution;
+pub(crate) mod entity_key;
+pub(crate) mod entity_resolution;
 mod entity_resolution_denial;
-mod exact_basis_access;
+pub(crate) mod exact_basis_access;
 mod expression;
-mod freshness;
+pub(crate) mod freshness;
 mod granular_invalidation;
-mod handler;
+pub(crate) mod handler;
 pub(in crate::domain_computation) use handler::DecisionContextUse;
-mod index_currency;
-pub(in crate::domain_computation) mod index_maintenance_budget;
-mod index_refresh;
+pub(crate) mod index_currency;
+pub(crate) mod index_maintenance_budget;
+pub(crate) mod index_refresh;
 mod initial_schema_denial;
 mod invariant_installation;
-mod invariant_projection;
-mod live_delivery;
-mod managed_bridge;
-mod merge_unique_values;
+pub(crate) mod invariant_projection;
+pub(crate) mod live_delivery;
+pub(crate) mod managed_bridge;
+pub(crate) mod merge_unique_values;
 mod read_observation;
-mod source_facts;
+pub(crate) mod source_facts;
 pub(in crate::domain_computation) use source_facts::{
     validate_source_principal_facts, SourceFactsAllocation,
 };
-mod derived_source;
+pub(crate) mod derived_source;
 mod source_read_equivalence;
-mod source_read_verification;
-mod structural_walk;
+pub(crate) mod source_read_verification;
+pub(crate) mod structural_walk;
 pub(crate) use managed_bridge::build_primary_graph_product_bridge;
-mod fact_verification_observation;
+pub(crate) mod fact_verification_observation;
 mod observations;
 mod operation_body;
 mod ordinary_read;
 pub(crate) mod output_lineage;
 mod request_allocation_control;
 pub(in crate::domain_computation) use output_lineage::SourceInvalidationOwner;
-mod output_binding_identity;
-mod output_family_identity;
-mod output_reuse;
+pub(crate) mod output_binding_identity;
+pub(crate) mod output_family_identity;
+pub(crate) mod output_reuse;
 mod principal_currentness_capture;
 mod principal_key;
 pub(in crate::domain_computation) use principal_currentness_capture::capture_principal_currentness_admitted;
 pub(in crate::domain_computation) use principal_currentness_capture::PrincipalCurrentnessCaptureStop;
 pub(crate) mod product_activation;
-mod product_operation;
+pub(crate) mod product_operation;
 pub use application_query::{
     WorthQueryHistoryOutputIntent, WorthQueryHistoryOutputNavigationDenial,
 };
@@ -128,30 +129,27 @@ pub(in crate::domain_computation) use product_operation::SharedSelectedProductOp
 pub use product_operation::WorthQueryHistoryOutputControlDenial;
 pub use product_operation::WorthQueryHistoryOutputReadDenial;
 pub use product_operation::WorthQueryHistoryRootOutputRead;
-mod program_occurrence;
+pub(crate) mod program_occurrence;
 pub(in crate::domain_computation) use program_occurrence::OriginalProgramMeaning;
-mod provider;
+pub(crate) mod provider;
 pub(in crate::domain_computation) use application_attempt::retained_decision_facts::StorageControl;
 pub(in crate::domain_computation::primary_graph) use provider::OutstandingDispatchInFlightLease;
 pub(in crate::domain_computation) use provider::PrimaryDecisionReadSetComparison;
 pub(in crate::domain_computation) use provider::RegisteredPrimaryRead;
-mod component_selection;
+pub(crate) mod component_selection;
 mod request_local;
-mod resolution;
-mod resolution_denial;
-mod root;
+pub(crate) mod resolution;
+pub(crate) mod resolution_denial;
+pub(crate) mod root;
 mod root_path_selection;
-mod schema_layout;
+pub(crate) mod schema_layout;
 mod typed_bootstrap;
-mod value_decode;
-pub(in crate::domain_computation) mod workflow;
+pub(crate) mod value_decode;
+pub(crate) mod workflow;
 pub use workflow::captured_input::{
     PreparedWorkflowCapturedInput, WorkflowCapturedInputContract, WorkflowCapturedInputDenial,
     WorkflowCapturedInputSource, WorkflowCapturedInputs,
 };
-
-#[cfg(test)]
-pub(in crate::domain_computation) mod tests;
 
 pub(in crate::domain_computation) use application_attempt::application_resource_request;
 pub(in crate::domain_computation) use application_attempt::precondition_binding::bind_empty_mutation_preconditions_admitted;
@@ -174,7 +172,7 @@ pub(in crate::domain_computation) use application_attempt::WorthQueryRegisteredP
 pub(crate) use application_attempt::WorthQueryRetainedGovernedInput;
 pub(in crate::domain_computation::primary_graph) use application_attempt::WorthQueryApplicationOutputCorrespondence;
 pub(crate) use application_attempt::WorthQueryPerformedExternalRedispatchSeal;
-pub(crate) use provider::WorthQueryRetainedPreImageSeal;
+pub(crate) use provider::{WorthQueryRetainedPreImageSeal, WorthQueryRetainedRelationPreImageSeal};
 pub(crate) use provider::WorthQueryPrimaryGraphProvider;
 pub(in crate::domain_computation) use provider::ApplicationFactTable;
 pub(in crate::domain_computation) use provider::CompletedApplicationFacts;
@@ -182,7 +180,6 @@ pub(in crate::domain_computation) use provider::WorthQueryPrimaryGraphApplicatio
 pub(in crate::domain_computation) use provider::WorthQueryUnpublishedIdempotencyDisposition;
 pub(in crate::domain_computation) use application_branch::primary_relational_branch_id;
 pub(in crate::domain_computation) use application_branch::primary_truth_branch_identity;
-#[cfg(test)]
 pub(crate) use application_query::WorthQueryApplicationHistoricalRead;
 pub(crate) use application_query::WorthQueryApplicationQueryControls;
 pub(in crate::domain_computation) use crate::domain_computation::application_aftermath::external_effect::WorthQueryAdmittedExternalDispatchAttempt;
@@ -202,31 +199,18 @@ pub(in crate::domain_computation) use resolution::WorthQueryIssuedSelectedPrinci
 pub(in crate::domain_computation) use freshness::validate_freshness_at_snapshot;
 pub(in crate::domain_computation) use freshness::WorthQueryDurablePrincipalCurrentness;
 pub(in crate::domain_computation) use freshness::WorthQueryPrincipalFreshnessEvidence;
-#[cfg(test)]
-pub(in crate::domain_computation) use tests::recoverable_commit_support::committed_recoverable_application;
-#[cfg(test)]
-pub(in crate::domain_computation) use tests::recoverable_commit_support::recoverable_application_world;
-#[cfg(test)]
-pub(in crate::domain_computation) use tests::recoverable_commit_support::two_recoverable_application_commits;
+
 pub(in crate::domain_computation) use provider::WorthQueryApplicationBranchCommitCoordination;
 pub(in crate::domain_computation) use provider::WorthQueryCommittedDispatchOutboxBinding;
-#[cfg(test)]
-pub(in crate::domain_computation) use provider::commit_distinct_records_and_admit_fixture;
-#[cfg(test)]
-pub(in crate::domain_computation) use provider::commit_observe_and_admit_fixture;
-#[cfg(test)]
-pub(in crate::domain_computation) use provider::commit_observe_and_admit_twice_fixture;
+
 pub(in crate::domain_computation) use schema_layout::WorthQueryPrimaryGraphLayout;
 pub(in crate::domain_computation) use schema_layout::WorthQueryPrimaryPrincipalBindingLayout;
 
-#[cfg(test)]
 pub(in crate::domain_computation) use application_contribution::SealedComputationRun;
 
 pub(in crate::domain_computation) use application_contribution::observe_discarded;
 
-#[cfg(test)]
 pub(crate) use application_contribution::TestHostRequest;
-#[cfg(test)]
 pub(crate) use application_contribution::{with_test_advancement, with_test_bootstrap_advancement};
 
 pub use application_contribution::with_bootstrap_advancement;
@@ -234,19 +218,15 @@ pub use application_contribution::with_bootstrap_advancement_from_request;
 
 pub use application_contribution::WorthQueryBootstrapAdvancementPhase;
 
-#[cfg(test)]
 pub use crate::domain_computation::execution_runtime::product_world::installed_source_reads_on_this_thread_for_test;
-
-#[cfg(test)]
-pub(crate) use tests::fixture::AdvancementHost;
 
 pub use observations::principal_target_reads_on_this_thread_for_test;
 
 pub use application_runtime::WorthQueryOperationInputCaptureDenial;
 pub(in crate::domain_computation) mod selected_read_indexes;
 
-pub(in crate::domain_computation) mod admitted_capture;
+pub(crate) mod admitted_capture;
 pub(crate) mod causal_inspection;
 mod record_reservations;
 
-pub(in crate::domain_computation) mod source_disclosure;
+pub(crate) mod source_disclosure;

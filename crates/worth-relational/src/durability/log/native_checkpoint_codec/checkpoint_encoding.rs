@@ -45,7 +45,7 @@ pub(crate) fn encode_checkpoint_members(
         captured,
         policy,
         placement,
-        CheckpointEncodingControl::Policy(policy),
+        &mut CheckpointEncodingControl::Policy(policy),
     )?;
     Ok((bytes, sections, members))
 }
@@ -54,7 +54,7 @@ pub(crate) fn encode_captured(
     mut captured: CapturedManifest,
     policy: ExecutionAllocationPolicy<'_, '_>,
     placement: &RelationalCheckpointArtifactPolicy<'_>,
-    control: CheckpointEncodingControl<'_, '_>,
+    control: &mut CheckpointEncodingControl<'_, '_, '_, '_, '_>,
 ) -> Result<
     (
         ExecutionImmutableBytes,
@@ -76,14 +76,7 @@ pub(crate) fn encode_captured(
                         "inline capture lacks indexed envelope custody",
                     )
                 })?;
-            let artifact = match control {
-                CheckpointEncodingControl::Original(execution) => {
-                    cell.export_artifact_original(&execution)
-                }
-                #[cfg(test)]
-                CheckpointEncodingControl::Policy(policy) => cell.export_artifact(policy),
-            }
-            .map_err(RelationalNativeCheckpointCaptureDenial::from)?;
+            let artifact = control.export_artifact(cell)?;
             captured.envelopes.push(encode_value(
                 control,
                 b"",

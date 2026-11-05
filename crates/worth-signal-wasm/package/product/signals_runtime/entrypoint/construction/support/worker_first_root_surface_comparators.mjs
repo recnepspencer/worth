@@ -19,7 +19,12 @@ export function comparablePerformanceSummary(summary) {
       // timings, that describes how the runtime got here, not the graph it
       // holds, so it is not part of cross-deployment surface parity.
       key === "serialExecutorUsageCount" ||
-      key === "parallelExecutorUsageCount"
+      key === "parallelExecutorUsageCount" ||
+      // The latest invocation's work and peak allocation also depend on the
+      // refresh path. Compare execution posture, not costs of different reads.
+      key === "chargedWork" ||
+      key === "chargedSpan" ||
+      key === "peakChargedMemoryBytes"
     ) {
       continue;
     }
@@ -60,6 +65,10 @@ export function comparableGraphSummary(summary) {
       || key === "serial_executor_usage_count"
       || key === "parallel_executor_usage_count"
       || key === "plans_built"
+      // Latest-invocation charges describe each deployment's refresh path.
+      || key === "charged_work"
+      || key === "charged_span"
+      || key === "peak_charged_memory_bytes"
     ) {
       continue;
     }

@@ -13,7 +13,10 @@ use worth_relational::facade::indexes::DerivedIndexId;
 
 use super::super::effect_program::WorthQueryApplicationRealizedEffect;
 use super::super::effect_validation::denial;
-use super::super::fact::{observe_indexed_entity_selection, WorthQueryIndexedSelectionRefusal};
+use super::super::fact::{
+    observe_applied_indexed_entity_selection, observe_indexed_entity_selection,
+    WorthQueryIndexedSelectionRefusal,
+};
 use super::super::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
     WorthQueryApplicationObservedFact, WorthQueryCompleteApplicationReadSet,
@@ -23,7 +26,7 @@ use crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFie
 
 /// Two candidates tell a free value from a taken one, and a held value from
 /// a duplicated one.
-const UNIQUE_VALUE_CANDIDATE_LIMIT: usize = 2;
+pub const UNIQUE_VALUE_CANDIDATE_LIMIT: usize = 2;
 
 type SelectionKey = (
     DerivedIndexId,
@@ -59,6 +62,19 @@ impl<Schema, Operation, Input, Scope>
             |entity| self.lease.layout.entity_kind(entity),
             |index, kind, locator, value| {
                 self.lease.handle().with_runtime(execution, |runtime| {
+                    if let Some(candidate) = self.lease.applied_projection() {
+                        return observe_applied_indexed_entity_selection(
+                            execution,
+                            runtime,
+                            self.lease.snapshot(),
+                            candidate,
+                            index,
+                            kind,
+                            locator,
+                            value,
+                            UNIQUE_VALUE_CANDIDATE_LIMIT,
+                        );
+                    }
                     observe_indexed_entity_selection(
                         runtime,
                         execution,
@@ -77,7 +93,7 @@ impl<Schema, Operation, Input, Scope>
     }
 }
 
-fn observe_unique_values(
+pub fn observe_unique_values(
     facts: &(impl FactSequence + ?Sized),
     unique: crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields<'_>,
     effects: &[WorthQueryApplicationRealizedEffect],
@@ -130,8 +146,7 @@ fn observe_unique_values(
     }
     Ok(appended)
 }
-#[cfg(test)]
-mod tests;
+
 mod writes;
 
 fn selection_key(fact: &WorthQueryApplicationObservedFact) -> Option<SelectionKey> {

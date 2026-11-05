@@ -1,7 +1,7 @@
 use worth_relational::facade::runtime::RelationalAdjacencyDirection;
 
 #[derive(Clone, Copy)]
-pub(in crate::domain_computation::primary_graph) enum WorkflowEvidenceDependencyKind {
+pub enum WorkflowEvidenceDependencyKind {
     Entity,
     EntityKind,
     AspectRevision,
@@ -79,3 +79,5 @@ mod tests {
         assert!(WorkflowEvidenceDependencyKind::decode("entity-kind-v2").is_none());
     }
 }
+
+mod court_doors_for_test;

@@ -9,6 +9,7 @@ use phase::{assemble_authoritative_publication_phase, ArtifactAssemblyInput};
 use preparation::PublicationPreparation;
 
 pub(super) struct AssembledCommitExecution {
+    lineage_deferred: bool,
     source_interpretation:
         std::sync::Arc<crate::validation::candidate_source::NativeManagedSourceInterpretation>,
     admitted: super::execution_admission::AdmittedCommitState,
@@ -50,6 +51,7 @@ impl AssembledCommitExecution {
         Vec<crate::transactions::data::AspectEvaluationTrace>,
         Vec<preparation::PreparedAspectEmissionTrace>,
         std::sync::Arc<crate::validation::candidate_source::NativeManagedSourceInterpretation>,
+        bool,
     ) {
         (
             self.admitted,
@@ -68,6 +70,7 @@ impl AssembledCommitExecution {
             self.aspect_evaluation_traces,
             self.aspect_emission_traces,
             self.source_interpretation,
+            self.lineage_deferred,
         )
     }
 }
@@ -76,6 +79,7 @@ pub(super) fn assemble_commit_artifacts(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalPreparationRuntime,
     validated: SnapshotValidatedCommitExecution,
+    lineage_deferred: bool,
 ) -> Result<AssembledCommitExecution, crate::transactions::data::TransactionCommitError> {
     super::consult_stage(execution, super::CommitStage::Artifact)?;
     let (
@@ -104,6 +108,7 @@ pub(super) fn assemble_commit_artifacts(
         commit_log,
         phase_timing,
         ArtifactAssemblyInput {
+            defer_lineage: lineage_deferred,
             working_state: &mut working_state,
             selected_branch_state: &selected_branch_state,
             effect,
@@ -126,6 +131,7 @@ pub(super) fn assemble_commit_artifacts(
     let aspect_emission_traces = publication.aspect_emission_traces().to_vec();
     let publication_snapshot = publication.snapshot().clone();
     Ok(AssembledCommitExecution {
+        lineage_deferred,
         source_interpretation,
         admitted,
         selected_branch_state,

@@ -1,13 +1,19 @@
+pub(crate) use application_publication::BoundAuthoredCoupling;
 mod application_publication;
 mod authority;
 mod preparation_denial;
 pub use application_publication::RelationalInstalledApplicationPublicationAuthority;
 pub(crate) use application_publication::{origin_denial, RequiredOutputPublicationAdmission};
 pub use application_publication::{
-    RelationalAuthoredRestoration, RelationalAuthoredRetirement,
+    RelationalAuthoredCoupledCandidate, RelationalAuthoredCoupledOwners,
+    RelationalAuthoredCoupledProducerAssembly, RelationalAuthoredCoupledTransaction,
+    RelationalAuthoredRestoration, RelationalAuthoredRetirement, RelationalCoupledAssemblyFailure,
+    RelationalCoupledAuthoredPublication, RelationalDeclaredCoupledOwner,
+    RelationalPerformedOutputPublications, RelationalPreparedOutputPublications,
     RelationalRequiredOutputPublication, RelationalRequiredOutputRouteAbsence,
-    RequiredOutputProducingImplementation, RequiredOutputPublication,
-    RequiredOutputPublicationMeaning, RequiredOutputRolePosture, RequiredOutputRoleTarget,
+    RelationalRestoredProducerPrior, RequiredOutputProducingImplementation,
+    RequiredOutputPublication, RequiredOutputPublicationMeaning, RequiredOutputRolePosture,
+    RequiredOutputRoleTarget,
 };
 pub(crate) use preparation_denial::PublicationPreparationDenial;
 mod candidate;

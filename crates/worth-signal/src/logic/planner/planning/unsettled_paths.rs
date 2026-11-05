@@ -18,6 +18,22 @@ impl UnsettledDependencyPaths {
     }
 }
 
+/// The requested targets that are not already current. A clean target is
+/// current only when no dependency path above it is unsettled, so a guided
+/// read that forces on-demand nodes neither reruns a current target nor
+/// returns a clean target over a dirty ancestor.
+pub(crate) fn targets_requiring_settlement(
+    graph: &mut SignalGraph,
+    targets: &[NodeId],
+) -> Result<Vec<NodeId>, SignalError> {
+    let unsettled = discover_unsettled_dependency_paths(graph, targets, None, None)?;
+    Ok(targets
+        .iter()
+        .copied()
+        .filter(|target| unsettled.contains(*target))
+        .collect())
+}
+
 pub(super) fn discover_unsettled_dependency_paths(
     graph: &mut SignalGraph,
     targets: &[NodeId],

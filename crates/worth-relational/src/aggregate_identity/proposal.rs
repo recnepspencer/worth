@@ -181,6 +181,21 @@ impl<'a> AggregateProposalBorrow<'a> {
         }
     }
 
+    pub(crate) fn candidate_read(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        business: &MergedCommitPlan,
+    ) -> Result<super::AggregateCandidateRead, TransactionCommitError> {
+        let projection =
+            self.owner
+                .projection(execution, None, &self.selected, self.after, business)?;
+        Ok(super::AggregateCandidateRead::new(
+            projection,
+            Arc::clone(self.owner.selected.state().root()),
+            self.owner.selected.version_id(),
+        ))
+    }
+
     pub(crate) fn ensure_prepared(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

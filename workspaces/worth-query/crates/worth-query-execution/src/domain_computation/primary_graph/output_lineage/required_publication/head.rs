@@ -3,14 +3,11 @@ use super::*;
 use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
 use worth_relational::facade::mvcc::RelationalRequiredOutputPublication;
 
-#[cfg(test)]
-mod tests;
-
-pub(in crate::domain_computation::primary_graph) struct SelectedRequiredPublicationHead {
+pub struct SelectedRequiredPublicationHead {
     selected: Arc<OnceLock<RecordedOutput>>,
 }
 
-pub(in crate::domain_computation::primary_graph) struct RequiredPublicationPredecessor {
+pub struct RequiredPublicationPredecessor {
     pub(in crate::domain_computation::primary_graph) implementation:
         worth_relational::facade::mvcc::RequiredOutputProducingImplementation,
     pub(in crate::domain_computation::primary_graph) correspondence:
@@ -37,7 +34,12 @@ impl SelectedRequiredPublicationHead {
         // A partial native ownership description cannot become that ordinary case.
         let claims_native = origin.required_publication.is_some();
         let has_locator = origin.native_prior_checkpoint.is_some();
-        if (claims_native && !has_locator)
+        let native_restoration = origin.source_identity.is_none()
+            && origin
+                .required_publication
+                .as_ref()
+                .is_some_and(|publication| publication.is_authored_restoration());
+        if (claims_native && !has_locator && !native_restoration)
             || (has_locator && origin.producer_dependency_identity.is_none())
         {
             return Err(Stop::SelectedSourceMismatch);
@@ -89,3 +91,5 @@ impl SelectedRequiredPublicationHead {
         }
     }
 }
+
+mod court_doors_for_test;

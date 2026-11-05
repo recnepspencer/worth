@@ -8,7 +8,7 @@ use worth_relational::facade::{
     snapshots::SnapshotHandle, transactions::RelationalExecutionDenialCause as Cause,
 };
 
-pub(in super::super) fn prepare(
+pub fn prepare(
     runtime: &RelationalRuntime,
     execution: &ExecutionRequest<'_, '_>,
     snapshot: &SnapshotHandle,
@@ -27,6 +27,9 @@ pub(in super::super) fn prepare(
         // retirement witness. Preserve its original source and currentness.
         Fact::DerivedSource { .. } => return Ok(None),
         _ => return Ok(None),
+    };
+    let Some(source) = source.committed_snapshot() else {
+        return Ok(None);
     };
     if source.runtime_instance_id() != snapshot.runtime_instance_id()
         || source.branch_id() != snapshot.branch_id()
@@ -99,6 +102,3 @@ fn all_retired(
     }
     Ok(true)
 }
-
-#[cfg(test)]
-mod tests;

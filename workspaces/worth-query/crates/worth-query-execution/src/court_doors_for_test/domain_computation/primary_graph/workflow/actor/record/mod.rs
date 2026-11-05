@@ -1,0 +1,2 @@
+//! Doors under `domain_computation::primary_graph::workflow::actor::record`.
+pub use crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor;

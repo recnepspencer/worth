@@ -31,14 +31,14 @@ use crate::domain_computation::primary_graph::application_attempt::{
 /// A receipted transition the successor must carry: the source's own, or one
 /// the source itself inherited. Either maps by the path of the node it ran.
 #[derive(Clone, Debug)]
-pub(in crate::domain_computation::primary_graph) struct WorkflowPerformedEffect {
+pub struct WorkflowPerformedEffect {
     pub(in crate::domain_computation::primary_graph) transition: EntityId,
     pub(in crate::domain_computation::primary_graph) path: String,
 }
 
 /// How a successor relates to the instance whose work it takes over.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum WorkflowSuccession {
+pub enum WorkflowSuccession {
     /// The source's own branch, onto a newer definition of its workflow.
     Migration,
     /// A fork's copy of an instance started on another branch, onto the
@@ -47,7 +47,7 @@ pub(in crate::domain_computation::primary_graph) enum WorkflowSuccession {
 }
 
 /// Admits `resumed`, the target definition as the successor runs it.
-pub(in crate::domain_computation::primary_graph) fn admit_workflow_migration(
+pub fn admit_workflow_migration(
     succession: WorkflowSuccession,
     source: &CompiledWorkflowDefinition,
     resumed: &CompiledWorkflowDefinition,

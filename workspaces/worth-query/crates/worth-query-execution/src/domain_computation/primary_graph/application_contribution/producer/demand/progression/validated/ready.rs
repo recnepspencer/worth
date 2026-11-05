@@ -189,7 +189,6 @@ where
                     Err(denial)
                         if denial.kind() == WorthQueryOutputDemandDenialKind::Superseded =>
                     {
-                        #[cfg(test)]
                         own_effect_observation::record(Stage::ReadySuperseded);
                         Err(ReadyUnavailable::Superseded)
                     }
@@ -220,7 +219,6 @@ where
         self.runtime
             .output_demands
             .finish_settlement(interest, &completion.authority)?;
-        #[cfg(test)]
         own_effect_observation::record(Stage::ReadySettled);
         Ok(ReadyVerdict::Settled(settlement))
     }
@@ -229,12 +227,10 @@ where
 fn ready_unavailable(denial: &WorthQueryOutputDemandDenial) -> Option<ReadyUnavailable> {
     match denial.kind() {
         WorthQueryOutputDemandDenialKind::Superseded => {
-            #[cfg(test)]
             own_effect_observation::record(Stage::ReadySuperseded);
             Some(ReadyUnavailable::Superseded)
         }
         WorthQueryOutputDemandDenialKind::WorkBudgetExceeded => {
-            #[cfg(test)]
             own_effect_observation::record(Stage::ReadyWorkExhausted);
             Some(ReadyUnavailable::WorkExhausted)
         }

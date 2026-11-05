@@ -16,7 +16,7 @@ mod changed;
 pub use changed::{
     WorthQueryChangedInspectionRequest, WorthQueryChangedReferenceOnlyInspectionRequest,
 };
-pub(super) mod binding;
+pub(crate) mod binding;
 mod governed;
 mod rich;
 use super::super::WorthQueryApplicationQueryObservation;

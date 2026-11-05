@@ -1,0 +1,46 @@
+"""Names a module's expanded glob imports must bind for the children that glob the module.
+
+`use super::*` in a child reads its parent's imports too. When the parent's own glob of
+production code is expanded to explicit names, the names its globbing descendants use must
+be among them, or the children lose them.
+"""
+from rust_source import tokens
+from src_paths import resolve, use_trees
+from src_scope import scope_items
+
+
+def inherited_words(model, names, cache):
+    """Identifiers of descendant modules that reach `names` through `use super::*` chains."""
+    if names not in cache:
+        cache[names] = set()
+        for child in model.index[names].children:
+            record = model.records.get(child.names)
+            text = record.node.own_text() if record is not None else child.own_text()
+            for segments, glob, _alias in use_trees(text):
+                resolved = resolve(segments, child.names, model.index) if glob else None
+                if resolved is not None and resolved[0] == names and not resolved[1]:
+                    stream = tokens(text)
+                    # A name the child declares is its own, not one it reads through the glob.
+                    declared = {item for _a, _v, _k, item, _s, _e in scope_items(text)}
+                    cache[names] |= {t.value for k, t in enumerate(stream)
+                                     if t.kind == 'ident' and not path_tail(stream, k)} - declared
+                    cache[names] |= inherited_words(model, child.names, cache)
+                    break
+    return cache[names]
+
+
+def path_tail(stream, k):
+    """Whether token `k` continues a path (`a::k`): a glob binds only path heads and bare names."""
+    return k >= 2 and stream[k - 1].value == ':' and stream[k - 2].value == ':'
+
+
+def glob_read(model, names):
+    """Whether a child module reads `names` through `use super::*`."""
+    for child in model.index[names].children:
+        record = model.records.get(child.names)
+        text = record.node.own_text() if record is not None else child.own_text()
+        for segments, glob, _alias in use_trees(text):
+            resolved = resolve(segments, child.names, model.index) if glob else None
+            if resolved is not None and resolved[0] == names and not resolved[1]:
+                return True
+    return False

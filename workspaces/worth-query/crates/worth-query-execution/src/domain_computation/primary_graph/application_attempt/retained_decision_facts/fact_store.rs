@@ -4,20 +4,16 @@ use super::{AdmittedFactKey, RetainedFact, RetainedFactStore, StorageControl, St
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact as Fact;
 use worth_execution::{ExecutionArray, ExecutionArrayIntoIter};
 
-pub(in crate::domain_computation::primary_graph) struct AuthoringSourceFacts {
+pub struct AuthoringSourceFacts {
     store: RetainedFactStore<Fact>,
     failure: Option<StoreDenial>,
 }
-pub(in crate::domain_computation::primary_graph) struct RetainedSourceFacts(
-    ExecutionArray<RetainedFact<Fact>>,
-);
+pub struct RetainedSourceFacts(ExecutionArray<RetainedFact<Fact>>);
 pub(in crate::domain_computation::primary_graph) struct RetainedSourceFactValues(
     ExecutionArrayIntoIter<RetainedFact<Fact>>,
 );
 impl AuthoringSourceFacts {
-    pub(in crate::domain_computation::primary_graph) fn new(
-        control: StorageControl<'_, '_>,
-    ) -> Result<Self, StoreDenial> {
+    pub fn new(control: StorageControl<'_, '_>) -> Result<Self, StoreDenial> {
         Ok(Self {
             store: RetainedFactStore::new(control)?,
             failure: None,
@@ -157,3 +153,5 @@ mod tests {
         send_sync::<crate::domain_computation::primary_graph::WorthQueryApplicationOperationInvariantProjectionSnapshot<(), ()>>();
     }
 }
+
+mod court_doors_for_test;

@@ -6,7 +6,7 @@ use super::{
 };
 use worth_execution::ExecutionWorkCeiling;
 
-pub(super) fn run_advancement(
+pub fn run_advancement(
     execution: &QueryRequestExecution<'_>,
     owner: Option<worth_runtime_world::facade::RuntimeWorldOwnerIdentity>,
     source_instance: Option<u64>,

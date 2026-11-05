@@ -43,7 +43,7 @@ pub enum WorthQueryGeneratedOutputRestorationFailureCause {
     PublicationNoEffect(WorthQueryGeneratedOutputPublicationNoEffect),
 }
 
-pub(super) fn preparation_failure_cause(
+pub fn preparation_failure_cause(
     error: &RelationalMaterializationError,
 ) -> WorthQueryGeneratedOutputRestorationFailureCause {
     use WorthQueryGeneratedOutputRestorationFailureCause as Cause;
@@ -102,9 +102,6 @@ pub(super) fn restoration_failure(
 ) -> WorthQueryGeneratedOutputRestorationFailure {
     WorthQueryGeneratedOutputRestorationFailure::Rejected { suspended, cause }
 }
-
-#[cfg(test)]
-mod tests;
 
 impl WorthQueryGeneratedOutputRestorationFailureCause {
     pub(super) fn advancement(

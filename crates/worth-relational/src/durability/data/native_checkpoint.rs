@@ -1,6 +1,7 @@
 use std::sync::Arc;
 use worth_execution::ExecutionImmutableBytes;
 
+mod roster_corruption;
 #[cfg(test)]
 mod tests;
 

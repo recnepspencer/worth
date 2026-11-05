@@ -3,11 +3,8 @@
 mod binding;
 mod denial;
 mod handle;
-mod identity;
+pub(crate) mod identity;
 mod mint;
-
-#[cfg(test)]
-pub(crate) use binding::WorthQueryRecoveryHandleBindingAxisProbe;
 
 pub use binding::WorthQueryRecoveryHandleBinding;
 pub use denial::{WorthQueryRecoveryHandleDenial, WorthQueryRecoveryHandleDenialKind};
@@ -16,6 +13,3 @@ pub use handle::WorthQueryRecoveryHandle;
 pub use identity::WorthQueryOpaqueRecoveryWireIdentity;
 pub(crate) use identity::WorthQueryRecoveryHandleAuthorityIdentity;
 pub use mint::WorthQueryRecoveryClaimStatus;
-
-#[cfg(test)]
-mod tests;

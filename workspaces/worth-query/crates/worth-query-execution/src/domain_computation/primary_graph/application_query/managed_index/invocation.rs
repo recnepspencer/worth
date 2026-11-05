@@ -40,7 +40,7 @@ impl From<Stop> for WorthQueryManagedIndexWorkDenial {
     }
 }
 
-pub(super) fn controlled<R>(
+pub fn controlled<R>(
     execution: &ExecutionRequest<'_, '_>,
     body: impl FnOnce(&Control<'_>) -> Result<R, WorthQueryManagedIndexWorkDenial>,
 ) -> Result<R, WorthQueryManagedIndexWorkDenial> {
@@ -87,7 +87,7 @@ pub(super) fn controlled<R>(
     }
 }
 
-pub(super) fn provider_result<R, D>(
+pub fn provider_result<R, D>(
     execution: &ExecutionRequest<'_, '_>,
     control: &Control<'_>,
     result: Result<R, ProviderStop<D>>,
@@ -109,7 +109,7 @@ where
 /// The managed decoder and control share the first actual refusal, while new
 /// outer SDK refusals remain authoritative rather than being replaced by a
 /// saved callback result.
-pub(super) fn decoded_provider<R>(
+pub fn decoded_provider<R>(
     execution: &ExecutionRequest<'_, '_>,
     bindings: &worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
     body: impl FnOnce(
@@ -176,6 +176,3 @@ pub(super) fn decoded_provider<R>(
         (Ok(()), None) => unreachable!("completed managed decode invocation"),
     }
 }
-
-#[cfg(test)]
-pub(super) mod tests;

@@ -11,7 +11,7 @@ use crate::domain_computation::{
     WorthQueryProviderSessionDenialKind as Session,
 };
 
-pub(super) fn classify_denial(denial: &Denial) -> Outcome {
+pub fn classify_denial(denial: &Denial) -> Outcome {
     if let Some(invariant) = denial.custom_invariant_denial() {
         return Outcome::TerminalFailure(Terminal::CustomInvariant(invariant.clone()));
     }
@@ -92,6 +92,7 @@ pub(super) fn classify_denial(denial: &Denial) -> Outcome {
                     }
                     | Session::ProjectionContract { .. }
                     | Session::HistoricalVisibility { .. }
+                    | Session::OutputCorrespondenceMismatch { .. }
                     | Session::ContentInconsistency
                     | Session::Content(_)
                     | Session::StorageUnavailable(_)
@@ -130,7 +131,7 @@ pub(super) fn classify_denial(denial: &Denial) -> Outcome {
     classify_kind(denial.kind())
 }
 
-fn classify_kind(kind: Kind) -> Outcome {
+pub fn classify_kind(kind: Kind) -> Outcome {
     match kind {
         Kind::ContentInconsistency | Kind::Content(_) | Kind::StorageUnavailable(_) => {
             Outcome::TerminalFailure(Terminal::ApplicationCommit(kind))
@@ -229,6 +230,3 @@ fn classify_kind(kind: Kind) -> Outcome {
         }
     }
 }
-
-#[cfg(test)]
-pub(super) mod tests;

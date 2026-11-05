@@ -13,7 +13,7 @@ use super::RecordedSettlementIdentity;
 use super::WorthQueryNativeMarkingPrecision;
 use super::WorthQueryNativeMarkingWork;
 use im::OrdSet;
-pub(in crate::domain_computation::primary_graph::output_lineage::invalidation) mod posting_order;
+pub(crate) mod posting_order;
 
 /// Touch matching visits only selected posting buckets. Each affected ordinal
 /// is marked once; downstream propagation follows only actual consumed edges.
@@ -53,7 +53,7 @@ pub(super) fn apply(
 
 /// The same native fact-ordinal marking for physical source publication and
 /// owner-issued publication completion. No second consumer registry is used.
-pub(in crate::domain_computation::primary_graph::output_lineage::invalidation) fn mark_keys(
+pub fn mark_keys(
     state: &mut MarkState,
     keys: &[FactPostingKey],
 

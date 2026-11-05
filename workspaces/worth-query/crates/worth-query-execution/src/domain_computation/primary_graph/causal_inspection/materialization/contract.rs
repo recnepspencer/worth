@@ -11,9 +11,6 @@ use crate::domain_computation::evidence_identity::WorthQueryEvidenceIdentity;
 use crate::domain_computation::evidence_identity::WorthQueryEvidenceTag;
 use crate::domain_computation::primary_graph::causal_inspection::inventory::CausalEvidenceFamily;
 
-#[cfg(test)]
-mod tests;
-
 pub(super) fn require_legacy_materialization_source(
     envelope: &BridgeCausalExplanationEnvelope,
 ) -> Result<(), CausalInspectionMaterializationError> {
@@ -37,7 +34,7 @@ pub(super) fn require_legacy_materialization_source(
     Ok(())
 }
 
-pub(super) fn validate_materialization_contract(
+pub fn validate_materialization_contract(
     query_observation_identity: &WorthQueryEvidenceIdentity,
     requested_families: &[CausalEvidenceFamily],
     envelope: &BridgeCausalExplanationEnvelope,

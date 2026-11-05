@@ -319,3 +319,5 @@ impl PartialEq for WorthQueryCommittedProductPublication {
 }
 
 impl Eq for WorthQueryCommittedProductPublication {}
+
+mod court_doors_for_test;

@@ -12,7 +12,7 @@ use worth_relational::facade::identity::KindId;
 use worth_runtime_bridge::facade::BridgeAuthorizationRuleContract;
 
 #[derive(Clone)]
-pub(in crate::domain_computation::authorization) struct WorthQueryCapabilityRuleBinding {
+pub struct WorthQueryCapabilityRuleBinding {
     bridge: BridgeAuthorizationRuleContract,
     path_requirements: Vec<Vec<usize>>,
     recorded_actor: Option<(worth_query_declaration::facade::application_capability::ApplicationCapabilityRecordedActorRequirement, [u8;32])>,
@@ -54,9 +54,7 @@ impl WorthQueryCapabilityRuleBinding {
             recorded_actor: Some((requirement, identity)),
         }
     }
-    pub(in crate::domain_computation::authorization) const fn bridge(
-        &self,
-    ) -> &BridgeAuthorizationRuleContract {
+    pub const fn bridge(&self) -> &BridgeAuthorizationRuleContract {
         &self.bridge
     }
 
@@ -66,7 +64,7 @@ impl WorthQueryCapabilityRuleBinding {
 }
 
 #[derive(Clone)]
-pub(in crate::domain_computation::authorization) struct WorthQueryCapabilityDecisionRuleBindings {
+pub struct WorthQueryCapabilityDecisionRuleBindings {
     pub(in crate::domain_computation::authorization) grant: usize,
     pub(in crate::domain_computation::authorization) allow: usize,
     pub(in crate::domain_computation::authorization) deny: Option<usize>,
@@ -102,7 +100,7 @@ impl WorthQueryCapabilityGrantWitnessBinding {
     }
 }
 
-pub(in crate::domain_computation::authorization) struct WorthQueryCapabilityPathTemplate {
+pub struct WorthQueryCapabilityPathTemplate {
     pub(in crate::domain_computation::authorization) plan: RelationalAuthorizationPathPlan,
     pub(in crate::domain_computation::authorization) identity: [u8; 32],
     pub(in crate::domain_computation::authorization) guard: WorthQueryCapabilityRequestGuard,
@@ -167,3 +165,5 @@ pub(in crate::domain_computation::authorization) const fn field_binding(
         ApplicationCapabilityFieldDimension::Bound(binding) => Some(binding),
     }
 }
+
+mod court_doors_for_test;

@@ -5,7 +5,7 @@ use std::sync::{
 
 use super::lifecycle_count::{acquire, record_one_saturating};
 
-mod lease;
+pub(crate) mod lease;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle;
 pub(crate) use lease::WorthQueryApplicationBasisLease;
 use worth_relational::facade::{
@@ -25,7 +25,7 @@ struct WorthQueryApplicationBasisRegistryState {
 }
 
 #[derive(Default)]
-pub(crate) struct WorthQueryApplicationBasisRegistry {
+pub struct WorthQueryApplicationBasisRegistry {
     state: Arc<WorthQueryApplicationBasisRegistryState>,
 }
 
@@ -193,15 +193,13 @@ pub struct WorthQueryApplicationBasisObservation {
     acquisitions: usize,
 }
 
-pub(crate) enum WorthQueryApplicationBasisRegistrationDenial {
+pub enum WorthQueryApplicationBasisRegistrationDenial {
     Basis(worth_relational::facade::branch::RelationalBranchBasisDenial),
     Snapshot(worth_relational::facade::snapshots::RelationalSnapshotAdmissionDenial),
 }
 
 impl WorthQueryApplicationBasisRegistry {
-    pub(in crate::domain_computation::primary_graph) fn observer(
-        &self,
-    ) -> WorthQueryApplicationBasisObserver {
+    pub fn observer(&self) -> WorthQueryApplicationBasisObserver {
         WorthQueryApplicationBasisObserver {
             state: Arc::clone(&self.state),
         }
@@ -275,6 +273,4 @@ impl WorthQueryApplicationBasisObservation {
     }
 }
 
-#[cfg(test)]
-#[path = "basis_registry/maintenance_refusal_cleanup.rs"]
-mod maintenance_refusal_cleanup;
+mod court_doors_for_test;

@@ -8,12 +8,11 @@ use worth_runtime_world::facade::ProductUnpublishedRecoveryHandle;
 
 mod managed_recovery;
 mod release;
-mod reservation;
+pub(crate) mod reservation;
 pub(in crate::domain_computation::primary_graph::provider) use managed_recovery::{
     ManagedUnpublishedRecoveryGuard, ManagedUnpublishedRecoveryStop,
 };
 pub(in crate::domain_computation) use release::WorthQueryUnpublishedReleaseReservation;
-#[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use reservation::unwind_recovery_inspection_count;
 pub(in crate::domain_computation::primary_graph) use reservation::WorthQueryUnpublishedIdempotencyReservation;
 
@@ -200,7 +199,6 @@ impl WorthQueryUnpublishedIdempotencyStore {
         Some((recorded.binding, recorded.recovery_handle.clone()))
     }
 
-    #[cfg(test)]
     fn retained_count(&self) -> usize {
         self.by_key.len()
     }
@@ -300,10 +298,7 @@ impl super::WorthQueryPrimaryGraphProvider {
             .inspect_exact(key)
     }
 
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn unpublished_idempotency_count(
-        &self,
-    ) -> usize {
+    pub fn unpublished_idempotency_count(&self) -> usize {
         self.unpublished_idempotency
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())

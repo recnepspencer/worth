@@ -1,6 +1,6 @@
 //! Exact-commit evidence minted only from the committed session stage.
 
-mod postcommit_currentness;
+pub(crate) mod postcommit_currentness;
 pub use postcommit_currentness::{FactlessCurrentness, OwnEffectOnReads, RebaseVerificationReason};
 pub(in crate::domain_computation::primary_graph) use postcommit_currentness::{
     FailedRebase, RebaseVerificationFailure,
@@ -15,7 +15,7 @@ use crate::domain_computation::primary_graph::provider::{
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphCommitEvidence {
+pub struct WorthQueryPrimaryGraphCommitEvidence {
     workflow_origin: Option<crate::domain_computation::primary_graph::workflow::operation_output::WorkflowOperationOrigin>,
     provider_session_binding:
         crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding,
@@ -55,9 +55,17 @@ pub(super) fn seal(
     provider: &crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider,
     committed: &mut WorthQueryCommittedApplicationSession,
 ) -> WorthQueryPrimaryGraphCommitEvidence {
+    provider.graph.with_runtime(execution, |runtime| {
+        seal_on_runtime(execution, runtime, committed)
+    })
+}
+pub(super) fn seal_on_runtime(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    committed: &mut WorthQueryCommittedApplicationSession,
+) -> WorthQueryPrimaryGraphCommitEvidence {
     let prepared_touched_records = committed.take_prepared_touched_records();
-    let touched_records =
-        prepared_touched_records.verify_performed(&committed.committed().changed_records);
+    let touched_records = prepared_touched_records.verify_performed(committed.changed_records());
     let mutation_work =
         WorthQueryPrimaryMutationWorkEvidence::from_commit_seal(WorthQueryMutationWorkCommitSeal {
             counters: committed.work(),
@@ -69,9 +77,7 @@ pub(super) fn seal(
         committed.attempt().dispatch_outbox(),
         committed.committed(),
     );
-    let output_correspondence = committed
-        .attempt()
-        .seal_output_correspondence(committed.committed());
+    let output_correspondence = committed.output_correspondence();
     let prepared_rebase = committed.take_source_fact_rebase();
     let producer_output = committed
         .attempt()
@@ -84,18 +90,19 @@ pub(super) fn seal(
     let retain_output_field_evidence = prepared_rebase.retains_output_field_evidence();
     let request = committed.attempt().affinity().publication_request().clone();
     let committed_result = committed.committed();
-    let observed_source_facts = provider.graph.with_runtime(execution, |runtime| {
+    let observed_source_facts = {
         postcommit_currentness::rebase_output(
             execution,
             runtime,
             &committed_result.snapshot,
             prepared_rebase,
             &output_correspondence,
-            &committed_result.changed_records,
+            committed.changed_records(),
+            committed.coupled_commit(),
             producer_output,
             crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(execution.allocation_policy(), Some(&request)),
         )
-    });
+    };
     // Opt-in output evaluation keeps only immutable field evidence. A failed
     // optional capture cannot undo the already committed Native publication.
     let performed_output_fields = if retain_output_field_evidence {
@@ -284,9 +291,7 @@ impl WorthQueryPrimaryGraphCommitEvidence {
     }
 
     /// Ordinals of the retained source facts the committed effect itself moved.
-    pub(in crate::domain_computation::primary_graph) fn source_facts_superseded_by_own_effect(
-        &self,
-    ) -> impl Iterator<Item = usize> + '_ {
+    pub fn source_facts_superseded_by_own_effect(&self) -> impl Iterator<Item = usize> + '_ {
         self.observed_source_facts.superseded_by_own_effect()
     }
 }
@@ -294,3 +299,5 @@ impl WorthQueryPrimaryGraphCommitEvidence {
 pub(in crate::domain_computation::primary_graph) use postcommit_currentness::{
     PreparedRebaseDenial, PreparedSourceFactRebase,
 };
+
+mod court_doors_for_test;

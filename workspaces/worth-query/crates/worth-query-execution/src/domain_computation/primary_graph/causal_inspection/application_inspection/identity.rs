@@ -47,7 +47,7 @@ enum Part<'a> {
 }
 
 #[derive(Clone, Copy, Eq, PartialEq)]
-pub(super) enum InspectionOriginalReference {
+pub enum InspectionOriginalReference {
     Before,
     After,
     Source,

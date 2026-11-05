@@ -36,10 +36,7 @@ impl super::WorthQueryPrimaryGraphLayout {
         u64::try_from(comparisons.checked_mul(bytes_per_comparison)?).ok()
     }
 
-    pub(in crate::domain_computation::primary_graph) fn entity_name(
-        &self,
-        kind: KindId,
-    ) -> Option<&str> {
+    pub fn entity_name(&self, kind: KindId) -> Option<&str> {
         self.entity_kinds
             .iter()
             .find_map(|(name, candidate)| (*candidate == kind).then_some(name.as_str()))
@@ -77,3 +74,5 @@ impl super::WorthQueryPrimaryGraphLayout {
         Ok(None)
     }
 }
+
+mod court_doors_for_test;

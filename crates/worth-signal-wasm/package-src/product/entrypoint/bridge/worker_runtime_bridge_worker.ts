@@ -1,4 +1,5 @@
 import init, { SignalWorkerRuntime } from "../../../raw_surface.js";
+import { applyWorkerAcknowledgedTransaction, readWorkerAcknowledgementState, readWorkerImportState } from "./worker_runtime_committed_state.js";
 import { createWorkerLocalTruthRuntime } from "../../local_truth/protocol/worker_local_truth_runtime.js";
 import {
   isWorkerRuntimeWasmBootstrapMessage,
@@ -140,6 +141,12 @@ function serializeError(error) {
 
 function resolveRuntimeMethod(runtime, method, args) {
   switch (method) {
+    case "applyTransactionAcknowledged":
+      return applyWorkerAcknowledgedTransaction(runtime, args[0]);
+    case "readAcknowledgementState":
+      return readWorkerAcknowledgementState(runtime, args[0]);
+    case "readImportState":
+      return readWorkerImportState(runtime, args[0]);
     case "publishPortableGraph":
       return resolvePublishPortableGraph(runtime, args[0]);
     case "applyTransaction":

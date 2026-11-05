@@ -3,10 +3,9 @@ use worth_relational::facade::{
     runtime::RelationalRuntime,
     snapshots::{RelationalSnapshotAdmissionDenial, SnapshotHandle},
 };
-#[cfg(test)]
 use worth_relational::facade::{branch::RelationalBranchBasisDenial, history::BranchId};
 
-pub(crate) fn open_exact_basis_snapshot(
+pub fn open_exact_basis_snapshot(
     runtime: &mut RelationalRuntime,
     basis: &AdmittedRelationalBranchBasis,
 ) -> Result<SnapshotHandle, RelationalSnapshotAdmissionDenial> {
@@ -16,8 +15,7 @@ pub(crate) fn open_exact_basis_snapshot(
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) enum WorthQueryExactBasisSnapshotDenial {
-    #[cfg(test)]
+pub enum WorthQueryExactBasisSnapshotDenial {
     BranchIdentityUnavailable,
     BranchObservationUnavailable,
     BranchMaterializationSuspended,
@@ -33,7 +31,6 @@ pub(crate) enum WorthQueryExactBasisSnapshotDenial {
     SnapshotIdentityExhausted,
 }
 
-#[cfg(test)]
 fn observation_denial(denial: RelationalBranchBasisDenial) -> WorthQueryExactBasisSnapshotDenial {
     match denial {
         RelationalBranchBasisDenial::RetentionCapacityExhausted => {
@@ -74,8 +71,7 @@ impl From<RelationalSnapshotAdmissionDenial> for WorthQueryExactBasisSnapshotDen
 /// Opens an ephemeral snapshot from the Relational owner's exact current
 /// branch observation. The descriptive branch name never selects storage on
 /// its own.
-#[cfg(test)]
-pub(crate) fn open_current_branch_snapshot(
+pub fn open_current_branch_snapshot(
     runtime: &mut RelationalRuntime,
     branch: &BranchId,
 ) -> Result<SnapshotHandle, WorthQueryExactBasisSnapshotDenial> {

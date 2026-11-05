@@ -1,0 +1,170 @@
+use worth_foundational::facade::AspectValue;
+use std::collections::BTreeMap;
+use worth_relational::facade::symbols::ClientKey;
+use worth_relational::facade::transactions::CreatedEntityRef;
+use worth_relational::facade::identity::EntityId;
+use worth_relational::facade::transactions::EntityReference;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::assessment::WorkflowAssessmentEvidenceMeaning;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::model::WorthQueryApplicationCreationPartition;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::model::WorthQueryApplicationRealizedEffect;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::assessment::text;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::assessment::workflow_evidence_retained_bytes;
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::installed_layout;
+
+pub fn created(
+    kind: worth_relational::facade::identity::KindId,
+    fields: BTreeMap<worth_foundational::facade::AspectFieldLocator, AspectValue>,
+) -> WorthQueryApplicationRealizedEffect {
+    WorthQueryApplicationRealizedEffect::CreateEntity {
+        kind,
+        key: "charged".to_owned(),
+        fields,
+        partition: WorthQueryApplicationCreationPartition::Issued,
+    }
+}
+
+pub fn entity(slot: u64) -> EntityId {
+    EntityId::new(
+        worth_relational::facade::identity::PartitionId::main(),
+        slot,
+        1,
+    )
+}
+
+#[test]
+fn evidence_and_each_dependency_charge_their_field_widths_and_nothing_else_does() {
+    let primary = installed_layout();
+    let layout = primary.workflow();
+    let evidence = BTreeMap::from([
+        (
+            (*layout.assessment_evidence.identity_for_test()).clone(),
+            text("abcd"),
+        ),
+        (
+            (*layout.assessment_evidence.retained_bytes_for_test()).clone(),
+            AspectValue::UInt64(u64::MAX),
+        ),
+    ]);
+    let dependency = BTreeMap::from([
+        (
+            (*layout.evidence_dependency.fact_kind_for_test()).clone(),
+            text("field"),
+        ),
+        (
+            (*layout.evidence_dependency.native_revision_for_test()).clone(),
+            AspectValue::UInt64(3),
+        ),
+        (
+            (*layout.evidence_dependency.field_presence_for_test()).clone(),
+            AspectValue::Bool(true),
+        ),
+    ]);
+
+    let charge = |effect| workflow_evidence_retained_bytes(layout, &effect);
+    assert_eq!(
+        charge(created(
+            (*layout.assessment_evidence.entity_kind_for_test()),
+            evidence.clone()
+        )),
+        5 + 9
+    );
+    assert_eq!(
+        charge(created(
+            (*layout.evidence_dependency.entity_kind_for_test()),
+            dependency
+        )),
+        6 + 9 + 2
+    );
+    assert_eq!(
+        charge(created(
+            (*(*layout.transition_for_test()).entity_kind_for_test()),
+            evidence
+        )),
+        0
+    );
+    assert_eq!(
+        charge(WorthQueryApplicationRealizedEffect::CreateRelation {
+            fields: Default::default(),
+            kind: (*layout.evidence_dependency_relation_for_test()),
+            key: "evidence-dependency".to_owned(),
+            from: EntityReference::Existing(entity(1)),
+            to: EntityReference::Existing(entity(2)),
+        }),
+        0,
+    );
+}
+
+#[test]
+fn performed_entity_kind_dependency_uses_a_distinct_durable_shape() {
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact as Fact;
+
+    let primary = installed_layout();
+    let layout = primary.workflow();
+    let dependent = entity(7);
+    let kind = worth_relational::facade::identity::KindId::new(19);
+    let make_meaning = |fact| {
+        WorkflowAssessmentEvidenceMeaning::new_for_test(
+            String::new(),
+            String::new(),
+            String::new(),
+            String::new(),
+            String::new(),
+            String::new(),
+            String::new(),
+            dependent,
+            String::new(),
+            String::new(),
+            String::new(),
+            true,
+            String::new(),
+            String::new(),
+            String::new(),
+            0,
+            std::sync::Arc::from([fact]),
+        )
+    };
+    let evidence = CreatedEntityRef {
+        partition_id: worth_relational::facade::identity::PartitionId::main(),
+        kind_id: (*layout.assessment_evidence.entity_kind_for_test()),
+        client_key: ClientKey::raw("evidence"),
+    };
+    let projected = |fact| {
+        let mut effects = Vec::new();
+        worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::assessment::dependency::visit_dependency_facts(
+            layout,
+            &evidence,
+            &make_meaning(fact),
+            &mut |effect| {
+                effects.push(effect);
+                Ok::<(), ()>(())
+            },
+        )
+        .unwrap();
+        let WorthQueryApplicationRealizedEffect::CreateEntity { fields, .. } = effects.remove(0)
+        else {
+            panic!("dependency projection must create its descriptor");
+        };
+        fields
+    };
+    let legacy = projected(Fact::SourceEntity {
+        entity_id: dependent,
+    });
+    assert_eq!(
+        legacy.get(&(*layout.evidence_dependency.fact_kind_for_test())),
+        Some(&text("entity"))
+    );
+    assert!(!legacy.contains_key(&(*layout.evidence_dependency.native_entity_kind_for_test())));
+
+    let exact = projected(Fact::Entity {
+        entity_id: dependent,
+        kind,
+    });
+    assert_eq!(
+        exact.get(&(*layout.evidence_dependency.fact_kind_for_test())),
+        Some(&text("entity-kind"))
+    );
+    assert_eq!(
+        exact.get(&(*layout.evidence_dependency.native_entity_kind_for_test())),
+        Some(&AspectValue::UInt64(u64::from(kind.as_u32())))
+    );
+}

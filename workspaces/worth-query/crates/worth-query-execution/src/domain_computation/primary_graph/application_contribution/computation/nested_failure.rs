@@ -1,11 +1,11 @@
 //! A computational failure is transported only from the call that owns its cause.
 use worth_execution::NestedComputationStop;
 
-pub(in crate::domain_computation::primary_graph) struct NestedFailureTransport<'context> {
+pub struct NestedFailureTransport<'context> {
     take: &'context mut dyn FnMut() -> Option<NestedComputationStop>,
 }
 
-pub(in crate::domain_computation::primary_graph) enum MemberComputeFailure<E> {
+pub enum MemberComputeFailure<E> {
     Own(E),
     Nested(TakenNestedFailure<E>),
 }
@@ -58,3 +58,5 @@ impl<E> MemberComputeFailure<E> {
         }
     }
 }
+
+mod court_doors_for_test;

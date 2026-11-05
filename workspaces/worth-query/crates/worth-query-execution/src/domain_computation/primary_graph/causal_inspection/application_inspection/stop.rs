@@ -25,7 +25,7 @@ pub use owner::{
 #[cfg(test)]
 mod output_tests;
 
-pub(super) enum InspectionCause {
+pub enum InspectionCause {
     Unavailable,
     Advancement(WorthQueryAdvancementDenial),
     Selection(crate::basis::WorthQueryProductBranchAdmissionDenial),
@@ -280,3 +280,5 @@ impl std::fmt::Debug for WorthQueryApplicationInspectionDenial {
 
 #[cfg(test)]
 mod projection_tests;
+
+mod court_doors_for_test;

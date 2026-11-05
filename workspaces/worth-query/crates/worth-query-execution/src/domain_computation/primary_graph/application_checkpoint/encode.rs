@@ -5,10 +5,8 @@ use super::{
 };
 use sha2::{Digest, Sha256};
 
-mod body;
-mod sizing;
-#[cfg(test)]
-mod tests;
+pub(crate) mod body;
+pub(crate) mod sizing;
 
 impl WorthQueryApplicationCheckpoint {
     pub(in crate::domain_computation::primary_graph) fn encode(
@@ -62,9 +60,11 @@ impl WorthQueryApplicationCheckpoint {
     }
 }
 
-fn reserve_buffer(
+pub fn reserve_buffer(
     total: usize,
     policy: WorthQueryCheckpointCapturePolicy<'_, '_>,
 ) -> Result<worth_execution::ExecutionByteBuffer, WorthQueryCheckpointCaptureDenial> {
     worth_execution::ExecutionByteBuffer::allocate(total, policy).map_err(Into::into)
 }
+
+mod court_doors_for_test;

@@ -16,7 +16,6 @@ pub fn worth_query_evidence_identity(
     WorthQueryEvidenceIdentityEncoder::new(scope, WorthQueryEvidenceIdentityScheme::V1)
 }
 
-#[cfg(test)]
 pub(crate) fn worth_query_evidence_identity_with_scheme(
     scope: WorthQueryEvidenceScope,
     scheme: WorthQueryEvidenceIdentityScheme,

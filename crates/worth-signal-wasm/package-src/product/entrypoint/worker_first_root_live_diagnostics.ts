@@ -40,6 +40,10 @@ export function createWorkerFirstRootLiveDiagnostics(bridge) {
       });
     },
     notify,
+    adopt(committedSnapshot) {
+      snapshot = Object.freeze(committedSnapshot);
+      notify();
+    },
     reset() {
       snapshot = emptyRootDiagnosticsSnapshot();
       notify();

@@ -117,3 +117,6 @@ impl<Schema, Operation, Input, Scope>
             .assert_retained_activation_read_cancelled(runtime, execution, snapshot, source);
     }
 }
+
+#[path = "retained_activation_read_tests_court_doors_for_test.rs"]
+mod court_doors_for_test;

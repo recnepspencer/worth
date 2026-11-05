@@ -6,6 +6,7 @@ use super::WorthQueryOutputDemandKey;
 use super::WorthQueryOutputDemandRegistry;
 use crate::domain_computation::primary_graph::application_attempt::CompletedHandlerFactBoundary;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceInvalidationOwner;
+use crate::domain_computation::primary_graph::output_lineage::ProducerHandlerPreparation;
 use crate::domain_computation::primary_graph::ComputationPrior;
 use crate::domain_computation::primary_graph::SealedComputationRetention;
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
@@ -14,56 +15,15 @@ use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 /// The live demand record selected for a producer operation. This is a
 /// move-only carrier; the source epoch and installed producer are the registry
 /// key, while the registry remains the sole owner of prerequisite claims.
-pub(in crate::domain_computation) struct RequiredOutputDemandContext {
+pub struct RequiredOutputDemandContext {
     family: &'static str,
     owner: WorthQueryOutputDemandRegistry,
     key: Arc<WorthQueryOutputDemandKey>,
     work_membership: Option<Arc<super::required_work::RequiredWorkMembership>>,
 
     ready_backing: Option<PreparedReadyBacking>,
-    completed_handler_facts: Option<CompletedHandlerFactBoundary>,
-    decision_context_use: Option<crate::domain_computation::primary_graph::DecisionContextUse>,
-    prepared_decision_reuse: Option<
-        crate::domain_computation::primary_graph::output_lineage::PreparedDecisionReuseContext,
-    >,
-    completed_decision_reuse: Option<
-        crate::domain_computation::primary_graph::output_lineage::CompletedDecisionReuseProof,
-    >,
-    prepared_input_reuse_key:
-        Option<crate::domain_computation::primary_graph::output_lineage::PreparedInputReuseKey>,
+    handler: ProducerHandlerPreparation,
     reuses_live_output_only: bool,
-    /// What the selected record retained for a partitioned computation the
-    /// handler runs, and that record.
-    computation_prior: Option<ComputationPrior>,
-    /// The run sealed with the handler's facts, for the record publication
-    /// writes.
-    sealed_computation: HandlerComputationCustody,
-}
-
-enum HandlerComputationCustody {
-    AwaitingHandler,
-    Sealed(SealedComputationRetention),
-    Transferred,
-}
-
-impl HandlerComputationCustody {
-    fn seal(&mut self, computation: SealedComputationRetention) {
-        assert!(
-            matches!(self, Self::AwaitingHandler),
-            "one completed handler retention result"
-        );
-        *self = Self::Sealed(computation);
-    }
-    fn take(&mut self) -> SealedComputationRetention {
-        assert!(
-            matches!(self, Self::Sealed(_)),
-            "handler completion precedes the single publication transfer"
-        );
-        let Self::Sealed(computation) = std::mem::replace(self, Self::Transferred) else {
-            unreachable!()
-        };
-        computation
-    }
 }
 
 /// Both parts are issued together before an installed producer can execute.
@@ -119,48 +79,41 @@ impl RequiredOutputDemandContext {
         &mut self,
         context: crate::domain_computation::primary_graph::output_lineage::PreparedDecisionReuseContext,
     ) {
-        assert!(self.prepared_decision_reuse.replace(context).is_none());
+        self.handler.retain_prepared_decision_reuse(context)
     }
 
     pub(in crate::domain_computation::primary_graph) fn take_completed_decision_reuse(
         &mut self,
     ) -> Option<crate::domain_computation::primary_graph::output_lineage::CompletedDecisionReuseProof>
     {
-        self.completed_decision_reuse.take()
+        self.handler.take_completed_decision_reuse()
     }
 
     pub(in crate::domain_computation) fn record_decision_context_use(
         &mut self,
         use_mask: crate::domain_computation::primary_graph::DecisionContextUse,
     ) {
-        assert!(self.decision_context_use.replace(use_mask).is_none());
+        self.handler.record_decision_context_use(use_mask)
     }
 
     pub(in crate::domain_computation::primary_graph) fn retain_computation_prior(
         &mut self,
         prior: ComputationPrior,
     ) {
-        assert!(self.computation_prior.replace(prior).is_none());
+        self.handler.retain_computation_prior(prior)
     }
 
     pub(in crate::domain_computation) fn computation_prior(&self) -> Option<ComputationPrior> {
-        self.computation_prior.clone()
+        self.handler.computation_prior()
     }
 
-    /// The sealed run and the record its prior state came from.
     pub(in crate::domain_computation::primary_graph) fn take_sealed_computation(
         &mut self,
     ) -> (
         SealedComputationRetention,
         Option<crate::domain_computation::primary_graph::output_lineage::PriorComputationRecord>,
     ) {
-        let sealed = self.sealed_computation.take();
-        (
-            sealed,
-            self.computation_prior
-                .take()
-                .and_then(ComputationPrior::into_record),
-        )
+        self.handler.take_sealed_computation()
     }
 
     pub(in crate::domain_computation) fn record_completed_handler_facts(
@@ -168,36 +121,28 @@ impl RequiredOutputDemandContext {
         boundary: CompletedHandlerFactBoundary,
         computation: SealedComputationRetention,
     ) {
-        assert!(
-            self.completed_handler_facts.is_none(),
-            "one completed handler read"
-        );
-        self.sealed_computation.seal(computation);
-        self.completed_decision_reuse = self.prepared_decision_reuse.take().and_then(|prepared| {
-            boundary.seal_decision_reuse(prepared, self.decision_context_use.take()?)
-        });
-        self.completed_handler_facts = Some(boundary);
+        self.handler
+            .record_completed_handler_facts(boundary, computation)
     }
 
     pub(in crate::domain_computation::primary_graph) fn take_completed_handler_facts(
         &mut self,
     ) -> Option<CompletedHandlerFactBoundary> {
-        self.completed_handler_facts.take()
+        self.handler.take_completed_handler_facts()
     }
 
     pub(in crate::domain_computation::primary_graph) fn retain_prepared_input_reuse_key(
         &mut self,
         key: crate::domain_computation::primary_graph::output_lineage::PreparedInputReuseKey,
     ) {
-        assert!(self.prepared_input_reuse_key.is_none());
-        self.prepared_input_reuse_key = Some(key);
+        self.handler.retain_prepared_input_reuse_key(key)
     }
 
     pub(in crate::domain_computation::primary_graph) fn take_prepared_input_reuse_key(
         &mut self,
     ) -> Option<crate::domain_computation::primary_graph::output_lineage::PreparedInputReuseKey>
     {
-        self.prepared_input_reuse_key.take()
+        self.handler.take_prepared_input_reuse_key()
     }
 
     pub(super) fn key_arc(&self) -> &Arc<WorthQueryOutputDemandKey> {
@@ -248,15 +193,10 @@ impl WorthQueryOutputDemandInterest {
             work_membership,
 
             ready_backing: Some(ready_backing),
-            completed_handler_facts: None,
-            decision_context_use: None,
-            prepared_decision_reuse: None,
-            completed_decision_reuse: None,
-            prepared_input_reuse_key: None,
-
+            handler: ProducerHandlerPreparation::new(),
             reuses_live_output_only: false,
-            computation_prior: None,
-            sealed_computation: HandlerComputationCustody::AwaitingHandler,
         })
     }
 }
+
+mod court_doors_for_test;

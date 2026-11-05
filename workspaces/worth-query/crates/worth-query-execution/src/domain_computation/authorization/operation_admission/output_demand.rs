@@ -11,6 +11,8 @@ impl WorthQueryAdmittedOperation {
     ) {
         if let Some(context) = &mut self.required_output_demand {
             context.record_decision_context_use(use_mask);
+        } else if let Some(handler) = self.graph_work.coupled_handler_mut() {
+            handler.record_decision_context_use(use_mask);
         }
     }
 
@@ -42,9 +44,10 @@ impl WorthQueryAdmittedOperation {
     ) {
         if let Some(context) = &mut self.required_output_demand {
             context.record_completed_handler_facts(boundary, computation);
+        } else if let Some(handler) = self.graph_work.coupled_handler_mut() {
+            handler.record_completed_handler_facts(boundary, computation);
         } else {
             crate::domain_computation::primary_graph::observe_discarded(&computation);
-            #[cfg(test)]
             crate::domain_computation::primary_graph::SealedComputationRun::keep_in_test(
                 match computation {
                     SealedComputationRetention::Produced(run) => Some(run),
@@ -60,9 +63,12 @@ impl WorthQueryAdmittedOperation {
         let prior = self
             .required_output_demand
             .as_ref()
-            .and_then(RequiredOutputDemandContext::computation_prior);
-        #[cfg(test)]
-        let prior = prior.or_else(ComputationPrior::handed_in_test);
-        prior
+            .and_then(RequiredOutputDemandContext::computation_prior)
+            .or_else(|| {
+                self.graph_work
+                    .coupled_handler()
+                    .and_then(|handler| handler.computation_prior())
+            });
+        prior.or_else(ComputationPrior::handed_in_test)
     }
 }

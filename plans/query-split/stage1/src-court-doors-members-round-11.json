@@ -1,0 +1,25 @@
+{
+ "authority_doors": [],
+ "constructor_doors": [],
+ "field_doors": [
+  "domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutput.completed_decision_reuse",
+  "domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutput.completed_decision_reuse (mut)",
+  "domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutput.completed_handler_facts",
+  "domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutput.completed_handler_facts (mut)",
+  "domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutput.prepared_input_reuse_key",
+  "domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutput.prepared_input_reuse_key (mut)",
+  "domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutput.source_partition_identity",
+  "domain_computation::primary_graph::schema_layout::program_activation::WorthQueryProgramActivationLayout.entity_kind",
+  "domain_computation::primary_graph::schema_layout::program_activation::WorthQueryProgramActivationLayout.program_revision_locator"
+ ],
+ "method_doors": [
+  "domain_computation::execution_runtime::product_world::request_control::WorthQueryProductPublicationBinding::prepare_relational_candidate",
+  "domain_computation::primary_graph::application_attempt::read_set::computation_routing::ComputationFactReaders::partitions",
+  "domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutput::observed_source_facts"
+ ],
+ "unplaced": [
+  "associated function `of` is private",
+  "method `bind_source_partition` is private",
+  "method `record_restoration` is private"
+ ]
+}

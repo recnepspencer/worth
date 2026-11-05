@@ -216,7 +216,7 @@ fn ensure_authority_owns_handle(
 /// testable without standing up a published runtime — the caller still reads
 /// the owner identity from the runtime it is a method on, never from an
 /// argument.
-pub(super) fn ensure_same_runtime(
+pub fn ensure_same_runtime(
     owner: WorthQueryRuntimeAuthorityIdentity,
     presented: WorthQueryRuntimeAuthorityIdentity,
 ) -> Result<(), WorthQueryRecoveryHandleDenial> {
@@ -235,3 +235,5 @@ fn admission_authorization_denial(
         denial.kind(),
     ))
 }
+
+mod court_doors_for_test;

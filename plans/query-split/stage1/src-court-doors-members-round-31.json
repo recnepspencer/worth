@@ -1,0 +1,14 @@
+{
+ "authority_doors": [],
+ "constructor_doors": [
+  "domain_computation::primary_graph::application_output_demand::registry::BoundOutputSource::new",
+  "domain_computation::primary_graph::application_output_demand::registry::DemandWake::new",
+  "domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputDemandNotifications::new"
+ ],
+ "field_doors": [],
+ "field_into_doors": [],
+ "method_doors": [],
+ "unplaced": [
+  "fields `closed_cleanup`, `work_membership`, `interests`, `required_interests`, `performed_obligations`, `framework_required_count`, `prerequisites`, `claim_batch`, `checkpoint_prerequisites`, `prepared_prerequisite_claims`, `pending_cleanup_next`, `pending_cleanup_queued`, `settlements`, `product_occurrence`, `source_scope`, `source_commits`, `state`, `performed_source`, `readmission_source`, `successor_of`, `required_stop`, `held_successor` and `wake` of struct `worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandRecord` are private"
+ ]
+}

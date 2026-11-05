@@ -4,7 +4,7 @@ mod control;
 mod custody;
 mod disposal;
 mod eligibility;
-mod output_authority;
+pub(crate) mod output_authority;
 mod output_completion;
 mod output_correspondence;
 mod output_lookup;

@@ -10,17 +10,15 @@ use super::{
 mod native;
 pub(super) use native::NativeReadInterruption;
 
-#[cfg(test)]
-mod tests;
+pub(crate) mod checkpoint_observer;
 
 /// A safe point between bounded kernel/native steps, never an interrupt inside
 /// an opaque native call. Every meter uses the same request-owned authority.
-pub(super) fn checkpoint(
+pub fn checkpoint(
     request: &WorthQueryRequestScope,
     subject: &str,
 ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
-    #[cfg(test)]
-    tests::visit_checkpoint(subject);
+    checkpoint_observer::visit(subject);
     match request.interruption() {
         None => Ok(()),
         Some(WorthQueryRequestInterruption::Cancelled) => Err(read_execution_denial(

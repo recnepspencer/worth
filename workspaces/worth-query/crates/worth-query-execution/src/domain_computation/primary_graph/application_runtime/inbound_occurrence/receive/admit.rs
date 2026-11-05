@@ -11,7 +11,6 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: worth_query_installation::facade::ApplicationSchema,
 {
-    #[cfg(test)]
     pub(in crate::domain_computation) fn admit_inbound_occurrence(
         &self,
         handle: &WorthQueryInboundVerifierHandle,
@@ -297,3 +296,5 @@ fn map_custody(
         WorthQueryInboundCustodyAdmission::CapacityExhausted => Err(Denial::CapacityExhausted),
     }
 }
+
+mod court_doors_for_test;

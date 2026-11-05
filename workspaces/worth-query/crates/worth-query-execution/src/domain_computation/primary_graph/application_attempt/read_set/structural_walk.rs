@@ -4,14 +4,13 @@ use super::super::{
     snapshot_lease::WorthQueryApplicationSnapshotLease,
 };
 use super::*;
-#[cfg(test)]
-mod tests;
+
 use crate::domain_computation::primary_graph::{
     invariant_projection::ExpectedFactKeys,
     structural_walk::{StructuralWalkKey, StructuralWalkObservation},
 };
 
-pub(super) fn observe<Schema, Operation, Input, Scope>(
+pub fn observe<Schema, Operation, Input, Scope>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     admission: &crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<
         Schema,
@@ -36,7 +35,7 @@ pub(super) fn observe<Schema, Operation, Input, Scope>(
             key,
             admission.admission_identity(),
             &admission.retain_graph_contract(),
-            lease.snapshot(),
+            lease.projection_origin(),
         )
         .ok_or_else(mismatch)?;
     let descriptor = super::super::WorthQueryApplicationFactKey::StructuralWalk(key.clone());

@@ -1,118 +1,110 @@
-//! Byte construction uses the genuine capture request; legacy policy is test-only.
+//! One checkpoint capture is one stage of its genuine request; legacy policy is test-only.
+//!
+//! Work rate, charged cumulatively on that stage's meter against the request's
+//! remaining work: one unit per byte each serializer pass produces (a sizing
+//! pass and an emission pass are each charged), one per payload byte hashed and
+//! one per byte copied. A zero-work boundary checkpoint charges nothing. Every
+//! charge and boundary observes cancellation and the deadline; none opens a
+//! scope, consults the request, or takes a reservation. Retained buffers admit
+//! their exact bytes on the stage's memory lineage once, before allocation.
+use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact as Artifact;
 use crate::durability::data::RelationalNativeCheckpointCaptureDenial as Denial;
+use crate::durability::log::native_checkpoint_codec::member_frame;
+use crate::durability::medium::RelationalDurableMemberLocator;
 #[cfg(test)]
-use worth_execution::{ExecutionAllocationPolicy, ExecutionByteBuffer};
+use worth_execution::ExecutionAllocationPolicy;
 use worth_execution::{
-    ExecutionImmutableBytes, ExecutionRequest, ExecutionRequestArrayBuilder,
-    ExecutionRequestArrayDenial,
+    ExecutionByteBuffer, ExecutionMemoryReservation, ExecutionRequest, ExecutionRequestArrayDenial,
+    MapKernelContext,
 };
 
-#[derive(Clone, Copy)]
-pub(crate) enum CheckpointEncodingControl<'request, 'authority> {
-    Original(ExecutionRequest<'request, 'authority>),
+pub(crate) enum CheckpointEncodingControl<'stage, 'scope, 'lease, 'request, 'authority> {
+    Original {
+        execution: ExecutionRequest<'request, 'authority>,
+        stage: &'stage mut MapKernelContext<'scope, 'lease>,
+    },
     #[cfg(test)]
     Policy(ExecutionAllocationPolicy<'request, 'authority>),
 }
-impl CheckpointEncodingControl<'_, '_> {
-    pub(crate) fn checkpoint(self, work: u64) -> Result<(), Denial> {
+
+impl CheckpointEncodingControl<'_, '_, '_, '_, '_> {
+    pub(crate) fn checkpoint(&mut self, work: u64) -> Result<(), Denial> {
         match self {
-            Self::Original(execution) => {
-                let mut stop = None;
-                let outcome = crate::execution::request_stage::optional_stage(
-                    &execution,
-                    |context, _| {
-                        stop = crate::execution::request_stage::checkpoint(context, work).err();
-                    },
-                    |_| 0,
-                );
-                if let Some(stop) = stop {
-                    return Err(Denial::Request(stop.into()));
-                }
-                outcome.map_err(Denial::Request)
+            Self::Original { stage, .. } => {
+                crate::execution::request_stage::checkpoint(stage, work)
+                    .map_err(|stop| Denial::Request(stop.into()))
             }
             #[cfg(test)]
             Self::Policy(policy) => policy.check_live().map_err(Denial::Allocation),
         }
     }
-    pub(crate) fn reserve_read(
-        self,
-        bytes: u64,
-    ) -> Result<Option<worth_execution::ExecutionMemoryReservation>, Denial> {
+    pub(super) fn allocate(&mut self, bytes: usize) -> Result<ExecutionByteBuffer, Denial> {
         match self {
-            Self::Original(execution) => execution
-                .reserve_retained_memory(bytes)
+            Self::Original { execution, stage } => {
+                ExecutionByteBuffer::allocate_in_stage(bytes, *execution, stage).map_err(allocation)
+            }
+            #[cfg(test)]
+            Self::Policy(policy) => {
+                ExecutionByteBuffer::allocate(bytes, *policy).map_err(Denial::Allocation)
+            }
+        }
+    }
+    pub(crate) fn reserve_read(
+        &mut self,
+        bytes: u64,
+    ) -> Result<Option<ExecutionMemoryReservation>, Denial> {
+        match self {
+            Self::Original { execution, stage } => execution
+                .reserve_retained_memory_in_stage(stage, bytes)
                 .map_err(|cause| Denial::Request(cause.into())),
             #[cfg(test)]
             Self::Policy(_) => Ok(None),
         }
     }
     pub(crate) fn locator(
-        self,
+        &mut self,
         bytes: &[u8],
-    ) -> Result<crate::durability::medium::RelationalDurableMemberLocator, Denial> {
+    ) -> Result<RelationalDurableMemberLocator, Denial> {
         match self {
-            Self::Original(execution) => {
-                crate::durability::log::native_checkpoint_codec::member_frame::locator_for_request(
-                    &execution, bytes,
-                )
-                .map_err(Denial::Request)
+            Self::Original { stage, .. } => {
+                member_frame::locator_in_stage(stage, bytes).map_err(Denial::Request)
             }
             #[cfg(test)]
-            Self::Policy(_) => {
-                Ok(crate::durability::log::native_checkpoint_codec::member_frame::locator(bytes))
-            }
+            Self::Policy(_) => Ok(member_frame::locator(bytes)),
         }
+    }
+    pub(crate) fn payload_digest(
+        &mut self,
+        commit: &crate::history::data::PositionedCanonicalCommit,
+    ) -> Result<[u8; 32], Denial> {
+        match self {
+            Self::Original { stage, .. } => {
+                Artifact::positioned_payload_digest_in_stage(commit, stage).map_err(Denial::from)
+            }
+            #[cfg(test)]
+            Self::Policy(_) => Artifact::positioned_payload_digest(commit).map_err(|error| {
+                super::super::super::manifest_capture::corrupt(format!(
+                    "canonical checkpoint digest: {error}"
+                ))
+                .into()
+            }),
+        }
+    }
+    /// A carried envelope's journal export keeps its owner's stage, nested in
+    /// this one and drawing on its remaining work.
+    pub(crate) fn export_artifact(
+        &mut self,
+        cell: &crate::history::RelationalCommitEnvelopeResidency,
+    ) -> Result<Artifact, Denial> {
+        match self {
+            Self::Original { execution, .. } => cell.export_artifact_original(execution),
+            #[cfg(test)]
+            Self::Policy(policy) => cell.export_artifact(*policy),
+        }
+        .map_err(Denial::from)
     }
 }
-pub(super) enum CheckpointEncodingBuffer<'request, 'authority> {
-    Original(ExecutionRequestArrayBuilder<'request, 'authority, u8>),
-    #[cfg(test)]
-    Policy(ExecutionByteBuffer),
-}
-impl<'request, 'authority> CheckpointEncodingBuffer<'request, 'authority> {
-    pub(super) fn allocate(
-        control: CheckpointEncodingControl<'request, 'authority>,
-        bytes: usize,
-    ) -> Result<Self, Denial> {
-        match control {
-            CheckpointEncodingControl::Original(execution) => {
-                ExecutionRequestArrayBuilder::allocate(execution, bytes)
-                    .map(Self::Original)
-                    .map_err(allocation)
-            }
-            #[cfg(test)]
-            CheckpointEncodingControl::Policy(policy) => {
-                ExecutionByteBuffer::allocate(bytes, policy)
-                    .map(Self::Policy)
-                    .map_err(Denial::Allocation)
-            }
-        }
-    }
-    pub(super) fn len(&self) -> usize {
-        match self {
-            Self::Original(bytes) => bytes.len(),
-            #[cfg(test)]
-            Self::Policy(bytes) => bytes.len(),
-        }
-    }
-    pub(super) fn append(&mut self, bytes: &[u8]) -> Result<(), Denial> {
-        match self {
-            Self::Original(output) => output.extend_from_slice(bytes).map_err(allocation),
-            #[cfg(test)]
-            Self::Policy(output) => output.extend_from_slice(bytes).map_err(Denial::Allocation),
-        }
-    }
-    pub(super) fn seal(self) -> Result<ExecutionImmutableBytes, Denial> {
-        match self {
-            Self::Original(output) => output
-                .seal()
-                .map(|bytes| bytes.into_immutable_bytes())
-                .map_err(allocation),
-            #[cfg(test)]
-            Self::Policy(output) => output.seal().map_err(Denial::Allocation),
-        }
-    }
-}
+
 fn allocation(cause: ExecutionRequestArrayDenial) -> Denial {
     match cause {
         ExecutionRequestArrayDenial::Request(cause) => Denial::Request(cause.into()),

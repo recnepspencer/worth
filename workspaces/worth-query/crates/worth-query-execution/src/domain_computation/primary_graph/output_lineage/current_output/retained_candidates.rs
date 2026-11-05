@@ -6,7 +6,7 @@ use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 /// The latest output one binding recorded for a source, with everything
 /// selection compares before it reuses that output.
-pub(in crate::domain_computation::primary_graph) struct WorthQueryRetainedOutputCandidate {
+pub struct WorthQueryRetainedOutputCandidate {
     pub(in crate::domain_computation::primary_graph) producing_implementation: Option<worth_relational::facade::mvcc::RequiredOutputProducingImplementation>,
     pub(in crate::domain_computation::primary_graph) binding: TypeId,
     pub(in crate::domain_computation::primary_graph) correspondence:
@@ -112,3 +112,5 @@ impl WorthQueryApplicationOutputLineage {
         Ok(candidates)
     }
 }
+
+mod court_doors_for_test;

@@ -10,7 +10,7 @@ use worth_query_declaration::facade::application_schema::{
 use worth_query_declaration::facade::portable_identity::WorthQueryPortableTypeIdentity;
 
 #[derive(Clone)]
-pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationEmission {
+pub struct WorthQueryApplicationEmission {
     effect: &'static str,
     payload_type: WorthQueryPortableTypeIdentity,
     payload_type_id: TypeId,
@@ -30,10 +30,7 @@ struct WorthQueryExternalPayloadProjection {
 }
 
 impl WorthQueryApplicationEmission {
-    pub(in crate::domain_computation::primary_graph::application_attempt) fn new<Binding>(
-        effect: &'static str,
-        payload: Binding::Value,
-    ) -> Self
+    pub fn new<Binding>(effect: &'static str, payload: Binding::Value) -> Self
     where
         Binding: ApplicationStructuredValueBinding,
         Binding::Value: Send + Sync,
@@ -137,19 +134,18 @@ impl WorthQueryApplicationEmission {
             .flatten()
     }
 
-    #[cfg(test)]
     pub(crate) const fn effect(&self) -> &'static str {
         self.effect
     }
 
-    #[cfg(test)]
     pub(crate) fn payload<Payload: 'static>(&self) -> Option<&Payload> {
         self.payload.downcast_ref()
     }
 }
 
-pub(in crate::domain_computation::primary_graph) struct WorthQueryAdmittedApplicationEmissionBatch {
+pub struct WorthQueryAdmittedApplicationEmissionBatch {
     emissions: Vec<WorthQueryApplicationEmission>,
+    memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
 impl WorthQueryAdmittedApplicationEmissionBatch {
@@ -159,13 +155,57 @@ impl WorthQueryAdmittedApplicationEmissionBatch {
         if emissions.iter().any(|emission| !emission.is_well_formed()) {
             return Err("application commit carried an invalid typed emission");
         }
-        Ok(Self { emissions })
+        Ok(Self {
+            emissions,
+            memory: None,
+        })
     }
 
-    pub(in crate::domain_computation::primary_graph) fn into_emissions(
+    pub(in crate::domain_computation::primary_graph) fn into_live_emissions(
         self,
-    ) -> Vec<WorthQueryApplicationEmission> {
-        self.emissions
+    ) -> (
+        Vec<WorthQueryApplicationEmission>,
+        Option<worth_execution::ExecutionMemoryReservation>,
+    ) {
+        (self.emissions, self.memory)
+    }
+    pub(in crate::domain_computation::primary_graph) fn combine<'a>(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        batches: impl Iterator<Item = &'a Self> + Clone,
+    ) -> Result<Self, crate::domain_computation::WorthQueryProviderSessionCommitStop> {
+        use crate::domain_computation::{
+            WorthQueryProviderSessionCommitStop as Stop,
+            WorthQueryProviderSessionDenialKind as Kind,
+            WorthQueryProviderSessionFailure as Failure,
+            WorthQueryProviderSessionProtocolStage as Stage,
+        };
+        let denied = || {
+            Stop::PreEffectDenied(Failure::new(
+                Kind::AllocationDenied,
+                Stage::Commit,
+                "coupled emission backing could not allocate",
+                Default::default(),
+            ))
+        };
+        let count = batches
+            .clone()
+            .try_fold(0usize, |count, batch| count.checked_add(batch.len()))
+            .ok_or_else(denied)?;
+        let bytes = count
+            .checked_mul(std::mem::size_of::<WorthQueryApplicationEmission>())
+            .and_then(|n| u64::try_from(n).ok())
+            .ok_or_else(denied)?;
+        let mut memory = execution.reserve_retained_memory(bytes).map_err(crate::domain_computation::primary_graph::provider::relational_execution_denial::request_commit_stop)?;
+        let mut emissions = Vec::new();
+        emissions.try_reserve_exact(count).map_err(|_| denied())?;
+        if let Some(memory) = memory.as_mut() {
+            memory.resize((emissions.capacity() * std::mem::size_of::<WorthQueryApplicationEmission>()) as u64).map_err(|cause| crate::domain_computation::primary_graph::provider::relational_execution_denial::request_commit_stop(worth_execution::WorkCeilingDenial::Admission(worth_execution::LeaseDenial::MemoryExhausted(cause))))?;
+        }
+        execution.run_native_with_checkpoint(|context| {
+            for batch in batches { for emission in &batch.emissions { context.checkpoint(1)?; emissions.push(emission.clone()); } }
+            Ok::<_, worth_execution::MapKernelStop>(())
+        }).map_err(crate::domain_computation::primary_graph::provider::relational_execution_denial::request_commit_stop)?.0.map_err(|cause| crate::domain_computation::primary_graph::provider::relational_execution_denial::request_commit_stop(worth_execution::WorkCeilingDenial::Stopped(cause)))?;
+        Ok(Self { emissions, memory })
     }
 
     pub(in crate::domain_computation::primary_graph) fn len(&self) -> usize {
@@ -206,3 +246,5 @@ impl WorthQueryAdmittedApplicationEmissionBatch {
         Ok(Some(projection.bytes.to_vec()))
     }
 }
+
+mod court_doors_for_test;

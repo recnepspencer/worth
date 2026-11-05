@@ -1,0 +1,67 @@
+//! Performed occurrence meaning survives disposal of caller-owned receipts.
+use crate::domain_computation::primary_graph::tests::authorization::capability_governed_input::*;
+
+#[test]
+fn original_governed_input_is_owned_by_the_committed_occurrence() {
+    let world = installed_capability_authorization_world();
+    world.authorization_time.script([time(100); 24]);
+    let request = live_scope();
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            authenticated_principal(&phase.test_host_request_for_test(), &world, &request)
+        })
+        .expect("the installed host admits principal resolution");
+    let (program, _) = world
+        .application
+        .with_host_advancement(|phase| {
+            admitted_capability_program(&phase, &world, &principal, &request, "recorded-source")
+        })
+        .expect("the original capability and decision are admitted");
+    let WorthQueryApplicationCommitOutcome::Committed(receipt) =
+        world.application.compare_and_commit_application(
+            program,
+            idempotency(97, 97),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+    else {
+        panic!("the original operation must actually publish");
+    };
+    let source_commit = receipt.commit_reference().clone();
+    let source_publication = receipt
+        .committed_product_publication()
+        .composite_commit()
+        .clone();
+    let source_operation = *receipt.installed_operation();
+    let source_key = receipt.idempotency_binding();
+    let copy = receipt.clone();
+    drop(receipt);
+    drop(copy);
+
+    let occurrence = (*(*world.application.runtime_for_test()).primary_provider_for_test())
+        .observe_completed_application_for_test(&source_commit)
+        .expect("the provider retains the performed source independently of receipts");
+    assert_eq!(
+        occurrence
+            .committed_product_publication_for_test()
+            .composite_commit(),
+        &source_publication
+    );
+    let original = occurrence.commit_evidence().original_authority_for_test();
+    assert_eq!(original.installed_operation(), &source_operation);
+    assert_eq!(original.idempotency_binding(), source_key);
+    let input = original
+        .retained_governed_input_for_test::<CapabilityTouchInput>()
+        .expect("original input belongs to committed source evidence");
+    assert_eq!(input.account, "account-1");
+    assert_eq!(input.amount, 50);
+    assert_eq!(input.caller_time, 100);
+    assert!(original
+        .retained_governed_input_for_test::<String>()
+        .is_none());
+    assert!(original
+        .retained_governed_input_carrier_for_test()
+        .expect("the input retains its canonical association")
+        .governed_identity_for_test()
+        .is_some());
+}

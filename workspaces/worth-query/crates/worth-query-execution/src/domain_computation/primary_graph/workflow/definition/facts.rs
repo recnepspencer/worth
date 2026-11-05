@@ -21,7 +21,7 @@ mod node;
 use node::create_node;
 
 #[derive(Clone, Copy)]
-pub(in crate::domain_computation::primary_graph) enum WorkflowLineagePublicationTarget {
+pub enum WorkflowLineagePublicationTarget {
     New,
     /// A retired lineage reopens with no current relation to replace.
     Existing {
@@ -36,7 +36,7 @@ struct WorkflowDefinitionPublicationContext {
     symbolic_partition: PartitionId,
 }
 
-pub(in crate::domain_computation::primary_graph) fn visit_definition_facts<Spec, Error>(
+pub fn visit_definition_facts<Spec, Error>(
     layout: &WorthQueryWorkflowLayout,
     program_revision: &ApplicationProgramRevision,
     definition: &ValidatedWorkflowDefinition<Spec>,

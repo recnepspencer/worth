@@ -1,7 +1,7 @@
 //! Whether a row still owes work, keeps an answer, or can retire.
 use super::{DemandRecord, DemandState, WorthQueryOutputAdvancement, WorthQueryOutputCheckpoint};
 
-pub(super) enum IdleRowDisposition {
+pub enum IdleRowDisposition {
     InFlight,
     KeptAnswer,
     HeldForStaleOwner,
@@ -108,3 +108,5 @@ impl DemandRecord {
         )
     }
 }
+
+mod court_doors_for_test;

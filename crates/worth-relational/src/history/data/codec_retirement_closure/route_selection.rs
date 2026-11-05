@@ -34,6 +34,7 @@ pub(crate) fn readmit_required_output_route(
                     meaning,
                     context,
                     lease,
+                    basis.inner.root.schema_authority(),
                 )
             },
         )
@@ -48,6 +49,7 @@ pub(super) fn select_at(
     meaning: &RequiredOutputPublicationMeaning,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
+    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
 ) -> Result<Option<RequiredOutputRoutePosition>, Stop> {
     let bound = runtime.history.catalog_len();
     for _ in 0..bound {
@@ -77,7 +79,7 @@ pub(super) fn select_at(
             }
         }
         if event.is_some() {
-            super::codec_disposition::validate(runtime, &envelope, context, lease)?;
+            super::codec_disposition::validate(runtime, &envelope, context, lease, schema)?;
             return Ok(Some(RequiredOutputRoutePosition::CodecRetired(commit)));
         }
         if let Some(restored) = &envelope.authored_cascade_restoration {
@@ -114,7 +116,7 @@ pub(super) fn select_at(
             }
         }
         if let Some(event) = &envelope.required_output_materialization {
-            super::materialization::validate_semantics(runtime, &envelope, context, lease)?;
+            super::materialization::validate_semantics(runtime, &envelope, context, lease, schema)?;
             next = Some(event.source_commit);
         } else {
             next = envelope.commit.parents.first().copied();

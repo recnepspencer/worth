@@ -16,14 +16,14 @@ mod batch;
 pub use batch::WorthQueryApplicationBatchReadDenial;
 pub use batch::WorthQueryApplicationBatchResult;
 
-mod denial;
+pub(crate) mod denial;
 pub(super) mod outcome;
 pub(super) mod plan_admission;
 use plan_admission::admit_request;
 use plan_admission::validate_authentication_lifetime;
 use plan_admission::validate_basis_lifetime;
 use plan_admission::validate_one_shot_plan;
-pub(super) mod pair_plans;
+pub(crate) mod pair_plans;
 mod result;
 pub use pair_plans::WorthQueryDerivedPairReadPlans;
 
@@ -182,7 +182,7 @@ where
     }
 }
 
-pub(super) fn map_authorized_read_denial(
+pub fn map_authorized_read_denial(
     denial_value: WorthQueryAuthorizedApplicationReadDenial,
     query: &str,
 ) -> WorthQueryApplicationOneShotDenial {
@@ -253,3 +253,5 @@ pub(super) fn map_authorized_read_denial(
     };
     denial(kind, query, subject)
 }
+
+mod court_doors_for_test;

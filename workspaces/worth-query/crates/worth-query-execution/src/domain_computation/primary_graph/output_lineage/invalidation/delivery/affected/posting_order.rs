@@ -8,8 +8,7 @@ use std::ops::Bound;
 use std::sync::Arc;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
-pub(in crate::domain_computation::primary_graph::output_lineage::invalidation) struct LogicalPostings
-{
+pub struct LogicalPostings {
     ready: OrdMap<FactPosting, u64>,
 }
 impl LogicalPostings {
@@ -130,3 +129,5 @@ fn observed_match(counts: &mut WorthQueryNativeMarkingWork) -> Result<(), Compan
         .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
     Ok(())
 }
+
+mod court_doors_for_test;

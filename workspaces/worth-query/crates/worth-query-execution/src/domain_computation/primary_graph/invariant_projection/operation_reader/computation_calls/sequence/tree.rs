@@ -1,6 +1,6 @@
 //! The existing measured-call tree, with relative counts and funded AVL joins.
 use super::*;
-pub(super) fn build(
+pub fn build(
     start: usize,
     entries: &[(ComputationRead, Call)],
     execution: &QueryRequestExecution<'_>,
@@ -39,7 +39,6 @@ pub(super) fn fresh(
             execution.reserve(bytes)
         })
         .transpose()?;
-    #[cfg(test)]
     let bytes = memory.as_ref().map(QueryMemoryReservation::bytes);
     observed::computation_call_copy();
     Ok(Arc::new(Node {
@@ -51,7 +50,6 @@ pub(super) fn fresh(
             CallSummary::native()
         }),
         kind: Kind::Leaf(read, call.clone()),
-        #[cfg(test)]
         bytes,
         _memory: memory,
     }))
@@ -79,7 +77,6 @@ fn branch(
         .has_accounting()
         .then(|| execution.reserve((size_of::<Node>() + 2 * size_of::<usize>()) as u64))
         .transpose()?;
-    #[cfg(test)]
     let bytes = memory
         .as_ref()
         .and_then(|memory| memory.bytes().checked_add(a.bytes?)?.checked_add(b.bytes?));
@@ -89,7 +86,6 @@ fn branch(
         height,
         summary,
         kind: Kind::Branch(a, b),
-        #[cfg(test)]
         bytes,
         _memory: memory,
     }))
@@ -263,7 +259,7 @@ pub(super) fn remove(
         }
     }
 }
-pub(super) fn summary(node: &Node, range: &Range<usize>) -> Option<CallSummary> {
+pub fn summary(node: &Node, range: &Range<usize>) -> Option<CallSummary> {
     summary_at(node, 0, range)
 }
 fn summary_at(node: &Node, start: usize, range: &Range<usize>) -> Option<CallSummary> {
@@ -286,7 +282,7 @@ fn summary_at(node: &Node, start: usize, range: &Range<usize>) -> Option<CallSum
         }
     }
 }
-pub(super) fn visit<E>(
+pub fn visit<E>(
     node: &Node,
     range: &Range<usize>,
     marked: &BTreeSet<usize>,

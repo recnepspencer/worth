@@ -46,6 +46,17 @@ pub(super) fn derive_closed_relations(
             if !record.is_live() {
                 continue;
             }
+            // Current custody links are removed by publication completion in
+            // this same codec retirement, rather than claimed as producer edges.
+            if record.kind_id().is_some_and(|kind| {
+                root.schema_authority()
+                    .registry()
+                    .current_publication_storage
+                    .as_ref()
+                    .is_some_and(|storage| storage.metadata_kinds().contains(&kind))
+            }) {
+                continue;
+            }
             let endpoints = record
                 .extra()
                 .endpoints

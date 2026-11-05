@@ -25,7 +25,7 @@ use worth_runtime_bridge::facade::{
 };
 
 mod connected;
-pub(super) mod rich;
+pub(crate) mod rich;
 pub(super) use connected::{materialize_connected, FundedConnectedReport};
 mod comparison;
 pub(super) use comparison::{
@@ -33,7 +33,7 @@ pub(super) use comparison::{
 };
 
 type ResourceStop = MapKernelFailure<RetainedStorageDenial>;
-pub(super) enum InspectionReportDenial {
+pub enum InspectionReportDenial {
     Identity(InspectionIdentityStop<ResourceStop>),
     Input(BridgeQueryObservationReportingInputDenial),
     Bridge(BridgeQueryObservationReportingStop<ResourceStop>),
@@ -48,7 +48,7 @@ pub(super) struct InspectionReportPayload {
     availability: Option<super::availability::WorthQueryInspectionEvidenceAvailability>,
 }
 
-pub(super) struct FundedInspectionReport {
+pub struct FundedInspectionReport {
     payload: InspectionReportPayload,
     session: WorthQueryGraphWorkSessionIdentity,
     managed_run: WorthQueryGraphWorkManagedRunIdentity,
@@ -61,7 +61,7 @@ pub(super) struct FundedInspectionReport {
     reference: InspectionOriginalReference,
 }
 
-pub(super) fn materialize(
+pub fn materialize(
     execution: &ExecutionRequest<'_, '_>,
     target: &Arc<WorthQueryApplicationInspectionTarget>,
     session: &WorthQueryManagedGraphWorkSession,

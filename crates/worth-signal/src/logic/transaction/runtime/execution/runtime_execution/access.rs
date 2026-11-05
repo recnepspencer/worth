@@ -113,20 +113,12 @@ where
         F: for<'ctx> Fn(&mut EvaluationContext<'ctx, Ctx>) -> Result<O, SignalError> + Sync,
         O: IntoEvaluationOutput,
     {
-        let pending = nodes
-            .iter()
-            .copied()
-            .filter(|node| {
-                !matches!(
-                    self.graph.get_state(*node),
-                    Ok(crate::data::node::NodeState::Clean)
-                )
-            })
-            .collect::<Vec<_>>();
-        if !pending.is_empty() {
+        // Clean targets may consume dirty ancestors. The planner owns the
+        // dependency-currentness check; a target's state alone cannot prune it.
+        if !nodes.is_empty() {
             self.execute_evaluation(
                 ExecutionIntent::Targets {
-                    targets: &pending,
+                    targets: nodes,
                     request_mode: EvaluationRequestMode::Default,
                 },
                 runtime_ctx,

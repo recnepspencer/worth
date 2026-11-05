@@ -13,6 +13,7 @@ use crate::domain_computation::{
 
 pub(super) fn cleanup_failed_outcome(outcome: Progression) -> Outcome {
     match outcome {
+        Progression::CoupledFailure(outcome) => outcome,
         Progression::ProductUnpublished(unpublished) => Outcome::ProductUnpublished(unpublished),
         Progression::ProductStale(stale) => Outcome::ProductStale(stale),
         Progression::NoEffect(no_effect) => Outcome::NoEffect(no_effect),

@@ -11,12 +11,16 @@ use crate::visibility::snapshot_states::{
 };
 use std::{collections::BTreeMap, sync::Arc};
 
+mod candidate;
 #[cfg(test)]
 mod commit_tests;
 mod frontier_reads;
 #[cfg(test)]
 mod historical_relations_tests;
 mod pinning;
+pub use candidate::{
+    RelationalAppliedCandidateReadIdentity, RelationalAppliedCandidateReadQualification,
+};
 mod record_reads;
 #[cfg(test)]
 mod tests;
@@ -58,6 +62,7 @@ mod tests;
 /// ```
 #[derive(Clone, Debug)]
 pub struct RelationalPinnedRead<Snapshot = SnapshotHandle> {
+    pub(super) applied_changes: Option<Arc<candidate::AppliedReadChanges>>,
     pub(super) current_version: crate::identity::data::VersionId,
     pub(super) instrumentation: crate::runtime::RuntimeInstrumentation,
     pub(super) snapshot: Snapshot,
@@ -93,6 +98,37 @@ impl RelationalPinnedRead {
 }
 
 impl<Snapshot> RelationalPinnedRead<Snapshot> {
+    /// Restrict an exact read to physical projection custody. The returned pin
+    /// retains its actual root and evidence basis, and exposes no operational
+    /// snapshot handle or snapshot query-plan execution door.
+    pub fn into_projection_read(self) -> RelationalPinnedRead<()> {
+        let Self {
+            applied_changes,
+            current_version,
+            instrumentation,
+            snapshot: _,
+            basis,
+            context,
+            symbols,
+            indexes,
+        } = self;
+        RelationalPinnedRead {
+            applied_changes,
+            current_version,
+            instrumentation,
+            snapshot: (),
+            basis,
+            context,
+            symbols,
+            indexes,
+        }
+    }
+    /// Descriptive context of the retained root. This does not issue a snapshot
+    /// handle; applied roots retain their explicit applied evidence basis.
+    pub fn read_context(&self) -> &QueryPlanContextId {
+        &self.context
+    }
+
     /// Immutable schema carried by the selected root, never current configuration.
     pub fn schema(&self) -> &RelationalSchemaRegistry {
         self.basis.root().schema_authority().registry()
@@ -118,6 +154,13 @@ impl<Snapshot> RelationalPinnedRead<Snapshot> {
 }
 
 impl<Snapshot> RelationalPinnedRead<Snapshot> {
+    pub(crate) fn candidate_aggregate(
+        &self,
+    ) -> Option<&crate::aggregate_identity::AggregateCandidateRead> {
+        self.applied_changes
+            .as_ref()
+            .and_then(|changes| changes.aggregate.as_ref())
+    }
     pub(crate) fn runtime_instance_id(&self) -> u64 {
         self.context.runtime_instance_id
     }
@@ -168,5 +211,12 @@ impl<Snapshot> super::super::projection::ProjectionRecordSource for RelationalPi
     }
     fn version_id(&self) -> crate::identity::data::VersionId {
         self.basis.version_id()
+    }
+}
+
+impl<Snapshot> RelationalPinnedRead<Snapshot> {
+    /// Project the exact retained physical root without a snapshot claim.
+    pub fn project_read(&self) -> super::super::projection::VisibilityProjectionView {
+        super::super::projection::VisibilityProjectionView::from_pinned(self)
     }
 }

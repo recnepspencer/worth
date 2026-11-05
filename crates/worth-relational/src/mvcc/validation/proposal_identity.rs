@@ -1,3 +1,5 @@
+#[path = "proposal_identity/sequence.rs"]
+mod sequence;
 use crate::branch::{RelationalBranchReferenceObservation, RelationalBranchVersion};
 use crate::identity::data::VersionId;
 use crate::transactions::data::TransactionId;
@@ -21,6 +23,16 @@ pub struct RelationalMutationProposalIdentity {
 }
 
 impl RelationalMutationProposalIdentity {
+    pub(crate) fn same_proposal_sequence(&self, other: &Self) -> bool {
+        self.runtime_instance_id == other.runtime_instance_id
+            && self.ordinal == other.ordinal
+            && self.transaction_id == other.transaction_id
+            && self.branch_observation == other.branch_observation
+            && self.branch_version == other.branch_version
+            && self.proposed_version_id == other.proposed_version_id
+            && self.commit_id == other.commit_id
+    }
+
     pub(crate) const fn commit_id(&self) -> crate::history::data::CommitId {
         self.commit_id
     }
@@ -79,30 +91,8 @@ impl crate::runtime::RelationalPreparationRuntime {
         ),
         crate::transactions::data::TransactionCommitError,
     > {
-        let proposed_version_id = self.history.reserve_version_id().ok_or_else(|| {
-            crate::transactions::data::TransactionCommitError::publication(
-                crate::publication::data::PublicationError::new(
-                    crate::publication::bundle::PublicationStage::BundleAssembly,
-                    "canonical version sequence overflow",
-                ),
-            )
-        })?;
-        let ordinal = self.services.next_proposal_ordinal().ok_or_else(|| {
-            crate::transactions::data::TransactionCommitError::preparation(
-                crate::transactions::data::CommitPreparationError::proposal_identity_exhausted(
-                    validation_input.target_branch().clone(),
-                    proposed_version_id,
-                ),
-            )
-        })?;
-        let commit_id = self.history.reserve_commit_id().ok_or_else(|| {
-            crate::transactions::data::TransactionCommitError::publication(
-                crate::publication::data::PublicationError::new(
-                    crate::publication::bundle::PublicationStage::BundleAssembly,
-                    "canonical commit identity capacity exhausted",
-                ),
-            )
-        })?;
+        let (proposed_version_id, ordinal, commit_id) =
+            self.reserve_proposal_sequence(validation_input)?;
         let source = crate::validation::candidate_source::NativeManagedSourceInterpretation::issue(
             validation_input,
             proposed_version_id,

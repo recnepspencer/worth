@@ -30,6 +30,7 @@ impl Serialize for EmbeddedCheckpointEnvelopeRef<'_> {
             producer_cascade_retirement,
             authored_cascade_retirement,
             authored_cascade_restoration,
+            coupled_authored_publication,
             required_output_materialization,
             commit,
             branch_context,
@@ -56,6 +57,7 @@ impl Serialize for EmbeddedCheckpointEnvelopeRef<'_> {
             descriptor_semantics_version,
         } = self.envelope;
         let field_count = 29
+            + usize::from(coupled_authored_publication.is_some())
             + usize::from(producer_cascade_retirement.is_some())
             + usize::from(!authored_index_writes.is_unavailable());
         let mut fields = serializer.serialize_struct("CanonicalCommitEnvelope", field_count)?;
@@ -72,6 +74,9 @@ impl Serialize for EmbeddedCheckpointEnvelopeRef<'_> {
         }
         fields.serialize_field("authored_cascade_retirement", authored_cascade_retirement)?;
         fields.serialize_field("authored_cascade_restoration", authored_cascade_restoration)?;
+        if coupled_authored_publication.is_some() {
+            fields.serialize_field("coupled_authored_publication", coupled_authored_publication)?;
+        }
         fields.serialize_field(
             "required_output_materialization",
             required_output_materialization,

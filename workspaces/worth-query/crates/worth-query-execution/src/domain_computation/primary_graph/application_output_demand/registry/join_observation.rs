@@ -9,7 +9,7 @@ thread_local! {
     static READS: std::cell::RefCell<Vec<(Root,Commit,Commit)>>=const { std::cell::RefCell::new(Vec::new()) };
 }
 #[derive(Default)]
-pub(in crate::domain_computation::primary_graph) struct PauseState {
+pub struct PauseState {
     reached: bool,
     released: bool,
 }

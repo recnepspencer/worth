@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use super::*;
 
-pub(in crate::domain_computation::primary_graph) struct PreparedSelectedSchedulingFinish<'a> {
+pub struct PreparedSelectedSchedulingFinish<'a> {
     registry: &'a WorthQueryOutputDemandRegistry,
     interest: &'a WorthQueryOutputDemandInterest,
     member: Arc<required_work::RequiredWorkMembership>,
@@ -100,3 +100,5 @@ impl<'a> PreparedSelectedSchedulingFinish<'a> {
         drop(performed_source);
     }
 }
+
+mod court_doors_for_test;

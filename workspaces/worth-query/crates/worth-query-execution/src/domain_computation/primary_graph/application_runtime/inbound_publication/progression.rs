@@ -188,7 +188,7 @@ Err(PublicationDenial::Stopped(stop)) => {
 
 // Both entry routes keep HEAD's preparation-refusal posture. The complete
 // refusal travels with the publication outcome rather than becoming a string.
-pub(in crate::domain_computation::primary_graph) fn completion_candidate(
+pub fn completion_candidate(
     result: Result<PreparedRelationalCommitCandidate, Preparation>,
 ) -> Result<PreparedRelationalCommitCandidate, Outcome> {
     match result {

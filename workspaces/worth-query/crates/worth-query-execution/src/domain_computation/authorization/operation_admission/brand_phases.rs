@@ -30,9 +30,7 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub(in crate::domain_computation) fn graph_work_branch(
-        &self,
-    ) -> &worth_relational::facade::history::BranchId {
+    pub fn graph_work_branch(&self) -> &worth_relational::facade::history::BranchId {
         self.core.graph_work_branch()
     }
 
@@ -41,21 +39,16 @@ impl<Schema, Operation, Input, Scope>
         self.core.graph_work_decision_fact_count()
     }
 
-    #[cfg(test)]
     #[inline]
     pub(in crate::domain_computation) fn graph_work_runtime_ordinal(&self) -> u64 {
         self.core.graph_work_runtime_ordinal()
     }
 
-    #[cfg(test)]
     #[inline]
-    pub(in crate::domain_computation) fn graph_work_principal_entity_id(
-        &self,
-    ) -> worth_relational::facade::identity::EntityId {
+    pub fn graph_work_principal_entity_id(&self) -> worth_relational::facade::identity::EntityId {
         self.core.graph_work_principal_entity_id()
     }
 
-    #[cfg(test)]
     #[inline]
     pub(in crate::domain_computation) fn graph_work_scope_entity_id(
         &self,
@@ -63,13 +56,11 @@ impl<Schema, Operation, Input, Scope>
         self.core.graph_work_scope_entity_id()
     }
 
-    #[cfg(test)]
     #[inline]
     pub(in crate::domain_computation) fn graph_work_capability_identity(&self) -> Option<[u8; 32]> {
         self.core.graph_work_capability_identity()
     }
 
-    #[cfg(test)]
     #[inline]
     pub(in crate::domain_computation) fn graph_work_provider(&self) -> &str {
         self.core.graph_work_provider()
@@ -292,3 +283,6 @@ impl<Schema, Operation, Input, Scope>
         self.core.original_correction_disclosure()
     }
 }
+
+#[path = "brand_phases_court_doors_for_test.rs"]
+mod court_doors_for_test;

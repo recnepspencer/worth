@@ -23,6 +23,7 @@ pub use schema::{
 mod historical;
 mod preimage;
 mod projection;
+mod restoration;
 mod source;
 mod transaction;
 pub(crate) use publication::{commit_denial, prepare_publication, ContentPublication};

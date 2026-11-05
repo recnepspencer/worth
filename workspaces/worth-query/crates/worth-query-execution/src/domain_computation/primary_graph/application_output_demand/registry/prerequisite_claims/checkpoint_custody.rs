@@ -8,8 +8,7 @@ use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
 /// The reader and lineage retain the complete funded facts and output witness.
 /// This claim pins their exact settlement address through prerequisite custody.
 /// It has no source epoch, producer, refresh route, or Ready delivery authority.
-pub(in crate::domain_computation::primary_graph::application_output_demand::registry) struct CheckpointPrerequisiteClaims
-{
+pub struct CheckpointPrerequisiteClaims {
     identities: Vec<Arc<RecordedSettlementIdentity>>,
     // Field order destroys the backing before refunding its final-owner charge.
 }

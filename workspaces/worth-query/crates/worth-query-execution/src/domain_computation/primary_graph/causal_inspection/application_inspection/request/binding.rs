@@ -9,8 +9,7 @@ use worth_query_installation::facade::{
     WorthQueryInstalledQueryBindingAdmissionStop,
 };
 
-pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) enum InspectionBindingDenial
-{
+pub enum InspectionBindingDenial {
     Installation(WorthQueryApplicationQueryInstallationDenial),
     Storage(RetainedStorageDenial),
 }

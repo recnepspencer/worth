@@ -22,20 +22,7 @@ mod relational_snapshot_release;
 pub mod facade;
 pub mod publication_boundary;
 
-#[cfg(test)]
-mod test_request_policy;
-
-#[cfg(test)]
-#[path = "test_support/bridge_host_request.rs"]
-mod bridge_host_request;
-
-#[cfg(test)]
-#[path = "test_support/process_deadline.rs"]
-mod process_deadline;
-
-#[cfg(test)]
-mod test_read_stops;
-
-#[cfg(test)]
-#[path = "test_support/published_checkpoint.rs"]
-mod published_checkpoint;
+#[doc(hidden)]
+#[path = "court_doors_for_test/mod.rs"]
+pub mod court_doors_for_test;
+pub mod test_read_stops;

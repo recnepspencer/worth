@@ -15,6 +15,14 @@ impl WorthQueryRunningDirectRun {
         WorthQueryAdmittedProviderExecutionPlan::direct(self, graph_authority)
     }
 
+    pub(in crate::domain_computation) fn into_coupled_provider_execution_plan<'run>(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        graph_authority: &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
+    ) -> crate::domain_computation::provider_session::CoupledProviderPlanAdmission<'run> {
+        WorthQueryAdmittedProviderExecutionPlan::coupled_direct(execution, self, graph_authority)
+    }
+
     pub(crate) fn provider_plan_operation(&self) -> &WorthQueryExecutionBoundOperationAuthority {
         self.affinity.provider_plan_operation()
     }
@@ -36,3 +44,5 @@ impl WorthQueryRunningDirectRun {
         &self.bridge_basis
     }
 }
+
+mod court_doors_for_test;

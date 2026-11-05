@@ -38,7 +38,6 @@ impl WorthQueryPrimaryGraphProvider {
             )),
             fault_port,
             world_history: std::sync::OnceLock::new(),
-            #[cfg(test)]
             teardown_sentinel: Default::default(),
         });
         let anchor = Arc::new(

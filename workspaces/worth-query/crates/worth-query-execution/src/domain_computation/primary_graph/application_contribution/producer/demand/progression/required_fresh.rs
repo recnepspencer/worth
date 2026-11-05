@@ -197,5 +197,4 @@ where
     }
 }
 
-#[cfg(test)]
 mod admission_court;

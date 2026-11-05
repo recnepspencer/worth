@@ -63,6 +63,48 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
+        self.resolve_query_scope_value_with_native_access(
+            execution,
+            field,
+            Some(selector.locator()),
+            selector.value(),
+            request,
+            native,
+        )
+    }
+
+    /// Both retained source readmission and declared coupled roots resolve the
+    /// same installed equality field through this one canonical Native lookup.
+    pub(in crate::domain_computation::primary_graph) fn resolve_query_scope_value_with_native_access<
+        Aspect,
+        Entity,
+        Field,
+        Value,
+        Write,
+        Unit,
+    >(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        field: ApplicationFieldRef<
+            Schema,
+            Entity,
+            Aspect,
+            Field,
+            Value,
+            Write,
+            EqualityPredicate,
+            Unit,
+        >,
+        locator: Option<&worth_foundational::facade::AspectFieldLocator>,
+        value: &worth_foundational::facade::AspectValue,
+        request: &WorthQueryRequestScope,
+        native: &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess<'_>,
+    ) -> Result<WorthQueryApplicationEntityIdentity<Schema, Entity>, WorthQueryEntityResolutionDenial>
+    where
+        Field: DeclaredApplicationFieldValue<Value = Value>,
+        Write: WritePosture,
+        Unit: ApplicationFieldUnit,
+    {
         // Every terminal refusal in this admitted route copies either the
         // entity or field name. Fund that one possible copy before validation.
 
@@ -98,13 +140,13 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         // The first selected walk measures initialized comparison text; the
         // second installed walk measures the later locator-clone backing.
 
-        if installed_locator != selector.locator() {
+        if locator.is_some_and(|locator| installed_locator != locator) {
             return Err(entity_denial(
                 WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::FieldNotInstalled),
                 field.field(),
             ));
         }
-        if selector.value().value_family() != Field::Binding::SCALAR_FAMILY {
+        if value.value_family() != Field::Binding::SCALAR_FAMILY {
             return Err(entity_denial(
                 WorthQueryEntityResolutionDenialKind::Refused(
                     ResolutionRefusal::ValueEncodingRejected,
@@ -117,7 +159,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             execution,
             field.entity(),
             field.field(),
-            selector.value().clone(),
+            value.clone(),
             request,
             index,
             installed_field,

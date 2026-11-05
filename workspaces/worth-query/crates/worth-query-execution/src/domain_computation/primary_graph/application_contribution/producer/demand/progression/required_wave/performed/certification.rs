@@ -2,7 +2,7 @@
 use super::super::*;
 use super::PerformedMembers;
 use crate::domain_computation::primary_graph::application_contribution::producer::ProducerInvocationAuthority;
-mod current_basis;
+pub(crate) mod current_basis;
 pub(in crate::domain_computation::primary_graph) use current_basis::CurrentBasis;
 
 impl PerformedMembers {
@@ -21,7 +21,7 @@ impl PerformedMembers {
 }
 
 /// A move-only key to acknowledgement, caller acceptance or requested return.
-pub(in crate::domain_computation::primary_graph) struct CurrentProof<T> {
+pub struct CurrentProof<T> {
     value: T,
     basis: CurrentBasis,
     record: Arc<
@@ -141,8 +141,6 @@ where
     }
 }
 
-#[cfg(test)]
-mod acknowledgement_basis;
 /// Frozen permits own-row truth and the native required-upstream resume.
 /// Thaw follows the successor's custody: its caller's continuation, or a
 /// registry frame moved to the advance that requires it. No global sweep runs.
@@ -219,3 +217,5 @@ pub(in super::super) struct FrozenCaller<'a, Schema: ApplicationSchema> {
     pub installed: &'a InstalledProducerProvider<Schema>,
     pub contacts: usize,
 }
+
+mod court_doors_for_test;

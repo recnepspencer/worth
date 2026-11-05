@@ -1,5 +1,6 @@
 //! Current complete canonical publication per family/source route at one native root.
 //! This derived selection image grants no ownership without native/proof custody.
+pub(crate) mod presence;
 use super::CommitId;
 use crate::identity::data::EntityId;
 use crate::mvcc::RequiredOutputPublicationMeaning as Meaning;
@@ -16,6 +17,7 @@ pub(crate) enum RequiredOutputRoutePosition {
 #[derive(Clone, Debug, Default)]
 pub(crate) struct RequiredOutputPublicationPositions {
     root: Option<Arc<PositionNode>>,
+    pub(crate) current_owned: presence::CurrentPositions,
     // Exact unindexed canonical prefix. Absence in this image is not route absence.
     unresolved_prefix: Option<CommitId>,
 }
@@ -44,6 +46,7 @@ impl RequiredOutputPublicationPositions {
     pub(crate) fn unresolved_at(commit: CommitId) -> Self {
         Self {
             root: None,
+            current_owned: Default::default(),
             unresolved_prefix: Some(commit),
         }
     }

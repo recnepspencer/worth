@@ -65,6 +65,19 @@ pub(super) fn validate(
                 if !row.is_live() {
                     continue;
                 }
+                // Publication completion adds its own current-custody links
+                // after producer membership capture. These are Native records,
+                // protected and authenticated by that storage owner; they are
+                // not business edges created by the producer.
+                if row.kind_id().is_some_and(|kind| {
+                    root.schema_authority()
+                        .registry()
+                        .current_publication_storage
+                        .as_ref()
+                        .is_some_and(|storage| storage.metadata_kinds().contains(&kind))
+                }) {
+                    continue;
+                }
                 if origin
                     .relations
                     .binary_search_by_key(id, |entry| entry.id)

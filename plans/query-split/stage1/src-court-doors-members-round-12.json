@@ -1,0 +1,15 @@
+{
+ "authority_doors": [],
+ "constructor_doors": [],
+ "field_doors": [
+  "domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::retained::RetainedComputation.facts (mut)"
+ ],
+ "method_doors": [
+  "domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts::len"
+ ],
+ "unplaced": [
+  "associated function `of` is private",
+  "method `bind_source_partition` is private",
+  "method `record_restoration` is private"
+ ]
+}

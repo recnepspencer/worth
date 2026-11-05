@@ -1,10 +1,9 @@
+import { wrapReadableSignal } from "./readable_signal_handle.js";
+import { registerSignalCleanup } from "./signal_handle_cleanup.js";
+export { wrapReadableSignal, registerSignalCleanup };
 import {
   activeComputedCallbackFrame,
-  activeRuntimeCallbackReader,
-  activeRuntimeCallbackReads,
   denySignalMutationDuringCallbackAuthoring,
-  denySignalReadFromForeignRuntime,
-  denyUnavailableRuntimeCallbackRead,
 } from "./callback_frames.js";
 import {
   DEBUG_NAME,
@@ -15,7 +14,6 @@ import {
 } from "./symbols.js";
 
 const INPUT_BASELINE_VALUES = new WeakMap();
-const SIGNAL_CLEANUP_CALLBACKS = new WeakMap();
 const INPUT_WRITE_OBSERVERS = new WeakMap();
 const INPUT_RESET_PREPARERS = new WeakMap();
 // rawSignals -> Map<inputId, product input handle>. Lets the compatibility
@@ -82,17 +80,6 @@ function mergeAssignedValue(currentValue, assignedFields, operation) {
     ...currentValue,
     ...assignedFields,
   };
-}
-
-function runRegisteredCleanup(signal) {
-  const cleanups = SIGNAL_CLEANUP_CALLBACKS.get(signal);
-  if (!cleanups || cleanups.length === 0) {
-    return;
-  }
-  SIGNAL_CLEANUP_CALLBACKS.delete(signal);
-  for (const cleanup of cleanups.splice(0)) {
-    cleanup();
-  }
 }
 
 function notifyInputWriteObservers(signal, nextValue) {
@@ -189,125 +176,6 @@ export function unwrapInputSignalTarget(target, rawSignals, operation = "signal 
   return handle[RAW_SIGNAL_HANDLE];
 }
 
-export function wrapReadableSignal(rawHandle, rawSignals, kind = "signal", debugName = null) {
-  const signal = function signal() {
-    const frame = activeComputedCallbackFrame();
-    if (frame) {
-      if (frame.rawSignals !== rawSignals) {
-        denySignalReadFromForeignRuntime(rawHandle.id);
-      }
-      frame.reads.add(rawHandle.id);
-      const runtimeReads = activeRuntimeCallbackReads();
-      if (runtimeReads) {
-        frame.runtimeReadIds.add(rawHandle.id);
-        if (Object.prototype.hasOwnProperty.call(runtimeReads, rawHandle.id)) {
-          return runtimeReads[rawHandle.id];
-        }
-        const runtimeReader = activeRuntimeCallbackReader();
-        if (runtimeReader) {
-          return runtimeReader(rawHandle.id);
-        }
-        denyUnavailableRuntimeCallbackRead(rawHandle.id);
-      }
-    }
-    return rawHandle.get();
-  };
-
-  Object.defineProperties(signal, {
-    id: {
-      enumerable: true,
-      get() {
-        return rawHandle.id;
-      },
-    },
-    debugName: {
-      enumerable: true,
-      get() {
-        return debugName;
-      },
-    },
-    get: {
-      enumerable: false,
-      value() {
-        const frame = activeComputedCallbackFrame();
-        if (frame) {
-          if (frame.rawSignals !== rawSignals) {
-            denySignalReadFromForeignRuntime(rawHandle.id);
-          }
-          frame.reads.add(rawHandle.id);
-          const runtimeReads = activeRuntimeCallbackReads();
-          if (runtimeReads) {
-            frame.runtimeReadIds.add(rawHandle.id);
-            if (Object.prototype.hasOwnProperty.call(runtimeReads, rawHandle.id)) {
-              return runtimeReads[rawHandle.id];
-            }
-            const runtimeReader = activeRuntimeCallbackReader();
-            if (runtimeReader) {
-              return runtimeReader(rawHandle.id);
-            }
-            denyUnavailableRuntimeCallbackRead(rawHandle.id);
-          }
-        }
-        return rawHandle.get();
-      },
-    },
-    value: {
-      enumerable: false,
-      value() {
-        return signal.get();
-      },
-    },
-    peek: {
-      enumerable: false,
-      value() {
-        return rawHandle.peek();
-      },
-    },
-    free: {
-      enumerable: false,
-      value() {
-        try {
-          runRegisteredCleanup(signal);
-        } finally {
-          return rawHandle.free();
-        }
-      },
-    },
-    [Symbol.dispose]: {
-      enumerable: false,
-      value() {
-        try {
-          runRegisteredCleanup(signal);
-        } finally {
-          if (typeof rawHandle[Symbol.dispose] === "function") {
-            rawHandle[Symbol.dispose]();
-            return;
-          }
-          rawHandle.free();
-        }
-      },
-    },
-    [RAW_SIGNAL_HANDLE]: {
-      enumerable: false,
-      value: rawHandle,
-    },
-    [RAW_SIGNALS]: {
-      enumerable: false,
-      value: rawSignals,
-    },
-    [PRODUCT_SIGNAL_KIND]: {
-      enumerable: false,
-      value: kind,
-    },
-    [DEBUG_NAME]: {
-      enumerable: false,
-      value: debugName,
-    },
-  });
-
-  return signal;
-}
-
 export function wrapInputSignal(rawHandle, rawSignals, baselineValue, debugName = null) {
   const signal = wrapReadableSignal(rawHandle, rawSignals, "input", debugName);
   INPUT_BASELINE_VALUES.set(signal, cloneSignalValue(baselineValue));
@@ -382,15 +250,6 @@ function registerInputHandle(rawSignals, signal) {
 
 export function lookupInputSignalHandle(rawSignals, id) {
   return INPUT_HANDLES_BY_RUNTIME.get(rawSignals)?.get(id) ?? null;
-}
-
-export function registerSignalCleanup(signal, cleanup) {
-  if (typeof cleanup !== "function") {
-    throw new TypeError("registerSignalCleanup expects a cleanup function");
-  }
-  const cleanups = SIGNAL_CLEANUP_CALLBACKS.get(signal) ?? [];
-  cleanups.push(cleanup);
-  SIGNAL_CLEANUP_CALLBACKS.set(signal, cleanups);
 }
 
 export function readInputBaselineValue(signal) {

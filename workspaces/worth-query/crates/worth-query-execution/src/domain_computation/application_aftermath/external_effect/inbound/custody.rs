@@ -12,7 +12,7 @@ use super::WorthQueryInboundTerminalOwnerResult;
 use crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxObservation;
 
 mod acceptance;
-mod publication_permit;
+pub(crate) mod publication_permit;
 mod recovery;
 mod terminal_state;
 pub(in crate::domain_computation) use publication_permit::{
@@ -43,7 +43,7 @@ impl MessageKey {
 
 /// Immutable accepted evidence retained by Query even if every caller drops
 /// its observer. Publication may borrow this but cannot change its meaning.
-pub(in crate::domain_computation) struct WorthQueryAcceptedInboundOccurrence {
+pub struct WorthQueryAcceptedInboundOccurrence {
     operation: String,
     claims: WorthQueryInboundOccurrenceClaims,
     owner: WorthQueryCommittedDispatchOutboxObservation,
@@ -131,7 +131,7 @@ enum PublicationState {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) enum WorthQueryInboundPublicationClaim {
+pub enum WorthQueryInboundPublicationClaim {
     Claimed,
     AtCapacity,
     Publishing,

@@ -56,6 +56,7 @@ pub(super) fn validate_semantics(
     envelope: &CanonicalCommitEnvelope,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
 ) -> Result<(), super::PublicationHistoryFailure> {
     validate_header(
         envelope,
@@ -63,5 +64,5 @@ pub(super) fn validate_semantics(
         runtime.history.catalog_len(),
         context,
     )?;
-    payload::validate(runtime, envelope, context, lease)
+    payload::validate(runtime, envelope, context, lease, schema)
 }

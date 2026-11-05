@@ -15,7 +15,7 @@ impl<Schema: ApplicationSchema, Operation: ApplicationOperationMarkerIdentity<Sc
         layout: &ComponentSetLayout,
         root: EntityId,
         member: Option<EntityId>,
-        pin: &RelationalPinnedRead,
+        pin: &RelationalPinnedRead<()>,
         context: &mut worth_execution::MapKernelContext<'_, '_>,
         subject: &str,
         allocation: &Arc<
@@ -56,7 +56,7 @@ struct OperationComponentAcquisition<'frame, 'reader, 'runtime, Schema, Operatio
     >,
     scope: &'frame WorthQueryOperationComponentReadScope,
     layout: &'frame ComponentSetLayout,
-    pin: &'frame RelationalPinnedRead,
+    pin: &'frame RelationalPinnedRead<()>,
     subject: &'frame str,
     _entity: std::marker::PhantomData<Entity>,
 }
@@ -113,9 +113,6 @@ impl<Schema: ApplicationSchema, Operation: ApplicationOperationMarkerIdentity<Sc
             context,
         )
         .map_err(|stop| match stop {
-            CouplingObservationDenial::Unavailable => {
-                Denial::new(Kind::EndpointUnavailable, self.subject)
-            }
             CouplingObservationDenial::Execution(cause) => self.native_denial(cause),
             CouplingObservationDenial::Source(cause) => {
                 self.reader.component_source_denial(cause, self.subject)

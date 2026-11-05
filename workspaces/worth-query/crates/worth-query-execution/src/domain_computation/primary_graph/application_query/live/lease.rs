@@ -134,7 +134,6 @@ where
         self.queue.buffered_cause_count()
     }
 
-    #[cfg(test)]
     pub(crate) fn fixture_phase<'scope>(
         &self,
         host: &crate::domain_computation::primary_graph::TestHostRequest<'scope>,
@@ -275,16 +274,4 @@ where
     }
 }
 
-#[cfg(test)]
-#[path = "lease/delivery_tests.rs"]
-mod delivery_tests;
-#[cfg(test)]
-#[path = "lease/reservation_race_tests.rs"]
-mod reservation_race_tests;
-#[cfg(test)]
-#[path = "lease/sibling_delivery_tests.rs"]
-mod sibling_delivery_tests;
-
-#[cfg(test)]
-#[path = "lease/foreign_phase_tests.rs"]
-mod foreign_phase_tests;
+mod court_doors_for_test;

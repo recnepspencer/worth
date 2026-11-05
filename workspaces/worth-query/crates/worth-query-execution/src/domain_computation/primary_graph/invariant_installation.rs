@@ -69,6 +69,7 @@ pub struct WorthQueryApplicationInvariantFactories<Schema> {
     installed_order: Vec<(String, ApplicationInvariantExecutionPoint)>,
     program_basis: Option<WorthQueryInvariantProgramBasis<Schema>>,
     managed_indexes: super::application_query::managed_index::ManagedIndexProviderCatalog<Schema>,
+    current_publication_ownership: bool,
     _schema: PhantomData<fn() -> Schema>,
 }
 
@@ -102,6 +103,7 @@ where
             installed_order: Vec::new(),
             program_basis: None,
             managed_indexes: Default::default(),
+            current_publication_ownership: false,
             _schema: PhantomData,
         }
     }
@@ -112,6 +114,14 @@ where
     ) -> Self {
         self.managed_indexes = catalog;
         self
+    }
+
+    pub(super) fn install_current_publication_ownership(&mut self, required: bool) {
+        self.current_publication_ownership = required;
+    }
+
+    pub(super) const fn current_publication_ownership(&self) -> bool {
+        self.current_publication_ownership
     }
 
     /// Binds the admitted support roster this installation lowers under, so a
@@ -305,3 +315,5 @@ fn denial(
 ) -> WorthQueryPrimaryGraphInstallationDenial {
     WorthQueryPrimaryGraphInstallationDenial::new(kind, subject)
 }
+
+mod court_doors_for_test;

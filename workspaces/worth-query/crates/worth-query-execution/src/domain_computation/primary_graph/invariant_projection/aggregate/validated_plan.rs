@@ -71,7 +71,7 @@ impl ValidatedAggregatePlan {
                 field: field_locator,
             },
             target: target.entity_id,
-            version: reader.snapshot.version_id(),
+            version: reader.version(),
             relation_member: relation.name().to_owned(),
             field_member: field.field().to_owned(),
         })

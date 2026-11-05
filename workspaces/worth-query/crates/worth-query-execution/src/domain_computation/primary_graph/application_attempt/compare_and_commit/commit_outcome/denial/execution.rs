@@ -52,11 +52,15 @@ impl Denial {
         use crate::domain_computation::WorthQueryInvariantExecutionDenialKind as Invariant;
         match self.cause.as_deref() {
             Some(Cause::Execution(cause)) => Some(*cause),
+            Some(Cause::CoupledProducer(denial)) => denial.commit_execution_denial().map(|(_, cause)| cause),
             Some(Cause::InvariantExecution(failure)) => match failure.kind() {
                 Invariant::ExecutionDenied(kind) => Some(Ok(kind)),
                 Invariant::ExecutionControlStopped(kind) => Some(Err(kind)),
                 Invariant::RequestInterrupted(stop) => Some(Err(control_kind(stop))),
                 Invariant::AllocationDenied
+                | Invariant::CoupledSettlementMissing
+                | Invariant::CoupledReadSupportChanged
+                | Invariant::CoupledReadSupportUnavailable { .. }
                 | Invariant::ManagedPredicatePreparationUnavailable
                 | Invariant::InvariantNotInstalled
                 | Invariant::ExecutorRoleMismatch
@@ -95,6 +99,7 @@ impl Denial {
                 };
                 match kind {
                     kind @ (Session::ProjectionContract { .. } | Session::HistoricalVisibility { .. }
+                    | Session::OutputCorrespondenceMismatch { .. }
                     | Session::ContentInconsistency
                     | Session::Content(_)
                     | Session::StorageUnavailable(_)
@@ -219,7 +224,8 @@ pub(super) fn execution_kind(
         Ok(Session::ExecutionIdentitiesNotCanonical { partition_identity }) => {
             Kind::ExecutionIdentitiesNotCanonical { partition_identity }
         }
-        Ok(Session::ProjectionContract { .. })
+        Ok(Session::OutputCorrespondenceMismatch { .. })
+        | Ok(Session::ProjectionContract { .. })
         | Ok(Session::HistoricalVisibility { .. })
         | Ok(Session::ForeignOperationAttempt)
         | Ok(Session::ForeignExecutionBasis)

@@ -317,3 +317,5 @@ base URL came from.
 - [Reconciliation Contract](../resources/responses/README.md)
 - [Resource Binary And Download Reference](./resource-binary-and-download.md)
 - [Resource Family Authoring Reference](./resource-family-authoring.md)
+
+Transport methods include `GET`, `POST`, `PUT`, `PATCH`, and `DELETE`. For a partial-update endpoint, `.mutation({ semantics: "update", method: "PATCH", load })` preserves the actual HTTP method in its request and mutation proof.

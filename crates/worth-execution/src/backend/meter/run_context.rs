@@ -20,6 +20,7 @@ impl RunLimits {
         prepared_activity: Option<Arc<PhysicalActivity>>,
         prepared_cell_charged: bool,
     ) -> Self {
+        crate::backend::setup_observation::limit_derivation();
         let parent = ACTIVE_METER.with(|active| active.borrow().last().cloned());
         let work_loan_affinity = parent
             .as_ref()

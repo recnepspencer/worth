@@ -122,12 +122,16 @@ export function preserveImportTipsAcrossContextReplace(previousContext, nextCont
     }
   }
   const nextEpochs = ensureImportHostTipEpochs(nextContext);
+  const previousWorkerEpochs = importWorkerTipEpochs.get(previousContext) ?? new Map();
+  const nextWorkerEpochs = new Map();
+  importWorkerTipEpochs.set(nextContext, nextWorkerEpochs);
   for (const [id, epoch] of previousEpochs) {
     if (!previousContext.signalValueById.has(id) || !nextContext.signalValueById.has(id)) {
       continue;
     }
     nextEpochs.set(id, epoch);
     const owningApplyEpoch = applyEpochById.get(id);
+    nextWorkerEpochs.set(id, Math.max(previousWorkerEpochs.get(id) ?? 0, owningApplyEpoch ?? 0));
     if (owningApplyEpoch === epoch) {
       continue;
     }
@@ -137,6 +141,15 @@ export function preserveImportTipsAcrossContextReplace(previousContext, nextCont
 
 // Import contexts are frozen — keep tip epochs off-DOM in a WeakMap.
 const importHostTipEpochs = new WeakMap();
+const importWorkerTipEpochs = new WeakMap();
+
+export function pendingImportedHostTipIds(context) {
+  const hostEpochs = importHostTipEpochs.get(context);
+  const workerEpochs = importWorkerTipEpochs.get(context);
+  return [...(hostEpochs ?? [])]
+    .filter(([id, epoch]) => epoch > (workerEpochs?.get(id) ?? 0))
+    .map(([id]) => id);
+}
 
 function projectImportContextTip(deps, id, value) {
   const context = typeof deps.activeImportContext === "function"

@@ -1,5 +1,6 @@
 mod admission;
 mod affinity;
+mod applied;
 mod pending;
 pub(super) use affinity::parameter_denial;
 pub use pending::WorthQueryPendingSourceExpectation;
@@ -19,7 +20,7 @@ struct CheckedSourceAffinity<'a> {
 
 /// Source facts prepared for exactly one admitted operation before its handler
 /// or stable-output publication can consume them.
-pub(in crate::domain_computation::primary_graph) struct PreparedObservedSourceExpectation {
+pub struct PreparedObservedSourceExpectation {
     context: Option<super::ObservedQueryExpressionContext>,
     admission_identity: WorthQueryOperationAdmissionIdentity,
     selected_product: crate::basis::WorthQueryProductBranchReadIdentity,
@@ -291,3 +292,5 @@ where
             .bind::<Binding>(phase, source, identity, input, kind)
     }
 }
+
+mod court_doors_for_test;

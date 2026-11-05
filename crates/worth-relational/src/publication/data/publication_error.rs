@@ -33,6 +33,19 @@ impl PublicationError {
         error
     }
 
+    pub(crate) fn ordinary_metadata_write(
+        kind: crate::identity::data::KindId,
+        record: Option<crate::transactions::data::RecordRef>,
+    ) -> Self {
+        let mut error = Self::new(
+            PublicationStage::BundleAssembly,
+            format!("ordinary write to Native-private kind {kind:?}"),
+        );
+        error.authored_retirement_refusal =
+            Some(super::AuthoredRetirementRefusal::OrdinaryMetadataWrite);
+        error.context.affected_records = record.into_iter().collect();
+        error
+    }
     pub(crate) fn owned_publication(
         cause: super::AuthoredRetirementRefusal,
         member: crate::identity::data::EntityId,

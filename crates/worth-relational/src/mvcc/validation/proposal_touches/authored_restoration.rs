@@ -1,17 +1,13 @@
 //! Only the sealed, payload-checked Native inverse is outside application authoring.
 use super::*;
-use crate::{
-    mvcc::{RelationalAuthoredRestoration, RequiredOutputPublication},
-    transactions::data::*,
-};
+use crate::{mvcc::RelationalAuthoredRestoration, transactions::data::*};
 type Error = ValidatedMutationTouchProjectionError;
 fn plan(proposal: &ValidatedRelationalProposal) -> Option<&RelationalAuthoredRestoration> {
-    match &proposal.required_output_publication.as_ref()?.publication {
-        RequiredOutputPublication::AuthoredCascadeRestoration { restoration, .. } => {
-            Some(restoration)
-        }
-        _ => None,
-    }
+    proposal
+        .required_output_publication
+        .as_ref()?
+        .publication
+        .authored_restoration()
 }
 pub(super) fn validate(
     proposal: &ValidatedRelationalProposal,
@@ -47,8 +43,7 @@ pub(super) fn validate(
                     RecordRef::Entity(
                         restoration
                             .retirement
-                            .authored_cascade_retirement
-                            .as_ref()
+                            .authored_source_retirement()
                             .expect("Native retirement")
                             .anchor,
                     ),
@@ -78,8 +73,15 @@ pub(super) fn owns_create(
                     .ok_or_else(collection::capacity)?,
             )?;
             let id = created.resolve(&target);
-            // The distinguished source is still authored by the application.
-            for (_, target) in restoration.entities.iter().skip(1) {
+            // Every anchor remains authored by its own inverse Create.
+            let anchors = restoration
+                .retirement
+                .authored_source_retirement()
+                .expect("Native restoration has its retirement")
+                .co_anchors
+                .len()
+                + 1;
+            for (_, target) in restoration.entities.iter().skip(anchors) {
                 checkpoint(
                     created
                         .resolve_work_bound(target)

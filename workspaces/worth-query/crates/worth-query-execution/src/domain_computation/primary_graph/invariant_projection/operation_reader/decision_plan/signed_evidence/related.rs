@@ -62,6 +62,11 @@ impl<Schema: ApplicationSchema, Operation>
             kind,
             entity: to.clone().into(),
             authority_identity: self.reader.authority_identity,
+            phase: self
+                .reader
+                .native
+                .candidate_identity()
+                .map(|id| id.qualification()),
             _marker: std::marker::PhantomData,
         };
         // The subject's provenance affinity and current evidence are checked by

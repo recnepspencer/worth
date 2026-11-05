@@ -78,6 +78,37 @@ pub(super) fn lineage_identity(
     derive_identity(LINEAGE_RULE_VERSION, entries)
 }
 
+/// Native custody supplies the parent when no hot Query execution head exists.
+/// This coordinate is deliberately never interpreted as a Query execution key.
+pub(super) fn native_parent_lineage_identity(
+    dependency: [u8; 32],
+    (commit, ordinal): (u64, usize),
+) -> Result<([u8; 32], WorthQueryCanonicalWorkEvidence), ()> {
+    let mut entries = Vec::with_capacity(3);
+    push(
+        &mut entries,
+        "dependency".into(),
+        CanonicalBasisEntryKind::Identity,
+        CanonicalBasisValue::BytesDigest(CanonicalDigestId::new(dependency)),
+    );
+    push(
+        &mut entries,
+        "native-parent-commit".into(),
+        CanonicalBasisEntryKind::Identity,
+        unsigned(commit),
+    );
+    push(
+        &mut entries,
+        "native-parent-ordinal".into(),
+        CanonicalBasisEntryKind::Identity,
+        unsigned(u64::try_from(ordinal).map_err(|_| ())?),
+    );
+    derive_identity(
+        "worth-query-application-producer-lineage-v3-native-parent",
+        entries,
+    )
+}
+
 fn optional_entity(
     entries: &mut Vec<CanonicalBasisEntry>,
     prefix: &str,

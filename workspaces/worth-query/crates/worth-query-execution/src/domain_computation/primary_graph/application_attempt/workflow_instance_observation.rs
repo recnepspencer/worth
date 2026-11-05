@@ -7,7 +7,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) use record
 };
 mod actors;
 pub(in crate::domain_computation::primary_graph) mod audit;
-pub(in crate::domain_computation::primary_graph) mod governed_record;
+pub(crate) mod governed_record;
 mod governed_start_path;
 mod transition_roles;
 pub(in crate::domain_computation::primary_graph::application_attempt) use actors::observe as observe_instance_roles;
@@ -32,15 +32,14 @@ use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkfl
 
 mod completed_source;
 mod evidence_budget;
-mod history;
+pub(crate) mod history;
 pub(super) use history::observe_ended_history;
 pub(in crate::domain_computation::primary_graph) mod instance_binding;
 mod progression;
-pub(in crate::domain_computation::primary_graph) mod settlement;
-mod step_budget;
-mod subject;
+pub(crate) mod settlement;
+pub(crate) mod step_budget;
+pub(crate) mod subject;
 use instance_binding::{adjacency, adjacency_with_kind, exact, exact_u64, text};
-#[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use settlement::decode_field_revision_fact;
 pub(super) use settlement::{
     observe_evidence_dependencies, observe_retained_approval_binding,

@@ -21,7 +21,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphInstallationDenialKind,
 };
 
-pub(in crate::domain_computation::primary_graph) struct WorthQueryInstalledOutputProducerRoute {
+pub struct WorthQueryInstalledOutputProducerRoute {
     pub(in crate::domain_computation::primary_graph) scheduling:
         Arc<BridgeInstalledConditionalLowering>,
     pub(in crate::domain_computation::primary_graph) output_comparison:
@@ -263,3 +263,5 @@ fn installation_denial(
         format!("producer `{identity}` Signal installation failed: {denial:?}"),
     )
 }
+
+mod court_doors_for_test;

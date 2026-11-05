@@ -17,21 +17,20 @@ pub use crate::domain_computation::application_aftermath::WorthQueryInboundClean
 use crate::domain_computation::authorization::WorthQueryInstalledAuthorizationRegistry;
 
 #[path = "application_runtime_core.rs"]
-mod runtime_core;
+pub(crate) mod runtime_core;
 pub(in crate::domain_computation) use runtime_core::WorthQueryApplicationRuntimeCore;
 
 mod certification_controls;
 mod certification_cost;
 mod conditional_cleanup;
 mod execution_memory;
-mod external_dispatch_attempt;
+pub(crate) mod external_dispatch_attempt;
 mod mutation_partition;
 mod teardown;
 pub use execution_memory::WorthQueryExecutionLeaseDenial;
-mod inbound_occurrence;
-#[cfg(test)]
+pub(crate) mod inbound_occurrence;
 pub(in crate::domain_computation::primary_graph) use inbound_occurrence::WorthQueryInboundAdmission;
-mod inbound_publication;
+pub(crate) mod inbound_publication;
 pub use certification_cost::{
     WorthQueryCertificationApplicationWork, WorthQueryCertificationCostObservation,
     WorthQueryCertificationCostRuntimeExt, WorthQueryCertificationCostScope,
@@ -60,7 +59,7 @@ mod derived_relation;
 mod graph_participation;
 pub use derived_relation::WorthQueryRuleReadableCollectionLifecycleForTest;
 pub(in crate::domain_computation::primary_graph) mod installation;
-mod operation_control;
+pub(crate) mod operation_control;
 mod publication_entry;
 mod storage_retention;
 pub(in crate::domain_computation::primary_graph) use operation_control::WorthQueryApplicationAttemptOperationControl;
@@ -326,7 +325,6 @@ impl WorthQueryApplicationLiveDeliveryCloseReceipt {
     }
 }
 
-#[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use inbound_publication::{
     authenticated_completion_candidate, transport_completion_candidate,
     InstalledTransportPublicationOutcome,
@@ -340,3 +338,5 @@ pub use operation_input_capture::WorthQueryOperationInputCaptureDenial;
 pub(in crate::domain_computation::primary_graph) use operation_control::{
     WorthQuerySourcePublicationHeadForTest, WorthQuerySourcePublicationImageForTest,
 };
+
+mod court_doors_for_test;

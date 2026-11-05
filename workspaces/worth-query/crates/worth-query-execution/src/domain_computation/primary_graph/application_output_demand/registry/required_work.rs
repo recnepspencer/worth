@@ -1,20 +1,20 @@
 //! Exact required-work hints shared by the demand record and native marks.
 
-mod wave_admission;
+pub(crate) mod wave_admission;
 pub(in crate::domain_computation::primary_graph) use wave_admission::AdmittedRequiredWave;
 pub(in crate::domain_computation::primary_graph) use wave_admission::PreparedRequiredInputs;
 mod branch_selection;
-mod claim;
+pub(crate) mod claim;
 pub(in crate::domain_computation::primary_graph) use claim::RequiredWorkClaim;
 mod current_record;
 mod discontinuity;
 mod interest_readmission;
-mod native_hints;
+pub(crate) mod native_hints;
 mod pending_readmission;
-mod queue;
-mod refresh_claim;
-mod requested_claim;
-mod selection;
+pub(crate) mod queue;
+pub(crate) mod refresh_claim;
+pub(crate) mod requested_claim;
+pub(crate) mod selection;
 mod subsumed;
 mod successor_join;
 
@@ -44,7 +44,7 @@ use crate::domain_computation::primary_graph::output_lineage::RecordedSettlement
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 
-pub(in crate::domain_computation::primary_graph) struct RequiredWorkMembership {
+pub struct RequiredWorkMembership {
     key: Arc<WorthQueryOutputDemandKey>,
     queue: Weak<RequiredWorkQueue>,
     state: Mutex<MembershipState>,
@@ -76,7 +76,7 @@ struct MembershipState {
         Option<crate::domain_computation::primary_graph::application_contribution::CurrentBasis>,
 }
 
-pub(in crate::domain_computation::primary_graph) struct SelectedRequiredWork {
+pub struct SelectedRequiredWork {
     pub(in crate::domain_computation::primary_graph) membership: Arc<RequiredWorkMembership>,
     pub(in crate::domain_computation::primary_graph) version: u64,
     // The registry pins the row that answers this occurrence after succession.
@@ -85,7 +85,7 @@ pub(in crate::domain_computation::primary_graph) struct SelectedRequiredWork {
     armed: bool,
 }
 
-pub(in crate::domain_computation::primary_graph) enum SelectedRequiredWorkKind {
+pub enum SelectedRequiredWorkKind {
     Native {
         observer: CompanionPublicationCompletionObserver,
         branch: Arc<NativeBranch>,
@@ -98,7 +98,7 @@ pub(in crate::domain_computation::primary_graph) enum SelectedRequiredWorkKind {
     UnresolvedInitial,
 }
 
-pub(in crate::domain_computation::primary_graph) struct ReplacedRequiredWorkHint {
+pub struct ReplacedRequiredWorkHint {
     _native: Option<Box<NativeHint>>,
     _settlement: Option<Arc<RecordedSettlementIdentity>>,
 }
@@ -310,7 +310,6 @@ impl Drop for SelectedRequiredWork {
     }
 }
 
-#[cfg(test)]
 impl super::DemandRegistryState {
     pub(super) fn fixture_page_required_discontinuity(
         &mut self,
@@ -323,5 +322,6 @@ impl super::DemandRegistryState {
     }
 }
 
-#[cfg(test)]
 mod proof_fixture;
+
+mod court_doors_for_test;

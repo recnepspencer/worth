@@ -11,7 +11,7 @@ enum DisclosureSubject {
     Inspection(Arc<crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationInspectionTarget>),
 }
 
-pub(in crate::domain_computation) struct WorthQueryApplicationGovernanceBinding {
+pub struct WorthQueryApplicationGovernanceBinding {
     runtime: WorthQueryRuntimeAuthorityIdentity,
     subject: DisclosureSubject,
     parameters: CanonicalDigestId,
@@ -214,3 +214,5 @@ impl WorthQueryApplicationGovernanceBinding {
             && self.provider == graph_work.provider()
     }
 }
+
+mod court_doors_for_test;

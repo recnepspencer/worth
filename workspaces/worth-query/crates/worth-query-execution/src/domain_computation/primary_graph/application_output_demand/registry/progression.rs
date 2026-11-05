@@ -1,11 +1,11 @@
 mod ordinary_begin;
 mod replacement;
 mod selected_begin;
-mod selected_checkpoint_finish;
-mod selected_finish;
+pub(crate) mod selected_checkpoint_finish;
+pub(crate) mod selected_finish;
 mod supersession;
 pub(in crate::domain_computation::primary_graph) use selected_checkpoint_finish::PreparedSelectedCheckpointFinish;
-mod checkpoint_finish;
+pub(crate) mod checkpoint_finish;
 pub(in crate::domain_computation::primary_graph) use checkpoint_finish::CheckpointFinishStop;
 
 use super::post_commit::release_completed_member;
@@ -183,7 +183,6 @@ impl WorthQueryOutputDemandRegistry {
         drop(released_prerequisites);
     }
 
-    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn finish_execution_failure(
         &self,
         interest: &WorthQueryOutputDemandInterest,
@@ -224,7 +223,6 @@ impl WorthQueryOutputDemandRegistry {
         drop(released_prerequisites);
     }
 
-    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn finish_checkpoint(
         &self,
         interest: &WorthQueryOutputDemandInterest,
@@ -285,3 +283,5 @@ pub(super) fn execution_failure_is_retryable(denial: &WorthQueryOutputDemandDeni
 pub(super) fn execution_failure_reschedules(denial: &WorthQueryOutputDemandDenial) -> bool {
     !super::required_stop::fails_row(denial)
 }
+
+mod court_doors_for_test;

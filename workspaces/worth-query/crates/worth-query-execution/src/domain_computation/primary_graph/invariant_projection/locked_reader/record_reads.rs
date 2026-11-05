@@ -3,15 +3,12 @@ use super::*;
 use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as NativeReadStop;
 
-#[cfg(test)]
-mod tests;
-
 impl<Schema> WorthQueryApplicationInvariantProjectionReader<'_, Schema>
 where
     Schema: ApplicationSchema,
 {
     pub const fn version(&self) -> worth_relational::facade::identity::VersionId {
-        self.snapshot.version_id()
+        self.native.version(self.snapshot)
     }
 
     /// Reads performed so far by this snapshot projection; diagnostic only.
@@ -54,13 +51,10 @@ where
                 field.field(),
             )
         })?;
-        let truth = self.entity_resolution.at_snapshot(
-            self.runtime,
-            self.snapshot,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )?;
-        let (resolved, examined) = truth.resolve_with_work(
+        let (resolved, examined) = self.native.resolve_entity(
+            self.entity_resolution,
             execution,
+            self.snapshot,
             field.entity(),
             field.aspect(),
             field.field(),
@@ -81,12 +75,13 @@ where
                 field.field(),
             ));
         }
-        self.realized_scope.record(resolved.entity_id());
+        self.realized_scope.record(resolved.entity);
         Ok(WorthQueryInvariantEntityIdentity {
-            entity_id: resolved.entity_id(),
-            kind: resolved.entity_kind(),
+            entity_id: resolved.entity,
+            kind: resolved.kind,
             entity: Arc::from(field.entity()),
             authority_identity: self.authority_identity,
+            phase: resolved.phase,
             _marker: PhantomData,
         })
     }
@@ -159,19 +154,25 @@ where
             .clone();
         let reads = &mut self.work;
         let decoder = self.value_decode;
-        let observed = crate::domain_computation::primary_graph::application_attempt::observe_field_value_borrowed_admitted(
-            self.runtime,
+        let observed = self.native.observe_field(
             execution,
             self.snapshot,
             identity.entity_id,
             identity.kind,
             &locator,
-            |raw| {
+            |observed| {
+                let raw = observed.value();
                 reads.record_fields(1);
-                raw.and_then(|value| decoder.decode::<Field::Binding>(field.entity(), field.aspect(), field.field(), value))
+                raw.and_then(|value| {
+                    decoder.decode::<Field::Binding>(
+                        field.entity(),
+                        field.aspect(),
+                        field.field(),
+                        value,
+                    )
+                })
             },
-        )
-        ;
+        );
         match observed {
             Ok(value) => value.flatten(),
             Err(cause) => {
@@ -188,6 +189,14 @@ where
         identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
         entity: &str,
     ) -> bool {
-        identity.authority_identity == self.authority_identity && identity.entity.as_ref() == entity
+        identity.authority_identity == self.authority_identity
+            && identity.entity.as_ref() == entity
+            && identity.phase.is_none_or(|phase| {
+                Some(phase)
+                    == self
+                        .native
+                        .candidate_identity()
+                        .map(|id| id.qualification())
+            })
     }
 }

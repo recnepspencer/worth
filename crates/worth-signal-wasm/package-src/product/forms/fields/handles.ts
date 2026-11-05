@@ -1,3 +1,4 @@
+import { clearPendingRawInput, denyFieldWriteIfBlocked } from './write_support.js';
 import { parseFailureArtifact } from "../validation/artifacts.js";
 import { applyFieldInteraction, normalizeInteractionInputSource } from "../interaction/controller_bindings.js";
 import { FormDeclarationError } from "../form_errors.js";
@@ -373,24 +374,4 @@ function normalizeIdentityValue(identity, message, details) {
 
 function isUsableIdentity(identity) {
   return identity !== undefined && identity !== null && String(identity).length > 0;
-}
-
-function denyFieldWriteIfBlocked(field, form, capability) {
-  const posture = form.fieldWritePosture(field.id, capability);
-  if (posture.canWrite) {
-    return;
-  }
-  const error = new TypeError(posture.reason);
-  error.name = "FormFieldWriteDenied";
-  error.details = posture;
-  throw error;
-}
-
-function clearPendingRawInput(state, fieldId, operation, reason = null) {
-  const pending = state.rawInputs.get(fieldId);
-  if (!pending) {
-    return;
-  }
-  state.rawInputs.delete(fieldId);
-  state.recordRawInput(fieldId, operation, pending.rawValue, pending.source ?? null, reason);
 }

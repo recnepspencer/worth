@@ -55,6 +55,7 @@ impl VisibilityReadContext<'_> {
         // StringInterner's im maps clone shared nodes, never their entries.
         let symbols = self.runtime.services.symbols.interner_snapshot();
         Ok(RelationalPinnedRead {
+            applied_changes: None,
             current_version: self.runtime.current_version_id(),
             instrumentation: self.runtime.services.instrumentation.clone(),
             snapshot,
@@ -130,6 +131,7 @@ impl VisibilityReadContext<'_> {
         let (current_version, instrumentation, _) = view.retain_pinning_metadata();
         let symbols = self.runtime.services.symbols.interner_snapshot();
         Ok(RelationalPinnedRead {
+            applied_changes: None,
             current_version,
             instrumentation,
             snapshot: (),

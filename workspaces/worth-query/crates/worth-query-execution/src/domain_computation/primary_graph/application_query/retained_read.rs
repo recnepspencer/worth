@@ -23,7 +23,6 @@ pub struct WorthQueryApplicationReadObservation {
 }
 
 impl WorthQueryApplicationReadObservation {
-    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn with_original_producer(
         &self,
         producer: Arc<super::super::application_output_demand::OriginalSettledProducerObservation>,
@@ -207,3 +206,5 @@ where
             .map(|selected| selected.with_original_settled_producer(observation.producer.clone()))
     }
 }
+
+mod court_doors_for_test;

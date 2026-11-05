@@ -3,22 +3,20 @@ use worth_foundational::facade::{AspectContractRevision, AspectKey, FieldKey};
 use worth_relational::facade::identity::{EntityId, KindId, VersionId};
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub(in crate::domain_computation) struct WorthQueryObservedFieldRevision {
+pub struct WorthQueryObservedFieldRevision {
     pub(in crate::domain_computation::primary_graph) entity: EntityId,
     pub(in crate::domain_computation::primary_graph) entity_name: String,
     pub(in crate::domain_computation::primary_graph) aspect: AspectKey,
     pub(in crate::domain_computation::primary_graph) field: FieldKey,
     pub(in crate::domain_computation::primary_graph) contract_revision: AspectContractRevision,
-    pub(in crate::domain_computation::primary_graph) native_revision:
-        Option<worth_relational::facade::runtime::RelationalFieldRevision>,
+    pub native_revision: Option<worth_relational::facade::runtime::RelationalFieldRevision>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) struct WorthQueryObservedAdjacencyRevision {
+pub struct WorthQueryObservedAdjacencyRevision {
     pub(in crate::domain_computation::primary_graph) anchor: EntityId,
     pub(in crate::domain_computation::primary_graph) relation_kind: KindId,
-    pub(in crate::domain_computation::primary_graph) direction:
-        worth_relational::facade::runtime::RelationalAdjacencyDirection,
+    pub direction: worth_relational::facade::runtime::RelationalAdjacencyDirection,
     pub(in crate::domain_computation::primary_graph) native_revision: Option<VersionId>,
     pub(in crate::domain_computation::primary_graph) comparison_work_limit: usize,
     pub(in crate::domain_computation::primary_graph) endpoints: Vec<EntityId>,
@@ -91,3 +89,5 @@ pub(in crate::domain_computation::primary_graph) const fn adjacency_direction_ra
         worth_relational::facade::runtime::RelationalAdjacencyDirection::Incoming => 1,
     }
 }
+
+mod court_doors_for_test;

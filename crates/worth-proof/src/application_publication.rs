@@ -53,6 +53,13 @@ pub struct AdmittedCheckpointProgramActivation {
     commitment: [u8; 32],
 }
 
+impl RequiredOutputPublicationAuthority {
+    /// Descriptive canonical coordinate; admission still requires issuer custody.
+    pub fn publication_coordinate(&self) -> (u64, usize) {
+        (self.publication, self.ordinal)
+    }
+}
+
 impl InstalledApplicationPublicationOwner {
     pub fn admit_authored_output_retirement(
         &self,

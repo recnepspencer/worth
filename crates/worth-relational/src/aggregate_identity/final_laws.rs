@@ -20,7 +20,7 @@ pub(crate) fn validate_final_derived_laws(
     basis: &crate::branch::AdmittedRelationalBranchBasis,
 ) -> Result<super::AggregateReadObservations, TransactionCommitError> {
     if authority.registry().derived_relations.is_empty()
-        || authority.registry().aggregate_private_kinds.is_empty()
+        || authority.registry().native_private_kinds.is_empty()
     {
         return Ok(super::AggregateReadObservations::default());
     }

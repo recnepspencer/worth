@@ -1,0 +1,13 @@
+{
+ "authority_doors": [],
+ "constructor_doors": [],
+ "field_doors": [
+  "domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutput.performed_origin"
+ ],
+ "method_doors": [
+  "domain_computation::primary_graph::application_contribution::producer::demand::progression::admission::WorthQueryPrimaryGraphApplicationRuntime<Schema>::admit_required_output_demand",
+  "domain_computation::primary_graph::invariant_projection::operation_reader::decision_plan::predecode_admission::WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>::decision_field_with_predecode_admission",
+  "equality_type_id::EqualityTypeId::of"
+ ],
+ "unplaced": []
+}

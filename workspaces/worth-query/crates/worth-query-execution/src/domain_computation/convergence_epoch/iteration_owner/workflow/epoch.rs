@@ -68,7 +68,6 @@ pub struct WorthQueryIteratingWorkflowConvergenceEpoch {
 }
 
 impl WorthQueryIteratingWorkflowConvergenceEpoch {
-    #[cfg(test)]
     pub(crate) fn fixture_phase<'scope>(
         &self,
         host: &crate::domain_computation::primary_graph::TestHostRequest<'scope>,
@@ -225,5 +224,6 @@ fn admit_associated_step(
     }
 }
 
-#[cfg(test)]
 mod test_phase_custody;
+
+mod court_doors_for_test;

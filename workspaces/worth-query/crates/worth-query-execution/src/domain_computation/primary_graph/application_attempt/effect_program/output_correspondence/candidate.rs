@@ -2,6 +2,8 @@ mod authoring;
 mod birth;
 mod completion;
 mod contract;
+mod projection;
+mod sealing;
 mod succession;
 
 use crate::equality_type_id::EqualityTypeId as TypeId;
@@ -29,14 +31,31 @@ struct CandidateOutputBinding {
     entity: EntityReference,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+struct CandidateClosureBinding {
+    entity_name: String,
+    entity_type: TypeId,
+    entity: EntityId,
+}
+impl CandidateClosureBinding {
+    fn committed(self) -> CommittedOutputBinding {
+        CommittedOutputBinding {
+            posture: WorthQueryApplicationOutputPosture::Retire,
+            entity_name: self.entity_name,
+            entity_type: self.entity_type,
+            entity: self.entity,
+        }
+    }
+}
+
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph::application_attempt) struct WorthQueryApplicationOutputCorrespondenceCandidate
-{
+pub struct WorthQueryApplicationOutputCorrespondenceCandidate {
     binding_type: Option<TypeId>,
     contract_type: Option<TypeId>,
     expected_roles: BTreeMap<String, ExpectedOutputBinding>,
     expected_families: Vec<ExpectedOutputFamily>,
     roles: BTreeMap<String, CandidateOutputBinding>,
+    closure_roles: BTreeMap<String, CandidateClosureBinding>,
 }
 
 impl WorthQueryApplicationOutputCorrespondenceCandidate {
@@ -96,7 +115,6 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
     /// Expect the roles and families `Contract` declares, as a binding with
     /// that output contract would. The contract stands in for the binding's
     /// own type, so the program's publication is recorded like any output.
-    #[cfg(test)]
     pub(super) fn prepare_test_contract<Schema, Contract>(&mut self)
     where
         Schema: worth_query_installation::facade::ApplicationSchema,
@@ -203,7 +221,6 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
         );
     }
 
-    #[cfg(test)]
     pub(super) fn bind<Schema, Entity>(
         &mut self,
         role: OutputRoleUse,
@@ -213,56 +230,6 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
         self.validate_binding(&role, target, program)?;
         self.insert_binding(role, target);
         Ok(())
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn seal(
-        self,
-        commit: &CommitResult,
-    ) -> WorthQueryApplicationOutputCorrespondence {
-        self.seal_with(|created| commit.created_entity(created))
-    }
-
-    pub(super) fn seal_with(
-        self,
-        resolve_created: impl Fn(
-            &worth_relational::facade::transactions::CreatedEntityRef,
-        ) -> Option<EntityId>,
-    ) -> WorthQueryApplicationOutputCorrespondence {
-        let roles = self
-            .roles
-            .into_iter()
-            .map(|(role, binding)| {
-                let entity = match binding.entity {
-                    EntityReference::Existing(entity_id) => entity_id,
-                    EntityReference::Created(created) => resolve_created(&created).expect(
-                        "a performed Relational commit resolves every admitted created output",
-                    ),
-                };
-                (
-                    role,
-                    CommittedOutputBinding {
-                        posture: binding.posture,
-                        entity_name: binding.entity_name,
-                        entity_type: binding.entity_type,
-                        entity,
-                    },
-                )
-            })
-            .collect();
-        let optional_roles = self
-            .expected_roles
-            .into_iter()
-            .filter(|(_, expected)| expected.cardinality.admits_absence())
-            .map(|(role, _)| role)
-            .collect();
-        WorthQueryApplicationOutputCorrespondence {
-            binding_type: self.binding_type,
-            contract_type: self.contract_type,
-            storage: std::sync::Arc::new(super::CorrespondenceStorage::from_committed(
-                optional_roles,
-                roles,
-            )),
-        }
     }
 }
 
@@ -314,3 +281,5 @@ fn denial(
 ) -> WorthQueryApplicationAttemptDenial {
     WorthQueryApplicationAttemptDenial::new(kind, subject)
 }
+
+mod court_doors_for_test;

@@ -3,17 +3,17 @@ mod custody;
 use super::*;
 use worth_runtime_world::facade::{CompositeCommitIdentity, ProductBranchObservation};
 
-pub(in crate::domain_computation::primary_graph) struct WorthQueryLivePredicatePreparation {
+pub struct WorthQueryLivePredicatePreparation {
     state: Arc<Mutex<WorthQueryLiveDeliverySourceState>>,
     key: WorthQueryLiveProductKey,
     _allocation: Arc<SourceFactsAllocation>,
 }
-pub(in crate::domain_computation::primary_graph) struct WorthQueryLivePredicateOpening {
+pub struct WorthQueryLivePredicateOpening {
     state: Arc<Mutex<WorthQueryLiveDeliverySourceState>>,
     key: WorthQueryLiveProductKey,
     _allocation: Arc<SourceFactsAllocation>,
 }
-pub(in crate::domain_computation::primary_graph) struct WorthQueryLivePredicateSubscription {
+pub struct WorthQueryLivePredicateSubscription {
     subscription: WorthQueryLiveSubscription,
     stamp: Stamp,
     allocation: Arc<SourceFactsAllocation>,
@@ -206,11 +206,7 @@ impl WorthQueryLiveDeliverySource {
         Ok(())
     }
     /// Owner court injects an untracked movement; production publishes exact predicate notices.
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn invalidate_predicates(
-        &self,
-        observation: &ProductBranchObservation,
-    ) {
+    pub fn invalidate_predicates(&self, observation: &ProductBranchObservation) {
         let key = WorthQueryLiveProductKey::from_observation(observation);
         let mut state = self
             .state
@@ -232,3 +228,5 @@ impl WorthQueryLivePredicateSubscription {
         &self.subscription
     }
 }
+
+mod court_doors_for_test;

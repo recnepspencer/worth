@@ -5,17 +5,14 @@ use crate::domain_computation::primary_graph::application_contribution::{
     QueryMemoryReservation, QueryRequestExecution,
 };
 use std::{collections::BTreeSet, ops::Range};
-#[cfg(test)]
-mod editing_tests;
+
 mod funding;
 mod issue;
-#[cfg(test)]
-mod tests;
 
 mod reached;
 use reached::ReachedCalls;
 #[derive(Debug)]
-pub(in crate::domain_computation::primary_graph) enum CallSequenceDenial {
+pub enum CallSequenceDenial {
     Resource(Resource),
     InvalidEdit,
     Storage(worth_execution::ExecutionOrderedMapDenial),
@@ -30,15 +27,15 @@ impl From<worth_execution::ExecutionOrderedMapDenial> for CallSequenceDenial {
         Self::Storage(cause)
     }
 }
-type Call = (ComputationCallCharge, Option<u64>);
+pub type Call = (ComputationCallCharge, Option<u64>);
 
-mod shape;
+pub(crate) mod shape;
 pub(in crate::domain_computation::primary_graph) use shape::{CallShape, CallShapeTransition};
-mod tree;
+pub(crate) mod tree;
 use tree::{build, leaf, patch, summary, visit};
 mod editing;
 #[derive(Clone, Copy)]
-pub(in crate::domain_computation::primary_graph) struct CallSummary {
+pub struct CallSummary {
     pub(super) accounting: Option<ComputationCallAccounting>,
     pub(in crate::domain_computation::primary_graph) declared: Option<u64>,
 }
@@ -73,12 +70,11 @@ impl CallSummary {
         })
     }
 }
-struct Node {
+pub struct Node {
     count: usize,
     height: u8,
     summary: Option<CallSummary>,
     kind: Kind,
-    #[cfg(test)]
     bytes: Option<u64>,
     _memory: Option<QueryMemoryReservation>,
 }
@@ -86,7 +82,7 @@ enum Kind {
     Leaf(ComputationRead, Call),
     Branch(Arc<Node>, Arc<Node>),
 }
-pub(in crate::domain_computation::primary_graph) enum CallVisit<'a> {
+pub enum CallVisit<'a> {
     Range(Range<usize>, &'a CallSummary),
     Leaf(
         usize,
@@ -97,11 +93,10 @@ pub(in crate::domain_computation::primary_graph) enum CallVisit<'a> {
 }
 /// No request borrow or parent sequence is stored. Each cell funds its own
 /// representation; unchanged nodes and the exact ordinal shape share grants.
-pub(in crate::domain_computation::primary_graph) struct ComputationCallSequence {
+pub struct ComputationCallSequence {
     shape: Arc<CallShape>,
     root: Option<Arc<Node>>,
     reached: ReachedCalls,
-    #[cfg(test)]
     bytes: Option<u64>,
     _memory: Option<QueryMemoryReservation>,
 }
@@ -112,26 +107,17 @@ impl ComputationCallSequence {
     pub(in crate::domain_computation::primary_graph) fn prefix(&self) -> usize {
         self.shape.prefix
     }
-    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn bytes(&self) -> Option<u64> {
         self.bytes
     }
-    pub(in crate::domain_computation::primary_graph) fn summary(
-        &self,
-        range: Range<usize>,
-        accounted: bool,
-    ) -> Option<CallSummary> {
+    pub fn summary(&self, range: Range<usize>, accounted: bool) -> Option<CallSummary> {
         if !accounted {
             return (range.start < range.end && range.end <= self.shape.len())
                 .then(CallSummary::native);
         }
         summary(self.root.as_deref()?, &range)
     }
-    pub(in crate::domain_computation::primary_graph) fn contains_in(
-        &self,
-        entity: EntityId,
-        range: &Range<usize>,
-    ) -> bool {
+    pub fn contains_in(&self, entity: EntityId, range: &Range<usize>) -> bool {
         observed::computation_call_scope();
         let Some(first) = self.shape.call_at(range.start) else {
             return false;
@@ -156,3 +142,5 @@ impl ComputationCallSequence {
 }
 
 use crate::domain_computation::primary_graph::fact_verification_observation as observed;
+
+mod court_doors_for_test;

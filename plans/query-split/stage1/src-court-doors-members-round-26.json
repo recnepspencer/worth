@@ -1,0 +1,18 @@
+{
+ "authority_doors": [],
+ "constructor_doors": [],
+ "field_doors": [
+  "domain_computation::primary_graph::application_output_demand::registry::DemandRecord.source_commits",
+  "domain_computation::primary_graph::application_output_demand::registry::DemandRegistryState.records (mut)",
+  "domain_computation::primary_graph::application_output_demand::registry::DemandRegistryState.required_keys (mut)"
+ ],
+ "method_doors": [
+  "domain_computation::primary_graph::application_output_demand::registry::required_work::RequiredWorkMembership::set_required",
+  "domain_computation::primary_graph::provider::application_decision_fact::WorthQueryPrimaryGraphApplicationDecisionFact::locator_identity",
+  "domain_computation::primary_graph::provider::application_decision_fact::WorthQueryPrimaryGraphApplicationDecisionFact::remains_equal_in",
+  "domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout::field"
+ ],
+ "unplaced": [
+  "cannot assign to data in a `&` reference"
+ ]
+}

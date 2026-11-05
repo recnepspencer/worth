@@ -68,6 +68,11 @@ pub(super) fn project<Schema, Operation, Input, Scope, Output>(
         kind: admission.scope_entity_kind(),
         entity: Arc::from(admission.scope_entity_name()),
         authority_identity: operation_reader.reader.authority_identity,
+        phase: operation_reader
+            .reader
+            .native
+            .candidate_identity()
+            .map(|id| id.qualification()),
         _marker: PhantomData,
     };
     let output = projection(&mut operation_reader, &scope);

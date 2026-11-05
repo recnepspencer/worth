@@ -226,9 +226,7 @@ fn checkpoint_denial(subject: impl Into<String>) -> WorthQueryPrimaryGraphInstal
 }
 
 impl WorthQueryExecutionInstallationAuthority {
-    pub(in crate::domain_computation::primary_graph) fn prepare_primary_graph_from_native_checkpoint_with_invariants<
-        Schema,
-    >(
+    pub fn prepare_primary_graph_from_native_checkpoint_with_invariants<Schema>(
         &self,
         phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
         runtime: &WorthQueryExecutionRuntime,

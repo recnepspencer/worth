@@ -1,6 +1,6 @@
 //! Fresh principal resolution at the already selected Product/native basis.
 #[path = "admitted/issued_principal.rs"]
-mod issued_principal;
+pub(crate) mod issued_principal;
 #[path = "admitted/native.rs"]
 mod native;
 use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
@@ -182,3 +182,6 @@ where
         self.resolve_authenticated_principal_admitted_with_native_access(execution, installed_binding, external, scope, mode, validated, &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess::acquire())
     }
 }
+
+#[path = "admitted_court_doors_for_test.rs"]
+mod court_doors_for_test;

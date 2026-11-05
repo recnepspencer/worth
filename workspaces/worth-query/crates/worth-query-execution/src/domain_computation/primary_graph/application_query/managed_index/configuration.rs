@@ -31,7 +31,7 @@ struct ConfiguredProviders<S> {
     registration_order: Vec<EqualityTypeId>,
 }
 
-pub(in crate::domain_computation::primary_graph) struct ManagedIndexProviderCatalog<S> {
+pub struct ManagedIndexProviderCatalog<S> {
     providers: Arc<ConfiguredProviders<S>>,
     marker: PhantomData<fn() -> S>,
 }
@@ -307,3 +307,5 @@ where
         .downcast_ref::<Arc<dyn InstalledIndexProvider<S, I>>>()
         .is_some_and(|actual| actual.installed().is_installed_in(schema))
 }
+
+mod court_doors_for_test;

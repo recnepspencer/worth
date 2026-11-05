@@ -9,7 +9,7 @@ use crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxO
 
 /// Why this application runtime could not admit a physical dispatch attempt.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) enum WorthQueryExternalDispatchAdmissionDenial {
+pub enum WorthQueryExternalDispatchAdmissionDenial {
     ForeignRelationalRuntime,
     ForeignProductWorld,
     PublicationCommitMismatch,
@@ -50,7 +50,6 @@ impl WorthQueryExternalDispatchAttemptOrdinal {
         self.0
     }
 
-    #[cfg(test)]
     pub(in crate::domain_computation) const fn value_for_test(&self) -> u64 {
         self.0
     }
@@ -167,3 +166,5 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
         }
     }
 }
+
+mod court_doors_for_test;

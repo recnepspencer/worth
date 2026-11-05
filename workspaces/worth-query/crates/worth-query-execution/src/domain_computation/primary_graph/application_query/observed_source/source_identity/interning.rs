@@ -215,7 +215,6 @@ impl WorthQueryObservedSourceMeaningRegistry {
         )
     }
 
-    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn intern(
         &self,
         query: &[u8; 32],
@@ -229,7 +228,6 @@ impl WorthQueryObservedSourceMeaningRegistry {
         .expect("ordinary equality comparison cannot refuse")
     }
 
-    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn intern_result_set(
         &self,
         query: &[u8; 32],
@@ -251,3 +249,5 @@ fn result_set_query(query: &[u8; 32]) -> [u8; 32] {
     digest.update(query);
     digest.finalize().into()
 }
+
+mod court_doors_for_test;

@@ -29,6 +29,40 @@ where
             Schema,
         >,
     {
+        let checked =
+            self.checked_source_contract::<Binding, Scope>(admission, input, |expected| {
+                compare_parameters(&source.parameters, expected)
+            })?;
+        source.validate_affinity(
+            self.runtime.authority_identity().as_u64(),
+            &self.installed_schema.binding_identity(),
+            admission.graph_work_branch(),
+            admission.scope_entity_id(),
+            &checked.selected_product,
+            checked.expected_query_identifier,
+            self.installed_schema
+                .installed_query_identity_by_name(checked.expected_query_identifier)
+                .expect("checked installed query"),
+        )?;
+        Ok(checked)
+    }
+
+    pub(super) fn checked_source_contract<'a, Binding, Scope>(
+        &'a self,
+        admission: &WorthQueryAdmittedApplicationOperation<
+            Schema,
+            Binding::Operation,
+            Binding::Input,
+            Scope,
+        >,
+        input: &Binding::Input,
+        mut compare_parameters: impl FnMut(worth_query_declaration::facade::application_query::ApplicationQueryParameterSet<<Binding::SourceExpectation as worth_query_declaration::facade::application_operation::ApplicationMutationSourceExpectation<Schema>>::Query>) -> Result<bool, WorthQuerySourceExpectationDenial>,
+    ) -> Result<CheckedSourceAffinity<'a>, WorthQuerySourceExpectationDenial>
+    where
+        Binding: worth_query_declaration::facade::application_operation::ApplicationMutationBinding<
+            Schema,
+        >,
+    {
         let expected_query_identifier = <Binding::SourceExpectation as worth_query_declaration::facade::application_operation::ApplicationMutationSourceExpectation<Schema>>::QUERY_IDENTIFIER
             .ok_or_else(|| {
                 WorthQuerySourceExpectationDenial::new(
@@ -42,7 +76,7 @@ where
                 Binding::IDENTITY,
             )
         })?;
-        let expected_query_identity = self
+        let _expected_query_identity = self
             .installed_schema
             .installed_query_identity_by_name(expected_query_identifier)
             .ok_or_else(|| {
@@ -72,25 +106,16 @@ where
             )
         };
         if admission.allowed_graph_contract().body().is_some_and(|body| body.requires_query_context())
-            && !compare_parameters(&source.parameters, worth_query_declaration::facade::application_query::ApplicationQueryParameterSet::new())?
+            && !compare_parameters(worth_query_declaration::facade::application_query::ApplicationQueryParameterSet::new())?
         {
             return Err(parameters_denial());
         }
         if let Some(expected) =
             Binding::expected_source_parameters(input).map_err(|_| parameters_denial())?
-            && !compare_parameters(&source.parameters, expected)?
+            && !compare_parameters(expected)?
         {
             return Err(parameters_denial());
         }
-        source.validate_affinity(
-            self.runtime.authority_identity().as_u64(),
-            &self.installed_schema.binding_identity(),
-            admission.graph_work_branch(),
-            admission.scope_entity_id(),
-            &selected_product,
-            expected_query_identifier,
-            expected_query_identity,
-        )?;
         Ok(CheckedSourceAffinity {
             layout: &graph.layout,
             selected_product,

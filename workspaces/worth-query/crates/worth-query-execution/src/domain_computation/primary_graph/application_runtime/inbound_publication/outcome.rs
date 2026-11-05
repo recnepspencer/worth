@@ -73,7 +73,7 @@ impl WorthQueryUnpublishedInboundCompletion {
 }
 
 #[derive(Debug)]
-pub(in crate::domain_computation) enum WorthQueryInboundPublicationDenial {
+pub enum WorthQueryInboundPublicationDenial {
     ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
     ForeignRelationalRuntime,
     ForeignProductWorld,
@@ -85,7 +85,7 @@ pub(in crate::domain_computation) enum WorthQueryInboundPublicationDenial {
 }
 
 #[must_use = "retain World completion outcome until terminal custody is settled"]
-pub(in crate::domain_computation) enum WorthQueryInboundPublicationOutcome {
+pub enum WorthQueryInboundPublicationOutcome {
     AlreadyCompleted,
     Performed(WorthQueryPerformedInboundCompletion),
     NoEffect,

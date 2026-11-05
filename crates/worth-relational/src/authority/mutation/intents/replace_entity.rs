@@ -38,6 +38,7 @@ pub(super) fn apply(
             context.schema,
             cascade_delete_policy,
             &mut outcome,
+            context.deferred_publication_edges,
         )?;
         let replacement_id = allocate_entity_with_extra(
             context.state,

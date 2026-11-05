@@ -8,11 +8,15 @@ use crate::runtime::{CodecFieldLocus, RelationalRuntime};
 mod authored_cascade;
 mod authored_restoration;
 mod authored_retirement;
+mod coupled_restoration;
 mod scope_dependents;
 pub(crate) mod source_scope_closure;
 pub(crate) use scope_dependents::select_owned_scope_dependent;
+pub(crate) use scope_dependents::OwnedScopeDependentSelection;
 mod restoration_payload;
-pub(crate) use authored_cascade::select_authored_source_retirement;
+pub(crate) use authored_cascade::{
+    select_authored_source_retirement, AuthoredRetirementSelection, SelectedAuthoredRetirement,
+};
 mod codec_disposition;
 pub(crate) use authored_retirement::select_authored_retirement;
 pub(super) mod materialization;

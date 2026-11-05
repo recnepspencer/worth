@@ -152,7 +152,6 @@ impl MutationReadAttemptCore<'_, '_, '_> {
                 installed_read_scopes,
                 facts,
                 content,
-                #[cfg(test)]
                 computation_facts: Some(metadata),
                 computation_fact_ordinals,
             },

@@ -16,17 +16,15 @@ use super::RecordedSourceIdentity;
 use super::SemanticSource;
 use super::WorthQueryApplicationOutputLineage;
 
-mod current_accepted;
+pub(crate) mod current_accepted;
 pub(in crate::domain_computation::primary_graph) use current_accepted::BoundCurrentAcceptedOutput;
 pub(in crate::domain_computation::primary_graph) use current_accepted::CurrentAcceptedResult;
 pub(in crate::domain_computation::primary_graph) use current_accepted::CurrentAcceptedStop;
-#[cfg(test)]
-mod tests;
 
 /// What ends an exact accepted-row lookup, before any effect. Each one denies
 /// the request; a reason only leaves the row uncertified.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum RequiredSettlementStop {
+pub enum RequiredSettlementStop {
     Admission(CompanionPreflightStop),
     /// The accepted authority belongs to another runtime or schema.
     Foreign,
@@ -54,7 +52,7 @@ impl From<FullVerificationReason> for Unresolved {
 /// Only exact accepted authority resolution can mint this candidate. A prior
 /// partition lookup cannot substitute a newer row or certify current demand.
 #[derive(Clone)]
-pub(in crate::domain_computation::primary_graph) struct AcceptedCurrentCandidate {
+pub struct AcceptedCurrentCandidate {
     selected: RetainedInputCutoffCandidate,
     ready: ReadyCompletion,
 }
@@ -249,3 +247,5 @@ impl WorthQueryApplicationOutputLineage {
         }))
     }
 }
+
+mod court_doors_for_test;

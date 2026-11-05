@@ -23,7 +23,7 @@ mod read_close;
 mod root_completion;
 pub(in crate::domain_computation::primary_graph) use root_completion::OriginalProgramRootCompletion;
 mod required_affinity;
-mod unavailable;
+pub(crate) mod unavailable;
 use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedOutputDemand, WorthQueryApplicationDependentOutputConnection,
     WorthQueryApplicationOutputDemand, WorthQueryApplicationOutputDemandSource,
