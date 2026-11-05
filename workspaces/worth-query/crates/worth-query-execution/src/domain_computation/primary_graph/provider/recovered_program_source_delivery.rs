@@ -48,16 +48,16 @@ impl Drop for WorthQueryRecoveredProgramSourceDeliveryForTest<'_> {
     }
 }
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    /// Arms one real first-carrier consumption on this receiver's next program
-    /// recovery. Normal extraction then takes the already-consumed delivery.
-    pub fn consume_next_recovered_program_source_delivery_for_test(
+pub trait RecoveredProgramSourceDeliveryOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::provider::host::ProviderHost<Schema>
+{
+    fn consume_next_recovered_program_source_delivery_for_test(
         &self,
     ) -> Result<
         WorthQueryRecoveredProgramSourceDeliveryForTest<'_>,
         WorthQueryRecoveredProgramSourceDeliveryDenialForTest,
     > {
-        let registration = &self.runtime.recovered_program_source_delivery;
+        let registration = self.recovered_program_source_delivery();
         let mut active = registration
             .active
             .lock()
@@ -74,13 +74,19 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     }
 }
 
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::provider::host::ProviderHost<Schema> + ?Sized,
+    > RecoveredProgramSourceDeliveryOps<Schema> for HostRuntime
+{
+}
+
 pub(super) fn consume_first_if_armed<Schema: ApplicationSchema>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::provider::host::ProviderHost<Schema>,
     take: impl FnOnce() -> WorthQueryRecoveredProgramOutputSource,
 ) {
     let active = runtime
-        .runtime
-        .recovered_program_source_delivery
+        .recovered_program_source_delivery()
         .active
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);

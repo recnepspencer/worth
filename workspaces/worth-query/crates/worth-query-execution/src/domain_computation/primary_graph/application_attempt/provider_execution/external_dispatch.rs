@@ -10,6 +10,7 @@
 
 #![deny(private_interfaces)]
 
+use crate::domain_computation::primary_graph::provider::ProviderCommittedDispatchOutboxScopedOps;
 use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 
 pub(crate) mod denial;

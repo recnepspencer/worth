@@ -1,0 +1,99 @@
+{
+ "module": "domain_computation::primary_graph::provider",
+ "blocks": 5,
+ "methods": 12,
+ "traits": [
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/committed_dispatch_outbox.rs",
+   "trait": "CommittedDispatchOutboxScopedOps",
+   "visibility": "pub(in crate::domain_computation)",
+   "methods": [
+    "observe_committed_dispatch_outbox_for_correlation"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/committed_dispatch_outbox.rs",
+   "trait": "CommittedDispatchOutboxOps",
+   "visibility": "pub",
+   "methods": [
+    "observe_committed_dispatch_outbox"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/committed_dispatch_outbox.rs",
+   "trait": "ProviderCommittedDispatchOutboxScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph)",
+   "methods": [
+    "observe_committed_dispatch_outbox_with_request"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/history_retirement.rs",
+   "trait": "HistoryRetirementOps",
+   "visibility": "pub",
+   "methods": [
+    "history_retained_for_test",
+    "completed_evidence_retained_for_test"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/managed_application_recovery.rs",
+   "trait": "ManagedApplicationRecoveryOps",
+   "visibility": "pub",
+   "methods": [
+    "recover_admitted_unpublished_application",
+    "recover_admitted_unpublished_application_in_advancement",
+    "recover_admitted_unpublished_program_source",
+    "recover_admitted_unpublished_source_operation"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/managed_application_recovery.rs",
+   "trait": "ManagedApplicationRecoveryOwnOps",
+   "visibility": "private",
+   "methods": [
+    "recover_admitted_unpublished_application_delivery"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/managed_application_recovery/producer.rs",
+   "trait": "ProducerScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph)",
+   "methods": [
+    "recover_original_producer_publication"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/recovered_program_source_delivery.rs",
+   "trait": "RecoveredProgramSourceDeliveryOps",
+   "visibility": "pub",
+   "methods": [
+    "consume_next_recovered_program_source_delivery_for_test"
+   ]
+  }
+ ],
+ "facades": 3,
+ "host": {
+  "core_fields": [
+   "installed_operations",
+   "primary_provider",
+   "product_runtime",
+   "recovered_program_source_delivery"
+  ],
+  "top_fields": [
+   "installed_schema"
+  ],
+  "core_methods": [
+   "authority_identity"
+  ],
+  "foreign": [
+   "release_product_publication_recovery_in_advancement",
+   "resolve_admitted_application_idempotency",
+   "with_application_advancement"
+  ],
+  "hand": [
+   "facade arguments of recover_admitted_unpublished_program_source",
+   "facade arguments of recover_admitted_unpublished_source_operation"
+  ]
+ }
+}

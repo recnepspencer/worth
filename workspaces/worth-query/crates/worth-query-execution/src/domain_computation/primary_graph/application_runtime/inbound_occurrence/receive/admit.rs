@@ -6,6 +6,7 @@ use super::phases::{
 };
 use super::WorthQueryInboundPermanentDenialKind as Permanent;
 use super::*;
+use crate::domain_computation::primary_graph::provider::CommittedDispatchOutboxScopedOps;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where

@@ -259,43 +259,79 @@ fn map_retained_snapshot_denial(
     }
 }
 
-impl<Schema> super::super::WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub(in crate::domain_computation) trait CommittedDispatchOutboxScopedOps<Schema>:
+    crate::domain_computation::primary_graph::provider::host::ProviderHost<Schema>
 where
     Schema: worth_query_installation::facade::ApplicationSchema,
 {
-    /// Uses the correlation only to select a candidate. The provider then
-    /// re-reads that candidate from the exact retained Relational commit.
-    pub(in crate::domain_computation) fn observe_committed_dispatch_outbox_for_correlation(
+    fn observe_committed_dispatch_outbox_for_correlation(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         correlation: &crate::domain_computation::application_aftermath::ExternalEffectCorrelationIdentity,
     ) -> Result<WorthQueryCommittedDispatchOutboxObservation, Denial> {
-        self.runtime
-            .primary_provider
+        self.primary_provider()
             .committed_dispatch_outbox_for_correlation(execution, correlation)
     }
+}
 
-    /// Reads this receipt's outbox from a fresh provider-owned Relational view.
-    pub fn observe_committed_dispatch_outbox(
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::primary_graph::provider::host::ProviderHost<Schema> + ?Sized,
+    > CommittedDispatchOutboxScopedOps<Schema> for HostRuntime
+where
+    Schema: worth_query_installation::facade::ApplicationSchema,
+{
+}
+
+pub trait CommittedDispatchOutboxOps<Schema>:
+    crate::domain_computation::primary_graph::provider::host::ProviderHost<Schema>
+where
+    Schema: worth_query_installation::facade::ApplicationSchema,
+{
+    fn observe_committed_dispatch_outbox(
         &self,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         receipt: &WorthQueryApplicationCommitReceipt,
     ) -> Result<Option<WorthQueryCommittedDispatchOutboxObservation>, Denial> {
         let phase_request = phase
-            .execution_request_for(&self.runtime.product_runtime)
+            .execution_request_for(self.product_runtime())
             .map_err(|_| Denial::ForeignPhase)?;
         self.observe_committed_dispatch_outbox_with_request(&phase_request, receipt)
     }
+}
 
-    pub(in crate::domain_computation::primary_graph) fn observe_committed_dispatch_outbox_with_request(
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::primary_graph::provider::host::ProviderHost<Schema> + ?Sized,
+    > CommittedDispatchOutboxOps<Schema> for HostRuntime
+where
+    Schema: worth_query_installation::facade::ApplicationSchema,
+{
+}
+
+pub(in crate::domain_computation::primary_graph) trait ProviderCommittedDispatchOutboxScopedOps<
+    Schema,
+>:
+    crate::domain_computation::primary_graph::provider::host::ProviderHost<Schema> where
+    Schema: worth_query_installation::facade::ApplicationSchema,
+{
+    fn observe_committed_dispatch_outbox_with_request(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         receipt: &WorthQueryApplicationCommitReceipt,
     ) -> Result<Option<WorthQueryCommittedDispatchOutboxObservation>, Denial> {
-        self.runtime
-            .primary_provider
+        self.primary_provider()
             .committed_dispatch_outbox(execution, receipt)
     }
+}
+
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::primary_graph::provider::host::ProviderHost<Schema> + ?Sized,
+    > ProviderCommittedDispatchOutboxScopedOps<Schema> for HostRuntime
+where
+    Schema: worth_query_installation::facade::ApplicationSchema,
+{
 }
 
 mod record_read;

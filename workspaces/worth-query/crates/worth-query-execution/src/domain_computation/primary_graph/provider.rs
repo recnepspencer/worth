@@ -315,3 +315,11 @@ pub use managed_cleanup_control::WorthQueryManagedCleanupRegistrationDenial;
 pub use managed_cleanup_control::WorthQueryManagedCleanupScheduleForTest;
 
 mod court_doors_for_test;
+pub use committed_dispatch_outbox::CommittedDispatchOutboxOps;
+pub(in crate::domain_computation) use committed_dispatch_outbox::CommittedDispatchOutboxScopedOps;
+pub(in crate::domain_computation::primary_graph) use committed_dispatch_outbox::ProviderCommittedDispatchOutboxScopedOps;
+pub use history_retirement::HistoryRetirementOps;
+pub use managed_application_recovery::ManagedApplicationRecoveryOps;
+pub(in crate::domain_computation::primary_graph) use managed_application_recovery::ProducerScopedOps;
+pub use recovered_program_source_delivery::RecoveredProgramSourceDeliveryOps;
+pub(crate) mod host;

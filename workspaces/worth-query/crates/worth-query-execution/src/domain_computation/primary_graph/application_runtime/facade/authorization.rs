@@ -1,7 +1,7 @@
 //! The runtime's consumer methods over `domain_computation::authorization`; each only calls its subsystem.
-use crate::facade::primary_graph::WorthQueryElevationApprovalAuthorizationDenial;
-use crate::facade::primary_graph::WorthQueryElevationCloseAuthorizationDenial;
-use crate::facade::primary_graph::WorthQueryMandatoryReviewAuthorizationDenial;
+use crate::domain_computation::primary_graph::WorthQueryElevationApprovalAuthorizationDenial;
+use crate::domain_computation::primary_graph::WorthQueryElevationCloseAuthorizationDenial;
+use crate::domain_computation::primary_graph::WorthQueryMandatoryReviewAuthorizationDenial;
 use worth_query_installation::facade::ApplicationSchema;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial;

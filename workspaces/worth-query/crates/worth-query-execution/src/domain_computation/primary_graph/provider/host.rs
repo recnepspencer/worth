@@ -1,0 +1,19 @@
+//! What `provider` needs from the runtime that composes it.
+
+/// The runtime's identity plus what `provider` reads or calls above itself.
+pub trait ProviderHost<Schema>:
+    crate::domain_computation::primary_graph::runtime_host::WorthQueryRuntimeIdentityHost<Schema>
+{
+    /// This host as the trait object `provider` is handed.
+    fn provider_host(&self) -> &dyn ProviderHost<Schema>;
+    fn primary_provider(
+        &self,
+    ) -> &std::sync::Arc<
+        crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider,
+    >;
+    fn installed_operations(
+        &self,
+    ) -> &std::sync::Arc<worth_query_installation::facade::InstalledOperationCatalog>;
+    fn bridge(&self) -> &crate::domain_computation::primary_graph::managed_bridge::WorthQueryInstalledApplicationBridge;
+    fn recovered_program_source_delivery(&self) -> &crate::domain_computation::primary_graph::provider::recovered_program_source_delivery::RecoveredProgramSourceDeliveryRegistration;
+}

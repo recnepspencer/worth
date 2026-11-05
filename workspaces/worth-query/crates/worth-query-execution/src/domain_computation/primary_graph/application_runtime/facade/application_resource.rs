@@ -3,7 +3,6 @@ use crate::domain_computation::authorization::application_disclosure::prepare_pe
 use crate::domain_computation::authorization::application_disclosure::WorthQueryPendingApplicationQueryGovernance;
 use crate::domain_computation::authorization::WorthQueryAdmittedApplicationCapabilityAccess;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
-use crate::facade::primary_graph::WorthQueryApplicationResourcesRequest;
 use std::sync::Arc;
 use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
@@ -20,7 +19,7 @@ impl<Schema: ApplicationSchema> super::super::WorthQueryPrimaryGraphApplicationR
         external: &'p WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &'r WorthQueryRequestScope,
         branch: crate::basis::WorthQueryProductBranch,
-    ) -> WorthQueryApplicationResourcesRequest<'a, 'p, 'r, Schema> {
+    ) -> crate::domain_computation::primary_graph::application_resource::WorthQueryApplicationResourcesRequest<'a, 'p, 'r, Schema>{
         <Self as crate::domain_computation::primary_graph::application_resource::RequestOps<
             Schema,
         >>::application_resources(self, external, request, branch)

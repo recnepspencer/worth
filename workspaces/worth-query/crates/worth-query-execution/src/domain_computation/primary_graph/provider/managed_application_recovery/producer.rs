@@ -2,12 +2,10 @@
 use super::*;
 use crate::domain_computation::primary_graph::application_installation::WorthQueryRecoveredProgramOutputSource;
 
-impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
-    pub(in crate::domain_computation::primary_graph) fn recover_original_producer_publication<
-        Operation,
-        Input,
-        Scope,
-    >(
+pub(in crate::domain_computation::primary_graph) trait ProducerScopedOps<S: ApplicationSchema>:
+    crate::domain_computation::primary_graph::provider::host::ProviderHost<S>
+{
+    fn recover_original_producer_publication<Operation, Input, Scope>(
         &self,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         recovery: &WorthQueryProductUnpublishedRecovery,
@@ -36,4 +34,11 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             RecoveredPublicationDelivery::ProgramSource,
         )
     }
+}
+
+impl<
+        S: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::provider::host::ProviderHost<S> + ?Sized,
+    > ProducerScopedOps<S> for HostRuntime
+{
 }

@@ -1,9 +1,9 @@
 //! The runtime's consumer methods over `domain_computation::primary_graph::application_checkpoint`; each only calls its subsystem.
-use crate::facade::application_installation::WorthQueryApplicationCheckpoint;
-use crate::facade::application_installation::WorthQueryApplicationCheckpointSectionBytes;
-use crate::facade::application_installation::WorthQueryCheckpointCaptureDenial;
-use crate::facade::primary_graph::WorthQueryApplicationCheckpointInspection;
-use crate::facade::primary_graph::WorthQueryCheckpointInspectionDenial;
+use crate::domain_computation::primary_graph::WorthQueryApplicationCheckpoint;
+use crate::domain_computation::primary_graph::WorthQueryApplicationCheckpointInspection;
+use crate::domain_computation::primary_graph::WorthQueryApplicationCheckpointSectionBytes;
+use crate::domain_computation::primary_graph::WorthQueryCheckpointCaptureDenial;
+use crate::domain_computation::primary_graph::WorthQueryCheckpointInspectionDenial;
 use worth_query_installation::facade::ApplicationSchema;
 
 impl<Schema: ApplicationSchema> super::super::WorthQueryPrimaryGraphApplicationRuntime<Schema> {

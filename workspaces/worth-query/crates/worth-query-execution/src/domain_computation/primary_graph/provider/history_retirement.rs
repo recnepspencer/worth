@@ -60,18 +60,15 @@ impl WorthQueryPrimaryGraphProvider {
     }
 }
 
-impl<Schema>
-    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub trait HistoryRetirementOps<Schema>:
+    crate::domain_computation::primary_graph::provider::host::ProviderHost<Schema>
 {
-    /// What this product's history retains now: installed World commits,
-    /// World history metadata bytes, unique World component pins and
-    /// Relational retired branch roots awaiting reclamation.
     #[doc(hidden)]
-    pub fn history_retained_for_test(
+    fn history_retained_for_test(
         &self,
         request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> (usize, usize, usize, usize) {
-        let world = self.runtime.product_runtime.owner.inspection_port();
+        let world = self.product_runtime().owner.inspection_port();
         let history = world
             .history_snapshot()
             .expect("an installed product World is available");
@@ -82,18 +79,22 @@ impl<Schema>
             history.installed_commits(),
             history.metadata().total_occupancy(),
             retention.unique_pins(),
-            self.runtime
-                .primary_provider
-                .graph
+            self.provider_graph()
                 .with_runtime(request_execution, |runtime| {
                     runtime.retired_branch_root_count()
                 }),
         )
     }
 
-    /// Exact completed idempotency evidence entries retained by this owner.
     #[doc(hidden)]
-    pub fn completed_evidence_retained_for_test(&self) -> usize {
-        self.runtime.primary_provider.completed_evidence_retained()
+    fn completed_evidence_retained_for_test(&self) -> usize {
+        self.primary_provider().completed_evidence_retained()
     }
+}
+
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::primary_graph::provider::host::ProviderHost<Schema> + ?Sized,
+    > HistoryRetirementOps<Schema> for HostRuntime
+{
 }

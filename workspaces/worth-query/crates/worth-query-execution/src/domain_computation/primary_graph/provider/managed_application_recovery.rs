@@ -75,13 +75,12 @@ impl From<ManagedUnpublishedRecoveryStop> for WorthQueryManagedApplicationRecove
     }
 }
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub trait ManagedApplicationRecoveryOps<Schema>:
+    crate::domain_computation::primary_graph::provider::host::ProviderHost<Schema>
 where
     Schema: ApplicationSchema,
 {
-    /// Continues the exact retained application partial with a fresh
-    /// admitted operation. It never reruns the Relational candidate or handler.
-    pub fn recover_admitted_unpublished_application<Operation, Input, Scope>(
+    fn recover_admitted_unpublished_application<Operation, Input, Scope>(
         &self,
         recovery: &WorthQueryProductUnpublishedRecovery,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
@@ -94,28 +93,28 @@ where
         Input: Clone + Send + Sync + 'static,
     {
         if !admission.belongs_to(
-            self.runtime.authority_identity(),
-            &self.installed_schema.binding_identity(),
+            self.authority_identity(),
+            &self.installed_schema().binding_identity(),
         ) {
             return Err(WorthQueryManagedApplicationRecoveryDenial::ForeignAdmission);
         }
         admission
-            .validate_installed_operation(&self.runtime.installed_operations)
+            .validate_installed_operation(self.installed_operations())
             .and_then(|()| admission.validate_current_authority())
             .map_err(WorthQueryManagedApplicationRecoveryDenial::Authorization)?;
-        self.with_application_advancement(admission.publication_request(), |phase| {
-            self.recover_admitted_unpublished_application_in_advancement(
-                &phase,
-                recovery,
-                admission,
-                idempotency,
-            )
-        })
-        .map_err(WorthQueryManagedApplicationRecoveryDenial::ExecutionDenied)?
+        self.application_runtime()
+            .with_application_advancement(admission.publication_request(), |phase| {
+                self.recover_admitted_unpublished_application_in_advancement(
+                    &phase,
+                    recovery,
+                    admission,
+                    idempotency,
+                )
+            })
+            .map_err(WorthQueryManagedApplicationRecoveryDenial::ExecutionDenied)?
     }
 
-    /// Continues recovery inside the Publication call that already admitted its readers.
-    pub fn recover_admitted_unpublished_application_in_advancement<Operation, Input, Scope>(
+    fn recover_admitted_unpublished_application_in_advancement<Operation, Input, Scope>(
         &self,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         recovery: &WorthQueryProductUnpublishedRecovery,
@@ -138,9 +137,7 @@ where
         .map(|(outcome, _)| outcome)
     }
 
-    /// Retains the original performed output carrier before optional Query
-    /// projection. Only the program-source owner uses this handoff.
-    pub fn recover_admitted_unpublished_program_source<Operation, Input, Scope>(
+fn recover_admitted_unpublished_program_source<Operation, Input, Scope>(
         &self,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
@@ -159,8 +156,7 @@ where
         )
     }
 
-    /// Owning no-output recovery retains cleanup without constructing an output carrier.
-    pub fn recover_admitted_unpublished_source_operation<Operation, Input, Scope>(
+    fn recover_admitted_unpublished_source_operation<Operation, Input, Scope>(
         &self,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
@@ -183,7 +179,22 @@ where
         )
         .map(|(outcome, _)| outcome)
     }
+}
 
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::primary_graph::provider::host::ProviderHost<Schema> + ?Sized,
+    > ManagedApplicationRecoveryOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
+}
+
+trait ManagedApplicationRecoveryOwnOps<Schema>:
+    crate::domain_computation::primary_graph::provider::host::ProviderHost<Schema>
+where
+    Schema: ApplicationSchema,
+{
     fn recover_admitted_unpublished_application_delivery<Operation, Input, Scope>(
         &self,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
@@ -196,17 +207,17 @@ where
 {
         use WorthQueryManagedApplicationRecoveryDenial as Denial;
         let request = phase
-            .execution_request_for(&self.runtime.product_runtime)
+            .execution_request_for(self.product_runtime())
             .map_err(|cause| Denial::ExecutionDenied(cause.into()))?;
         {
             if !admission.belongs_to(
-                self.runtime.authority_identity(),
-                &self.installed_schema.binding_identity(),
+                self.authority_identity(),
+                &self.installed_schema().binding_identity(),
             ) {
                 return Err(Denial::ForeignAdmission);
             }
             admission
-                .validate_installed_operation(&self.runtime.installed_operations)
+                .validate_installed_operation(self.installed_operations())
                 .and_then(|()| admission.validate_current_authority())
                 .map_err(Denial::Authorization)?;
             let product = admission
@@ -220,16 +231,14 @@ where
                 .bind_preconditions(admission.mutation_preconditions().identity())
                 .bind_governed_input(admission.governed_input_identity())
                 .bind_governed_proposal(admission.governed_proposal_identity());
-            let command_lane = self.runtime.primary_provider.correction_commit_lane(&bound);
+            let command_lane = self.primary_provider().correction_commit_lane(&bound);
             let command_coordination = command_lane.as_ref().map(|lane| lane.enter());
             let lane = self
-                .runtime
-                .primary_provider
+                .primary_provider()
                 .application_branch_commit_lane(product.observation());
             let coordination = lane.enter();
             let mut guard = self
-                .runtime
-                .primary_provider
+                .primary_provider()
                 .begin_managed_unpublished_recovery(recovery.record_handle(), product.recovery())
                 .map_err(Denial::from)?;
             // The handler already supplied this component to the retained attempt.
@@ -263,8 +272,7 @@ where
             }
             let unpublished = recovery.inspect().map_err(Denial::World)?;
             let lease = self
-                .runtime
-                .product_runtime
+                .product_runtime()
                 .admit_product_occurrence(product.observation().lifecycle_incarnation())
                 .map_err(|_| Denial::ProductUnavailable)?;
             let binding = lease.publication_binding();
@@ -272,7 +280,7 @@ where
                 return Err(Denial::BindingMismatch);
             }
             let outcome = publication::publish(
-                self,
+                self.provider_host(),
                 request,
                 admission.publication_request(),
                 &binding,
@@ -296,7 +304,7 @@ Err(PublicationDenial::Stopped(stop)) => {
                     let next = effects.into_recovery();
                     guard.retain_successor(next.record_handle());
                     let prior_cleanup_failure = self
-                        .release_product_publication_recovery_in_advancement(
+                        .application_runtime().release_product_publication_recovery_in_advancement(
                             phase,
                             recovery.clone(),
                             0,
@@ -319,18 +327,18 @@ Err(PublicationDenial::Stopped(stop)) => {
                         | RecoveredPublicationDelivery::OwningSource => None,
                         RecoveredPublicationDelivery::ProgramSource => {
                             super::recovered_program_source_delivery::consume_first_if_armed(
-                                self,
+                                self.provider_host(),
                                 || session.take_recovered_output_source(),
                             );
                             Some(session.take_recovered_output_source())
                         }
                     };
                     let publication_failure =
-                        publish_recovered(&request, &self.runtime.primary_provider, session).err();
+                        publish_recovered(&request, self.primary_provider(), session).err();
                     guard.finish();
                     let (prior_cleanup_failure, pending_cleanup) = match delivery {
                         RecoveredPublicationDelivery::Ordinary => (
-                            self.release_product_publication_recovery_in_advancement(
+                            self.application_runtime().release_product_publication_recovery_in_advancement(
                                 phase,
                                 recovery.clone(),
                                 0,
@@ -346,7 +354,7 @@ Err(PublicationDenial::Stopped(stop)) => {
                     drop(coordination);
                     // The installed pending/completed handoff now owns visibility.
                     drop(command_coordination);
-                    let read = self.resolve_admitted_application_idempotency(
+                    let read = self.application_runtime().resolve_admitted_application_idempotency(
                         phase,
                         admission,
                         idempotency,
@@ -368,3 +376,13 @@ Err(PublicationDenial::Stopped(stop)) => {
         }
     }
 }
+
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::primary_graph::provider::host::ProviderHost<Schema> + ?Sized,
+    > ManagedApplicationRecoveryOwnOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
+}
+pub(in crate::domain_computation::primary_graph) use producer::ProducerScopedOps;

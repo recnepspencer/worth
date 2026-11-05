@@ -1,10 +1,10 @@
 //! The runtime's consumer methods over `domain_computation::primary_graph::operation_body`; each only calls its subsystem.
 use crate::domain_computation::primary_graph::operation_body::WorthQueryOperationBodyRequirementFinding;
-use crate::facade::application_contribution::WorthQueryAdvancementPhase;
-use crate::facade::primary_graph::WorthQueryAdmittedApplicationOperation;
-use crate::facade::primary_graph::WorthQueryApplicationInvariantProjectionAuthority;
-use crate::facade::primary_graph::WorthQueryCurrentBodyRequirementAssessment;
-use crate::facade::primary_graph::WorthQueryOperationBodyAssessmentDenial;
+use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation;
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use crate::domain_computation::primary_graph::WorthQueryApplicationInvariantProjectionAuthority;
+use crate::domain_computation::primary_graph::WorthQueryCurrentBodyRequirementAssessment;
+use crate::domain_computation::primary_graph::WorthQueryOperationBodyAssessmentDenial;
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
 use worth_query_declaration::facade::application_operation::ApplicationMutationScopeBinding;
 use worth_query_installation::facade::ApplicationSchema;

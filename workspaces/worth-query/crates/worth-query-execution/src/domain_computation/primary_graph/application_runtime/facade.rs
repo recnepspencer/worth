@@ -6,3 +6,4 @@ mod application_resource;
 mod authorization;
 mod conditional_operation;
 mod operation_body;
+mod provider;
