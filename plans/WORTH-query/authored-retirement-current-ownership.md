@@ -307,3 +307,40 @@ its required-frame assertion still names CHK15. Update only that expectation to
 CHK18, the batch's recorded current format. Keep the authentic predecessor
 fixture bytes and Query-only reheader tamper unchanged. Court the exact denial
 and no-effect checks, then repeat the selected gate on this final test tree.
+
+## D1169 Native registration and complete-suite comparison
+
+Boundary review: current ownership is mandatory state for opted-in publications
+(D1124/D1137), not optional history-derived custody. The public schema registrar
+is already the same path used by Query installation. Native's authority declares
+which producers opt in, but route-absence and publication binding do not yet
+require the registered storage; the canonical writer catches omission too late.
+Make storage presence part of those Native admission/readmission doors, with the
+existing typed CurrentOwnershipStorageMissing refusal and actual source subject.
+Keep the canonical writer's defensive check using the same requirement owner.
+No historical current-fact walk or second closure owner is introduced.
+
+Use the public registrar in the Native authored-retirement fixtures, including
+cold restoration. Keep their existing atomicity, exact live membership, true
+corruption subject and live-child refusal assertions. Add real Native negative
+admission courts without registration; ordinary independent publication remains
+eligible without it. Replace the carried-export supported-version literal with
+RelationalCanonicalCommitArtifact::FORMAT_VERSION and keep found/repeated-call
+assertions. Run complete Native certification and then all tests in both public
+workspaces on this branch and pristine master. Prebuild failures from #62 may
+exclude only the named court and World's lib tests; retain World's doctests.
+Compare every failed test by name and cause, fix every batch-only failure, and
+leave the two historical-kind master failures untouched. Finish full Native,
+three Query targets, the requested gate suites, format/caps/boundary/context and
+focused Clippy. All builds use UUID identities and the lane's own target.
+
+The registered Native courts also reach cold authored restoration and foreign
+roster classification previously hidden by missing storage. Preserve specific
+foreign-member refusals using one-hop current member claims; independent
+producer birth provenance is a direct historical lookup, never a current-owned
+fallback or another closure. A fully retired route legitimately has no live
+custody row: missing-current/history contradiction applies to live owned
+publication postures, while historical AuthoredRetirement/ProducerRetirement
+remains inverse provenance. Court both with existing exact refusal and cold
+restoration assertions. Application-change counts exclude only the additional
+registrar's kinds; retain exact three application edits and restored names.

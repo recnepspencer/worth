@@ -235,6 +235,9 @@ impl RelationalRuntime {
         basis: &AdmittedRelationalBranchBasis,
         origin: &Arc<crate::history::data::CanonicalRequiredOutputOrigin>,
     ) -> Result<RelationalRequiredOutputPublication, TransactionCommitError> {
+        if origin.source_scope_owned {
+            installed.require_current_ownership_storage(basis, origin.meaning.source_scope)?;
+        }
         if origin.source_scope_owned
             && origin
                 .members

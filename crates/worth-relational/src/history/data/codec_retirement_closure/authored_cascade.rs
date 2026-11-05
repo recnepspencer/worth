@@ -1,4 +1,5 @@
 //! Catalog-bounded closure from installed source ownership, never submitted reachability.
+mod foreign_member;
 mod roster;
 use super::{charge, CodecRetirementClosureStop as Stop};
 use crate::storage::overlay::PartitionAccess;
@@ -141,7 +142,7 @@ pub(crate) fn select_authored_source_retirement(
                         birth, co_anchors: births, retirements: selected, coupled_owners, current: latest,
                     });
                 }
-                require_roster(anchor, &anchors, roles, &selected, &latest, context)?;
+                require_roster(execution, runtime, basis, anchor, &anchors, roles, &selected, &latest, context)?;
                 // Cover the exact fixed-width legality-seal comparisons performed by proof admission.
                 charge(context, selected.len().saturating_mul(selected.len() + 1))
                     .map_err(stopped)?;

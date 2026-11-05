@@ -37,7 +37,7 @@ fn historical_kind_reconstruction_preserves_literal_original_stops_and_releases_
     };
     // SDK totals are independent of Native's proposal work account. These are
     // frozen invoices for this real two-record/one-relation transaction.
-    for ceiling in [944, 1024] {
+    for ceiling in [943, 1024] {
         let world = seeded();
         let request = request(ceiling);
         let execution = ExecutionRequest::serial(&request);
@@ -51,11 +51,11 @@ fn historical_kind_reconstruction_preserves_literal_original_stops_and_releases_
                 world.commit(&execution, world.relation_intent(0, 1, 7, "edge"))
             })
             .unwrap();
-        if ceiling == 944 {
+        if ceiling == 943 {
             assert!(
                 matches!(result, Err(TransactionCommitError::Execution { denial, .. })
                 if denial.kind == CommitExecutionDenialKind::Cause(RelationalExecutionDenialCause::WorkExhausted)),
-                "944 original Work must refuse: {result:?}"
+                "943 original Work must refuse: {result:?}"
             );
             assert_eq!(
                 world
@@ -68,8 +68,8 @@ fn historical_kind_reconstruction_preserves_literal_original_stops_and_releases_
             assert_eq!(request.memory().unwrap().charged_memory_bytes(), 0);
         } else {
             let committed = result.unwrap();
-            assert_eq!(report.charged_work(), 945);
-            assert_eq!(request.memory().unwrap().charged_memory_bytes(), 11_728);
+            assert_eq!(report.charged_work(), 944);
+            assert_eq!(request.memory().unwrap().charged_memory_bytes(), 11_696);
             world.release(&committed);
         }
     }

@@ -158,7 +158,7 @@ fn content_carried_export_preserves_version_and_size_refusals_across_repeated_ca
                     frame,
                     RelationalCanonicalCommitArtifactFrameRefusal::UnsupportedVersion {
                         found: 2,
-                        supported: 5
+                        supported: RelationalCanonicalCommitArtifact::FORMAT_VERSION
                     }
                 ),
                 2 => assert_eq!(

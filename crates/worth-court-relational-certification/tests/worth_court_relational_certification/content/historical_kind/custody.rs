@@ -71,7 +71,7 @@ fn original_kind_custody_survives_successor_basis_checkpoint_tail_and_reopen() {
         (checkpoint, source, tail, basis)
     };
     let held = original.memory().unwrap().charged_memory_bytes();
-    assert_eq!(held, 8_608);
+    assert_eq!(held, 8_576);
     let reopened = checkpoint::reopen(&seed_execution, &checkpoint, tail, source);
     assert_eq!(original.memory().unwrap().charged_memory_bytes(), held);
     let read_snapshot = snapshot(&reopened);

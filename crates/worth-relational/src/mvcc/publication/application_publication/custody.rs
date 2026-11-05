@@ -155,6 +155,13 @@ impl crate::runtime::RelationalRuntime {
             .source_scope_ownership
             .scope_kind(producer)
             .is_some()
+        {
+            installed.require_current_ownership_storage(basis, meaning.source_scope)?;
+        }
+        if installed
+            .source_scope_ownership
+            .scope_kind(producer)
+            .is_some()
             && roles
                 .iter()
                 .any(|role| role.posture != super::RequiredOutputRolePosture::Retire)
@@ -177,6 +184,9 @@ impl crate::runtime::RelationalRuntime {
             origin,
             ordinal,
         } = selected;
+        if origin.source_scope_owned {
+            installed.require_current_ownership_storage(basis, origin.meaning.source_scope)?;
+        }
         if crate::history::data::readmit_required_output_route(execution, self, basis, meaning)
             .map_err(cold_stop)?
             != Some(

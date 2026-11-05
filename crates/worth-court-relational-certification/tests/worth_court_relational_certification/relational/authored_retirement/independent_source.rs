@@ -33,10 +33,7 @@ fn independent_parent_cannot_retire_or_replace_the_source_of_a_live_owned_child(
         None,
     );
     let execution = &ExecutionRequest::serial(&request);
-    let mut runtime = AspectSchemaFixture::with_default_declared_aspects(
-        worth_relational::facade::config::CascadeDeletePolicy::RetainDanglingForAudit,
-    )
-    .build_runtime();
+    let mut runtime = registration::runtime();
     let receipt = runtime
         .prepare_initial_schema_installation()
         .unwrap()

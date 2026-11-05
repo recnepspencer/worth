@@ -2,7 +2,11 @@
 use super::*;
 use std::sync::Arc;
 
+#[allow(clippy::too_many_arguments)]
 pub(super) fn require_roster(
+    execution: &ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    basis: &AdmittedRelationalBranchBasis,
     anchor: EntityId,
     anchors: &[EntityId],
     roles: &[RequiredOutputRoleTarget],
@@ -59,7 +63,8 @@ pub(super) fn require_roster(
                     ));
                 }
             }
-            return Err(reject(Cause::ExtraEntity, id));
+            let cause = super::foreign_member::classify(execution, runtime, basis, id, context)?;
+            return Err(reject(cause, id));
         }
     }
     for &anchor in anchors {

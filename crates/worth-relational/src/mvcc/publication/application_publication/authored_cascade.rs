@@ -62,6 +62,9 @@ impl RelationalRuntime {
         if installed.runtime_instance_id != self.runtime_instance_id() {
             return Err(origin_denial("foreign installed source-retirement owner"));
         }
+        if !installed.source_scope_ownership.is_empty() {
+            installed.require_current_ownership_storage(basis, anchor)?;
+        }
         // Selection and every cold predecessor readmission share one original request scope.
         execution
             .in_scope(|_| {

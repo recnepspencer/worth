@@ -103,6 +103,11 @@ impl crate::mvcc::ValidatedRelationalProposal {
                 "required-output publication has a foreign or repeated installed owner",
             ));
         }
+        if !installed.source_scope_ownership.is_empty()
+            && let Some(source) = publication.ownership_subject(installed)
+        {
+            installed.require_current_ownership_storage(self.validation_input.basis(), source)?;
+        }
         self.required_output_publication = Some(RequiredOutputPublicationAdmission {
             installed: installed.clone(),
             publication,

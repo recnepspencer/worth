@@ -17,10 +17,7 @@ pub(super) fn check(
         .durability_authority()
         .native_checkpoint(execution, execution.allocation_policy())
         .unwrap();
-    let mut reopened = AspectSchemaFixture::with_default_declared_aspects(
-        worth_relational::facade::config::CascadeDeletePolicy::RetainDanglingForAudit,
-    )
-    .build_runtime();
+    let mut reopened = registration::runtime();
     let receipt = reopened
         .prepare_initial_schema_installation()
         .unwrap()
@@ -85,14 +82,15 @@ pub(super) fn check(
             restoration: plan,
         },
     );
+    let application =
+        super::application_delta::application_changes(execution, runtime, &basis, &restored);
     let fresh_source = restored.created_entity(&recreated[0]).unwrap();
     assert_ne!(
         fresh_source, source,
         "restoration never revives the original generation"
     );
     assert_eq!(
-        restored
-            .changed_records
+        application
             .iter()
             .filter(|record| matches!(record, RecordRef::Entity(_)))
             .count(),
@@ -125,7 +123,7 @@ pub(super) fn check(
         .project_observation(&basis.observation())
         .unwrap();
     let mut names = std::collections::BTreeMap::new();
-    for record in &restored.changed_records {
+    for record in &application {
         if let RecordRef::Entity(id) = record {
             let name = view
                 .read_exact_entity_state(execution, *id, |_, state| {
@@ -152,7 +150,7 @@ pub(super) fn check(
     wanted.sort_unstable();
     assert_eq!(names.keys().map(String::as_str).collect::<Vec<_>>(), wanted);
     let mut edges = Vec::new();
-    for record in &restored.changed_records {
+    for record in &application {
         if let RecordRef::Relation(id) = record {
             let ends = view
                 .read_exact_relation_state(execution, *id, |metadata, state| {

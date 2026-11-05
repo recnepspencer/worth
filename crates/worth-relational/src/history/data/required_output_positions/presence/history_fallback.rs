@@ -42,7 +42,11 @@ pub(crate) fn require_current_owned_route(
                     (origin.meaning.family.len() + meaning.family.len() + 1) as u64,
                 )?;
                 if origin.meaning.same_route(meaning) {
-                    return Ok(origin.source_scope_owned);
+                    // A fully retired route has no live custody row. Historical
+                    // retirement remains the inverse's provenance, not live ownership.
+                    return Ok(origin.source_scope_owned && !matches!(origin.publication,
+                        crate::history::data::CanonicalOutputPublication::AuthoredRetirement { .. }
+                        | crate::history::data::CanonicalOutputPublication::ProducerRetirement { .. }));
                 }
             }
             Err(refuse(Cause::CorruptPublication))

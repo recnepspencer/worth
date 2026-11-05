@@ -2,6 +2,35 @@
 use super::*;
 use crate::transactions::data::RecordRef;
 impl RequiredOutputPublication {
+    /// The distinguished source for an admission failure, without walking a roster.
+    pub(crate) fn ownership_subject(
+        &self,
+        installed: &RelationalInstalledApplicationPublicationAuthority,
+    ) -> Option<crate::identity::data::EntityId> {
+        if let Some((producer, _)) = self.lineage_attribution()
+            && installed
+                .source_scope_ownership
+                .scope_kind(producer)
+                .is_none()
+        {
+            return None;
+        }
+        Some(match self {
+            Self::Birth { meaning, .. } | Self::Preserve { meaning, .. } => meaning.source_scope,
+            Self::AuthoredRetirement { predecessor, .. } => predecessor.origin.meaning.source_scope,
+            Self::AuthoredCascadeRetirement { predecessor, .. } => predecessor.anchor,
+            Self::AuthoredCascadeRestoration { restoration, .. } => {
+                restoration
+                    .publications
+                    .first()?
+                    .origin
+                    .meaning
+                    .source_scope
+            }
+            Self::CoupledAuthored { group } => group.binding.owners.anchor,
+        })
+    }
+
     pub(crate) fn ownership_seeds(&self, into: &mut Vec<RecordRef>) {
         match self {
             Self::Birth { meaning, .. } | Self::Preserve { meaning, .. } => {

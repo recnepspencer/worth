@@ -108,6 +108,13 @@ impl crate::runtime::RelationalRuntime {
                 "route absence requires the exact installed native basis",
             ));
         }
+        if installed
+            .source_scope_ownership
+            .scope_kind(&meaning.family)
+            .is_some()
+        {
+            installed.require_current_ownership_storage(basis, meaning.source_scope)?;
+        }
         let current = if installed.source_scope_ownership.is_empty()
             || basis
                 .inner
