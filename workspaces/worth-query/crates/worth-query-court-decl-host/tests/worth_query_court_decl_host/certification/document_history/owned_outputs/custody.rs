@@ -113,3 +113,91 @@ fn worker_only_owned_graph_undo_and_redo_restore_producer_custody_and_its_lineag
     let _observation = WorthQueryExecutionObservation::install_on_this_thread();
     undo_redo_then_settle(&world::install_worker_only());
 }
+
+/// Record an unrelated owned-member edit after undo, then revisit that new
+/// future. Its outputs still carry the original pre-undo producer observations.
+fn revisit_a_future_recorded_after_selection(host: &world::Host) {
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host.request(&principal, &scope);
+    let Edited {
+        document,
+        before,
+        selection,
+        outputs,
+        ..
+    } = edited(host, &request, false);
+    let undone = checkout(&document, &request, before, selection, 0x5356_0301).unwrap();
+    let branch = undone.physical_endpoint().product_branch();
+    let on_branch = host.request(&principal, &scope).on_branch(branch);
+    let contacts = host.producer_contacts_on_this_thread_for_test();
+    first::settle(host, &on_branch, "a");
+    second::settle(host, &on_branch, "a");
+    assert_eq!(host.producer_contacts_on_this_thread_for_test(), contacts);
+    let mut edit = document
+        .edit(member_edit::Intent {
+            key: "m".into(),
+            value: 6,
+        })
+        .idempotency_owned(&on_branch, "edit-member-after-undo".to_owned())
+        .unwrap()
+        .retain_in_program::<program::Program, program::MemberEditAction>(host)
+        .unwrap_or_else(|(_, cause)| panic!("{cause:?}"));
+    loop {
+        edit = match edit.advance(&on_branch) {
+            WorthQueryHistoryEditAdvance::Progress(next) => next,
+            WorthQueryHistoryEditAdvance::Ready(next) => {
+                edit = next;
+                break;
+            }
+            WorthQueryHistoryEditAdvance::Refused { denial, .. } => panic!("{denial:?}"),
+        };
+    }
+    let WorthQueryHistoryEditFinish { document, outcome } = edit
+        .finish(&on_branch)
+        .unwrap_or_else(|(_, cause)| panic!("{cause:?}"));
+    assert!(matches!(
+        outcome,
+        WorthQueryHistoryEditOutcome::Recorded { .. }
+    ));
+    drop(outcome);
+    let future = document.current_step(&request).unwrap().id();
+    let expected = document.selection(&request).unwrap();
+    let away = checkout(&document, &request, before, expected, 0x5356_0302).unwrap();
+    let returned = checkout(&document, &request, future, away, 0x5356_0303).unwrap();
+    let branch = returned.physical_endpoint().product_branch();
+    assert_eq!(world::model(host, branch).value, 1);
+    assert_eq!(world::outputs(host, branch), outputs);
+    let on_branch = host.request(&principal, &scope).on_branch(branch);
+    assert_eq!(
+        on_branch
+            .query(query::member::Read("m".into()))
+            .execute()
+            .unwrap()
+            .rows()[0]
+            .value,
+        6
+    );
+    first::settle(host, &on_branch, "a");
+    second::settle(host, &on_branch, "a");
+    assert_eq!(
+        host.producer_contacts_on_this_thread_for_test(),
+        contacts,
+        "a future recorded after undo keeps its original producer evidence"
+    );
+    assert_eq!(world::outputs(host, branch), outputs);
+    host.with_host_advancement(|phase| document.close(&phase).unwrap())
+        .unwrap();
+}
+
+#[test]
+fn a_future_recorded_after_undo_reuses_both_original_families() {
+    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
+    revisit_a_future_recorded_after_selection(&world::install());
+}
+
+#[test]
+fn worker_only_future_recorded_after_undo_reuses_both_original_families() {
+    let _observation = WorthQueryExecutionObservation::install_on_this_thread();
+    revisit_a_future_recorded_after_selection(&world::install_worker_only());
+}

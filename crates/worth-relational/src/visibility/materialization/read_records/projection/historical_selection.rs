@@ -9,6 +9,7 @@ use crate::{
 use std::sync::Arc;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 mod antecedent;
+mod chain;
 mod revisions;
 
 #[derive(Debug)]
@@ -25,6 +26,12 @@ pub enum RelationalHistoricalSelectionReadDenial {
 /// selection can compare their original revisions through this read evidence.
 /// There is no constructor from a descriptor, stamp, or caller member list.
 pub struct RelationalHistoricalSelectionRead {
+    stages: Vec<HistoricalSelectionStage>,
+    _memory: Option<ExecutionMemoryReservation>,
+}
+
+/// One independently authenticated committed selection in oldest-first order.
+struct HistoricalSelectionStage {
     selected: VisibilityProjectionView,
     restored: VisibilityProjectionView,
     envelope: Arc<CanonicalCommitEnvelope>,
@@ -108,26 +115,37 @@ impl VisibilityReadContext<'_> {
             )
         };
         Ok(RelationalHistoricalSelectionRead {
-            selected: project(selected),
-            restored: project(restored),
-            envelope,
-            _memory: memory,
+            stages: vec![HistoricalSelectionStage {
+                selected: project(selected),
+                restored: project(restored),
+                envelope,
+                _memory: memory,
+            }],
+            _memory: None,
         })
     }
 }
 
 impl RelationalHistoricalSelectionRead {
+    fn latest(&self) -> &HistoricalSelectionStage {
+        self.stages
+            .last()
+            .expect("read evidence has a committed selection")
+    }
+    pub fn model(&self) -> crate::identity::data::EntityId {
+        self.latest().graph().model()
+    }
+    pub fn selection_commit(&self) -> CommitId {
+        self.latest().envelope.commit.commit_id
+    }
+}
+
+impl HistoricalSelectionStage {
     fn graph(&self) -> &crate::history::data::CanonicalOwnedGraphSelection {
         match &self.envelope.authority_kind {
             CanonicalCommitAuthorityKind::OwnedGraphSelection(graph) => graph,
             _ => unreachable!("only the native graph-selection reader constructs this evidence"),
         }
-    }
-    pub fn model(&self) -> crate::identity::data::EntityId {
-        self.graph().model()
-    }
-    pub fn selection_commit(&self) -> CommitId {
-        self.envelope.commit.commit_id
     }
 }
 

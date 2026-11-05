@@ -16,6 +16,7 @@ mod courts;
 mod custody;
 mod edit;
 mod family;
+mod member_edit;
 mod navigation;
 mod program;
 mod query;

@@ -14,30 +14,42 @@ impl RelationalHistoricalSelectionRead {
     ) -> Result<bool, RelationalHistoricalSelectionReadDenial> {
         use RelationalHistoricalSelectionReadDenial as Denial;
         crate::execution::check_request(execution).map_err(Denial::Execution)?;
-        if runtime.runtime_instance_id() != self.restored.runtime_identity
-            || source.runtime_instance_id() != self.restored.runtime_identity
+        if runtime.runtime_instance_id() != self.latest().restored.runtime_identity
+            || source.runtime_instance_id() != self.latest().restored.runtime_identity
         {
             return Err(Denial::ForeignOwner);
         }
-        if source.version_id() > self.selected.version_id() {
+        if source.version_id() > self.latest().selected.version_id() {
             return Ok(false);
         }
         let Some(requested) = source.commit_id() else {
             return Ok(false);
         };
-        let Some(start) = self
-            .selected
-            .selected_root()
-            .and_then(|root| root.commit_id())
-        else {
-            return Ok(false);
-        };
         let bound = runtime.history.catalog_len();
         let mut visited = BTreeSet::new();
         let initial = execution
-            .reserve_retained_memory(512)
+            .reserve_retained_memory(
+                512u64.saturating_add((self.stages.len() as u64).saturating_mul(32)),
+            )
             .map_err(Denial::Request)?;
-        let mut pending = vec![start];
+        execution
+            .run_native_with_checkpoint(|context| checkpoint(context, self.stages.len() as u64))
+            .map_err(Denial::Request)?
+            .0
+            .map_err(|stop| Denial::Request(worth_execution::WorkCeilingDenial::Stopped(stop)))?;
+        // Each source coordinate is an independently authenticated selected
+        // basis. Their canonical parent union includes earlier selected futures
+        // even when a later selection's physical parent lies on another branch.
+        let mut pending = self
+            .stages
+            .iter()
+            .filter_map(|stage| {
+                stage
+                    .selected
+                    .selected_root()
+                    .and_then(|root| root.commit_id())
+            })
+            .collect::<Vec<_>>();
         let mut memory = vec![initial];
         while let Some(commit) = pending.pop() {
             execution

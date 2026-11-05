@@ -81,7 +81,9 @@ fn declare(
             SecondOutput::reference(),
             Model::reference(),
         );
-    let schema = query::declare(edit::declare(navigation::declare(schema)));
+    let schema = query::declare(member_edit::declare(edit::declare(navigation::declare(
+        schema,
+    ))));
     second::declare(first::declare(schema)).application_history(
         ApplicationHistoryDefinition::<Schema, History>::for_binding(
             ApplicationQueryDisclosureContract::public(),
@@ -89,6 +91,7 @@ fn declare(
         .model_domain(ApplicationHistoryModelDomain::OwnedModelGraph)
         .navigation::<navigation::Navigation>()
         .owns(ModelMember::reference())
-        .operation::<edit::Binding>("Edit model"),
+        .operation::<edit::Binding>("Edit model")
+        .owned_operation::<member_edit::Binding>("Edit member"),
     )
 }

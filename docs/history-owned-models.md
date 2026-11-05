@@ -109,3 +109,9 @@ can settle as `HistoricallySelected`, with no new producer receipt or execution.
 Serial and worker-only two-family courts exercise this reuse after undo.
 Automatic verification of every output tree during checkout, including fallback
 and final-endpoint qualification, remains under qualification.
+
+A new future recorded after undo preserves the same original producer evidence.
+Revisiting it composes the authentic Native selection stages; each needed
+restoration baseline must still match. An intervening authored edit or ABA
+cannot be erased by another selection. These comparisons charge their retained
+stage storage and traversal to the original request, including worker requests.

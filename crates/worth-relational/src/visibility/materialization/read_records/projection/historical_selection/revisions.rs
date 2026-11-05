@@ -5,7 +5,7 @@ use crate::identity::data::EntityId;
 use crate::storage::data::RelationalFieldRevision;
 use worth_foundational::facade::{AspectFieldLocator, AspectKey};
 
-impl RelationalHistoricalSelectionRead {
+impl HistoricalSelectionStage {
     fn member(
         &self,
         execution: &ExecutionRequest<'_, '_>,
@@ -67,10 +67,19 @@ impl RelationalHistoricalSelectionRead {
         .map_err(Denial::Execution)?
         .map_err(Denial::Execution)
     }
+}
 
-    /// A true result proves both the original selected field revision and that
-    /// this exact field has not changed since the committed restoration. An
-    /// unrelated field edit does not invalidate this proof. ABA still does.
+/// A matching revision ends the walk; only an authentic restoration baseline
+/// permits comparing the unchanged original observation at an earlier link.
+enum RevisionComparison {
+    Current,
+    Prior,
+    Changed,
+}
+
+impl RelationalHistoricalSelectionRead {
+    /// Match an immutable producer field observation through every restoration
+    /// it needs. A changed intermediate revision, including ABA, ends the proof.
     pub fn matches_field_revision(
         &self,
         execution: &ExecutionRequest<'_, '_>,
@@ -80,32 +89,44 @@ impl RelationalHistoricalSelectionRead {
         expected: RelationalFieldRevision,
     ) -> Result<bool, RelationalHistoricalSelectionReadDenial> {
         use RelationalHistoricalSelectionReadDenial as Denial;
-        if !self.member(execution, current, entity)? {
-            return Ok(false);
+        let mut current = current;
+        for stage in self.stages.iter().rev() {
+            if !stage.member(execution, current, entity)? {
+                return Ok(false);
+            }
+            let comparison = optional_stage(
+                execution,
+                |context, _| {
+                    let mut read = |view: &VisibilityProjectionView| {
+                        view.entity_field_revision_admitted(execution, entity, locator, |work| {
+                            checkpoint(context, work)
+                        })?
+                        .map_err(crate::execution::denial::kernel_stop)
+                    };
+                    let actual = read(current)?;
+                    if actual.is_none() || actual != read(&stage.restored)? {
+                        return Ok(RevisionComparison::Changed);
+                    }
+                    Ok(if read(&stage.selected)? == Some(expected) {
+                        RevisionComparison::Current
+                    } else {
+                        RevisionComparison::Prior
+                    })
+                },
+                |_| 0,
+            )
+            .map_err(Denial::Execution)?
+            .map_err(Denial::Execution)?;
+            match comparison {
+                RevisionComparison::Current => return Ok(true),
+                RevisionComparison::Changed => return Ok(false),
+                RevisionComparison::Prior => current = &stage.selected,
+            }
         }
-        optional_stage(
-            execution,
-            |context, _| {
-                let mut read = |view: &VisibilityProjectionView| {
-                    view.entity_field_revision_admitted(execution, entity, locator, |work| {
-                        checkpoint(context, work)
-                    })?
-                    .map_err(crate::execution::denial::kernel_stop)
-                };
-                let actual = read(current)?;
-                let baseline = read(&self.restored)?;
-                if actual.is_none() || actual != baseline {
-                    return Ok(false);
-                }
-                Ok(read(&self.selected)? == Some(expected))
-            },
-            |_| 0,
-        )
-        .map_err(Denial::Execution)?
-        .map_err(Denial::Execution)
+        Ok(false)
     }
 
-    /// Original output witness aspects use the same exact restoration boundary.
+    /// Output witnesses use the same prefix of authentic restoration links.
     pub fn matches_aspect_revision(
         &self,
         execution: &ExecutionRequest<'_, '_>,
@@ -115,28 +136,41 @@ impl RelationalHistoricalSelectionRead {
         expected: Option<u64>,
     ) -> Result<bool, RelationalHistoricalSelectionReadDenial> {
         use RelationalHistoricalSelectionReadDenial as Denial;
-        if !self.member(execution, current, entity)? {
-            return Ok(false);
+        let mut current = current;
+        for stage in self.stages.iter().rev() {
+            if !stage.member(execution, current, entity)? {
+                return Ok(false);
+            }
+            let comparison = optional_stage(
+                execution,
+                |context, _| {
+                    let mut read = |view: &VisibilityProjectionView| {
+                        checkpoint(context, 128u64.saturating_add(aspect.as_str().len() as u64))
+                            .map_err(|stop| {
+                                Denial::Execution(crate::execution::denial::kernel_stop(stop))
+                            })?;
+                        view.read_entity_aspect_version(execution, entity, aspect)
+                            .map_err(borrowed)
+                    };
+                    let actual = read(current)?;
+                    if actual.is_none() || actual != read(&stage.restored)? {
+                        return Ok(RevisionComparison::Changed);
+                    }
+                    Ok(if read(&stage.selected)? == Some(expected) {
+                        RevisionComparison::Current
+                    } else {
+                        RevisionComparison::Prior
+                    })
+                },
+                |_| 0,
+            )
+            .map_err(Denial::Execution)??;
+            match comparison {
+                RevisionComparison::Current => return Ok(true),
+                RevisionComparison::Changed => return Ok(false),
+                RevisionComparison::Prior => current = &stage.selected,
+            }
         }
-        optional_stage(
-            execution,
-            |context, _| {
-                let mut read = |view: &VisibilityProjectionView| {
-                    checkpoint(context, 128u64.saturating_add(aspect.as_str().len() as u64))
-                        .map_err(|stop| {
-                            Denial::Execution(crate::execution::denial::kernel_stop(stop))
-                        })?;
-                    view.read_entity_aspect_version(execution, entity, aspect)
-                        .map_err(borrowed)
-                };
-                let actual = read(current)?;
-                if actual.is_none() || actual != read(&self.restored)? {
-                    return Ok(false);
-                }
-                Ok(read(&self.selected)? == Some(expected))
-            },
-            |_| 0,
-        )
-        .map_err(Denial::Execution)?
+        Ok(false)
     }
 }

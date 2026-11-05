@@ -100,6 +100,17 @@ scalar_read!(
     "owned-outputs.model-input.v1"
 );
 scalar_read!(
+    member,
+    Member,
+    MemberFacts,
+    MemberKey,
+    MemberValue,
+    "Member",
+    "owned-outputs.member-read.v1",
+    "owned-outputs.member-binding.v1",
+    "owned-outputs.member-input.v1"
+);
+scalar_read!(
     first_output,
     FirstOutput,
     FirstFacts,
@@ -124,5 +135,7 @@ scalar_read!(
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-    second_output::declare(first_output::declare(model::declare(schema)))
+    second_output::declare(first_output::declare(member::declare(model::declare(
+        schema,
+    ))))
 }

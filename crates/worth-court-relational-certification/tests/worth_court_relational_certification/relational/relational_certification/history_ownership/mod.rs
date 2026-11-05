@@ -13,6 +13,7 @@ mod historical_absence;
 mod historical_artifact;
 mod historical_foreign;
 mod historical_publication;
+mod historical_read_chain;
 mod historical_read_evidence;
 mod historical_source_ancestry;
 mod historical_worker;

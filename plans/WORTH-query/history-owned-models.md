@@ -839,3 +839,49 @@ skipped verification. The restored suites pass 126 public history courts, 52
 Native ownership courts and 2260 Native library tests. This does not complete
 slice 3: automatic verification of every route at one endpoint, dependent-family
 and nested-selection courts, multi-tree recording and build-isolation remain.
+
+### D1202 selection continuity court (before slice 3)
+
+Boundary review: transport currently retains only the latest selected/restored
+Native pair. A selected step may itself contain an inherited historical row:
+an ordinary owned-member edit after undo need not invalidate model-sourced
+outputs. Revisiting that new step must still compare the original producer
+observations, not observations rewritten to the intermediate restoration stamps.
+The current fixture has only a model-value edit, so it cannot expose this leg.
+
+First add a concrete Member-scoped edit to the existing generic fixture and
+court undo, edit that unrelated owned member, navigate away and return, then
+demand both original output families with zero contacts. Run it before changing
+production. If it exposes the lost evidence chain, retain the authentic prior
+selection coordinate on transport and compose its comparisons at Native's
+historical read owner. Every link must still be an actual committed selection;
+currentness remains on the existing verifier, facts/witnesses remain immutable,
+and worker-only requests keep their original checkpoints. Add a stale/ABA leg
+and a compiled drop-prior-evidence mutant. No new test framework or authority
+constructor. Then rerun the public history and Native ownership suites plus the
+boundary/context/format/line-cap gates. This is continuity of D1119 evidence,
+not a new navigation policy or a substitute for slice 3's multi-family owner.
+
+The continuity court failed on the merged tree with two extra contacts. Transport
+now retains the authentic prior coordinate. Native composes a flat oldest-first
+list of independently authenticated selection stages, refuses empty/reversed
+chains, and compares each needed member and restoration baseline. A matching
+selected revision ends the comparison at that prefix; an intermediate ABA still
+fails. Original source observations and witnesses are never rebased. Upstream
+ancestry starts only at those authenticated selected roots, traversing their
+actual canonical parents. Both coordinate traversal and Native stages use their
+original request, checked memory and worker-aware checkpoints; no wire change.
+
+The public continuity courts include an ordinary Member-scoped edit that leaves
+the model-sourced families unchanged, a visit away and back, independent payload
+reads and zero producer contacts. Their already-closed edit outcome is dropped
+before document teardown because it retains readonly World history. Native
+courts also cover intermediate observations, later changes, intermediate ABA,
+empty/reversed/mismatched chains. Nine compiled mutants are killed: newest-only
+field/aspect comparison, omitted field/aspect baselines, reversed/empty chain
+admission, dropped prior coordinate, and raw accounting-only Native/Query
+checkpoints. Every mutation was restored byte-for-byte. Pristine suites pass
+55 Native ownership and 128 public history courts; boundary/context, formatting,
+whitespace and the 16-file dirty Rust cap pass. The primary structural review
+read all 12 function advisories; no independent review is claimed. Slice 3 is
+still required, so this is no issue-batch READY.

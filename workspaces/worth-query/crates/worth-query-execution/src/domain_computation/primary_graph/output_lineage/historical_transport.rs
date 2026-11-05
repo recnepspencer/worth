@@ -145,9 +145,11 @@ impl WorthQueryApplicationOutputLineage {
         self.invalidate_source_publication_coverage();
         let restored_basis = restored.basis().relational_basis().observation();
         for selected in prepared.rows {
+            let row = selected.cell.get().expect("prepared rows are filled");
             let historical = Arc::new(HistoricalSelectionCoordinate {
                 selected: prepared.selected.clone(),
                 restored: restored_basis.clone(),
+                prior: row.historical_selection.as_ref().map(Arc::clone),
             });
             let position = publications
                 .iter()
@@ -158,7 +160,6 @@ impl WorthQueryApplicationOutputLineage {
                 })
                 .expect("the selection commit republished every prepared restored route");
             let publication = publications.swap_remove(position);
-            let row = selected.cell.get().expect("prepared rows are filled");
             let origin = row
                 .performed_origin
                 .as_ref()

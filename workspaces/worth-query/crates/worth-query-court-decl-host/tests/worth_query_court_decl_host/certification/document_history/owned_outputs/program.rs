@@ -77,6 +77,8 @@ impl ApplicationProgramDefinition<Schema> for Program {
                 .provides::<EntryOutput>()
                 .action::<edit::Binding, Completion>()
                 .finish_action()
+                .action::<member_edit::Binding, Completion>()
+                .finish_action()
                 .finish(),
             ApplicationFeatureSpec::root::<Schema, Derived>()
                 .conditional_operation::<first::initial::Operation>()
@@ -93,5 +95,14 @@ pub type EditAction = ApplicationActionReference<
     ApplicationRootComposition,
     Entry,
     edit::Binding,
+    Completion,
+>;
+
+/// The child-scoped edit belongs to this model through ModelMember.
+pub type MemberEditAction = ApplicationActionReference<
+    Schema,
+    ApplicationRootComposition,
+    Entry,
+    member_edit::Binding,
     Completion,
 >;

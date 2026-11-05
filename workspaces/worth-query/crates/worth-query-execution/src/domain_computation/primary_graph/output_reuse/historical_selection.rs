@@ -92,11 +92,7 @@ impl<'a> HistoricalOutputRead<'a> {
         let Some(witness) = self.witness else {
             return Ok(false);
         };
-        let evidence = match runtime.read_truth().read_historical_selection(
-            execution,
-            &self.coordinate.selected,
-            &self.coordinate.restored,
-        ) {
+        let evidence = match self.coordinate.read_evidence(execution, runtime) {
             Ok(evidence) => evidence,
             Err(cause) => return evidence_answer(Err(cause)),
         };

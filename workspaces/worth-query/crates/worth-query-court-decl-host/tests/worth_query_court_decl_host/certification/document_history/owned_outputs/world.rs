@@ -16,6 +16,7 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         setup.handler::<edit::Binding, _>(edit::Handler)?;
+        setup.handler::<member_edit::Binding, _>(member_edit::Handler)?;
         first::install(setup)?;
         second::install(setup)
     }
