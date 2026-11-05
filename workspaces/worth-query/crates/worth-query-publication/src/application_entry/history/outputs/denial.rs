@@ -12,6 +12,7 @@ pub enum WorthQueryHistoryOutputDenial {
     Preparation(crate::application_entry::WorthQueryRequiredOutputPreparationDenial),
     Qualification(worth_query_execution::publication_boundary::original_read_outputs::WorthQueryOriginalReadOutputDenial),
     Close(worth_query_execution::facade::primary_graph::WorthQueryOutputReadCloseDenial),
+    GraphQualification(worth_query_execution::publication_boundary::document_history::WorthQueryHistoryOutputQualificationDenial),
     ManagedCleanup,
     Execution(worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial),
     Memory(worth_execution::LeaseDenial),

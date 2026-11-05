@@ -242,3 +242,48 @@ family!(
     RestrictedTree,
     |value: u64| value * 100
 );
+
+family!(
+    upstream,
+    SourceScopeCascade,
+    output,
+    Model,
+    ModelFacts,
+    ModelKey,
+    ModelValue,
+    model,
+    "upstream",
+    "owned-outputs.upstream.initial",
+    "owned-outputs.upstream.preserve",
+    UpstreamInitial,
+    UpstreamPreserve,
+    Member,
+    MemberFacts,
+    MemberKey,
+    MemberValue,
+    UpstreamOf,
+    UpstreamTree,
+    |value: u64| value * 5
+);
+family!(
+    downstream,
+    SourceScopeCascade,
+    source,
+    Member,
+    MemberFacts,
+    MemberKey,
+    MemberValue,
+    member_public,
+    "downstream",
+    "owned-outputs.downstream.initial",
+    "owned-outputs.downstream.preserve",
+    DownstreamInitial,
+    DownstreamPreserve,
+    ChildOutput,
+    ChildFacts,
+    ChildKey,
+    ChildValue,
+    ChildOf,
+    DownstreamTree,
+    |value: u64| value * 100
+);

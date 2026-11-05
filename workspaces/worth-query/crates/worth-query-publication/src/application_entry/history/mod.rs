@@ -108,8 +108,10 @@ mod observation;
 mod outputs;
 mod owner_handoff;
 pub use outputs::{
-    WorthQueryHistoryNoOutputs, WorthQueryHistoryOutputDenial, WorthQueryHistoryOutputsMode,
-    WorthQueryHistoryWithOutputs,
+    WorthQueryHistoryNoOutputs, WorthQueryHistoryOutputDenial,
+    WorthQueryHistoryOutputQualificationDenial, WorthQueryHistoryOutputsMode,
+    WorthQueryHistoryWithOutputTrees, WorthQueryHistoryWithOutputs,
+    WorthQueryOriginalReadOutputDenial,
 };
 pub use outputs::{
     WorthQueryHistoryOutputAdvanceDenial, WorthQueryHistoryOutputReadDenial,

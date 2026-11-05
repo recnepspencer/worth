@@ -48,6 +48,7 @@ pub enum WorthQueryHistoryOutputControlDenial {
 pub struct WorthQueryHistoryRootOutputRead<'authority, 'phase, 'scope, Q, R> {
     authority: &'authority WorthQueryHistoryOutputAuthority<'phase, 'scope>,
     result: WorthQueryApplicationOneShotResult<Q, R>,
+    truth: Option<crate::basis::WorthQueryProductObservationLease>,
 }
 
 impl<'authority, 'phase, 'scope, Q, R>
@@ -68,8 +69,9 @@ impl<'authority, 'phase, 'scope, Q, R>
     ) -> (
         &'authority WorthQueryHistoryOutputAuthority<'phase, 'scope>,
         WorthQueryApplicationOneShotResult<Q, R>,
+        Option<crate::basis::WorthQueryProductObservationLease>,
     ) {
-        (self.authority, self.result)
+        (self.authority, self.result, self.truth)
     }
 }
 
@@ -121,7 +123,11 @@ impl<S: ApplicationSchema>
         let result = self.execute_history_output_query_on_selected(
             phase, authority, binding, external, control, retained,
         )?;
-        Ok(WorthQueryHistoryRootOutputRead { authority, result })
+        Ok(WorthQueryHistoryRootOutputRead {
+            authority,
+            result,
+            truth: None,
+        })
     }
 }
 
@@ -147,10 +153,14 @@ impl<S: ApplicationSchema>
             .map_err(|cause| WorthQueryHistoryOutputReadDenial::Admission(WorthQueryApplicationQueryAdmissionDenial::new(
                 crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::InstalledQuery(cause.kind()), "history graph source",
             )))?;
-        let result = authority
+        let (result, truth) = authority
             .profile()
             .source_intent()
             .execute_graph_source(self, phase, authority, &installed, external)?;
-        Ok(WorthQueryHistoryRootOutputRead { authority, result })
+        Ok(WorthQueryHistoryRootOutputRead {
+            authority,
+            result,
+            truth: Some(truth),
+        })
     }
 }

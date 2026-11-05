@@ -88,12 +88,12 @@ impl WorthQueryHistoryOutputIntent {
     pub(in crate::domain_computation::primary_graph) fn matches_output_source<Q>(
         &self,
         source: &crate::domain_computation::primary_graph::WorthQueryObservedSource<Q>,
-        observation: &crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
+        observation: &worth_runtime_world::facade::ProductBranchObservation,
     ) -> bool {
         self.backing.scope.matches_source(source)
             && matches!(&source.selection,
             crate::domain_computation::primary_graph::WorthQueryApplicationBasisSelectionIdentity::Product(product)
-                if product.matches_observation(observation.product_observation()))
+                if product.matches_observation(observation))
     }
     /// This identifies original immutable custody, not semantic equivalence.
     pub(in crate::domain_computation::primary_graph) fn same_custody(&self, other: &Self) -> bool {

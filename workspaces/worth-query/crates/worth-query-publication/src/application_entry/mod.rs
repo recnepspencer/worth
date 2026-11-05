@@ -68,14 +68,16 @@ pub use history::{
     WorthQueryHistoryNavigationDenial, WorthQueryHistoryNavigationEligibilityDenial,
     WorthQueryHistoryNavigationIntent, WorthQueryHistoryNavigationPosture,
     WorthQueryHistoryNoOutputs, WorthQueryHistoryNodeId, WorthQueryHistoryOutputAdvanceDenial,
-    WorthQueryHistoryOutputDenial, WorthQueryHistoryOutputReadDenial, WorthQueryHistoryOutputsMode,
-    WorthQueryHistoryPage, WorthQueryHistoryPageCursor, WorthQueryHistoryPageDenial,
-    WorthQueryHistoryPageEntry, WorthQueryHistoryPageLimits, WorthQueryHistoryPageRow,
-    WorthQueryHistoryParentBoundary, WorthQueryHistoryPayloadMode, WorthQueryHistoryPreviewResult,
-    WorthQueryHistoryRedoChoice, WorthQueryHistoryRedoChoices, WorthQueryHistoryReleaseOutcome,
+    WorthQueryHistoryOutputDenial, WorthQueryHistoryOutputQualificationDenial,
+    WorthQueryHistoryOutputReadDenial, WorthQueryHistoryOutputsMode, WorthQueryHistoryPage,
+    WorthQueryHistoryPageCursor, WorthQueryHistoryPageDenial, WorthQueryHistoryPageEntry,
+    WorthQueryHistoryPageLimits, WorthQueryHistoryPageRow, WorthQueryHistoryParentBoundary,
+    WorthQueryHistoryPayloadMode, WorthQueryHistoryPreviewResult, WorthQueryHistoryRedoChoice,
+    WorthQueryHistoryRedoChoices, WorthQueryHistoryReleaseOutcome,
     WorthQueryHistoryRetentionStatus, WorthQueryHistoryRootOutputAdmissionDenial,
     WorthQueryHistorySelection, WorthQueryHistoryStep, WorthQueryHistoryTypedMembers,
-    WorthQueryHistoryWindowChange, WorthQueryHistoryWithOutputs,
+    WorthQueryHistoryWindowChange, WorthQueryHistoryWithOutputTrees, WorthQueryHistoryWithOutputs,
+    WorthQueryOriginalReadOutputDenial,
 };
 #[doc(hidden)]
 pub use history::{

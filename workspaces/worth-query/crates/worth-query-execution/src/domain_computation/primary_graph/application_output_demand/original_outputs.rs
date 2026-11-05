@@ -1,4 +1,5 @@
 //! Whole-tree qualification at the original tree's canonically linked endpoint.
+mod collection;
 use super::{WorthQueryOutputDemandSettlement, WorthQueryOutputSettlementPosture};
 use crate::domain_computation::primary_graph::application_installation::{
     WorthQueryProgramApplicationRuntime, WorthQuerySelectedProgramOwnerDenial,
@@ -12,6 +13,9 @@ use crate::publication_boundary::{
         WorthQueryRequiredSetCurrentnessDenial, WorthQueryRetainedQueryDependencies,
     },
     WorthQueryProgramPublicationAccess,
+};
+pub(in crate::domain_computation::primary_graph) use collection::{
+    qualify_output_collection, OriginalOutputTree,
 };
 use std::sync::Arc;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;

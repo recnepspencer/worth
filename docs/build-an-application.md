@@ -2218,6 +2218,17 @@ the complete example with
 Its renderer descriptions carry no historical payload lease and cannot reopen a
 document after process loss.
 
+Owned graph navigation can retain a runtime-length set of original typed
+output trees with `with_output_trees::<Program, FirstRoot>(..)` followed by
+`with_output_tree::<Program, OtherRoot>(..)`. Each entry retains its actual
+program continuation and disposal custody. One navigation qualifies the complete
+collection at the endpoint derived from all original publication movements; a
+later fallback cannot leave an earlier family stale. Native supplies the selected
+publication routes independently of the configured collection. This path remains
+under qualification: direct verification without opening healthy original roots
+and multi-tree edit recording are still being completed. See the
+[owned-model plan](../plans/WORTH-query/history-owned-models.md).
+
 To record an isolated edit, consume the attached document with
 `document.edit(intent).idempotency_owned(&request, key)?`, then
 `retain_in_program::<Program, Action>(host)`. Repeatedly call `advance(&request)`

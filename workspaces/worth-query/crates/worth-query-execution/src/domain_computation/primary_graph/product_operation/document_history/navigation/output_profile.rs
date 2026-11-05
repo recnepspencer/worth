@@ -1,4 +1,5 @@
 //! Installed rebuild correspondence; an index addresses immutable owner metadata.
+mod forest;
 use super::super::{HistoryModelIdentity, WorthQueryDocumentHistory};
 use super::*;
 use crate::domain_computation::primary_graph::{
@@ -33,6 +34,7 @@ pub struct WorthQueryHistoryOutputProfile {
     pub(super) recipe: std::any::TypeId,
     pub(super) registration: HistoryOutputRegistration,
     pub(super) family: &'static str,
+    forest: Option<Arc<forest::HistoryOutputForest>>,
     source_intent: crate::domain_computation::primary_graph::WorthQueryHistoryOutputIntent,
 }
 
@@ -60,7 +62,9 @@ impl WorthQueryHistoryOutputProfile {
     /// Guarded consumers require the original immutable registered custody.
     /// Independent equal descriptions first pass funded owner readmission.
     pub(in crate::domain_computation::primary_graph) fn same_custody(&self, other: &Self) -> bool {
-        self.same_header(other) && self.source_intent.same_custody(&other.source_intent)
+        self.same_header(other)
+            && self.same_forest_custody(other)
+            && self.source_intent.same_custody(&other.source_intent)
     }
 
     pub(super) fn equivalent(
@@ -70,6 +74,9 @@ impl WorthQueryHistoryOutputProfile {
     ) -> Result<bool, worth_relational::facade::transactions::RelationalExecutionDenialCause> {
         if !self.same_header(other) {
             return Ok(false);
+        }
+        if self.forest.is_some() || other.forest.is_some() {
+            return self.equivalent_forest(execution, other);
         }
         self.source_intent
             .equivalent(execution, &other.source_intent)
@@ -226,6 +233,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
             registration,
             family: <<Demand<S, R> as WorthQueryApplicationOutputDemand<S>>::OutputFamily as WorthQueryProducerOutputFamily<S>>::IDENTITY,
             source_intent,
+            forest: None,
         })
     }
 }

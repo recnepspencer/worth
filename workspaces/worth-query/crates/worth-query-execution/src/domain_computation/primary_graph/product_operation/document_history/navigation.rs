@@ -7,6 +7,7 @@ mod eligibility;
 pub(crate) mod output_authority;
 mod output_completion;
 mod output_correspondence;
+mod output_coverage;
 mod output_custody;
 mod output_lookup;
 mod output_profile;
@@ -32,7 +33,10 @@ pub use output_authority::WorthQueryHistoryOutputAuthority;
 pub(in crate::domain_computation::primary_graph) use output_authority::{
     HistoryBorrowedReadStop, HistoryProducerCutover,
 };
-pub use output_completion::WorthQueryCompletedHistoryOutputs;
+pub use output_completion::{
+    WorthQueryCompletedHistoryOutputs, WorthQueryHistoryOutputQualificationDenial,
+    WorthQueryRetainedHistoryOutputTree,
+};
 pub use output_profile::{
     WorthQueryHistoryOutputNavigationAdvance, WorthQueryHistoryOutputProfile,
 };

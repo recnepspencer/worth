@@ -57,6 +57,22 @@ impl<RootQuery> WorthQueryApplicationProgramOutputSettlement<RootQuery> {
         )
     }
 
+    /// Split the original complete tree's immutable receipts from its move-only
+    /// discovery custody. History retains them before final forest qualification.
+    pub(in crate::application_entry) fn original_tree_parts(&mut self) -> (
+        std::sync::Arc<worth_query_execution::facade::primary_graph::WorthQueryOutputDemandSettlement>,
+        impl ExactSizeIterator<Item = std::sync::Arc<worth_query_execution::facade::primary_graph::WorthQueryOutputDemandSettlement>> + '_,
+        &mut Option<worth_query_execution::publication_boundary::discovery_currentness::WorthQueryRetainedQueryDependencies>,
+    ){
+        (
+            self.root.retain_settlement(),
+            self.outputs
+                .iter()
+                .map(|output| std::sync::Arc::clone(&output.retained_settlement)),
+            &mut self.dependencies,
+        )
+    }
+
     /// Borrows the original root's immutable settlement, including typed output roles.
     ///
     /// A reused root can retain output correspondence without a producer receipt.

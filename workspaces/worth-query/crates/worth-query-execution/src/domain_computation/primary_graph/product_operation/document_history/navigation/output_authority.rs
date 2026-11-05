@@ -19,6 +19,7 @@ use worth_query_installation::facade::{
 };
 
 pub(crate) mod producer_invocation;
+mod tree;
 pub(in crate::domain_computation::primary_graph) use producer_invocation::{
     HistoryBorrowedReadStop, HistoryProducerCutover,
 };
@@ -98,6 +99,12 @@ impl WorthQueryHistoryOutputAuthority<'_, '_> {
 
     pub(in crate::domain_computation::primary_graph) fn request(&self) -> &WorthQueryRequestScope {
         self.request.request()
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn selected_graph(
+        &self,
+    ) -> Option<&worth_relational::facade::mvcc::RelationalBranchObservation> {
+        self.selected_graph.as_ref()
     }
 
     pub(in crate::domain_computation::primary_graph) fn profile(

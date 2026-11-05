@@ -31,6 +31,7 @@ worth_query_field!(pub ChildValue for Schema, ChildOutput, ChildFacts: u64 => U6
 worth_query_relation!(pub ChildOf in Schema, Member => ChildOutput; integrity = same_context_unbounded_retain_dangling);
 worth_query_relation!(pub MappingTarget in Schema, Mapping => Principal; integrity = same_context_unbounded_retain_dangling);
 worth_query_relation!(pub ModelMember in Schema, Model => Member; integrity = same_context_unbounded_retain_dangling);
+worth_query_relation!(pub UpstreamOf in Schema, Member => Model; integrity = same_context_unbounded_retain_dangling);
 worth_query_relation!(pub FirstOf in Schema, FirstOutput => Model; integrity = same_context_unbounded_retain_dangling);
 worth_query_relation!(pub SecondOf in Schema, SecondOutput => Model; integrity = same_context_unbounded_retain_dangling);
 worth_query_principal_binding!(pub Actor in Schema, mapping Mapping { identity: ExternalId, status: Status, target: MappingTarget => Principal, principal_identity: PrincipalId });
@@ -86,6 +87,11 @@ fn declare(
             Member::reference(),
         )
         .relation(
+            UpstreamOf::reference(),
+            Member::reference(),
+            Model::reference(),
+        )
+        .relation(
             FirstOf::reference(),
             FirstOutput::reference(),
             Model::reference(),
@@ -98,8 +104,8 @@ fn declare(
     let schema = query::declare(member_delete::declare(member_edit::declare(edit::declare(
         navigation::declare(schema),
     ))));
-    restricted::declare(child::declare(second::declare(first::declare(
-        permission::declare(schema),
+    downstream::declare(upstream::declare(restricted::declare(child::declare(
+        second::declare(first::declare(permission::declare(schema))),
     ))))
     .application_history(
         ApplicationHistoryDefinition::<Schema, History>::for_binding(

@@ -115,15 +115,15 @@ pub use product_operation::document_history::{
     WorthQueryHistoryNodeId, WorthQueryHistoryOutputAdvanceDenial,
     WorthQueryHistoryOutputAuthority, WorthQueryHistoryOutputDiscovery,
     WorthQueryHistoryOutputNavigationAdvance, WorthQueryHistoryOutputProfile,
-    WorthQueryHistoryOutputSource, WorthQueryHistoryPage,
-    WorthQueryHistoryPageAssemblyPauseForTest, WorthQueryHistoryPageCursor,
+    WorthQueryHistoryOutputQualificationDenial, WorthQueryHistoryOutputSource,
+    WorthQueryHistoryPage, WorthQueryHistoryPageAssemblyPauseForTest, WorthQueryHistoryPageCursor,
     WorthQueryHistoryPageDenial, WorthQueryHistoryPageEntry, WorthQueryHistoryPageLimits,
     WorthQueryHistoryPageRow, WorthQueryHistoryParentBoundary, WorthQueryHistoryPreview,
     WorthQueryHistoryProgramOutputAdvance, WorthQueryHistoryRedoChoice,
     WorthQueryHistoryRedoChoices, WorthQueryHistoryReleaseOutcome,
     WorthQueryHistoryRetentionChangePauseForTest, WorthQueryHistoryRetentionStatus,
     WorthQueryHistoryRootOutputAdmissionDenial, WorthQueryHistorySelection, WorthQueryHistoryStep,
-    WorthQuerySettledHistoryProgramOutput,
+    WorthQueryRetainedHistoryOutputTree, WorthQuerySettledHistoryProgramOutput,
 };
 pub(in crate::domain_computation) use product_operation::SharedSelectedProductOperation;
 pub use product_operation::WorthQueryHistoryOutputControlDenial;

@@ -991,3 +991,96 @@ poll dispatch. New Native work uses request_stage::checkpoint.
 The remaining cutover includes nested handler queries, later dependent sources,
 multiple trees, all-route verification and recording at one endpoint. These are
 not implied by the root-source admission courts. No issue-completion claim.
+
+### D1207 checkpoint and #57 forest boundary
+
+Source-admission checkpoint `d488beeb30` is local, clean and qualified by 131
+public history courts, 56 Native ownership courts, 2262 Native library tests
+(31 ignored), four Query source-control courts and eight restored compiled
+mutations. Boundary, generated context, formatting and dirty caps pass. No
+complete-workspace or issue handoff is implied.
+
+The next vertical slice is a collection of original output trees for an owned
+graph document. The existing single-tree driver contains both typed SDK custody
+and per-call Query READ/NAV admission. Calling it repeatedly would perform several
+independent navigation transitions and could adopt before another family is
+qualified. That path is insufficient. The existing original-endpoint owner derives
+E from actual World publication movements; the completed-set currentness owner
+can qualify an entire original tree at an explicitly selected E. Those remain the
+only endpoint and currentness authorities. Native still exclusively owns closure,
+roster and route presence. A profile is descriptive installed correspondence,
+never ownership, admission or a settlement.
+
+Plan:
+1. Extend the canonical history profile owner with an immutable, funded collection
+   of original single-tree profiles. Preserve the single-profile path and its
+   custody comparison. A collection is graph-only; members retain their own
+   program/root/source/recipe correspondence and cannot nest or duplicate a root
+   demand. Eligibility checks every relevant installed delivery against the whole
+   collection before effects.
+2. Add an SDK collection mode that retains each original typed tree behind its
+   compiled driver, with runtime-length addition. It preserves each slot, original
+   source, failed cleanup and close owner. Collection allocation and traversal use
+   the existing charged/polling owners; no new framework or format is introduced.
+   Keep existing `with_outputs` and ScopeEntityRecord behavior unchanged.
+3. A single fresh history READ/metadata/NAV admits one navigation advancement.
+   It lends each registered tree its own borrowed output authority for the same
+   private D and same current C. A callback cannot substitute another profile or
+   basis. Healthy restored rows use the existing currentness reuse gates; only a
+   failed family enters its original producer continuation.
+4. Retain authentic complete settlement shares and dependency custody from every
+   original tree. Derive one endpoint from their union of actual World movements,
+   then ask the existing completed-set owner to qualify each whole tree there.
+   Never substitute the current head, infer ancestry from ordinals or manufacture
+   a settlement. Only the complete collection can enter Selecting. Selecting
+   freshly readmits every original tree; disposal keeps every actual remainder.
+5. Join edit completion to the same collection at its one final endpoint. Add
+   public two-family serial/worker undo-redo zero-contact courts, changed-build
+   family isolation, partial/refused cleanup and a family-drop mutant. Then cover
+   dependent source admission and new candidate members through Native ownership,
+   codec-retired restoration, remaining issue courts and #56.
+
+Checks for the slice: focused public owned_outputs/history courts, Native ownership
+and library courts, Query currentness/contribution/output-demand courts; compiled
+mutations with exact SHA256 restoration; boundary/context, formatting, function
+review and scoped caps. Full root and Query tests versus clean current master are
+required before an issue READY. The profile collection is process-local and leaves
+CHK18 unchanged.
+
+
+### D1207 forest fallback evidence and direct-verification correction
+
+The original-tree forest now passes 21 public owned-output courts. The dependent
+fixture strengthens membership: its generated Member reaches the model only
+through Native publication custody; UpstreamOf is an ordinary reference. Ordered
+fallbacks preserve both original identities and publish 10/1000. Reversing the
+order leaves the earlier child stale, so final whole-set qualification refuses
+without adoption. Serial and worker-only legs cover both outcomes.
+
+Three compiled mutations fail their intended courts: skip the first tree's final
+currentness, skip expected-route coverage, and ignore route family identity.
+Every mutated file is restored with the same SHA256, recorded in
+build-cache/history53-d1207/forest-mutation-results.json. These qualify the forest's
+fallback collection mechanics, not completion of #57 or D1119.
+
+Review against D1119 found a remaining boundary mismatch: even healthy roots
+currently execute source disclosure and create original SDK trees before reuse.
+Zero producer contacts alone does not prove that healthy selection avoids the
+original source/root/disposal path. Direct restored-route verification must enter
+the existing output-currentness owner before any SDK root. It must use Native's
+exact selection requirements and actual current roster/presence, the canonical
+lineage lookup and installed producer edition; no synthetic settlement or second
+producer engine. Unknown/stale evidence enters the original fallback driver.
+The private candidate cannot be adopted before all actual routes pass.
+
+Next plan: add a canonical lineage route read, compose it with the currentness
+owner at the original untouched restoration candidate, and let the registered
+navigation progress to Selecting only when every Native route passes. Repeat
+verification before any later adoption retry. The ordinary ScopeEntityRecord
+path stays unchanged. If a registered root has no selected owned publication,
+it keeps the original source/root fallback path, including D1207 current-C
+source permission. Then narrow mixed healthy/stale progression to only the
+failed families, retain all final-endpoint checks, and join recording. Public
+courts must distinguish the healthy path from source disclosure, rather than
+merely counting producers. No issue READY until those paths and final workspace
+qualification are complete.

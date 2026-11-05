@@ -1,4 +1,7 @@
 //! Original SDK qualification preserves typed root/model provenance through adoption.
+mod denial;
+pub use denial::WorthQueryHistoryOutputQualificationDenial;
+mod forest;
 use super::*;
 use crate::domain_computation::primary_graph::{
     application_installation::{WorthQueryProgramApplicationRuntime, WorthQueryProgramOwner},
@@ -10,6 +13,7 @@ use crate::publication_boundary::{
     discovery_currentness::WorthQueryRetainedQueryDependencies,
     original_read_outputs::WorthQueryOriginalReadOutputDenial,
 };
+pub use forest::WorthQueryRetainedHistoryOutputTree;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::application_program::{
     ApplicationOutputGraphShape, ApplicationProgramDefinition,
@@ -21,6 +25,7 @@ use worth_query_installation::facade::ApplicationSchema;
 pub struct WorthQueryCompletedHistoryOutputs {
     pub(super) profile: WorthQueryHistoryOutputProfile,
     pub(super) original: WorthQueryCompletedOriginalReadOutputs,
+    forest: Option<forest::HistoryForestCompletion>,
 }
 
 impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
@@ -43,7 +48,9 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
                 "history output root/profile correspondence",
             ))
         };
-        if source.profile.root != crate::equality_type_id::EqualityTypeId::of::<R>().into_external()
+        if source.profile.is_output_forest()
+            || source.profile.root
+                != crate::equality_type_id::EqualityTypeId::of::<R>().into_external()
             || source.profile.program_type
                 != crate::equality_type_id::EqualityTypeId::of::<P>().into_external()
             || source.profile.program != *self.owned_revision()
@@ -78,6 +85,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         Ok(WorthQueryCompletedHistoryOutputs {
             profile: source.profile.clone(),
             original,
+            forest: None,
         })
     }
 }
@@ -95,7 +103,8 @@ impl<S: ApplicationSchema> NavigationProgress<'_, S> {
         };
         let source = outputs.original.original_source();
         let endpoint = outputs.original.original_endpoint();
-        if !outputs.profile.same_custody(profile)
+        if outputs.forest.is_some() != profile.is_output_forest()
+            || !outputs.profile.same_custody(profile)
             || profile.model != self.model
             || source
                 .product_observation()

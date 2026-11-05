@@ -119,6 +119,7 @@ where
         }
         self.tree = None;
         self.settlement = None;
+        self.forest_tree = None;
         self.source = None;
         self.original = None;
         Ok(())

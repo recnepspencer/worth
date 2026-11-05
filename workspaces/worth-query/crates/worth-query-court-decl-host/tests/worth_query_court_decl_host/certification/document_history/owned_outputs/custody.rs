@@ -2,12 +2,9 @@
 use super::courts::{checkout, edited, Edited};
 use super::*;
 
-/// Undo then redo over a model whose two owned families settled before the
-/// recorded edit. Each checkout restores the HistoricalSelection custody with
-/// no producer contact. The redone step's rows were stale at that step (the
-/// edit was not settled in history), so a later settlement is Preserve for
-/// both families: each succeeds the committed selection publication that its
-/// transported row names, keeping the original output identity.
+/// Undo restores both healthy publications without contact. The edited step
+/// deliberately recorded stale outputs, so redo must fallback for each family
+/// before adoption. Subsequent ordinary demands reuse those exact publications.
 fn undo_redo_then_settle(host: &world::Host) {
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
@@ -20,6 +17,7 @@ fn undo_redo_then_settle(host: &world::Host) {
         selection,
         outputs,
     } = edited(host, &request, false);
+    let document = courts::configure_all_trees(host, document);
     assert_eq!(world::model(host, branch).value, 2);
     let contacts = host.producer_contacts_on_this_thread_for_test();
     let undone = checkout(&document, &request, before, selection, 0x5356_0101)
@@ -32,11 +30,12 @@ fn undo_redo_then_settle(host: &world::Host) {
         .unwrap_or_else(|cause| panic!("redo restores owned custody: {cause:?}"));
     let redone_branch = redone.physical_endpoint().product_branch();
     assert_eq!(world::model(host, redone_branch).value, 2);
-    assert_eq!(world::outputs(host, redone_branch), outputs);
+    let redone_outputs = world::outputs(host, redone_branch);
+    assert_eq!((redone_outputs.0.value, redone_outputs.1.value), (20, 1002));
     assert_eq!(
         host.producer_contacts_on_this_thread_for_test(),
-        contacts,
-        "undo and redo restore producer custody without a producer contact"
+        contacts + 2,
+        "the deliberately stale redone step verifies both families and falls back once each"
     );
     let on_branch = host.request(&principal, &scope).on_branch(redone_branch);
     first::settle(host, &on_branch, "a");
@@ -44,7 +43,7 @@ fn undo_redo_then_settle(host: &world::Host) {
     assert_eq!(
         host.producer_contacts_on_this_thread_for_test(),
         contacts + 2,
-        "each family's Preserve producer ran once after the restored edit"
+        "subsequent demands reuse the two navigation fallbacks"
     );
     let settled = world::outputs(host, redone_branch);
     assert_eq!((settled.0.value, settled.1.value), (20, 1002));
@@ -71,6 +70,7 @@ fn undo_then_settle_reuses_restored_outputs(host: &world::Host) {
         outputs,
         ..
     } = edited(host, &request, false);
+    let document = courts::configure_all_trees(host, document);
     let contacts = host.producer_contacts_on_this_thread_for_test();
     let undone = checkout(&document, &request, before, selection, 0x5356_0201)
         .unwrap_or_else(|cause| panic!("undo restores owned custody: {cause:?}"));
@@ -127,6 +127,7 @@ fn revisit_a_future_recorded_after_selection(host: &world::Host) {
         outputs,
         ..
     } = edited(host, &request, false);
+    let document = courts::configure_all_trees(host, document);
     let undone = checkout(&document, &request, before, selection, 0x5356_0301).unwrap();
     let branch = undone.physical_endpoint().product_branch();
     let on_branch = host.request(&principal, &scope).on_branch(branch);

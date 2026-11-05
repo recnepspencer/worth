@@ -192,3 +192,39 @@ fn out_of_history_settlement_on_the_document_branch_diverges_its_head() {
     host.with_host_advancement(|phase| document.close(&phase).unwrap())
         .unwrap();
 }
+
+/// Every Native-owned publication participates in navigation currentness.
+pub(super) fn configure_all_trees<'a>(
+    host: &'a world::Host,
+    document: world::Document<'a>,
+) -> WorthQueryApplicationHistoryDocument<
+    'a,
+    Schema,
+    History,
+    OrdinaryHistoryPayload,
+    WorthQueryHistoryWithOutputTrees<Schema>,
+> {
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host.request(&principal, &scope);
+    host.with_host_advancement(|phase| {
+        document
+            .with_output_trees::<program::Program, program::FirstTree>(
+                &phase,
+                &request,
+                host,
+                first::Demand("a".into()),
+                WorthQueryOutputDemandControls::default(),
+            )
+            .unwrap_or_else(|(_, cause)| panic!("{cause:?}"))
+            .with_output_tree::<program::Program, program::SecondTree>(
+                &phase,
+                &request,
+                host,
+                second::Demand("a".into()),
+                WorthQueryOutputDemandControls::default(),
+            )
+            .unwrap_or_else(|(_, cause)| panic!("{cause:?}"))
+    })
+    .unwrap()
+}

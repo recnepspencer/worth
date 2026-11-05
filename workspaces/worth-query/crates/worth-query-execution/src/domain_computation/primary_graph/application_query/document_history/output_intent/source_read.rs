@@ -23,7 +23,10 @@ impl WorthQueryHistoryOutputIntent {
         installed: &WorthQueryInstalledApplicationQueryBinding<S, B>,
         external: &WorthQueryAuthenticatedExternalPrincipal<S>,
     ) -> Result<
-        WorthQueryApplicationOneShotResult<B::Query, Rows<S, B>>,
+        (
+            WorthQueryApplicationOneShotResult<B::Query, Rows<S, B>>,
+            crate::basis::WorthQueryProductObservationLease,
+        ),
         WorthQueryHistoryOutputReadDenial,
     >
     where
@@ -65,12 +68,25 @@ impl WorthQueryHistoryOutputIntent {
             ));
         }
         let truth = runtime
-            .select_application_read_observation(phase, authority.original())
+            .on_branch(crate::basis::WorthQueryProductBranch::from_occurrence(
+                authority
+                    .original()
+                    .product_observation()
+                    .lifecycle_incarnation(),
+            ))
+            .select_with_request(&execution)
             .map_err(|cause| {
                 Stop::Authority(WorthQueryHistoryNavigationDenial::ProductAdmission(cause))
             })?
             .prepare_shared_query_basis()
             .map_err(|(_, cause)| Stop::Resource(cause))?;
+        // Earlier original trees may have published on this same private D.
+        // Its actual head is data only; current C still supplies every grant.
+        truth.selected().inspect_selected_program().map_err(|_| Stop::Authority(
+            WorthQueryHistoryNavigationDenial::RequiresSemanticCorrection(
+                crate::domain_computation::primary_graph::WorthQueryHistoryNavigationEligibilityDenial::ProgramUnavailable,
+            ),
+        ))?;
         let principal = current
             .resolve_authenticated_principal_issued(
                 &execution,
@@ -133,7 +149,12 @@ impl WorthQueryHistoryOutputIntent {
         // Identity refusals also carry information about D. Confirm the same
         // C before delivering either an answer or a prepared refusal.
         authority
-            .confirm_read(phase, runtime, request, result)
+            .confirm_read(
+                phase,
+                runtime,
+                request,
+                result.map(|result| (result, truth.selected().product().read_lease())),
+            )
             .map_err(Stop::Authority)?
     }
 }

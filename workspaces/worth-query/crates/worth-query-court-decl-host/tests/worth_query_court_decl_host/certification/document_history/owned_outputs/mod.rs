@@ -24,7 +24,7 @@ mod permission;
 mod program;
 mod query;
 mod world;
-use family::{child, first, restricted, second};
+use family::{child, downstream, first, restricted, second, upstream};
 
 pub struct History;
 worth_query_portable_type!(History => "worth.owned-outputs.history.v1");
@@ -37,3 +37,9 @@ impl<B: ApplicationMutationBinding<Schema>> ApplicationActionDelivery<Schema, B>
     type Mode = ApplicationSourceCompletion;
     const IDENTITY: &'static str = "owned-outputs.completion.v1";
 }
+
+mod forest;
+
+mod incomplete_forest;
+
+mod dependent_forest;

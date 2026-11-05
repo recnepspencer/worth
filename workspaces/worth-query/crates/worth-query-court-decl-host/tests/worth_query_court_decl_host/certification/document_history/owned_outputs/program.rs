@@ -13,7 +13,13 @@ impl ApplicationFeature<Schema> for Derived {
             SecondInput,
             ApplicationFeatureInputList<
                 ChildInput,
-                ApplicationFeatureInputList<RestrictedInput, ApplicationFeatureInputLeaf>,
+                ApplicationFeatureInputList<
+                    RestrictedInput,
+                    ApplicationFeatureInputList<
+                        UpstreamInput,
+                        ApplicationFeatureInputList<DownstreamInput, ApplicationFeatureInputLeaf>,
+                    >,
+                >,
             >,
         >,
     >;
@@ -88,11 +94,34 @@ root!(
     restricted,
     "owned-outputs.start-restricted"
 );
+root!(
+    UpstreamInput,
+    "upstream-input",
+    StartUpstream,
+    UpstreamConnection,
+    UpstreamTree,
+    upstream,
+    "owned-outputs.start-upstream"
+);
+root!(
+    DownstreamInput,
+    "downstream-input",
+    StartDownstream,
+    DownstreamConnection,
+    DownstreamTree,
+    downstream,
+    "owned-outputs.start-downstream"
+);
 pub struct Program;
 impl ApplicationProgramDefinition<Schema> for Program {
     type Contributions = (Contribution,);
-    type Outputs =
-        ApplicationProgramOutputs<(FirstTree, (SecondTree, (ChildTree, RestrictedTree)))>;
+    type Outputs = ApplicationProgramOutputs<(
+        FirstTree,
+        (
+            SecondTree,
+            (ChildTree, (RestrictedTree, (UpstreamTree, DownstreamTree))),
+        ),
+    )>;
     type Rules = ApplicationRuleLeaf;
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("owned-outputs.program.v1");
@@ -116,6 +145,10 @@ impl ApplicationProgramDefinition<Schema> for Program {
                 .conditional_operation::<child::preserve::Operation>()
                 .conditional_operation::<restricted::initial::Operation>()
                 .conditional_operation::<restricted::preserve::Operation>()
+                .conditional_operation::<upstream::initial::Operation>()
+                .conditional_operation::<upstream::preserve::Operation>()
+                .conditional_operation::<downstream::initial::Operation>()
+                .conditional_operation::<downstream::preserve::Operation>()
                 .finish(),
         ]
     }

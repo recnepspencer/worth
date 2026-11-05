@@ -104,6 +104,7 @@ where
     pub(super) source: Option<WorthQueryHistoryOutputSource>,
     pub(super) tree: Option<WorthQueryApplicationProgramOutputHandle<S, P, R>>,
     pub(super) settlement: Option<WorthQueryApplicationProgramOutputSettlement<RootQuery<S, R>>>,
+    pub(super) forest_tree: Option<Arc<worth_query_execution::publication_boundary::document_history::WorthQueryRetainedHistoryOutputTree>>,
     pub(super) read_cleanup:
         Option<worth_query_execution::facade::primary_graph::WorthQueryOutputReadCleanup>,
     pub(super) managed_cleanup: Option<(
@@ -127,6 +128,7 @@ where
             source: None,
             tree: None,
             settlement: None,
+            forest_tree: None,
             read_cleanup: None,
             managed_cleanup: None,
             terminal: false,
@@ -139,6 +141,7 @@ where
             && self.source.is_none()
             && self.tree.is_none()
             && self.settlement.is_none()
+            && self.forest_tree.is_none()
             && self.read_cleanup.is_none()
             && self.managed_cleanup.is_none()
     }

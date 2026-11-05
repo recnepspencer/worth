@@ -37,7 +37,6 @@ pub mod document_history {
     pub use crate::domain_computation::primary_graph::application_query::{
         WorthQueryDocumentHistoryRead, WorthQueryHistoryPreviewReadAdmission,
     };
-    pub use crate::domain_computation::primary_graph::WorthQueryCompletedHistoryOutputs;
     #[doc(hidden)]
     pub use crate::domain_computation::primary_graph::WorthQueryDocumentHistoryCapturePauseForTest;
     #[doc(hidden)]
@@ -52,6 +51,10 @@ pub mod document_history {
         WorthQueryHistoryOutputDiscovery, WorthQueryHistoryOutputReadDenial,
         WorthQueryHistoryProgramOutputAdvance, WorthQueryHistoryRootOutputAdmissionDenial,
         WorthQueryHistoryRootOutputRead, WorthQuerySettledHistoryProgramOutput,
+    };
+    pub use crate::domain_computation::primary_graph::{
+        WorthQueryCompletedHistoryOutputs, WorthQueryHistoryOutputQualificationDenial,
+        WorthQueryRetainedHistoryOutputTree,
     };
     pub use crate::domain_computation::primary_graph::{
         WorthQueryDocumentHistory, WorthQueryDocumentHistoryAdoptionFailure,

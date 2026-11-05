@@ -44,8 +44,9 @@ pub use navigation::{
     WorthQueryHistoryNavigationPosture, WorthQueryHistoryOutputAdvanceDenial,
     WorthQueryHistoryOutputAuthority, WorthQueryHistoryOutputDiscovery,
     WorthQueryHistoryOutputNavigationAdvance, WorthQueryHistoryOutputProfile,
-    WorthQueryHistoryOutputSource, WorthQueryHistoryProgramOutputAdvance,
-    WorthQueryHistoryRootOutputAdmissionDenial, WorthQueryHistorySelection,
+    WorthQueryHistoryOutputQualificationDenial, WorthQueryHistoryOutputSource,
+    WorthQueryHistoryProgramOutputAdvance, WorthQueryHistoryRootOutputAdmissionDenial,
+    WorthQueryHistorySelection, WorthQueryRetainedHistoryOutputTree,
     WorthQuerySettledHistoryProgramOutput,
 };
 mod observation;

@@ -83,6 +83,42 @@ fn source_transfer_restores_its_two_output_families_and_owned_edge_without_selec
             .collect::<Result<Vec<_>, _>>()
             .unwrap();
         assert_eq!(publications.len(), 2);
+        let evidence = world
+            .runtime
+            .read_truth()
+            .read_historical_selection(execution, &selected.observation(), &after.observation())
+            .unwrap();
+        let mut routes = evidence
+            .selected_output_routes(execution)
+            .unwrap()
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap();
+        routes.sort_by(|left, right| left.family.cmp(&right.family));
+        let mut expected = [&world.meaning, &related];
+        expected.sort_by(|left, right| left.family.cmp(&right.family));
+        assert_eq!(
+            routes, expected,
+            "B's unrelated current publication is not a selected route"
+        );
+        let policy = worth_foundational::ExecutionRequestPolicy::new(
+            worth_foundational::ExecutionPosture::Automatic,
+            worth_foundational::DeterminismContract::CanonicalBitwise,
+            worth_foundational::ExecutionBudget::new(
+                std::num::NonZeroUsize::new(1).unwrap(),
+                None,
+                Some(1),
+            ),
+        );
+        let bounded = SerialRequest::from_policy(&policy, CancellationToken::new(), None);
+        assert!(matches!(
+            evidence.selected_output_routes(&ExecutionRequest::serial(&bounded)),
+            Err(
+                worth_relational::facade::runtime::RelationalHistoricalSelectionReadDenial::Request(
+                    _
+                )
+            )
+        ));
+
         assert!(publications.iter().all(|p| p.is_historical_selection()
             && p.meaning().source_scope == world.source
             && p.authority().publication_coordinate().0 == committed.commit.commit_id.0));

@@ -138,6 +138,30 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
     } else {
         None
     };
+    if let Some(profile) = outputs.filter(|profile| profile.is_output_forest()) {
+        let execution = phase
+            .checked_execution_request_for(&application.runtime.product_runtime)
+            .map_err(Denial::Stopped)?;
+        let work = profile
+            .tree_profiles()
+            .len()
+            .checked_mul(
+                supported
+                    .installed
+                    .action_inventory()
+                    .declarations()
+                    .len()
+                    .saturating_add(1),
+            )
+            .and_then(|work| u64::try_from(work).ok())
+            .ok_or(Denial::OutputLineage(
+                worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow,
+            ))?;
+        execution.run_native_with_checkpoint(|context| {
+            crate::domain_computation::primary_graph::admitted_capture::checkpoint(context, work)
+        }).map_err(|cause| Denial::Stopped(crate::domain_computation::primary_graph::application_contribution::advancement_denial(cause)))?
+            .0.map_err(|cause| Denial::Stopped(crate::domain_computation::primary_graph::application_contribution::advancement_denial(worth_execution::WorkCeilingDenial::Stopped(cause))))?;
+    }
     for action in supported.installed.action_inventory().declarations() {
         let output = action.delivery().and_then(|delivery| delivery.output());
         let relevant = action.operation_identifier() == navigation.parts().operation
@@ -151,8 +175,11 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
             && (action.required_output_source() || output.is_some())
             && if let Some(profile) = outputs.filter(|profile| profile.uses_owned_model_graph()) {
                 output.is_some_and(|output| {
-                    output.root_type() != profile.root
-                        || output.read().is_some_and(|read| read != &access)
+                    output.read().is_some_and(|read| read != &access)
+                        || !profile
+                            .tree_profiles()
+                            .iter()
+                            .any(|tree| tree.root == output.root_type())
                 })
             } else {
                 expected_output.is_none() || output != expected_output
@@ -198,7 +225,7 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
                         RelationalTransactionIntent::ordinary(),
                     )
                     .map_err(Denial::Transaction)?;
-                drop(super::output_custody::prepare(
+                let prepared = super::output_custody::prepare(
                     &execution,
                     native,
                     application
@@ -209,7 +236,16 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
                         .as_deref(),
                     transaction,
                     graph,
-                )?);
+                )?;
+                if outputs.is_none()
+                    && prepared
+                        .1
+                        .as_ref()
+                        .is_some_and(|custody| !custody.routes.is_empty())
+                {
+                    return Err(correction(Eligibility::RequiredOutputs));
+                }
+                drop(prepared);
                 return Ok(());
             }
             let transaction = native

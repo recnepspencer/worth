@@ -14,6 +14,16 @@ use worth_query_execution::publication_boundary::document_history::{
     WorthQueryCompletedHistoryOutputs, WorthQueryHistoryOutputNavigationAdvance as Step,
 };
 
+pub(super) enum TreeCompletion {
+    Single(WorthQueryCompletedHistoryOutputs),
+    Forest(Arc<worth_query_execution::publication_boundary::document_history::WorthQueryRetainedHistoryOutputTree>),
+}
+#[derive(Clone, Copy)]
+pub(super) enum TreeCompletionMode {
+    Single,
+    Forest,
+}
+
 impl<S, P, R> WorthQueryHistoryWithOutputs<S, P, R>
 where
     S: ApplicationSchema + 'static,
@@ -37,6 +47,34 @@ where
         key: [u8; 32],
         step: Step<'_, '_>,
     ) -> Result<Option<WorthQueryCompletedHistoryOutputs>, WorthQueryHistoryOutputDenial> {
+        self.progress_tree(phase, request, key, step, TreeCompletionMode::Single)?
+            .map(|completion| match completion {
+                TreeCompletion::Single(outputs) => Ok(outputs),
+                TreeCompletion::Forest(_) => Err(WorthQueryHistoryOutputDenial::ForeignSource),
+            })
+            .transpose()
+    }
+
+    pub(super) fn progress_forest(
+        &self, phase: &WorthQueryAdvancementPhase<'_>,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>, key: [u8; 32], step: Step<'_, '_>,
+    ) -> Result<Option<Arc<worth_query_execution::publication_boundary::document_history::WorthQueryRetainedHistoryOutputTree>>, WorthQueryHistoryOutputDenial>{
+        self.progress_tree(phase, request, key, step, TreeCompletionMode::Forest)?
+            .map(|completion| match completion {
+                TreeCompletion::Forest(tree) => Ok(tree),
+                TreeCompletion::Single(_) => Err(WorthQueryHistoryOutputDenial::ForeignSource),
+            })
+            .transpose()
+    }
+
+    pub(super) fn progress_tree(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+        key: [u8; 32],
+        step: Step<'_, '_>,
+        completion: TreeCompletionMode,
+    ) -> Result<Option<TreeCompletion>, WorthQueryHistoryOutputDenial> {
         use WorthQueryHistoryOutputDenial as Denial;
         if matches!(step, Step::Selected(_)) {
             if let Some(slot) = self.existing_slot(&key)? {
@@ -168,7 +206,52 @@ where
             .expect("retained tree")
             .drain_read_request(phase, &self.application, branch)
             .map_err(Denial::Close)?;
+        if matches!(completion, TreeCompletionMode::Forest) {
+            if state.forest_tree.is_none() {
+                let SlotState {
+                    source,
+                    settlement,
+                    forest_tree,
+                    ..
+                } = &mut *state;
+                let (root, dependents, dependencies) = settlement
+                    .as_mut()
+                    .ok_or(Denial::ForeignSource)?
+                    .original_tree_parts();
+                let retained = self
+                    .application
+                    .retain_original_history_output_tree::<R>(
+                        phase,
+                        &program_publication_access(),
+                        source.as_ref().ok_or(Denial::ForeignSource)?,
+                        root,
+                        dependents,
+                        dependencies,
+                    )
+                    .map_err(Denial::GraphQualification)?;
+                *forest_tree = Some(retained);
+            }
+            return Ok(state
+                .forest_tree
+                .as_ref()
+                .map(|tree| TreeCompletion::Forest(Arc::clone(tree))));
+        }
         let settlement = state.settlement.as_ref().ok_or(Denial::ForeignSource)?;
+        if self.profile.uses_owned_model_graph() {
+            return self
+                .application
+                .qualify_original_graph_history_outputs::<R>(
+                    phase,
+                    &program_publication_access(),
+                    authority,
+                    state.source.as_ref().ok_or(Denial::ForeignSource)?,
+                    settlement.root_settlement().retained_settlement(),
+                    settlement.retained_settlements().skip(1),
+                    settlement.dependencies.as_ref(),
+                )
+                .map(|outputs| Some(TreeCompletion::Single(outputs)))
+                .map_err(Denial::GraphQualification);
+        }
         self.application
             .qualify_original_history_outputs::<R>(
                 phase,
@@ -179,7 +262,7 @@ where
                 settlement.retained_settlements().skip(1),
                 settlement.dependencies.as_ref(),
             )
-            .map(Some)
+            .map(|outputs| Some(TreeCompletion::Single(outputs)))
             .map_err(Denial::Qualification)
     }
 }

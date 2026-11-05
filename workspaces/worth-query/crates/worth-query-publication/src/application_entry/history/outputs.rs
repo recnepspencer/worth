@@ -1,6 +1,8 @@
 //! A document's output mode owns its tree; a request lends only current admission.
 use super::*;
 mod binding;
+mod forest;
+pub use forest::WorthQueryHistoryWithOutputTrees;
 mod closing;
 mod denial;
 mod progression;
@@ -10,6 +12,7 @@ mod tree;
 pub use denial::WorthQueryHistoryOutputDenial;
 pub use retained::WorthQueryHistoryWithOutputs;
 use worth_query_declaration::facade::application_history::ApplicationHistoryNavigationBinding;
+pub use worth_query_execution::publication_boundary::document_history::WorthQueryHistoryOutputQualificationDenial;
 use worth_query_execution::publication_boundary::document_history::{
     WorthQueryDocumentHistoryNavigation, WorthQueryHistoryNavigationCompletion,
     WorthQueryHistoryNavigationIntent, WorthQueryHistorySelection,
@@ -18,6 +21,7 @@ pub use worth_query_execution::publication_boundary::document_history::{
     WorthQueryHistoryOutputAdvanceDenial, WorthQueryHistoryOutputReadDenial,
     WorthQueryHistoryRootOutputAdmissionDenial,
 };
+pub use worth_query_execution::publication_boundary::original_read_outputs::WorthQueryOriginalReadOutputDenial;
 
 /// A document with no required derived-output tree has no output registry.
 #[derive(Debug)]

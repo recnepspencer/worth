@@ -11,7 +11,9 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         first::contracts(contracts)?;
         second::contracts(contracts)?;
         child::contracts(contracts)?;
-        restricted::contracts(contracts)
+        restricted::contracts(contracts)?;
+        upstream::contracts(contracts)?;
+        downstream::contracts(contracts)
     }
     fn configure(
         _: (),
@@ -23,7 +25,9 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         first::install(setup)?;
         second::install(setup)?;
         child::install(setup)?;
-        restricted::install(setup)
+        restricted::install(setup)?;
+        upstream::install(setup)?;
+        downstream::install(setup)
     }
 }
 pub fn install() -> Host {
