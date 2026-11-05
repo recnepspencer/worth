@@ -12,12 +12,6 @@ use crate::canonical_work::WorthQueryCanonicalWorkEvidence;
 
 const DOMAIN: &str = "worth-query.authorization-path";
 const RULE: &str = "worth-query-authorization-path-v2";
-const PATH_BUDGET: CanonicalDigestWorkBudget =
-    match CanonicalDigestWorkBudget::new(4_096, 1_024 * 1_024) {
-        Some(budget) => budget,
-        None => panic!("fixed authorization path canonical-work budget is valid"),
-    };
-
 pub(super) struct PreparedAuthorizationPathIdentity {
     pub(super) digest: CanonicalDigestId,
     pub(super) work: WorthQueryCanonicalWorkEvidence,
@@ -25,6 +19,7 @@ pub(super) struct PreparedAuthorizationPathIdentity {
 
 pub(super) fn prepare_authorization_path_identity(
     path: &ApplicationAuthorizationPath,
+    budget: CanonicalDigestWorkBudget,
 ) -> Result<PreparedAuthorizationPathIdentity, CanonicalDigestDerivationDenial> {
     let version =
         CanonicalizationRuleVersion::new(RULE).expect("fixed authorization path rule is valid");
@@ -37,7 +32,7 @@ pub(super) fn prepare_authorization_path_identity(
     .expect("authorization paths always have a nonempty canonical basis");
     let ready = canonicalization()
         .digest()
-        .for_sequence_with_budget(basis, CanonicalDigestAlgorithmId::sha256(), PATH_BUDGET)
+        .for_sequence_with_budget(basis, CanonicalDigestAlgorithmId::sha256(), budget)
         .into_result()?;
     let derived = canonicalization().digest().derive(ready);
     Ok(PreparedAuthorizationPathIdentity {

@@ -11,6 +11,7 @@ use crate::{
 use worth_query_declaration::facade::application_schema::ApplicationSchemaBindingIdentity;
 
 pub(crate) fn bind_resource_obligations(
+    budget: worth_foundational::facade::CanonicalDigestWorkBudget,
     binding: &ApplicationSchemaBindingIdentity,
     name: &str,
     purpose: WorthQueryResourceAccessPurpose,
@@ -32,6 +33,7 @@ pub(crate) fn bind_resource_obligations(
         .saturating_add(ability.map_or(0, |value| value.policy_paths().len().max(1)))
         .saturating_add(usize::from(!capabilities.is_empty()).saturating_mul(2));
     WorthQueryInstalledGraphObligationSet::for_resource(
+        budget,
         binding,
         name.to_owned(),
         purpose.name().to_owned(),

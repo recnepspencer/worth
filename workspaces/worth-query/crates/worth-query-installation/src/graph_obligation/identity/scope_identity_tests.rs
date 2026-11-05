@@ -58,6 +58,7 @@ fn identity(
         },
     ];
     derive_set_identity(
+        worth_foundational::facade::CanonicalDigestWorkBudget::new(4096, 1024 * 1024).unwrap(),
         &binding(),
         "application-operation",
         "apply-preserve",
@@ -110,5 +111,53 @@ fn mask_boundaries_and_projection_associations_cannot_alias() {
     assert_eq!(
         identity(vec![projection(1, &["b", "a"])]),
         identity(vec![projection(1, &["a", "b"])])
+    );
+}
+
+#[test]
+fn complete_field_marker_keeps_partial_and_whole_masks_distinct() {
+    let complete = identity(vec![projection(1, &["a", "a|b", "b"])]);
+    assert_ne!(complete, identity(vec![projection(1, &["a", "b"])]));
+    assert_ne!(complete, identity(vec![projection(1, &[])]));
+    assert_ne!(complete, identity(vec![projection(2, &["a", "a|b", "b"])]));
+}
+
+#[test]
+fn every_touch_kind_and_locus_remain_in_the_identity() {
+    use crate::domain_operation::{
+        WorthQueryOperationEntityTouchScope, WorthQueryOperationTouchContract,
+        WorthQueryOperationTouchScope,
+    };
+    let identity = |scope| {
+        derive_set_identity(
+            worth_foundational::facade::CanonicalDigestWorkBudget::new(4096, 1024 * 1024).unwrap(),
+            &binding(),
+            "application-operation",
+            "apply-preserve",
+            Some("Input"),
+            &[WorthQueryInstalledGraphObligationContract::MutationTouch {
+                contract: WorthQueryOperationTouchContract::Declared {
+                    graph_roles: vec!["primary".into()],
+                    scopes: vec![scope],
+                },
+            }],
+            &WorthQueryInstalledGraphObligationResourcePosture::ApplicationOperation(
+                crate::domain_computation::WorthQueryExecutionResourceContract::default(),
+            ),
+        )
+        .unwrap()
+        .0
+    };
+    let record = || WorthQueryOperationEntityTouchScope::new(binding(), "Record".into());
+    let original = identity(WorthQueryOperationTouchScope::CreateEntity(record()));
+    assert_ne!(
+        original,
+        identity(WorthQueryOperationTouchScope::DeleteEntity(record()))
+    );
+    assert_ne!(
+        original,
+        identity(WorthQueryOperationTouchScope::CreateEntity(
+            WorthQueryOperationEntityTouchScope::new(binding(), "Other".into()),
+        ))
     );
 }

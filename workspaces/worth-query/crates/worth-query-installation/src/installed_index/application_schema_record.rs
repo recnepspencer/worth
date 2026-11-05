@@ -71,6 +71,10 @@ impl WorthQueryInstalledApplicationSchemaRecord {
         &self.operation_contracts
     }
 
+    pub(super) fn identity_budget(&self) -> worth_foundational::facade::CanonicalDigestWorkBudget {
+        crate::derived_identity_budget::derived_identity_budget(self.schema_work)
+    }
+
     pub(super) fn installation_work(&self) -> WorthQueryCanonicalWorkEvidence {
         self.schema_work.combine(self.catalog.canonical_work())
     }
