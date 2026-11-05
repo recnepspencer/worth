@@ -1,5 +1,6 @@
 pub(crate) mod activation;
 mod admission;
+mod advancement_opening;
 mod application_publication;
 mod bootstrap;
 pub(crate) mod branch_close;

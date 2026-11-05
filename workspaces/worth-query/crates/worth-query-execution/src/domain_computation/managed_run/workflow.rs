@@ -289,3 +289,14 @@ impl std::fmt::Debug for WorthQueryWorkflowRunCompletionRejection {
 }
 
 mod court_doors_for_test;
+
+impl crate::domain_computation::primary_graph::request_execution::advancement::WorthQueryAdvancementSource
+    for WorthQueryRunningWorkflowRun
+{
+    fn advancement_owner(&self) -> Option<worth_runtime_world::facade::RuntimeWorldOwnerIdentity> {
+        self.execution_owner_identity()
+    }
+    fn advancement_source_instance(&self) -> u64 {
+        self.execution_source_instance_id()
+    }
+}

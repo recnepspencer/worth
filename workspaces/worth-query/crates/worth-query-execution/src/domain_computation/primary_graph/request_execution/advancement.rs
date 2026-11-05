@@ -152,7 +152,9 @@ pub(in crate::domain_computation::primary_graph) fn advancement_denial(
     }
 }
 
-mod installed_opening;
+pub(crate) mod installed_opening;
+pub(crate) mod source;
+pub use source::WorthQueryAdvancementSource;
 
 /// Installation runs serially under the host's memory and aggregate work bounds.
 /// Custody is per thread; another thread's public call owns its own request.
@@ -189,44 +191,6 @@ fn with_owned_bootstrap_advancement<R>(
     execution.run_advancement(None, None, body)
 }
 
-impl WorthQueryAdvancementDenial {
-    pub(in crate::domain_computation) fn provider_denial_cause(
-        self,
-    ) -> Result<
-        crate::domain_computation::WorthQueryProviderSessionDenialKind,
-        crate::domain_computation::WorthQueryProviderSessionControlStopKind,
-    > {
-        use crate::domain_computation::{
-            WorthQueryProviderSessionControlStopKind as Control,
-            WorthQueryProviderSessionDenialKind as Kind,
-        };
-        match self {
-            Self::Resource(denial) => Ok(Kind::ExecutionResource {
-                denial,
-                partition_identity: None,
-                policy_ancestor: None,
-            }),
-            Self::Interrupted(WorthQueryManagedComputationInterruption::Cancelled) => {
-                Err(Control::Cancelled)
-            }
-            Self::Interrupted(WorthQueryManagedComputationInterruption::DeadlineExceeded) => {
-                Err(Control::TimedOut)
-            }
-            Self::NestedOpening => Ok(Kind::ExecutionResource {
-                denial: Resource::NestedAdvancementOpening,
-                partition_identity: None,
-                policy_ancestor: None,
-            }),
-            Self::NestedStopped => Ok(Kind::ExecutionNestedPatternStopped {
-                partition_identity: None,
-            }),
-            Self::Panicked => Ok(Kind::ExecutionWorkerPanicked {
-                partition_identity: None,
-            }),
-        }
-    }
-}
-
 pub(in crate::domain_computation::primary_graph) mod observation;
 
 pub use observation::{
@@ -238,13 +202,24 @@ pub use observation::{
 pub fn with_test_advancement<R>(
     body: impl for<'scope> FnOnce(test_host_policy::TestHostRequest<'scope>) -> R,
 ) -> R {
-    let policy =
-        crate::domain_computation::execution_runtime::product_world::test_product_world_resources(worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system())
-            .execution_policy();
-    with_owned_bootstrap_advancement(policy, |phase| {
+    with_owned_bootstrap_advancement(fixture_request_policy(), |phase| {
         body(test_host_policy::TestHostRequest::new(phase.active))
     })
     .expect("the declared fixture policy admits its host call")
+}
+
+/// The declared fixture request policy: one serial worker with canonical bitwise results and
+/// a finite work allowance. The fixture Product World installs it too.
+pub(crate) fn fixture_request_policy() -> worth_foundational::ExecutionRequestPolicy {
+    worth_foundational::ExecutionRequestPolicy::new(
+        worth_foundational::ExecutionPosture::Serial,
+        worth_foundational::DeterminismContract::CanonicalBitwise,
+        worth_foundational::ExecutionBudget::new(
+            std::num::NonZeroUsize::MIN,
+            None,
+            Some(8_000_000),
+        ),
+    )
 }
 
 /// Positive fixture authoring has its own finite allowance, outside measured host calls.

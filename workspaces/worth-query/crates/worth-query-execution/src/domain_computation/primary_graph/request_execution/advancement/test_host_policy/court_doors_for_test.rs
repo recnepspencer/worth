@@ -5,7 +5,7 @@ impl<'scope> TestHostRequest<'scope> {
     #[doc(hidden)]
     pub fn execution_request_for_for_test(
         &self,
-        runtime: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime,
+        runtime: &(impl super::super::source::WorthQueryAdvancementSource + ?Sized),
     ) -> Result<ExecutionRequest<'_, '_>, WorthQueryForeignAdvancementPhase> {
         Self::execution_request_for(self, runtime)
     }
@@ -13,11 +13,11 @@ impl<'scope> TestHostRequest<'scope> {
 
 impl<'scope> TestHostRequest<'scope> {
     #[doc(hidden)]
-    pub fn phase_for_application_for_test<Owner: WorthQueryInstalledProductOwner + ?Sized>(
+    pub fn phase_for_application_for_test(
         &self,
-        runtime: &Owner,
+        runtime: &(impl super::super::source::WorthQueryAdvancementSource + ?Sized),
     ) -> WorthQueryAdvancementPhase<'scope> {
-        Self::phase_for_application::<Owner>(self, runtime)
+        Self::phase_for_application(self, runtime)
     }
 }
 
@@ -32,7 +32,7 @@ impl<'scope> TestHostRequest<'scope> {
     #[doc(hidden)]
     pub fn phase_for_direct_for_test(
         &self,
-        run: &crate::domain_computation::WorthQueryRunningDirectRun,
+        run: &(impl super::super::source::WorthQueryAdvancementSource + ?Sized),
     ) -> WorthQueryAdvancementPhase<'scope> {
         Self::phase_for_direct(self, run)
     }
@@ -42,7 +42,7 @@ impl<'scope> TestHostRequest<'scope> {
     #[doc(hidden)]
     pub fn phase_for_workflow_for_test(
         &self,
-        run: &crate::domain_computation::WorthQueryRunningWorkflowRun,
+        run: &(impl super::super::source::WorthQueryAdvancementSource + ?Sized),
     ) -> WorthQueryAdvancementPhase<'scope> {
         Self::phase_for_workflow(self, run)
     }

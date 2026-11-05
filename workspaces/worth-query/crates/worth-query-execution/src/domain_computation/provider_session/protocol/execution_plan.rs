@@ -294,8 +294,9 @@ impl<'run> WorthQueryAdmittedProviderExecutionPlan<'run> {
         }
         .map_err(|cause| {
             failure(
-                crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::from(cause)
-                    .provider_denial_cause()
+                super::advancement_denial_cause(
+                    crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial::from(cause),
+                )
                     .expect("foreign custody is a resource refusal"),
                 "provider plan belongs to another advancement runtime",
                 &self.counters,

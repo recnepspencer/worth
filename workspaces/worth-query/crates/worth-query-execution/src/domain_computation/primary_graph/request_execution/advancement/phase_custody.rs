@@ -174,15 +174,15 @@ impl<'scope> WorthQueryAdvancementPhase<'scope> {
     /// Borrows execution only after the receiving installed runtime accepts custody.
     pub(crate) fn execution_request_for(
         &self,
-        runtime: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime,
+        runtime: &(impl super::source::WorthQueryAdvancementSource + ?Sized),
     ) -> Result<ExecutionRequest<'scope, 'scope>, WorthQueryForeignAdvancementPhase> {
-        self.request_for_owner(runtime.owner.owner_identity())
+        self.request_for_owner_of(runtime)
     }
 
     /// Lends the admitted request and preserves the shared advancement refusal.
     pub fn checked_execution_request_for(
         &self,
-        runtime: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime,
+        runtime: &(impl super::source::WorthQueryAdvancementSource + ?Sized),
     ) -> Result<ExecutionRequest<'scope, 'scope>, super::WorthQueryAdvancementDenial> {
         self.execution_request_for(runtime).map_err(Into::into)
     }
@@ -190,7 +190,7 @@ impl<'scope> WorthQueryAdvancementPhase<'scope> {
     /// Checks the receiving runtime and this phase's current interruption state.
     pub fn check_live_for(
         &self,
-        runtime: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime,
+        runtime: &(impl super::source::WorthQueryAdvancementSource + ?Sized),
     ) -> Result<(), super::WorthQueryAdvancementDenial> {
         self.checked_execution_request_for(runtime)?
             .check_live()
@@ -221,20 +221,31 @@ impl<'scope> WorthQueryAdvancementPhase<'scope> {
 
     pub(in crate::domain_computation) fn request_for_managed(
         &self,
-        observation: &crate::domain_computation::managed_run::WorthQueryManagedRelationalObservation,
+        observation: &(impl super::source::WorthQueryAdvancementSource + ?Sized),
     ) -> Result<ExecutionRequest<'scope, 'scope>, WorthQueryForeignAdvancementPhase> {
-        match observation.owner_identity() {
+        match observation.advancement_owner() {
             Some(owner) => self.request_for_owner(owner),
-            None => self.request_for_source(observation.identity().runtime_instance_id()),
+            None => self.request_for_source(observation.advancement_source_instance()),
+        }
+    }
+
+    /// The admitted request, only for a source with this phase's World owner.
+    fn request_for_owner_of(
+        &self,
+        source: &(impl super::source::WorthQueryAdvancementSource + ?Sized),
+    ) -> Result<ExecutionRequest<'scope, 'scope>, WorthQueryForeignAdvancementPhase> {
+        match source.advancement_owner() {
+            Some(owner) => self.request_for_owner(owner),
+            None => Err(WorthQueryForeignAdvancementPhase(())),
         }
     }
 
     pub fn complete(self) {}
     pub(in crate::domain_computation::primary_graph) fn execution_for(
         &self,
-        runtime: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime,
+        runtime: &(impl super::source::WorthQueryAdvancementSource + ?Sized),
     ) -> Result<&QueryRequestExecution<'scope>, WorthQueryForeignAdvancementPhase> {
-        self.request_for_owner(runtime.owner.owner_identity())?;
+        self.request_for_owner_of(runtime)?;
         Ok(self.active.execution)
     }
 }

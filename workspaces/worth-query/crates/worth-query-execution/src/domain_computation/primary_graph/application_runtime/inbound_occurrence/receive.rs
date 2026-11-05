@@ -270,7 +270,8 @@ impl WorthQueryInboundAdmissionDenial {
         cause: crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
     ) -> Self {
         let stage = crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage::ResourceAdmission;
-        match cause.provider_denial_cause() {
+        match crate::domain_computation::provider_session::protocol::advancement_denial_cause(cause)
+        {
             Ok(kind) => Self::PublicationExecutionDenied { stage, kind },
             Err(kind) => Self::PublicationExecutionControlStopped { stage, kind },
         }

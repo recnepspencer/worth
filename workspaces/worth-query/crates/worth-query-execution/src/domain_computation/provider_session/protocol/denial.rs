@@ -297,3 +297,45 @@ impl WorthQueryProviderSessionFailure {
 mod managed_index;
 
 mod court_doors_for_test;
+
+/// How a provider session reports a refused advancement: as its own denial, or as a control stop.
+pub(in crate::domain_computation) fn advancement_denial_cause(
+    denial: crate::domain_computation::primary_graph::request_execution::advancement::WorthQueryAdvancementDenial,
+) -> Result<
+    crate::domain_computation::WorthQueryProviderSessionDenialKind,
+    crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+> {
+    use crate::domain_computation::primary_graph::request_execution::advancement::WorthQueryAdvancementDenial as Denial;
+    use crate::domain_computation::primary_graph::request_execution::execution_refusal::{
+        WorthQueryManagedComputationInterruption,
+        WorthQueryManagedComputationResourceDenial as Resource,
+    };
+    use crate::domain_computation::{
+        WorthQueryProviderSessionControlStopKind as Control,
+        WorthQueryProviderSessionDenialKind as Kind,
+    };
+    match denial {
+        Denial::Resource(denial) => Ok(Kind::ExecutionResource {
+            denial,
+            partition_identity: None,
+            policy_ancestor: None,
+        }),
+        Denial::Interrupted(WorthQueryManagedComputationInterruption::Cancelled) => {
+            Err(Control::Cancelled)
+        }
+        Denial::Interrupted(WorthQueryManagedComputationInterruption::DeadlineExceeded) => {
+            Err(Control::TimedOut)
+        }
+        Denial::NestedOpening => Ok(Kind::ExecutionResource {
+            denial: Resource::NestedAdvancementOpening,
+            partition_identity: None,
+            policy_ancestor: None,
+        }),
+        Denial::NestedStopped => Ok(Kind::ExecutionNestedPatternStopped {
+            partition_identity: None,
+        }),
+        Denial::Panicked => Ok(Kind::ExecutionWorkerPanicked {
+            partition_identity: None,
+        }),
+    }
+}

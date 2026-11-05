@@ -4,14 +4,6 @@ use super::{
     *,
 };
 
-/// The product runtime an installed application owns, lent to fixture host phases so the
-/// fixture host never names the application runtime.
-pub trait WorthQueryInstalledProductOwner {
-    fn installed_product_runtime(
-        &self,
-    ) -> &crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime;
-}
-
 #[derive(Clone, Copy)]
 pub struct TestHostRequest<'scope> {
     active: &'scope ActiveAdvancement<'scope>,
@@ -42,7 +34,7 @@ impl<'scope> TestHostRequest<'scope> {
 
     pub(crate) fn execution_request_for(
         &self,
-        runtime: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime,
+        runtime: &(impl super::source::WorthQueryAdvancementSource + ?Sized),
     ) -> Result<ExecutionRequest<'_, '_>, WorthQueryForeignAdvancementPhase> {
         self.phase_for_product(runtime)
             .execution_request_for(runtime)?;
@@ -53,11 +45,11 @@ impl<'scope> TestHostRequest<'scope> {
         WorthQueryBootstrapAdvancementPhase::new(self.borrowed_request_for_test())
     }
 
-    pub(crate) fn phase_for_application<Owner: WorthQueryInstalledProductOwner + ?Sized>(
+    pub(crate) fn phase_for_application(
         &self,
-        runtime: &Owner,
+        runtime: &(impl super::source::WorthQueryAdvancementSource + ?Sized),
     ) -> WorthQueryAdvancementPhase<'scope> {
-        self.phase_for_product(runtime.installed_product_runtime())
+        self.phase_for_product(runtime)
     }
 
     pub(super) fn from_installed(phase: &WorthQueryAdvancementPhase<'scope>) -> Self {
@@ -85,46 +77,39 @@ impl<'scope> TestHostRequest<'scope> {
 
     pub(crate) fn phase_for_product(
         &self,
-        runtime: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime,
+        runtime: &(impl super::source::WorthQueryAdvancementSource + ?Sized),
     ) -> WorthQueryAdvancementPhase<'scope> {
-        self.lend_installed(
-            AdvancementSource::Relational(
-                runtime
-                    .source
-                    .authoritative_source_profile()
-                    .runtime_instance_id(),
-            ),
-            Some(runtime.owner.owner_identity()),
-        )
+        self.lend_source(runtime)
     }
 
     pub(crate) fn phase_for_direct(
         &self,
-        run: &crate::domain_computation::WorthQueryRunningDirectRun,
+        run: &(impl super::source::WorthQueryAdvancementSource + ?Sized),
     ) -> WorthQueryAdvancementPhase<'scope> {
-        self.lend_installed(
-            AdvancementSource::Relational(run.execution_source_instance_id()),
-            run.execution_owner_identity(),
-        )
+        self.lend_source(run)
     }
 
     pub(crate) fn phase_for_workflow(
         &self,
-        run: &crate::domain_computation::WorthQueryRunningWorkflowRun,
+        run: &(impl super::source::WorthQueryAdvancementSource + ?Sized),
     ) -> WorthQueryAdvancementPhase<'scope> {
-        self.lend_installed(
-            AdvancementSource::Relational(run.execution_source_instance_id()),
-            run.execution_owner_identity(),
-        )
+        self.lend_source(run)
     }
 
     pub(in crate::domain_computation) fn phase_for_managed(
         &self,
-        observation: &crate::domain_computation::managed_run::WorthQueryManagedRelationalObservation,
+        observation: &(impl super::source::WorthQueryAdvancementSource + ?Sized),
+    ) -> WorthQueryAdvancementPhase<'scope> {
+        self.lend_source(observation)
+    }
+
+    fn lend_source(
+        &self,
+        source: &(impl super::source::WorthQueryAdvancementSource + ?Sized),
     ) -> WorthQueryAdvancementPhase<'scope> {
         self.lend_installed(
-            AdvancementSource::Relational(observation.identity().runtime_instance_id()),
-            observation.owner_identity(),
+            AdvancementSource::Relational(source.advancement_source_instance()),
+            source.advancement_owner(),
         )
     }
 }

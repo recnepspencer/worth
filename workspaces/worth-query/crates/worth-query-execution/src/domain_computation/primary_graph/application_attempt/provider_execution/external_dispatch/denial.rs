@@ -357,7 +357,8 @@ impl WorthQueryExternalRedispatchDenial {
             | Advancement::NestedStopped
             | Advancement::Panicked => {}
         }
-        match cause.provider_denial_cause() {
+        match crate::domain_computation::provider_session::protocol::advancement_denial_cause(cause)
+        {
             Ok(kind) => Self::CompletionExecutionDenied { stage, kind },
             Err(kind) => Self::CompletionExecutionControlStopped { stage, kind },
         }

@@ -5,7 +5,7 @@ impl<'scope> WorthQueryAdvancementPhase<'scope> {
     #[doc(hidden)]
     pub fn execution_for_for_test(
         &self,
-        runtime: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime,
+        runtime: &(impl super::super::source::WorthQueryAdvancementSource + ?Sized),
     ) -> Result<&QueryRequestExecution<'scope>, WorthQueryForeignAdvancementPhase> {
         Self::execution_for(self, runtime)
     }
@@ -24,7 +24,7 @@ impl<'scope> WorthQueryAdvancementPhase<'scope> {
     #[doc(hidden)]
     pub fn execution_request_for_for_test(
         &self,
-        runtime: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime,
+        runtime: &(impl super::super::source::WorthQueryAdvancementSource + ?Sized),
     ) -> Result<ExecutionRequest<'scope, 'scope>, WorthQueryForeignAdvancementPhase> {
         Self::execution_request_for(self, runtime)
     }

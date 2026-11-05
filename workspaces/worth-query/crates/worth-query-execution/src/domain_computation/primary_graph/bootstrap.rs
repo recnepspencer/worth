@@ -250,7 +250,9 @@ fn primary_graph_denial(
 pub(super) fn request_denial(
     cause: crate::domain_computation::primary_graph::request_execution::WorthQueryAdvancementDenial,
 ) -> WorthQueryPrimaryGraphInstallationDenial {
-    let kind = match cause.provider_denial_cause() {
+    let kind = match crate::domain_computation::provider_session::protocol::advancement_denial_cause(
+        cause,
+    ) {
         Ok(kind) => WorthQueryPrimaryGraphInstallationDenialKind::ExecutionDenied { kind },
         Err(kind) => WorthQueryPrimaryGraphInstallationDenialKind::ExecutionControlStopped { kind },
     };

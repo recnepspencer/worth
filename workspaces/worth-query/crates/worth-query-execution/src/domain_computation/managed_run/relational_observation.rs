@@ -97,3 +97,14 @@ impl WorthQueryManagedRelationalObservationReleaseReceipt {
 }
 
 mod court_doors_for_test;
+
+impl crate::domain_computation::primary_graph::request_execution::advancement::WorthQueryAdvancementSource
+    for WorthQueryManagedRelationalObservation
+{
+    fn advancement_owner(&self) -> Option<worth_runtime_world::facade::RuntimeWorldOwnerIdentity> {
+        self.owner_identity()
+    }
+    fn advancement_source_instance(&self) -> u64 {
+        self.identity().runtime_instance_id()
+    }
+}

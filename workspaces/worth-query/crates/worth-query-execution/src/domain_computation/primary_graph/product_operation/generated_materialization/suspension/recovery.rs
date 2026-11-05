@@ -175,7 +175,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             execution
                 .consult()
                 .map_err(|cause| {
-                    Admission::Stopped(advancement_denial(cause).provider_denial_cause())
+                    Admission::Stopped(crate::domain_computation::provider_session::protocol::advancement_denial_cause(advancement_denial(cause)))
                 })
                 .and_then(|()| self.on_branch(retry.branch).select_with_request(execution))
         };

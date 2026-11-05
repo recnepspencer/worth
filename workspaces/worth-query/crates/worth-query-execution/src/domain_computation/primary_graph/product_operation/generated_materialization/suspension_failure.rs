@@ -8,7 +8,12 @@ impl WorthQueryGeneratedOutputSuspensionFailure {
         &self,
     ) -> Option<crate::domain_computation::WorthQueryProviderSessionControlStopKind> {
         match self {
-            Self::ExecutionDenied(cause) => cause.provider_denial_cause().err(),
+            Self::ExecutionDenied(cause) => {
+                crate::domain_computation::provider_session::protocol::advancement_denial_cause(
+                    *cause,
+                )
+                .err()
+            }
             Self::Preparation(cause) => {
                 super::preparation_execution::project(cause).and_then(Result::err)
             }
