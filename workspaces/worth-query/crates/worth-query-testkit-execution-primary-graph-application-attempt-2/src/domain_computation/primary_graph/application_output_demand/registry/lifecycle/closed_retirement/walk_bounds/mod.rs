@@ -1,6 +1,5 @@
 //! Actual mutation walk sites stay local when another occurrence grows.
 
-use crate::domain_computation::primary_graph::application_output_demand::registry::tests as registry_tests;
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::support::key;
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::support::occurrence;
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::support::record;

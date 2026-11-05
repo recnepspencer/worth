@@ -3,7 +3,6 @@
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::planar_read::PlanarQuery;
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::planar_read::PlanarReadBinding;
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::planar_read::PlanarReadResult;
-use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::principal;
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::principal::ConsumerPrincipalBinding;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationOutputDemandSource;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationQueryAccessContext;
@@ -148,8 +147,6 @@ impl WorthQueryApplicationInvariantRule<OwnerSchema> for InterruptingRule {
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitDenialStage;
 use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandAdvance;
 use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenialKind;
-
-use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::*;
 
 #[test]
 fn cancelling_one_caller_during_producer_commit_keeps_the_other_callers_row_live() {

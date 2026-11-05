@@ -22,7 +22,6 @@ use worth_query_execution::facade::domain_computation::WorthQueryProviderSession
 use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionLifecycle;
 use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionProtocolCounters;
 use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionProtocolStage;
-use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionRecoveryPosture;
 use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionToken;
 use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionTokenAdmission;
 use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionView;

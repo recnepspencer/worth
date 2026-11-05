@@ -57,7 +57,7 @@ pub struct NestedAccountResult {
     pub reverse_sequences: Vec<u64>,
 }
 worth_query_declaration::worth_query_portable_type!(NestedAccountResult => "worth.query.test.execution.nested.result.v1");
-worth_query_declaration::worth_query_structured_value_binding!(NestedUnitResultBinding for () { identity: "worth.rust.unit" });
+worth_query_declaration::worth_query_structured_value_binding!(pub NestedUnitResultBinding for () { identity: "worth.rust.unit" });
 
 impl NestedAccountResult {
     pub fn activity_identities(

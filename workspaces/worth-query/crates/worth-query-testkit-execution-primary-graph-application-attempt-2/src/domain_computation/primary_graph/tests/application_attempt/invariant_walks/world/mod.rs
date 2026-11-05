@@ -1,6 +1,5 @@
 //! Install a real schema and rule, then publish one complete authored graph.
 use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::tests::application_attempt::invariant_walks::observation::Observation;
-use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::tests::application_attempt::invariant_walks::rule;
 use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::tests::application_attempt::invariant_walks::schema::*;
 use worth_query_execution::facade::domain_computation::WorthQueryExecutionRuntimeInstaller;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationEntityKey;

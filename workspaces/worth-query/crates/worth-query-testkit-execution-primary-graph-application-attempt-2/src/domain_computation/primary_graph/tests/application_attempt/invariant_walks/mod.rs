@@ -1,13 +1,7 @@
 //! Installed complete walks preserve deep prepared authority and atomic denial.
 
-use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitDenialKind;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitOutcome;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationEffectProgram;
-use worth_query_execution::facade::domain_computation::WorthQueryExecutionPlacementForTest;
-use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationResourceDenial;
-use worth_query_execution::facade::domain_computation::advancement_requests_on_this_thread_for_test;
-use worth_query_execution::facade::domain_computation::bound_advancement_requests_on_this_thread_for_test;
-use worth_query_execution::facade::domain_computation::place_managed_computations_on_this_thread_for_test;
 use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::tests::application_attempt::invariant_walks::schema::Node;
 use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::tests::application_attempt::invariant_walks::schema::WalkSchema;
 use crate::domain_computation::primary_graph::tests::application_attempt::invariant_walks::world::World;

@@ -1,5 +1,4 @@
 //! Real package installation and bootstrap, with a matching static schema type.
-use crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::probe;
 use crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::schema::*;
 use worth_query_execution::facade::domain_computation::WorthQueryExecutionRuntimeInstaller;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationEntityKey;

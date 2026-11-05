@@ -1,14 +1,10 @@
 use crate::domain_computation::managed_run::tests::provisional_attempt_fixture::InvariantFixtureOutcome;
 use crate::domain_computation::managed_run::tests::provisional_attempt_fixture::ProvisionalProviderState;
 
-use crate::domain_computation::managed_run::tests::invariant_execution_fixture as invariant_fixture;
-use crate::domain_computation::managed_run::tests::provisional_attempt_fixture::*;
 use std::num::NonZeroU32;
 use std::sync::Arc;
 use std::sync::Mutex;
-use worth_query_execution::facade::domain_computation::WorthQueryInvariantExecutionDenialKind;
 use worth_query_execution::facade::domain_computation::WorthQueryInvariantExecutionFailure;
-use worth_query_execution::facade::domain_computation::WorthQueryInvariantExecutionFailurePosture;
 use worth_query_execution::facade::domain_computation::WorthQueryInvariantReceipt;
 use worth_query_execution::facade::domain_computation::WorthQueryInvariantStateLocator;
 use worth_query_installation::facade::WorthQueryInstalledInvariantExecutionRequirement;

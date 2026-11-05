@@ -9,8 +9,6 @@ use worth_query_execution::court_doors_for_test::domain_computation::primary_gra
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::refreshed_rejoin::awaited_by_stale_owner;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::refreshed_rejoin::newest_of_occurrence;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::refreshed_rejoin::occurrence_rows;
-use crate::domain_computation::primary_graph::application_output_demand::registry::tests::*;
-use crate::domain_computation::primary_graph::tests::recoverable_commit_support;
 pub fn check(search: usize) {
     let mut contacts = Vec::new();
     let receipts = receipt_batch();

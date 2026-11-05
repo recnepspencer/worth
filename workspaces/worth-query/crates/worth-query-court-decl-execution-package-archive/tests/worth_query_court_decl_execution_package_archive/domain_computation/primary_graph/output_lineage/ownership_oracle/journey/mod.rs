@@ -1,7 +1,6 @@
 //! Actual Query admission and fresh disclosure for one real MODE2 completion.
 
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::planar_read::PlanarReadBinding;
-use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::principal;
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::principal::ConsumerPrincipalBinding;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationQueryAccessContext;
 use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandAdvance;
@@ -124,7 +123,6 @@ pub fn complete_with_contacts(
         .unwrap()
 }
 
-use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::*;
 #[test]
 fn real_mode2_mixed_query_publication_attests_neither_whole_nor_created_subset() {
     let runtime = crate::domain_computation::primary_graph::output_lineage::ownership_oracle::installation::install();

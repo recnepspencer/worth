@@ -12,7 +12,6 @@ use crate::domain_computation::primary_graph::application_output_demand::registr
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::support::record;
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::support::retain_owned_key;
 
-use crate::domain_computation::primary_graph::application_output_demand::registry::tests::*;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint;
 pub fn ready() -> DemandState {
     let receipt = crate::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();

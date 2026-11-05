@@ -1,9 +1,6 @@
-use worth_query_execution::facade::domain_computation::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::num::NonZeroUsize;
 use std::time::Duration;
 use worth_query_declaration::facade::application_query::ApplicationQueryParameterSet;
-use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
-use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_two_principal_authorization_world;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::application_queries::parameter_reference::status_parameter;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::Account;
@@ -21,7 +18,6 @@ use worth_query_testkit_execution_primary_graph_application_contribution::domain
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::nested_account::NestedAccountResult;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::OrderedAccountSummaryQuery;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationQueryAccessContext;
-use worth_query_execution::facade::domain_computation::WorthQueryApplicationQueryAdmissionDenialKind;
 use worth_query_execution::facade::domain_computation::WorthQueryPrincipalResolutionMode;
 pub use crate::domain_computation::primary_graph::tests::application_query::observed_source_fixture::observed_account_source;
 pub fn installed_query(
