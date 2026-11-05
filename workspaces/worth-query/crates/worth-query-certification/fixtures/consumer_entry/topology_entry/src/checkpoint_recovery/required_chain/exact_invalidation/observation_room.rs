@@ -135,9 +135,9 @@ mod serial {
     }
         match write() {
             Ok(Performed::NotPerformed(
-                WorthQueryApplicationMutationOutcome::AlreadyCommitted(replayed),
+                WorthQueryApplicationMutationOutcome::RecoveredCommitted(replayed),
             )) => assert!(
-                replayed.is_same_authoritative_commit(&receipt),
+                receipt.matches_recorded_original(&replayed),
                 "{at}: the same request answers the commit it performed"
             ),
             _ => panic!("{at}: a released write is not performed again"),
