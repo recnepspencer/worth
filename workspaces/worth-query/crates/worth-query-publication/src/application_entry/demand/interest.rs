@@ -150,7 +150,7 @@ where
             .recover_prepared_program_root_source::<Root>(
                 phase,
                 &worth_query_execution::publication_boundary::program_publication_access(),
-                &source_receipt,
+                source_receipt,
             )
             .map_err(WorthQueryApplicationOutputDemandDenial::Demand)?;
         let (source_receipt, observation, prepared) = retained;
