@@ -8,6 +8,7 @@ mod handler;
 mod identity;
 mod operation_body;
 mod output_demand;
+mod output_lineage;
 mod principal_currentness_capture;
 mod product_activation;
 mod resolution;

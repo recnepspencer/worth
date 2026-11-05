@@ -37,11 +37,6 @@ pub fn inexact_native_deliveries_on_this_thread_for_test() -> u64 {
     INEXACT_DELIVERIES.with(Cell::get)
 }
 
-impl<Schema>
-    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
-{
-}
-
 // Law 2, scope: passive counts end with their owned observation guard.
 thread_local! { static CLEANUP_REGISTERED: Cell<bool> = const { Cell::new(false) }; }
 fn clear_observations() {
