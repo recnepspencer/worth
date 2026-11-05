@@ -1,0 +1,115 @@
+{
+ "parent": "domain_computation",
+ "note": "Draft target layer stack, bottom to top; within a layer, modules are listed bottom to top too. Rerun: request_execution (moved in phase 1) placed at the bottom of execution_resources.",
+ "layers": [
+  {
+   "name": "identity_time_and_observation",
+   "modules": [
+    [
+     "runtime_time",
+     "the one time source for grant validity, timeouts and recovery expiry"
+    ],
+    [
+     "artifact_identity",
+     "artifact identity"
+    ],
+    [
+     "application_outcome_identity",
+     "application outcome identity"
+    ],
+    [
+     "evidence_material",
+     "evidence material"
+    ],
+    [
+     "evidence_identity",
+     "the canonical Query diagnostic identity protocol"
+    ],
+    [
+     "execution_observation",
+     "owned observation lifetime for Query execution"
+    ],
+    [
+     "application_contract_admission",
+     "execution-side consumption of installed read and program meaning"
+    ]
+   ]
+  },
+  {
+   "name": "execution_resources",
+   "modules": [
+    [
+     "request_execution",
+     "advancement phases and request custody (moved to the domain level in phase 1)"
+    ],
+    [
+     "execution_runtime",
+     "the product world and execution runtime resources"
+    ],
+    [
+     "invalidation_equivalence_control",
+     "the receiver-owned verification arm"
+    ],
+    [
+     "product_publication",
+     "product publication and unpublished recovery"
+    ],
+    [
+     "artifact_owner",
+     "artifact ownership and production authority"
+    ],
+    [
+     "operation_binding",
+     "operation binding authority and resource topology"
+    ],
+    [
+     "domain_evidence_binding",
+     "domain evidence binding"
+    ]
+   ]
+  },
+  {
+   "name": "sessions_authority_and_aftermath",
+   "modules": [
+    [
+     "provider_session",
+     "provider session protocol, failures and commit stops"
+    ],
+    [
+     "managed_run",
+     "managed provider runs"
+    ],
+    [
+     "authorization",
+     "operation authorization, capabilities and disclosure"
+    ],
+    [
+     "application_aftermath",
+     "external effects, recovery custody and recorded correction causality"
+    ]
+   ]
+  },
+  {
+   "name": "primary_graph",
+   "modules": [
+    [
+     "primary_graph",
+     "the primary application graph"
+    ]
+   ]
+  },
+  {
+   "name": "convergence_and_attempts",
+   "modules": [
+    [
+     "convergence_epoch",
+     "convergence epochs over managed runs"
+    ],
+    [
+     "execution_resource_attempt",
+     "execution resource attempts"
+    ]
+   ]
+  }
+ ]
+}

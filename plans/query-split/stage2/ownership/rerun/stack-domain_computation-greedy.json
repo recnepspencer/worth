@@ -1,0 +1,195 @@
+{
+ "parent": "domain_computation",
+ "note": "Current greedy layering of module_coupling.py at the rerun commit, bottom to top, one layer per module.",
+ "layers": [
+  {
+   "name": "application_contract_admission",
+   "modules": [
+    [
+     "application_contract_admission",
+     "greedy rank 0"
+    ]
+   ]
+  },
+  {
+   "name": "application_outcome_identity",
+   "modules": [
+    [
+     "application_outcome_identity",
+     "greedy rank 1"
+    ]
+   ]
+  },
+  {
+   "name": "artifact_identity",
+   "modules": [
+    [
+     "artifact_identity",
+     "greedy rank 2"
+    ]
+   ]
+  },
+  {
+   "name": "evidence_identity",
+   "modules": [
+    [
+     "evidence_identity",
+     "greedy rank 3"
+    ]
+   ]
+  },
+  {
+   "name": "evidence_material",
+   "modules": [
+    [
+     "evidence_material",
+     "greedy rank 4"
+    ]
+   ]
+  },
+  {
+   "name": "execution_observation",
+   "modules": [
+    [
+     "execution_observation",
+     "greedy rank 5"
+    ]
+   ]
+  },
+  {
+   "name": "request_execution",
+   "modules": [
+    [
+     "request_execution",
+     "greedy rank 6"
+    ]
+   ]
+  },
+  {
+   "name": "runtime_time",
+   "modules": [
+    [
+     "runtime_time",
+     "greedy rank 7"
+    ]
+   ]
+  },
+  {
+   "name": "domain_evidence_binding",
+   "modules": [
+    [
+     "domain_evidence_binding",
+     "greedy rank 8"
+    ]
+   ]
+  },
+  {
+   "name": "artifact_owner",
+   "modules": [
+    [
+     "artifact_owner",
+     "greedy rank 9"
+    ]
+   ]
+  },
+  {
+   "name": "execution_runtime",
+   "modules": [
+    [
+     "execution_runtime",
+     "greedy rank 10"
+    ]
+   ]
+  },
+  {
+   "name": "invalidation_equivalence_control",
+   "modules": [
+    [
+     "invalidation_equivalence_control",
+     "greedy rank 11"
+    ]
+   ]
+  },
+  {
+   "name": "product_publication",
+   "modules": [
+    [
+     "product_publication",
+     "greedy rank 12"
+    ]
+   ]
+  },
+  {
+   "name": "operation_binding",
+   "modules": [
+    [
+     "operation_binding",
+     "greedy rank 13"
+    ]
+   ]
+  },
+  {
+   "name": "convergence_epoch",
+   "modules": [
+    [
+     "convergence_epoch",
+     "greedy rank 14"
+    ]
+   ]
+  },
+  {
+   "name": "application_aftermath",
+   "modules": [
+    [
+     "application_aftermath",
+     "greedy rank 15"
+    ]
+   ]
+  },
+  {
+   "name": "provider_session",
+   "modules": [
+    [
+     "provider_session",
+     "greedy rank 16"
+    ]
+   ]
+  },
+  {
+   "name": "authorization",
+   "modules": [
+    [
+     "authorization",
+     "greedy rank 17"
+    ]
+   ]
+  },
+  {
+   "name": "managed_run",
+   "modules": [
+    [
+     "managed_run",
+     "greedy rank 18"
+    ]
+   ]
+  },
+  {
+   "name": "primary_graph",
+   "modules": [
+    [
+     "primary_graph",
+     "greedy rank 19"
+    ]
+   ]
+  },
+  {
+   "name": "execution_resource_attempt",
+   "modules": [
+    [
+     "execution_resource_attempt",
+     "greedy rank 20"
+    ]
+   ]
+  }
+ ]
+}

@@ -1,0 +1,381 @@
+{
+ "parent": "domain_computation::primary_graph",
+ "note": "Draft target layer stack, bottom to top; within a layer, modules are listed bottom to top too. Each purpose is read from the module's own documentation (or its root items where it has none). Rerun: application_inbound (new in phase 2) placed just below application_attempt. workflow is gone (nested under application_attempt in phase 1); runtime_host placed at the top of the identity layer.",
+ "layers": [
+  {
+   "name": "identity_keys_and_refusals",
+   "modules": [
+    [
+     "application_branch",
+     "the sole ordinary-branch name constant"
+    ],
+    [
+     "entity_key",
+     "caller-chosen key for a created or seeded entity"
+    ],
+    [
+     "principal_key",
+     "typed bootstrap identity of one principal entity"
+    ],
+    [
+     "aggregate_identity",
+     "application aggregate names; reads still need view admission"
+    ],
+    [
+     "output_binding_identity",
+     "declared binding names that order lineage"
+    ],
+    [
+     "output_family_identity",
+     "declared output-family identity, the family ordering axis"
+    ],
+    [
+     "admitted_capture",
+     "one original-request capture posture for opaque projections"
+    ],
+    [
+     "exact_basis_access",
+     "opens a snapshot from the exact current branch observation"
+    ],
+    [
+     "index_maintenance_budget",
+     "the ordinary commit's index maintenance budget"
+    ],
+    [
+     "request_local",
+     "state owned by one request's thread of control"
+    ],
+    [
+     "request_allocation_control",
+     "attempt-local stop custody, never commit authority"
+    ],
+    [
+     "record_reservations",
+     "bounded host observation of native reservations"
+    ],
+    [
+     "selected_read_indexes",
+     "selected-index currency retained at its admitted basis"
+    ],
+    [
+     "read_observation",
+     "projection work and installed invariant read counters"
+    ],
+    [
+     "program_occurrence",
+     "which rostered program one occurrence runs under (identity), though it reads installation"
+    ],
+    [
+     "publication_request_denial",
+     "request stops carried by World's no-effect publication outcomes"
+    ],
+    [
+     "value_decode",
+     "one native projection's codec admission"
+    ],
+    [
+     "content",
+     "field-bound completed content values and their door refusals"
+    ],
+    [
+     "entity_resolution_denial",
+     "why an entity could not be resolved"
+    ],
+    [
+     "denial",
+     "why installing or publishing the primary graph runtime was refused"
+    ],
+    [
+     "initial_schema_denial",
+     "maps the initial schema installation refusal"
+    ],
+    [
+     "resolution_denial",
+     "why a principal could not be resolved"
+    ],
+    [
+     "runtime_host",
+     "the runtime identity every module host extends (phase 2)"
+    ]
+   ]
+  },
+  {
+   "name": "schema_and_native_facts",
+   "modules": [
+    [
+     "schema_layout",
+     "the installed schema's layout: kinds, fields, indexes"
+    ],
+    [
+     "index_currency",
+     "probes the selected published index generation"
+    ],
+    [
+     "structural_walk",
+     "complete original Native truth, independent of its consumer"
+    ],
+    [
+     "derived_source",
+     "complete actual Native derived truth"
+    ],
+    [
+     "source_facts",
+     "Native physical read facts shared by Query and operation selection"
+    ],
+    [
+     "aggregate_observation",
+     "actual selected-root aggregate truth"
+    ],
+    [
+     "root_path_selection",
+     "the one physical traversal engine for installed paths"
+    ],
+    [
+     "component_selection",
+     "a scoped answer's original Native bodies and visibility facts"
+    ],
+    [
+     "source_read_verification",
+     "completed exact-Arc comparisons within one verification extent"
+    ],
+    [
+     "source_read_equivalence",
+     "full immutable body equality within one interning pass"
+    ],
+    [
+     "fact_verification_observation",
+     "retained-fact and computation handoff work"
+    ],
+    [
+     "aggregate_projection",
+     "every source a patch touched, for cached aggregate generations"
+    ]
+   ]
+  },
+  {
+   "name": "principals_and_resolution",
+   "modules": [
+    [
+     "authenticated_principal",
+     "opaque identity of one application principal"
+    ],
+    [
+     "observations",
+     "principal target and mapping observations"
+    ],
+    [
+     "freshness",
+     "durable principal currentness evidence, never a live permit"
+    ],
+    [
+     "principal_currentness_capture",
+     "retains principal currentness under one admission"
+    ],
+    [
+     "resolution",
+     "how identity lookups are verified while resolving a principal or entity"
+    ],
+    [
+     "entity_resolution",
+     "exact Relational truth that resolves one application entity"
+    ],
+    [
+     "source_disclosure",
+     "original source disclosure meaning"
+    ]
+   ]
+  },
+  {
+   "name": "graph_root_and_workflow_facts",
+   "modules": [
+    [
+     "root",
+     "the execution-owned primary logical graph of one installed schema"
+    ],
+    [
+     "granular_invalidation",
+     "installed granular invalidation and its delivery coverage"
+    ],
+    [
+     "managed_bridge",
+     "the installed application bridge source"
+    ],
+    [
+     "expression",
+     "workflow condition expressions over installed query results"
+    ]
+   ]
+  },
+  {
+   "name": "attempt_and_commit",
+   "modules": [
+    [
+     "application_inbound",
+     "inbound occurrences and installed-transport completions (moved out of the runtime, proposal 02)"
+    ],
+    [
+     "application_attempt",
+     "one application attempt: read set, facts, effect program, compare-and-commit"
+    ],
+    [
+     "live_delivery",
+     "live commit batches and their delivery source"
+    ],
+    [
+     "provider",
+     "the primary graph provider: Relational commit, decision facts, recovery"
+    ],
+    [
+     "application_checkpoint",
+     "opaque bytes of one complete application checkpoint"
+    ],
+    [
+     "application_program",
+     "move-only owner evidence for one performed source publication"
+    ]
+   ]
+  },
+  {
+   "name": "query",
+   "modules": [
+    [
+     "access_strategy",
+     "managed candidate execution for queries"
+    ],
+    [
+     "application_query",
+     "application query admission, execution, live leases and history"
+    ],
+    [
+     "application_discovery",
+     "read-only projections of installed declaration meaning"
+    ],
+    [
+     "application_invariant",
+     "domain algorithms for installed application invariants"
+    ]
+   ]
+  },
+  {
+   "name": "contribution_and_output_demand",
+   "modules": [
+    [
+     "output_reuse",
+     "retained output reuse selection and verification"
+    ],
+    [
+     "output_lineage",
+     "product-local semantic output correspondence"
+    ],
+    [
+     "invariant_projection",
+     "installation-minted authority for invariant projection"
+    ],
+    [
+     "application_output_demand",
+     "the output demand registry and its progression"
+    ],
+    [
+     "application_contribution",
+     "contributions: producers, computation, request advancement"
+    ]
+   ]
+  },
+  {
+   "name": "operation_execution",
+   "modules": [
+    [
+     "application_entry",
+     "the mutation entry contract and handler candidate building"
+    ],
+    [
+     "operation_body",
+     "execution of a complete installed operation body"
+    ],
+    [
+     "handler",
+     "installed mutation handler registry and conditional definitions"
+    ]
+   ]
+  },
+  {
+   "name": "product_operations",
+   "modules": [
+    [
+     "product_activation",
+     "program activation inspection for a product branch"
+    ],
+    [
+     "product_operation",
+     "product-level operations: document history, adoption, materialization"
+    ]
+   ]
+  },
+  {
+   "name": "runtime_and_installation",
+   "modules": [
+    [
+     "typed_bootstrap",
+     "one entity or relation to seed at bootstrap"
+    ],
+    [
+     "bootstrap_publication",
+     "commits the bootstrap rows"
+    ],
+    [
+     "bootstrap",
+     "the move-only installation phase of the primary graph"
+    ],
+    [
+     "invariant_installation",
+     "what a program-hosted installation carries into invariant lowering"
+    ],
+    [
+     "application_runtime",
+     "the purpose-scoped application runtime published from one graph"
+    ],
+    [
+     "application_resource",
+     "application resource custody over Native lifecycle and World sources"
+    ],
+    [
+     "conditional_operation",
+     "conditional operation installation and its runtime"
+    ],
+    [
+     "application_invariant_preparation",
+     "prepares the graph with its exact invariant factories"
+    ],
+    [
+     "application_installation",
+     "complete construction of one contribution-composed application"
+    ]
+   ]
+  },
+  {
+   "name": "surface",
+   "modules": [
+    [
+     "causal_inspection",
+     "diagnostic integration for receipt and certification callers"
+    ],
+    [
+     "merge_unique_values",
+     "a merge writes unique values under the program law"
+    ],
+    [
+     "index_refresh",
+     "executes a mutation and refreshes every committed branch it touched"
+    ],
+    [
+     "ordinary_read",
+     "ordinary read outcomes for the public contract"
+    ],
+    [
+     "facade",
+     "public primary-graph contract aggregation"
+    ]
+   ]
+  }
+ ]
+}

@@ -1,0 +1,726 @@
+{
+ "parent": "domain_computation::primary_graph",
+ "note": "Current greedy layering of module_coupling.py at the rerun commit, bottom to top, one layer per module.",
+ "layers": [
+  {
+   "name": "admitted_capture",
+   "modules": [
+    [
+     "admitted_capture",
+     "greedy rank 0"
+    ]
+   ]
+  },
+  {
+   "name": "aggregate_identity",
+   "modules": [
+    [
+     "aggregate_identity",
+     "greedy rank 1"
+    ]
+   ]
+  },
+  {
+   "name": "application_branch",
+   "modules": [
+    [
+     "application_branch",
+     "greedy rank 2"
+    ]
+   ]
+  },
+  {
+   "name": "entity_key",
+   "modules": [
+    [
+     "entity_key",
+     "greedy rank 3"
+    ]
+   ]
+  },
+  {
+   "name": "entity_resolution_denial",
+   "modules": [
+    [
+     "entity_resolution_denial",
+     "greedy rank 4"
+    ]
+   ]
+  },
+  {
+   "name": "exact_basis_access",
+   "modules": [
+    [
+     "exact_basis_access",
+     "greedy rank 5"
+    ]
+   ]
+  },
+  {
+   "name": "index_maintenance_budget",
+   "modules": [
+    [
+     "index_maintenance_budget",
+     "greedy rank 6"
+    ]
+   ]
+  },
+  {
+   "name": "output_binding_identity",
+   "modules": [
+    [
+     "output_binding_identity",
+     "greedy rank 7"
+    ]
+   ]
+  },
+  {
+   "name": "output_family_identity",
+   "modules": [
+    [
+     "output_family_identity",
+     "greedy rank 8"
+    ]
+   ]
+  },
+  {
+   "name": "principal_key",
+   "modules": [
+    [
+     "principal_key",
+     "greedy rank 9"
+    ]
+   ]
+  },
+  {
+   "name": "publication_request_denial",
+   "modules": [
+    [
+     "publication_request_denial",
+     "greedy rank 10"
+    ]
+   ]
+  },
+  {
+   "name": "read_observation",
+   "modules": [
+    [
+     "read_observation",
+     "greedy rank 11"
+    ]
+   ]
+  },
+  {
+   "name": "request_allocation_control",
+   "modules": [
+    [
+     "request_allocation_control",
+     "greedy rank 12"
+    ]
+   ]
+  },
+  {
+   "name": "request_local",
+   "modules": [
+    [
+     "request_local",
+     "greedy rank 13"
+    ]
+   ]
+  },
+  {
+   "name": "selected_read_indexes",
+   "modules": [
+    [
+     "selected_read_indexes",
+     "greedy rank 14"
+    ]
+   ]
+  },
+  {
+   "name": "value_decode",
+   "modules": [
+    [
+     "value_decode",
+     "greedy rank 15"
+    ]
+   ]
+  },
+  {
+   "name": "denial",
+   "modules": [
+    [
+     "denial",
+     "greedy rank 16"
+    ]
+   ]
+  },
+  {
+   "name": "initial_schema_denial",
+   "modules": [
+    [
+     "initial_schema_denial",
+     "greedy rank 17"
+    ]
+   ]
+  },
+  {
+   "name": "aggregate_projection",
+   "modules": [
+    [
+     "aggregate_projection",
+     "greedy rank 18"
+    ]
+   ]
+  },
+  {
+   "name": "application_program",
+   "modules": [
+    [
+     "application_program",
+     "greedy rank 19"
+    ]
+   ]
+  },
+  {
+   "name": "expression",
+   "modules": [
+    [
+     "expression",
+     "greedy rank 20"
+    ]
+   ]
+  },
+  {
+   "name": "fact_verification_observation",
+   "modules": [
+    [
+     "fact_verification_observation",
+     "greedy rank 21"
+    ]
+   ]
+  },
+  {
+   "name": "structural_walk",
+   "modules": [
+    [
+     "structural_walk",
+     "greedy rank 22"
+    ]
+   ]
+  },
+  {
+   "name": "derived_source",
+   "modules": [
+    [
+     "derived_source",
+     "greedy rank 23"
+    ]
+   ]
+  },
+  {
+   "name": "typed_bootstrap",
+   "modules": [
+    [
+     "typed_bootstrap",
+     "greedy rank 24"
+    ]
+   ]
+  },
+  {
+   "name": "program_occurrence",
+   "modules": [
+    [
+     "program_occurrence",
+     "greedy rank 25"
+    ]
+   ]
+  },
+  {
+   "name": "authenticated_principal",
+   "modules": [
+    [
+     "authenticated_principal",
+     "greedy rank 26"
+    ]
+   ]
+  },
+  {
+   "name": "schema_layout",
+   "modules": [
+    [
+     "schema_layout",
+     "greedy rank 27"
+    ]
+   ]
+  },
+  {
+   "name": "source_facts",
+   "modules": [
+    [
+     "source_facts",
+     "greedy rank 28"
+    ]
+   ]
+  },
+  {
+   "name": "root",
+   "modules": [
+    [
+     "root",
+     "greedy rank 29"
+    ]
+   ]
+  },
+  {
+   "name": "managed_bridge",
+   "modules": [
+    [
+     "managed_bridge",
+     "greedy rank 30"
+    ]
+   ]
+  },
+  {
+   "name": "index_currency",
+   "modules": [
+    [
+     "index_currency",
+     "greedy rank 31"
+    ]
+   ]
+  },
+  {
+   "name": "granular_invalidation",
+   "modules": [
+    [
+     "granular_invalidation",
+     "greedy rank 32"
+    ]
+   ]
+  },
+  {
+   "name": "runtime_host",
+   "modules": [
+    [
+     "runtime_host",
+     "greedy rank 33"
+    ]
+   ]
+  },
+  {
+   "name": "resolution_denial",
+   "modules": [
+    [
+     "resolution_denial",
+     "greedy rank 34"
+    ]
+   ]
+  },
+  {
+   "name": "product_activation",
+   "modules": [
+    [
+     "product_activation",
+     "greedy rank 35"
+    ]
+   ]
+  },
+  {
+   "name": "live_delivery",
+   "modules": [
+    [
+     "live_delivery",
+     "greedy rank 36"
+    ]
+   ]
+  },
+  {
+   "name": "application_discovery",
+   "modules": [
+    [
+     "application_discovery",
+     "greedy rank 37"
+    ]
+   ]
+  },
+  {
+   "name": "observations",
+   "modules": [
+    [
+     "observations",
+     "greedy rank 38"
+    ]
+   ]
+  },
+  {
+   "name": "freshness",
+   "modules": [
+    [
+     "freshness",
+     "greedy rank 39"
+    ]
+   ]
+  },
+  {
+   "name": "application_entry",
+   "modules": [
+    [
+     "application_entry",
+     "greedy rank 40"
+    ]
+   ]
+  },
+  {
+   "name": "application_checkpoint",
+   "modules": [
+    [
+     "application_checkpoint",
+     "greedy rank 41"
+    ]
+   ]
+  },
+  {
+   "name": "aggregate_observation",
+   "modules": [
+    [
+     "aggregate_observation",
+     "greedy rank 42"
+    ]
+   ]
+  },
+  {
+   "name": "source_read_verification",
+   "modules": [
+    [
+     "source_read_verification",
+     "greedy rank 43"
+    ]
+   ]
+  },
+  {
+   "name": "output_reuse",
+   "modules": [
+    [
+     "output_reuse",
+     "greedy rank 44"
+    ]
+   ]
+  },
+  {
+   "name": "entity_resolution",
+   "modules": [
+    [
+     "entity_resolution",
+     "greedy rank 45"
+    ]
+   ]
+  },
+  {
+   "name": "content",
+   "modules": [
+    [
+     "content",
+     "greedy rank 46"
+    ]
+   ]
+  },
+  {
+   "name": "access_strategy",
+   "modules": [
+    [
+     "access_strategy",
+     "greedy rank 47"
+    ]
+   ]
+  },
+  {
+   "name": "product_operation",
+   "modules": [
+    [
+     "product_operation",
+     "greedy rank 48"
+    ]
+   ]
+  },
+  {
+   "name": "root_path_selection",
+   "modules": [
+    [
+     "root_path_selection",
+     "greedy rank 49"
+    ]
+   ]
+  },
+  {
+   "name": "component_selection",
+   "modules": [
+    [
+     "component_selection",
+     "greedy rank 50"
+    ]
+   ]
+  },
+  {
+   "name": "resolution",
+   "modules": [
+    [
+     "resolution",
+     "greedy rank 51"
+    ]
+   ]
+  },
+  {
+   "name": "application_invariant",
+   "modules": [
+    [
+     "application_invariant",
+     "greedy rank 52"
+    ]
+   ]
+  },
+  {
+   "name": "principal_currentness_capture",
+   "modules": [
+    [
+     "principal_currentness_capture",
+     "greedy rank 53"
+    ]
+   ]
+  },
+  {
+   "name": "invariant_installation",
+   "modules": [
+    [
+     "invariant_installation",
+     "greedy rank 54"
+    ]
+   ]
+  },
+  {
+   "name": "bootstrap_publication",
+   "modules": [
+    [
+     "bootstrap_publication",
+     "greedy rank 55"
+    ]
+   ]
+  },
+  {
+   "name": "application_resource",
+   "modules": [
+    [
+     "application_resource",
+     "greedy rank 56"
+    ]
+   ]
+  },
+  {
+   "name": "bootstrap",
+   "modules": [
+    [
+     "bootstrap",
+     "greedy rank 57"
+    ]
+   ]
+  },
+  {
+   "name": "source_disclosure",
+   "modules": [
+    [
+     "source_disclosure",
+     "greedy rank 58"
+    ]
+   ]
+  },
+  {
+   "name": "operation_body",
+   "modules": [
+    [
+     "operation_body",
+     "greedy rank 59"
+    ]
+   ]
+  },
+  {
+   "name": "application_inbound",
+   "modules": [
+    [
+     "application_inbound",
+     "greedy rank 60"
+    ]
+   ]
+  },
+  {
+   "name": "application_attempt",
+   "modules": [
+    [
+     "application_attempt",
+     "greedy rank 61"
+    ]
+   ]
+  },
+  {
+   "name": "conditional_operation",
+   "modules": [
+    [
+     "conditional_operation",
+     "greedy rank 62"
+    ]
+   ]
+  },
+  {
+   "name": "application_output_demand",
+   "modules": [
+    [
+     "application_output_demand",
+     "greedy rank 63"
+    ]
+   ]
+  },
+  {
+   "name": "handler",
+   "modules": [
+    [
+     "handler",
+     "greedy rank 64"
+    ]
+   ]
+  },
+  {
+   "name": "output_lineage",
+   "modules": [
+    [
+     "output_lineage",
+     "greedy rank 65"
+    ]
+   ]
+  },
+  {
+   "name": "provider",
+   "modules": [
+    [
+     "provider",
+     "greedy rank 66"
+    ]
+   ]
+  },
+  {
+   "name": "source_read_equivalence",
+   "modules": [
+    [
+     "source_read_equivalence",
+     "greedy rank 67"
+    ]
+   ]
+  },
+  {
+   "name": "causal_inspection",
+   "modules": [
+    [
+     "causal_inspection",
+     "greedy rank 68"
+    ]
+   ]
+  },
+  {
+   "name": "application_query",
+   "modules": [
+    [
+     "application_query",
+     "greedy rank 69"
+    ]
+   ]
+  },
+  {
+   "name": "invariant_projection",
+   "modules": [
+    [
+     "invariant_projection",
+     "greedy rank 70"
+    ]
+   ]
+  },
+  {
+   "name": "application_installation",
+   "modules": [
+    [
+     "application_installation",
+     "greedy rank 71"
+    ]
+   ]
+  },
+  {
+   "name": "record_reservations",
+   "modules": [
+    [
+     "record_reservations",
+     "greedy rank 72"
+    ]
+   ]
+  },
+  {
+   "name": "application_runtime",
+   "modules": [
+    [
+     "application_runtime",
+     "greedy rank 73"
+    ]
+   ]
+  },
+  {
+   "name": "application_contribution",
+   "modules": [
+    [
+     "application_contribution",
+     "greedy rank 74"
+    ]
+   ]
+  },
+  {
+   "name": "ordinary_read",
+   "modules": [
+    [
+     "ordinary_read",
+     "greedy rank 75"
+    ]
+   ]
+  },
+  {
+   "name": "merge_unique_values",
+   "modules": [
+    [
+     "merge_unique_values",
+     "greedy rank 76"
+    ]
+   ]
+  },
+  {
+   "name": "index_refresh",
+   "modules": [
+    [
+     "index_refresh",
+     "greedy rank 77"
+    ]
+   ]
+  },
+  {
+   "name": "facade",
+   "modules": [
+    [
+     "facade",
+     "greedy rank 78"
+    ]
+   ]
+  },
+  {
+   "name": "application_invariant_preparation",
+   "modules": [
+    [
+     "application_invariant_preparation",
+     "greedy rank 79"
+    ]
+   ]
+  }
+ ]
+}
