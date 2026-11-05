@@ -1,4 +1,5 @@
 use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
+mod record;
 mod retained_scope;
 use super::admit_request;
 use super::entity_denial;

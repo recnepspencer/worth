@@ -19,6 +19,11 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
     pub fn build(
         mut self,
     ) -> Result<ApplicationSchemaDeclaration<Schema>, ApplicationSchemaDeclarationDenial> {
+        crate::application_schema::fragment::expand_record_access(
+            &self.member_provenance.fragments.catalog,
+            &self.member_provenance.fragments.access,
+            &mut self.members,
+        )?;
         validate_schema_header(self.owner, self.name)?;
         validate_member_identifiers(&self.members)?;
         crate::application_schema::relation_integrity::validate_relation_integrity(&self.members)?;

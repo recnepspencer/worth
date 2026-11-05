@@ -15,7 +15,7 @@ use worth_query_declaration::facade::application_schema::fragment::{AspectDefini
 use worth_query_installation::facade::ApplicationSchema;
 
 impl<S: ApplicationSchema, O> Reader<'_, '_, S, O> {
-    pub(in crate::domain_computation::primary_graph) fn fragment<F: Fragment>(
+    pub fn fragment<F: Fragment>(
         &mut self,
         marker: F,
     ) -> Result<View<'_, F, Reading<'_>>, FragmentDenial> {
@@ -108,9 +108,6 @@ impl<S: ApplicationSchema, O> ReadPort for Reader<'_, '_, S, O> {
                 )));
             }
         };
-        if !present {
-            return Ok(None);
-        }
         let mut values = BTreeMap::new();
         for (index, field) in aspect.fields().iter().enumerate() {
             let locus = field.recipe().locus();
@@ -162,7 +159,7 @@ impl<S: ApplicationSchema, O> ReadPort for Reader<'_, '_, S, O> {
                 values.insert(path, raw);
             }
         }
-        Ok(Some(values))
+        Ok(present.then_some(values))
     }
 
     fn target(

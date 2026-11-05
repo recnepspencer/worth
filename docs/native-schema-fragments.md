@@ -67,7 +67,7 @@ lowers to `interval.start` and `interval.end`. These remain ordinary scalar fiel
 Native scalar decoding borrows Query's original admission separately from domain
 work. Decode invokes the owner's checked constructor and retains its typed error.
 Scalar refusals identify the full leaf path; constructor refusals identify their
-owning record prefix. Tuple arities for membership, cases and record accessors are 1?8;
+owning record prefix. Tuple arities for membership, cases and record accessors are 1 through 8;
 empty membership tuples are supported.
 
 During schema authoring, select a field from that same record:
@@ -94,3 +94,29 @@ The [generic fixture](../workspaces/worth-query/crates/worth-query-testkit-decl/
 and [declaration courts](../workspaces/worth-query/crates/worth-query-court-decl/tests/worth_query_court_decl/decl/fragment_records.rs)
 exercise the declarations and round-trip every reached binding with owner-supplied
 samples, including a foreign checked value with borrowed owner context.
+
+One-of reads observe every case's actual Native parent presence before decoding.
+A required group needs exactly one case; an optional group also permits none.
+Two present cases refuse as corruption, even if one case would independently
+fail its checked constructor. Schema build refuses repeated case row types:
+Rust permits one `From<T>` implementation to satisfy two cases with row `T`.
+
+Declare whole-record operation access from the same membership:
+
+```rust
+builder
+    .operation_read_record(operation, Fixture, Item, Form)
+    .operation_write_record(operation, Fixture, Item, Measured)
+```
+
+A whole case write owns the sibling removals derived from that group. A single
+field write grants no parent removal. Repeated case writes replace only that
+transition's own pending clears; separately authored clears remain conflicts.
+
+Principal-binding requirements accept `from_record` handles and check write,
+equality and binding postures. Bootstrap entity seeds accept `record_field`.
+Selected products resolve those handles with `resolve_record_entity`, preserving
+the original phase, product and request. For completed candidate programs,
+`application.fragment_candidate(&mut candidate, Fixture)` lends a write view
+after checking the candidate's runtime and schema affinity. Handler writers
+continue to use `writer.fragment(Fixture)`.

@@ -15,13 +15,13 @@ pub struct ApplicationPrincipalBindingRef<
     name: &'static str,
     mapping_entity: &'static str,
     identity_aspect: &'static str,
-    identity_field: &'static str,
+    identity_field: String,
     status_aspect: &'static str,
-    status_field: &'static str,
+    status_field: String,
     target_relation: &'static str,
     principal_entity: &'static str,
     principal_identity_aspect: &'static str,
-    principal_identity_field: &'static str,
+    principal_identity_field: String,
     principal_identity_scalar_family: ScalarAspectType,
     principal_identity_value_type: &'static str,
     principal_identity_binding_recipe: ApplicationFieldBindingRecipe,
@@ -52,13 +52,13 @@ impl<Schema, Binding, Mapping, Principal, PrincipalIdentity, PrincipalIdentityBi
             name: self.name,
             mapping_entity: self.mapping_entity,
             identity_aspect: self.identity_aspect,
-            identity_field: self.identity_field,
+            identity_field: self.identity_field.clone(),
             status_aspect: self.status_aspect,
-            status_field: self.status_field,
+            status_field: self.status_field.clone(),
             target_relation: self.target_relation,
             principal_entity: self.principal_entity,
             principal_identity_aspect: self.principal_identity_aspect,
-            principal_identity_field: self.principal_identity_field,
+            principal_identity_field: self.principal_identity_field.clone(),
             principal_identity_scalar_family: self.principal_identity_scalar_family,
             principal_identity_value_type: self.principal_identity_value_type,
             principal_identity_binding_recipe: self.principal_identity_binding_recipe.clone(),
@@ -124,16 +124,16 @@ impl<Schema, Binding, Mapping, Principal, PrincipalIdentity, PrincipalIdentityBi
         self.identity_aspect
     }
 
-    pub const fn identity_field(&self) -> &'static str {
-        self.identity_field
+    pub fn identity_field(&self) -> &str {
+        &self.identity_field
     }
 
     pub const fn status_aspect(&self) -> &'static str {
         self.status_aspect
     }
 
-    pub const fn status_field(&self) -> &'static str {
-        self.status_field
+    pub fn status_field(&self) -> &str {
+        &self.status_field
     }
 
     pub const fn target_relation(&self) -> &'static str {
@@ -148,8 +148,8 @@ impl<Schema, Binding, Mapping, Principal, PrincipalIdentity, PrincipalIdentityBi
         self.principal_identity_aspect
     }
 
-    pub const fn principal_identity_field(&self) -> &'static str {
-        self.principal_identity_field
+    pub fn principal_identity_field(&self) -> &str {
+        &self.principal_identity_field
     }
 
     pub const fn principal_identity_scalar_family(&self) -> ScalarAspectType {

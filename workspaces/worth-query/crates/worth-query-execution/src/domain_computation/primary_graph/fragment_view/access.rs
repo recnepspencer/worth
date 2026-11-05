@@ -5,7 +5,7 @@ use super::{ErasedCandidate, ErasedObserved, FragmentDenial};
 use std::collections::BTreeMap;
 use worth_foundational::facade::AspectValue;
 use worth_query_declaration::facade::application_schema::fragment::{
-    AspectDefinition, RelationDefinition,
+    AspectDefinition, GroupDefinition, RelationDefinition,
 };
 
 pub struct Reading<'a> {
@@ -39,6 +39,14 @@ pub(in crate::domain_computation::primary_graph) trait ReadPort {
     ) -> Result<WorthQueryInvariantMutationTarget<(), ()>, FragmentDenial>;
 }
 pub(in crate::domain_computation::primary_graph) trait WritePort {
+    fn case_record(
+        &mut self,
+        target: &ErasedCandidate,
+        aspect: &AspectDefinition,
+        group: &GroupDefinition,
+        cases: &[&AspectDefinition],
+        fields: BTreeMap<String, AspectValue>,
+    ) -> Result<(), FragmentDenial>;
     fn target(
         &self,
         target: &WorthQueryInvariantMutationTarget<(), ()>,

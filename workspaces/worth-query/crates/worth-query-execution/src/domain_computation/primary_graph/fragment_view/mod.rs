@@ -5,6 +5,7 @@ mod access;
 mod declaration_contract;
 mod denial;
 mod entity;
+mod group_read;
 mod read;
 mod write;
 

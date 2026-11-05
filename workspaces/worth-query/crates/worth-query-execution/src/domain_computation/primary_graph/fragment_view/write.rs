@@ -53,9 +53,6 @@ impl<F: Fragment> View<'_, F, Writing<'_>> {
         A: Aspect + In<E::Aspects, AspectWitness, E>,
         F::Bindings: Record<A::Row>,
     {
-        if self.definition.case_group::<E, A>().is_some() {
-            return Err(FragmentDenial::OneOfTransitionUnavailable);
-        }
         let definition =
             self.definition
                 .aspect::<E, A>()
@@ -71,6 +68,27 @@ impl<F: Fragment> View<'_, F, Writing<'_>> {
             });
         }
         let encoded = <F::Bindings as Record<A::Row>>::record().encode(value, definition.path())?;
+        if let Some(group) = self.definition.case_group::<E, A>() {
+            let cases = group
+                .cases()
+                .iter()
+                .map(|case| {
+                    self.definition.case_aspect::<E>(case).ok_or(
+                        FragmentDenial::MemberNotInstalled {
+                            entity: E::NAME,
+                            member: case.name(),
+                        },
+                    )
+                })
+                .collect::<Result<Vec<_>, _>>()?;
+            return self.access.port.case_record(
+                &target.erased,
+                definition,
+                group,
+                &cases,
+                encoded,
+            );
+        }
         self.access.port.record(&target.erased, definition, encoded)
     }
 

@@ -7,13 +7,23 @@ pub struct Fixture;
 impl Fragment for Fixture {
     const NAME: &'static str = "fixture";
     type Bindings = Bindings;
-    type Members = (Item, SetMetric, super::fragment_context_fixture::Contextual);
+    type Members = (
+        Item,
+        SetMetric,
+        super::fragment_context_fixture::Contextual,
+        super::fragment_auth_fixture::Authentication,
+    );
 }
 
 pub struct Item;
 impl Entity for Item {
     const NAME: &'static str = "item";
-    type Aspects = (Metrics, Option<Label>, Exclusive<Form>);
+    type Aspects = (
+        Metrics,
+        Option<Label>,
+        Exclusive<Form>,
+        super::fragment_auth_fixture::ItemIdentity,
+    );
     type Relations = (Next,);
 }
 
@@ -206,7 +216,7 @@ impl<T: Any + Eq> BindingSample for Sample<T> {
         Ok(Box::new((self.decode)(values, prefix, work)?))
     }
 }
-fn row_sample<T: Any + Eq>(value: T) -> Box<dyn BindingSample>
+pub(crate) fn row_sample<T: Any + Eq>(value: T) -> Box<dyn BindingSample>
 where
     Bindings: Record<T>,
 {
@@ -219,7 +229,7 @@ where
         },
     })
 }
-fn scalar_sample<T: Any + Eq>(value: T) -> Box<dyn BindingSample>
+pub(crate) fn scalar_sample<T: Any + Eq>(value: T) -> Box<dyn BindingSample>
 where
     Bindings: Scalar<T>,
 {
@@ -254,6 +264,9 @@ pub fn samples(binding: &RecordBinding) -> Vec<Box<dyn BindingSample>> {
         return super::fragment_context_fixture::samples(binding.value_type());
     }
     let value = binding.value_type();
+    if let Some(samples) = super::fragment_auth_fixture::samples(value) {
+        return samples;
+    }
     if value == TypeId::of::<u64>() {
         return vec![scalar_sample(0u64), scalar_sample(u64::MAX)];
     }

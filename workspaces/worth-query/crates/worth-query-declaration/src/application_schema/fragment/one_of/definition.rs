@@ -9,6 +9,7 @@ pub struct CaseDefinition {
     marker: TypeId,
     name: &'static str,
     row: &'static str,
+    row_type: TypeId,
     bindings: &'static str,
 }
 
@@ -17,6 +18,7 @@ impl PartialEq for CaseDefinition {
         self.marker == other.marker
             && self.name == other.name
             && self.row == other.row
+            && self.row_type == other.row_type
             && self.bindings == other.bindings
     }
 }
@@ -28,11 +30,21 @@ impl CaseDefinition {
             marker: TypeId::of::<A>(),
             name: A::NAME,
             row: std::any::type_name::<A::Row>(),
+            row_type: TypeId::of::<A::Row>(),
             bindings: std::any::type_name::<Set>(),
         }
     }
     pub fn name(&self) -> &'static str {
         self.name
+    }
+    pub fn marker(&self) -> TypeId {
+        self.marker
+    }
+    pub(crate) fn row_type(&self) -> TypeId {
+        self.row_type
+    }
+    pub(crate) fn row_name(&self) -> &'static str {
+        self.row
     }
 }
 

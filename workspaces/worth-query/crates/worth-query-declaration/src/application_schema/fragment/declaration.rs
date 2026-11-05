@@ -18,6 +18,10 @@ pub trait Entity: 'static {
     type Relations;
 }
 
+impl<S, E: Entity> super::super::ApplicationEntityMarkerIdentity<S> for E {
+    const IDENTIFIER: &'static str = E::NAME;
+}
+
 pub trait Aspect: 'static {
     const NAME: &'static str;
     type Row: 'static;

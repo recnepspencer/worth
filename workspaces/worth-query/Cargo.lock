@@ -785,6 +785,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "worth-query-court-decl-host-native-fragments"
+version = "0.1.0"
+dependencies = [
+ "worth-execution",
+ "worth-foundational",
+ "worth-query-decl",
+ "worth-query-host",
+ "worth-query-testkit-decl",
+]
+
+[[package]]
 name = "worth-query-court-decl-host-package-archive-replay-application-graph"
 version = "0.1.0"
 dependencies = [

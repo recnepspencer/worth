@@ -3,8 +3,8 @@
 use super::{FragmentDenial, ObservedEntity, ObservedTarget, Reading, View};
 use std::marker::PhantomData;
 use worth_query_declaration::facade::application_schema::fragment::{
-    Aspect, BindingSet, CaseWitness, Entity, Fragment, FragmentDefinition, GroupWitness, In, OneOf,
-    OptionalCaseWitness, OptionalGroupWitness, OptionalWitness, Record, RequiredWitness, Shape,
+    Aspect, BindingSet, Entity, Fragment, FragmentDefinition, In, OptionalWitness, Record,
+    RequiredWitness, Shape,
 };
 
 #[doc(hidden)]
@@ -146,52 +146,7 @@ where
     }
 }
 
-macro_rules! group_read {
-    ($witness:ident, $output:ty) => {
-        impl<G, Set, Members, P, E> Readable<Set, Members, (P, $witness), E> for G
-        where
-            E: Entity,
-            Set: BindingSet,
-            G: OneOf + In<Members, (P, $witness), E>,
-        {
-            type Output = $output;
-            fn read(
-                _: &mut Reading<'_>,
-                _: &FragmentDefinition,
-                _: &ObservedEntity<E>,
-                _: &mut Set::Work<'_>,
-            ) -> Result<Self::Output, FragmentDenial> {
-                Err(FragmentDenial::OneOfReadUnavailable)
-            }
-        }
-    };
-}
-macro_rules! case_read {
-    ($witness:ident) => {
-        impl<A, Set, Members, P, Inner, E> Readable<Set, Members, (P, $witness<Inner>), E> for A
-        where
-            E: Entity,
-            Set: BindingSet,
-            A: Aspect + In<Members, (P, $witness<Inner>), E>,
-        {
-            type Output = Option<A::Row>;
-            fn read(
-                _: &mut Reading<'_>,
-                _: &FragmentDefinition,
-                _: &ObservedEntity<E>,
-                _: &mut Set::Work<'_>,
-            ) -> Result<Self::Output, FragmentDenial> {
-                Err(FragmentDenial::OneOfReadUnavailable)
-            }
-        }
-    };
-}
-group_read!(GroupWitness, G::Row);
-group_read!(OptionalGroupWitness, Option<G::Row>);
-case_read!(CaseWitness);
-case_read!(OptionalCaseWitness);
-
-fn decode_record<Set: Record<T>, T: 'static>(
+pub(super) fn decode_record<Set: Record<T>, T: 'static>(
     access: &mut Reading<'_>,
     raw: &std::collections::BTreeMap<String, worth_foundational::facade::AspectValue>,
     path: &str,

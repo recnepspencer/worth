@@ -9,6 +9,8 @@ use super::record::Column;
 use super::{Aspect, Entity, Fragment, Record, RecordBinding};
 use std::any::TypeId;
 use std::collections::BTreeMap;
+mod record_access;
+pub(crate) use record_access::{expand_record_access, RecordAccess};
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct FragmentCatalog {
@@ -136,6 +138,16 @@ impl FragmentCatalog {
         entity: &str,
         group: GroupDefinition,
     ) -> Result<(), Denial> {
+        let mut rows = std::collections::BTreeSet::new();
+        for case in group.cases() {
+            if !rows.insert(case.row_type()) {
+                return Err(Denial::DuplicateOneOfRow {
+                    entity: entity_path.to_owned(),
+                    group: group.name(),
+                    row: case.row_name(),
+                });
+            }
+        }
         let owner = self.owner(entity_path)?;
         let entity_type = owner
             .entities
@@ -173,6 +185,12 @@ impl FragmentCatalog {
 }
 
 impl FragmentDefinition {
+    pub fn case_aspect<E: Entity>(
+        &self,
+        case: &super::CaseDefinition,
+    ) -> Option<&AspectDefinition> {
+        self.aspects.get(&(TypeId::of::<E>(), case.marker()))
+    }
     pub fn path(&self) -> &str {
         &self.path
     }

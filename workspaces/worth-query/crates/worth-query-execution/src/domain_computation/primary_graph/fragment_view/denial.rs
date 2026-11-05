@@ -35,8 +35,11 @@ pub enum FragmentDenial {
         path: String,
         cause: WorthQueryValueDecodeDenial,
     },
-    OneOfTransitionUnavailable,
-    OneOfReadUnavailable,
+    CorruptOneOf {
+        entity: &'static str,
+        group: &'static str,
+        present: Vec<String>,
+    },
 }
 impl std::fmt::Display for FragmentDenial {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

@@ -1,3 +1,4 @@
+mod record;
 use std::marker::PhantomData;
 
 use crate::authentication::{
@@ -31,7 +32,7 @@ pub struct ApplicationPrincipalBindingRequirements<
 pub struct ApplicationPrincipalMappingIdentityRequirement<Schema, Mapping> {
     pub(super) entity: &'static str,
     pub(super) aspect: &'static str,
-    pub(super) field: &'static str,
+    pub(super) field: String,
     _marker: PhantomData<fn() -> (Schema, Mapping)>,
 }
 
@@ -55,7 +56,7 @@ impl<Schema, Mapping> ApplicationPrincipalMappingIdentityRequirement<Schema, Map
         Self {
             entity: field.entity(),
             aspect: field.aspect(),
-            field: field.field(),
+            field: field.field().to_owned(),
             _marker: PhantomData,
         }
     }
@@ -63,7 +64,7 @@ impl<Schema, Mapping> ApplicationPrincipalMappingIdentityRequirement<Schema, Map
 
 pub struct ApplicationPrincipalMappingStatusRequirement<Schema, Mapping> {
     pub(super) aspect: &'static str,
-    pub(super) field: &'static str,
+    pub(super) field: String,
     _marker: PhantomData<fn() -> (Schema, Mapping)>,
 }
 
@@ -87,7 +88,7 @@ impl<Schema, Mapping> ApplicationPrincipalMappingStatusRequirement<Schema, Mappi
     {
         Self {
             aspect: field.aspect(),
-            field: field.field(),
+            field: field.field().to_owned(),
             _marker: PhantomData,
         }
     }
@@ -119,7 +120,7 @@ pub struct ApplicationPrincipalIdentityRequirement<
     PrincipalIdentityBinding,
 > {
     pub(super) aspect: &'static str,
-    pub(super) field: &'static str,
+    pub(super) field: String,
     pub(super) scalar_family: worth_foundational::facade::ScalarAspectType,
     pub(super) value_type: &'static str,
     pub(super) binding_recipe: ApplicationFieldBindingRecipe,
@@ -164,7 +165,7 @@ impl<Schema, Principal, PrincipalIdentity, PrincipalIdentityBinding>
     {
         Self {
             aspect: field.aspect(),
-            field: field.field(),
+            field: field.field().to_owned(),
             scalar_family: field.scalar_family(),
             value_type: field.value_type_name(),
             binding_recipe: ApplicationFieldBindingRecipe::of::<PrincipalIdentityBinding>(

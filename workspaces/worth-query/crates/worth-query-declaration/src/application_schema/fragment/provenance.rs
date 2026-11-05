@@ -92,6 +92,7 @@ pub(crate) struct FragmentProvenance {
     pub(crate) catalog: super::FragmentCatalog,
     bindings: Vec<RecordBinding>,
     expected_fields: Vec<ApplicationFieldBindingRecipe>,
+    pub(crate) access: Vec<super::catalog::RecordAccess>,
 }
 
 impl super::super::ApplicationSchemaMemberProvenance {

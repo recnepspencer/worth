@@ -1,5 +1,6 @@
 mod aspect_removal;
 mod body_external_emission;
+mod case_transition;
 mod conditional_definition;
 mod content;
 mod effect_growth;
@@ -103,6 +104,7 @@ impl<Schema, Operation, Input, Scope>
             program: Arc::new(()),
             effects: Vec::new(),
             field_write_positions: FieldWriteIndex::default(),
+            case_transitions: Default::default(),
             keys: BTreeSet::new(),
             conditional_definition: None,
             output_correspondence: Default::default(),

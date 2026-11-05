@@ -56,7 +56,7 @@ Declare application graph membership with the type-owned
 and outgoing relations, fragments list entities and nested fragments, and one
 binding set supplies reusable records. Arrays and nested records become the
 existing flat scalar fields. Typed record field handles serve operation bodies,
-requirements and authorization predicates without a second field declaration.
+requirements, principal bindings, bootstrap seeds and authorization predicates without a second field declaration.
 
 
 Choose [native representations](native-representations.md) before a durable

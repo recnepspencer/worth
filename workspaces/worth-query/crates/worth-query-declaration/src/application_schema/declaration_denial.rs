@@ -14,6 +14,14 @@ pub enum ApplicationSchemaDeclarationDenial {
         path: String,
     },
     InvalidRecordRevision,
+    DuplicateOneOfRow {
+        entity: String,
+        group: &'static str,
+        row: &'static str,
+    },
+    InvalidRecordMember {
+        path: String,
+    },
     InvalidRecordField {
         field: super::ApplicationFieldBindingLocus,
     },

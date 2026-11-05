@@ -12,6 +12,7 @@ pub(crate) mod provenance;
 mod record;
 mod record_fields;
 mod record_value;
+mod references;
 mod refusal;
 
 pub use catalog::{
@@ -32,7 +33,9 @@ pub use one_of::{CaseRows, CaseWitness, GroupWitness, OptionalCaseWitness, Optio
 pub use one_of::{Exclusive, OneOf};
 pub use provenance::RecordBinding;
 pub use record::{field, BindingSet, Record, Scalar, Shape};
+pub use references::{entity, relation};
 pub use refusal::{RecordRefusal, RecordRefusalKind};
 
+pub(crate) use catalog::expand_record_access;
 pub(crate) use record_fields::Columns;
 pub(crate) use record_value::ValueColumns;
