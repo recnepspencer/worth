@@ -32,6 +32,17 @@ impl CanonicalCommitEnvelope {
             &self.schema_reconciliation_descriptor,
             &self.descriptor_semantics_version,
         );
+        if let Some(selection) = &self.historical_output_selection {
+            return rmp_serde::encode::write_named(
+                writer,
+                &(
+                    identity_and_authority,
+                    canonical_semantics,
+                    &self.authored_index_writes,
+                    selection,
+                ),
+            );
+        }
         if let Some(group) = &self.coupled_authored_publication {
             return rmp_serde::encode::write_named(
                 writer,

@@ -21,7 +21,7 @@ pub(super) use worth_relational::facade::{
     transactions::*,
 };
 use worth_testkit_relational::aspect_storage::AspectSchemaFixture;
-mod cold;
+pub(super) mod cold;
 use cold::reopen;
 pub(super) use cold::MemberSource;
 
@@ -100,6 +100,18 @@ pub(super) fn runtime() -> RelationalRuntime {
         .schema_registry(registry())
         .build()
         .unwrap()
+}
+pub(super) fn installed_runtime() -> RelationalRuntime {
+    let mut runtime = runtime();
+    runtime
+        .prepare_initial_schema_installation()
+        .unwrap()
+        .install_with_custom_invariants(
+            RelationalSchemaRegistry::new(),
+            vec![ownership().invariant_registration().unwrap()],
+        )
+        .unwrap();
+    runtime
 }
 pub(super) fn ownership() -> RelationalModelOwnership {
     RelationalModelOwnership::new(vec![RelationalModelOwnershipDomain {

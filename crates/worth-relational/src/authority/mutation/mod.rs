@@ -12,6 +12,7 @@ mod field_versions;
 pub(crate) mod intents;
 mod mutation_context;
 mod outcomes;
+pub(crate) mod owned_graph_selection;
 mod patch_details;
 mod record_changes;
 pub(crate) mod retained_entity_selection;

@@ -92,6 +92,7 @@ impl CanonicalCommitEnvelope {
         if matches!(
             origin.publication,
             CanonicalOutputPublication::ProducerRetirement { .. }
+                | CanonicalOutputPublication::HistoricalSelection { .. }
         ) {
             return Err("producer retirement cannot be a standalone publication".into());
         }
@@ -142,6 +143,16 @@ impl CanonicalCommitEnvelope {
                         CanonicalOutputPublication::AuthoredRetirement { .. }
                         | CanonicalOutputPublication::ProducerRetirement { .. } => {
                             member.posture != Posture::Retire || member.before_write.is_none()
+                        }
+                        CanonicalOutputPublication::HistoricalSelection {
+                            selected,
+                            generation,
+                            ..
+                        } => {
+                            member.posture != Posture::Preserve
+                                || member.after_write != self.commit.version_id
+                                || selected == self.commit.commit_id
+                                || generation.0 == 0
                         }
                         CanonicalOutputPublication::Preserve { .. } => {
                             (member.posture == Posture::Create) != member.before_write.is_none()

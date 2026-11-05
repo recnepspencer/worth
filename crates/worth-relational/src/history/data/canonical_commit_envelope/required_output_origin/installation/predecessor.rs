@@ -65,7 +65,7 @@ pub(super) fn validate<'a>(
         compare_retained_origin(origin, canonical, context)?;
         if let crate::publication::ownership::PublicationEvidence::Current(retained) =
             &predecessor.evidence
-            && retained.basis != *basis.descriptor()
+            && retained.basis.as_ref() != Some(basis.descriptor())
         {
             return Err(crate::mvcc::origin_denial(
                 "current publication custody has a different Native basis",

@@ -10,8 +10,6 @@ impl BasisRead<'_, '_, '_, '_, '_, '_> {
         self.charge(1)?;
         self.demand(id.partition_id)?;
         let live = self
-            .basis
-            .inner
             .root
             .get_current_partition(id.partition_id)
             .is_some_and(|region| region.relation(id).is_some_and(|slot| slot.is_live()));
@@ -39,11 +37,20 @@ impl BasisRead<'_, '_, '_, '_, '_, '_> {
         let mut edges = Vec::new();
         for &id in ids.iter() {
             if let Some(edge) = self.relation(id)? {
-                if if outgoing {
-                    edge.source == entity
-                } else {
-                    edge.target == entity
-                } {
+                let native_custody = self
+                    .root
+                    .schema_authority()
+                    .registry()
+                    .current_publication_storage
+                    .as_ref()
+                    .is_some_and(|storage| storage.metadata_kinds().contains(&edge.kind_id));
+                if !native_custody
+                    && if outgoing {
+                        edge.source == entity
+                    } else {
+                        edge.target == entity
+                    }
+                {
                     edges.push(edge);
                 }
             }

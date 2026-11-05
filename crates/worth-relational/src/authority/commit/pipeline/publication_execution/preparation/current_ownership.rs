@@ -112,7 +112,7 @@ pub(super) fn select(
                 // this preparation and never feed this reuse decision.
                 if let Some(current) =
                     admission.and_then(|a| a.publication.current_ownership_evidence())
-                    && current.basis == *basis.descriptor()
+                    && current.basis.as_ref() == Some(basis.descriptor())
                     && current.covers(&linked, &scoped)
                 {
                     return Ok(Arc::clone(current));

@@ -35,19 +35,19 @@ impl RelationalRestoredProducerPrior {
     }
 }
 impl RelationalRuntime {
-    pub fn readmit_authored_restored_producer_prior(
+    pub fn readmit_restored_producer_prior(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         installed: &RelationalInstalledApplicationPublicationAuthority,
         basis: &AdmittedRelationalBranchBasis,
         meaning: &RequiredOutputPublicationMeaning,
     ) -> Result<Option<RelationalRestoredProducerPrior>, TransactionCommitError> {
-        let Some(publication) = self
-            .readmit_authored_output_retirement_successor(execution, installed, basis, meaning)?
+        let Some(publication) =
+            self.readmit_native_output_transition_successor(execution, installed, basis, meaning)?
         else {
             return Ok(None);
         };
-        if !publication.is_authored_restoration() {
+        if !publication.is_authored_restoration() && !publication.is_historical_selection() {
             return Ok(None);
         }
         let antecedent = execution
@@ -59,6 +59,22 @@ impl RelationalRuntime {
                 let mut origin = Arc::clone(&publication.origin);
                 let bound = self.history.catalog_len();
                 for _ in 0..=bound {
+                    if matches!(
+                        origin.publication,
+                        CanonicalOutputPublication::HistoricalSelection { .. }
+                    ) {
+                        context.checkpoint(1).map_err(custody::execution_stop)?;
+                        let meaning = origin.meaning.clone();
+                        current = crate::history::data::historical_producer_antecedent(
+                            self, &current, &origin, context,
+                        )
+                        .map_err(custody::cold_stop)?;
+                        origin = current
+                            .output_origin_for_route(&meaning, context)
+                            .map(Arc::clone)
+                            .map_err(custody::cold_stop)?;
+                        continue;
+                    }
                     let CanonicalOutputPublication::AuthoredRestoration { predecessor, .. } =
                         origin.publication
                     else {

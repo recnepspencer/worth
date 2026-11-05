@@ -115,6 +115,13 @@ pub(super) fn reconstruct(
             .find(|relation| relation.id == id)
             .ok_or("relation predecessor membership absent")?;
         chain.push(Arc::clone(&current));
+        if matches!(
+            origin.publication,
+            crate::history::data::CanonicalOutputPublication::HistoricalSelection { .. }
+        ) {
+            current = super::historical_selection::antecedent(runtime, &current, origin, context)?;
+            continue;
+        }
         let Some(before) = relation.before_write else {
             if let crate::history::data::CanonicalOutputPublication::AuthoredRestoration {
                 retirement,
@@ -171,6 +178,12 @@ pub(super) fn reconstruct(
     let mut state: Option<super::payload_reconstruction::ReconstructedPayload> = None;
     for envelope in chain.iter().rev() {
         let origin = envelope.output_origin_for_relation(id, context)?;
+        if matches!(
+            origin.publication,
+            crate::history::data::CanonicalOutputPublication::HistoricalSelection { .. }
+        ) {
+            continue;
+        }
         charge(
             context,
             origin.relations.len() + envelope.patch.authoritative_record_patches.len(),

@@ -154,3 +154,5 @@ mod basis_registry_scale_tests;
 
 mod symbol_read;
 pub(crate) use symbol_read::SymbolAdmittedRootRead;
+
+pub(crate) use model_ownership::validate_candidate_ownership;

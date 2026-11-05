@@ -11,6 +11,11 @@ impl CanonicalCommitEnvelope {
         self.required_output_origin
             .iter()
             .chain(
+                self.historical_output_selection
+                    .iter()
+                    .flat_map(|event| event.publications.iter()),
+            )
+            .chain(
                 self.producer_cascade_retirement
                     .iter()
                     .flat_map(|event| event.publications.iter()),
@@ -95,6 +100,7 @@ impl CanonicalCommitEnvelope {
         if let Some(event) = &self.coupled_authored_publication {
             return self.validate_coupled_authored_header(event, context);
         }
+        self.validate_historical_selection_header(context)?;
         self.validate_restoration_header(context)?;
         self.validate_producer_retirement_header(context)?;
         let Some(event) = &self.authored_cascade_retirement else {

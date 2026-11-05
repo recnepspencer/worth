@@ -288,12 +288,7 @@ pub(super) fn restore_without_owner(
     publication: worth_relational::facade::history::CommitId,
 ) {
     let prior = runtime
-        .readmit_authored_output_retirement_successor(
-            execution,
-            installed,
-            &basis(runtime),
-            meaning,
-        )
+        .readmit_native_output_transition_successor(execution, installed, &basis(runtime), meaning)
         .unwrap()
         .unwrap();
     let admission = owner

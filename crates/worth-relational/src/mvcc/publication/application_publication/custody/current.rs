@@ -44,7 +44,7 @@ pub(super) fn readmit(
                 .map_err(execution_stop)?;
             if installed.runtime_instance_id != basis.descriptor().runtime_instance_id()
                 || !basis.is_current()
-                || roster.basis != *basis.descriptor()
+                || roster.basis.as_ref() != Some(basis.descriptor())
                 || origin.producer != producer
                 || &origin.dependency_identity != dependency
                 || &origin.meaning != meaning

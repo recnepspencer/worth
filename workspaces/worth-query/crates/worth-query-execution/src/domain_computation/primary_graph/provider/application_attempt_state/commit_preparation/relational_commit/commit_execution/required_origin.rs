@@ -99,7 +99,7 @@ pub(super) fn bind(
     let retired = provider
         .graph
         .with_runtime(execution, |runtime| {
-            runtime.readmit_authored_output_retirement_successor(
+            runtime.readmit_native_output_transition_successor(
                 execution,
                 &publisher.native,
                 native_basis,

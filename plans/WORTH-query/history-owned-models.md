@@ -394,3 +394,138 @@ After that handoff is available, the implementation order remains #55 custody
 and one-owner courts, #53 atomic restoration, #57 all-family verification and
 zero-contact courts, then #56 correction steps. Every issue gets focused courts,
 mutation evidence, and its own report section before a READY TO MERGE handoff.
+
+## D1178 Native historical-selection origin
+
+The D1159 owner stop is resolved: this lane owns the Native custody changes.
+HistoricalSelection is additive within CHK18; no Native version increment.
+
+Boundary brief: the selected basis supplies immutable publication ownership and
+original full-generation record identity. The current basis supplies the guarded
+candidate's predecessor and foreign-custody conflicts. The slot lifecycle owner
+selects retained versions under their original IDs, with fresh version metadata;
+it does not allocate identities or issue create intents. Native publication and
+position completion remain independent writers. Their result passes the existing
+pairing check. Query carries original source observations/witnesses into the
+existing currentness owner; it must not mint settlement from descriptive IDs.
+
+The adversarial case is a selection that correctly names a producer but includes
+an unrelated record, or restores only roster facts while route presence stays
+current. Both must refuse before publication. A no-storage store cannot make an
+owned publication disappear into an empty current roster. Unknown additive origin
+tags remain typed decoder errors; old CHK18 records retain their exact encoding.
+
+Implementation plan, in authority order:
+
+1. Add a distinct historical-output selection admission in worth-proof and a
+   Native-prepared selection capsule under mvcc/publication/application_publication.
+   Only an exact selected-basis roster can supply its publications and members.
+2. Add HistoricalSelection beside the existing canonical output origins, binding
+   the selected publication commit/generation and original producer antecedent.
+   Validate route, payload and complete owned record coverage in the canonical
+   installer. Keep authored retirement/restoration meaning unchanged.
+3. Extend the slot lifecycle and existing semantic selection plan to restore the
+   declared graph plus source-owned publications without ordinary copy/create.
+   Restore current roster/claims through publication completion and presence
+   through the position owner in that same candidate; validate their pairing.
+4. Integrate #55 membership and prospective exclusivity with that same Native
+   custody owner; then remove #53's explicit refusal only when atomic restoration
+   is complete. Add #57 per-family currentness verification and fallbacks on the
+   restored facts, then #56 correction step composition.
+5. Court original IDs/payloads, foreign coverage, pairing mismatch, storage absence,
+   old CHK18 opening, unknown origin refusal and cold selection reopen. Public
+   undo/redo with two families must contact zero producers; changed build contacts
+   only the affected family. Mutate presence, foreign admission, verification and
+   regeneration. Record fixtures through their existing recorders only.
+
+Each issue batch runs complete root and Query workspace tests against an isolated
+clean-master checkout. #62 compile blocks, #64 frozen invoices and D1169's named
+snapshot/doctest failures are accepted only when reproduced identically there.
+Owner/public tests, boundary-check, agent-context, formatting and scoped caps
+remain required. No issue is ready merely because this prerequisite plan exists.
+
+D1178 pairing review refinement: the working-state image may be sparse. Pairing
+must therefore consume the complete prepared root after both writers finish,
+through the existing Native current-custody reader. That reader now distinguishes
+an admitted-basis observation from a candidate-root observation; the latter has
+no admitted descriptor and cannot be reused to issue current publication custody.
+No alternate roster decoder or pairing policy is introduced.
+
+D1178 exclusivity review refinement: the declared-relation rule executes before
+prospective publication facts exist. The model-ownership registration therefore
+retains its immutable ownership meaning for a final candidate-root judgment. Its
+rule adapter is private, so installation cannot omit that judgment by constructing
+a generic registration directly. The same traversal consumes the same Native
+roster reader after both writers complete. This stores no parallel custody facts;
+conflicts retain the existing typed custom-invariant refusal and true subject.
+
+D1178 payload preparation uses the retained head's existing symbol-admission
+receiver before proposal symbol rounds, matching retained-entity selection. Slot
+selection derives both full identity and original birth from the retained slot;
+equal kind/generation cannot authorize copying a different slot. Suspended slots
+re-establish field-revision storage before ordinary delta stamping.
+
+D1178 invariant-scope review refinement: a graph constituent is not an empty
+authored-command plan. Its recorded selected kinds/endpoints and full targets
+must enter packet scope, custom applicability/touches and the existing relation
+scope accumulator. A restored outgoing edge must be judged against live outside
+edges; target cardinality supplies the refusal court and mutation. No proxy
+create intents or duplicate invariant evaluator are introduced.
+
+D1178 next custody slice boundary: current-only publication routes are selected
+absence, not authored retirements or producer runs. The current and selected
+Native rosters already authenticate that distinction. A graph-wide preparation
+must read both once under the caller's checkpoint, retain the exact original
+publication for each selected route, and retain current custody for a route absent
+at the selected root. The latter may retire only the graph's current-only records.
+Publication completion removes that route's roster/claims, while position
+completion independently removes its presence. Their shared reader checks the
+complete candidate; no canonical-history absence can repair missing storage.
+The position selector records the historical absence as an additive selection
+coordinate so cold route selection cannot fall through to the displaced birth.
+Courts will select a pre-publication snapshot, then reselect the published
+snapshot, checking original output identity and equal cold/warm current facts.
+The existing scalar preparation remains a publication selection; graph-wide
+preparation supplies the complete heterogeneous route set without N roster reads.
+
+Currentness boundary still to implement: ordinary field/aspect revisions name
+fresh writes, including restored writes. Original recorded observations and
+witnesses must stay immutable. Native must carry the selected-version antecedent
+at its revision owner; Query's existing verifier must consume that evidence,
+rather than rewinding ordinary revision stamps or asserting equality in history.
+The healthy fast path and changed-build fallback need public two-family courts.
+
+The milestone's opening scope decision and phase 7 defer durable history
+reopening to Store integration. Graph selection therefore retains the existing
+memory-only selection profile: an attached medium refuses before contact, and
+raw canonical-tail replay refuses with its named unsupported graph-selection
+profile before installing the selection. Completed Native checkpoints still
+carry and reopen the selected root and both current-fact writers. This avoids
+silently journaling a selection that lacks recovery source custody; it adds no
+parallel replay or Store history protocol.
+
+D1178 graph-write admission boundary refinement: preparing a descriptive graph
+with caller-supplied meaning must not authorize a write under an ad hoc ownership
+relation list. Native graph admission and preparation must match the retained
+global recipe to the actual installed model-ownership registration, and match
+the document recipe to declared domains in that registration. A caller cannot
+turn an ordinary reference into ownership or omit another document's ownership
+edges. The descriptive observation door remains descriptive. Retain both exact
+meanings with funded graph preparation; canonicalize domain sets at construction,
+then compare their exact typed values under the request meter. The public courts
+must install the real one-owner invariant before publishing, and negative courts
+must refuse uninstalled, broadened and incomplete global meanings before effect.
+The Query installer also registers that actual meaning for an explicit
+OwnedModelGraph domain with no ownership edges yet. Its root-only graph is still
+a declared navigation domain. ScopeEntityRecord installations without ownership
+keep their existing registration behavior.
+
+The full Query comparison exposed a causal worker-only bootstrap regression:
+prospective model exclusivity entered a Native scope even on installations with
+no ownership declaration. The frozen invariant registry now carries the index
+of its exact tagged ownership registration. Both graph write admission and the
+final candidate check consume that original registration in O(1), and an
+installation without it enters no extra work scope. This is compiled
+applicability over immutable installation meaning, not another ownership fact
+reader. The existing worker-only recorded parameter-inverse court is the
+regression oracle; do not accept its branch-only failure as master debt.

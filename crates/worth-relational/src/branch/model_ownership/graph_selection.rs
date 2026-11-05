@@ -17,6 +17,9 @@ use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, MapKernelCon
 /// material grants no mutation authority. Ordinary incoming relations from
 /// outside this entity boundary never enter either restoration roster.
 pub struct RelationalOwnedModelGraphSelection {
+    pub(super) ownership: RelationalModelOwnership,
+    pub(super) installed_ownership: RelationalModelOwnership,
+    _meaning_memory: Option<ExecutionMemoryReservation>,
     entities: RelationalOwnedModelEntityBoundary,
     current: BTreeMap<RelationId, StructuralRelationRecord>,
     selected: BTreeMap<RelationId, StructuralRelationRecord>,
@@ -68,7 +71,27 @@ impl RelationalRuntime {
                     let entities = self.prepare_entity_boundary(
                         execution, context, current, selected, ownership, model,
                     )?;
-                    prepare(self, execution, context, entities, installed_ownership)
+                    let bytes = ownership
+                        .retention_bytes(context)?
+                        .saturating_add(installed_ownership.retention_bytes(context)?);
+                    context.checkpoint(bytes).map_err(|stop| {
+                        Denial::Ownership(super::RelationalModelOwnershipDenial::Request(
+                            worth_execution::WorkCeilingDenial::Stopped(stop),
+                        ))
+                    })?;
+                    let meaning_memory =
+                        execution.reserve_retained_memory(bytes).map_err(|stop| {
+                            Denial::Ownership(super::RelationalModelOwnershipDenial::Request(stop))
+                        })?;
+                    prepare(
+                        self,
+                        execution,
+                        context,
+                        entities,
+                        ownership,
+                        installed_ownership,
+                        meaning_memory,
+                    )
                 })());
             })
             .map_err(|cause| {
@@ -105,7 +128,9 @@ fn prepare(
     execution: &ExecutionRequest<'_, '_>,
     context: &mut MapKernelContext<'_, '_>,
     entities: RelationalOwnedModelEntityBoundary,
+    ownership: &RelationalModelOwnership,
     installed: &RelationalModelOwnership,
+    meaning_memory: Option<ExecutionMemoryReservation>,
 ) -> Result<RelationalOwnedModelGraphSelection, Denial> {
     let current = entities.current_basis();
     let selected = entities.selected_basis();
@@ -173,6 +198,9 @@ fn prepare(
         Ok::<_, Denial>(())
     })?;
     Ok(RelationalOwnedModelGraphSelection {
+        ownership: ownership.clone(),
+        installed_ownership: installed.clone(),
+        _meaning_memory: meaning_memory,
         entities,
         current: current_relations,
         selected: selected_relations,

@@ -324,6 +324,13 @@ impl PreparedCommitPublicationExecution {
         self.admitted.semantic_plan().selection().is_some()
     }
 
+    pub(crate) fn owned_graph_selection_model(&self) -> Option<crate::identity::data::EntityId> {
+        self.admitted
+            .semantic_plan()
+            .graph_selection()
+            .map(|graph| graph.model())
+    }
+
     pub(crate) fn release_transaction_retention(&mut self) {
         self.admitted.release_transaction_retention();
     }

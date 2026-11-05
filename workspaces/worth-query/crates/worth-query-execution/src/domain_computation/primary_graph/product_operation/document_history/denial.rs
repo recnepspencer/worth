@@ -68,18 +68,13 @@ impl WorthQueryDocumentHistoryDenial {
     ) -> Option<crate::domain_computation::primary_graph::WorthQueryManagedComputationInterruption>
     {
         use crate::domain_computation::primary_graph::WorthQueryManagedComputationInterruption as I;
-        use worth_execution::{MapKernelStop as S, WorkCeilingDenial as W};
+        use worth_execution::MapKernelStop as S;
         match self {
-            Self::Ownership(
-                worth_relational::facade::branch::RelationalModelOwnershipDenial::Request(
-                    W::Stopped(S::Cancelled),
-                ),
-            ) => Some(I::Cancelled),
-            Self::Ownership(
-                worth_relational::facade::branch::RelationalModelOwnershipDenial::Request(
-                    W::Stopped(S::DeadlineElapsed),
-                ),
-            ) => Some(I::DeadlineExceeded),
+            Self::Ownership(cause) => match cause.kernel_stop() {
+                Some(S::Cancelled) => Some(I::Cancelled),
+                Some(S::DeadlineElapsed) => Some(I::DeadlineExceeded),
+                _ => None,
+            },
             _ => None,
         }
     }

@@ -2047,6 +2047,15 @@ head or recreated model refuses. Close with
 `document.close(&phase)` and retain any live-document or retired-cleanup failure.
 See [attach a model and read its owned head](../workspaces/worth-query/crates/worth-query/docs/foundations/branches-and-previews.md#attach-a-model-and-read-its-owned-head).
 
+To include operations scoped to owned entities, declare `.owns(relation)` on the
+history and enroll `.owned_operation::<Binding>(label)`. Native proves instance
+membership from the stored full-generation ownership edges at the current head;
+registered source-scope-owned publication members participate through the same
+current-custody owner. Installation enforces one document owner, including
+custody first installed in the prospective publication. See the
+[generic owned-model example](history-owned-models.md). The explicit
+`OwnedModelGraph` navigation path remains under qualification.
+
 To bound selectable history across all futures, declare separate
 `ApplicationHistoryWindowBinding` and `ApplicationHistoryBookmarkBinding`
 recipes and install them with `.window_policy::<Window>()` and
@@ -2388,6 +2397,15 @@ publishes a new inverse, compensation or reapplication under its own contract.
 For a gesture containing several ordinary actions, use an
 owning group. It keeps the original model selected until all members complete,
 then records one history edge:
+
+For a runtime-length mix of action types, open
+`document.gesture(host, request, key)` and add each entry with
+`push::<Intent, Action>(request, intent, member_key)`. The first advancement
+freezes the member list. The same group owner advances and completes it at one
+endpoint, and `finish` returns each original completion for typed recovery with
+`original::<Intent, Action>()`. Installed member and retained-result limits apply.
+The [mixed Model/Member gesture](../workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_model/gesture.rs)
+shows runtime membership, atomic adoption and refused partial work.
 
 <!-- compiled: document_history_group_open.rs -->
 ```rust

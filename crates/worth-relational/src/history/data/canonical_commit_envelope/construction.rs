@@ -43,6 +43,7 @@ impl CanonicalCommitEnvelope {
             live_managed_source_history: LiveManagedSourceHistory::default(),
             required_output_codec_retirements: Vec::new(),
             required_output_origin: None,
+            historical_output_selection: None,
             producer_cascade_retirement: None,
             authored_cascade_retirement: None,
             authored_cascade_restoration: None,

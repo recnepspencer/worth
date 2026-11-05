@@ -7,6 +7,35 @@ use crate::identity::data::{EntityId, KindId};
 use crate::transactions::data::RecordRef;
 
 impl RelationalTransactionFootprint {
+    pub(crate) fn record_owned_graph_selection(
+        &mut self,
+        targets: impl Iterator<Item = RecordRef> + Clone,
+        partitions: impl Iterator<Item = crate::identity::data::PartitionId> + Clone,
+        policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+    ) -> Result<(), Denial> {
+        let reads = self.reads.with_inserted(
+            targets
+                .clone()
+                .map(|record| Ok(Read::Existing(record)))
+                .chain(
+                    partitions
+                        .clone()
+                        .map(|partition| Ok(Read::ValidationPartition(partition))),
+                ),
+            policy,
+        )?;
+        let writes = self.writes.with_inserted(
+            targets.clone().map(|record| Ok(Write::Existing(record))),
+            policy,
+        )?;
+        let partitions = self
+            .write_partitions
+            .with_inserted(partitions.map(Ok), policy)?;
+        self.reads = reads;
+        self.writes = writes;
+        self.write_partitions = partitions;
+        Ok(())
+    }
     pub(crate) fn record_retained_entity_selection(
         &mut self,
         entity: EntityId,

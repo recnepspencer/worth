@@ -5,6 +5,8 @@ use crate::{
     storage::overlay::CurrentPartitionAccess, validation::engine::state_view::InvariantStateView,
 };
 use worth_execution::{ExecutionRequest, MapKernelContext};
+#[path = "custody_read.rs"]
+mod custody_read;
 #[path = "graph_read.rs"]
 mod graph_read;
 
@@ -61,7 +63,8 @@ pub(super) fn read<R, E: From<RelationalModelOwnershipDenial>>(
     let mut read = BasisRead {
         execution,
         context,
-        basis,
+        basis: Some(basis),
+        root: &basis.inner.root,
         memory: Vec::new(),
         state: InvariantStateView::new(
             basis.inner.root.as_ref(),
@@ -75,7 +78,8 @@ pub(super) struct BasisRead<'a, 'basis, 'context, 'kernel, 'execution, 'request>
     execution: &'a ExecutionRequest<'execution, 'request>,
     context: &'a mut MapKernelContext<'context, 'kernel>,
     state: InvariantStateView<'basis>,
-    basis: &'basis AdmittedRelationalBranchBasis,
+    basis: Option<&'basis AdmittedRelationalBranchBasis>,
+    root: &'basis crate::branch::RelationalBranchRoot,
     memory: Vec<worth_execution::ExecutionMemoryReservation>,
 }
 
@@ -91,9 +95,7 @@ impl BasisRead<'_, '_, '_, '_, '_, '_> {
         &self,
         id: crate::identity::data::PartitionId,
     ) -> Result<(), RelationalModelOwnershipDenial> {
-        self.basis
-            .inner
-            .root
+        self.root
             .demand_head_partition(self.execution, id)
             .map_err(|cause| RelationalModelOwnershipDenial::Native(cause.into()))
     }
@@ -141,6 +143,7 @@ impl Read for BasisRead<'_, '_, '_, '_, '_, '_> {
                 }
             }
         }
+        neighbors.extend(self.custody_neighbors(entity, outgoing)?);
         Ok(neighbors)
     }
     // Cover a first BTree node, growing queues and reservation-handle backing.
@@ -160,4 +163,30 @@ impl BasisRead<'_, '_, '_, '_, '_, '_> {
         }
         Ok(())
     }
+}
+
+pub(super) fn read_candidate<R>(
+    execution: &ExecutionRequest<'_, '_>,
+    root: &crate::branch::RelationalBranchRoot,
+    context: &mut MapKernelContext<'_, '_>,
+    operation: impl FnOnce(
+        &mut BasisRead<'_, '_, '_, '_, '_, '_>,
+    ) -> Result<R, RelationalModelOwnershipDenial>,
+) -> Result<R, RelationalModelOwnershipDenial> {
+    let mut read = BasisRead {
+        execution,
+        context,
+        basis: None,
+        root,
+        memory: Vec::new(),
+        state: InvariantStateView::new(
+            root,
+            crate::identity::data::VersionId(
+                root.axes()
+                    .ok_or(RelationalModelOwnershipDenial::ForeignBasis)?
+                    .storage_version,
+            ),
+        ),
+    };
+    operation(&mut read)
 }

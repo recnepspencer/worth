@@ -11,16 +11,21 @@ impl RelationalModelOwnership {
     pub fn invariant_registration(
         self,
     ) -> Result<CustomInvariantRegistration, CustomInvariantRegistrationError> {
-        CustomInvariantRegistration::new(self)
+        let meaning = Arc::new(self);
+        let mut registration =
+            CustomInvariantRegistration::new(StructuralExclusivity(Arc::clone(&meaning)))?;
+        registration.model_ownership = Some(meaning);
+        Ok(registration)
     }
 }
 
-impl CustomInvariantRule for RelationalModelOwnership {
+struct StructuralExclusivity(Arc<RelationalModelOwnership>);
+impl CustomInvariantRule for StructuralExclusivity {
     type Scope = ();
 
     fn descriptor(&self) -> CustomInvariantDescriptor {
-        let entities = self.entity_kinds();
-        let relations = self.relation_kinds();
+        let entities = self.0.entity_kinds();
+        let relations = self.0.relation_kinds();
         CustomInvariantDescriptor {
             identity: CustomInvariantSemanticIdentity {
                 rule_id: CustomInvariantRuleId::new("worth.model-ownership.exclusivity"),
@@ -80,7 +85,7 @@ impl CustomInvariantRule for RelationalModelOwnership {
         context: &CustomInvariantExecutionContext<'_>,
         _: &(),
     ) -> Result<CustomInvariantVerdict, CustomInvariantExecutionError> {
-        match self.check_candidate(context) {
+        match self.0.check_candidate(context) {
             Ok(()) => Ok(CustomInvariantVerdict::Pass),
             Err(RelationalModelOwnershipDenial::Conflict(conflict)) => {
                 if !context.refusal_budget().claim_result(256) {
@@ -136,11 +141,6 @@ fn changed_targets(
 ) -> Result<BTreeSet<EntityId>, RelationalModelOwnershipDenial> {
     let touched = context.touched();
     let mut targets = BTreeSet::new();
-    if touched.planned_relation_creates().is_empty()
-        && touched.planned_relation_endpoint_updates().is_empty()
-    {
-        return Ok(targets);
-    }
     for &id in touched.visible_relation_ids() {
         read.0
             .read_budget()
@@ -149,13 +149,9 @@ fn changed_targets(
         if touched.planned_relation_deletes().contains(&id) {
             continue;
         }
-        let after = read
-            .0
-            .live_relation_record(id)
-            .map_err(presence_denial)?
-            .ok_or(RelationalModelOwnershipDenial::Read(
-                StructuralReadError::RecordUnavailable,
-            ))?;
+        let Some(after) = read.0.live_relation_record(id).map_err(presence_denial)? else {
+            continue;
+        };
         let before = context
             .committed_relations()
             .live_relation_record(id)

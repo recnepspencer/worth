@@ -49,6 +49,13 @@ impl RelationalRequiredOutputPublication {
             crate::history::data::CanonicalOutputPublication::AuthoredRestoration { .. }
         )
     }
+    /// This Native origin selects the producer's own retained record identities.
+    pub fn is_historical_selection(&self) -> bool {
+        matches!(
+            self.origin.publication,
+            crate::history::data::CanonicalOutputPublication::HistoricalSelection { .. }
+        )
+    }
     pub fn authority(&self) -> &worth_proof::RequiredOutputPublicationAuthority {
         &self.authority
     }

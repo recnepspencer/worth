@@ -310,6 +310,17 @@ pub(super) fn prepare_publication_phase(
         .map_err(|denial| {
             preparation_denial::transaction_error(denial, &branch_basis, commit_log.clone())
         })?;
+    crate::branch::validate_candidate_ownership(
+        execution,
+        runtime,
+        prepared_history.root(),
+        &canonical_commit_envelope,
+    )?;
+    crate::publication::ownership::selection_pairing::validate(
+        execution,
+        prepared_history.root(),
+        &canonical_commit_envelope,
+    )?;
     runtime
         .validate_reserved_lineage_events(canonical_commit_envelope.lineage_events())
         .map_err(|detail| {

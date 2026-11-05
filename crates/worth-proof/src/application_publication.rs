@@ -1,4 +1,6 @@
 use std::sync::Arc;
+mod historical_selection;
+pub use historical_selection::AdmittedHistoricalOutputSelection;
 mod source_scope_retirement;
 pub use source_scope_retirement::AdmittedProducerOutputRetirement;
 

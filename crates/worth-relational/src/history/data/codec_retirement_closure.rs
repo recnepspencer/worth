@@ -9,6 +9,8 @@ mod authored_cascade;
 mod authored_restoration;
 mod authored_retirement;
 mod coupled_restoration;
+mod historical_selection;
+pub(crate) use historical_selection::antecedent as historical_producer_antecedent;
 mod scope_dependents;
 pub(crate) mod source_scope_closure;
 pub(crate) use scope_dependents::select_owned_scope_dependent;

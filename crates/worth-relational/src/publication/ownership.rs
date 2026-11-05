@@ -13,10 +13,11 @@ mod evidence;
 mod merge_custody;
 mod read;
 pub(crate) mod record;
+pub(crate) mod selection_pairing;
 pub(crate) use completion::complete;
 pub(crate) use evidence::PublicationEvidence;
 pub(crate) use read::{
-    decode_payload, linked_selectors, read, read_selected, CurrentPublicationRoster,
+    decode_payload, linked_selectors, read, read_candidate, read_selected, CurrentPublicationRoster,
 };
 
 pub(crate) fn select_current(

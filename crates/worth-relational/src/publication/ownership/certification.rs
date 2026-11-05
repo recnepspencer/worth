@@ -211,7 +211,7 @@ impl RelationalRuntime {
             .readmit_required_output_route_absence(execution, installed, basis, &meaning)
             .map(|_| ());
         let retirement = self
-            .readmit_authored_output_retirement_successor(execution, installed, basis, &meaning)
+            .readmit_native_output_transition_successor(execution, installed, basis, &meaning)
             .map(|_| ());
         Ok(vec![absence, retirement])
     }

@@ -35,10 +35,12 @@ Document readers keep seeing the old selected model until guarded adoption.
 Request stops, missing material and refused cleanup keep their original typed
 outcomes and owning continuations.
 
-This increment's declared-relation implementation is under qualification.
-Source-scope-owned publication membership and exclusivity must join the existing
-producer custody owner before the public batch is ready. The implementation must
-not reconstruct a second publication-ownership ledger.
+Source-scope-owned publication membership now uses the Native current roster and
+its independently checked route presence. Exclusivity also judges the complete
+candidate after those facts are installed, so a publication's first candidate
+cannot introduce a second document owner. Cold material and work refusals retain
+their original owners and subjects. No publication-ownership ledger is rebuilt
+from history. The combined public batch remains under qualification.
 
 For graph navigation, select
 `ApplicationHistoryModelDomain::OwnedModelGraph` and declare `.navigation::<N>()`.

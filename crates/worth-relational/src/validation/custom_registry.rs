@@ -15,6 +15,7 @@ pub struct DuplicateCustomInvariantRegistration {
 #[derive(Debug, Clone, Default)]
 pub(crate) struct FrozenCustomInvariantRegistry {
     registrations: Arc<[CustomInvariantRegistration]>,
+    model_ownership_index: Option<usize>,
     source_groups: Arc<[SourcePreparationGroup]>,
     source_postings: crate::validation::candidate_source::routing::SourceProgramPostings,
     pub(crate) source_history:
@@ -36,7 +37,11 @@ impl FrozenCustomInvariantRegistry {
         public_sources: Vec<SourcePreparationGroup>,
     ) -> Result<Self, DuplicateCustomInvariantRegistration> {
         let mut index_by_identity_and_execution_point = BTreeMap::new();
+        let mut model_ownership_index = None;
         for (index, registration) in registrations.iter().enumerate() {
+            if registration.model_ownership.is_some() {
+                model_ownership_index = Some(index);
+            }
             let identity = registration.descriptor().identity.clone();
             let execution_point = registration.execution_point();
             if index_by_identity_and_execution_point
@@ -62,8 +67,20 @@ impl FrozenCustomInvariantRegistry {
                 ),
             source_groups: source_groups.into(),
             registrations: registrations.into(),
+            model_ownership_index,
             index_by_identity_and_execution_point: Arc::new(index_by_identity_and_execution_point),
         })
+    }
+
+    /// The exact tagged registration; no request-time applicability scan or parallel meaning.
+    pub(crate) fn model_ownership(
+        &self,
+    ) -> Option<(
+        &CustomInvariantRegistration,
+        &crate::branch::RelationalModelOwnership,
+    )> {
+        let registration = self.registrations.get(self.model_ownership_index?)?;
+        Some((registration, registration.model_ownership.as_deref()?))
     }
 
     pub(crate) fn source_inventory(&self) -> Arc<[SourcePreparationGroup]> {

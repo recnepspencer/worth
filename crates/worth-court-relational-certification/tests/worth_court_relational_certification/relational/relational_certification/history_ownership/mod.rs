@@ -2,9 +2,19 @@
 mod fixture;
 use fixture::*;
 mod entity_boundary;
+mod graph_admission;
 mod graph_boundary;
+mod graph_integrity;
+mod graph_persistence;
+mod graph_publication;
 mod graph_refusals;
 mod graph_resources;
+mod historical_artifact;
+mod historical_foreign;
+mod historical_publication;
+mod prospective_publication;
+mod publication_fixture;
+mod publication_membership;
 
 #[test]
 fn cold_model_ownership_demands_cross_partition_endpoints_and_edges() {

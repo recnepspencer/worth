@@ -20,8 +20,9 @@ pub use crate::mvcc::{
     RelationalCancellationToken, RelationalInstalledApplicationPublicationAuthority,
     RelationalInterruptionBoundary, RelationalInterruptionCostCounters,
     RelationalInterruptionEvent, RelationalMutationInvariantEvidence, RelationalOperationControl,
-    RelationalOperationInterruption, RelationalPreparationPort, RelationalPublicationCompanion,
-    RelationalPublicationDeferred, RelationalPublicationDenial,
+    RelationalOperationInterruption, RelationalOwnedGraphSelection,
+    RelationalOwnedGraphSelectionPreparationError, RelationalPreparationPort,
+    RelationalPublicationCompanion, RelationalPublicationDeferred, RelationalPublicationDenial,
     RelationalPublicationDurabilityPosture, RelationalPublicationFailure,
     RelationalPublicationFailureKind, RelationalPublicationOutcome, RelationalPublicationPort,
     RelationalPublicationProjectionPosture, RelationalRetainedEntitySelection,
@@ -42,11 +43,11 @@ pub use crate::mvcc::{
     RelationalAuthoredCoupledProducerAssembly, RelationalAuthoredCoupledTransaction,
     RelationalAuthoredRestoration, RelationalAuthoredRetirement, RelationalCoupledAssemblyFailure,
     RelationalCoupledAuthoredPublication, RelationalDeclaredCoupledOwner,
-    RelationalPerformedOutputPublications, RelationalPreparedOutputPublications,
-    RelationalRequiredOutputPublication, RelationalRequiredOutputRouteAbsence,
-    RelationalRestoredProducerPrior, RequiredOutputProducingImplementation,
-    RequiredOutputPublication, RequiredOutputPublicationMeaning, RequiredOutputRolePosture,
-    RequiredOutputRoleTarget,
+    RelationalHistoricalOutputSelection, RelationalPerformedOutputPublications,
+    RelationalPreparedOutputPublications, RelationalRequiredOutputPublication,
+    RelationalRequiredOutputRouteAbsence, RelationalRestoredProducerPrior,
+    RequiredOutputProducingImplementation, RequiredOutputPublication,
+    RequiredOutputPublicationMeaning, RequiredOutputRolePosture, RequiredOutputRoleTarget,
 };
 pub use crate::publication::RelationalSettlementPort;
 pub use crate::transactions::data::{

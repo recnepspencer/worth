@@ -3,24 +3,27 @@ use crate::identity::data::{EntityId, KindId};
 use std::collections::BTreeSet;
 
 mod basis;
+mod graph_admission;
 mod graph_denial;
 mod graph_selection;
 mod invariant;
+mod publication;
 pub use graph_denial::{RelationalOwnedModelForeignRelation, RelationalOwnedModelSelectionDenial};
 pub use graph_selection::RelationalOwnedModelGraphSelection;
+pub(crate) use publication::validate_candidate_ownership;
 mod selection;
 mod traversal;
 pub use selection::RelationalOwnedModelEntityBoundary;
 
 /// Schema meaning only. Constructing it grants no read or mutation authority.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct RelationalModelOwnershipDomain {
     pub root: KindId,
     pub relations: Vec<KindId>,
     pub entities: Vec<KindId>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct RelationalModelOwnership {
     domains: Vec<RelationalModelOwnershipDomain>,
     relations: Vec<KindId>,
@@ -44,6 +47,7 @@ impl RelationalModelOwnershipConflict {
 #[derive(Debug)]
 pub enum RelationalModelOwnershipDenial {
     ForeignBasis,
+    Custody(crate::transactions::data::TransactionCommitError),
     TargetNotCurrent,
     SchemaChanged,
     ModelRootKind { model: EntityId, actual: KindId },
@@ -57,7 +61,15 @@ pub enum RelationalModelOwnershipDenial {
 }
 
 impl RelationalModelOwnership {
-    pub fn new(domains: Vec<RelationalModelOwnershipDomain>) -> Self {
+    pub fn new(mut domains: Vec<RelationalModelOwnershipDomain>) -> Self {
+        for domain in &mut domains {
+            domain.relations.sort_unstable();
+            domain.relations.dedup();
+            domain.entities.sort_unstable();
+            domain.entities.dedup();
+        }
+        domains.sort_unstable();
+        domains.dedup();
         let relations = domains
             .iter()
             .flat_map(|domain| domain.relations.iter().copied())
@@ -92,5 +104,24 @@ impl RelationalModelOwnership {
     }
     fn relation_lookup_work(&self) -> usize {
         self.relations.len().checked_ilog2().unwrap_or(0) as usize + 1
+    }
+}
+
+impl RelationalModelOwnershipDenial {
+    /// Keep custody-owner interruptions visible without flattening its typed refusal.
+    pub fn kernel_stop(&self) -> Option<worth_execution::MapKernelStop> {
+        match self {
+            Self::Request(worth_execution::WorkCeilingDenial::Stopped(stop)) => Some(*stop),
+            Self::Native(cause) => cause.as_kernel_stop(),
+            Self::Custody(crate::transactions::data::TransactionCommitError::Execution {
+                denial,
+                ..
+            }) => {
+                let crate::transactions::data::CommitExecutionDenialKind::Cause(cause) =
+                    denial.kind;
+                cause.as_kernel_stop()
+            }
+            _ => None,
+        }
     }
 }

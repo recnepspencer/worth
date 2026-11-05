@@ -40,6 +40,7 @@ impl Serialize for AuthoritativeArtifactEnvelopeRef<'_> {
             authored_cascade_retirement,
             authored_cascade_restoration,
             coupled_authored_publication,
+            historical_output_selection,
             required_output_materialization,
             commit,
             branch_context,
@@ -72,6 +73,7 @@ impl Serialize for AuthoritativeArtifactEnvelopeRef<'_> {
             entries: Vec::new(),
         };
         let field_count = 29
+            + usize::from(historical_output_selection.is_some())
             + usize::from(coupled_authored_publication.is_some())
             + usize::from(producer_cascade_retirement.is_some())
             + usize::from(!authored_index_writes.is_unavailable());
@@ -84,6 +86,9 @@ impl Serialize for AuthoritativeArtifactEnvelopeRef<'_> {
             required_output_codec_retirements,
         )?;
         fields.serialize_field("required_output_origin", required_output_origin)?;
+        if historical_output_selection.is_some() {
+            fields.serialize_field("historical_output_selection", historical_output_selection)?;
+        }
         if producer_cascade_retirement.is_some() {
             fields.serialize_field("producer_cascade_retirement", producer_cascade_retirement)?;
         }

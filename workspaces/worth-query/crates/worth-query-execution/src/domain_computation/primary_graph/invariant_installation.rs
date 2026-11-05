@@ -291,7 +291,8 @@ where
         if self
             .histories
             .iter()
-            .any(|history| !history.parts().ownership.is_empty())
+            .any(|history| !history.parts().ownership.is_empty()
+                || history.parts().model_domain == worth_query_declaration::facade::application_history::ApplicationHistoryModelDomain::OwnedModelGraph)
         {
             lowered.push(
                 layout
