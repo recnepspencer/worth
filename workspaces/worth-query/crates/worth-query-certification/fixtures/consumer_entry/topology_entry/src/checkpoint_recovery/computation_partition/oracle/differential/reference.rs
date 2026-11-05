@@ -5,7 +5,8 @@ use std::cell::{Cell, RefCell};
 use worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile;
 
 // The four-round independent model captured 77 checkpoints through 162 events.
-// Its original request peaked at 19,484,190 Work; shared refusal Worlds stay at 8m.
+// Its ordinary model calls keep their finite World policy; whole-history capture
+// borrows the separate population setup request.
 const FULL_RUN_HISTORY_POLICY: worth_foundational::ExecutionRequestPolicy =
     worth_foundational::ExecutionRequestPolicy::new(
         worth_foundational::ExecutionPosture::Serial,
@@ -138,8 +139,14 @@ impl Reference {
         }
         drop(replay);
         model.applied = self.history.len();
+        let capture = worth_query_host::facade::primary_graph::query_test_execution_authority_for_test()
+            .request_lease(worth_query_host::facade::runtime::LeaseRequest {
+                policy: crate::checkpoint_recovery::support::observation::POPULATION_BOOTSTRAP_POLICY,
+                cancellation: worth_query_host::facade::runtime::CancellationToken::new(),
+                deadline: None,
+            }).expect("the population owns its original checkpoint-capture request");
         let native = application
-            .with_host_advancement(|host_phase| {
+            .with_funded_host_advancement(worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy::Execution(&capture), |host_phase| {
                 application
                     .capture_native_truth_checkpoint_for_test(&host_phase)
                     .unwrap()
