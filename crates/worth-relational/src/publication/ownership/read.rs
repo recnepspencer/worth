@@ -67,6 +67,22 @@ impl CurrentPublicationRoster {
         )
     }
 
+    /// A retired closure is not a published role grant. This coordinate only
+    /// names the custody owner that must prepare its historical material.
+    pub(crate) fn codec_retirement_subject(
+        &self,
+    ) -> Option<(
+        crate::history::data::CommitId,
+        crate::identity::data::EntityId,
+    )> {
+        self.codec_retired.first().map(|row| {
+            (
+                row.value.origin.commit.commit_id,
+                row.value.origin.meaning.source_scope,
+            )
+        })
+    }
+
     pub(crate) fn coordinates(
         &self,
     ) -> impl ExactSizeIterator<

@@ -39,7 +39,47 @@ pub(crate) fn complete(
     let mut writer = Writer::new(
         execution, runtime, basis, working, identities, candidate, context,
     )?;
+    let absent_count = candidate.historical_absent_routes().count();
+    if absent_count != 0 {
+        let text_work = candidate
+            .historical_absent_routes()
+            .fold(0usize, |work, a| {
+                work.saturating_add(a.meaning.family.len() + 65)
+            });
+        let rows = roster
+            .publications
+            .iter()
+            .chain(&roster.codec_retired)
+            .fold(roster.links.len() + 1, |rows, row| {
+                rows.saturating_add(row.value.origin.members.len().saturating_mul(2))
+                    .saturating_add(row.value.origin.relations.len().saturating_mul(3))
+                    .saturating_add(4)
+            });
+        let scopes = candidate
+            .output_origins()
+            .count()
+            .saturating_add(roster.codec_retired.len())
+            .saturating_add(candidate.required_output_codec_retirements.len())
+            .saturating_add(absent_count)
+            .saturating_add(1);
+        writer.checkpoint(
+            text_work
+                .saturating_mul(rows)
+                .saturating_mul(scopes)
+                .saturating_mul(4),
+        )?;
+        writer
+            .retain((absent_count as u64).saturating_mul(
+                2 * std::mem::size_of::<crate::identity::data::EntityId>() as u64,
+            ))?;
+    }
     let mut scopes = Vec::new();
+    for absence in candidate.historical_absent_routes() {
+        writer.checkpoint(scopes.len() + 1)?;
+        if !scopes.contains(&absence.meaning.source_scope) {
+            scopes.push(absence.meaning.source_scope);
+        }
+    }
     for origin in candidate
         .output_origins()
         .filter(|origin| origin.source_scope_owned)
@@ -98,6 +138,9 @@ pub(crate) fn complete(
             });
         let replaced = |meaning: &crate::mvcc::RequiredOutputPublicationMeaning| {
             scope_deleted
+                || candidate
+                    .historical_absent_routes()
+                    .any(|absence| absence.meaning.same_route(meaning))
                 || candidate
                     .output_origins()
                     .any(|origin| origin.source_scope_owned && origin.meaning.same_route(meaning))

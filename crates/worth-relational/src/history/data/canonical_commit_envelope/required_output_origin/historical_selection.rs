@@ -9,6 +9,7 @@ use crate::{
 };
 use std::sync::Arc;
 use worth_execution::{ExecutionMemoryReservation, ExecutionResourceLease, MapKernelContext};
+mod absence;
 mod header;
 mod records;
 
@@ -16,6 +17,8 @@ mod records;
 pub(crate) struct CanonicalHistoricalOutputSelection {
     pub(crate) selected_basis: RelationalBranchBasisDescriptor,
     pub(crate) publications: Vec<Arc<CanonicalRequiredOutputOrigin>>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) absences: Vec<absence::CanonicalHistoricalOutputAbsence>,
 }
 
 pub(super) fn install(
@@ -48,6 +51,7 @@ pub(super) fn install(
         })?;
     let mut positions = basis.inner.root.output_publication_positions.clone();
     let mut publications = Vec::new();
+    let mut absences = Vec::new();
     for selection in &selections {
         let prior = &selection.publication;
         let original = &prior.origin;
@@ -70,6 +74,19 @@ pub(super) fn install(
                 .all(|m| m.posture == crate::mvcc::RequiredOutputRolePosture::Retire)
         {
             return Err(refuse());
+        }
+        if !selection.select_version {
+            absences.push(absence::install(
+                selection,
+                basis,
+                working,
+                envelope.commit.commit_id,
+                envelope.commit.version_id,
+                &mut positions,
+                lease,
+                context,
+            )?);
+            continue;
         }
         for previous in &publications {
             let previous: &Arc<CanonicalRequiredOutputOrigin> = previous;
@@ -167,6 +184,7 @@ pub(super) fn install(
     envelope.historical_output_selection = Some(Arc::new(CanonicalHistoricalOutputSelection {
         selected_basis,
         publications,
+        absences,
     }));
     envelope
         .validate_historical_selection_header(context)

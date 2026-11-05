@@ -96,6 +96,27 @@ pub(crate) fn complete(
         }
         replace(&mut writer, storage, old, next)?;
     }
+    let absence_work = candidate
+        .historical_absent_routes()
+        .fold(0usize, |work, event| {
+            work.saturating_add(event.meaning.family.len() + 65)
+        });
+    if absence_work != 0 {
+        writer.checkpoint(
+            absence_work.saturating_mul(current.len().saturating_mul(3).saturating_add(1)),
+        )?;
+    }
+    for event in candidate.historical_absent_routes() {
+        let old = current
+            .iter()
+            .find(|(_, presence)| presence.meaning.same_route(&event.meaning));
+        if let Some(positions) = positions.as_deref_mut() {
+            positions
+                .current_owned
+                .replace(execution, &event.meaning, None, writer.context())?;
+        }
+        replace(&mut writer, storage, old, None)?;
+    }
     for event in &candidate.required_output_codec_retirements {
         writer.checkpoint(current.len() + 1)?;
         // A codec event for a non-opted-in route has no presence row.
@@ -128,6 +149,9 @@ pub(crate) fn complete(
         if !candidate
             .output_origins()
             .any(|origin| origin.meaning.same_route(&old.1.meaning))
+            && !candidate
+                .historical_absent_routes()
+                .any(|event| event.meaning.same_route(&old.1.meaning))
             && candidate
                 .patch
                 .authoritative_record_patches

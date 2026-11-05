@@ -9,6 +9,7 @@ mod graph_persistence;
 mod graph_publication;
 mod graph_refusals;
 mod graph_resources;
+mod historical_absence;
 mod historical_artifact;
 mod historical_foreign;
 mod historical_publication;

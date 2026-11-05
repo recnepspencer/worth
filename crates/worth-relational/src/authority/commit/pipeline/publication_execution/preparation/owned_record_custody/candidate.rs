@@ -27,6 +27,7 @@ impl<'a> CandidateWrites<'a> {
             .and_then(|n| n.checked_add(adjacency.len()))
             .and_then(|n| n.checked_add(candidate.output_origins().count()))
             .and_then(|n| n.checked_add(candidate.required_output_codec_retirements.len()))
+            .and_then(|n| n.checked_add(candidate.historical_absent_routes().count()))
             .and_then(|n| {
                 n.checked_mul(4 * std::mem::size_of::<(RecordRef, (EntityId, EntityId))>())
             })
@@ -80,6 +81,18 @@ impl<'a> CandidateWrites<'a> {
                     prior,
                 ));
             }
+        }
+        for absence in candidate.historical_absent_routes() {
+            crate::publication::ownership::checkpoint(
+                context,
+                absence.meaning.family.len() as u64 + 1,
+            )?;
+            selected.successors.insert((
+                &absence.meaning.family,
+                absence.meaning.source_scope,
+                absence.meaning.source_partition,
+                absence.publication,
+            ));
         }
         for retirement in &candidate.required_output_codec_retirements {
             crate::publication::ownership::checkpoint(

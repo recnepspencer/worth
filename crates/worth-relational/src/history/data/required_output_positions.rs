@@ -12,6 +12,7 @@ use worth_execution::{ExecutionMemoryReservation, ExecutionResourceLease, MapKer
 pub(crate) enum RequiredOutputRoutePosition {
     Published(CommitId),
     CodecRetired(CommitId),
+    HistoricalAbsence(CommitId),
 }
 
 #[derive(Clone, Debug, Default)]

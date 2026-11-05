@@ -529,3 +529,30 @@ installation without it enters no extra work scope. This is compiled
 applicability over immutable installation meaning, not another ownership fact
 reader. The existing worker-only recorded parameter-inverse court is the
 regression oracle; do not accept its branch-only failure as master debt.
+
+D1178 route-absence implementation checkpoint: graph-wide preparation reads the
+Native current and selected rosters once each, under one checkpoint. Union
+entities are filtered by genuine full-generation point liveness at each basis
+before entering that reader: a current-only record may not have existed in the
+selected partition at all. The filter derives no ownership and never converts
+missing cold material to absence. Both current-fact writers independently remove
+absent routes; the existing reader checks their complete candidate result.
+Warm and cold route selection stop at an explicit historical-absence coordinate,
+so an old publication cannot leak through ancestry. The disposition retains the
+actual displaced publication/version and fresh selection commit; it makes no
+producer-run or fresh-identity claim.
+
+Two-family Native courts select the pre-publication snapshot, cold-open the
+absence, and reselect the original publications at their issued IDs. A separate
+court removes a current-only source together with its route, avoiding a second
+presence deletion in source cleanup. These are Native atomic/disposition courts,
+not the required public zero-producer-contact count court.
+
+Codec-retired closures remain a distinct typed posture. The roster supplies only
+their diagnostic publication/owner coordinate to this path; it does not retag
+retirement evidence as published roles. The graph batch and coverage gate refuse
+such a selection until its disposition restoration is composed at the existing
+Native codec-retirement owner. This is unfinished work, not a route-absence
+fallback. Whole-output derived-codec retirement invalidates the output generation
+and requires target-producer rebuild; ordinary physical rematerialization is a
+different owner. Preserve that distinction during the upcoming currentness join.

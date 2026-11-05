@@ -23,6 +23,14 @@ pub(super) fn registry() -> RelationalSchemaRegistry {
 use worth_testkit_relational::aspect_storage::AspectSchemaFixture;
 impl PublishedModel {
     pub fn new(execution: &ExecutionRequest<'_, '_>) -> Self {
+        Self::with_before_publication(execution).0
+    }
+    pub fn with_before_publication(
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> (
+        Self,
+        worth_relational::facade::branch::AdmittedRelationalBranchBasis,
+    ) {
         let mut runtime = RelationalRuntimeApi::builder()
             .schema_registry(registry())
             .build()
@@ -51,16 +59,22 @@ impl PublishedModel {
             source_partition: [0; 32],
             source_epoch: [1; 32],
         };
+        let (_, before) = runtime
+            .observe_branch(&runtime.main_branch_identity())
+            .unwrap();
         let output = publish(execution, &runtime, &owner, &installed, &meaning, "output");
-        Self {
-            runtime,
-            owner,
-            installed,
-            model,
-            source,
-            output,
-            meaning,
-        }
+        (
+            Self {
+                runtime,
+                owner,
+                installed,
+                model,
+                source,
+                output,
+                meaning,
+            },
+            before,
+        )
     }
 }
 
