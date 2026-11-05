@@ -30,9 +30,16 @@ impl<S: Scenario> WorthQueryApplicationOutputRole for Cell<S> {
 }
 pub struct Role<S>(PhantomData<fn() -> S>);
 impl<S: Scenario> ApplicationMutationOutputContract<S> for Outputs {
-    const ROLE_FAMILIES: &'static [ApplicationMutationOutputRoleFamilyDescriptor] = if S::MODE == 69
-    {
+    const ROLE_FAMILIES: &'static [ApplicationMutationOutputRoleFamilyDescriptor] = if matches!(
+        S::MODE,
+        69
+    ) {
         &[<sheet_boundary::InitialNodes<S> as WorthQueryApplicationDeclaredOutputRoleFamily>::DESCRIPTOR]
+    } else if S::MODE == 70 {
+        &[
+            <sheet_boundary::InitialNodes<S> as WorthQueryApplicationDeclaredOutputRoleFamily>::DESCRIPTOR,
+            <sheet_boundary::split_walk::InitialFork<S> as WorthQueryApplicationDeclaredOutputRoleFamily>::DESCRIPTOR,
+        ]
     } else {
         &[]
     };

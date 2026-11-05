@@ -112,3 +112,9 @@ mod current_history;
 mod cold_owned_revision;
 
 mod sheet_boundary;
+
+mod foreign_aggregate;
+
+mod currentness_guards;
+
+mod support_currentness;

@@ -74,7 +74,7 @@ impl<S: Scenario> ApplicationDeclaredOperation<S> for EditOp {
 pub fn declare<S: Scenario>(
     schema: ApplicationSchemaDeclarationBuilder<S>,
 ) -> ApplicationSchemaDeclarationBuilder<S> {
-    if !matches!(S::MODE, 48 | 68 | 69) {
+    if !matches!(S::MODE, 48 | 68 | 69 | 70) {
         return schema;
     }
     schema

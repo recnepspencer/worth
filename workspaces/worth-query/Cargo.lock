@@ -831,6 +831,7 @@ dependencies = [
  "worth-execution",
  "worth-foundational",
  "worth-query-decl",
+ "worth-query-execution",
  "worth-query-host",
  "worth-query-testkit-document-retention",
  "worth-relational",

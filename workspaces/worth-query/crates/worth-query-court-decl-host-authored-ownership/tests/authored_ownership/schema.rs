@@ -5,7 +5,7 @@ pub trait Scenario:
     type Heterogeneous: heterogeneous::Profile;
     type Boundary: sheet_boundary::Profile;
     const MODE: u8;
-    const COUPLED: bool = matches!(Self::MODE, 6..=12 | 14..=28 | 30 | 39 | 40 | 41 | 42 | 43 | 48 | 60 | 61 | 64 | 66 | 68 | 69);
+    const COUPLED: bool = matches!(Self::MODE, 6..=12 | 14..=28 | 30 | 39 | 40 | 41 | 42 | 43 | 48 | 60 | 61 | 64 | 66 | 68 | 69 | 70);
     const TWO_BODIES: bool = matches!(
         Self::MODE,
         7 | 8 | 9 | 15..=18 | 20 | 27 | 28 | 42 | 43 | 61 | 64
@@ -142,7 +142,9 @@ impl<S: Scenario> ApplicationSchemaContribution<S> for Contribution {
         let schema = sheet_boundary::declare(heterogeneous::declare(content::declare(
             stage_schema::declare(schema),
         )));
-        let schema = parameter_inverse::declare(relation_splice::declare(schema));
+        let schema = currentness_guards::declare(parameter_inverse::declare(
+            relation_splice::declare(schema),
+        ));
         let schema = projected_memberships::schema::declare(schema);
         let schema = if S::COUPLED {
             coupled::producer::declare(schema)
@@ -167,7 +169,7 @@ impl<S: Scenario> ApplicationSchemaContribution<S> for Contribution {
         source: std::any::TypeId,
         visitor: V,
     ) -> Result<V::Output, V> {
-        if matches!(S::MODE, 48 | 68 | 69)
+        if matches!(S::MODE, 48 | 68 | 69 | 70)
             && source == std::any::TypeId::of::<parameter_inverse::Binding<S>>()
         {
             return Ok(dispatch_application_correction::<
@@ -220,8 +222,16 @@ impl<S: Scenario> WorthQueryApplicationContribution<S> for Contribution {
                 projected_memberships::inspection::Handler,
             )?;
         }
-        if matches!(S::MODE, 48 | 68 | 69) {
+        if matches!(S::MODE, 48 | 68 | 69 | 70) {
             setup.handler::<parameter_inverse::Binding<S>, _>(parameter_inverse::Handler)?;
+        }
+        if S::MODE == 70 {
+            setup.handler::<foreign_aggregate::BirthBinding<S>, _>(
+                foreign_aggregate::command::Handler,
+            )?;
+            setup.handler::<sheet_boundary::split_walk::ExtendBinding<S>, _>(
+                sheet_boundary::split_walk::Handler,
+            )?;
         }
         setup.handler::<lifecycle::CreateBinding<S>, _>(lifecycle_handlers::Handler)?;
         setup.handler::<lifecycle::RetireBinding<S>, _>(lifecycle_handlers::Handler)?;

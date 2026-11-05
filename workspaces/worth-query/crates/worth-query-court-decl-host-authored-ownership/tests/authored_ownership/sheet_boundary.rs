@@ -29,12 +29,12 @@ impl Successor {
     }
 }
 macro_rules! family {
-    ($name:ident, $contract:ty, $prefix:literal, $postures:expr) => {
+    ($name:ident, $entity:ty, $contract:ty, $prefix:literal, $postures:expr) => {
         pub struct $name<S>(PhantomData<fn() -> S>);
         impl<S: Scenario> WorthQueryApplicationOutputRoleFamily for $name<S> {
             type Schema = S;
             type Contract = $contract;
-            type Entity = Occurrence;
+            type Entity = $entity;
             const PREFIX: &'static str = $prefix;
             const POSTURES: ApplicationMutationOutputPostureSet = $postures;
             const MINIMUM: usize = 0;
@@ -43,18 +43,21 @@ macro_rules! family {
 }
 family!(
     InitialNodes,
+    Occurrence,
     producer::Outputs,
     "boundary.",
     ApplicationMutationOutputPostureSet::ALL
 );
 family!(
     SurvivingNodes,
+    Occurrence,
     coupled::producer::Outputs,
     "boundary.",
     ApplicationMutationOutputPostureSet::ALL
 );
 family!(
     RetiredNodes,
+    Occurrence,
     coupled::producer::Outputs,
     "retired-boundary.",
     ApplicationMutationOutputPostureSet::RETIRE
@@ -224,6 +227,7 @@ mod court;
 pub struct Absent;
 pub struct Owned;
 pub trait Profile: 'static {
+    type Decision<S: Scenario>;
     fn initial<S: Scenario>(
         _: &mut CandidateWriter<'_, S, producer::Binding<S>>,
         _: &WorthQueryApplicationEffectEntity<S, Node>,
@@ -232,20 +236,23 @@ pub trait Profile: 'static {
     }
     fn read<S: Scenario>(
         _: &mut DecisionReader<'_, '_, '_, S, Preserve<S>>,
-    ) -> Result<Option<Decision<S>>, HandlerExecutionDenial> {
+    ) -> Result<Option<Self::Decision<S>>, HandlerExecutionDenial> {
         Ok(None)
     }
     fn trim<S: Scenario>(
         _: &mut CandidateWriter<'_, S, Preserve<S>>,
-        decision: Option<Decision<S>>,
+        decision: Option<Self::Decision<S>>,
         _: &WorthQueryApplicationEffectEntity<S, Node>,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
         assert!(decision.is_none());
         Ok(())
     }
 }
-impl Profile for Absent {}
+impl Profile for Absent {
+    type Decision<S: Scenario> = ();
+}
 impl Profile for Owned {
+    type Decision<S: Scenario> = Decision<S>;
     fn initial<S: Scenario>(
         writer: &mut CandidateWriter<'_, S, producer::Binding<S>>,
         source: &WorthQueryApplicationEffectEntity<S, Node>,
@@ -254,14 +261,16 @@ impl Profile for Owned {
     }
     fn read<S: Scenario>(
         reader: &mut DecisionReader<'_, '_, '_, S, Preserve<S>>,
-    ) -> Result<Option<Decision<S>>, HandlerExecutionDenial> {
+    ) -> Result<Option<Self::Decision<S>>, HandlerExecutionDenial> {
         read(reader).map(Some)
     }
     fn trim<S: Scenario>(
         writer: &mut CandidateWriter<'_, S, Preserve<S>>,
-        decision: Option<Decision<S>>,
+        decision: Option<Self::Decision<S>>,
         source: &WorthQueryApplicationEffectEntity<S, Node>,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
         trim(writer, decision.expect("owned boundary decision"), source)
     }
 }
+
+pub(super) mod split_walk;

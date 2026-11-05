@@ -50,7 +50,7 @@ pub fn definition<S: Scenario>() -> ApplicationQueryDefinition<S, Query, (), Row
         .scope(Node::reference())
         .result_shape({
             let shape = ApplicationQueryResultShapeBuilder::new(Node::reference()).field(id());
-            if matches!(S::MODE, 48 | 68 | 69) {
+            if matches!(S::MODE, 48 | 68 | 69 | 70) {
                 shape.field(parameter()).build()
             } else {
                 shape.build()
@@ -75,7 +75,7 @@ impl<S: Scenario> WorthQueryApplicationProjection<S, Query> for Row {
     ) -> Result<Self, WorthQueryApplicationProjectionDenial> {
         Ok(Self {
             id: row.field(id())?,
-            value: if matches!(S::MODE, 48 | 68 | 69) {
+            value: if matches!(S::MODE, 48 | 68 | 69 | 70) {
                 row.field(parameter())?
             } else {
                 0

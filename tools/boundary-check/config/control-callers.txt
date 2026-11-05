@@ -1721,3 +1721,6 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/producer_succession/locality.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/producer_succession/route_degree/courts.rs
 crates/worth-relational/ workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/endpoint_fence.rs
+
+# D1190 passive retained aggregate evidence from a real Query-installed producer.
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/foreign_aggregate/retained.rs
