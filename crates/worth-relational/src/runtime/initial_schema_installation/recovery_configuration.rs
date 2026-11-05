@@ -15,8 +15,7 @@ impl RelationalRuntime {
             config.storage.cross_context_policy = policy.cross_context_policy;
             if config.schema.registry != *schema {
                 let rebuilt = super::rebuilt_schema_contract_runtime(
-                    &state,
-                    schema.clone(),
+                    schema,
                     state
                         .schema_contract_runtime
                         .custom_invariant_registries
@@ -25,7 +24,9 @@ impl RelationalRuntime {
                     state
                         .schema_contract_runtime
                         .initial_custom_invariants_sealed,
-                );
+                    crate::schema::SchemaCompilationControl::Configuration,
+                )
+                .expect("request-free replay configuration has no execution refusal");
                 config.schema.registry = schema.clone();
                 state.schema_contract_runtime = std::sync::Arc::new(rebuilt);
             }

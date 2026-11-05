@@ -163,6 +163,7 @@ impl RelationalBranchRoot {
                 crate::history::data::RequiredOutputPublicationPositions::unresolved_at(
                     envelope.commit.commit_id,
                 ),
+            execution_contracts: Default::default(),
             schema_authority,
             committed: Some(RelationalCommittedBranchRoot {
                 descriptor,
@@ -316,6 +317,7 @@ impl RelationalBranchRoot {
                     self.output_publication_positions.clone()
                 }
             },
+            execution_contracts: self.execution_contracts.clone(),
             schema_authority: Arc::clone(&self.schema_authority),
             committed: Some(committed),
             _memory: None,

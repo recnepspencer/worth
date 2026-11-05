@@ -158,7 +158,11 @@ fn recover_shape_inner(
     } else {
         durable_runtime_with_test_schema()
     };
-    bind_durable_medium(&mut receiving, runtime.durability.detach_medium().unwrap());
+    receiving
+        .unshared_state_mut()
+        .expect("fresh receiver is unshared")
+        .durability
+        .attach_recovered_medium(runtime.durability.detach_medium().unwrap());
     let plan = receiving
         .durability()
         .recovery_plan_from_source(

@@ -312,6 +312,12 @@ impl PreparedCommitPublicationExecution {
             .recovered_codec_publication_custody()
     }
 
+    pub(crate) fn home_step(
+        &self,
+    ) -> Option<&std::sync::Arc<crate::runtime::AdmittedRelationalHomeProgramStep>> {
+        self.admitted.validation_input().home_step()
+    }
+
     pub(crate) fn has_prepared_indexes(&self) -> bool {
         self.prepared_indexes.is_some()
     }

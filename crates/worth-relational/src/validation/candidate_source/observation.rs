@@ -136,7 +136,8 @@ pub(crate) fn prepare(
         committed: root.committed.clone(),
         proposed: root.proposed.clone(),
         availability: root.availability,
-        committed_available: owner.physical_basis().materialization_is_complete(),
+        committed_available: owner.home_target.is_none()
+            && owner.physical_basis().materialization_is_complete(),
         audience: audience.clone(),
     })
 }
@@ -211,17 +212,6 @@ fn association(
     ),
     Denial,
 > {
-    for view in [committed, proposed] {
-        for path in program.paths() {
-            view.require_derived_relation(path)?;
-            view.require_derived_change_access(path).map_err(|cause| {
-                DerivedRelationReadDenial::Structural(view.read_budget().refusal(cause))
-            })?;
-        }
-        view.read_budget()
-            .check_live()
-            .map_err(DerivedRelationReadDenial::Structural)?;
-    }
     let before = &committed
         .structural_source
         .as_ref()
@@ -249,6 +239,23 @@ fn association(
         || proposal.proposed_version_id() != owner.proposed_version()
     {
         return Err(Denial::ForeignSource);
+    }
+    // A target program has no predecessor installation. Both real observation
+    // affinities remain checked above; only the proposed target may admit its
+    // definition. Committed target reads explicitly remain unavailable.
+    for view in [committed, proposed]
+        .into_iter()
+        .skip(usize::from(owner.home_target.is_some()))
+    {
+        for path in program.paths() {
+            view.require_derived_relation(path)?;
+            view.require_derived_change_access(path).map_err(|cause| {
+                DerivedRelationReadDenial::Structural(view.read_budget().refusal(cause))
+            })?;
+        }
+        view.read_budget()
+            .check_live()
+            .map_err(DerivedRelationReadDenial::Structural)?;
     }
     Ok((owner, before.clone(), after.clone()))
 }

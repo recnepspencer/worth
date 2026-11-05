@@ -13,6 +13,9 @@ mod call_admission;
 #[path = "operation/creation_reservation.rs"]
 mod creation_reservation;
 mod home_transition;
+mod home_transition_effect;
+mod home_transition_resume;
+mod home_transition_unopened;
 mod open_attempt;
 #[cfg(test)]
 #[path = "operation/preparation_test_support.rs"]
@@ -112,6 +115,7 @@ where
             &identities.commit_identity,
             Some(&identities.attempt_identity),
             successor_observation_requested,
+            None,
         )
         .map_err(|cause| NoEffectCompositePublication::new(cause, Some(expected_head.clone())))?;
         if let Some(denied) = self.reservation_denial(&expected_head, cancellation, deadline) {

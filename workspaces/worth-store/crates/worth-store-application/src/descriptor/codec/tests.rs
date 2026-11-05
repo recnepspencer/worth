@@ -44,8 +44,9 @@ fn changed_program_or_schema_requires_a_transition_preserving_the_recorded_bindi
     for requested in [binding(4, 3), binding(2, 5)] {
         let mut requested_bytes = Vec::new();
         crate::descriptor::binding::emit(&requested, &mut requested_bytes);
-        let DescriptorBindingAdmission::TransitionRequired { recorded: found } =
-            admit_record(&bytes, [1; 16], "runtime", "profile", &requested_bytes).unwrap()
+        let DescriptorBindingAdmission::TransitionRequired {
+            recorded: found, ..
+        } = admit_record(&bytes, [1; 16], "runtime", "profile", &requested_bytes).unwrap()
         else {
             panic!("a changed program or schema must name its transition requirement")
         };

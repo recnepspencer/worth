@@ -42,16 +42,26 @@ impl Default for CustomInvariantAccessContract {
 }
 
 impl CustomInvariantAccessContract {
-    pub fn canonicalize(mut self) -> Self {
-        self.read_entity_kinds.sort();
-        self.read_entity_kinds.dedup();
-        self.read_relation_kinds.sort();
-        self.read_relation_kinds.dedup();
-        self.affected_entity_kinds.sort();
-        self.affected_entity_kinds.dedup();
-        self.affected_relation_kinds.sort();
-        self.affected_relation_kinds.dedup();
-        self
+    pub fn canonicalize(self) -> Self {
+        self.canonicalize_for_compilation(crate::schema::SchemaCompilationControl::Configuration)
+            .expect("configuration access canonicalization has no request refusal")
+    }
+    pub(crate) fn canonicalize_for_compilation(
+        mut self,
+        control: crate::schema::SchemaCompilationControl<'_, '_>,
+    ) -> Result<Self, crate::execution::RelationalExecutionDenialCause> {
+        for kinds in [
+            &mut self.read_entity_kinds,
+            &mut self.read_relation_kinds,
+            &mut self.affected_entity_kinds,
+            &mut self.affected_relation_kinds,
+        ] {
+            control.checkpoint()?;
+            kinds.sort_unstable();
+            control.checkpoint()?;
+            kinds.dedup();
+        }
+        Ok(self)
     }
     pub(crate) fn reads_entity(&self, kind: crate::identity::data::KindId) -> bool {
         self.read_entity_kinds.binary_search(&kind).is_ok()

@@ -1730,6 +1730,7 @@ dependencies = [
  "worth-query-execution",
  "worth-query-host",
  "worth-query-testkit-host",
+ "worth-query-testkit-installation",
  "worth-relational",
  "worth-runtime-bridge",
  "worth-runtime-world",

@@ -8,6 +8,7 @@ pub(super) mod memory_observation;
 pub(crate) use memory_observation::MemoryPublicationRecord;
 mod readmission;
 pub use memory_observation::WorldObservedMemoryPublication;
+pub(crate) use readmission::PreparedReadmittedPublicationRecord;
 pub(crate) use readmission::{PublicationEvidence, ReadmittedPublicationRecord};
 pub use readmission::{WorldReadmittedPublication, WorldReadmittedPublicationDenial};
 

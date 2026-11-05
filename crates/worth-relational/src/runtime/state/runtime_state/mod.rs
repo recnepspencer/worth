@@ -14,6 +14,7 @@ pub use source_close::{
 mod merge_authority;
 mod owner_lifecycle;
 mod partition_edition_access;
+mod preparation_home_contracts;
 mod preparation_round;
 mod preparation_runtime;
 mod prepared_close;

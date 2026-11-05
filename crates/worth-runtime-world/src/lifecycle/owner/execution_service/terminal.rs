@@ -105,7 +105,9 @@ where
             "performed owner evidence cannot become no-effect"
         );
         if attempt.has_durable_open() {
-            return OwnerExecutionOutcome::ProductUnpublished(attempt.retain_open());
+            return OwnerExecutionOutcome::ProductUnpublished(
+                attempt.retain_open_after_refusal(cause),
+            );
         }
         let expected = attempt.expected_head().clone();
         let observed = (cause == NoEffectCause::StaleExpectedProductHead)

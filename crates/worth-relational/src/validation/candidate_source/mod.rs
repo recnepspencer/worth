@@ -11,7 +11,7 @@ pub use context::{
 pub use interpretation::NativeSourceInterpretationIdentity;
 mod program;
 pub use denial::ManagedIndexSourcePreparationDenial;
-pub(crate) use program::SourceBindingCache;
+pub(crate) use program::{SourceBindingCache, SourceProgramCommitmentDenial};
 mod observation;
 mod preparation;
 mod preparation_group;

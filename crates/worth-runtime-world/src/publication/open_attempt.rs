@@ -14,6 +14,7 @@ pub use native_preparation::{
 };
 #[derive(Debug)]
 pub enum WorldOpenAttemptRefusal {
+    TransitionAdmission(worth_proof::HomeProgramTransitionAdmissionDenial),
     NotHomeBound,
     Reservation(super::NoEffectCompositePublication),
     Durable(WorldDurableMediumDenial),
@@ -31,25 +32,43 @@ pub enum WorldOpenAttemptOutcome {
 /// Dropping observation preserves a submitted original open in its owner catalog.
 #[derive(Debug)]
 pub struct WorldPendingOpenAttempt {
+    pub(crate) original: WorldOpenAttemptOriginal,
+}
+
+/// Same identities and capacities, independent of submitted/readmitted phase.
+#[derive(Debug)]
+pub(crate) struct WorldOpenAttemptOriginal {
     pub(crate) binding: Arc<WorldDurableMediumBinding>,
     pub(crate) durable_custody: Arc<crate::durability::WorldDurableOpenCustody>,
     pub(crate) subject: WorldDurableArtifact,
-    pub(crate) record: WorldOpenAttemptRecord,
     pub(crate) association_bytes: ExecutionArray<u8>,
     pub(crate) identity: CompositePublicationAttemptIdentity,
     pub(crate) resolved: ResolvedExpectedProductHead,
     pub(crate) custody: ActiveAttemptCustody,
     pub(crate) deadline: Option<crate::lifecycle::RuntimeWorldInstant>,
 }
+impl WorldOpenAttemptOriginal {
+    pub(crate) fn open_record(&self) -> &WorldOpenAttemptRecord {
+        self.subject
+            .open_attempt()
+            .expect("the opened phase retains an actual original open")
+    }
+}
 impl WorldPendingOpenAttempt {
     pub fn unpublished_recovery_handle(&self) -> crate::recovery::ProductUnpublishedRecoveryHandle {
-        self.custody.unpublished_recovery_handle()
+        self.original.custody.unpublished_recovery_handle()
     }
     pub fn advance(mut self, execution: &ExecutionRequest<'_, '_>) -> WorldOpenAttemptOutcome {
-        match self.binding.publish(&self.subject, execution) {
+        match self
+            .original
+            .binding
+            .publish(&self.original.subject, execution)
+        {
             Ok(committed) => {
-                self.durable_custody.acknowledge(committed);
-                WorldOpenAttemptOutcome::Opened(WorldOpenedPublicationAttempt { original: self })
+                self.original.durable_custody.acknowledge(committed);
+                WorldOpenAttemptOutcome::Opened(WorldOpenedPublicationAttempt {
+                    original: self.original,
+                })
             }
             Err(WorldDurablePublicationStop::Pending | WorldDurablePublicationStop::Busy) => {
                 WorldOpenAttemptOutcome::Pending(self)
@@ -61,7 +80,7 @@ impl WorldPendingOpenAttempt {
                 WorldOpenAttemptOutcome::EvidenceRequired(self)
             }
             Err(WorldDurablePublicationStop::Refused(cause)) => {
-                self.custody.retain_durable_open(None);
+                self.original.custody.retain_durable_open(None);
                 WorldOpenAttemptOutcome::Refused(WorldOpenAttemptRefusal::Durable(cause))
             }
         }
@@ -71,9 +90,13 @@ impl WorldPendingOpenAttempt {
 /// the consumed validated Native proposal. It is not an owner-effect success.
 #[derive(Debug)]
 pub struct WorldOpenedPublicationAttempt {
-    pub(crate) original: WorldPendingOpenAttempt,
+    pub(crate) original: WorldOpenAttemptOriginal,
 }
 impl WorldOpenedPublicationAttempt {
+    pub fn reserved_commit_identity(&self) -> crate::identity::CompositeCommitIdentity {
+        self.original.custody.reserved_commit_identity()
+    }
+
     pub fn caller_association_bytes(&self) -> &[u8] {
         self.original.association_bytes.elements()
     }

@@ -15,6 +15,7 @@ mod close;
 mod incarnation;
 mod initialization;
 mod page;
+mod reactivation;
 mod recovered_publication;
 #[path = "catalog/update.rs"]
 mod update;
@@ -69,6 +70,7 @@ pub(crate) struct ReservedProductUnpublishedSlot {
     catalog: ProductUnpublishedRecoveryCatalog,
     reserved_metadata_bytes: usize,
     armed: bool,
+    recovered: Option<Arc<crate::recovery::RecoveredWorldPublicationRecord>>,
 }
 
 impl ReservedProductUnpublishedSlot {
@@ -95,6 +97,9 @@ impl std::fmt::Debug for ReservedProductUnpublishedSlot {
 impl Drop for ReservedProductUnpublishedSlot {
     fn drop(&mut self) {
         if !self.armed {
+            return;
+        }
+        if self.restore_recovered() {
             return;
         }
         let mut state = self.catalog.locked_state();
@@ -177,6 +182,7 @@ impl ProductUnpublishedRecoveryCatalog {
             catalog: self.clone(),
             reserved_metadata_bytes: metadata_charge,
             armed: true,
+            recovered: None,
         })
     }
 

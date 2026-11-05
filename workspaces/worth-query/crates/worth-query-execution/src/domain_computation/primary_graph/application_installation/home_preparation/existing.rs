@@ -46,8 +46,12 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeNativeMeaning<Sc
                     "existing Home retains an unresolved codec transition",
                 ));
             }
-            self.schema.receipt = native
-                .readmit_recovered_initial_schema_installation(self.schema.receipt.clone())
+            self.schema.receipt = recovered
+                .readmit_home_initial_schema_installation(
+                    &execution,
+                    native,
+                    self.schema.receipt.clone(),
+                )
                 .map_err(|cause| {
                     existing_denial(format!("Home recovered schema authority denied: {cause}"))
                 })?;

@@ -9,7 +9,9 @@ use crate::schema::data::RelationalSchemaRegistry;
 use crate::validation::data::CustomInvariantAccessContract;
 
 mod bindings;
+mod catalog_commitment;
 pub(crate) use bindings::SourceBindingCache;
+pub(crate) use catalog_commitment::SourceProgramCommitmentDenial;
 mod projection_routes;
 pub use projection_routes::ManagedIndexSourceProjectionRoute;
 
@@ -115,15 +117,27 @@ impl ManagedIndexSourceProgram {
     pub(crate) fn require_registry(
         &self,
         registry: &RelationalSchemaRegistry,
-    ) -> Result<(), Denial> {
-        if self
-            .paths()
-            .any(|path| !registry.admits_derived_relation(path))
-        {
-            return Err(Denial::ForeignDefinition);
+        control: crate::schema::SchemaCompilationControl<'_, '_>,
+    ) -> Result<(), crate::validation::CustomInvariantCompilationDenial> {
+        use crate::validation::CustomInvariantCompilationDenial as CompilationDenial;
+        for path in self.paths() {
+            control.checkpoint().map_err(CompilationDenial::Execution)?;
+            if !registry.admits_derived_relation(path) {
+                return Err(CompilationDenial::Source(Denial::ForeignDefinition));
+            }
         }
-        projection_routes::validate_fields(registry, self.row_kind(), self.fields())?;
-        projection_routes::validate_routes(registry, self.row_kind(), self.projection_routes())
+        projection_routes::validate_fields_for_compilation(
+            registry,
+            self.row_kind(),
+            self.fields(),
+            control,
+        )?;
+        projection_routes::validate_routes_for_compilation(
+            registry,
+            self.row_kind(),
+            self.projection_routes(),
+            control,
+        )
     }
 
     pub(crate) fn require_access(

@@ -38,11 +38,7 @@ impl<'a> DiscoveredSource<'a> {
             .and_then(|n| n.checked_mul(2))
             .ok_or_else(exhausted)?;
         let units = context
-            .draft
-            .outcome
-            .effect
-            .publication
-            .changed_records
+            .records
             .len()
             .checked_mul(record_width)
             .and_then(|n| {
@@ -57,11 +53,7 @@ impl<'a> DiscoveredSource<'a> {
         let overlay = OverlayStateView::new(&context.selected, context.draft.state());
         let after = InvariantStateView::new(&overlay, context.proposal.proposed_version_id());
         let physical = context
-            .draft
-            .outcome
-            .effect
-            .publication
-            .changed_records
+            .records
             .iter()
             .filter(|record| source_record_is_relevant(program, record, &before, &after));
         let same_records = physical.eq(records.iter());

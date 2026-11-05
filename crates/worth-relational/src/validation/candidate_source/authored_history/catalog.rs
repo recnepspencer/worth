@@ -9,18 +9,37 @@ use std::sync::Arc;
 #[derive(Debug, Default)]
 pub(crate) struct SourceHistoryCatalog {
     programs: Vec<ManagedIndexSourceProgram>,
+    _funding: Option<Arc<crate::validation::CustomInvariantCompilationFunding>>,
 }
 impl SourceHistoryCatalog {
-    pub(crate) fn compile(groups: &[SourcePreparationGroup]) -> Self {
-        let mut programs = Vec::new();
+    pub(crate) fn compile(
+        groups: &[SourcePreparationGroup],
+        capacity: usize,
+        funding: Option<Arc<crate::validation::CustomInvariantCompilationFunding>>,
+        control: crate::schema::SchemaCompilationControl<'_, '_>,
+    ) -> Result<Self, crate::validation::CustomInvariantCompilationDenial> {
+        use crate::validation::CustomInvariantCompilationDenial as Denial;
+        let mut programs = Vec::with_capacity(capacity);
         for group in groups {
             for program in group.programs() {
-                if !programs.contains(program) {
+                control.checkpoint().map_err(Denial::Execution)?;
+                let mut found = false;
+                for prior in &programs {
+                    control.checkpoint().map_err(Denial::Execution)?;
+                    if prior == program {
+                        found = true;
+                        break;
+                    }
+                }
+                if !found {
                     programs.push(program.clone());
                 }
             }
         }
-        Self { programs }
+        Ok(Self {
+            programs,
+            _funding: funding,
+        })
     }
     pub(crate) fn len(&self) -> usize {
         self.programs.len()

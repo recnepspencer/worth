@@ -14,7 +14,7 @@ use crate::transactions::data::TransactionId;
 /// consume it, either through publication or explicit discard.
 pub struct PreparedRelationalCommitCandidate {
     runtime_instance_id: u64,
-    custom_invariant_generation: u64,
+    configuration_invariant_generation: u64,
     publication_binding: crate::runtime::RelationalRuntimePublicationBinding,
     transaction_id: TransactionId,
     branch_id: BranchId,
@@ -65,7 +65,7 @@ pub(crate) enum PreparedRelationalCandidateAdmissionStop {
 impl PreparedRelationalCommitCandidate {
     pub(crate) fn new(
         runtime_instance_id: u64,
-        custom_invariant_generation: u64,
+        configuration_invariant_generation: u64,
         publication_binding: crate::runtime::RelationalRuntimePublicationBinding,
         transaction_id: TransactionId,
         branch_id: BranchId,
@@ -115,7 +115,7 @@ impl PreparedRelationalCommitCandidate {
             })?;
         Ok(Self {
             runtime_instance_id,
-            custom_invariant_generation,
+            configuration_invariant_generation,
             publication_binding,
             transaction_id,
             branch_id,
@@ -141,8 +141,8 @@ impl PreparedRelationalCommitCandidate {
         self.runtime_instance_id
     }
 
-    pub(crate) fn custom_invariant_generation(&self) -> u64 {
-        self.custom_invariant_generation
+    pub(crate) fn configuration_invariant_generation(&self) -> u64 {
+        self.configuration_invariant_generation
     }
 
     pub(crate) fn expected_basis(&self) -> Option<crate::branch::RelationalBranchBasisDescriptor> {
@@ -221,6 +221,16 @@ impl PreparedRelationalCommitCandidate {
                     .recovered_codec_publication_custody()
                     .cloned()
             })
+    }
+
+    pub(crate) fn home_step(
+        &self,
+    ) -> Option<std::sync::Arc<crate::runtime::AdmittedRelationalHomeProgramStep>> {
+        self._payload
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .as_ref()
+            .and_then(|payload| payload.execution.home_step().cloned())
     }
 
     pub(crate) fn indexes_already_prepared(&self) -> bool {

@@ -29,7 +29,7 @@ fn ordinary_continuity_reuses_registry_allocation_at_small_and_large_schema_scal
             .as_ref()
             .expect("ordinary continuity carries its exact registry");
         assert!(
-            Arc::ptr_eq(&prior_registry, carried_registry),
+            prior_registry.same_allocation(carried_registry),
             "ordinary continuity must share the root registry allocation at width {additional_kind_count}"
         );
 

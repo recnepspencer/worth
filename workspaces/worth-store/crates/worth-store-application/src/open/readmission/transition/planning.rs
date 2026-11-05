@@ -16,13 +16,16 @@ pub enum ApplicationHomeTransitionPlanningDenial {
     Read(OrderedJournalReadFailure),
     PositionExhausted,
     SourceScope,
+    Intent(super::ApplicationHomeTransitionIntentDenial),
+    Native(worth_relational::facade::branch::RelationalRecordedComponentRefusal),
     World(worth_runtime_world::facade::WorldHomeTransitionReservationRefusal),
 }
 
 /// The actual World reservation and the original request's description backing.
 pub struct ReservedApplicationHomeTransitionPlan {
-    world: ReservedWorldHomeTransitionAssignments,
-    _description_memory: Option<worth_execution::ExecutionMemoryReservation>,
+    pub(super) world: ReservedWorldHomeTransitionAssignments,
+    pub(super) native: worth_relational::facade::branch::RecordedRelationalComponentReference,
+    pub(super) _description_memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 impl ReservedApplicationHomeTransitionPlan {
     pub fn description(&self) -> &HomeProgramTransitionPlanDescription {
@@ -36,9 +39,46 @@ impl ReservedApplicationHomeTransitionPlan {
 pub(crate) fn reserve<D, I, E, Ctx, T>(
     context: &HomeContext,
     publication: RuntimeWorldPublicationPort<D, I, E, Ctx, T>,
+    native: &worth_relational::facade::runtime::RelationalRuntime,
     expected: ProductBranchObservation,
     digest: HomeProgramTransitionPlanDigest,
     steps: u32,
+    target: HomeProgramTransitionTargetMeaning,
+    request: &ExecutionRequest<'_, '_>,
+) -> Result<ReservedApplicationHomeTransitionPlan, ApplicationHomeTransitionPlanningDenial>
+where
+    D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
+    I: Copy + Ord + Send + Sync + 'static,
+    E: Send + Sync + 'static,
+    Ctx: Send + Sync + 'static,
+    T: Copy + Ord + Send + Sync + 'static,
+{
+    crate::request_stage::prepare(
+        request,
+        || {
+            reserve_prepared(
+                context,
+                publication,
+                native,
+                expected,
+                digest,
+                steps,
+                target,
+                request,
+            )
+        },
+        ApplicationHomeTransitionPlanningDenial::Execution,
+    )
+}
+
+fn reserve_prepared<D, I, E, Ctx, T>(
+    context: &HomeContext,
+    publication: RuntimeWorldPublicationPort<D, I, E, Ctx, T>,
+    native: &worth_relational::facade::runtime::RelationalRuntime,
+    expected: ProductBranchObservation,
+    digest: HomeProgramTransitionPlanDigest,
+    steps: u32,
+    target: HomeProgramTransitionTargetMeaning,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<ReservedApplicationHomeTransitionPlan, ApplicationHomeTransitionPlanningDenial>
 where
@@ -50,6 +90,11 @@ where
 {
     use ApplicationHomeTransitionPlanningDenial as Denial;
     request.consult().map_err(Denial::Execution)?;
+    context
+        .transition
+        .admission
+        .require_fresh_plan(&context.descriptor.binding)
+        .map_err(Denial::Intent)?;
     let journal = context
         .serving
         .ordered_journal(
@@ -93,14 +138,21 @@ where
         predecessor,
         digest,
         steps,
+        target,
     )
     .map_err(|_| Denial::SourceScope)?;
     let proof = context.transition.admit_plan(description.commitment());
+    let native = native
+        .owner_component_services()
+        .basis_port()
+        .export_recorded_current_component(request, expected.basis().relational_basis())
+        .map_err(Denial::Native)?;
     let world = publication
         .reserve_home_transition_assignments(request, expected, description, proof)
         .map_err(Denial::World)?;
     Ok(ReservedApplicationHomeTransitionPlan {
         world,
+        native,
         _description_memory: description_memory,
     })
 }

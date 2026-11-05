@@ -171,7 +171,7 @@ impl WorldOpenedPublicationAttempt {
                 cause: WorldNativePreparationDenial::MissingAssociation,
             });
         };
-        let original = &self.original.record.association;
+        let original = &self.original.open_record().association;
         let observed = crate::durability::decode_association(
             association.as_bytes(),
             original.attempt().owner().home(),

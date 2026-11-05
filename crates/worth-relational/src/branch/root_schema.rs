@@ -8,13 +8,37 @@ use crate::schema::data::{
     AspectContractPlanCatalog, LoweredAspectContractPlan, RelationalSchemaRegistry,
     SchemaAuthoritySnapshot,
 };
+#[path = "root_schema/aspect_plan_quote.rs"]
+mod aspect_plan_quote;
+#[path = "root_schema/compilation.rs"]
+mod compilation;
+#[path = "root_schema/compilation_quote.rs"]
+mod compilation_quote;
+#[path = "root_schema/compiled_plans.rs"]
+mod compiled_plans;
+#[path = "root_schema/compiled_retention.rs"]
+mod compiled_retention;
+#[path = "root_schema/home_target.rs"]
+mod home_target;
 #[path = "root_schema/recorded_image.rs"]
 mod recorded_image;
 #[path = "root_schema/registry_binding.rs"]
 mod registry_binding;
+#[path = "root_schema/registry_quote.rs"]
+mod registry_quote;
 #[path = "root_schema/snapshot_match.rs"]
 mod snapshot_match;
+#[path = "root_schema/snapshot_quote.rs"]
+mod snapshot_quote;
+#[path = "root_schema/standard_tree_quote.rs"]
+mod standard_tree_quote;
+pub(crate) use compiled_retention::{
+    RetainedRelationalAspectPlans, RetainedRelationalSchemaRegistry,
+};
 use registry_binding::registry_for_snapshot;
+pub(crate) use standard_tree_quote::retained_tree_bytes as retained_compilation_tree_bytes;
+#[path = "root_schema/allocation_observation.rs"]
+mod allocation_observation;
 
 /// Immutable schema vocabulary and executable projection contracts selected
 /// by one branch root. Exact readers must not consult the live runtime schema.
@@ -31,6 +55,7 @@ pub(crate) struct RelationalBranchRootSchemaAuthority {
     // plans and allocating a second snapshot during exact root checks.
     relation_integrity_revisions: Arc<[crate::schema::data::RelationIntegrityPlanRevision]>,
     recorded_image: std::sync::OnceLock<crate::durability::data::DurableBranchRootSchemaImage>,
+    _funding: Option<Arc<compiled_retention::SchemaCompilationFunding>>,
 }
 
 impl RelationalBranchRootSchemaAuthority {
@@ -42,21 +67,16 @@ impl RelationalBranchRootSchemaAuthority {
         previous: Option<&Self>,
     ) -> Option<Arc<Self>> {
         registry_for_snapshot(registry, expected).map(|registry| {
-            let aspect_plans = crate::schema::lower_aspect_plans(&registry);
-            let retained_aspect_contracts = retain_aspect_contracts(previous, &aspect_plans);
-            debug_assert!(/* Proof: RelationalBranchRootSchemaAuthority constructors lower these plans directly from the retained immutable schema snapshot with the selected descriptor semantics; the private plan table cannot be independently supplied or changed. */ plans_match_snapshot(&aspect_plans, expected));
-            Arc::new(Self {
-                recorded_image: Default::default(),
+            Self::compile_owned(
                 allocation_id,
-                authority_digest: crate::schema::data::schema_authority_snapshot_digest_bytes(
-                    expected,
-                ),
-                registry: Arc::new(registry),
-                aspect_plans: Arc::new(aspect_plans),
-                retained_aspect_contracts: Arc::new(retained_aspect_contracts),
+                registry,
+                expected,
                 descriptor_semantics_version,
-                relation_integrity_revisions: snapshot_match::retain_revisions(expected),
-            })
+                compilation::RetainedContracts::Extend(previous),
+                None,
+                crate::schema::SchemaCompilationControl::Configuration,
+            )
+            .expect("configuration root compilation has no request refusal")
         })
     }
 
@@ -68,37 +88,32 @@ impl RelationalBranchRootSchemaAuthority {
         descriptor_semantics_version: crate::schema::data::DescriptorSemanticsVersion,
     ) -> Option<Arc<Self>> {
         (registry.authority_snapshot() == *expected).then(|| {
-            let aspect_plans = crate::schema::lower_aspect_plans(&registry);
-            debug_assert!(/* Proof: RelationalBranchRootSchemaAuthority constructors lower these plans directly from the retained immutable schema snapshot with the selected descriptor semantics; the private plan table cannot be independently supplied or changed. */ plans_match_snapshot(&aspect_plans, expected));
-            Arc::new(Self {
-                recorded_image: Default::default(),
+            Self::compile_owned(
                 allocation_id,
-                authority_digest: crate::schema::data::schema_authority_snapshot_digest_bytes(
-                    expected,
-                ),
-                registry: Arc::new(registry),
-                aspect_plans: Arc::new(aspect_plans),
-                retained_aspect_contracts: Arc::new(retained_aspect_contracts),
+                registry,
+                expected,
                 descriptor_semantics_version,
-                relation_integrity_revisions: snapshot_match::retain_revisions(expected),
-            })
+                compilation::RetainedContracts::Exact(retained_aspect_contracts),
+                None,
+                crate::schema::SchemaCompilationControl::Configuration,
+            )
+            .expect("configuration root compilation has no request refusal")
         })
     }
 
     #[cfg(test)]
     pub(crate) fn empty() -> Arc<Self> {
-        Arc::new(Self {
-            recorded_image: Default::default(),
-            allocation_id: 0,
-            authority_digest: RelationalSchemaRegistry::default().authority_digest_bytes(),
-            registry: Arc::new(RelationalSchemaRegistry::default()),
-            aspect_plans: Arc::new(AspectContractPlanCatalog::empty()),
-            retained_aspect_contracts: Arc::new(Vec::new()),
-            descriptor_semantics_version: crate::schema::data::runtime_descriptor_semantics_policy(
-            )
-            .current_write_version(),
-            relation_integrity_revisions: Arc::from([]),
-        })
+        let registry = RelationalSchemaRegistry::default();
+        Self::compile_owned(
+            0,
+            registry.clone(),
+            &registry.authority_snapshot(),
+            crate::schema::data::runtime_descriptor_semantics_policy().current_write_version(),
+            compilation::RetainedContracts::Exact(Vec::new()),
+            None,
+            crate::schema::SchemaCompilationControl::Configuration,
+        )
+        .expect("configuration root compilation has no request refusal")
     }
 
     pub(crate) fn matches(&self, expected: &SchemaAuthoritySnapshot) -> bool {
@@ -110,8 +125,11 @@ impl RelationalBranchRootSchemaAuthority {
         &self.registry
     }
 
-    pub(crate) fn registry_arc(&self) -> Arc<RelationalSchemaRegistry> {
-        Arc::clone(&self.registry)
+    pub(crate) fn registry_arc(&self) -> RetainedRelationalSchemaRegistry {
+        RetainedRelationalSchemaRegistry::from_schema(
+            Arc::clone(&self.registry),
+            self._funding.clone(),
+        )
     }
 
     pub(crate) fn has_same_executable_meaning_except_basis(
@@ -129,34 +147,19 @@ impl RelationalBranchRootSchemaAuthority {
         &self.aspect_plans
     }
 
+    pub(crate) fn aspect_plans_arc(&self) -> RetainedRelationalAspectPlans {
+        RetainedRelationalAspectPlans::from_schema(
+            Arc::clone(&self.aspect_plans),
+            self._funding.clone(),
+        )
+    }
+
     pub(crate) fn retained_aspect_contracts(&self) -> &[AspectContract] {
         &self.retained_aspect_contracts
     }
 
     pub(crate) const fn allocation_id(&self) -> u64 {
         self.allocation_id
-    }
-
-    pub(crate) fn authoritative_allocation_bytes(&self) -> u64 {
-        let registry_bytes = registry_allocation_bytes(&self.registry);
-        let plan_bytes = plan_catalog_allocation_bytes(&self.aspect_plans);
-        let retained_contract_bytes = self.retained_aspect_contracts.iter().fold(
-            self.retained_aspect_contracts
-                .capacity()
-                .saturating_mul(std::mem::size_of::<AspectContract>()),
-            |bytes, contract| bytes.saturating_add(contract.owned_allocation_capacity_bytes()),
-        );
-        usize_to_u64(
-            std::mem::size_of::<Self>()
-                .saturating_add(registry_bytes)
-                .saturating_add(plan_bytes)
-                .saturating_add(retained_contract_bytes),
-        )
-        .saturating_add(
-            (self.relation_integrity_revisions.len() as u64).saturating_mul(std::mem::size_of::<
-                crate::schema::data::RelationIntegrityPlanRevision,
-            >() as u64),
-        )
     }
 
     pub(crate) fn schema_version(&self) -> crate::schema::data::SchemaVersionId {
@@ -224,10 +227,12 @@ impl PortableAspectContractLookup for RelationalBranchRootSchemaAuthority {
 fn retain_aspect_contracts(
     previous: Option<&RelationalBranchRootSchemaAuthority>,
     plans: &AspectContractPlanCatalog,
-) -> Vec<AspectContract> {
+    control: crate::schema::SchemaCompilationControl<'_, '_>,
+) -> Result<Vec<AspectContract>, crate::execution::RelationalExecutionDenialCause> {
     let mut retained = std::collections::BTreeMap::new();
     if let Some(previous) = previous {
         for contract in previous.retained_aspect_contracts() {
+            control.checkpoint()?;
             retained.insert(contract_basis(contract), contract.clone());
         }
     }
@@ -237,9 +242,15 @@ fn retain_aspect_contracts(
         .chain(plans.relation_plans.values())
         .flat_map(|plan| &plan.executable_bindings)
     {
+        control.checkpoint()?;
         retained.insert(contract_basis(&binding.contract), binding.contract.clone());
     }
-    retained.into_values().collect()
+    let mut contracts = Vec::with_capacity(retained.len());
+    for contract in retained.into_values() {
+        control.checkpoint()?;
+        contracts.push(contract);
+    }
+    Ok(contracts)
 }
 
 fn contract_basis(
@@ -252,109 +263,41 @@ fn contract_basis(
     )
 }
 
-fn registry_allocation_bytes(registry: &RelationalSchemaRegistry) -> usize {
-    let entity_bytes = registry.entity_kinds.values().fold(0_usize, |bytes, kind| {
-        bytes
-            .saturating_add(std::mem::size_of_val(kind))
-            .saturating_add(kind.kind_name.capacity())
-            .saturating_add(kind.schema_id.0.capacity())
-            .saturating_add(declaration_allocation_bytes(
-                &kind.aspect_contract_declarations,
-            ))
-    });
-    let relation_bytes = registry
-        .relation_kinds
-        .values()
-        .fold(0_usize, |bytes, kind| {
-            bytes
-                .saturating_add(std::mem::size_of_val(kind))
-                .saturating_add(kind.kind_name.capacity())
-                .saturating_add(kind.schema_id.0.capacity())
-                .saturating_add(declaration_allocation_bytes(
-                    &kind.aspect_contract_declarations,
-                ))
-        });
-    std::mem::size_of::<RelationalSchemaRegistry>()
-        .saturating_add(entity_bytes)
-        .saturating_add(relation_bytes)
-}
-
-fn declaration_allocation_bytes(
-    declarations: &crate::schema::data::KindAspectContractDeclarations,
-) -> usize {
-    declarations
-        .aspects
-        .iter()
-        .fold(
-            declarations
-                .aspects
-                .capacity()
-                .saturating_mul(std::mem::size_of::<
-                    crate::schema::data::DeclaredAspectContractBinding,
-                >()),
-            |bytes, declaration| {
-                bytes
-                    .saturating_add(declaration.binding.owned_allocation_capacity_bytes())
-                    .saturating_add(declaration.contract.owned_allocation_capacity_bytes())
-            },
-        )
-        .saturating_add(
-            declarations
-                .identity_declarations
-                .capacity()
-                .saturating_mul(std::mem::size_of::<
-                    crate::merge::data::IdentityBasisDeclaration,
-                >()),
-        )
-        .saturating_add(
-            declarations
-                .merge_policy_declarations
-                .capacity()
-                .saturating_mul(std::mem::size_of::<
-                    crate::merge::data::AspectMergePolicyDeclaration,
-                >()),
-        )
-}
-
-fn plan_catalog_allocation_bytes(plans: &AspectContractPlanCatalog) -> usize {
-    let bindings = plans
-        .entity_plans
-        .values()
-        .chain(plans.relation_plans.values())
-        .fold(0_usize, |bytes, plan| {
-            plan.executable_bindings.iter().fold(
-                bytes
-                    .saturating_add(std::mem::size_of_val(plan))
-                    .saturating_add(plan.executable_bindings.capacity().saturating_mul(
-                        std::mem::size_of::<crate::schema::data::LoweredAspectContractBinding>(),
-                    )),
-                |bytes, binding| {
-                    bytes
-                        .saturating_add(binding.target.owned_allocation_capacity_bytes())
-                        .saturating_add(binding.contract.owned_allocation_capacity_bytes())
-                },
-            )
-        });
-    std::mem::size_of::<AspectContractPlanCatalog>().saturating_add(bindings)
-}
-
-fn usize_to_u64(bytes: usize) -> u64 {
-    u64::try_from(bytes).unwrap_or(u64::MAX)
-}
-
 fn plans_match_snapshot(
     plans: &AspectContractPlanCatalog,
     expected: &SchemaAuthoritySnapshot,
 ) -> bool {
-    expected.entity_kinds.iter().all(|kind| {
-        plans
+    plans_match_snapshot_for_compilation(
+        plans,
+        expected,
+        crate::schema::SchemaCompilationControl::Configuration,
+    )
+    .expect("configuration plan comparison has no request refusal")
+}
+fn plans_match_snapshot_for_compilation(
+    plans: &AspectContractPlanCatalog,
+    expected: &SchemaAuthoritySnapshot,
+    control: crate::schema::SchemaCompilationControl<'_, '_>,
+) -> Result<bool, crate::execution::RelationalExecutionDenialCause> {
+    for kind in &expected.entity_kinds {
+        control.checkpoint()?;
+        if !plans
             .entity_plans
             .get(&kind.kind_id)
             .is_some_and(|plan| plan.plan_revision == kind.aspect_plan_revision)
-    }) && expected.relation_kinds.iter().all(|kind| {
-        plans
+        {
+            return Ok(false);
+        }
+    }
+    for kind in &expected.relation_kinds {
+        control.checkpoint()?;
+        if !plans
             .relation_plans
             .get(&kind.kind_id)
             .is_some_and(|plan| plan.plan_revision == kind.aspect_plan_revision)
-    })
+        {
+            return Ok(false);
+        }
+    }
+    Ok(true)
 }

@@ -44,6 +44,7 @@ impl PublicationPreparationRuntime for RelationalRuntime {
                 Arc::clone(envelope),
                 schema_registry,
                 &self.services.symbols,
+                None,
             )
             .map_err(PublicationPreparationDenial::from)
     }
@@ -86,6 +87,7 @@ impl PublicationPreparationRuntime for crate::runtime::RelationalPreparationRunt
                 Arc::clone(envelope),
                 schema_registry,
                 &self.services.symbols,
+                self.execution_contracts.clone(),
             )
             .map_err(PublicationPreparationDenial::from)
     }

@@ -98,9 +98,18 @@ where
                 Err(pre_effect_failure(NoEffectCause::StaleExpectedProductHead))
             }
             RelationalPublicationOutcome::Denied(denial) => {
-                let cause = match denial {
+                let cause = match &denial {
                     worth_relational::facade::mvcc::RelationalPublicationDenial::OwnerUnavailable { .. } => NoEffectCause::OwnerUnavailable,
-                    _ => NoEffectCause::OwnerDeniedBeforeEffect,
+                    worth_relational::facade::mvcc::RelationalPublicationDenial::CanonicalArtifactEncoding(_)
+                    | worth_relational::facade::mvcc::RelationalPublicationDenial::RecoveredCodecTransitionRequired
+                    | worth_relational::facade::mvcc::RelationalPublicationDenial::HomeProgramContractsRequired
+                    | worth_relational::facade::mvcc::RelationalPublicationDenial::HomeProgramTransition(_)
+                    | worth_relational::facade::mvcc::RelationalPublicationDenial::StaleInvariantGeneration { .. }
+                    | worth_relational::facade::mvcc::RelationalPublicationDenial::ForeignRuntime { .. }
+                    | worth_relational::facade::mvcc::RelationalPublicationDenial::OwnerMismatch
+                    | worth_relational::facade::mvcc::RelationalPublicationDenial::Archived
+                    | worth_relational::facade::mvcc::RelationalPublicationDenial::Deleting
+                    | worth_relational::facade::mvcc::RelationalPublicationDenial::DurablePublicationRefused(_) => NoEffectCause::OwnerDeniedBeforeEffect,
                 };
                 Err(pre_effect_failure(cause))
             }

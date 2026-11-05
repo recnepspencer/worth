@@ -83,6 +83,7 @@ impl RelationalForkPort {
         &self,
         target_branch: BranchId,
     ) -> Result<RelationalForkTargetReservation, RelationalForkDenial> {
+        self.admit_home_program_fork()?;
         let _operation = self
             .lifecycle
             .admit()
@@ -107,6 +108,8 @@ impl RelationalForkPort {
         reservation: RelationalForkTargetReservation,
         source: AdmittedRelationalForkSourceBasis,
     ) -> Result<RelationalForkOutcome, ForkStop> {
+        self.admit_home_program_fork()
+            .map_err(RelationalBranchTransitionStop::Denied)?;
         let step = LiveBranchTransitionStep::new(self.medium.clone(), execution);
         self.fork_reserved_with_hooks(execution, &step, reservation, source, || {}, || {}, false)
             .map(|(outcome, _)| outcome)
@@ -121,10 +124,21 @@ impl RelationalForkPort {
         reservation: RelationalForkTargetReservation,
         source: AdmittedRelationalForkSourceBasis,
     ) -> Result<(RelationalForkOutcome, AdmittedRelationalBranchBasis), ForkStop> {
+        self.admit_home_program_fork()
+            .map_err(RelationalBranchTransitionStop::Denied)?;
         let step = LiveBranchTransitionStep::new(self.medium.clone(), execution);
         self.fork_reserved_with_hooks(execution, &step, reservation, source, || {}, || {}, true)
             .map(with_basis)
             .map_err(Into::into)
+    }
+
+    fn admit_home_program_fork(&self) -> Result<(), RelationalForkDenial> {
+        if let Some(medium) = &self.medium {
+            medium.admit_home_program_write(None, None).map_err(|cause|
+                RelationalForkDenial::DurablePublicationRefused(
+                    crate::durability::medium::RelationalDurablePublicationRefusal::HomeProgramTransition(cause)))?;
+        }
+        Ok(())
     }
 
     /// Replay a recorded fork of `target_branch` from `source_branch` through

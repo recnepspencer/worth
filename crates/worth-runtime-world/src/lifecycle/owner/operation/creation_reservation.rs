@@ -95,7 +95,7 @@ where
             reserved_component_pin_pair,
             reserved_successor_observation: _,
             reserved_publication_capacity,
-        } = reserve_publication_resources(self, &source, &commit_identity, None, false)
+        } = reserve_publication_resources(self, &source, &commit_identity, None, false, None)
             .map_err(map_reservation_cause)?;
         let relational_custody = reserve_custody(
             self,

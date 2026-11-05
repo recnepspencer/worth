@@ -1,6 +1,7 @@
 /// Truthful denial from the owning recovery catalog or its lifecycle.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RuntimeWorldRecoveryDenial {
+    HomeProgramTransitionRequired,
     RecoveredCustodyRequired,
     ReopenRequired,
     OwnerUnavailable(crate::lifecycle::RuntimeWorldOwnerUnavailable),

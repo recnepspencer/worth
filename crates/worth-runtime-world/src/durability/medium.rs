@@ -11,6 +11,7 @@ pub struct WorldDurableHomeBinding {
     incarnation: HomeIncarnation,
     program_revision: [u8; 32],
     transition: Option<worth_proof::HomeProgramTransitionAuthority>,
+    transition_attempt_frontier: Option<u64>,
 }
 impl WorldDurableHomeBinding {
     /// Data provided by the trusted admitted adapter contract, not physical
@@ -25,6 +26,7 @@ impl WorldDurableHomeBinding {
             incarnation,
             program_revision,
             transition: None,
+            transition_attempt_frontier: None,
         }
     }
     pub const fn owner(&self) -> DurableWorldOwnerIdentity {
@@ -47,6 +49,16 @@ impl WorldDurableHomeBinding {
         self
     }
 
+    /// Supplemental original reservations admitted from the actual Home intent journal.
+    /// This does not replace or rewrite checkpoint/source frontier facts.
+    pub fn with_home_transition_attempt_frontier(mut self, frontier: Option<u64>) -> Self {
+        self.transition_attempt_frontier = frontier;
+        self
+    }
+    pub(crate) fn transition_attempt_frontier(&self) -> Option<u64> {
+        self.transition_attempt_frontier
+    }
+
     pub(crate) fn transition_authority(
         &self,
     ) -> Option<&worth_proof::HomeProgramTransitionAuthority> {
@@ -55,6 +67,8 @@ impl WorldDurableHomeBinding {
 }
 #[derive(Debug)]
 pub enum WorldDurableMediumDenial {
+    NameAllocation,
+    OccurrenceReopenRequired,
     Allocation(worth_execution::ExecutionAllocationDenial),
     Backing(worth_execution::ExecutionRequestArrayDenial),
     Ordered(worth_execution::ExecutionOrderedMapDenial),

@@ -310,6 +310,17 @@ impl ProductBranchObservation {
         self.snapshot.commit().identity()
     }
 
+    /// Original publication provenance of this retained product occurrence.
+    /// This observation cannot issue or restart the recorded attempt.
+    pub fn publication_attempt(
+        &self,
+    ) -> Option<&crate::identity::CompositePublicationAttemptIdentity> {
+        match self.snapshot.commit().provenance() {
+            crate::history::CompositeCommitProvenance::Bootstrap(_) => None,
+            crate::history::CompositeCommitProvenance::Publication(attempt) => Some(attempt),
+        }
+    }
+
     pub fn basis(&self) -> &AdmittedCompositeRuntimeWorldBasis {
         self.snapshot.commit().basis()
     }

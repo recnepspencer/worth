@@ -216,7 +216,11 @@ impl PreparationInvariantAuthority<'_> {
             self.runtime,
             selected.selected().state(),
         );
-        let plan_contract = Some(InvariantPlanContract::from_merged_plan(plan));
+        let plan_contract = self
+            .runtime
+            .home_target
+            .is_none()
+            .then(|| InvariantPlanContract::from_merged_plan(plan));
         let consumed_groups = profile.consumed_groups();
         if plan_contract
             .is_some_and(|contract| !contract.intersects_consumed_groups(consumed_groups))

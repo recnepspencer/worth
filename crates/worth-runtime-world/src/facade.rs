@@ -82,8 +82,13 @@ pub use crate::identity::{
     RuntimeWorldIdentityFamily, RuntimeWorldOwnerIdentity,
 };
 pub use crate::publication::{
-    ReservedWorldHomeTransitionAssignments, WorldDurablePublicationDenial,
-    WorldDurablePublicationOutcome, WorldHomeTransitionReservationRefusal,
+    home_transition_caller_association_commitment, ReservedWorldHomeTransitionAssignments,
+    WorldDurablePublicationDenial, WorldDurablePublicationOutcome,
+    WorldHomeTransitionEffectControl, WorldHomeTransitionEffectDenial,
+    WorldHomeTransitionEffectInterruption, WorldHomeTransitionEffectOutcome,
+    WorldHomeTransitionEffectProgress, WorldHomeTransitionOpenResumeDenial,
+    WorldHomeTransitionOpenResumeRefused, WorldHomeTransitionReservationRefusal,
+    WorldHomeTransitionStepReservation, WorldHomeTransitionUnopenedDenial,
     WorldNativePreparationDenial, WorldNativePreparationRefusal, WorldOpenAttemptOutcome,
     WorldOpenAttemptRefusal, WorldOpenedPublicationAttempt, WorldPendingDurablePublication,
     WorldPendingOpenAttempt, WorldPreparedPublicationWithoutSignal, WorldQueryNativePreparation,

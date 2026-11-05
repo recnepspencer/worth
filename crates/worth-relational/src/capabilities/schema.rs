@@ -126,9 +126,8 @@ impl RelationalRuntime {
         kind_id: crate::identity::data::KindId,
     ) -> Option<&LoweredRelationIntegrityPlan> {
         self.schema_contract_runtime
-            .relation_integrity_plans
-            .relation_plans
-            .get(&kind_id)
+            .relation_integrity_registrations
+            .plan(&kind_id)
     }
 }
 

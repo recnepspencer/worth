@@ -1,8 +1,31 @@
 //! Inspect unsupported persisted owner state while the original Home stays owned.
 mod admission_backing;
+mod catalog_admission;
+pub(crate) use catalog_admission::{
+    admit as admit_catalog, admit_if_pending as admit_pending_catalog,
+};
+mod history;
+mod intent;
+pub(crate) use history::{HomeTransitionAdmission, ReadmittedHomeProgramTransitions};
 mod owner;
+mod publication;
+use publication::HomeIntentPublication;
+pub use publication::{
+    ApplicationHomeTransitionIntentOutcome, ApplicationHomeTransitionStartRefused,
+};
+mod readmitted_step_admission;
+mod staging;
+mod step_admission;
+mod step_source;
+mod unopened_step_admission;
 pub use admission_backing::ApplicationHomeTransitionAdmissionObservation;
+pub use intent::{ApplicationHomeTransitionIntentDenial, HomeProgramTransitionIntent};
 pub(crate) use owner::HomeTransitionOwner;
+pub(crate) use readmitted_step_admission::admit as admit_readmitted_step;
+pub(crate) use staging::{advance as advance_intent, stage as stage_intent};
+pub(crate) use step_admission::admit as admit_step;
+pub use step_admission::AdmittedApplicationHomeProgramStep;
+pub(crate) use unopened_step_admission::admit as admit_unopened_step;
 mod planning;
 use crate::home_context::HomeContext;
 use crate::registry::{HomeJournalAdmission, HOME_JOURNALS};

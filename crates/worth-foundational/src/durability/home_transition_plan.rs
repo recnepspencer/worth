@@ -2,6 +2,7 @@
 use super::{
     CompositeAttemptAssociation, DurableProductBranchReference, HomeProgramTransitionIdentity,
     HomeProgramTransitionPlanDigest, HomeProgramTransitionStepAssociation,
+    HomeProgramTransitionTargetMeaning,
 };
 use sha2::{Digest, Sha256};
 #[cfg(test)]
@@ -13,6 +14,7 @@ pub struct HomeProgramTransitionPlanDescription {
     predecessor: DurableProductBranchReference,
     digest: HomeProgramTransitionPlanDigest,
     steps: u32,
+    target: HomeProgramTransitionTargetMeaning,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -28,15 +30,20 @@ impl HomeProgramTransitionPlanDescription {
         predecessor: DurableProductBranchReference,
         digest: HomeProgramTransitionPlanDigest,
         steps: u32,
+        target: HomeProgramTransitionTargetMeaning,
     ) -> Result<Self, HomeProgramTransitionDescriptionDenial> {
         if identity.home() != predecessor.branch().owner().home() {
             return Err(HomeProgramTransitionDescriptionDenial::ForeignHome);
+        }
+        if target.step() >= steps {
+            return Err(HomeProgramTransitionDescriptionDenial::StepOutOfRange);
         }
         Ok(Self {
             identity,
             predecessor,
             digest,
             steps,
+            target,
         })
     }
 
@@ -53,6 +60,10 @@ impl HomeProgramTransitionPlanDescription {
         self.steps
     }
 
+    pub const fn target_meaning(&self) -> HomeProgramTransitionTargetMeaning {
+        self.target
+    }
+
     pub fn commitment(&self) -> [u8; 32] {
         let mut digest = Sha256::new();
         digest.update(b"worth.home.transition.plan.v1\0");
@@ -67,6 +78,13 @@ impl HomeProgramTransitionPlanDescription {
         digest.update(self.predecessor.selected_commit().ordinal().to_le_bytes());
         digest.update(self.digest.bytes());
         digest.update(self.steps.to_le_bytes());
+        digest.update(self.target.step().to_le_bytes());
+        digest.update(self.target.catalog().bytes());
+        digest.update(
+            self.target
+                .whole_candidate_validation_version()
+                .to_le_bytes(),
+        );
         digest.finalize().into()
     }
 

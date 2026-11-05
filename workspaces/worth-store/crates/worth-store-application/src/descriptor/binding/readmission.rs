@@ -2,7 +2,7 @@
 use crate::descriptor::ApplicationHomeDescriptorDenial as Denial;
 use worth_foundational::facade::{ApplicationHomeBinding, CanonicalDigestId, HomeProgramBinding};
 
-pub(in crate::descriptor) fn decode(bytes: &[u8]) -> Result<ApplicationHomeBinding, Denial> {
+pub(crate) fn decode(bytes: &[u8]) -> Result<ApplicationHomeBinding, Denial> {
     let mut read = RecordedBinding { remaining: bytes };
     let package = CanonicalDigestId::new(read.fixed()?);
     let schema = CanonicalDigestId::new(read.fixed()?);
@@ -33,7 +33,7 @@ pub(in crate::descriptor) fn decode(bytes: &[u8]) -> Result<ApplicationHomeBindi
 
 /// Both returned binding boxes, the decoded roster capacity and its strings.
 /// The requested binding moves from its existing owner; its backing is not cloned.
-pub(in crate::descriptor) fn allocation_bytes(bytes: &[u8]) -> Result<u64, Denial> {
+pub(crate) fn allocation_bytes(bytes: &[u8]) -> Result<u64, Denial> {
     let mut read = RecordedBinding { remaining: bytes };
     read.fixed::<32>()?;
     read.fixed::<32>()?;
@@ -83,4 +83,47 @@ impl<'record> RecordedBinding<'record> {
         self.remaining = remaining;
         Ok((name, CanonicalDigestId::new(self.fixed()?)))
     }
+}
+
+/// Borrowed roster membership, after the envelope has admitted these exact bytes.
+pub(crate) fn contains_program(bytes: &[u8], program: &HomeProgramBinding) -> Result<bool, Denial> {
+    let mut read = RecordedBinding { remaining: bytes };
+    read.fixed::<32>()?;
+    read.fixed::<32>()?;
+    read.program()?;
+    let count = u32::from_le_bytes(read.fixed()?) as usize;
+    let mut found = false;
+    for _ in 0..count {
+        let (name, revision) = read.program()?;
+        found |= name == program.identity() && revision == program.revision();
+    }
+    if !read.remaining.is_empty() {
+        return Err(Denial::Malformed);
+    }
+    Ok(found)
+}
+
+/// Compare the canonical binding without allocating a second binding owner.
+pub(crate) fn describes(bytes: &[u8], binding: &ApplicationHomeBinding) -> Result<bool, Denial> {
+    let mut read = RecordedBinding { remaining: bytes };
+    let package = CanonicalDigestId::new(read.fixed()?);
+    let schema = CanonicalDigestId::new(read.fixed()?);
+    let (name, revision) = read.program()?;
+    let mut matches = package == binding.package()
+        && schema == binding.schema()
+        && name == binding.selected().identity()
+        && revision == binding.selected().revision();
+    let count = u32::from_le_bytes(read.fixed()?) as usize;
+    matches &= count == binding.roster().len();
+    for index in 0..count {
+        let (name, revision) = read.program()?;
+        matches &= binding
+            .roster()
+            .get(index)
+            .is_some_and(|expected| name == expected.identity() && revision == expected.revision());
+    }
+    if !read.remaining.is_empty() {
+        return Err(Denial::Malformed);
+    }
+    Ok(matches)
 }

@@ -46,6 +46,8 @@ impl RelationalStoreSection {
             placement,
             cold_source,
             checkpoint_selection,
+            None,
+            None,
         )
         .map(|attached| attached.share(None))
     }

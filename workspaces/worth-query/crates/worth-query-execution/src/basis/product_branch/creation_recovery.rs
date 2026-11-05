@@ -71,6 +71,7 @@ impl WorthQueryProductBranchCreationRecoveryInspection {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryProductBranchRecoveryDenial {
+    HomeProgramTransitionRequired,
     StaleIncarnation,
     ReopenRequired,
     RecoveredCustodyRequired,
@@ -324,6 +325,9 @@ pub(crate) fn map_recovery_denial(
 ) -> WorthQueryProductBranchRecoveryDenial {
     use RuntimeWorldRecoveryDenial as Denial;
     match denial {
+        Denial::HomeProgramTransitionRequired => {
+            WorthQueryProductBranchRecoveryDenial::HomeProgramTransitionRequired
+        }
         Denial::RecoveredCustodyRequired => {
             WorthQueryProductBranchRecoveryDenial::RecoveredCustodyRequired
         }

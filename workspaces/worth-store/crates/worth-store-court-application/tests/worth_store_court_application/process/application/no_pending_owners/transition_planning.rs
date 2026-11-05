@@ -11,10 +11,14 @@ fn transition_plan_reserves_original_attempts_without_publishing_future_heads_or
     let directory = tempfile::tempdir().unwrap();
     let request = crate::workload::serial_request();
     let execution = ExecutionRequest::serial(&request);
-    let fixture = open(directory.path(), &execution);
-    let bootstrap = fixture.bootstrap_root(&execution);
+    let fixture = super::transition_opening::open_transition(directory.path(), &execution);
+    let source = fixture
+        .home
+        .world()
+        .observation_port()
+        .observe_root_product_branch()
+        .unwrap();
     let home = fixture.home;
-    let source = bootstrap.product_branch();
     let native_journals = [RELATIONAL_CANONICAL_COMMITS, RELATIONAL_BRANCH_TRANSITIONS];
     let original_native_heads = native_journals.map(|name| {
         home.physical_serving_for_test()
@@ -28,6 +32,7 @@ fn transition_plan_reserves_original_attempts_without_publishing_future_heads_or
             source.clone(),
             HomeProgramTransitionPlanDigest::from_recorded([7; 32]),
             3,
+            super::transition_opening::target_meaning(),
             &execution,
         )
         .expect("the actual Home owner supplies its attached planning admission");
@@ -80,7 +85,7 @@ fn transition_plan_reserves_original_attempts_without_publishing_future_heads_or
         .observation_port()
         .observe_root_product_branch()
         .unwrap();
-    assert_eq!(&selected, source);
+    assert_eq!(selected, source);
     for (index, name) in native_journals.into_iter().enumerate() {
         assert_eq!(
             home.physical_serving_for_test()
@@ -105,7 +110,7 @@ fn transition_plan_reserves_original_attempts_without_publishing_future_heads_or
     }
     drop(selected);
     drop(reserved);
-    drop(bootstrap);
+    drop(source);
     close(home, &execution);
 }
 
@@ -114,15 +119,21 @@ fn stopped_transition_planning_retains_the_source_without_issuing_attempt_assign
     let directory = tempfile::tempdir().unwrap();
     let request = crate::workload::serial_request();
     let execution = ExecutionRequest::serial(&request);
-    let fixture = open(directory.path(), &execution);
-    let bootstrap = fixture.bootstrap_root(&execution);
+    let fixture = super::transition_opening::open_transition(directory.path(), &execution);
+    let source = fixture
+        .home
+        .world()
+        .observation_port()
+        .observe_root_product_branch()
+        .unwrap();
     let home = fixture.home;
     let digest = HomeProgramTransitionPlanDigest::from_recorded([7; 32]);
     let first = home
         .reserve_home_program_transition_plan(
-            bootstrap.product_branch().clone(),
+            source.clone(),
             digest,
             1,
+            super::transition_opening::target_meaning(),
             &execution,
         )
         .expect("the actual issuer reserves the first assignment");
@@ -137,9 +148,10 @@ fn stopped_transition_planning_retains_the_source_without_issuing_attempt_assign
     cancellation.cancel();
     let refused = home
         .reserve_home_program_transition_plan(
-            bootstrap.product_branch().clone(),
+            source.clone(),
             digest,
             8,
+            super::transition_opening::target_meaning(),
             &ExecutionRequest::serial(&stopped),
         )
         .err()
@@ -151,9 +163,10 @@ fn stopped_transition_planning_retains_the_source_without_issuing_attempt_assign
     assert_contended(directory.path(), &execution);
     let next = home
         .reserve_home_program_transition_plan(
-            bootstrap.product_branch().clone(),
+            source.clone(),
             digest,
             1,
+            super::transition_opening::target_meaning(),
             &execution,
         )
         .expect("the same actual owner remains usable");
@@ -167,9 +180,9 @@ fn stopped_transition_planning_retains_the_source_without_issuing_attempt_assign
         .observation_port()
         .observe_root_product_branch()
         .unwrap();
-    assert_eq!(&current, bootstrap.product_branch());
+    assert_eq!(&current, &source);
     drop(current);
     drop(next);
-    drop(bootstrap);
+    drop(source);
     close(home, &execution);
 }

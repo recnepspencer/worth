@@ -43,10 +43,31 @@ impl ReservedProductUnpublishedSlot {
 
     /// Install the owner record while the slot is still reserved, before any
     /// component effect. Live attempts and abandoned records use one budget.
-    pub(crate) fn register_active(&self, record: Arc<ActiveAttemptRecord>) {
+    pub(crate) fn register_active(&mut self, record: Arc<ActiveAttemptRecord>) {
         let mut state = self.catalog.locked_state();
         assert_eq!(record.identity().owner_identity(), state.owner);
-        state.slots.insert_active(record);
+        let replaced = match self.recovered.as_ref() {
+            Some(original) => {
+                assert_eq!(record.identity(), &original.identity);
+                assert!(matches!(
+                    state.slots.get(&original.identity),
+                    Some(RecoveryEntry::Busy)
+                ));
+                Some(
+                    state
+                        .slots
+                        .replace(&original.identity, RecoveryEntry::Active(record)),
+                )
+            }
+            None => {
+                state.slots.insert_active(record);
+                None
+            }
+        };
+        let recovered = self.recovered.take();
+        drop(state);
+        drop(replaced);
+        drop(recovered);
     }
 
     pub(crate) fn remove_active(&self, identity: &ProductUnpublishedOwnerEffectsIdentity) {

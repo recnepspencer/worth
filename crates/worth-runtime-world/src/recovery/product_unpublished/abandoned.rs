@@ -25,6 +25,7 @@ impl ProductUnpublishedOwnerEffectsRecord {
             catalog_affinity,
             live_obligations,
             cause,
+            before_effect_refusal: facts.before_effect_refusal,
             next_actions,
             deadline,
             admitted_at: facts.admitted_at,

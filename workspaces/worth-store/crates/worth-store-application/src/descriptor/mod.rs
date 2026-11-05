@@ -1,4 +1,4 @@
-mod binding;
+pub(crate) mod binding;
 mod codec;
 mod transition_required;
 
@@ -10,7 +10,7 @@ use worth_relational::facade::runtime::RelationalRuntimeDefinition;
 use worth_store::physical_runtime::{
     AnchoredRecordName, AnchoredRecordPublication, AnchoredRecordPublicationFailure,
     AnchoredRecordReadFailure, AnchoredRecordsDenial, PhysicalMutationDeadline,
-    RecoveryStorePresence, ServingPhysicalRuntime,
+    ServingPhysicalRuntime,
 };
 
 const MAXIMUM_DESCRIPTOR_BYTES: usize = 64 << 10;
@@ -45,6 +45,8 @@ pub enum ApplicationHomeDescriptorDenial {
     ApplicationBindingMissing,
     BuildBindingMissing,
     BindingMismatch,
+    TransitionPredecessorNotRostered,
+    TransitionPredecessorMismatch,
     TransitionRequired {
         recorded: Box<ApplicationHomeBinding>,
         requested: Box<ApplicationHomeBinding>,
@@ -58,6 +60,8 @@ pub(crate) struct PreparedDescriptor {
     descriptor: HomeDescriptor,
     payload: crate::frame_encoding::EncodedHomeFrame,
     generation: u64,
+    definition: RelationalRuntimeDefinition,
+    transition: crate::open::readmission::transition::HomeTransitionAdmission,
 }
 impl PreparedDescriptor {
     pub(crate) fn home_identity(&self) -> HomeIdentity {
@@ -65,27 +69,14 @@ impl PreparedDescriptor {
     }
 }
 
-pub(crate) fn prepare_admission(
-    serving: &ServingPhysicalRuntime,
-    origin: RecoveryStorePresence,
-    definition: &RelationalRuntimeDefinition,
-    binding: ApplicationHomeBinding,
-    build: worth_foundational::facade::ApplicationBuildIdentity,
-    execution: &ExecutionRequest<'_, '_>,
-) -> Result<PreparedDescriptor, ApplicationHomeDescriptorDenial> {
-    use ApplicationHomeDescriptorDenial as Denial;
-    crate::request_stage::prepare(
-        execution,
-        || prepare(serving, origin, definition, binding, build, execution),
-        Denial::Execution,
-    )
-}
+mod admission;
+pub(crate) use admission::prepare_admission;
 
 pub(crate) fn publish(
     serving: &ServingPhysicalRuntime,
     prepared: PreparedDescriptor,
     execution: &ExecutionRequest<'_, '_>,
-) -> Result<HomeDescriptor, ApplicationHomeDescriptorDenial> {
+) -> Result<PublishedHomeDescriptor, ApplicationHomeDescriptorDenial> {
     use ApplicationHomeDescriptorDenial as Denial;
     let records = serving.anchored_records().map_err(Denial::Unavailable)?;
     let anchor = AnchoredRecordName::new(crate::registry::HOME_ANCHOR).expect("static home anchor");
@@ -93,6 +84,8 @@ pub(crate) fn publish(
         descriptor,
         payload,
         generation,
+        definition,
+        transition,
     } = prepared;
     let milliseconds =
         crate::deadline::milliseconds(execution, 30_000).map_err(Denial::Deadline)?;
@@ -112,96 +105,15 @@ pub(crate) fn publish(
             deadline,
         ))
         .map_err(Denial::Publication)?;
-    Ok(descriptor)
+    Ok(PublishedHomeDescriptor {
+        descriptor,
+        definition,
+        transition,
+    })
 }
 
-fn prepare(
-    serving: &ServingPhysicalRuntime,
-    origin: RecoveryStorePresence,
-    definition: &RelationalRuntimeDefinition,
-    binding: ApplicationHomeBinding,
-    build: worth_foundational::facade::ApplicationBuildIdentity,
-    execution: &ExecutionRequest<'_, '_>,
-) -> Result<PreparedDescriptor, ApplicationHomeDescriptorDenial> {
-    use ApplicationHomeDescriptorDenial as Denial;
-    execution.consult().map_err(Denial::Execution)?;
-    let identity = HomeIdentity::from_observed_bytes(serving.store_identity().bytes())
-        .map_err(|_| Denial::IdentityMismatch)?;
-    let config = definition.configuration();
-    let runtime = &config.execution.runtime_name;
-    let profile = format!("{:?}", config.profile);
-    let size = binding::size(&binding)
-        .filter(|size| *size <= MAXIMUM_DESCRIPTOR_BYTES)
-        .ok_or(Denial::SizeLimit)?;
-    let binding_bytes =
-        crate::frame_encoding::encode(size, execution, |bytes| binding::emit(&binding, bytes))
-            .map_err(Denial::Execution)?;
-    let size = codec::size(runtime, &profile, size)
-        .filter(|size| *size <= MAXIMUM_DESCRIPTOR_BYTES)
-        .ok_or(Denial::SizeLimit)?;
-    let records = serving.anchored_records().map_err(Denial::Unavailable)?;
-    let anchor = AnchoredRecordName::new(crate::registry::HOME_ANCHOR).expect("static home anchor");
-    // Retired homes are refused, never adopted or treated as a second source.
-    if let Some(legacy) = records
-        .read(
-            AnchoredRecordName::new("relational.home").unwrap(),
-            MAXIMUM_DESCRIPTOR_BYTES as u64,
-        )
-        .map_err(Denial::Read)?
-    {
-        let observed = legacy
-            .bytes()
-            .get(8..10)
-            .and_then(|bytes| bytes.try_into().ok())
-            .map(u16::from_le_bytes)
-            .unwrap_or(0);
-        return Err(Denial::UnsupportedVersion { observed });
-    }
-    let previous = records
-        .read(anchor, MAXIMUM_DESCRIPTOR_BYTES as u64)
-        .map_err(Denial::Read)?;
-    let (generation, incarnation) = match previous.as_ref() {
-        Some(record) => {
-            let admission = codec::admit_record(
-                record.bytes(),
-                identity.bytes(),
-                runtime,
-                &profile,
-                &binding_bytes.bytes,
-            )?;
-            let incarnation = match admission {
-                codec::DescriptorBindingAdmission::Exact(incarnation) => incarnation,
-                codec::DescriptorBindingAdmission::TransitionRequired { recorded } => {
-                    return Err(transition_required::refuse(recorded, binding, execution));
-                }
-            };
-            (
-                record.version().generation(),
-                incarnation
-                    .successor()
-                    .map_err(|_| Denial::IncarnationExhausted)?,
-            )
-        }
-        None => match origin {
-            RecoveryStorePresence::ProvenAbsent => (0, HomeIncarnation::initial()),
-            RecoveryStorePresence::ExistingArtifacts => {
-                return Err(Denial::IncompleteInitialization)
-            }
-        },
-    };
-    let descriptor = HomeDescriptor {
-        identity,
-        incarnation,
-        binding,
-        build,
-    };
-    let payload = crate::frame_encoding::encode(size, execution, |bytes| {
-        codec::emit(&descriptor, runtime, &profile, &binding_bytes.bytes, bytes);
-    })
-    .map_err(Denial::Execution)?;
-    Ok(PreparedDescriptor {
-        descriptor,
-        payload,
-        generation,
-    })
+pub(crate) struct PublishedHomeDescriptor {
+    pub(crate) descriptor: HomeDescriptor,
+    pub(crate) definition: RelationalRuntimeDefinition,
+    pub(crate) transition: crate::open::readmission::transition::HomeTransitionAdmission,
 }

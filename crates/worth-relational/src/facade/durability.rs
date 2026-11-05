@@ -2,10 +2,12 @@ pub use crate::durability::authority::CapturedRelationalCheckpointAdmissionImage
 pub use crate::durability::authority::{
     FreshRelationalSourceAdmission, ObservedRelationalMemoryCommit,
     ReadmittedRelationalAssociatedEffect, ReadmittedRelationalCreatedEntity,
+    ReadmittedRelationalHomeProgramCatalogs, RefusedRelationalHomeProgramCatalogReadmission,
     RefusedRelationalRecordedComponent, RelationalAssociatedEffectRefusal,
     RelationalAssociatedEffectSettlement, RelationalAssociatedEffectSubject,
-    RelationalFreshSourceAdmissionStop, RelationalHomeProgramTransitionSource,
-    RelationalHomeProgramTransitionSourceRefusal, RelationalRecordedComponentAdmissionCause,
+    RelationalFreshSourceAdmissionStop, RelationalHomeProgramCatalogReadmissionDenial,
+    RelationalHomeProgramTransitionSource, RelationalHomeProgramTransitionSourceRefusal,
+    RelationalRecordedComponentAdmissionCause,
 };
 pub use crate::durability::branch_transition_artifact::{
     RelationalBranchTransitionArtifact, RelationalBranchTransitionArtifactDigest,
@@ -32,6 +34,7 @@ pub use crate::durability::data::{
     RelationalCheckpointArtifactPolicy, RelationalCheckpointMember, RelationalNativeCheckpoint,
     RelationalNativeCheckpointCaptureDenial, RelationalRecoveryStop,
 };
+pub use crate::durability::medium::RelationalHomeProgramWriteDenial;
 pub use crate::durability::medium::RelationalInitialInputsPublicationStop;
 pub use crate::durability::medium::{
     CheckpointSelectionIdentity, CheckpointSelectionObservation, DurablePublicationFate,

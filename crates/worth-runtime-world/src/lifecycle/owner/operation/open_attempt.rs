@@ -1,18 +1,17 @@
 use super::reservation_steps::{
-    issue_publication_identities, reserve_publication_resources, resources_to_capacities,
+    issue_publication_identities_for_attempt, reserve_publication_resources,
+    resources_to_capacities,
 };
 use super::*;
 use crate::durability::{
-    DurableWorldHead, WorldDurableArtifact, WorldOpenAttemptRecord, WorldRecord,
+    WorldArtifactInput, WorldDurableArtifact, WorldHeadInput, WorldOpenAttemptInput,
 };
 use crate::publication::{
     WorldOpenAttemptOutcome, WorldOpenAttemptRefusal, WorldPendingOpenAttempt,
 };
 use worth_foundational::facade::{
-    CompositeAttemptAssociation, DurableCompositeCommitIdentity,
-    DurableCompositePublicationAttemptIdentity, DurableProductBranchIdentity,
-    DurableProductBranchIncarnation, DurableProductReferenceGeneration,
-    DurableProductUnpublishedOwnerEffectsIdentity,
+    DurableCompositeCommitIdentity, DurableCompositePublicationAttemptIdentity,
+    DurableProductBranchIncarnation, DurableProductUnpublishedOwnerEffectsIdentity,
 };
 impl<D, I, E, Ctx, T> RuntimeWorldOwnerRoot<D, I, E, Ctx, T>
 where
@@ -40,6 +39,25 @@ where
         change: worth_relational::facade::mvcc::RelationalTransactionIntent,
         cancellation: &RuntimeWorldCancellationToken,
         deadline: Option<RuntimeWorldInstant>,
+    ) -> Result<WorldPendingOpenAttempt, WorldOpenAttemptRefusal> {
+        self.prepare_durable_open_with_assignment(
+            execution,
+            expected,
+            change,
+            cancellation,
+            deadline,
+            None,
+        )
+    }
+
+    pub(in crate::lifecycle) fn prepare_durable_open_with_assignment(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        expected: ProductBranchObservation,
+        change: worth_relational::facade::mvcc::RelationalTransactionIntent,
+        cancellation: &RuntimeWorldCancellationToken,
+        deadline: Option<RuntimeWorldInstant>,
+        assigned: Option<crate::publication::HomeTransitionOpenAssignment>,
     ) -> Result<WorldPendingOpenAttempt, WorldOpenAttemptRefusal> {
         use WorldOpenAttemptRefusal as Refusal;
         let current = self
@@ -83,18 +101,24 @@ where
                     Some(expected.clone()),
                 ))
             })?;
-        let identities = issue_publication_identities(self).map_err(|cause| {
-            Refusal::Reservation(NoEffectCompositePublication::new(
-                cause,
-                Some(expected.clone()),
-            ))
-        })?;
+        let (assigned, home_association) = match assigned {
+            Some(assigned) => (Some(assigned.attempt), Some(assigned.association)),
+            None => (None, None),
+        };
+        let identities =
+            issue_publication_identities_for_attempt(self, assigned).map_err(|cause| {
+                Refusal::Reservation(NoEffectCompositePublication::new(
+                    cause,
+                    Some(expected.clone()),
+                ))
+            })?;
         let resources = reserve_publication_resources(
             self,
             &expected,
             &identities.commit_identity,
             Some(&identities.attempt_identity),
             true,
+            None,
         )
         .map_err(|cause| {
             Refusal::Reservation(NoEffectCompositePublication::new(
@@ -102,54 +126,49 @@ where
                 Some(expected.clone()),
             ))
         })?;
-        let branch = DurableProductBranchIdentity::from_recorded(
-            owner,
-            expected.branch_identity().name().as_str().to_owned(),
-        )
-        .map_err(|_| Refusal::IdentityScope)?;
-        let incarnation = DurableProductBranchIncarnation::from_recorded(
-            owner,
-            expected.lifecycle_incarnation().ordinal(),
-        );
-        let association = CompositeAttemptAssociation::from_recorded(
-            DurableCompositePublicationAttemptIdentity::from_recorded(
-                owner,
-                identities.attempt_identity.ordinal(),
-            ),
-            branch.clone(),
-            incarnation,
-        )
-        .map_err(|_| Refusal::IdentityScope)?;
-        let record = WorldOpenAttemptRecord {
-            component_intent: crate::durability::WorldOpenComponentIntent::RelationalOnly,
-            association,
-            commit: DurableCompositeCommitIdentity::from_recorded(
-                owner,
-                identities.commit_identity.ordinal(),
-            ),
-            custody: DurableProductUnpublishedOwnerEffectsIdentity::from_recorded(
-                owner,
-                identities.product_unpublished_identity.ordinal(),
-            ),
-            expected: DurableWorldHead {
-                branch,
-                incarnation,
-                generation: DurableProductReferenceGeneration::from_recorded(
-                    expected.reference_generation().get(),
+        let subject = WorldDurableArtifact::from_input(
+            WorldArtifactInput::OpenAttempt(WorldOpenAttemptInput {
+                attempt: DurableCompositePublicationAttemptIdentity::from_recorded(
+                    owner,
+                    identities.attempt_identity.ordinal(),
+                ),
+                name: expected.branch_identity().name().as_str(),
+                incarnation: DurableProductBranchIncarnation::from_recorded(
+                    owner,
+                    expected.lifecycle_incarnation().ordinal(),
                 ),
                 commit: DurableCompositeCommitIdentity::from_recorded(
                     owner,
-                    expected.selected_commit().ordinal(),
+                    identities.commit_identity.ordinal(),
                 ),
-            },
-            program_revision: binding.binding().program_revision(),
+                custody: DurableProductUnpublishedOwnerEffectsIdentity::from_recorded(
+                    owner,
+                    identities.product_unpublished_identity.ordinal(),
+                ),
+                expected: WorldHeadInput::from_observation(&expected).map_err(Refusal::Durable)?,
+                program_revision: binding.binding().program_revision(),
+                component_intent: crate::durability::WorldOpenComponentIntent::RelationalOnly,
+            }),
+            execution,
+        )
+        .map_err(Refusal::Durable)?;
+        let original = &subject
+            .open_attempt()
+            .expect("the owned input was an open")
+            .association;
+        let association_bytes = match home_association {
+            Some(bytes) => {
+                if crate::durability::decode_association(bytes.elements(), owner.home())
+                    .map_err(|cause| Refusal::Durable(cause.into()))?
+                    != *original
+                {
+                    return Err(Refusal::IdentityScope);
+                }
+                bytes
+            }
+            None => crate::durability::encode_association(execution, original)
+                .map_err(Refusal::Durable)?,
         };
-        let association_bytes =
-            crate::durability::encode_association(execution, &record.association)
-                .map_err(Refusal::Durable)?;
-        let subject =
-            WorldDurableArtifact::from_record(WorldRecord::OpenAttempt(record.clone()), execution)
-                .map_err(Refusal::Durable)?;
         let capacities = resources_to_capacities(
             resources,
             self.state.clock.now(),
@@ -164,19 +183,24 @@ where
             capacities,
         );
         // Installation precedes adapter submission and survives every unwind.
-        let durable_custody =
-            crate::durability::WorldDurableOpenCustody::submitted(binding.clone(), subject.clone());
+        let durable_custody = crate::durability::WorldDurableOpenCustody::submitted(
+            binding.clone(),
+            subject.clone(),
+            execution,
+        )
+        .map_err(Refusal::Durable)?;
         custody.retain_durable_open(Some(durable_custody.clone()));
         Ok(WorldPendingOpenAttempt {
-            binding,
-            durable_custody,
-            subject,
-            record,
-            association_bytes,
-            identity: identities.attempt_identity,
-            resolved,
-            custody,
-            deadline,
+            original: crate::publication::WorldOpenAttemptOriginal {
+                binding,
+                durable_custody,
+                subject,
+                association_bytes,
+                identity: identities.attempt_identity,
+                resolved,
+                custody,
+                deadline,
+            },
         })
     }
 }

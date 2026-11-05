@@ -6,6 +6,7 @@ use crate::identity::data::{EntityId, KindId, RelationId};
 use crate::storage::overlay::CurrentPartitionAccess;
 use crate::transactions::data::{EntityReference, MergedCommitPlan};
 
+mod home_target;
 mod incidence_collection;
 mod relation_changes;
 mod scope_completion;
@@ -14,6 +15,7 @@ use crate::transactions::data::TransactionCommitError;
 
 pub(crate) fn prepare_relation_integrity_scopes(
     merged_plan: Option<&MergedCommitPlan>,
+    whole_home_target: bool,
     partitions: &dyn CurrentPartitionAccess,
     version_id: crate::identity::data::VersionId,
     requirements: BTreeMap<KindId, RelationScopeRequirement>,
@@ -33,6 +35,9 @@ pub(crate) fn prepare_relation_integrity_scopes(
     );
     if let Some(merged_plan) = merged_plan {
         accumulator.collect_plan(merged_plan)?;
+    }
+    if whole_home_target {
+        accumulator.collect_home_target_source()?;
     }
     accumulator.check_live()?;
     accumulator.scan_touched_relations()?;

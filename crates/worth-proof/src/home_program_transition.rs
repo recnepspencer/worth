@@ -1,6 +1,12 @@
 //! Exact Home-owner admission across transition reservation and execution.
 use crate::HomeIncarnationFence;
 use std::sync::Arc;
+mod catalog;
+pub use catalog::AdmittedHomeProgramTransitionCatalog;
+mod execution;
+pub use execution::AdmittedHomeProgramTransitionExecution;
+mod lifecycle;
+pub use lifecycle::{HomeProgramTransitionBindingCommitted, HomeProgramTransitionRequired};
 
 #[derive(Debug)]
 struct TransitionOccurrence {
@@ -36,12 +42,26 @@ pub struct AdmittedHomeProgramTransitionPlan {
 
 /// Store issues this only from its original committed or readmitted intent.
 /// The receiving owner also checks the complete step-description commitment.
-#[derive(Debug)]
-pub struct AdmittedHomeProgramTransitionStep {
+#[derive(Debug, Clone)]
+pub struct AdmittedHomeProgramTransitionStep<Source> {
     occurrence: Arc<TransitionOccurrence>,
     home: [u8; 16],
     incarnation: HomeIncarnationFence,
     commitment: [u8; 32],
+    caller_association: [u8; 32],
+    source: Source,
+}
+
+impl<Source> AdmittedHomeProgramTransitionStep<Source> {
+    /// Exact port-free source identity supplied by the admitting Home owner.
+    pub fn source(&self) -> &Source {
+        &self.source
+    }
+
+    /// Exact opaque association encoded by the assigning World owner.
+    pub const fn caller_association_commitment(&self) -> [u8; 32] {
+        self.caller_association
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -49,6 +69,7 @@ pub enum HomeProgramTransitionAdmissionDenial {
     StaleIncarnation,
     ForeignOwner,
     CommitmentMismatch,
+    CallerAssociationMismatch,
 }
 
 impl HomeProgramTransitionOwner {
@@ -105,12 +126,19 @@ impl HomeProgramTransitionOwner {
         }
     }
 
-    pub fn admit_step(&self, commitment: [u8; 32]) -> AdmittedHomeProgramTransitionStep {
+    pub fn admit_step<Source>(
+        &self,
+        commitment: [u8; 32],
+        caller_association: [u8; 32],
+        source: Source,
+    ) -> AdmittedHomeProgramTransitionStep<Source> {
         AdmittedHomeProgramTransitionStep {
             occurrence: self.occurrence.clone(),
             home: self.home,
             incarnation: self.incarnation,
             commitment,
+            caller_association,
+            source,
         }
     }
 }
@@ -130,10 +158,11 @@ impl HomeProgramTransitionAuthority {
         )
     }
 
-    pub fn admit_step(
+    pub fn admit_step<Source>(
         &self,
-        proof: &AdmittedHomeProgramTransitionStep,
+        proof: &AdmittedHomeProgramTransitionStep<Source>,
         commitment: &[u8; 32],
+        caller_association: &[u8; 32],
     ) -> Result<(), HomeProgramTransitionAdmissionDenial> {
         self.admit(
             &proof.occurrence,
@@ -141,7 +170,11 @@ impl HomeProgramTransitionAuthority {
             proof.incarnation,
             &proof.commitment,
             commitment,
-        )
+        )?;
+        if &proof.caller_association != caller_association {
+            return Err(HomeProgramTransitionAdmissionDenial::CallerAssociationMismatch);
+        }
+        Ok(())
     }
 
     fn admit(
@@ -190,14 +223,18 @@ mod tests {
         let installed = owner(1);
         let foreign = owner(1);
         let authority = installed.authority();
-        let proof = installed.admit_step([7; 32]);
-        assert_eq!(authority.admit_step(&proof, &[7; 32]), Ok(()));
+        let proof = installed.admit_step([7; 32], [3; 32], ());
+        assert_eq!(authority.admit_step(&proof, &[7; 32], &[3; 32]), Ok(()));
         assert_eq!(
-            authority.admit_step(&proof, &[8; 32]),
+            authority.admit_step(&proof, &[8; 32], &[3; 32]),
             Err(HomeProgramTransitionAdmissionDenial::CommitmentMismatch)
         );
         assert_eq!(
-            authority.admit_step(&foreign.admit_step([7; 32]), &[7; 32]),
+            authority.admit_step(
+                &foreign.admit_step([7; 32], [3; 32], ()),
+                &[7; 32],
+                &[3; 32]
+            ),
             Err(HomeProgramTransitionAdmissionDenial::ForeignOwner)
         );
         let plan = installed.admit_plan([9; 32]);
@@ -205,6 +242,20 @@ mod tests {
         assert_eq!(
             authority.admit_plan(&foreign.admit_plan([9; 32]), &[9; 32]),
             Err(HomeProgramTransitionAdmissionDenial::ForeignOwner)
+        );
+    }
+
+    #[test]
+    fn transition_step_grants_refuse_a_different_original_caller_association() {
+        let owner = owner(1);
+        let proof = owner.admit_step([7; 32], [3; 32], ());
+        assert_eq!(
+            owner.authority().admit_step(&proof, &[7; 32], &[4; 32]),
+            Err(HomeProgramTransitionAdmissionDenial::CallerAssociationMismatch)
+        );
+        assert_eq!(
+            owner.authority().admit_step(&proof, &[7; 32], &[3; 32]),
+            Ok(())
         );
     }
 
@@ -217,11 +268,19 @@ mod tests {
             HomeIncarnationFence::from_owner(NonZeroU64::new(1).unwrap()),
         );
         assert_eq!(
-            current.admit_step(&foreign.admit_step([7; 32]), &[8; 32]),
+            current.admit_step(
+                &foreign.admit_step([7; 32], [3; 32], ()),
+                &[8; 32],
+                &[4; 32]
+            ),
             Err(HomeProgramTransitionAdmissionDenial::ForeignOwner)
         );
         assert_eq!(
-            current.admit_step(&earlier.admit_step([7; 32]), &[8; 32]),
+            current.admit_step(
+                &earlier.admit_step([7; 32], [3; 32], ()),
+                &[8; 32],
+                &[4; 32]
+            ),
             Err(HomeProgramTransitionAdmissionDenial::StaleIncarnation)
         );
         assert_eq!(
@@ -254,16 +313,16 @@ mod tests {
             backing.clone(),
         );
         let authority = owner.authority();
-        let proof = owner.admit_step([7; 32]);
+        let proof = owner.admit_step([7; 32], [3; 32], ());
         assert_eq!(
-            other.authority().admit_step(&proof, &[7; 32]),
+            other.authority().admit_step(&proof, &[7; 32], &[3; 32]),
             Err(HomeProgramTransitionAdmissionDenial::ForeignOwner)
         );
         drop(backing);
         drop(owner);
         drop(other);
         assert_eq!(reclaimed.load(Ordering::SeqCst), 0);
-        assert_eq!(authority.admit_step(&proof, &[7; 32]), Ok(()));
+        assert_eq!(authority.admit_step(&proof, &[7; 32], &[3; 32]), Ok(()));
         drop(authority);
         assert_eq!(reclaimed.load(Ordering::SeqCst), 0);
         drop(proof);

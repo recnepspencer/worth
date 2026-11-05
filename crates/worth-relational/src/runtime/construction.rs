@@ -79,18 +79,29 @@ impl RuntimeExtensions {
     ) -> Result<SchemaContractRuntimeSubsystem, Denial> {
         let mut schema_contract_runtime =
             <SchemaContractRuntimeSubsystem as RuntimeSubsystem>::new(config);
-        let sources =
-            crate::validation::candidate_source::SourcePreparationGroup::for_public_sources(
-                &config.schema.registry,
-                self.managed_sources.clone(),
-            )
-            .map_err(Denial::ManagedIndexSource)?;
         schema_contract_runtime.custom_invariant_registries =
-            FrozenCustomInvariantRegistry::from_registrations(
+            FrozenCustomInvariantRegistry::compile(
+                &config.schema.registry,
                 self.custom_invariants.clone(),
-                sources,
+                self.managed_sources.clone(),
+                crate::schema::SchemaCompilationControl::Configuration,
             )
-            .map_err(Denial::CustomInvariant)?;
+            .map_err(|cause| match cause {
+                crate::validation::CustomInvariantCompilationDenial::Source(cause) => {
+                    Denial::ManagedIndexSource(cause)
+                }
+                crate::validation::CustomInvariantCompilationDenial::Duplicate(cause) => {
+                    Denial::CustomInvariant(cause)
+                }
+                crate::validation::CustomInvariantCompilationDenial::Execution(cause) => {
+                    Denial::Execution(cause)
+                }
+                crate::validation::CustomInvariantCompilationDenial::CapacityOverflow => {
+                    Denial::Execution(
+                        crate::execution::RelationalExecutionDenialCause::MemoryOverflow,
+                    )
+                }
+            })?;
         Ok(schema_contract_runtime)
     }
 

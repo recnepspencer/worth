@@ -1,8 +1,10 @@
 //! Immutable recovered meaning owns the original Native admission exactly once.
+mod backing;
 mod retirement;
 use crate::{
     branch::ProductBranchReferenceSnapshot, identity::CompositePublicationAttemptIdentity,
 };
+pub(crate) use backing::PreparedReadmittedPublicationRecord;
 pub(crate) use retirement::ReadmittedPublicationRetirement;
 use std::sync::Arc;
 use worth_proof::RelationalPublicationReadmitted;
@@ -18,6 +20,7 @@ pub(crate) struct ReadmittedPublicationRecord {
     pub(crate) location: crate::durability::AdmittedWorldOccurrenceLocation,
     pub(crate) incarnation: worth_foundational::facade::HomeIncarnation,
     native: Option<NativePublicationMeaning>,
+    _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 #[derive(Debug)]
 pub(super) enum NativePublicationMeaning {
@@ -38,6 +41,7 @@ impl NativePublicationMeaning {
 }
 impl ReadmittedPublicationRecord {
     pub(crate) fn new(
+        prepared: PreparedReadmittedPublicationRecord,
         before: ProductBranchReferenceSnapshot,
         after: ProductBranchReferenceSnapshot,
         attempt: CompositePublicationAttemptIdentity,
@@ -45,31 +49,52 @@ impl ReadmittedPublicationRecord {
         incarnation: worth_foundational::facade::HomeIncarnation,
         native: RelationalPublicationReadmitted<RelationalRecoveredPublicationCustody>,
     ) -> Arc<Self> {
-        Arc::new(Self {
+        Self::from_meaning(
+            prepared,
             before,
             after,
             attempt,
             location,
             incarnation,
-            native: Some(NativePublicationMeaning::Recovered(
-                native.consume(|native| native),
-            )),
-        })
+            NativePublicationMeaning::Recovered(native.consume(|native| native)),
+        )
     }
     pub(crate) fn from_source(
+        prepared: PreparedReadmittedPublicationRecord,
         before: ProductBranchReferenceSnapshot,
         after: ProductBranchReferenceSnapshot,
         attempt: CompositePublicationAttemptIdentity,
         occurrence: &crate::durability::AdmittedWorldOccurrence,
         native: worth_relational::facade::durability::ReadmittedRelationalAssociatedEffect,
     ) -> Arc<Self> {
+        Self::from_meaning(
+            prepared,
+            before,
+            after,
+            attempt,
+            occurrence.location().clone(),
+            occurrence.publishing_incarnation(),
+            NativePublicationMeaning::Source(native),
+        )
+    }
+
+    fn from_meaning(
+        prepared: PreparedReadmittedPublicationRecord,
+        before: ProductBranchReferenceSnapshot,
+        after: ProductBranchReferenceSnapshot,
+        attempt: CompositePublicationAttemptIdentity,
+        location: crate::durability::AdmittedWorldOccurrenceLocation,
+        incarnation: worth_foundational::facade::HomeIncarnation,
+        native: NativePublicationMeaning,
+    ) -> Arc<Self> {
         Arc::new(Self {
             before,
             after,
             attempt,
-            location: occurrence.location().clone(),
-            incarnation: occurrence.publishing_incarnation(),
-            native: Some(NativePublicationMeaning::Source(native)),
+            location,
+            incarnation,
+            native: Some(native),
+            _memory: prepared.memory,
         })
     }
     fn native(&self) -> &NativePublicationMeaning {

@@ -31,6 +31,36 @@ pub(crate) fn prepare_consulted_authoritative_commit(
     runtime: &crate::runtime::RelationalPreparationRuntime,
     context: AuthoritativeCommitContext,
 ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
+    runtime
+        .durability_admission
+        .admit_home_program_write(
+            context
+                .validation_input
+                .home_step()
+                .map(std::sync::Arc::as_ref),
+            context
+                .validation_input
+                .recovered_codec_publication_custody()
+                .map(std::sync::Arc::as_ref),
+        )
+        .map_err(|cause| {
+            TransactionCommitError::publication_denied(
+                crate::mvcc::RelationalPublicationDenial::HomeProgramTransition(cause),
+            )
+        })?;
+    if let Some(step) = context.validation_input.home_step() {
+        if !context
+            .caller_association
+            .as_ref()
+            .is_some_and(|association| step.admits_association(association.as_bytes()))
+        {
+            return Err(TransactionCommitError::publication_denied(
+                crate::mvcc::RelationalPublicationDenial::HomeProgramTransition(
+                    crate::durability::medium::RelationalHomeProgramWriteDenial::TransitionRequired,
+                ),
+            ));
+        }
+    }
     let history = prepare_history(execution, runtime, context)?;
     let validated = stages::validate(execution, history)?;
     let assembled = stages::assemble(execution, validated)?;

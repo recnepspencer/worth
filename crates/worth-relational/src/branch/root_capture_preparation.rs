@@ -40,9 +40,16 @@ pub(super) fn prepare(
     envelope: Arc<CanonicalCommitEnvelope>,
     registry: &crate::schema::data::RelationalSchemaRegistry,
     symbols: &crate::runtime::RuntimeSymbolTable,
+    execution_contracts: Option<Arc<crate::runtime::RelationalRootExecutionContracts>>,
 ) -> Result<PreparedRelationalBranchRootCapture, RelationalBranchRootCaptureDenial> {
     let root_id = issuer.issue_root_id()?;
-    let prepared_schema = prepare_schema(issuer, previous, &envelope, registry)?;
+    let prepared_schema = prepare_schema(
+        issuer,
+        previous,
+        &envelope,
+        registry,
+        execution_contracts.as_ref(),
+    )?;
     let prepared_regions = prepare_regions(
         issuer,
         root_id,
@@ -83,6 +90,12 @@ pub(super) fn prepare(
             crate::history::data::RequiredOutputPublicationPositions::unresolved_at(
                 envelope.commit.commit_id,
             )
+        },
+        execution_contracts: match execution_contracts {
+            Some(contracts) => std::sync::OnceLock::from(contracts),
+            None => previous
+                .map(|source| source.execution_contracts.clone())
+                .unwrap_or_default(),
         },
         schema_authority: prepared_schema.authority,
         _memory: None,
@@ -178,9 +191,28 @@ fn prepare_schema(
     previous: Option<&Arc<RelationalBranchRoot>>,
     envelope: &CanonicalCommitEnvelope,
     registry: &crate::schema::data::RelationalSchemaRegistry,
+    execution: Option<&Arc<crate::runtime::RelationalRootExecutionContracts>>,
 ) -> Result<PreparedRootSchema, RelationalBranchRootCaptureDenial> {
     let schema_root =
         crate::schema::data::schema_authority_snapshot_digest_bytes(&envelope.schema_authority);
+    if let Some(execution) =
+        execution.filter(|execution| execution.schema.matches(&envelope.schema_authority))
+    {
+        let authority = execution.schema.clone();
+        let reused =
+            previous.is_some_and(|source| Arc::ptr_eq(&source.schema_authority, &authority));
+        return Ok(PreparedRootSchema {
+            allocation: if reused {
+                PreparedSchemaAllocation::Reused
+            } else {
+                PreparedSchemaAllocation::New {
+                    authoritative_bytes: authority.authoritative_allocation_bytes(),
+                }
+            },
+            authority,
+            schema_root,
+        });
+    }
     if let Some(previous) =
         previous.filter(|root| root.schema_authority.matches(&envelope.schema_authority))
     {

@@ -5,7 +5,9 @@ mod product_unpublished;
 mod progress;
 mod recovered_publication;
 pub(crate) use recovered_publication::{
-    RecoveredNativeCustody, RecoveredWorldPublicationInputs, RecoveredWorldPublicationRecord,
+    ContinuationCommon, OriginalContinuationAdvance, OriginalHomeTransitionContinuation,
+    PreparedOriginalContinuation, RecoveredNativeContinuationLoan, RecoveredNativeCustody,
+    RecoveredWorldPublicationInputs, RecoveredWorldPublicationRecord,
 };
 pub use recovered_publication::{
     WorldRecoveredReleaseOutcome, WorldRecoveredUnpublishedEffects, WorldReleasedRecoveredEffects,

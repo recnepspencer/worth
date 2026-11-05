@@ -45,7 +45,10 @@ fn text(text: &str, bytes: &mut Vec<u8>) {
 #[derive(Debug)]
 pub(super) enum DescriptorBindingAdmission<'record> {
     Exact(worth_foundational::facade::HomeIncarnation),
-    TransitionRequired { recorded: &'record [u8] },
+    TransitionRequired {
+        recorded: &'record [u8],
+        incarnation: worth_foundational::facade::HomeIncarnation,
+    },
 }
 
 pub(super) fn admit_record<'record>(
@@ -59,6 +62,7 @@ pub(super) fn admit_record<'record>(
     if recorded.binding != binding {
         return Ok(DescriptorBindingAdmission::TransitionRequired {
             recorded: recorded.binding,
+            incarnation: recorded.incarnation,
         });
     }
     Ok(DescriptorBindingAdmission::Exact(recorded.incarnation))

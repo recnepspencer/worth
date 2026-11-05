@@ -8,7 +8,7 @@ use std::sync::Arc;
 #[derive(Clone)]
 pub(crate) enum SchemaRegistryCustody {
     Runtime(Arc<crate::runtime::RelationalRuntimeConfig>),
-    Selected(Arc<RelationalSchemaRegistry>),
+    Selected(crate::branch::RetainedRelationalSchemaRegistry),
 }
 
 impl SchemaRegistryCustody {

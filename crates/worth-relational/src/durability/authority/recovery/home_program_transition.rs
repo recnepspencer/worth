@@ -1,7 +1,8 @@
 //! Readmit an exact predecessor and its associated durable migration prefix.
 use super::*;
-use crate::branch::{RecordedRelationalComponentReference, RecordedRelationalComponentTarget};
-use crate::history::data::RelationalCallerAssociation;
+use crate::branch::RecordedRelationalComponentTarget;
+use crate::runtime::RelationalHomeProgramCatalogReadmissionSource;
+use sha2::{Digest, Sha256};
 use worth_execution::ExecutionRequest;
 
 #[derive(Debug)]
@@ -10,7 +11,6 @@ pub enum RelationalHomeProgramTransitionSourceRefusal {
     Predecessor(super::super::RefusedRelationalRecordedComponent),
     PredecessorMissing,
     PredecessorSchemaMismatch,
-    CommittedPredecessorRequired,
     CurrentHeadMissing,
     DurableSourceMissing {
         commit: crate::history::data::CommitId,
@@ -31,6 +31,10 @@ pub enum RelationalHomeProgramTransitionSourceRefusal {
     PrefixHead,
     Backing(worth_execution::ExecutionRequestArrayDenial),
     CapacityOverflow,
+    UnboundHome,
+    Admission(worth_proof::HomeProgramTransitionAdmissionDenial),
+    AssignmentCount,
+    Contracts(Box<crate::runtime::RelationalHomeProgramContractDenial>),
 }
 impl From<RelationalRecoveryStop> for RelationalHomeProgramTransitionSourceRefusal {
     fn from(cause: RelationalRecoveryStop) -> Self {
@@ -74,12 +78,30 @@ impl DurabilityRecoveryAuthority<'_> {
         &mut self,
         execution: &ExecutionRequest<'_, '_>,
         plan: RecoveryPlan,
-        recorded: &RecordedRelationalComponentReference,
-        prefix: &[RelationalCallerAssociation],
+        admission: &worth_proof::AdmittedHomeProgramTransitionCatalog<
+            RelationalHomeProgramCatalogReadmissionSource<'_>,
+        >,
     ) -> Result<worth_proof::RelationalReadmitted<RelationalHomeProgramTransitionSource>, Refusal>
     {
         crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
-        let declared = self.runtime.config.schema.registry.authority_snapshot();
+        let source = admission.source();
+        self.runtime
+            .durability
+            .medium()
+            .ok_or(Refusal::UnboundHome)?
+            .home_transition_authority()
+            .ok_or(Refusal::UnboundHome)?
+            .admit_catalog(admission, &source.plan().commitment())
+            .map_err(Refusal::Admission)?;
+        if source.assignments().len() != source.plan().steps() as usize
+            || source.callers().len() != source.assignments().len()
+        {
+            return Err(Refusal::AssignmentCount);
+        }
+        let recorded = source.predecessor();
+
+        let original = self.runtime.configuration_binding().snapshot();
+        let declared = original.config.schema.registry.authority_snapshot();
         let initial = self.runtime.initial_schema_authority_snapshot();
         let admitted = admit_recovery_or_emit(self.runtime, plan)?;
         let mut material = rebuild_admitted_recovery_or_emit(execution, self.runtime, admitted)?;
@@ -87,7 +109,7 @@ impl DurabilityRecoveryAuthority<'_> {
             .restored
             .restore_initial_schema_authority_after_recovery(initial);
         let roots = std::mem::take(&mut material.recovered_roots).into_readmission(execution)?;
-        let recovered = recovered_authority(&material.restored, roots.clone());
+        let mut recovered = recovered_authority(&material.restored, roots.clone());
         let predecessor = recovered
             .admit_recorded_component(execution, &material.restored, recorded)
             .map_err(Refusal::Predecessor)?;
@@ -97,7 +119,7 @@ impl DurabilityRecoveryAuthority<'_> {
         if !root.schema_authority().matches(&declared) {
             return Err(Refusal::PredecessorSchemaMismatch);
         }
-        validate_prefix(execution, &material.restored, recorded, prefix)?;
+        validate_prefix(execution, &material.restored, source)?;
         let main = material.restored.main_branch_identity();
         let current = material
             .restored
@@ -115,6 +137,18 @@ impl DurabilityRecoveryAuthority<'_> {
             current.schema_authority().registry(),
         );
         declared_schema::require_declared_schema_of_recovered_main(&material.restored)?;
+        recovered.home_program_predecessor = Some(
+            material
+                .restored
+                .retain_home_predecessor_catalog(
+                    execution,
+                    recorded,
+                    &predecessor.basis,
+                    original.schema_contract_runtime,
+                )
+                .map_err(|cause| Refusal::Contracts(Box::new(cause)))?,
+        );
+
         crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
         move_durable_medium(self.runtime, &mut material.restored)?;
         let (outcome, _) = publish_recovered_runtime(self.runtime, material);
@@ -132,11 +166,13 @@ impl DurabilityRecoveryAuthority<'_> {
 fn validate_prefix(
     execution: &ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
-    recorded: &RecordedRelationalComponentReference,
-    prefix: &[RelationalCallerAssociation],
+    original: &RelationalHomeProgramCatalogReadmissionSource<'_>,
 ) -> Result<(), Refusal> {
-    let RecordedRelationalComponentTarget::Canonical(source) = recorded.target() else {
-        return Err(Refusal::CommittedPredecessorRequired);
+    let (source_position, mut previous) = match original.predecessor().target() {
+        RecordedRelationalComponentTarget::Canonical(source) => {
+            (Some(source.position()), Some(source.receipt().commit_id))
+        }
+        RecordedRelationalComponentTarget::Empty => (None, None),
     };
     let artifacts = runtime
         .history
@@ -158,42 +194,72 @@ fn validate_prefix(
                 commit: artifact.commit_id(),
             },
         )?;
-        if entry.position > source.position() {
+        if source_position.is_none_or(|source| entry.position > source) {
             entries.push(entry);
         }
     }
-    entries.sort_by_key(|entry| entry.position);
-    if entries.len() != prefix.len() {
+    entries.sort_unstable_by_key(|entry| entry.position);
+    if entries.len() > original.assignments().len() {
         return Err(Refusal::PrefixLength {
-            expected: prefix.len(),
+            expected: original.assignments().len(),
             actual: entries.len(),
         });
     }
-    let mut previous = source.receipt().commit_id;
-    for (entry, expected) in entries.iter().zip(prefix) {
+    for (step, entry) in entries.iter().enumerate() {
         crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
-        if entry.association_discovery.association() != Some(expected) {
+        let association =
+            entry
+                .association_discovery
+                .association()
+                .ok_or(Refusal::PrefixAssociation {
+                    position: entry.position,
+                })?;
+        let observed: [u8; 32] = Sha256::digest(association.as_bytes()).into();
+        if observed != original.callers()[step] {
             return Err(Refusal::PrefixAssociation {
                 position: entry.position,
             });
         }
-        if entry.commit.parents.as_slice() != [previous] {
+        let envelope =
+            worth_foundational::facade::HomeProgramTransitionCaller::read(association.as_bytes())
+                .map_err(|_| Refusal::PrefixAssociation {
+                position: entry.position,
+            })?;
+        let coordinate =
+            worth_foundational::facade::HomeProgramTransitionStepAssociation::from_recorded(
+                original.plan().identity(),
+                step as u32,
+            );
+        if envelope.step() != coordinate
+            || envelope.catalog() != original.plan().target_meaning().catalog()
+            || original.plan().step_role(step as u32).ok() != Some(envelope.role())
+            || original
+                .plan()
+                .step_commitment(coordinate, &original.assignments()[step])
+                .ok()
+                != Some(envelope.commitment())
+        {
+            return Err(Refusal::PrefixAssociation {
+                position: entry.position,
+            });
+        }
+        if entry.commit.parents.as_slice() != previous.as_slice() {
             return Err(Refusal::PrefixParent {
                 commit: entry.commit.commit_id,
             });
         }
-        if entry.commit.branch_id != source.receipt().branch_id {
+        if &entry.commit.branch_id != original.predecessor().descriptor().branch_id() {
             return Err(Refusal::PrefixBranch {
                 commit: entry.commit.commit_id,
             });
         }
-        previous = entry.commit.commit_id;
+        previous = Some(entry.commit.commit_id);
     }
     let current = runtime
         .history()
         .latest_commit()
-        .ok_or(Refusal::CurrentHeadMissing)?;
-    if current.commit_id != previous {
+        .map(|commit| commit.commit_id);
+    if current != previous {
         return Err(Refusal::PrefixHead);
     }
     Ok(())

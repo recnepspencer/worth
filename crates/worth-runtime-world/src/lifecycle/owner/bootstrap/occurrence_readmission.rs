@@ -13,10 +13,10 @@ where
 {
     pub(crate) fn prepare_readmitted_occurrence(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         before: &ProductBranchObservation,
         occurrence: &AdmittedWorldOccurrence,
         native: RelationalPublicationReadmitted<RelationalRecoveredPublicationCustody>,
-        identity: worth_relational::facade::history::RelationalCommitIdentity,
     ) -> Result<
         std::sync::Arc<ReadmittedPublicationRecord>,
         (
@@ -24,72 +24,22 @@ where
             Denial,
         ),
     > {
+        let location = occurrence.location();
         let open = occurrence.open();
-        let owner = self.owner_identity();
-        let prepared = (|| {
-            let location = occurrence.location();
-            if Some(location.owner()) != owner.durable()
-                || location.attempt() != open.association.attempt()
-                || location.commit() != open.commit
-            {
-                return Err(Denial::OccurrenceEvidenceMismatch);
-            }
-            if native.custody().predecessor().admission_identity()
-                != before.basis().relational_basis().admission_identity()
-            {
-                return Err(Denial::OccurrenceEvidenceMismatch);
-            }
-            let commit = crate::identity::readmission::readmit_commit(owner, open.commit)
-                .ok_or(Denial::ForeignOwner)?;
-            let attempt =
-                crate::identity::readmission::readmit_attempt(owner, open.association.attempt())
-                    .ok_or(Denial::ForeignOwner)?;
-            let basis = crate::basis::admit_validated(
-                &self
-                    .state
-                    .identities
-                    .lock()
-                    .unwrap_or_else(|e| e.into_inner()),
-                native.custody().successor().clone(),
-                before.basis().signal_basis().clone(),
-                before.basis().correspondence_basis().clone(),
-            );
-            let results = crate::publication::CompositeOwnerExecutionResults::retained()
-                .with_relational_settled_receipt(
-                    identity,
-                    basis.relational_basis().clone(),
-                    native.custody().effect().subject().receipt().clone(),
-                );
-            let commit = CompositeRuntimeWorldCommit::from_ordinary_publication(
-                commit,
-                before.snapshot().commit(),
-                basis,
-                attempt.clone(),
-                &results,
-                None,
-            )
-            .map_err(|_| Denial::OccurrenceEvidenceMismatch)?;
-            let generation = before
-                .reference_generation()
-                .advance()
-                .map_err(Denial::IdentityExhaustion)?;
-            let after = ProductBranchReferenceSnapshot::owner_issued(
-                owner,
-                before.branch_identity().clone(),
-                before.lifecycle_incarnation(),
-                generation,
-                std::sync::Arc::new(commit),
-            )
-            .map_err(|_| Denial::BranchLineage)?;
-            Ok((after, attempt))
-        })();
-        match prepared {
+        if Some(location.owner()) != self.owner_identity().durable()
+            || location.attempt() != open.association.attempt()
+            || location.commit() != open.commit
+        {
+            return Err((native, Denial::OccurrenceEvidenceMismatch));
+        }
+        match self.prepare_readmitted_successor(execution, before, open, native.custody()) {
             Err(cause) => Err((native, cause)),
-            Ok((after, attempt)) => Ok(ReadmittedPublicationRecord::new(
+            Ok(prepared) => Ok(ReadmittedPublicationRecord::new(
+                prepared.record,
                 before.snapshot().clone(),
-                after,
-                attempt,
-                occurrence.location().clone(),
+                prepared.after,
+                prepared.attempt,
+                location.clone(),
                 occurrence.publishing_incarnation(),
                 native,
             )),
@@ -106,7 +56,7 @@ where
         let capacity = self
             .state
             .history
-            .reserve_commit_capacity(commit.identity().clone(), commit.parent().clone())
+            .reserve_readmitted_capacity(commit.identity().clone(), commit.parent().clone())
             .map_err(Denial::HistoryAdmission)?;
         capacities.push(capacity);
         let head = self

@@ -59,6 +59,27 @@ impl RelationalPreparationRuntime {
     fn validate_branch_transaction_source(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
+        transaction: crate::mvcc::BranchBoundRelationalTransaction,
+        lowered: Option<(
+            crate::branch::SelectedRelationalBranchState,
+            crate::transactions::data::MergedCommitPlan,
+        )>,
+        strategy: Option<StrategyProposalDecoration>,
+        context: Option<&dyn crate::validation::candidate_source::ManagedIndexSourceContextFactory>,
+    ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
+        self.select_home_contracts(&transaction.basis, transaction.home_target.as_ref())?
+            .validate_selected_branch_transaction_source(
+                execution,
+                transaction,
+                lowered,
+                strategy,
+                context,
+            )
+    }
+
+    fn validate_selected_branch_transaction_source(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         mut transaction: crate::mvcc::BranchBoundRelationalTransaction,
         lowered: Option<(
             crate::branch::SelectedRelationalBranchState,
@@ -67,6 +88,16 @@ impl RelationalPreparationRuntime {
         strategy: Option<StrategyProposalDecoration>,
         context: Option<&dyn crate::validation::candidate_source::ManagedIndexSourceContextFactory>,
     ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
+        self.durability_admission
+            .admit_home_program_write(
+                transaction.home_step.as_deref(),
+                transaction.recovered_codec_publication_custody.as_deref(),
+            )
+            .map_err(|cause| {
+                TransactionCommitError::publication_denied(
+                    crate::mvcc::RelationalPublicationDenial::HomeProgramTransition(cause),
+                )
+            })?;
         require_not_interrupted(
             &transaction.control,
             &transaction.basis.inner.retention_binding,
@@ -110,6 +141,7 @@ impl RelationalPreparationRuntime {
             )?;
         }
         let validated_against_version = basis.observation().version_id();
+        transaction.prepare_home_target_coverage(execution, self)?;
         let validated_against_commit = basis.observation().commit_id();
         let super::proposal_round::PreparedProposalRound {
             prepared,

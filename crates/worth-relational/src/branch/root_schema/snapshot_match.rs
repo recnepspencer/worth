@@ -3,12 +3,17 @@ use super::*;
 
 pub(super) fn retain_revisions(
     expected: &SchemaAuthoritySnapshot,
-) -> Arc<[crate::schema::data::RelationIntegrityPlanRevision]> {
-    expected
-        .relation_kinds
-        .iter()
-        .map(|kind| kind.relation_integrity_plan_revision)
-        .collect()
+    control: crate::schema::SchemaCompilationControl<'_, '_>,
+) -> Result<
+    Arc<[crate::schema::data::RelationIntegrityPlanRevision]>,
+    crate::execution::RelationalExecutionDenialCause,
+> {
+    let mut revisions = Vec::with_capacity(expected.relation_kinds.len());
+    for kind in &expected.relation_kinds {
+        control.checkpoint()?;
+        revisions.push(kind.relation_integrity_plan_revision);
+    }
+    Ok(revisions.into())
 }
 
 pub(super) fn matches(

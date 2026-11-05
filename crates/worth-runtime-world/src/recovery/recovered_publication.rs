@@ -14,13 +14,22 @@ use worth_relational::facade::durability::{
     ReadmittedRelationalAssociatedEffect, RelationalRecoveredPublicationCustody,
 };
 
+mod continuation;
+mod continuation_loan;
 mod release;
+pub(crate) use continuation::{
+    ContinuationCommon, OriginalContinuationAdvance, OriginalHomeTransitionContinuation,
+    PreparedOriginalContinuation,
+};
+pub(crate) use continuation_loan::RecoveredNativeContinuationLoan;
 pub use release::{WorldRecoveredReleaseOutcome, WorldReleasedRecoveredEffects};
 
 #[derive(Debug)]
 pub(crate) enum RecoveredNativeCustody {
     OpenOnly,
     Relational(RelationalPublicationReadmitted<RelationalRecoveredPublicationCustody>),
+    Continuing(Box<OriginalHomeTransitionContinuation>),
+    Working,
     Released,
 }
 
@@ -33,6 +42,7 @@ pub(crate) struct RecoveredWorldPublicationRecord {
     pub(crate) expected: ProductBranchObservation,
     pub(crate) binding: Arc<WorldDurableMediumBinding>,
     pub(crate) native: Mutex<RecoveredNativeCustody>,
+    pub(crate) control: Mutex<Option<Arc<crate::publication::HomeTransitionEffectControlState>>>,
     pub(crate) claimed: Mutex<bool>,
     pub(crate) release: Mutex<Option<WorldDurableArtifact>>,
     pub(crate) committed_release: Mutex<Option<DurablyCommitted<ActualWorldPublication>>>,
@@ -48,6 +58,22 @@ pub struct WorldRecoveredUnpublishedEffects {
 }
 
 impl WorldRecoveredUnpublishedEffects {
+    /// Encode only this admitted original's association. This is descriptive
+    /// meaning, not permission to create or repeat an owner effect.
+    pub fn caller_association_commitment(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        plan: &worth_foundational::facade::HomeProgramTransitionPlanDescription,
+        step: worth_foundational::facade::HomeProgramTransitionStepAssociation,
+    ) -> Result<[u8; 32], crate::durability::WorldDurableMediumDenial> {
+        crate::publication::home_transition_caller_association_commitment(
+            execution,
+            plan,
+            step,
+            &self.record.open.association,
+        )
+    }
+
     pub fn identity(&self) -> &ProductUnpublishedOwnerEffectsIdentity {
         &self.record.identity
     }
@@ -63,6 +89,29 @@ impl WorldRecoveredUnpublishedEffects {
     pub fn claim_incarnation(&self) -> worth_foundational::facade::HomeIncarnation {
         self.record.binding.binding().incarnation()
     }
+    /// Actual retained progress, not a physical fate or permission to advance.
+    pub fn home_transition_effect_progress(
+        &self,
+    ) -> Result<
+        Option<crate::publication::WorldHomeTransitionEffectProgress>,
+        crate::recovery::RuntimeWorldRecoveryDenial,
+    > {
+        match &*self
+            .record
+            .native
+            .lock()
+            .unwrap_or_else(|cause| cause.into_inner())
+        {
+            RecoveredNativeCustody::OpenOnly | RecoveredNativeCustody::Relational(_) => Ok(None),
+            RecoveredNativeCustody::Continuing(work) => Ok(Some(work.progress())),
+            RecoveredNativeCustody::Working => {
+                Err(crate::recovery::RuntimeWorldRecoveryDenial::Busy)
+            }
+            RecoveredNativeCustody::Released => {
+                Err(crate::recovery::RuntimeWorldRecoveryDenial::MissingRecord)
+            }
+        }
+    }
     pub fn native_receipt(
         &self,
     ) -> Option<worth_relational::facade::history::RelationalCommitReceipt> {
@@ -71,6 +120,10 @@ impl WorldRecoveredUnpublishedEffects {
                 Some(native.custody().effect().subject().receipt().clone())
             }
             RecoveredNativeCustody::OpenOnly => None,
+            RecoveredNativeCustody::Continuing(original) => Some(original.native_receipt().clone()),
+            RecoveredNativeCustody::Working => {
+                unreachable!("a claim cannot observe its consuming advance")
+            }
             RecoveredNativeCustody::Released => unreachable!("a released claim is consumed"),
         }
     }
@@ -111,6 +164,7 @@ impl RecoveredWorldPublicationRecord {
                 RecoveredNativeCustody::Relational,
             )),
             claimed: Mutex::new(false),
+            control: Mutex::new(None),
             release: Mutex::new(None),
             committed_release: Mutex::new(None),
             metadata_bytes,

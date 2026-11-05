@@ -75,6 +75,8 @@ where
             .map_err(Refusal::Request)?;
         let mut assignments =
             ExecutionRequestArrayBuilder::allocate(*request, count).map_err(Refusal::Backing)?;
+        let mut steps =
+            ExecutionRequestArrayBuilder::allocate(*request, count).map_err(Refusal::Backing)?;
         let operation = self
             .reserve_operation_if_open_and_bootstrapped()
             .map_err(|()| {
@@ -90,7 +92,7 @@ where
             .identities
             .lock()
             .unwrap_or_else(|error| error.into_inner());
-        for _ in 0..count {
+        for step in 0..count {
             request.consult().map_err(Refusal::Request)?;
             let issued = issuer.publication_attempt().map_err(Refusal::Identity)?;
             let association = CompositeAttemptAssociation::from_recorded(
@@ -99,15 +101,38 @@ where
                 source.incarnation(),
             )
             .expect("all coordinates came from the same admitted World source");
+            let caller_association =
+                crate::publication::home_transition_caller_association_commitment(
+                    request,
+                    &description,
+                    worth_foundational::facade::HomeProgramTransitionStepAssociation::from_recorded(
+                        description.identity(),
+                        step as u32,
+                    ),
+                    &association,
+                )
+                .map_err(Refusal::Association)?;
+            steps
+                .push(std::sync::Mutex::new(Some(
+                    crate::publication::WorldHomeTransitionStepReservation {
+                        attempt: issued,
+                        plan: description.commitment(),
+                        step: step as u32,
+                        caller_association,
+                    },
+                )))
+                .map_err(Refusal::Backing)?;
             assignments.push(association).map_err(Refusal::Backing)?;
         }
         drop(issuer);
         Ok(ReservedWorldHomeTransitionAssignments {
             description,
             assignments: assignments.seal().map_err(Refusal::Backing)?,
+            predecessor: expected,
             owner: self.owner_identity(),
             operation,
             _names_memory: names_memory,
+            steps: steps.seal().map_err(Refusal::Backing)?,
         })
     }
 }

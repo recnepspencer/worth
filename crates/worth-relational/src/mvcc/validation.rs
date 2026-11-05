@@ -47,6 +47,9 @@ pub(crate) struct RelationalTransactionValidationInput {
     recovered_codec_publication_custody:
         Option<std::sync::Arc<crate::durability::RecoveredCodecPublicationCustody>>,
     schema_authority_input: Option<crate::schema::SchemaContinuityAuthorityInput>,
+    home_target: Option<std::sync::Arc<crate::runtime::AdmittedRelationalHomeProgramTarget>>,
+    home_step: Option<std::sync::Arc<crate::runtime::AdmittedRelationalHomeProgramStep>>,
+    home_target_coverage: Option<std::sync::Arc<crate::runtime::RelationalHomeTargetCoverage>>,
     schema_authority: std::sync::Arc<RelationalBranchRootSchemaAuthority>,
     footprint: crate::mvcc::RelationalTransactionFootprint,
     retention:
@@ -60,7 +63,17 @@ impl PartialEq for RelationalTransactionValidationInput {
             && self.intent == other.intent
             && self.merge_parent_bases == other.merge_parent_bases
             && self.schema_authority_input == other.schema_authority_input
+            && match (&self.home_target, &other.home_target) {
+                (Some(left), Some(right)) => std::sync::Arc::ptr_eq(left, right),
+                (None, None) => true,
+                (None, Some(_)) | (Some(_), None) => false,
+            }
             && self.recovered_codec_publication_custody == other.recovered_codec_publication_custody
+            && match (&self.home_step, &other.home_step) {
+                (Some(left), Some(right)) => std::sync::Arc::ptr_eq(left, right),
+                (None, None) => true,
+                (None, Some(_)) | (Some(_), None) => false,
+            }
             && self.schema_authority.allocation_id() == other.schema_authority.allocation_id()
             && self.footprint == other.footprint
     }
@@ -77,6 +90,9 @@ impl RelationalTransactionValidationInput {
             intent: transaction.intent.clone(),
             merge_parent_bases: transaction.merge_parent_bases.clone(),
             schema_authority_input: transaction.schema_authority_input.clone(),
+            home_target: transaction.home_target.clone(),
+            home_step: transaction.home_step.clone(),
+            home_target_coverage: transaction.home_target_coverage.clone(),
             recovered_codec_publication_custody: transaction
                 .recovered_codec_publication_custody
                 .clone(),
@@ -93,6 +109,9 @@ impl RelationalTransactionValidationInput {
             intent: crate::mvcc::RelationalTransactionIntent::ordinary(),
             merge_parent_bases: Vec::new(),
             schema_authority_input: None,
+            home_target: None,
+            home_step: None,
+            home_target_coverage: None,
             recovered_codec_publication_custody: None,
             schema_authority: basis.inner.root.retained_schema_authority(),
             footprint: crate::mvcc::RelationalTransactionFootprint::for_basis(basis),
@@ -160,6 +179,24 @@ impl RelationalTransactionValidationInput {
         self.schema_authority_input.as_ref()
     }
 
+    pub(crate) fn home_target(
+        &self,
+    ) -> Option<&std::sync::Arc<crate::runtime::AdmittedRelationalHomeProgramTarget>> {
+        self.home_target.as_ref()
+    }
+
+    pub(crate) fn home_step(
+        &self,
+    ) -> Option<&std::sync::Arc<crate::runtime::AdmittedRelationalHomeProgramStep>> {
+        self.home_step.as_ref()
+    }
+
+    pub(crate) fn home_target_coverage(
+        &self,
+    ) -> Option<&std::sync::Arc<crate::runtime::RelationalHomeTargetCoverage>> {
+        self.home_target_coverage.as_ref()
+    }
+
     pub(crate) fn with_schema_authority_input(
         mut self,
         input: crate::schema::SchemaContinuityAuthorityInput,
@@ -203,6 +240,9 @@ impl RelationalTransactionValidationInput {
         );
         transaction.merge_parent_bases = self.merge_parent_bases;
         transaction.schema_authority_input = self.schema_authority_input;
+        transaction.home_target = self.home_target;
+        transaction.home_step = self.home_step;
+        transaction.home_target_coverage = self.home_target_coverage;
         transaction.recovered_codec_publication_custody = self.recovered_codec_publication_custody;
         if let Some(retention) = self.retention {
             transaction.retention = retention;

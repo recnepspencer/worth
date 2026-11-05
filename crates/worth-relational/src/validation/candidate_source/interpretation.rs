@@ -44,6 +44,10 @@ pub(crate) struct NativeManagedSourceInterpretation {
     posture: Option<RelationalMaterializationTransactionMode>,
     materialization: Option<Arc<NativeMaterializationSource>>,
     restoration: Option<NativeSourceRestorationOrigin>,
+    pub(super) home_target: Option<Arc<crate::runtime::AdmittedRelationalHomeProgramTarget>>,
+    pub(super) home_coverage:
+        std::sync::Mutex<Option<Arc<crate::runtime::RelationalHomeTargetCoverage>>>,
+    pub(super) execution_catalog: Option<Arc<crate::runtime::RelationalRootExecutionContracts>>,
     pub(super) prepared: std::sync::OnceLock<super::staged::PreparedManagedIndexSources>,
     pub(super) authored_history:
         std::sync::OnceLock<Option<Arc<super::authored_history::PreparedSourceImpactHistory>>>,
@@ -63,6 +67,12 @@ impl NativeManagedSourceInterpretation {
             posture: input.intent().materialization_mode(),
             materialization: input.intent().materialization_source().cloned(),
             restoration: input.intent().restoration_origin().cloned(),
+            home_target: input.home_target().cloned(),
+            home_coverage: std::sync::Mutex::new(input.home_target_coverage().cloned()),
+            execution_catalog: input
+                .home_target()
+                .map(|target| target.meaning.clone())
+                .or_else(|| input.basis().inner.root.execution_contracts.get().cloned()),
             prepared: std::sync::OnceLock::new(),
             authored_history: std::sync::OnceLock::new(),
             context: std::sync::OnceLock::new(),

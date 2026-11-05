@@ -63,6 +63,25 @@ impl DerivedRelationGraphLaws {
                         .all(|pair| pair[0] < pair[1])
             })
     }
+    pub(crate) fn clone_allocation_bytes(
+        &self,
+        checkpoint: &mut dyn FnMut() -> Option<()>,
+    ) -> Option<usize> {
+        let Some(minimum) = &self.reaches_at_least else {
+            return Some(0);
+        };
+        minimum.target_domains.iter().try_fold(
+            minimum
+                .target_domains
+                .len()
+                .checked_mul(size_of::<NativeMemberDomain>())?,
+            |bytes, domain| {
+                checkpoint()?;
+                bytes.checked_add(domain.name_bytes()?)
+            },
+        )
+    }
+
     pub(crate) fn owned_bytes(&self) -> usize {
         self.reaches_at_least.as_ref().map_or(0, |minimum| {
             minimum

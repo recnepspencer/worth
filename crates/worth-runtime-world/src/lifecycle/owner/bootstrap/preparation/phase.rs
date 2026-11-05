@@ -61,7 +61,7 @@ impl RootInstallationPhase for SelectedDurableRoot {
     ) -> Result<(), Denial> {
         let WorldRecord::Branch {
             head, bootstrap, ..
-        } = &self.actual.record
+        } = self.actual.record()
         else {
             return Err(Denial::ForeignBasis);
         };

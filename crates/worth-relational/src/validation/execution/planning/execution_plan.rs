@@ -102,8 +102,8 @@ fn planning_context(
         current_version_id: request.current_version_id(),
         structural_summary: None,
         plan_contract: request.plan_contract(),
-        schema_registry_entry_count: runtime.config.schema.registry.entity_kinds.len()
-            + runtime.config.schema.registry.relation_kinds.len(),
+        schema_registry_entry_count: runtime.selected_registry.registry().entity_kinds.len()
+            + runtime.selected_registry.registry().relation_kinds.len(),
         invariant_registration_count: runtime.config.schema.invariant_catalog.registrations.len()
             + runtime
                 .schema_contract_runtime

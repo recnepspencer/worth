@@ -1,4 +1,3 @@
-use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use super::target::RelationalBranchRootDescriptor;
@@ -21,6 +20,8 @@ mod capture;
 mod capture_preparation;
 #[path = "root_commit_evidence.rs"]
 mod commit_evidence;
+#[path = "root_empty.rs"]
+mod empty;
 pub(crate) use commit_evidence::RelationalRootCommitEvidence;
 #[cfg(test)]
 #[path = "root_content_tests.rs"]
@@ -56,7 +57,10 @@ pub(crate) use allocation::{
     RelationalRootAuthoritativeAllocationObservation,
 };
 pub(crate) use identity::RelationalBranchRootIdentityIssuer;
-pub(crate) use schema::RelationalBranchRootSchemaAuthority;
+pub(crate) use schema::{
+    retained_compilation_tree_bytes, RelationalBranchRootSchemaAuthority,
+    RetainedRelationalAspectPlans, RetainedRelationalSchemaRegistry,
+};
 pub(crate) use visibility::RelationalBranchVisibilityCommitment;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -144,6 +148,8 @@ pub(crate) struct RelationalBranchRoot {
     pub(crate) output_publication_positions:
         crate::history::data::RequiredOutputPublicationPositions,
     schema_authority: Arc<RelationalBranchRootSchemaAuthority>,
+    pub(crate) execution_contracts:
+        std::sync::OnceLock<Arc<crate::runtime::RelationalRootExecutionContracts>>,
     committed: Option<RelationalCommittedBranchRoot>,
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
     pub(crate) managed_source_image: std::sync::OnceLock<crate::mvcc::ManagedSourceRootImage>,
@@ -182,57 +188,6 @@ impl RelationalBranchRootState {
 }
 
 impl RelationalBranchRoot {
-    #[cfg(test)]
-    pub(crate) fn empty() -> Arc<Self> {
-        let issuer = RelationalBranchRootIdentityIssuer::default();
-        Arc::new(Self {
-            id: 0,
-            regions: RelationalPersistentRegionSet::initial(0, BTreeMap::new(), &issuer)
-                .expect("empty test root has reachability capacity"),
-            entity_slot_count: 0,
-            relation_slot_count: 0,
-            content_accumulator: [0; 32],
-            output_publication_positions: Default::default(),
-            schema_authority: RelationalBranchRootSchemaAuthority::empty(),
-            committed: None,
-            _memory: None,
-            managed_source_image: std::sync::OnceLock::new(),
-        })
-    }
-
-    pub(crate) fn empty_with_schema(
-        registry: &crate::schema::data::RelationalSchemaRegistry,
-        descriptor_semantics_version: crate::schema::data::DescriptorSemanticsVersion,
-    ) -> Arc<Self> {
-        let issuer = RelationalBranchRootIdentityIssuer::default();
-        let expected = registry.authority_snapshot();
-        let schema_authority_id = issuer
-            .issue_schema_authority_id()
-            .expect(/* Proof: Each empty root creates a fresh issuer at its initial frontier; these first schema and empty-reachability allocations cannot exhaust it. */ "empty root has schema authority capacity");
-        let schema = RelationalBranchRootSchemaAuthority::capture(
-            schema_authority_id, registry, &expected, descriptor_semantics_version, None,
-        ).expect(/* Proof: the authority is captured from this same validated registry and its own snapshot. */ "empty schema matches registry");
-        Self::empty_with_schema_authority(schema)
-    }
-
-    pub(crate) fn empty_with_schema_authority(
-        schema: Arc<RelationalBranchRootSchemaAuthority>,
-    ) -> Arc<Self> {
-        let issuer = RelationalBranchRootIdentityIssuer::default();
-        Arc::new(Self {
-            id: 0,
-            regions: RelationalPersistentRegionSet::initial(0, BTreeMap::new(), &issuer)
-                .expect(/* Proof: Each empty root creates a fresh issuer at its initial frontier; these first schema and empty-reachability allocations cannot exhaust it. */ "empty root has reachability capacity"),
-            entity_slot_count: 0,
-            relation_slot_count: 0,
-            content_accumulator: [0; 32],
-            output_publication_positions: Default::default(),
-            schema_authority: schema,
-            committed: None,
-            _memory: None,
-            managed_source_image: std::sync::OnceLock::new(),
-        })
-    }
     pub(crate) fn prepare_capture(
         issuer: &RelationalBranchRootIdentityIssuer,
         partitions: &impl PartitionAccess,
@@ -241,6 +196,7 @@ impl RelationalBranchRoot {
         envelope: Arc<CanonicalCommitEnvelope>,
         registry: &crate::schema::data::RelationalSchemaRegistry,
         symbols: &crate::runtime::RuntimeSymbolTable,
+        execution_contracts: Option<Arc<crate::runtime::RelationalRootExecutionContracts>>,
     ) -> Result<PreparedRelationalBranchRootCapture, RelationalBranchRootCaptureDenial> {
         capture_preparation::prepare(
             issuer,
@@ -250,6 +206,7 @@ impl RelationalBranchRoot {
             envelope,
             registry,
             symbols,
+            execution_contracts,
         )
     }
     pub(crate) const fn id(&self) -> u64 {

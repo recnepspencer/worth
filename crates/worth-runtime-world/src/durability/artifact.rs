@@ -1,5 +1,12 @@
 use super::WorldRelationalReleaseEvidence;
 use std::sync::Arc;
+mod record_input;
+pub(crate) use record_input::{WorldArtifactInput, WorldHeadInput, WorldOpenAttemptInput};
+mod record_custody;
+pub(crate) use record_custody::PreparedWorldArtifact;
+pub(crate) use record_custody::WorldArtifactFrame;
+#[cfg(test)]
+mod retention_tests;
 use worth_foundational::facade::{
     BoundaryProtocolIdentity, BoundaryProtocolUnsupportedVersion, BoundaryProtocolVersion,
     CompositeAttemptAssociation, DurableCompositeCommitIdentity, DurableProductBranchIdentity,
@@ -100,36 +107,54 @@ pub enum WorldDurableFrameDenial {
 /// Public callers cannot manufacture a writable artifact from descriptive IDs.
 #[derive(Clone, Debug)]
 pub struct WorldDurableArtifact {
-    pub(crate) record: WorldRecord,
-    bytes: Arc<worth_execution::ExecutionImmutableBytes>,
+    original: Arc<record_custody::WorldArtifactMeaning>,
 }
 impl WorldDurableArtifact {
     /// Whether both values retain the same original owner-framed allocation.
     /// This correlation grants no publication or recovery authority.
     pub fn same_subject(&self, other: &Self) -> bool {
-        Arc::ptr_eq(&self.bytes, &other.bytes)
+        Arc::ptr_eq(&self.original, &other.original)
     }
-    pub(crate) fn from_record(
-        record: WorldRecord,
+    pub(crate) fn from_input(
+        input: WorldArtifactInput<'_>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Self, super::WorldDurableMediumDenial> {
-        let bytes = Arc::new(super::codec::encode(&record, execution)?.into_immutable_bytes());
-        Ok(Self { record, bytes })
+        let prepared = PreparedWorldArtifact::prepare(input.name_bytes()?, execution)?;
+        let record = input.materialize()?;
+        let bytes = super::codec::encode(&record, execution)?.into_immutable_bytes();
+        Ok(prepared.complete_owned(record, WorldArtifactFrame::from_encoded(bytes)))
     }
-    pub(crate) fn from_preallocated(
-        record: WorldRecord,
-        bytes: worth_execution::ExecutionImmutableBytes,
-    ) -> Self {
-        Self {
-            record,
-            bytes: Arc::new(bytes),
+    pub(crate) fn from_readmitted_open(
+        source: &super::AdmittedWorldOpenAttempt,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Self, super::WorldDurableMediumDenial> {
+        // The original decoder already admitted and owns these exact names.
+        let prepared = PreparedWorldArtifact::prepare(0, execution)?;
+        let bytes =
+            super::codec::encode(&source.record().record, execution)?.into_immutable_bytes();
+        Ok(prepared.complete_readmitted(
+            source.record().clone(),
+            WorldArtifactFrame::from_encoded(bytes),
+        ))
+    }
+    pub(crate) fn record(&self) -> &WorldRecord {
+        self.original.record()
+    }
+    pub(crate) fn open_attempt(&self) -> Option<&WorldOpenAttemptRecord> {
+        match self.record() {
+            WorldRecord::OpenAttempt(open) => Some(open),
+            WorldRecord::Owner { .. }
+            | WorldRecord::Branch { .. }
+            | WorldRecord::Occurrence { .. }
+            | WorldRecord::Released { .. }
+            | WorldRecord::Continued { .. } => None,
         }
     }
     pub fn as_bytes(&self) -> &[u8] {
-        self.bytes.bytes()
+        self.original.bytes()
     }
     pub fn journal(&self) -> WorldDurableJournal {
-        self.record.journal()
+        self.record().journal()
     }
 }
 

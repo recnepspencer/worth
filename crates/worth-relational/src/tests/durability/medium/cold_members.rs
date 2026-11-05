@@ -279,7 +279,11 @@ fn a_cold_point_read_keeps_cross_partition_kind_authority_after_an_unrelated_wri
         source.clone(),
     );
     let mut receiving = durable_runtime_with_test_schema();
-    bind_durable_medium(&mut receiving, runtime.durability.detach_medium().unwrap());
+    receiving
+        .unshared_state_mut()
+        .expect("fresh receiver is unshared")
+        .durability
+        .attach_recovered_medium(runtime.durability.detach_medium().unwrap());
     let plan = receiving
         .durability()
         .recovery_plan_from_source(

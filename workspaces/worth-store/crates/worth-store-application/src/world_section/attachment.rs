@@ -75,10 +75,16 @@ pub(crate) struct UnclaimedWorldSlot {
     medium: Arc<super::ApplicationWorldMedium>,
 }
 impl UnclaimedWorldSlot {
+    pub(crate) fn owner_identity_for_home(
+        home: worth_foundational::facade::HomeIdentity,
+    ) -> DurableWorldOwnerIdentity {
+        DurableWorldOwnerIdentity::from_recorded(home, WorldOwnerSlotIdentity::from_recorded(0))
+    }
     pub(crate) fn from_admitted_home(
         serving: Arc<ServingPhysicalRuntime>,
         descriptor: &crate::descriptor::HomeDescriptor,
         transition: worth_proof::HomeProgramTransitionAuthority,
+        transition_attempt_frontier: Option<u64>,
         checkpoint: &Arc<crate::checkpoint::owner::HomeCheckpointOwner>,
         request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Self, worth_execution::WorkCeilingDenial> {
@@ -86,10 +92,7 @@ impl UnclaimedWorldSlot {
             .extend(std::alloc::Layout::new::<super::ApplicationWorldMedium>())
             .expect("fixed original World medium layout");
         let funding = request.reserve_retained_memory(layout.pad_to_align().size() as u64)?;
-        let owner = DurableWorldOwnerIdentity::from_recorded(
-            descriptor.identity,
-            WorldOwnerSlotIdentity::from_recorded(0),
-        );
+        let owner = Self::owner_identity_for_home(descriptor.identity);
         Ok(Self {
             medium: Arc::new(super::ApplicationWorldMedium {
                 serving: std::sync::Mutex::new(Some(serving)),
@@ -99,7 +102,8 @@ impl UnclaimedWorldSlot {
                     descriptor.incarnation,
                     *descriptor.binding.selected().revision().bytes(),
                 )
-                .with_home_transition_authority(transition),
+                .with_home_transition_authority(transition)
+                .with_home_transition_attempt_frontier(transition_attempt_frontier),
                 placement: crate::open::physical_admission::placement(),
                 publications: Arc::new(super::WorldPublications::default()),
                 checkpoint: Arc::downgrade(checkpoint),

@@ -253,7 +253,11 @@ pub(super) fn prepare_publication_phase(
                 .root()
                 .map(|root| root.schema_authority().registry_arc())
         })
-        .unwrap_or_else(|| std::sync::Arc::new(runtime.config.schema.registry.clone()));
+        .unwrap_or_else(|| {
+            crate::branch::RetainedRelationalSchemaRegistry::from_configuration(
+                std::sync::Arc::new(runtime.config.schema.registry.clone()),
+            )
+        });
     let prepare_history = || {
         runtime.mvcc_publication_authority().prepare_commit(
             execution,

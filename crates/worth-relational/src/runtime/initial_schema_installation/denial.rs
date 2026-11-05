@@ -1,4 +1,28 @@
 use crate::schema::data::SchemaRegistryError;
+pub(super) fn inventory_compilation_denial(
+    cause: crate::validation::CustomInvariantCompilationDenial,
+) -> RelationalInitialSchemaInstallationDenial {
+    use crate::validation::CustomInvariantCompilationDenial as Cause;
+    use RelationalInitialSchemaInstallationDenialKind as Kind;
+    match cause {
+        Cause::Source(cause) => RelationalInitialSchemaInstallationDenial::new(
+            Kind::ManagedIndexSourceRejected,
+            format!("{cause:?}"),
+        ),
+        Cause::Duplicate(cause) => RelationalInitialSchemaInstallationDenial::new(
+            Kind::DuplicateCustomInvariant,
+            cause.identity.rule_id.as_str(),
+        ),
+        Cause::Execution(cause) => RelationalInitialSchemaInstallationDenial::new(
+            Kind::Request(cause),
+            format!("{cause:?}"),
+        ),
+        Cause::CapacityOverflow => RelationalInitialSchemaInstallationDenial::new(
+            Kind::Request(crate::execution::RelationalExecutionDenialCause::MemoryOverflow),
+            "compiled invariant inventory capacity overflow",
+        ),
+    }
+}
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum RelationalInitialSchemaInstallationDenialKind {
     RuntimeAlreadyCommitted,

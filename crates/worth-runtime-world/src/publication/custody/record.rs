@@ -29,6 +29,7 @@ pub(super) struct ActiveAttemptState {
     pub(super) resources: Option<ActiveAttemptResources>,
     pub(super) abandoned: bool,
     pub(super) cause: crate::recovery::ProductUnpublishedCause,
+    pub(super) before_effect_refusal: Option<crate::publication::NoEffectCause>,
     pub(super) last_observed: Option<crate::branch::ProductBranchReferenceSnapshot>,
     pub(super) destination: Option<Arc<crate::branch::registry::ProductBranchInstallationWitness>>,
 }
@@ -96,6 +97,7 @@ impl ActiveAttemptRecord {
                 resources: Some(resources),
                 abandoned: false,
                 cause: crate::recovery::ProductUnpublishedCause::CallerAbandoned,
+                before_effect_refusal: None,
                 last_observed: None,
                 destination: None,
             }),

@@ -19,6 +19,10 @@ mod execution;
 mod incarnation;
 use incarnation::publication_owner_denial;
 mod home_transition;
+mod home_transition_effect;
+mod home_transition_resume;
+mod home_transition_step;
+mod home_transition_unopened;
 mod open_attempt;
 mod owned_async;
 

@@ -17,9 +17,11 @@ mod home_incarnation;
 pub use home_incarnation::{HomeIncarnationDenial, HomeIncarnationFence};
 mod home_program_transition;
 pub use home_program_transition::{
+    AdmittedHomeProgramTransitionCatalog, AdmittedHomeProgramTransitionExecution,
     AdmittedHomeProgramTransitionPlan, AdmittedHomeProgramTransitionStep,
     HomeProgramTransitionAdmissionDenial, HomeProgramTransitionAuthority,
-    HomeProgramTransitionOwner,
+    HomeProgramTransitionBindingCommitted, HomeProgramTransitionOwner,
+    HomeProgramTransitionRequired,
 };
 mod home_recovery;
 mod linear;

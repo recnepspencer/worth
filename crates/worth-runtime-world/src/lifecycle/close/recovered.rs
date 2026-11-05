@@ -84,6 +84,7 @@ impl OriginalRecoveredClose {
             expected,
             binding,
             native,
+            control,
             claimed,
             release,
             committed_release,
@@ -100,11 +101,15 @@ impl OriginalRecoveredClose {
             RecoveredNativeCustody::Released => {
                 unreachable!("the exclusive recovered record passed final sealed validation")
             }
+            RecoveredNativeCustody::Continuing(_) | RecoveredNativeCustody::Working => {
+                unreachable!("sealed close admission refused the live original continuation")
+            }
         };
         // The caller still borrows the pointer-equal binding in the live World
         // owner. This is a nonfinal local share, so no medium/provider Drop can
         // run here. Retired data must not retain this Serving capability.
         drop(binding);
+        drop(control);
         Self {
             _identity: identity,
             _attempt: attempt,

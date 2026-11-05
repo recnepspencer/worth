@@ -31,14 +31,17 @@ pub use readmission_custody::WorldNativeReadmissionCustody;
 mod release_evidence;
 mod root_readmission;
 pub(crate) use artifact::{
-    DurableWorldHead, WorldOpenAttemptRecord, WorldOpenComponentIntent, WorldRecord,
+    DurableWorldHead, PreparedWorldArtifact, WorldArtifactInput, WorldHeadInput,
+    WorldOpenAttemptInput, WorldOpenAttemptRecord, WorldOpenComponentIntent, WorldRecord,
     WorldRelationalEvidence,
 };
 pub use artifact::{
     WorldDurableArtifact, WorldDurableFrameDenial, WORLD_ARTIFACT_PROTOCOL, WORLD_ARTIFACT_VERSION,
 };
 pub(crate) use association::is_world_association;
-pub(crate) use association::{decode_association, encode_association};
+pub(crate) use association::{
+    decode_association, encode_association, encode_home_transition_association,
+};
 pub(crate) use binding::{
     ActualWorldPublication, WorldDurableMediumBinding, WorldDurablePublicationStop,
 };

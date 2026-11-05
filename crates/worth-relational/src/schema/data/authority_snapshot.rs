@@ -90,6 +90,16 @@ impl SchemaAuthoritySnapshot {
 }
 
 pub fn schema_authority_snapshot_digest_bytes(snapshot: &SchemaAuthoritySnapshot) -> [u8; 32] {
+    schema_authority_snapshot_digest_for_compilation(
+        snapshot,
+        crate::schema::SchemaCompilationControl::Configuration,
+    )
+    .expect("configuration schema digest has no request refusal")
+}
+pub(crate) fn schema_authority_snapshot_digest_for_compilation(
+    snapshot: &SchemaAuthoritySnapshot,
+    control: crate::schema::SchemaCompilationControl<'_, '_>,
+) -> Result<[u8; 32], crate::execution::RelationalExecutionDenialCause> {
     let mut hasher = Sha256::new();
     hasher.update(b"WORTH_SCHEMA_AUTHORITY_SNAPSHOT_V2");
     if let Some(schema_id) = &snapshot.primary_schema_id {
@@ -106,6 +116,7 @@ pub fn schema_authority_snapshot_digest_bytes(snapshot: &SchemaAuthoritySnapshot
     }
     update_count(&mut hasher, snapshot.entity_kinds.len());
     for entity_kind in &snapshot.entity_kinds {
+        control.checkpoint()?;
         hasher.update(b"entity_kind\0");
         hasher.update(entity_kind.kind_id.0.to_le_bytes());
         update_bytes(&mut hasher, entity_kind.kind_name.as_bytes());
@@ -115,6 +126,7 @@ pub fn schema_authority_snapshot_digest_bytes(snapshot: &SchemaAuthoritySnapshot
     }
     update_count(&mut hasher, snapshot.relation_kinds.len());
     for relation_kind in &snapshot.relation_kinds {
+        control.checkpoint()?;
         hasher.update(b"relation_kind\0");
         hasher.update(relation_kind.kind_id.0.to_le_bytes());
         update_bytes(&mut hasher, relation_kind.kind_name.as_bytes());
@@ -132,15 +144,21 @@ pub fn schema_authority_snapshot_digest_bytes(snapshot: &SchemaAuthoritySnapshot
             relation_kind.cascade_delete_policy,
         )]);
     }
-    crate::derived_relation::canonical::update_digest(&mut hasher, &snapshot.derived_relations);
-    crate::projected_member_domain::canonical::update_digest(
+    crate::derived_relation::canonical::update_digest_for_compilation(
+        &mut hasher,
+        &snapshot.derived_relations,
+        control,
+    )?;
+    crate::projected_member_domain::canonical::update_digest_for_compilation(
         &mut hasher,
         &snapshot.projected_member_domains,
-    );
+        control,
+    )?;
     let digest = hasher.finalize();
     let mut out = [0_u8; 32];
     out.copy_from_slice(&digest);
-    out
+    control.checkpoint()?;
+    Ok(out)
 }
 
 fn update_count(hasher: &mut Sha256, count: usize) {

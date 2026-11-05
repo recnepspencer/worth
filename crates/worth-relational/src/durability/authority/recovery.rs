@@ -1,4 +1,9 @@
+mod catalog_readmission;
 use crate::durability::data::RelationalRecoveryStop;
+pub use catalog_readmission::{
+    ReadmittedRelationalHomeProgramCatalogs, RefusedRelationalHomeProgramCatalogReadmission,
+    RelationalHomeProgramCatalogReadmissionDenial,
+};
 pub(crate) use codec_transition::{
     AdmittedRecoveredCodecPublication, RecoveredCodecPublicationCustody,
 };
@@ -131,6 +136,8 @@ fn recovered_authority(
         .map(|cell| (cell.branch_id, (cell.observation, cell.truth_version)))
         .collect();
     RecoveredRelationalRuntimeAuthority {
+        home_catalog_readmission: std::sync::Mutex::new(()),
+        home_program_predecessor: None,
         runtime_instance_id: runtime.runtime_instance_id(),
         recovered_branch_images,
         recovered_roots,
@@ -214,7 +221,7 @@ fn move_durable_medium(
         .durability
         .detach_medium()
         .ok_or_else(|| unmovable("the recovering runtime's durable medium already moved"))?;
-    rebuilt.durability.attach_medium(medium);
+    rebuilt.durability.attach_recovered_medium(medium);
     Ok(())
 }
 

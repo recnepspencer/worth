@@ -23,6 +23,7 @@ pub(crate) use catalog::{CompositeHistoryCatalogEntry, InstalledRootCommitRollba
     reason = "the internal denial is asserted by the real constructor contract test"
 )]
 pub(crate) use commit::CompositeCommitConstructionDenial;
+pub(crate) use commit::ReadmittedWorldCommitDenial;
 pub use commit::{
     CompositeCallerCorrelation, CompositeCommitParent, CompositeCommitProvenance,
     CompositeComponentChangePosture, CompositeRuntimeWorldCommit,
@@ -30,6 +31,7 @@ pub use commit::{
 };
 pub use parentage::OrdinaryParent;
 pub(crate) use publication::MemoryPublicationRecord;
+pub(crate) use publication::PreparedReadmittedPublicationRecord;
 pub(crate) use publication::{
     CanonicalPublicationEnvelope, PerformedPublicationFacts, PreparedPublicationRecord,
     PublicationDeliveryClaim, PublicationRevision,

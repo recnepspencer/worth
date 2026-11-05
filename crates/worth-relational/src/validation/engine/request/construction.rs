@@ -68,6 +68,7 @@ impl<'state> InvariantExecutionRequest<'state> {
             relation_scope_requirements_for(runtime, profile, control)?;
         let relation_integrity_scopes = prepare_relation_integrity_scopes(
             merged_plan,
+            runtime.home_target.is_some(),
             observation.committed_partition_access(),
             version_id,
             relation_scope_requirements,

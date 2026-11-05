@@ -18,6 +18,12 @@ impl crate::runtime::RelationalRuntime {
         ArchivedRelationalBranch,
         RelationalBranchTransitionStop<RelationalBranchArchiveDenial>,
     > {
+        if let Some(medium) = self.durability.medium() {
+            medium.admit_home_program_write(None, None).map_err(|cause|
+                RelationalBranchTransitionStop::Denied(
+                    RelationalBranchArchiveDenial::DurablePublicationRefused(
+                        crate::durability::medium::RelationalDurablePublicationRefusal::HomeProgramTransition(cause))))?;
+        }
         let step = LiveBranchTransitionStep::new(self.durability.medium(), execution);
         self.archive_branch_with(execution, &step, identity)
             .map_err(Into::into)
