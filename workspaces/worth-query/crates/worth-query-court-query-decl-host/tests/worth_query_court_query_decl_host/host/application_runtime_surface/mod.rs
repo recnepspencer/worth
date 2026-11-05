@@ -1,6 +1,6 @@
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use worth_query_host::facade::{
-    admission::authenticated_principal::{WorthQueryCancellationSource, WorthQueryRequestScope},
+    admission::authenticated_principal::WorthQueryRequestScope,
     application_installation::ApplicationBuildIdentity,
     primary_graph::WorthQueryPrincipalResolutionMode,
 };
