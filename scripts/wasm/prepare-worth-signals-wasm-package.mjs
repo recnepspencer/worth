@@ -1,5 +1,6 @@
 import { execFile } from "node:child_process";
-import { access, copyFile, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { copyFile, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { createRequire, stripTypeScriptTypes } from "node:module";
 import { tmpdir } from "node:os";
 import { promisify } from "node:util";
@@ -42,7 +43,7 @@ const reactDeclarationsDirPath = path.resolve("crates/worth-signal-wasm/react");
 const reactTsConfigPath = path.resolve("crates/worth-signal-wasm/tsconfig.react.json");
 const reactCrateDir = path.resolve("crates/worth-signal-wasm");
 const reactTscBinaryPath = path.resolve(
-  "crates/worth-signal-wasm/node_modules/typescript/lib/tsc.js",
+  "crates/worth-signal-wasm/node_modules/typescript/bin/tsc",
 );
 const preservedStageEntries = new Set([
   ".gitignore",
@@ -78,22 +79,30 @@ async function copyDirectoryRecursive(sourceDir, destinationDir) {
   }
 }
 
-async function ensureCratePublishToolingInstalled() {
-  // TypeScript is vendored in-tree for React emit; esbuild is lockfile-pinned and
-  // platform-native, so install on demand when missing from a clean checkout.
+function cratePublishToolingInstalled() {
   try {
     crateRequire.resolve("esbuild");
-    return;
   } catch {
-    // continue to install
+    return false;
   }
-  const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
+  return existsSync(reactTscBinaryPath);
+}
+
+async function ensureCratePublishToolingInstalled() {
+  // esbuild and TypeScript 7 are lockfile-pinned and platform-native, so install
+  // them on demand when missing from a clean checkout.
+  if (cratePublishToolingInstalled()) {
+    return;
+  }
+  // Node refuses to spawn npm's Windows `.cmd` shim without a shell.
   await execFileAsync(
-    npmCommand,
+    process.platform === "win32" ? "npm.cmd" : "npm",
     ["install", "--no-fund", "--no-audit"],
-    { cwd: reactCrateDir },
+    { cwd: reactCrateDir, shell: process.platform === "win32" },
   );
-  crateRequire.resolve("esbuild");
+  if (!cratePublishToolingInstalled()) {
+    throw new Error("npm install did not provide the lockfile-pinned esbuild and TypeScript tooling");
+  }
 }
 
 async function transpilePackageSourcesRecursive(sourceDir, destinationDir) {
@@ -157,47 +166,12 @@ async function compileReactEntryPoints(reactOutDir) {
   // tsc emits to pkg/react per tsconfig; override by compiling then moving when needed.
   const defaultOutDir = path.join(pkgDir, "react");
   await mkdir(defaultOutDir, { recursive: true });
-  try {
-    await access(reactTscBinaryPath);
-    await execFileAsync(
-      process.execPath,
-      [reactTscBinaryPath, "-p", reactTsConfigArg],
-      { cwd: reactCrateDir },
-    );
-  } catch (error) {
-    if (error?.code !== "ENOENT") {
-      throw error;
-    }
-    if (process.platform === "win32") {
-      await execFileAsync(
-        "cmd.exe",
-        [
-          "/d",
-          "/s",
-          "/c",
-          `npx --yes -p typescript -p react -p @types/react tsc -p ${reactTsConfigArg}`,
-        ],
-        { cwd: reactCrateDir },
-      );
-    } else {
-      await execFileAsync(
-        "npx",
-        [
-          "--yes",
-          "-p",
-          "typescript",
-          "-p",
-          "react",
-          "-p",
-          "@types/react",
-          "tsc",
-          "-p",
-          reactTsConfigArg,
-        ],
-        { cwd: reactCrateDir },
-      );
-    }
-  }
+  // Always the lockfile-pinned compiler; ensureCratePublishToolingInstalled ran first.
+  await execFileAsync(
+    process.execPath,
+    [reactTscBinaryPath, "-p", reactTsConfigArg],
+    { cwd: reactCrateDir },
+  );
   if (path.resolve(reactOutDir) !== path.resolve(defaultOutDir)) {
     await copyDirectoryRecursive(defaultOutDir, reactOutDir);
   }
