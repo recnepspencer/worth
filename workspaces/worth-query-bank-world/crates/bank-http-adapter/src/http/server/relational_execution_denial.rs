@@ -19,7 +19,8 @@ pub(super) fn denial(cause: Cause) -> BankHttpDenial {
         | Cause::ResultCapacityExceeded
         | Cause::ScratchCapacityExceeded => (Kind::ResourceExhausted, Next::NarrowRequest),
         Cause::NestedStopped | Cause::AllocationFailed => (Kind::Unavailable, Next::Retry),
-        Cause::ProjectionContract(_)
+        Cause::ContentInconsistency
+        | Cause::ProjectionContract(_)
         | Cause::HistoricalVisibility(_)
         | Cause::ChargedBytesOverflow
         | Cause::AccountingUnavailable

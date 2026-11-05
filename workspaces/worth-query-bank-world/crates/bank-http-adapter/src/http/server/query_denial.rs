@@ -214,6 +214,15 @@ fn value_decode(
         runtime::{LeaseDenial, WorkCeilingDenial as Request},
     };
     match cause {
+        Decode::Content(cause) => {
+            crate::http::server::relational_execution_denial::denial(cause.into_execution_cause())
+        }
+        Decode::ContentProjectionWorkExceeded => exhausted(),
+        Decode::RequiredContentFieldAbsent
+        | Decode::ContentBasisUnavailable
+        | Decode::ContentProjectionWorkOverflow => {
+            BankHttpDenial::new(Kind::InternalDenied, Next::ContactOperator)
+        }
         Decode::Checkpoint(stop) => super::advancement_denial::request(Request::Stopped(stop)),
         Decode::Memory(limit) => super::advancement_denial::request(Request::Admission(
             LeaseDenial::MemoryExhausted(limit),

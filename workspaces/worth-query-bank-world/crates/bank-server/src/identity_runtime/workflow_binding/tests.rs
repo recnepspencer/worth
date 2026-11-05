@@ -60,6 +60,7 @@ fn workflow_binding_refusal_preserves_inputs_until_real_operation_closes() {
             WorthQueryAuthenticationAdapterAdmission::new(
                 configuration.audience,
                 configuration.method,
+                worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system(),
             ),
             CausalBankAuthenticationAdapter,
         )

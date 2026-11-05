@@ -54,6 +54,7 @@ pub(in crate::http::server) fn request_mutation_denial(
         | Denial::WorkflowControl
         | Denial::WorkflowCapturedInput
         | Denial::InputNotAdmitted
+        | Denial::DocumentHistory
         | Denial::SignedCreation
         | Denial::HandlerNotInstalled
         | Denial::IdempotencyIntentUnverifiable

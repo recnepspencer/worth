@@ -231,7 +231,9 @@ pub(super) const fn one_shot(kind: QueryOneShot) -> BankApplicationOneShotDenial
         QueryOneShot::ExpressionContextIncomplete => Bank::ExpressionContextIncomplete,
         QueryOneShot::ProjectionInspectionUnavailable => Bank::ProjectionInspectionUnavailable,
         QueryOneShot::ProjectionInspectionIncomplete => Bank::ProjectionInspectionIncomplete,
-        QueryOneShot::Projection(kind) => Bank::Projection(projection(kind)),
+        QueryOneShot::Projection(kind) => {
+            Bank::Projection(BankApplicationProjectionDenialKind::from_query(kind))
+        }
         QueryOneShot::ResultBufferLimitExceeded => Bank::ResultBufferLimitExceeded,
         QueryOneShot::WorkLimitExceeded => Bank::WorkLimitExceeded,
         QueryOneShot::SourceObservationAllocation {
@@ -271,7 +273,9 @@ pub(super) const fn continuation(kind: QueryContinuation) -> BankApplicationCont
         QueryContinuation::ContinuationPageWidthInvalid => Bank::ContinuationPageWidthInvalid,
         QueryContinuation::ContinuationGenerationChanged => Bank::ContinuationGenerationChanged,
         QueryContinuation::ProjectionUnavailable => Bank::ProjectionUnavailable,
-        QueryContinuation::Projection(kind) => Bank::Projection(projection(kind)),
+        QueryContinuation::Projection(kind) => {
+            Bank::Projection(BankApplicationProjectionDenialKind::from_query(kind))
+        }
         QueryContinuation::ResultBufferLimitExceeded => Bank::ResultBufferLimitExceeded,
         QueryContinuation::WorkLimitExceeded => Bank::WorkLimitExceeded,
     }
@@ -293,19 +297,22 @@ pub(super) const fn live(kind: QueryLive) -> BankApplicationLiveOpenDenialKind {
     }
 }
 
-const fn projection(kind: QueryProjection) -> BankApplicationProjectionDenialKind {
-    use BankApplicationProjectionDenialKind as Bank;
-    match kind {
-        QueryProjection::ValueDecode(cause) => Bank::ValueDecode(cause),
-        QueryProjection::FieldNotProjected => Bank::FieldNotProjected,
-        QueryProjection::FieldContractMismatch => Bank::FieldContractMismatch,
-        QueryProjection::FieldTypeMismatch => Bank::FieldTypeMismatch,
-        QueryProjection::FieldOmitted => Bank::FieldOmitted,
-        QueryProjection::RelationNotProjected => Bank::RelationNotProjected,
-        QueryProjection::RelationContractMismatch => Bank::RelationContractMismatch,
-        QueryProjection::RelationCardinalityMismatch => Bank::RelationCardinalityMismatch,
-        QueryProjection::RelationOmitted => Bank::RelationOmitted,
-        QueryProjection::DomainProjectionRejected => Bank::DomainProjectionRejected,
+impl BankApplicationProjectionDenialKind {
+    /// Preserve the original public Query projection refusal for transport adapters.
+    pub const fn from_query(kind: QueryProjection) -> Self {
+        use BankApplicationProjectionDenialKind as Bank;
+        match kind {
+            QueryProjection::ValueDecode(cause) => Bank::ValueDecode(cause),
+            QueryProjection::FieldNotProjected => Bank::FieldNotProjected,
+            QueryProjection::FieldContractMismatch => Bank::FieldContractMismatch,
+            QueryProjection::FieldTypeMismatch => Bank::FieldTypeMismatch,
+            QueryProjection::FieldOmitted => Bank::FieldOmitted,
+            QueryProjection::RelationNotProjected => Bank::RelationNotProjected,
+            QueryProjection::RelationContractMismatch => Bank::RelationContractMismatch,
+            QueryProjection::RelationCardinalityMismatch => Bank::RelationCardinalityMismatch,
+            QueryProjection::RelationOmitted => Bank::RelationOmitted,
+            QueryProjection::DomainProjectionRejected => Bank::DomainProjectionRejected,
+        }
     }
 }
 

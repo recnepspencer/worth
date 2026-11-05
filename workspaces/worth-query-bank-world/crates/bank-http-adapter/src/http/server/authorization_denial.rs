@@ -132,6 +132,7 @@ fn execution_request_denial(
                 | Resource::ChargedBytesOverflow
                 | Resource::NestedLeaseMisuse
                 | Resource::NestedAdvancementOpening
+                | Resource::ForeignAdmissionClock
                 | Resource::ForeignAdvancementPhase
                 | Resource::NoActiveExecutionScope
                 | Resource::EquivalenceContractUnavailable,

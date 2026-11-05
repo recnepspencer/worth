@@ -160,7 +160,7 @@ pub(in crate::http::server) fn execution_resource(denial: Resource) -> BankHttpD
             BankHttpDenialKind::InternalDenied,
             BankHttpNextAction::ContactOperator,
         ),
-        Resource::ForeignAdvancementPhase => (
+        Resource::ForeignAdmissionClock | Resource::ForeignAdvancementPhase => (
             BankHttpDenialKind::InternalDenied,
             BankHttpNextAction::ContactOperator,
         ),
