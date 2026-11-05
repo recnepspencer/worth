@@ -6,7 +6,11 @@ import unittest
 
 from coupling_graph import components, layering, upward_edges
 from crate_partition import Partition, path_module
-from module_coupling import coupling, freeze, ratchet, report
+import contextlib
+import io
+import json
+
+from module_coupling import check_all, coupling, freeze, ratchet, report
 from split_candidates import balanced
 from module_graph import LibraryModel
 from ownership_units import Classifier, header_parts, units
@@ -69,6 +73,49 @@ class CouplingTests(unittest.TestCase):
         layering_file = freeze(report(self.lib, PARENT, self.root))
         children, edges, _kinds = coupling(self.lib, PARENT, self.root)
         self.assertIn('module delta is not placed', ratchet(layering_file, children + ['delta'], edges)[0])
+
+
+    def test_strict_layering_with_no_upward_edges_refuses_any_upward_edge(self):
+        strict = freeze(report(self.lib, PARENT, self.root))
+        (low, high), = [tuple(e) for e in strict['upward']]
+        strict['upward'] = []
+        children, edges, _kinds = coupling(self.lib, PARENT, self.root)
+        refusals = ratchet(strict, children, edges)
+        self.assertEqual(len(refusals), 1)
+        self.assertIn(f'new upward edge {low} -> {high}', refusals[0])
+        edges.pop((low, high))
+        self.assertEqual(ratchet(strict, children, edges), [])
+
+    def write_layering(self, name, layering_file):
+        path = self.root / name
+        path.write_text(json.dumps(layering_file), encoding='utf-8')
+        return path
+
+    def run_check(self, *paths):
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            code = check_all(self.lib, list(paths), self.root)
+        return code, out.getvalue().splitlines(), err.getvalue().splitlines()
+
+    def test_check_verifies_several_layering_files_in_one_run(self):
+        frozen = freeze(report(self.lib, PARENT, self.root))
+        strict = dict(frozen, upward=[])
+        good = self.write_layering('good.json', frozen)
+        bad = self.write_layering('strict.json', strict)
+        code, out, err = self.run_check(good)
+        self.assertEqual((code, out, err), (0, ['{"refusals": 0, "upward_edges": 1}'], []))
+        code, out, err = self.run_check(good, good)
+        self.assertEqual((code, len(out)), (0, 2))
+        self.assertEqual(json.loads(out[0])['parent'], 'graph')
+        code, out, err = self.run_check(good, bad)
+        self.assertEqual(code, 1)
+        self.assertEqual([json.loads(line)['refusals'] for line in out], [0, 1])
+        self.assertTrue(err[0].startswith('[graph] new upward edge '))
+
+    def test_check_refuses_a_missing_layering_file(self):
+        code, out, err = self.run_check(self.root / 'absent.json')
+        self.assertEqual((code, out), (2, []))
+        self.assertIn('does not exist', err[0])
 
 
 class GraphTests(unittest.TestCase):

@@ -4,11 +4,14 @@
 Usage:
     python scripts/query_split/module_coupling.py report <lib.rs> <module::path> --out <dir>
     python scripts/query_split/module_coupling.py baseline <lib.rs> <module::path> --out <layering.json>
-    python scripts/query_split/module_coupling.py check <lib.rs> <layering.json>
+    python scripts/query_split/module_coupling.py check <lib.rs> <layering.json> [<layering.json> ...]
 
 `baseline` freezes the current layering and its upward edges. `check` is the ratchet:
 it refuses a new upward edge, an unplaced new module, or a baseline edge that no longer
 exists (shrink the baseline in the same change), so the cycle can only get smaller.
+Each layering file names its own `parent`, so one run checks several modules (for example
+`domain_computation` and `domain_computation::primary_graph`) against one parsed library.
+A layering whose `upward` list is empty is strict: any upward edge is refused.
 
 Only production references count: test-gated families are excluded on both ends.
 Each reference is a distinct (source file, defining module, item) triple, so a
@@ -116,6 +119,30 @@ def ratchet(layering, children, edges):
     return refusals
 
 
+def check_all(lib, layering_files, root):
+    """Ratchet every layering file against one parsed library; 1 if any refuses, 2 if unreadable."""
+    layerings = []
+    for path in layering_files:
+        if not path.is_file():
+            print(f'layering file {path.as_posix()} does not exist; regenerate it with '
+                  f'module_coupling.py baseline', file=sys.stderr)
+            return 2
+        layerings.append((path, json.loads(path.read_text(encoding='utf-8'))))
+    model, failed, many = LibraryModel(lib, root), False, len(layerings) > 1
+    for path, layering in layerings:
+        parent = tuple(layering['parent'].split('::'))
+        children, edges, _kinds = coupling(lib, parent, root, model)
+        refusals = ratchet(layering, children, edges)
+        for refusal in refusals:
+            print(f"[{layering['parent']}] {refusal}" if many else refusal, file=sys.stderr)
+        summary = {'refusals': len(refusals), 'upward_edges': len(layering['upward'])}
+        if many:
+            summary = {'layering': path.as_posix(), 'parent': layering['parent'], **summary}
+        print(json.dumps(summary))
+        failed = failed or bool(refusals)
+    return 1 if failed else 0
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest='command', required=True)
@@ -131,17 +158,11 @@ def main(argv=None):
     frozen.add_argument('--root', type=Path, default=Path.cwd())
     checking = sub.add_parser('check')
     checking.add_argument('lib', type=Path)
-    checking.add_argument('layering', type=Path)
+    checking.add_argument('layering', type=Path, nargs='+')
     checking.add_argument('--root', type=Path, default=Path.cwd())
     args = parser.parse_args(argv)
     if args.command == 'check':
-        layering = json.loads(args.layering.read_text(encoding='utf-8'))
-        children, edges, _kinds = coupling(args.lib, tuple(layering['parent'].split('::')), args.root.resolve())
-        refusals = ratchet(layering, children, edges)
-        for refusal in refusals:
-            print(refusal, file=sys.stderr)
-        print(json.dumps({'refusals': len(refusals), 'upward_edges': len(layering['upward'])}))
-        return 1 if refusals else 0
+        return check_all(args.lib, args.layering, args.root.resolve())
     parent = tuple(args.module.split('::'))
     result = report(args.lib, parent, args.root.resolve())
     if args.command == 'baseline':
