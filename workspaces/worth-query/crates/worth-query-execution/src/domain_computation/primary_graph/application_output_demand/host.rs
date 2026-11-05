@@ -1,5 +1,4 @@
 //! What the output-demand subsystem needs from the runtime that composes it.
-use worth_query_installation::facade::WorthQueryInstalledApplicationSchema;
 
 use crate::basis::WorthQueryProductBranchAdmissionDenial;
 use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
@@ -10,15 +9,11 @@ use crate::domain_computation::primary_graph::product_operation::{
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle;
 
 /// The runtime's identity, its graph handle, and the product selections output demands read.
-pub trait OutputDemandHost<Schema> {
+pub trait OutputDemandHost<Schema>:
+    crate::domain_computation::primary_graph::runtime_host::WorthQueryRuntimeIdentityHost<Schema>
+{
     /// This host as the trait object output-demand state is handed.
     fn output_demand_host(&self) -> &dyn OutputDemandHost<Schema>;
-    fn installed_schema(&self) -> &WorthQueryInstalledApplicationSchema<Schema>;
-    fn authority_identity(&self) -> WorthQueryRuntimeAuthorityIdentity;
-    fn product_runtime(
-        &self,
-    ) -> &crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime;
-    fn provider_graph(&self) -> &WorthQueryPrimaryGraphIntegrationHandle;
     fn take_ready_read_snapshot_pressure(&self) -> bool;
     fn hold_world_snapshot_pressure_for_test(
         &self,

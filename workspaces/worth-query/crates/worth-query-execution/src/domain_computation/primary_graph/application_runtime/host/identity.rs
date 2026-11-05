@@ -1,0 +1,27 @@
+//! The runtime's identity and wiring, lent to every module's host trait.
+use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationSchema};
+
+use super::super::WorthQueryPrimaryGraphApplicationRuntime;
+use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
+use crate::domain_computation::primary_graph::runtime_host::WorthQueryRuntimeIdentityHost;
+use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle;
+
+impl<Schema: ApplicationSchema> WorthQueryRuntimeIdentityHost<Schema>
+    for WorthQueryPrimaryGraphApplicationRuntime<Schema>
+{
+    fn installed_schema(&self) -> &WorthQueryInstalledApplicationSchema<Schema> {
+        &self.installed_schema
+    }
+    fn authority_identity(&self) -> WorthQueryRuntimeAuthorityIdentity {
+        self.runtime.authority_identity()
+    }
+    fn product_runtime(
+        &self,
+    ) -> &crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime
+    {
+        &self.runtime.product_runtime
+    }
+    fn provider_graph(&self) -> &WorthQueryPrimaryGraphIntegrationHandle {
+        &self.runtime.primary_provider.graph
+    }
+}

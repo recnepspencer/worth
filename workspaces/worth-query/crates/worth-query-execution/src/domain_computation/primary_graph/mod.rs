@@ -141,6 +141,7 @@ pub(crate) mod resolution;
 pub(crate) mod resolution_denial;
 pub(crate) mod root;
 mod root_path_selection;
+pub(crate) mod runtime_host;
 pub(crate) mod schema_layout;
 mod typed_bootstrap;
 pub(crate) mod value_decode;

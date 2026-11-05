@@ -1,15 +1,13 @@
 //! The runtime composes the output-demand subsystem: identity, graph handle and selections.
-use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationSchema};
+use worth_query_installation::facade::ApplicationSchema;
 
-use super::WorthQueryPrimaryGraphApplicationRuntime;
+use super::super::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::basis::WorthQueryProductBranchAdmissionDenial;
-use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
 use crate::domain_computation::primary_graph::application_output_demand::host::OutputDemandHost;
 use crate::domain_computation::primary_graph::application_query::WorthQueryApplicationReadObservation;
 use crate::domain_computation::primary_graph::product_operation::{
     WorthQueryProductEntry, WorthQuerySelectedProductOperation,
 };
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle;
 
 impl<Schema: ApplicationSchema> OutputDemandHost<Schema>
     for WorthQueryPrimaryGraphApplicationRuntime<Schema>
@@ -27,21 +25,6 @@ impl<Schema: ApplicationSchema> OutputDemandHost<Schema>
         branch: crate::basis::WorthQueryProductBranch,
     ) -> Vec<crate::basis::WorthQueryProductBranchLease> {
         Self::hold_world_snapshot_pressure_for_test(self, branch)
-    }
-    fn installed_schema(&self) -> &WorthQueryInstalledApplicationSchema<Schema> {
-        &self.installed_schema
-    }
-    fn authority_identity(&self) -> WorthQueryRuntimeAuthorityIdentity {
-        self.runtime.authority_identity()
-    }
-    fn product_runtime(
-        &self,
-    ) -> &crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime
-    {
-        &self.runtime.product_runtime
-    }
-    fn provider_graph(&self) -> &WorthQueryPrimaryGraphIntegrationHandle {
-        &self.runtime.primary_provider.graph
     }
     fn next_output_producer_attempt(&self) -> &std::sync::atomic::AtomicU64 {
         &self.runtime.next_output_producer_attempt
