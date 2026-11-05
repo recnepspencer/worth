@@ -64,7 +64,10 @@ fn close_deadline_retains_the_original_coupled_checkpoint_and_retry_closes_the_s
     let closing = SerialRequest::from_memory(
         SerialMemoryBudget::new(None),
         CancellationSource::new().token(),
-        Some(worth_execution::MonotonicClock::system().deadline_at(std::time::Instant::now() + std::time::Duration::from_millis(25))),
+        Some(
+            worth_execution::MonotonicClock::system()
+                .deadline_at(std::time::Instant::now() + std::time::Duration::from_millis(25)),
+        ),
     );
     drop(operation);
     let refused = home

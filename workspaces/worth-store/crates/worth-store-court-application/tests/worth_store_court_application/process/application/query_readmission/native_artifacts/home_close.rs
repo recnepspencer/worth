@@ -18,11 +18,11 @@ fn open(
         .unwrap()
         .unwrap_or_else(|refused| panic!("actual Host admission: {refused:?}"))
 }
-fn serial(bytes: Option<u64>, deadline.map(|instant| worth_execution::MonotonicClock::system().deadline_at(instant)): Option<std::time::Instant>) -> SerialRequest {
+fn serial(bytes: Option<u64>, deadline: Option<std::time::Instant>) -> SerialRequest {
     SerialRequest::from_memory(
         SerialMemoryBudget::new(bytes),
         CancellationSource::new().token(),
-        deadline,
+        deadline.map(|instant| worth_execution::MonotonicClock::system().deadline_at(instant)),
     )
 }
 fn physical_media_admission() -> worth_store::physical_runtime::FilesystemMediaAdmission {
