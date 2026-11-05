@@ -18,8 +18,6 @@ use source::Source;
 
 fn cold_runtime(execution: &ExecutionRequest<'_, '_>) -> (RelationalRuntime, Arc<Source>) {
     let (runtime, contract) = fixture();
-    publish(&runtime, execution, &contract);
-    publish(&runtime, execution, &contract);
     let checkpoint = runtime
         .durability_authority()
         .native_checkpoint_with_policy(
@@ -31,13 +29,18 @@ fn cold_runtime(execution: &ExecutionRequest<'_, '_>) -> (RelationalRuntime, Arc
             },
         )
         .unwrap();
-    let commits = runtime
+    // These courts exercise Journal export, so the two actual commits must
+    // follow the selected checkpoint rather than be covered by it.
+    publish(&runtime, execution, &contract);
+    publish(&runtime, execution, &contract);
+    let tail = runtime
         .durability()
-        .canonical_commit_artifacts(&execution)
-        .map(|artifact| {
-            let artifact = artifact.unwrap();
-            (artifact.position(), artifact.as_bytes().to_vec())
-        })
+        .canonical_commit_artifacts(execution)
+        .map(Result::unwrap)
+        .collect::<Vec<_>>();
+    let commits = tail
+        .iter()
+        .map(|artifact| (artifact.position(), artifact.as_bytes().to_vec()))
         .collect();
     let source = Arc::new(Source::from_checkpoint(&checkpoint, commits));
     let recovery = RelationalDurableRecoverySource::new(
@@ -46,7 +49,7 @@ fn cold_runtime(execution: &ExecutionRequest<'_, '_>) -> (RelationalRuntime, Arc
             checkpoint.covered_branch_transitions().unwrap(),
             RelationalNativeCheckpoint::from_untrusted_bytes(checkpoint.bytes().to_vec()),
         )),
-        vec![],
+        tail,
         vec![],
         source.clone(),
     );
@@ -71,6 +74,20 @@ fn cold_runtime(execution: &ExecutionRequest<'_, '_>) -> (RelationalRuntime, Arc
     (target, source)
 }
 
+// The public artifact export owns the legacy-port bound and sticky damage.
+// Use its existing typed conversion; checkpoint capture uses owned reads.
+fn export_older(
+    target: &RelationalRuntime,
+    execution: &ExecutionRequest<'_, '_>,
+) -> Result<RelationalCanonicalCommitArtifact, RelationalNativeCheckpointCaptureDenial> {
+    target
+        .durability()
+        .canonical_commit_artifacts(execution)
+        .next()
+        .expect("the real journal tail contains the older commit")
+        .map_err(Into::into)
+}
+
 #[test]
 fn content_carried_export_preserves_version_and_size_refusals_across_repeated_calls() {
     for fault in [1, 2] {
@@ -85,10 +102,7 @@ fn content_carried_export_preserves_version_and_size_refusals_across_repeated_ca
             .0;
         source.fault.store(fault, Ordering::SeqCst);
         for _ in 0..2 {
-            let refusal = target
-                .durability_authority()
-                .native_checkpoint(&execution, execution.allocation_policy())
-                .unwrap_err();
+            let refusal = export_older(&target, &execution).unwrap_err();
             let RelationalNativeCheckpointCaptureDenial::ArtifactFrame(frame) = refusal else {
                 panic!("{refusal:?}");
             };
@@ -140,10 +154,7 @@ fn content_carried_export_actual_digest_damage_becomes_a_sticky_typed_refusal() 
     let execution = ExecutionRequest::serial(&request);
     let (target, source) = cold_runtime(&execution);
     source.fault.store(3, Ordering::SeqCst);
-    let refusal = target
-        .durability_authority()
-        .native_checkpoint(&execution, execution.allocation_policy())
-        .unwrap_err();
+    let refusal = export_older(&target, &execution).unwrap_err();
     assert!(
         matches!(
             refusal,
@@ -154,10 +165,7 @@ fn content_carried_export_actual_digest_damage_becomes_a_sticky_typed_refusal() 
         "{refusal:?}"
     );
     assert_eq!(source.reads.load(Ordering::SeqCst), 1);
-    let refusal = target
-        .durability_authority()
-        .native_checkpoint(&execution, execution.allocation_policy())
-        .unwrap_err();
+    let refusal = export_older(&target, &execution).unwrap_err();
     assert!(
         matches!(refusal, RelationalNativeCheckpointCaptureDenial::Durability(ref error) if error.class == RecoveryFailureClass::ColdStorageUnavailable),
         "{refusal:?}"
@@ -182,10 +190,7 @@ fn content_carried_export_reserves_the_certified_read_bound_before_the_port() {
     let budget = SerialMemoryBudget::new(Some(64 * 1024 * 1024));
     let limited = SerialRequest::from_memory(budget.clone(), cancel.token(), None);
     let limited = ExecutionRequest::serial(&limited);
-    let refusal = target
-        .durability_authority()
-        .native_checkpoint(&limited, limited.allocation_policy())
-        .unwrap_err();
+    let refusal = export_older(&target, &limited).unwrap_err();
     assert!(matches!(refusal, RelationalNativeCheckpointCaptureDenial::Request(worth_relational::facade::transactions::RelationalExecutionDenialCause::PolicyMemoryExhausted { requested: 268_435_456, .. })), "{refusal:?}");
     assert_eq!(source.reads.load(Ordering::SeqCst), 0);
     assert_eq!(budget.charged_memory_bytes(), 0);

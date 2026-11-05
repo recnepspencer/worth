@@ -148,9 +148,6 @@ fn content_cold_history_is_unavailable_while_a_genuine_dangling_reference_is_mis
         SerialRequest::from_memory(SerialMemoryBudget::new(None), cancellation.token(), None);
     let execution = ExecutionRequest::serial(&original);
     let (runtime, contract) = fixture();
-    let (identity, entity) = publish(&runtime, &execution, &contract);
-    let older = runtime.history().latest_patch_stream_position().unwrap();
-    publish(&runtime, &execution, &contract);
     let checkpoint = runtime
         .durability_authority()
         .native_checkpoint_with_policy(
@@ -162,6 +159,15 @@ fn content_cold_history_is_unavailable_while_a_genuine_dangling_reference_is_mis
             },
         )
         .unwrap();
+    // The older body is an actual Journal tail, not a selected member.
+    let (identity, entity) = publish(&runtime, &execution, &contract);
+    let older = runtime.history().latest_patch_stream_position().unwrap();
+    publish(&runtime, &execution, &contract);
+    let tail = runtime
+        .durability()
+        .canonical_commit_artifacts(&execution)
+        .map(Result::unwrap)
+        .collect();
     let source = Arc::new(Source::capture(
         &runtime,
         &execution,
@@ -169,11 +175,12 @@ fn content_cold_history_is_unavailable_while_a_genuine_dangling_reference_is_mis
         older,
         None,
     ));
-    let target = reopen(
+    let target = reopen_with_tail(
         &execution,
         &checkpoint,
         checkpoint.bytes().to_vec(),
         source.clone(),
+        tail,
     );
     drop(runtime);
     drop(checkpoint);
