@@ -120,9 +120,41 @@ and borrows the host only through traits, the borrow of `self.output` and of the
 overlap mutably: every field access today is `&self` (reads, or interior mutation through the
 registry's own locks), so no `&mut` split is needed.
 
-The subsystem type lives in `application_output_demand` (owner of the registry and the
-recovered outputs); `application_contribution` keeps the producer registry and routes types and
-supplies them at installation.
+**Correction (accepted):** the subsystem type lives in `application_contribution`, not in
+`application_output_demand`. It holds the producer registry and the routes, which are
+`application_contribution`'s, beside the demand registry and recovered outputs, which are
+`application_output_demand`'s and sit below it; placing it in `application_output_demand` would
+have added an output_demand → contribution edge. Its registry-only test doors become methods on
+`WorthQueryOutputDemandRegistry` itself.
+
+## 4a. The rulings that bind every runtime proposal
+
+- **Facade (ruling A).** The runtime's 196 public non-test methods stay as inherent methods in
+  `application_runtime`. Each is a short composition over the subsystem that owns the work and
+  holds no domain logic (composition law 13). Internal forwarders are temporary: each is deleted
+  once its library callers move, and at the end no runtime method exists only for
+  library-internal callers.
+- **Test doors** move onto the subsystems; courts reach them through a sealed door that hands
+  the subsystem over, with callers registered as usual.
+- **Host traits.** Every module below `application_runtime` owns a host trait listing only what
+  it needs from above; the runtime implements each one in `application_runtime`. Context types
+  and parameters that name the runtime hold or take `&'r dyn <Module>Host<Schema>` (or
+  `&'r mut dyn`), so every public type keeps its name, definition and module, and its body is
+  compiled once in its own module (iteration law 7). A generic `R: <Module>Host<Schema>` is used
+  only where a trait object cannot work (generic methods that cannot take `&mut dyn FnMut` or be
+  split, `Self: Sized` returns, a demonstrated per-row or per-fact hot path); each such generic is
+  recorded with its reason, and a public type made generic gets its composed alias in
+  `application_runtime`.
+- **Internal runtime methods** become extension traits in their own modules, one per original
+  visibility, implemented for every host, so no method is widened.
+- Conversions are scripted per module, bottom-up, with rustc's suggestions supplying the trait
+  imports, and doors regenerated after each.
+
+Under these rulings the output-production subsystem is: the state struct
+`WorthQueryOutputProduction<Schema>` in `application_contribution` (the six fields), the
+contribution host trait (identity, product, publication and readiness needs), and the
+extension traits holding the 54 methods, which reach the state through the host's
+`output_production()` accessor.
 
 ## 5. Migration steps
 
