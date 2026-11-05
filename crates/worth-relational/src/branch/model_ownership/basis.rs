@@ -116,6 +116,9 @@ impl Read for BasisRead<'_, '_, '_, '_, '_, '_> {
         outgoing: bool,
         relations: &[KindId],
     ) -> Result<Vec<EntityId>, RelationalModelOwnershipDenial> {
+        if relations.is_empty() {
+            return self.custody_neighbors(entity, outgoing);
+        }
         self.demand(entity.partition_id)?;
         let count = self.state.relation_candidate_count(entity, outgoing);
         self.retain_bytes(count.saturating_mul(512) as u64)?;

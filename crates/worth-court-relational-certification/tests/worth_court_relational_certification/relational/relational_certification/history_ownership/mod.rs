@@ -20,6 +20,8 @@ mod prospective_publication;
 mod publication_fixture;
 mod publication_membership;
 mod transfer_fixture;
+mod transfer_publication_replacements;
+mod transfer_publications;
 
 #[test]
 fn cold_model_ownership_demands_cross_partition_endpoints_and_edges() {

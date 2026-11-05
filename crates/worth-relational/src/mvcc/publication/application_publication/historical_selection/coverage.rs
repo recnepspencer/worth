@@ -96,14 +96,14 @@ pub(crate) fn require_graph_coverage(
                     .ok_or_else(|| missing(original))?;
                 if selection.selected.descriptor() != entities.selected_basis().descriptor()
                     || selection.current.descriptor() != entities.current_basis().descriptor()
-                    || !entities
-                        .selected_entities()
+                    || !graph
+                        .restored_entities()
                         .contains(&original.meaning.source_scope)
                     || original
                         .members
                         .iter()
                         .filter(|m| m.posture != RequiredOutputRolePosture::Retire)
-                        .any(|m| !entities.selected_entities().contains(&m.id))
+                        .any(|m| !graph.restored_entities().contains(&m.id))
                     || original
                         .relations
                         .iter()
@@ -115,19 +115,19 @@ pub(crate) fn require_graph_coverage(
             for original in current.origins() {
                 crate::execution::request_stage::checkpoint(context, charge(original))
                     .map_err(custody::execution_stop)?;
-                let source_owned = entities
+                let source_owned = graph
                     .current_entities()
                     .contains(&original.meaning.source_scope)
-                    || entities
-                        .selected_entities()
+                    || graph
+                        .restored_entities()
                         .contains(&original.meaning.source_scope);
                 let outside_members = original
                     .members
                     .iter()
                     .filter(|m| m.posture != RequiredOutputRolePosture::Retire)
                     .any(|m| {
-                        !entities.current_entities().contains(&m.id)
-                            && !entities.selected_entities().contains(&m.id)
+                        !graph.current_entities().contains(&m.id)
+                            && !graph.restored_entities().contains(&m.id)
                     });
                 let outside_relations = original
                     .relations

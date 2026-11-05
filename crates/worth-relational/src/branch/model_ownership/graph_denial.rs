@@ -57,7 +57,6 @@ impl From<RelationalModelOwnershipDenial> for RelationalOwnedModelSelectionDenia
 
 /// Source ownership is the actual full-generation source endpoint (D1117).
 /// The diagnostic borrows real installed contracts from its retained basis.
-#[derive(Debug)]
 pub struct RelationalOwnedModelForeignRelation {
     entity: EntityId,
     relation: RelationId,
@@ -115,5 +114,17 @@ impl RelationalOwnedModelForeignRelation {
             .expect("constructed from this immutable schema registration")
             .relation_integrity
             .endpoint_deletion_integrity_contracts
+    }
+}
+
+impl std::fmt::Debug for RelationalOwnedModelForeignRelation {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("RelationalOwnedModelForeignRelation")
+            .field("entity", &self.entity)
+            .field("relation", &self.relation)
+            .field("owner", &self.owner)
+            .field("kind", &self.kind)
+            .field("basis", self.basis.descriptor())
+            .finish()
     }
 }

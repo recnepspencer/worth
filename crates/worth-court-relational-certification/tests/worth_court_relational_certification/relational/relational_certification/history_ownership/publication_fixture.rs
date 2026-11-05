@@ -86,24 +86,66 @@ pub(super) fn publish(
     meaning: &RequiredOutputPublicationMeaning,
     key: &str,
 ) -> EntityId {
+    publish_records(execution, runtime, owner, installed, meaning, key, false).0
+}
+pub(super) fn publish_related(
+    execution: &ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    owner: &worth_proof::InstalledApplicationPublicationOwner,
+    installed: &RelationalInstalledApplicationPublicationAuthority,
+    meaning: &RequiredOutputPublicationMeaning,
+    key: &str,
+) -> (EntityId, worth_relational::facade::identity::RelationId) {
+    let (entity, relation) =
+        publish_records(execution, runtime, owner, installed, meaning, key, true);
+    (entity, relation.unwrap())
+}
+fn publish_records(
+    execution: &ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    owner: &worth_proof::InstalledApplicationPublicationOwner,
+    installed: &RelationalInstalledApplicationPublicationAuthority,
+    meaning: &RequiredOutputPublicationMeaning,
+    key: &str,
+    related: bool,
+) -> (
+    EntityId,
+    Option<worth_relational::facade::identity::RelationId>,
+) {
     let mut tx = begin(runtime);
     let generated = CreatedEntityRef {
         partition_id: PartitionId(4),
         kind_id: KindId(3),
         client_key: ClientKey::raw(key),
     };
-    tx.push_batch(
-        WorkerIntentBatch::new("generator").push(MutationIntent::Create(CreateIntent::Entity(
-            EntitySpec {
-                partition_id: generated.partition_id,
-                kind_id: generated.kind_id,
-                client_key: generated.client_key.clone(),
+    let mut batch = WorkerIntentBatch::new("generator").push(MutationIntent::Create(
+        CreateIntent::Entity(EntitySpec {
+            partition_id: generated.partition_id,
+            kind_id: generated.kind_id,
+            client_key: generated.client_key.clone(),
+            fields: AspectFieldPatch::default(),
+        }),
+    ));
+    let relation = CreatedRelationRef {
+        partition_id: PartitionId(4),
+        kind_id: KindId(4),
+        client_key: ClientKey::raw(format!("{key}:relation")),
+        source: EntityReference::Existing(meaning.source_scope),
+        target: EntityReference::Created(generated.clone()),
+    };
+    if related {
+        batch = batch.push(MutationIntent::Create(CreateIntent::Relation(
+            RelationSpec {
+                partition_id: relation.partition_id,
+                kind_id: relation.kind_id,
+                client_key: relation.client_key.clone(),
+                source: EntityReference::Existing(meaning.source_scope),
+                target: EntityReference::Created(generated.clone()),
                 fields: AspectFieldPatch::default(),
             },
-        ))),
-        execution.allocation_policy(),
-    )
-    .unwrap();
+        )));
+    }
+    tx.push_batch(batch, execution.allocation_policy()).unwrap();
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();
@@ -140,6 +182,120 @@ pub(super) fn publish(
     };
     let born = runtime.settle_performed_publication(performed).unwrap();
     let output = born.created_entity(&generated).unwrap();
+    let edge = related.then(|| born.created_relation(&relation).unwrap());
     release_test_commit_snapshot(runtime, &born);
-    output
+    (output, edge)
+}
+
+pub(super) fn replace_related(
+    execution: &ExecutionRequest<'_, '_>,
+    world: &PublishedModel,
+    meaning: &RequiredOutputPublicationMeaning,
+    old: EntityId,
+    old_edge: worth_relational::facade::identity::RelationId,
+) -> (EntityId, worth_relational::facade::identity::RelationId) {
+    let (_, basis) = world
+        .runtime
+        .observe_branch(&world.runtime.main_branch_identity())
+        .unwrap();
+    let prior = world
+        .runtime
+        .prepare_historical_output_selection(execution, &world.installed, &basis, &basis, meaning)
+        .unwrap();
+    let predecessor = prior.publication().clone();
+    let admission = world
+        .owner
+        .admit_required_output_succession(
+            world.owner.admit_required_output("generator", [2; 32]),
+            predecessor.authority(),
+        )
+        .unwrap();
+    let generated = CreatedEntityRef {
+        partition_id: PartitionId(4),
+        kind_id: KindId(3),
+        client_key: ClientKey::raw("replacement"),
+    };
+    let relation = CreatedRelationRef {
+        partition_id: PartitionId(4),
+        kind_id: KindId(4),
+        client_key: ClientKey::raw("replacement:relation"),
+        source: EntityReference::Existing(meaning.source_scope),
+        target: EntityReference::Created(generated.clone()),
+    };
+    let batch = WorkerIntentBatch::new("generator")
+        .push(MutationIntent::Relation(RelationMutationIntent::Delete(
+            DeleteRelationIntent {
+                relation_id: old_edge,
+            },
+        )))
+        .push(MutationIntent::Entity(EntityMutationIntent::Delete(
+            DeleteEntityIntent { entity_id: old },
+        )))
+        .push(MutationIntent::Create(CreateIntent::Entity(EntitySpec {
+            partition_id: generated.partition_id,
+            kind_id: generated.kind_id,
+            client_key: generated.client_key.clone(),
+            fields: AspectFieldPatch::default(),
+        })))
+        .push(MutationIntent::Create(CreateIntent::Relation(
+            RelationSpec {
+                partition_id: relation.partition_id,
+                kind_id: relation.kind_id,
+                client_key: relation.client_key.clone(),
+                source: relation.source.clone(),
+                target: relation.target.clone(),
+                fields: AspectFieldPatch::default(),
+            },
+        )));
+    let mut tx = begin(&world.runtime);
+    tx.push_batch(batch, execution.allocation_policy()).unwrap();
+    let mut meaning = meaning.clone();
+    meaning.source_epoch = [2; 32];
+    let proposal = tx
+        .validate(execution, &world.runtime)
+        .unwrap()
+        .bind_required_output_publication(
+            &world.installed,
+            RequiredOutputPublication::Preserve {
+                admission,
+                predecessor,
+                meaning,
+                roles: vec![
+                    RequiredOutputRoleTarget {
+                        role: "result".into(),
+                        entity_name: "Member".into(),
+                        kind: KindId(3),
+                        posture: RequiredOutputRolePosture::Retire,
+                        target: EntityReference::Existing(old),
+                    },
+                    RequiredOutputRoleTarget {
+                        role: "replacement".into(),
+                        entity_name: "Member".into(),
+                        kind: KindId(3),
+                        posture: RequiredOutputRolePosture::Create,
+                        target: EntityReference::Created(generated.clone()),
+                    },
+                ],
+            },
+        )
+        .unwrap();
+    let prepared = world
+        .runtime
+        .prepare_validated_proposal(execution, proposal)
+        .unwrap();
+    let RelationalPublicationOutcome::Performed(performed) = world
+        .runtime
+        .publication_port()
+        .compare_and_publish(execution, prepared)
+    else {
+        panic!("owning producer replacement must publish");
+    };
+    let committed = world
+        .runtime
+        .settle_performed_publication(performed)
+        .unwrap();
+    let entity = committed.created_entity(&generated).unwrap();
+    let edge = committed.created_relation(&relation).unwrap();
+    release_test_commit_snapshot(&world.runtime, &committed);
+    (entity, edge)
 }

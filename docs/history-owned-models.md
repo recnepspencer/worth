@@ -93,3 +93,12 @@ regenerate healthy outputs. The Native current ownership roster restores and
 undergoes currentness checks with those outputs. Native installations must
 register current publication storage; reaching owned publications without it
 refuses CurrentOwnershipStorageMissing and never falls back to history.
+
+Native transfer restoration also follows the transferred source's selected
+publication custody. It restores original member and owned-relation IDs when a
+producer version replaced them, and retires displaced current members in the
+same candidate. Other source scopes in B keep their current publication
+coordinates. Both roster/claims and route presence are checked together after
+restoration. Query observation transport and verification of every restored
+family remain under qualification; these Native courts do not establish the
+public zero-producer-contact fast path.

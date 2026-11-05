@@ -246,3 +246,45 @@ fn a_reparented_selected_source_refuses_instead_of_giving_the_member_to_the_wron
     assert_owner(execution, &runtime, e, edge, a, &[a, b, c]);
     assert_owner(execution, &runtime, parent, parent_edge, c, &[a, b, c]);
 }
+
+#[test]
+fn a_transferred_sources_unowned_reference_cannot_be_severed_to_retire_another_member() {
+    let host = serial_request();
+    let execution = &ExecutionRequest::serial(&host);
+    let runtime = installed_runtime();
+    let a = create_entity(execution, &runtime, "a");
+    let b = create_entity(execution, &runtime, "b");
+    let source = member(execution, &runtime, "transferred");
+    let edge = create_relation(execution, &runtime, b, source, "owner");
+    let at_b = basis(&runtime);
+    move_to(execution, &runtime, edge, a, source);
+    let current_only = member(execution, &runtime, "current-only");
+    create_relation(execution, &runtime, a, current_only, "current-only-owner");
+    let reference = create_relation_of_kind(
+        execution,
+        &runtime,
+        source,
+        current_only,
+        "outside-reference",
+        KindId(4),
+    );
+    let before = basis(&runtime);
+    let error = runtime
+        .prepare_owned_model_graph_selection(
+            execution,
+            &before,
+            &at_b,
+            &ownership(),
+            &ownership(),
+            a,
+        )
+        .unwrap_err();
+    let foreign = error
+        .foreign_incoming_relation()
+        .expect("the transferred source owns its ordinary relation");
+    assert_eq!(foreign.entity(), current_only);
+    assert_eq!(foreign.owner(), source);
+    assert_eq!(foreign.relation(), reference);
+    assert_eq!(basis(&runtime).descriptor(), before.descriptor());
+    assert_owner(execution, &runtime, source, edge, a, &[a, b]);
+}

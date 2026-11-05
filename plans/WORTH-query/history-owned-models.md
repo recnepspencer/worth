@@ -623,3 +623,28 @@ No unrelated outside payload is enrolled, and unavailable or nonlinear transfer
 evidence refuses typed. This preserves B→C→B navigation after A→B without
 reconstructing a parallel current-ownership ledger. The actual closure getters
 continue to describe only recorded current/selected ownership.
+
+D1188 next publication join boundary/plan: moving an authored producer source
+moves its already-owned output subtree. The source and those outputs are in the
+transfer restoration set even when they are outside the selected document's
+actual closure. D1178 coverage must therefore consume that proven restoration
+set, not the narrower closure getters. It must still require every publication
+member and owned relation and deny a partial/foreign publication. Native's
+existing roster reader supplies any publication-owned semantic relations; only
+those relations join a transferred source's selected edges. Other ordinary
+outside relations and B's unrelated publications remain current. Add an executed
+source/output transfer round trip that compares B's unrelated publication's exact
+coordinate and members across all legs, with the existing independent roster and
+presence pairing. No observation rewriting, regeneration, or Query currentness
+claim belongs in this Native custody slice.
+
+Publication-join refinement: publication versions may contain different member
+IDs. For a restored source, the selected Native source-custody closure supplies
+its selected publication members, including members no longer live now; the
+current source-custody closure supplies displaced members to retire. This is a
+custody walk only, through the same Native roster reader, never arbitrary
+outgoing references or another document's other source scopes. Record these
+cross-document participants for the next inverse as well. Full publication
+coverage still gates admission. Add a real producer succession that retires its
+old member and creates a replacement before navigation: selecting the older
+transferred source must restore the old ID and retire the replacement.

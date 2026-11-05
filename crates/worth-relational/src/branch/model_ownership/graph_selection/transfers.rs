@@ -93,10 +93,64 @@ pub(super) fn prepare(
                     }
                 }
             }
+            // D1178 publication versions may have different member identities.
+            for _ in &selected {
+                read.retain()?;
+            }
+            let seeds = selected.iter().copied().collect::<Vec<_>>();
+            for source in seeds {
+                for entity in super::super::traversal::walk(read, source, true, &[])? {
+                    if !selected.contains(&entity) {
+                        read.retain()?;
+                        selected.insert(entity);
+                    }
+                    if !entities.selected_entities().contains(&entity) {
+                        if let Some(owner) = installed.owner(read, entity)? {
+                            if !transferred.contains_key(&entity) {
+                                read.retain()?;
+                                transferred.insert(entity, owner);
+                            }
+                            if !participants.contains(&entity) {
+                                read.retain()?;
+                                participants.insert(entity);
+                            }
+                        }
+                    }
+                }
+            }
             Ok::<_, Denial>((current, selected, transferred, participants))
         },
     )?;
     memory.extend(selected_memory);
+    let mut current = current;
+    let mut participants = participants;
+    let ((), current_memory) = basis::read(
+        native,
+        execution,
+        entities.current_basis(),
+        context,
+        |read| {
+            for &source in &selected {
+                if read.kind(source)?.is_none() {
+                    continue;
+                }
+                for entity in super::super::traversal::walk(read, source, true, &[])? {
+                    if !current.contains(&entity) {
+                        read.retain()?;
+                        current.insert(entity);
+                    }
+                    if !entities.current_entities().contains(&entity)
+                        && !participants.contains(&entity)
+                    {
+                        read.retain()?;
+                        participants.insert(entity);
+                    }
+                }
+            }
+            Ok::<_, Denial>(())
+        },
+    )?;
+    memory.extend(current_memory);
     Ok(RestorationBoundary {
         current,
         selected,

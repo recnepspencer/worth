@@ -8,28 +8,9 @@ impl BasisRead<'_, '_, '_, '_, '_, '_> {
         outgoing: bool,
     ) -> Result<Vec<EntityId>, RelationalModelOwnershipDenial> {
         use super::traversal::Read;
-        if self
-            .root
-            .schema_authority()
-            .registry()
-            .current_publication_storage
-            .is_none()
-        {
+        let Some(roster) = self.custody_roster(entity)? else {
             return Ok(Vec::new());
-        }
-        let records = [RecordRef::Entity(entity)];
-        let roster = match self.basis {
-            Some(basis) => {
-                crate::publication::ownership::read(self.execution, basis, &records, self.context)
-            }
-            None => crate::publication::ownership::read_candidate(
-                self.execution,
-                self.root,
-                &records,
-                self.context,
-            ),
-        }
-        .map_err(RelationalModelOwnershipDenial::Custody)?;
+        };
         let mut neighbors = Vec::new();
         for origin in roster.origins() {
             for member in &origin.members {
@@ -51,5 +32,61 @@ impl BasisRead<'_, '_, '_, '_, '_, '_> {
             }
         }
         Ok(neighbors)
+    }
+
+    fn custody_roster(
+        &mut self,
+        entity: EntityId,
+    ) -> Result<
+        Option<crate::publication::ownership::CurrentPublicationRoster>,
+        RelationalModelOwnershipDenial,
+    > {
+        if self
+            .root
+            .schema_authority()
+            .registry()
+            .current_publication_storage
+            .is_none()
+        {
+            return Ok(None);
+        }
+        let records = [RecordRef::Entity(entity)];
+        let roster = match self.basis {
+            Some(basis) => {
+                crate::publication::ownership::read(self.execution, basis, &records, self.context)
+            }
+            None => crate::publication::ownership::read_candidate(
+                self.execution,
+                self.root,
+                &records,
+                self.context,
+            ),
+        }
+        .map_err(RelationalModelOwnershipDenial::Custody)?;
+        Ok(Some(roster))
+    }
+    /// The roster proves ownership of IDs; the ordinary relation reader owns
+    /// their current full-generation structural facts.
+    pub(in crate::branch::model_ownership) fn custody_relation_ids(
+        &mut self,
+        entity: EntityId,
+    ) -> Result<
+        std::collections::BTreeSet<crate::identity::data::RelationId>,
+        RelationalModelOwnershipDenial,
+    > {
+        let mut edges = std::collections::BTreeSet::new();
+        let Some(roster) = self.custody_roster(entity)? else {
+            return Ok(edges);
+        };
+        for origin in roster.origins() {
+            for owned in &origin.relations {
+                self.charge(1)?;
+                if owned.source == entity && !edges.contains(&owned.id) {
+                    self.retain()?;
+                    edges.insert(owned.id);
+                }
+            }
+        }
+        Ok(edges)
     }
 }

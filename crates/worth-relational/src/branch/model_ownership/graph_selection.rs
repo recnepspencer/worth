@@ -168,21 +168,38 @@ fn prepare(
         basis::read(native, execution, current, context, |read| {
             let mut map = BTreeMap::new();
             for &entity in restoration.current.union(restored) {
+                let owned = if transferred.contains_key(&entity) {
+                    read.custody_relation_ids(entity)?
+                } else {
+                    BTreeSet::new()
+                };
                 for edge in read.relations(entity, true)? {
-                    if !transferred.contains_key(&entity) || declared(read, installed, edge)? {
+                    read.charge(owned.len().checked_ilog2().unwrap_or(0) as usize + 1)?;
+                    if !transferred.contains_key(&entity)
+                        || declared(read, installed, edge)?
+                        || owned.contains(&edge.relation_id)
+                    {
                         insert(read, &mut map, edge)?;
                     }
                 }
                 for edge in read.relations(entity, false)? {
                     if declared(read, installed, edge)? {
                         insert(read, &mut map, edge)?;
-                    } else if restoration.current.contains(&entity)
-                        && !restored.contains(&entity)
-                        && (!in_domain(edge.source) || transferred.contains_key(&edge.source))
-                    {
-                        return Err(Denial::ForeignIncomingRelation(
-                            RelationalOwnedModelForeignRelation::new(current, entity, edge)?,
-                        ));
+                    } else if restoration.current.contains(&entity) && !restored.contains(&entity) {
+                        let source_written = if !in_domain(edge.source) {
+                            false
+                        } else if transferred.contains_key(&edge.source) {
+                            let owned = read.custody_relation_ids(edge.source)?;
+                            read.charge(owned.len().checked_ilog2().unwrap_or(0) as usize + 1)?;
+                            owned.contains(&edge.relation_id)
+                        } else {
+                            true
+                        };
+                        if !source_written {
+                            return Err(Denial::ForeignIncomingRelation(
+                                RelationalOwnedModelForeignRelation::new(current, entity, edge)?,
+                            ));
+                        }
                     }
                 }
             }
@@ -195,6 +212,14 @@ fn prepare(
                 if entities.selected_entities().contains(&entity) {
                     for edge in read.relations(entity, true)? {
                         insert(read, &mut map, edge)?;
+                    }
+                } else {
+                    let owned = read.custody_relation_ids(entity)?;
+                    for edge in read.relations(entity, true)? {
+                        read.charge(owned.len().checked_ilog2().unwrap_or(0) as usize + 1)?;
+                        if owned.contains(&edge.relation_id) {
+                            insert(read, &mut map, edge)?;
+                        }
                     }
                 }
                 for edge in read.relations(entity, false)? {
