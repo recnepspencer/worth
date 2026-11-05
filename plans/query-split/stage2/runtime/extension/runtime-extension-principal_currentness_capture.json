@@ -1,0 +1,14 @@
+{
+ "module": "domain_computation::primary_graph::principal_currentness_capture",
+ "blocks": 0,
+ "methods": 0,
+ "traits": [],
+ "facades": 0,
+ "host": {
+  "core_fields": [],
+  "top_fields": [],
+  "core_methods": [],
+  "foreign": [],
+  "hand": []
+ }
+}

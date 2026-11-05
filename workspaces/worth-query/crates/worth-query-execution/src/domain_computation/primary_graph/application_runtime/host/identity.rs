@@ -24,4 +24,9 @@ impl<Schema: ApplicationSchema> WorthQueryRuntimeIdentityHost<Schema>
     fn provider_graph(&self) -> &WorthQueryPrimaryGraphIntegrationHandle {
         &self.runtime.primary_provider.graph
     }
+    fn primary_graph(
+        &self,
+    ) -> Option<&crate::domain_computation::primary_graph::WorthQueryPrimaryGraph> {
+        self.runtime.primary_graph()
+    }
 }

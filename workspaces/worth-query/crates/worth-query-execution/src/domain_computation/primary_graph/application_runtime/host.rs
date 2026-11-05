@@ -3,4 +3,6 @@ mod application_checkpoint;
 mod application_discovery;
 mod identity;
 mod output_demand;
+mod principal_currentness_capture;
 mod product_activation;
+mod resolution;

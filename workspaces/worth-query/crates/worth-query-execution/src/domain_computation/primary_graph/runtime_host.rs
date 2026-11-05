@@ -14,4 +14,7 @@ pub trait WorthQueryRuntimeIdentityHost<Schema> {
     fn authority_identity(&self) -> WorthQueryRuntimeAuthorityIdentity;
     fn product_runtime(&self) -> &WorthQueryProductRuntime;
     fn provider_graph(&self) -> &WorthQueryPrimaryGraphIntegrationHandle;
+    fn primary_graph(
+        &self,
+    ) -> Option<&crate::domain_computation::primary_graph::WorthQueryPrimaryGraph>;
 }

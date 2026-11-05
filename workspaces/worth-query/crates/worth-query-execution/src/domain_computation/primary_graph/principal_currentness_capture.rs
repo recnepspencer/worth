@@ -17,7 +17,7 @@ pub(in crate::domain_computation) fn capture_principal_currentness_admitted<
     Principal,
     PrincipalIdentity,
 >(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::principal_currentness_capture::host::PrincipalCurrentnessCaptureHost<Schema>,
     principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
     session: WorthQueryGraphWorkSessionIdentity,
 ) -> Result<WorthQueryPrincipalCurrentnessDependency, PrincipalCurrentnessCaptureStop>
@@ -35,7 +35,7 @@ where
     // Stale graph/layout can return an owned binding subject. First refusal
     // remains allocation-free at the caller.
 
-    let graph = runtime.runtime.primary_graph().ok_or(Stop::MissingGraph)?;
+    let graph = runtime.primary_graph().ok_or(Stop::MissingGraph)?;
 
     let layout = graph
         .layout
@@ -46,3 +46,4 @@ where
         session, principal, layout,
     ))
 }
+pub(crate) mod host;
