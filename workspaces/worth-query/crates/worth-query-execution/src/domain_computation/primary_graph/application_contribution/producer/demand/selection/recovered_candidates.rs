@@ -17,8 +17,8 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
         for recovered in self
-            .runtime
-            .recovered_outputs
+            .output_production
+            .recovered()
             .matching_source_partition(scope, source.partition_identity())
         {
             let checkpoint = &recovered.checkpoint;

@@ -102,12 +102,13 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
             ));
         }
         let route = self
-            .runtime
-            .output_readiness_routes
+            .output_production
+            .readiness_routes()
             .get(producer_identity)
             .expect("installation requires one readiness route for every output producer");
         let producer = self
-            .installed_producers
+            .output_production
+            .producers()
             .entries
             .get(producer_identity)
             .expect("readiness route must retain its installed producer");
@@ -143,7 +144,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         };
 
         let attempt = {
-            let update_counter = &self.runtime.next_output_producer_attempt;
+            let update_counter = self.output_production.next_producer_attempt();
             let mut current = update_counter.load(std::sync::atomic::Ordering::Relaxed);
             loop {
                 let Some(updated_value) = current.checked_add(1) else {
@@ -208,8 +209,8 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
             ));
         }
         let evaluation = match self
-            .runtime
-            .output_producer_routes
+            .output_production
+            .producer_routes()
             .get(producer_identity)
             .and_then(|route| route.output_comparison.as_ref())
         {
@@ -229,7 +230,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
                         layout: &self.runtime.primary_provider.graph.layout,
                     },
                     ready,
-                    &self.runtime.next_output_producer_attempt,
+                    self.output_production.next_producer_attempt(),
                 )?;
                 if visit.compared_now {
                     self.runtime.primary_provider.output_comparison_completed();

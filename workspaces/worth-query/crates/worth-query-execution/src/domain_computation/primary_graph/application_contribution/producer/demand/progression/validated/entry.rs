@@ -62,7 +62,7 @@ where
                 .interest
                 .as_ref()
                 .expect("a published row retains its live Interest");
-            match self.runtime.output_demands.begin_published(interest) {
+            match self.output_production.demands().begin_published(interest) {
                 Admission::AdvanceCheckpoint { claim, checkpoint } => {
                     if !self.advance_output_checkpoint(
                         execution,

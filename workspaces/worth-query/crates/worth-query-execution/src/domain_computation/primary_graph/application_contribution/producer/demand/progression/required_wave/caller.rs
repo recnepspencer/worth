@@ -182,7 +182,7 @@ where
         &mut frame_custody,
         performed,
     );
-    frame_custody.hold_unfinished(&runtime.runtime.output_demands);
+    frame_custody.hold_unfinished(runtime.output_production.demands());
     queue.conclude(result)
 }
 
@@ -223,7 +223,7 @@ where
     match demand
         .required_continuations
         .promote_caller_successor::<Family>(
-            &runtime.runtime.output_demands,
+            runtime.output_production.demands(),
             anchor_ready,
             selected,
             continues_caller,
@@ -252,8 +252,8 @@ where
         .as_ref()
         .expect("Current caller retains its Interest");
     runtime
-        .runtime
-        .output_demands
+        .output_production
+        .demands()
         .finish_settlement_admitted(interest, selected)?;
     drop(demand.required_continuations.take_all());
     Ok(Some(proof))

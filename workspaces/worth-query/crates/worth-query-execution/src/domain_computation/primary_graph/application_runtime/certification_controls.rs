@@ -40,7 +40,15 @@ where
         &self,
     ) -> &crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandRegistry
 {
-        &self.runtime.output_demands
+        self.output_production.demands()
+    }
+
+    /// Hands courts the output-production state this runtime owns; its test doors live there.
+    #[doc(hidden)]
+    pub fn output_production_mut_for_test(
+        &mut self,
+    ) -> &mut crate::domain_computation::primary_graph::application_contribution::WorthQueryOutputProduction<Schema>{
+        &mut self.output_production
     }
 
     /// Schedules failure at the real post-commit snapshot admission boundary.
@@ -116,16 +124,16 @@ where
     /// Counts readiness decisions actually attempted by this application runtime.
     #[doc(hidden)]
     pub fn output_readiness_attempt_count_for_test(&self) -> u64 {
-        self.runtime
-            .next_output_producer_attempt
+        self.output_production
+            .next_producer_attempt()
             .load(std::sync::atomic::Ordering::Relaxed)
     }
 
     /// Counts post-publication checkpoints and any World snapshots retained inside their receipts.
     #[doc(hidden)]
     pub fn output_checkpoint_snapshot_state_for_test(&self) -> (usize, usize) {
-        self.runtime
-            .output_demands
+        self.output_production
+            .demands()
             .output_checkpoint_snapshot_state()
     }
 
@@ -163,13 +171,15 @@ where
     /// Counts performed sources awaiting their required-output admission owner.
     #[doc(hidden)]
     pub fn prepared_required_output_source_count_for_test(&self) -> usize {
-        self.runtime.output_demands.prepared_source_count()
+        self.output_production.demands().prepared_source_count()
     }
 
     /// Counts retained source custody, including consumed roots awaiting program completion.
     #[doc(hidden)]
     pub fn retained_source_custody_count_for_test(&self) -> usize {
-        self.runtime.output_demands.retained_source_custody_count()
+        self.output_production
+            .demands()
+            .retained_source_custody_count()
     }
 
     /// Observes the currently bound primary Bridge truth snapshot.

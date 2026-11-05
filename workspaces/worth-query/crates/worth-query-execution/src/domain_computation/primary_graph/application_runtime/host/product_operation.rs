@@ -17,7 +17,7 @@ impl<Schema: ApplicationSchema> ProductOperationHost<Schema>
         &self.runtime.basis_leases
     }
     fn installed_producers(&self) -> &crate::domain_computation::primary_graph::application_contribution::WorthQueryInstalledApplicationProducerRegistry<Schema>{
-        &self.installed_producers
+        &self.output_production.producers()
     }
     fn workflow_coverage(&self) -> &crate::domain_computation::primary_graph::application_attempt::workflow::adoption::WorkflowVocabularyCoverageRegistry{
         &self.runtime.workflow_coverage

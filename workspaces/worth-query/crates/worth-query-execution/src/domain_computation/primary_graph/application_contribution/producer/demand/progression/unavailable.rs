@@ -59,7 +59,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             demand.installed_entry.edition,
         )?;
 
-        let result = self.runtime.output_demands.finish_unavailable_source(
+        let result = self.output_production.demands().finish_unavailable_source(
             prepared,
             interest,
             &self

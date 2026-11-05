@@ -103,7 +103,10 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             )
         });
         let lifecycle_observation = lifecycle_observation.as_ref().unwrap_or(observation);
-        let output_bindings = self.installed_producers.family_output_bindings::<Family>();
+        let output_bindings = self
+            .output_production
+            .producers()
+            .family_output_bindings::<Family>();
         let scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(source.source_root());
         let mut lineage = self
             .runtime
@@ -135,7 +138,8 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         let mut live_candidates = Vec::new();
         for candidate in candidates {
             let role = self
-                .installed_producers
+                .output_production
+                .producers()
                 .family_output_role::<Family>(candidate.binding)?;
             if let Some(entity) = candidate.correspondence.active_entity_for_role(role) {
                 live_candidates.push((candidate, entity));
@@ -234,7 +238,7 @@ use crate::domain_computation::primary_graph::output_lineage::RecordedSourceIden
                         };
                     // Existing live output determines Preserve even when its producing
                     // build cannot reuse. Identity never substitutes for native liveness.
-                    let (_, installed) = self.installed_producers.select_exact::<Family>(candidate.binding)?;
+                    let (_, installed) = self.output_production.producers().select_exact::<Family>(candidate.binding)?;
                     let implementation_current = candidate.producing_implementation.is_some_and(|original| {
                         original == worth_relational::facade::mvcc::RequiredOutputProducingImplementation::new(installed.edition.build_identity(), installed.edition.digest())
                     });
@@ -268,7 +272,8 @@ use crate::domain_computation::primary_graph::output_lineage::RecordedSourceIden
                 }
                 if facts_current {
                     let (mut selected, entry) = self
-                        .installed_producers
+                        .output_production
+                        .producers()
                         .select_exact::<Family>(candidate.binding)?;
                     // A runtime record reaches the input cutoff and needs its
                     // declared decision proof. A current checkpoint record is
@@ -297,18 +302,19 @@ use crate::domain_computation::primary_graph::output_lineage::RecordedSourceIden
                     };
                     if may_rejoin_ready
                         && let Some(epoch) = source.output_source_epoch()
-                        && let Ok((delivery, delivery_entry)) = self
-                            .installed_producers
-                            .select::<Family>(WorthQueryProducerApplicability::new(
-                                profile_kind,
-                                WorthQueryProducerLifecyclePosture::Preserve,
-                            ))
+                        && let Ok((delivery, delivery_entry)) =
+                            self.output_production.producers().select::<Family>(
+                                WorthQueryProducerApplicability::new(
+                                    profile_kind,
+                                    WorthQueryProducerLifecyclePosture::Preserve,
+                                ),
+                            )
                         && delivery_entry.declaration.operation_binding_type == candidate.binding
                     {
                         let key = crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandKey::new(
                             Family::IDENTITY, delivery.identity.clone(), delivery.applicability, epoch,
                         );
-                        if self.runtime.output_demands.has_committed_ready(
+                        if self.output_production.demands().has_committed_ready(
                             &key,
                             scope,
                             observation.lifecycle_incarnation(),
@@ -330,13 +336,15 @@ use crate::domain_computation::primary_graph::output_lineage::RecordedSourceIden
                         let key = crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandKey::new(
                             Family::IDENTITY, selected.identity.clone(), selected.applicability, epoch,
                         );
-                        if let Some(_ready) = self.runtime.output_demands.committed_required_ready(
-                            &key,
-                            scope,
-                            observation.lifecycle_incarnation(),
-                            candidate.correspondence.as_ref(),
-                            &candidate.idempotency_key_identity,
-                        ) {
+                        if let Some(_ready) =
+                            self.output_production.demands().committed_required_ready(
+                                &key,
+                                scope,
+                                observation.lifecycle_incarnation(),
+                                candidate.correspondence.as_ref(),
+                                &candidate.idempotency_key_identity,
+                            )
+                        {
                             selected.exact_retained_output = false;
                             return Ok((selected, entry));
                         }
@@ -345,7 +353,7 @@ use crate::domain_computation::primary_graph::output_lineage::RecordedSourceIden
                 retained_output = true;
             }
             if retained_output {
-                return self.installed_producers.select::<Family>(
+                return self.output_production.producers().select::<Family>(
                     WorthQueryProducerApplicability::new(
                         profile_kind,
                         WorthQueryProducerLifecyclePosture::Preserve,
@@ -353,7 +361,8 @@ use crate::domain_computation::primary_graph::output_lineage::RecordedSourceIden
                 );
             }
         }
-        self.installed_producers
+        self.output_production
+            .producers()
             .select::<Family>(WorthQueryProducerApplicability::new(
                 profile_kind,
                 WorthQueryProducerLifecyclePosture::Initial,

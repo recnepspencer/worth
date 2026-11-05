@@ -17,10 +17,10 @@ impl<Schema: ApplicationSchema> ApplicationCheckpointHost<Schema>
         self.runtime.publication()
     }
     fn output_demands(&self) -> &crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandRegistry{
-        &self.runtime.output_demands
+        &self.output_production.demands()
     }
     fn recovered_outputs(&self) -> &crate::domain_computation::primary_graph::application_output_demand::WorthQueryRecoveredOutputs{
-        &self.runtime.recovered_outputs
+        &self.output_production.recovered()
     }
     fn application_branch_commit_lane_for_occurrence(&self, occurrence: worth_runtime_world::facade::ProductBranchIncarnation) -> std::sync::Arc<crate::domain_computation::primary_graph::provider::branch_commit_coordination::WorthQueryApplicationBranchCommitLane>{
         self.runtime

@@ -78,7 +78,7 @@ where
                 "discovered continuation differs from its original runtime or publication",
             ));
         }
-        self.backing.runtime.runtime.output_demands.validate_recovery_root_kind(
+        self.backing.runtime.output_production.demands().validate_recovery_root_kind(
             receipt,
             crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Discovered(TypeId::of::<Root>()),
         )?;
@@ -137,7 +137,7 @@ where
                 "the program source belongs to another runtime",
             ));
         }
-        self.backing.runtime.runtime.output_demands.retain_program_source(
+        self.backing.runtime.output_production.demands().retain_program_source(
             prepared,
             crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Discovered(TypeId::of::<Root>()),
         )

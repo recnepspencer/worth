@@ -38,8 +38,8 @@ where
         >,
     ) -> Result<WorthQueryOutputSchedulingResult, WorthQueryOutputDemandDenial> {
         let route = self
-            .runtime
-            .output_producer_routes
+            .output_production
+            .producer_routes()
             .get(&selected.identity)
             .ok_or_else(|| {
                 denial(
@@ -134,8 +134,8 @@ where
             ));
         }
         let route = self
-            .runtime
-            .output_producer_routes
+            .output_production
+            .producer_routes()
             .get(&selected.identity)
             .ok_or_else(|| {
                 denial(
@@ -210,7 +210,7 @@ where
             |source| source.change.signal_basis(),
         );
         let attempt = {
-            let update_counter = &self.runtime.next_output_producer_attempt;
+            let update_counter = self.output_production.next_producer_attempt();
             let mut current = update_counter.load(std::sync::atomic::Ordering::Relaxed);
             loop {
                 let Some(updated_value) = current.checked_add(1) else {

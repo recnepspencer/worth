@@ -96,8 +96,8 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
     ) -> Result<(), crate::domain_computation::primary_graph::application_output_demand::denial::read_cleanup::WorthQueryOutputReadCloseDenial>{
         use crate::domain_computation::primary_graph::application_output_demand::denial::read_cleanup::WorthQueryOutputReadCloseDenial as Denial;
         let Some((claim, checkpoint)) = self
-            .runtime
-            .output_demands
+            .output_production
+            .demands()
             .begin_unpublished_close(interest)?
         else {
             return Ok(());
@@ -105,8 +105,8 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
         let mut loan = PublicationLoan::new(checkpoint, |checkpoint| {
             use crate::domain_computation::primary_graph::application_output_demand::CheckpointFinishStop;
             match self
-                .runtime
-                .output_demands
+                .output_production
+                .demands()
                 .finish_checkpoint_owned(interest, claim, checkpoint, None)
             {
                 Ok(()) | Err(CheckpointFinishStop::Restored(_)) => Ok(()),
@@ -141,7 +141,8 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
             finish,
         );
         let entry = self
-            .installed_producers
+            .output_production
+            .producers()
             .entries
             .get(producer)
             .expect("a claimed checkpoint retains its original installed producer");

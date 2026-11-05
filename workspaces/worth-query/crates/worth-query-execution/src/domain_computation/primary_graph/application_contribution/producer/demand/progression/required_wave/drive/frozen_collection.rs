@@ -35,7 +35,7 @@ pub(super) fn collect<'a, Schema: ApplicationSchema + 'static>(
     authority: &ProducerInvocationAuthority<'_>,
     performed: &std::cell::RefCell<super::super::performed::PerformedMembers>,
 ) -> Result<FrozenRequiredWave<'a, Schema>, WorthQueryOutputDemandDenial> {
-    if let Some(delivery) = caller_storage.awaited_delivery(&runtime.runtime.output_demands)? {
+    if let Some(delivery) = caller_storage.awaited_delivery(runtime.output_production.demands())? {
         return Ok(FrozenRequiredWave::Delivery(SuccessorCustody::Caller(
             delivery,
         )));

@@ -13,7 +13,8 @@ impl<S: ApplicationSchema, P: ApplicationProgramDefinition<S>>
         if self
             .runtime()
             .application_runtime()
-            .installed_producers
+            .output_production
+            .producers()
             .supports_history_group::<Family<S, D>>()
         {
             Ok(())

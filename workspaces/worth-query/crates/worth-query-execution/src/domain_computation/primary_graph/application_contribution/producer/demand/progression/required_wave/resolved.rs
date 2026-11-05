@@ -152,7 +152,7 @@ where
         let crate::domain_computation::primary_graph::application_output_demand::PendingUpstream::Ready(
             upstream,
         ) = runtime
-            .runtime.output_demands
+            .output_production.demands()
             .pending_exact_ready_readmission(pending, positioned)?
         else {
             return Ok(None);
@@ -195,8 +195,8 @@ where
     // Initial and Preserve may have different bindings; this match authenticates
     // the live successor cell and the exact consumed predecessor below.
     let Some(live_successor) = runtime
-        .runtime
-        .output_demands
+        .output_production
+        .demands()
         .interest_ready_readmission(progress.interest())?
     else {
         return Ok(None);

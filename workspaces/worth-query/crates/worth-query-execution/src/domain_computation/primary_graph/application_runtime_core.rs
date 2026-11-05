@@ -41,14 +41,7 @@ pub struct WorthQueryApplicationRuntimeCore {
     >,
     pub(super) inbound_maintenance_turn: AtomicU64,
     pub(crate) recovery_handles: Arc<WorthQueryRecoveryHandleRegistry>,
-    pub(in crate::domain_computation::primary_graph) output_producer_routes:
-        super::super::application_contribution::WorthQueryInstalledOutputProducerRoutes,
-    pub(in crate::domain_computation::primary_graph) output_readiness_routes:
-        super::super::application_contribution::WorthQueryInstalledOutputReadinessRoutes,
-    pub(in crate::domain_computation::primary_graph) next_output_producer_attempt: AtomicU64,
     pub(in crate::domain_computation::primary_graph) next_application_mutation_partition: AtomicU32,
-    pub(in crate::domain_computation::primary_graph) output_demands: super::super::application_output_demand::WorthQueryOutputDemandRegistry,
-    pub(in crate::domain_computation::primary_graph) recovered_outputs: super::super::application_output_demand::WorthQueryRecoveredOutputs,
     pub(in crate::domain_computation::primary_graph) workflow_coverage:
         crate::domain_computation::primary_graph::application_attempt::workflow::adoption::WorkflowVocabularyCoverageRegistry,
     pub(in crate::domain_computation::primary_graph) installed_operations: Arc<worth_query_installation::facade::InstalledOperationCatalog>,

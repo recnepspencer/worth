@@ -32,11 +32,14 @@ where
     };
     // A packet is scheduling evidence for exactly the native basis that issued it.
     let (shared, positioned) = selection::select_required_basis(execution, runtime, branch)?;
-    let upstream = runtime.runtime.output_demands.requested_ready_readmission(
-        &requested,
-        &positioned,
-        &mut demand.required_continuations.requested,
-    )?;
+    let upstream = runtime
+        .output_production
+        .demands()
+        .requested_ready_readmission(
+            &requested,
+            &positioned,
+            &mut demand.required_continuations.requested,
+        )?;
     let (anchor_ready, shared, positioned) = match upstream {
         PendingUpstream::Ready(ready) => (ready, shared, positioned),
         PendingUpstream::Held(head) => {
@@ -68,13 +71,16 @@ where
             return Ok(None);
         }
     };
-    let head = runtime.runtime.output_demands.publication_head_selection(
-        shared
-            .selected()
-            .product()
-            .observation()
-            .lifecycle_incarnation(),
-    )?;
+    let head = runtime
+        .output_production
+        .demands()
+        .publication_head_selection(
+            shared
+                .selected()
+                .product()
+                .observation()
+                .lifecycle_incarnation(),
+        )?;
     let wave = RequiredWaveSelection::from_basis(
         shared,
         positioned,
@@ -100,6 +106,6 @@ where
         &mut frame_custody,
         performed,
     );
-    frame_custody.hold_unfinished(&runtime.runtime.output_demands);
+    frame_custody.hold_unfinished(runtime.output_production.demands());
     result
 }

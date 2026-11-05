@@ -67,7 +67,7 @@ where
             crate::basis::WorthQueryProductObservationLease::new(observation.clone()),
         );
         let product_occurrence = observation.lifecycle_incarnation();
-        let source_commit = self.runtime.output_demands.retain_performed_source(
+        let source_commit = self.output_production.demands().retain_performed_source(
             crate::domain_computation::primary_graph::application_output_demand::WorthQueryPerformedOutputDemandSource {
                 receipt,
                 change,
@@ -83,7 +83,7 @@ where
                 runtime_authority: self.runtime.authority_identity().as_u64(),
                 source_commit,
                 product_occurrence,
-                owner: self.runtime.output_demands.clone(),
+                owner: self.output_production.demands().clone(),
             },
             retained,
         ))
@@ -109,8 +109,8 @@ where
         Discovery: Clone + Send + Sync + 'static,
     {
         let (discovery, observation) = self
-            .runtime
-            .output_demands
+            .output_production
+            .demands()
             .recover_discovered_source::<Discovery>(receipt, root_type)?;
         let retained = crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation::from_product(
             self,
@@ -124,7 +124,7 @@ where
                     .composite_commit()
                     .clone(),
                 product_occurrence: receipt.product_branch().occurrence(),
-                owner: self.runtime.output_demands.clone(),
+                owner: self.output_production.demands().clone(),
             };
         Ok((discovery, retained, prepared))
     }
@@ -155,7 +155,7 @@ where
             prepared,
             observed,
         )?;
-        self.runtime.output_demands.bind_prepared_output_source(
+        self.output_production.demands().bind_prepared_output_source(
             &prepared.source_commit,
             crate::domain_computation::primary_graph::application_output_demand::BoundOutputSource {
                 scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(observed.source_root()),
@@ -209,8 +209,8 @@ where
                 })
             })
             .collect::<Result<Vec<_>, WorthQueryOutputDemandDenial>>()?;
-        self.runtime
-            .output_demands
+        self.output_production
+            .demands()
             .ensure_discovered_sources_bound(&prepared.source_commit, &identities)
     }
 
@@ -219,8 +219,8 @@ where
         prepared: crate::domain_computation::primary_graph::WorthQueryPreparedRequiredOutputSource,
     ) {
         if prepared.runtime_authority == self.runtime.authority_identity().as_u64() {
-            self.runtime
-                .output_demands
+            self.output_production
+                .demands()
                 .discard_prepared_source(&prepared.source_commit);
         }
     }

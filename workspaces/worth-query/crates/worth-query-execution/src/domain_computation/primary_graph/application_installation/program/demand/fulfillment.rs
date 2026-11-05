@@ -36,7 +36,7 @@ where
             <RootConnectionRef<Schema, Root> as ApplicationConnectionShape<Schema>>::TargetFeature>() {
             return Err(WorthQueryOutputDemandDenial::new(Kind::ForeignDemand, ""));
         }
-        runtime.runtime.output_demands.validate_owned_root_kind(prepared,
+        runtime.output_production.demands().validate_owned_root_kind(prepared,
             crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Required(TypeId::of::<Root>()))?;
         self.admitted
             .retain_fulfilled_root(runtime, &execution, prepared, receipt, settlement)

@@ -83,8 +83,8 @@ where
         // join must observe the same predecessor ownership on every exit.
         let outcome = transfer
             .and_then(|readiness| {
-                self.runtime
-                    .output_demands
+                self.output_production
+                    .demands()
                     .finish_replaced_interest(
                         slot.claim().interest(),
                         successor

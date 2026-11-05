@@ -123,8 +123,8 @@ where
         let source_preparation = self
             .backing
             .runtime
-            .runtime
-            .output_demands
+            .output_production
+            .demands()
             .begin_source_preparation(program.product_branch().occurrence());
         let branch = program.product_branch();
         let selected_program = presented.rendering().clone();

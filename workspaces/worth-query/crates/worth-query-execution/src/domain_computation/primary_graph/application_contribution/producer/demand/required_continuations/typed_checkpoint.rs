@@ -41,8 +41,8 @@ where
             .as_ref()
             .expect("installed successor retains its real Interest");
         let prepared = runtime
-            .runtime
-            .output_demands
+            .output_production
+            .demands()
             .prepare_selected_checkpoint_finish(interest)?;
         let Some((finish, claim, checkpoint)) = prepared.claim()? else {
             return Ok(false);

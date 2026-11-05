@@ -72,7 +72,8 @@ where
             1
         );
         let interest = self.interest.as_ref().expect("original live Interest");
-        let OutputRowStage::Ready(completion) = runtime.runtime.output_demands.row_stage(interest)
+        let OutputRowStage::Ready(completion) =
+            runtime.output_production.demands().row_stage(interest)
         else {
             panic!("the original row must retain its actual Ready, not an inferred commit");
         };
@@ -154,7 +155,8 @@ where
             2
         );
         let interest = self.interest.as_ref().expect("actual P2 Interest");
-        let OutputRowStage::Ready(completion) = runtime.runtime.output_demands.row_stage(interest)
+        let OutputRowStage::Ready(completion) =
+            runtime.output_production.demands().row_stage(interest)
         else {
             panic!("P2 must retain its own completed publication");
         };

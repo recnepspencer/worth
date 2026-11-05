@@ -120,8 +120,8 @@ where
     }
 
     let Some(held) = runtime
-        .runtime
-        .output_demands
+        .output_production
+        .demands()
         .take_published_held_successor(key)?
     else {
         return Ok(HeldUpstream::Unfinished);
@@ -161,8 +161,8 @@ pub(super) fn resume_registry_successor<Schema: ApplicationSchema + 'static>(
         Err(stop)
             if superseded(&stop)
                 && runtime
-                    .runtime
-                    .output_demands
+                    .output_production
+                    .demands()
                     .give_back_replaced_ready(key)? =>
         {
             drop(stop);
@@ -180,15 +180,15 @@ pub(super) fn resume_registry_successor<Schema: ApplicationSchema + 'static>(
             // the row has moved on meanwhile.
             drop(
                 runtime
-                    .runtime
-                    .output_demands
+                    .output_production
+                    .demands()
                     .hold_required_successor(held, held_key::<Schema>),
             );
             return unfinished.map(|_| HeldUpstream::Unfinished);
         }
     };
     let HeldFrameSuccessor { progress, .. } = *held;
-    let slot = custody.prepare_slot(&runtime.runtime.output_demands)?;
+    let slot = custody.prepare_slot(runtime.output_production.demands())?;
 
     slot.push(progress);
     Ok(HeldUpstream::Ready(ready))
@@ -220,7 +220,7 @@ where
         performed: &std::cell::RefCell<PerformedMembers>,
     ) -> Result<Option<SelectedReadyReadmission>, WorthQueryOutputDemandDenial> {
         self.authorize_current_source(phase, runtime, principal, request, invocation)?;
-        let registry = &runtime.runtime.output_demands;
+        let registry = runtime.output_production.demands();
         if registry
             .interest_ready_readmission(self.interest())?
             .is_some()

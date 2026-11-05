@@ -45,8 +45,8 @@ where
             panic!("actual current authenticated disclosure");
         };
         let ready = runtime
-            .runtime
-            .output_demands
+            .output_production
+            .demands()
             .interest_ready_readmission(self.interest.as_ref().unwrap())
             .unwrap()
             .expect("the actual required Interest pins its exact Ready/source/member");
@@ -54,8 +54,8 @@ where
             .matches_interest(self.interest.as_ref().unwrap())
             .unwrap());
         let claim = runtime
-            .runtime
-            .output_demands
+            .output_production
+            .demands()
             .claim_required_ready_refresh(&ready)
             .unwrap()
             .expect("authentic current Ready claim");
@@ -75,8 +75,8 @@ where
             .unwrap();
         slot.bind_admitted(&mut successor);
         runtime
-            .runtime
-            .output_demands
+            .output_production
+            .demands()
             .finish_replaced_interest(
                 slot.claim().interest(),
                 successor.interest.as_ref().unwrap(),

@@ -46,8 +46,8 @@ where
     Family: WorthQueryProducerOutputFamily<Schema>,
 {
     runtime
-        .runtime
-        .output_demands
+        .output_production
+        .demands()
         .record_selection_state(wave.is_frozen());
     let mut frontier = RequiredFrontier::new();
     frontier.insert(wave.anchor_ready.retain()?, true, None)?;
@@ -152,7 +152,7 @@ where
                 }
                 requested_refusal::RequestedRefusal::Unavailable => {
                     let ended = RefusingMember::from_driver(
-                        &runtime.runtime.output_demands,
+                        runtime.output_production.demands(),
                         &mut frontier.members[index],
                         RefusalRow::Member,
                         &mut *queue_custody,
@@ -254,7 +254,7 @@ where
                 Err(OwnedRefreshStop::Selection(stop)) => return Err(stop),
                 Err(OwnedRefreshStop::Recorded(stop)) => {
                     let ended = RefusingMember::from_driver(
-                        &runtime.runtime.output_demands,
+                        runtime.output_production.demands(),
                         &mut frontier.members[index],
                         RefusalRow::Member,
                         &mut *queue_custody,
@@ -308,7 +308,10 @@ where
                 performed,
             ) {
                 Ok(HeldUpstream::Ready(ready)) => {
-                    runtime.runtime.output_demands.clear_required_stop(&head);
+                    runtime
+                        .output_production
+                        .demands()
+                        .clear_required_stop(&head);
                     if super::selection::committed_ready(&ready)? {
                         wave = wave.reselect(execution, runtime)?;
                         resolved.clear();
@@ -326,7 +329,7 @@ where
                 }
                 Err(stop) => {
                     let ended = RefusingMember::from_driver(
-                        &runtime.runtime.output_demands,
+                        runtime.output_production.demands(),
                         &mut frontier.members[index],
                         RefusalRow::HeldHead(&head),
                         &mut *queue_custody,

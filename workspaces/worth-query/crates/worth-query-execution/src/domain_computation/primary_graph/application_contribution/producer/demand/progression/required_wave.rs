@@ -84,7 +84,8 @@ pub(super) fn installed_for_selected_cue<'runtime, Schema>(
     // before the variable lookup quote is computed.
 
     runtime
-        .installed_producers
+        .output_production
+        .producers()
         .entries
         .get(producer)
         .map(std::sync::Arc::as_ref)

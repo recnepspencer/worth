@@ -70,25 +70,6 @@ impl WorthQueryApplicationRuntimeCore {
 
 impl WorthQueryApplicationRuntimeCore {
     #[doc(hidden)]
-    pub fn output_demands_for_test(
-        &self,
-    ) -> &super::super::super::application_output_demand::WorthQueryOutputDemandRegistry {
-        &self.output_demands
-    }
-}
-
-impl WorthQueryApplicationRuntimeCore {
-    #[doc(hidden)]
-    pub fn output_producer_routes_for_test(
-        &self,
-    ) -> &super::super::super::application_contribution::WorthQueryInstalledOutputProducerRoutes
-    {
-        &self.output_producer_routes
-    }
-}
-
-impl WorthQueryApplicationRuntimeCore {
-    #[doc(hidden)]
     pub fn relational_branch_identity_for_test(
         &self,
     ) -> &worth_relational::facade::branch::RelationalBranchIdentity {
@@ -116,15 +97,5 @@ impl WorthQueryApplicationRuntimeCore {
         &self,
     ) -> &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority {
         Self::primary_graph_authority(self)
-    }
-}
-
-impl WorthQueryApplicationRuntimeCore {
-    #[doc(hidden)]
-    pub fn output_producer_routes_mut_for_test(
-        &mut self,
-    ) -> &mut super::super::super::application_contribution::WorthQueryInstalledOutputProducerRoutes
-    {
-        &mut self.output_producer_routes
     }
 }

@@ -158,7 +158,10 @@ where
                 &self.installed_schema.binding_identity(),
                 WorthQueryOperationScopeEntityBinding::from_entity(observed_source.source_root()),
                 observation,
-                &self.installed_producers.family_output_bindings::<Family>(),
+                &self
+                    .output_production
+                    .producers()
+                    .family_output_bindings::<Family>(),
                 observed_source.partition_identity(),
                 execution,
             )
@@ -172,7 +175,8 @@ where
         let mut current = None;
         for output in outputs {
             let role = self
-                .installed_producers
+                .output_production
+                .producers()
                 .family_output_role::<Family>(output.binding)?;
             let source_matches =
                 output
@@ -272,7 +276,8 @@ where
         }
         let output = current.ok_or_else(|| stop(WorthQueryOutputDemandDenialKind::Superseded))?;
         let (mut selected, entry) = self
-            .installed_producers
+            .output_production
+            .producers()
             .select_exact::<Family>(output.binding)?;
 
         selected.retained_idempotency_key = Some(output.stable.idempotency_key_identity());
@@ -289,8 +294,8 @@ where
         )?;
 
         let observed_source = self
-            .runtime
-            .output_demands
+            .output_production
+            .demands()
             .retain_readmission_source(observed_source, limits, None)?
             .without_row();
         Ok(WorthQueryAdmittedOutputDemand {

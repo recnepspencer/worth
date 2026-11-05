@@ -203,7 +203,7 @@ where
         return Err(super::super::denial::request_admission_rejected(stop));
     }
     let (requests, completion, inputs) = match prepared {
-        Ok(prepared) => prepared.into_parts(&runtime.runtime.output_demands)?,
+        Ok(prepared) => prepared.into_parts(runtime.output_production.demands())?,
         Err(report) => {
             return Ok(super::super::prepared_plan::ProducerExecutionPlan::new(
                 Vec::new(),
@@ -252,7 +252,7 @@ where
             worth_relational::facade::mvcc::RequiredOutputProducingImplementation::new(edition.build_identity(), edition.digest()),
             successor_of,
             identity_execution.allocation_policy(),
-            runtime.installed_producers.entries.get(Binding::IDENTITY)
+            runtime.output_production.producers().entries.get(Binding::IDENTITY)
                 .expect("execution retains its installed producer")
                 .declaration.installed_output_equivalence.is_some(),
         )

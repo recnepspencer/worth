@@ -274,7 +274,7 @@ where
                 .map_err(Denial::ConditionalPublication)?;
             (application, installed_conditionals)
         };
-    application.installed_producers = producers;
+    application.output_production.install_producers(producers);
     application.installed_conditionals = installed_conditionals;
     application
         .runtime
@@ -298,19 +298,23 @@ where
         );
     }
     if let Some(checkpoint) = decoded_checkpoint {
-        application.runtime.recovered_outputs =
+        let recovered =
             super::super::application_output_demand::WorthQueryRecoveredOutputs::from_checkpoint(
                 checkpoint,
                 &execution,
                 |accepted| {
-                    application.installed_producers.readmit_checkpoint_output(
-                        &application.installed_schema,
-                        accepted,
-                        &execution,
-                    )
+                    application
+                        .output_production
+                        .producers()
+                        .readmit_checkpoint_output(
+                            &application.installed_schema,
+                            accepted,
+                            &execution,
+                        )
                 },
             )
             .map_err(Denial::Graph)?;
+        application.output_production.restore_recovered(recovered);
     }
     super::checkpoint_lineage::restore(&application, &execution).map_err(Denial::Graph)?;
     Ok(application)

@@ -6,11 +6,13 @@ pub(crate) mod computation;
 pub(crate) mod conditional;
 mod contracts;
 mod feature;
+mod output_production;
 pub use feature::{
     WorthQueryFeatureConfiguration, WorthQueryFeatureDefinition,
     WorthQueryFeaturePairConfiguration, WorthQueryFeatureRoleRuntime, WorthQueryFeatureRuntime,
     WorthQueryRequiredFeatureContract, WorthQueryRequiredFeaturePair,
 };
+pub(in crate::domain_computation::primary_graph) use output_production::WorthQueryOutputProduction;
 pub(in crate::domain_computation) mod execution_denial;
 pub(crate) mod partitioned_computation;
 pub(crate) mod producer;

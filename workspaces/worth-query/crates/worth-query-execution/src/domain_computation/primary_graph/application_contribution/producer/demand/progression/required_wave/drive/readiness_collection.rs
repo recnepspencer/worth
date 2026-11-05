@@ -90,8 +90,8 @@ where
                 )
             {
                 let declared = runtime
-                    .runtime
-                    .output_demands
+                    .output_production
+                    .demands()
                     .declared_required_predecessors(frontier.members[index].key())?;
                 let mut pending = None;
                 for (upstream, member) in frontier.members.iter().enumerate() {
@@ -160,7 +160,7 @@ where
             } else {
                 &mut *queue_storage
             };
-            storage.reserve_one(&runtime.runtime.output_demands)?;
+            storage.reserve_one(runtime.output_production.demands())?;
             let view = resolved.view_two(caller_storage.entries(), queue_storage.entries());
             let permission = super::super::super::refresh::permit_refresh(
                 if index == 0 && wave.target == RequiredWaveTarget::Caller {
@@ -196,8 +196,8 @@ where
                     };
                     storage.release_unused();
                     runtime
-                        .runtime
-                        .output_demands
+                        .output_production
+                        .demands()
                         .clear_required_stop(member.key());
                     if index == 0 {
                         frontier.members[index].state = MemberState::Current(Some(proof));
@@ -246,8 +246,8 @@ where
                     frontier.members[index].dependency_schedule =
                         DependencySchedule::PendingConsumed;
                     let prerequisites = runtime
-                        .runtime
-                        .output_demands
+                        .output_production
+                        .demands()
                         .declared_required_readmissions(frontier.members[index].ready.selected())?;
                     for prerequisite in prerequisites {
                         // Declared membership schedules inspection; only the

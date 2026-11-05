@@ -87,7 +87,7 @@ where
                         Ok(receipt) => delivered = receipt,
                         Err(stop) => {
                             RefusingMember {
-                                registry: &runtime.runtime.output_demands,
+                                registry: runtime.output_production.demands(),
                                 member: &mut frontier.members[0],
                                 row: RefusalRow::HeldHead(delivery.key()),
                                 custody: RefusalCustody::<Schema>::Caller,
@@ -153,8 +153,8 @@ where
         .map_err(|_| foreign_denial())?;
     let admitted =
         runtime
-            .runtime
-            .output_demands
+            .output_production
+            .demands()
             .admit_prepared_wave(&wave.positioned, keys, plans)?;
     let cursor = CanonicalApplyCursor::compute_admitted(admitted, execution);
     let mut moved = false;
@@ -192,12 +192,12 @@ where
                     let successor = storage.last_mut();
                     let stage = match successor
                         .checkpoint()
-                        .inspect(&runtime.runtime.output_demands)
+                        .inspect(runtime.output_production.demands())
                     {
                         Ok(WaveCheckpointTurn::Current(ready)) => {
                             runtime
-                                .runtime
-                                .output_demands
+                                .output_production
+                                .demands()
                                 .clear_required_stop(successor.interest().key());
                             moved |= committed_ready(ready.ready())
                                 .map_err(|stop| MemberStop::member(index, stop))?;
@@ -210,7 +210,7 @@ where
                         Err(stop) => {
                             return Err(MemberStop::checkpoint(
                                 index,
-                                &runtime.runtime.output_demands,
+                                runtime.output_production.demands(),
                                 successor.interest().key(),
                                 stop,
                             ))
@@ -229,7 +229,7 @@ where
                         Err(stop) => {
                             return Err(MemberStop::checkpoint(
                                 index,
-                                &runtime.runtime.output_demands,
+                                runtime.output_production.demands(),
                                 storage.last_mut().interest().key(),
                                 stop,
                             ))
@@ -319,7 +319,7 @@ where
                 failure.stop = failure.stop.with_managed_cleanup(cleanup);
                 let (index, stop, recording) = failure.into_parts();
                 recording.record_if_needed(
-                    &runtime.runtime.output_demands,
+                    runtime.output_production.demands(),
                     frontier.members[index].key(),
                     &stop,
                 );

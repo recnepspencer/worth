@@ -27,7 +27,7 @@ pub(super) fn resolve<Schema: ApplicationSchema + 'static>(
         return Ok(RequestedRefusal::Unavailable);
     };
     match custody.requested_readmission(
-        &runtime.runtime.output_demands,
+        runtime.output_production.demands(),
         &requested,
         &wave.positioned,
     )? {

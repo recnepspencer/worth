@@ -214,7 +214,7 @@ where
                                 let evidence = rebound_consumption::retain(execution, runtime, &successor, &pending, sealed.product(),
                                     sealed.snapshot_handle(), positioned)?;
 
-                                MatchedRequiredPredecessors::join(&mut matched, &runtime.runtime.output_demands, &consumer, old, evidence, positioned)
+                                MatchedRequiredPredecessors::join(&mut matched, runtime.output_production.demands(), &consumer, old, evidence, positioned)
                                     .map_err(ProducerExecutionStop::ExecutionStopped)?;
                                 let next = handle
                                     .with_runtime(execution, |relational| {
@@ -258,7 +258,7 @@ where
                             let consumer = candidate.retain_recorded_identity()
                                 .map_err(|stop| ready::ready_resource_denial(Binding::IDENTITY, stop))?;
                             Some(MatchedRequiredPredecessors::retain_consumer(
-                                &runtime.runtime.output_demands, &consumer, positioned,
+                                runtime.output_production.demands(), &consumer, positioned,
                             ).map_err(ProducerExecutionStop::ExecutionStopped)?)
                         } else { None };
                         drop(sealed);

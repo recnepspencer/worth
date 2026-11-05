@@ -46,7 +46,9 @@ where
             return Ok(false);
         }
         Ok(matches!(
-            self.runtime.output_demands.row_stage_admitted(interest)?,
+            self.output_production
+                .demands()
+                .row_stage_admitted(interest)?,
             OutputRowStage::BeforeReady
         ))
     }
@@ -119,14 +121,14 @@ where
             .as_ref()
             .expect("progression entry checked live Interest");
         let end_row = || {
-            self.runtime
-                .output_demands
+            self.output_production
+                .demands()
                 .finish_superseded(interest, Family::IDENTITY)
         };
         if selected {
             return Err(end_row()?);
         }
-        let ready = match self.runtime.output_demands.row_stage(interest) {
+        let ready = match self.output_production.demands().row_stage(interest) {
             OutputRowStage::Driven => {
                 return Ok(OwnStages::Answer(WorthQueryOutputDemandAdvance::Pending))
             }

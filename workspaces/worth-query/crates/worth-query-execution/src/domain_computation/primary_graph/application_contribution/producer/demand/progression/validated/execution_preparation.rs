@@ -88,8 +88,8 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         // subsequent Scheduled begin can enter Running. The actual outcome
         // consumes it; dropping an unused token never releases a peer's row.
         let selected_execution_finish = self
-            .runtime
-            .output_demands
+            .output_production
+            .demands()
             .prepare_selected_execution_finish(interest)?;
         let mut selected_published_mode = if schedule_progression.is_selected() {
             // Execute moves the invocation-local matched identity out of its
@@ -102,9 +102,9 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         };
         use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandAdvanceAdmission as Admission;
         let (mut admission_phase, mut selected_finish) = if schedule_progression.is_selected() {
-            self.runtime.output_demands.begin_admitted(interest)?
+            self.output_production.demands().begin_admitted(interest)?
         } else {
-            (self.runtime.output_demands.begin(interest), None)
+            (self.output_production.demands().begin(interest), None)
         };
         let successor_of = loop {
             match admission_phase {
@@ -133,7 +133,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                             finish.finish(performed_source, &mut result);
                         }
                         _ => {
-                            self.runtime.output_demands.finish_scheduling(
+                            self.output_production.demands().finish_scheduling(
                                 interest,
                                 performed_source,
                                 &mut result,
@@ -144,10 +144,10 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                     // The scheduled row is this call's to execute.
                     Ok(crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputSchedulingResult::Scheduled) => {
                         admission_phase = if schedule_progression.is_selected() {
-                            self.runtime.output_demands
+                            self.output_production.demands()
                                 .begin_scheduled_admitted(interest)?
                         } else {
-                            self.runtime.output_demands.begin(interest)
+                            self.output_production.demands().begin(interest)
                         };
                         continue;
                     }

@@ -27,7 +27,7 @@ impl<Schema: ApplicationSchema> OutputDemandHost<Schema>
         Self::hold_world_snapshot_pressure_for_test(self, branch)
     }
     fn next_output_producer_attempt(&self) -> &std::sync::atomic::AtomicU64 {
-        &self.runtime.next_output_producer_attempt
+        &self.output_production.next_producer_attempt()
     }
     fn on_branch(
         &self,

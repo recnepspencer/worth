@@ -112,8 +112,8 @@ impl QueuedRequiredRoots {
     ) -> Result<Option<(usize, RequiredWorkClaim)>, WorthQueryOutputDemandDenial> {
         if self.drained {
             runtime
-                .runtime
-                .output_demands
+                .output_production
+                .demands()
                 .maintain_selected_required_cleanup(
                     wave.shared.selected().product().read_lease_ref(),
                     &wave.positioned,
@@ -127,8 +127,8 @@ impl QueuedRequiredRoots {
             return Ok(None);
         }
         let Some(claim) = runtime
-            .runtime
-            .output_demands
+            .output_production
+            .demands()
             .next_required_claim_for_selected(
                 wave.shared.selected().product().read_lease_ref(),
                 &wave.positioned,
@@ -178,8 +178,8 @@ impl QueuedRequiredRoots {
             return Ok(None);
         };
         let Some(ready) = runtime
-            .runtime
-            .output_demands
+            .output_production
+            .demands()
             .selected_ready_completion(&work)?
         else {
             self.hold(work)?;
@@ -224,8 +224,8 @@ impl QueuedRequiredRoots {
         wave: &RequiredWaveSelection<'_, Schema>,
     ) -> Result<Option<SelectedRequiredWork>, WorthQueryOutputDemandDenial> {
         let Some(work) = runtime
-            .runtime
-            .output_demands
+            .output_production
+            .demands()
             .select_required_claim(claim, &wave.positioned)?
         else {
             return Ok(None);

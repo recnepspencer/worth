@@ -1,10 +1,6 @@
 //! Ordered destruction of concrete custody interleaved with typed registries.
 use super::WorthQueryApplicationRuntimeCore;
-use {
-    crate::domain_computation::primary_graph::application_contribution,
-    crate::domain_computation::primary_graph::application_output_demand,
-    crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider,
-};
+use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider;
 
 // These owners followed the typed conditional registry before the core split.
 // Move exclusive custody and retain shared backing before cleanup can unwind.
@@ -49,34 +45,6 @@ impl Drop for ApplicationPostConditionalTeardown {
         drop(self.inbound.take());
         drop(std::mem::take(&mut self.completions));
         drop(self.recovery.take());
-    }
-}
-
-#[derive(Default)]
-pub(super) struct ApplicationOutputTeardown {
-    producers: Option<application_contribution::WorthQueryInstalledOutputProducerRoutes>,
-    readiness: Option<application_contribution::WorthQueryInstalledOutputReadinessRoutes>,
-    demands: Option<application_output_demand::WorthQueryOutputDemandRegistry>,
-    recovered: Option<application_output_demand::WorthQueryRecoveredOutputs>,
-}
-
-impl ApplicationOutputTeardown {
-    pub(super) fn take_from(&mut self, core: &mut WorthQueryApplicationRuntimeCore) {
-        self.producers = Some(std::mem::take(&mut core.output_producer_routes));
-        self.readiness = Some(std::mem::take(&mut core.output_readiness_routes));
-        // A registry Default allocates. Retain the same Arc instead: the core's
-        // earlier decrement cannot destroy this backing before its old slot.
-        self.demands = Some(core.output_demands.clone());
-        self.recovered = Some(std::mem::take(&mut core.recovered_outputs));
-    }
-}
-
-impl Drop for ApplicationOutputTeardown {
-    fn drop(&mut self) {
-        drop(self.producers.take());
-        drop(self.readiness.take());
-        drop(self.demands.take());
-        drop(self.recovered.take());
     }
 }
 

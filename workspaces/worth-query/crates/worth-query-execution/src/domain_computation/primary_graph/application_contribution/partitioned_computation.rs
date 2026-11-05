@@ -17,8 +17,8 @@
 //! facts changed. Every other run recomputes every partition, for a cause
 //! the test observer is shown.
 
-mod compute;
 mod certification_reuse;
+mod compute;
 mod denial;
 pub(crate) mod incremental;
 pub(crate) mod installed;

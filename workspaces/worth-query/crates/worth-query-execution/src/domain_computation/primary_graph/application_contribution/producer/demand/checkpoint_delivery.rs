@@ -180,8 +180,8 @@ where
             (prepared.lowering, prepared.ordinal)
         } else {
             let route = self
-                .runtime
-                .output_readiness_routes
+                .output_production
+                .readiness_routes()
                 .get(producer_identity)
                 .expect("installation requires one readiness route for every output producer");
             (&route.lowering, route.delivery_dependency_ordinal)
@@ -240,7 +240,8 @@ where
             let preserved = if let Some(prepared) = prepared.as_ref() {
                 prepared.preserved
             } else {
-                self.installed_producers
+                self.output_production
+                    .producers()
                     .entries
                     .get(producer_identity)
                     .expect("readiness route retains its installed producer")
@@ -293,7 +294,7 @@ where
         returned: &mut Option<Checkpoint>,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial> {
         use crate::domain_computation::primary_graph::application_output_demand::CheckpointFinishStop;
-        match self.runtime.output_demands.finish_checkpoint_owned(
+        match self.output_production.demands().finish_checkpoint_owned(
             interest,
             claim,
             checkpoint,

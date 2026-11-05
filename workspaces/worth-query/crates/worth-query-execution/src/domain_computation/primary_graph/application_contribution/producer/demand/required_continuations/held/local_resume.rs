@@ -15,8 +15,8 @@ pub(in super::super) fn resume<Schema: ApplicationSchema + 'static>(
     custody.entries[index]
         .authorize_current_source(phase, runtime, principal, request, invocation)?;
     let result = match runtime
-        .runtime
-        .output_demands
+        .output_production
+        .demands()
         .interest_ready_readmission(custody.entries[index].interest())?
     {
         Some(ready) => Ok(Some(ready)),
@@ -36,8 +36,8 @@ pub(in super::super) fn resume<Schema: ApplicationSchema + 'static>(
         Err(stop)
             if superseded(&stop)
                 && runtime
-                    .runtime
-                    .output_demands
+                    .output_production
+                    .demands()
                     .give_back_replaced_ready(custody.entries[index].interest().key())? =>
         {
             drop(custody.entries.remove(index));

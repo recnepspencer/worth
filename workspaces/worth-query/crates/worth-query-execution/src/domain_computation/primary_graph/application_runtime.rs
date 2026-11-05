@@ -129,9 +129,7 @@ pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(super) mutation_handlers: super::handler::InstalledMutationHandlerRegistry<Schema>,
     pub(super) mutation_projection:
         super::WorthQueryApplicationInvariantProjectionAuthority<Schema>,
-    pub(super) installed_producers:
-        super::application_contribution::WorthQueryInstalledApplicationProducerRegistry<Schema>,
-    output_teardown: teardown::ApplicationOutputTeardown,
+    pub(super) output_production: super::application_contribution::WorthQueryOutputProduction<Schema>,
     pub(super) program_required_bindings: std::collections::HashSet<TypeId>,
     pub(super) program_required_operations: std::collections::HashSet<TypeId>,
     pub(super) workflow_guarded_operations: std::collections::HashSet<TypeId>,
@@ -210,7 +208,7 @@ where
     where
         Binding: super::application_contribution::WorthQueryApplicationProducerBinding<Schema>,
     {
-        self.installed_producers.provider::<Binding>()
+        self.output_production.producers().provider::<Binding>()
     }
 
     pub fn conditional<Binding>(&self) -> Option<Arc<Binding::Installed>>
@@ -325,7 +323,6 @@ impl WorthQueryApplicationLiveDeliveryCloseReceipt {
         self.remaining_live_consumers == 0
     }
 }
-
 
 mod candidate_input_observation;
 

@@ -22,7 +22,6 @@ impl<Schema> Drop for WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         // custody into its original field positions before cleanup can panic.
         let execution = self.runtime.execution.take();
         self.post_conditional_teardown.take_from(&mut self.runtime);
-        self.output_teardown.take_from(&mut self.runtime);
         self.workflow_teardown.take_from(&mut self.runtime);
         self.release_conditional_runtime_resources();
         drop(execution);

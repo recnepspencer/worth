@@ -121,7 +121,8 @@ where
         let execution = &execution_request;
         drop(application_basis);
         if application
-            .installed_producers
+            .output_production
+            .producers()
             .provider::<Producer>()
             .is_none()
         {

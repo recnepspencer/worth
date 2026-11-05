@@ -157,8 +157,8 @@ impl<Schema: ApplicationSchema> WorthQueryCertificationCostRuntimeExt<Schema>
                 .primary_provider
                 .application_attempt_work_for_test(),
             output_producer_attempts: self
-                .runtime
-                .next_output_producer_attempt
+                .output_production
+                .next_producer_attempt()
                 .load(Ordering::Relaxed),
             world_retention: self.certification_world_retention(),
             world_history: self.certification_world_history(),
@@ -190,8 +190,8 @@ impl<Schema: ApplicationSchema> WorthQueryCertificationCostRuntimeExt<Schema>
             relational,
             application_work,
             output_producer_attempts: self
-                .runtime
-                .next_output_producer_attempt
+                .output_production
+                .next_producer_attempt()
                 .load(Ordering::Relaxed)
                 .saturating_sub(scope.output_producer_attempts),
             world_retention_before: scope.world_retention,

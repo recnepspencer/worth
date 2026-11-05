@@ -28,11 +28,12 @@ where
     ) -> Result<Option<ReadmittedOutput>, WorthQueryOutputDemandDenial> {
         let checkpoint_source = source_epoch.checkpoint_identity();
         let Some(readmitted) = self
-            .runtime
-            .recovered_outputs
+            .output_production
+            .recovered()
             .matching_source_partition(source_scope, observed_source.partition_identity())
             .find(|readmitted| {
-                self.installed_producers
+                self.output_production
+                    .producers()
                     .implementation_matches(producer, readmitted.checkpoint.implementation)
                     && readmitted.checkpoint.producer.as_str() == producer
                     && readmitted.checkpoint.source == checkpoint_source.bytes()

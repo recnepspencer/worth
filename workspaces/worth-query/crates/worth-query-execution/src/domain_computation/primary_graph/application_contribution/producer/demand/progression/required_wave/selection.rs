@@ -45,13 +45,16 @@ impl<'runtime, Schema: ApplicationSchema + 'static> RequiredWaveSelection<'runti
         runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         _delivery: super::super::super::required_continuations::DeliveredAwaited,
     ) -> Result<Self, WorthQueryOutputDemandDenial> {
-        let head = runtime.runtime.output_demands.publication_head_selection(
-            self.shared
-                .selected()
-                .product()
-                .observation()
-                .lifecycle_incarnation(),
-        )?;
+        let head = runtime
+            .output_production
+            .demands()
+            .publication_head_selection(
+                self.shared
+                    .selected()
+                    .product()
+                    .observation()
+                    .lifecycle_incarnation(),
+            )?;
         match head {
             crate::domain_computation::primary_graph::application_output_demand::PublicationHeadSelection::Frozen => Ok(self),
             crate::domain_computation::primary_graph::application_output_demand::PublicationHeadSelection::Live(_) =>
@@ -92,8 +95,8 @@ where
     Schema: ApplicationSchema + 'static,
 {
     let Some(anchor_ready) = runtime
-        .runtime
-        .output_demands
+        .output_production
+        .demands()
         .interest_ready_readmission(interest)?
     else {
         return Ok(None);
@@ -140,13 +143,16 @@ where
     Schema: ApplicationSchema + 'static,
 {
     let (shared, positioned) = select_required_basis(execution, runtime, branch)?;
-    let head = runtime.runtime.output_demands.publication_head_selection(
-        shared
-            .selected()
-            .product()
-            .observation()
-            .lifecycle_incarnation(),
-    )?;
+    let head = runtime
+        .output_production
+        .demands()
+        .publication_head_selection(
+            shared
+                .selected()
+                .product()
+                .observation()
+                .lifecycle_incarnation(),
+        )?;
     Ok(RequiredWaveSelection::from_basis(
         shared,
         positioned,
@@ -198,8 +204,8 @@ where
         })
         .map_err(position_denial)?;
     runtime
-        .runtime
-        .output_demands
+        .output_production
+        .demands()
         .observe_selected_discontinuity(
             product,
             &positioned,

@@ -216,8 +216,8 @@ where
             Ok(settlement) => settlement,
             Err(kind) => return Ok(ReadyVerdict::Unavailable(kind)),
         };
-        self.runtime
-            .output_demands
+        self.output_production
+            .demands()
             .finish_settlement(interest, &completion.authority)?;
         own_effect_observation::record(Stage::ReadySettled);
         Ok(ReadyVerdict::Settled(settlement))

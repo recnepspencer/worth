@@ -11,6 +11,6 @@ impl<Schema: ApplicationSchema> ApplicationInstallationHost<Schema>
         self
     }
     fn recovered_outputs(&self) -> &crate::domain_computation::primary_graph::application_output_demand::WorthQueryRecoveredOutputs{
-        &self.runtime.recovered_outputs
+        &self.output_production.recovered()
     }
 }

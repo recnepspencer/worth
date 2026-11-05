@@ -127,8 +127,8 @@ where
         }
         RequiredCueProgress::PendingExact(pending) => {
             let upstream = runtime
-                .runtime
-                .output_demands
+                .output_production
+                .demands()
                 .pending_exact_ready_readmission(&pending, &wave.positioned)?;
             Ok(match upstream {
                 PendingUpstream::Ready(ready) => RequiredWaveStep::Upstream(ready),
@@ -191,14 +191,14 @@ pub(in super::super) fn certify_frozen_ready<'call, Schema: ApplicationSchema + 
         crate::domain_computation::primary_graph::application_contribution::producer::execution::FrozenCurrentInspection::Current(value) =>
             FrozenCallerInspection::Current(performed.borrow().current(value, CurrentBasis::of(wave.shared.selected().product().observation()), selected.certify_current_record(CurrentBasis::of(wave.shared.selected().product().observation())))),
         crate::domain_computation::primary_graph::application_contribution::producer::execution::FrozenCurrentInspection::PendingExact(pending) => {
-            match super::super::super::super::required_continuations::RegistryDelivery::from_pending(&pending, &wave.positioned, &runtime.runtime.output_demands)? {
+            match super::super::super::super::required_continuations::RegistryDelivery::from_pending(&pending, &wave.positioned, runtime.output_production.demands())? {
                 super::super::super::super::required_continuations::RequiredDelivery::Delivery(delivery) => FrozenCallerInspection::RegistryDelivery(delivery),
                 super::super::super::super::required_continuations::RequiredDelivery::Ready(ready) => FrozenCallerInspection::Upstream(ready),
                 super::super::super::super::required_continuations::RequiredDelivery::Unavailable => FrozenCallerInspection::NotCurrent,
             }
         }
         crate::domain_computation::primary_graph::application_contribution::producer::execution::FrozenCurrentInspection::NotCurrent => {
-            match super::super::super::super::required_continuations::RegistryDelivery::from_required_claim(selected, &runtime.runtime.output_demands)? {
+            match super::super::super::super::required_continuations::RegistryDelivery::from_required_claim(selected, runtime.output_production.demands())? {
                 Some(delivery) => FrozenCallerInspection::RegistryDelivery(delivery),
                 None => FrozenCallerInspection::NotCurrent,
             }

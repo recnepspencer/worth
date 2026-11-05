@@ -11,7 +11,7 @@ impl<Schema: ApplicationSchema> ApplicationAttemptHost<Schema>
         self
     }
     fn output_demands(&self) -> &crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandRegistry{
-        &self.runtime.output_demands
+        &self.output_production.demands()
     }
     fn program_support(&self) -> &Option<crate::domain_computation::primary_graph::program_occurrence::WorthQueryInstalledProgramSupport<Schema>>{
         &self.program_support

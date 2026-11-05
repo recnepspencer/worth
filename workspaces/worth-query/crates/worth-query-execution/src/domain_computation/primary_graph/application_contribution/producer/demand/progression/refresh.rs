@@ -109,7 +109,7 @@ where
         refreshed.producer_contacts_in_this_demand = demand.producer_contacts_in_this_demand;
         refreshed.settled = demand.settled;
         if let Some(interest) = demand.interest.as_ref() {
-            self.runtime.output_demands.finish_replaced_interest(
+            self.output_production.demands().finish_replaced_interest(
                 interest,
                 refreshed
                     .interest

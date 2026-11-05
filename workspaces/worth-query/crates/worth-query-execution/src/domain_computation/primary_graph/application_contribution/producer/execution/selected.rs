@@ -188,7 +188,7 @@ where
                 refresh_permission.map_err(ProducerExecutionStop::ExecutionStopped)?;
 
                 let claim = runtime
-                    .runtime.output_demands
+                    .output_production.demands()
                     .claim_required_ready_refresh(selected)
                     .map_err(ProducerExecutionStop::ExecutionStopped)?
                     // A later wave must select the Ready row after this claim moved.
