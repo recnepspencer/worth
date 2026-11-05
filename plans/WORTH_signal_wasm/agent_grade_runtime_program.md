@@ -19,6 +19,7 @@ closes. The closing release is 2.0.0, because D10–D12 are breaking cutovers.
 | `1332187656` | Guided bulk reads skip current targets without hiding dirty ancestors |
 | `4e2dbdfe4e` | 1.6.4 published from master |
 | `9e43ea42b2` | Single-pass `SignalValue` decoder: a 100-row value went from 13,555 Errors to 0, with a real-artifact regression |
+| `3c08acaa20` | The decoder reads serde_json `arbitrary_precision` number tokens as finite numbers, so its answer no longer depends on feature unification |
 
 Two pieces are in flight in the original session, `local_2ebb73b1`:
 - The TypeScript 7 migration (`b0804b0d33`).
@@ -109,7 +110,7 @@ The naive implementation breaks this today in seven places. All were confirmed b
 
 **D5. Reads plan once, sized to their affected closure.**
 
-- Single and bulk reads settle through one plan over `targets_requiring_settlement`. That is the in-flight read-currentness work; S1 builds on it, not beside it.
+- Single and bulk reads settle through one plan, built by the currentness planning that Phase 0 lands: guided reads plan by currentness, never force. S1 builds on it, not beside it.
 - Planner scratch (`unsettled_paths`, `stage_formation`) uses epoch-stamped sparse sets reused across requests, not fresh arena-sized vectors.
 - Growth: O(affected closure) per read, and O(1) for a clean read.
 
