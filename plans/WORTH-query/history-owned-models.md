@@ -885,3 +885,44 @@ checkpoints. Every mutation was restored byte-for-byte. Pristine suites pass
 whitespace and the 16-file dirty Rust cap pass. The primary structural review
 read all 12 function advisories; no independent review is claimed. Slice 3 is
 still required, so this is no issue-batch READY.
+
+### D1202 required ruling: a restored source absent from current control C
+
+Named owner: Query source-scope admission, especially
+`application_query/admission/access_observation.rs:105-115`,
+`entity_resolution/freshness.rs:25-47`, and
+`application_query/document_history/output_read.rs:53-59` (all under
+`worth-query-execution/src/domain_computation/primary_graph`).
+
+Verified in code: history's source control plan must select C for both data and
+security, and ordinary source admission validates the scope's exact full-generation
+identity through the identity index at that security snapshot. This check precedes
+query authorization and also applies to a public query. A source E retired at C
+cannot obtain that control plan, even if the owned graph selection restores the
+same E live at private D. Currentness can reuse healthy rows without this lookup;
+a failed verification requiring the original tree reaches this gate. Selecting D
+before qualification would violate the atomic navigation boundary. Using D's
+principal/grants as current control would violate current authority.
+
+Concrete leg: an owned Feature-like Member E has a publication at the selected
+step; it is retired at C. Checkout restores E and its output at D. If verification
+fails because the producing build or another input changed, the existing fallback
+source entry cannot resolve E at C. The current two-family fixture uses Model
+sources, so this restored-only-source fallback leg has not yet been executed as
+a public court; the gate and its original request/security basis are verified
+from the production path. No new authorization posture was implemented.
+
+Ruling requested before the child-source/forest cutover:
+
+1. Add an explicit historical-source control posture: validate source E's exact
+   presence and owned-domain correspondence at D, using the genuine Native graph
+   selection; freshly evaluate principal, permission, capability and request facts
+   at C. A permission C cannot establish still refuses typed. D provides data and
+   presence, never grants. Preserve the original root/read/disposal owners and
+   the unchanged ScopeEntityRecord path.
+2. Keep the current-C source-liveness prerequisite and refuse navigation before
+   selection whenever fallback needs a source absent at C, naming E and its family.
+
+Option 1 is recommended for invertible deletion/build-change navigation. This
+is a source-admission authority choice, beyond merely collecting more trees.
+The lane stops pending that choice, under the task's explicit design-stop rule.
