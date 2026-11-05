@@ -61,6 +61,53 @@ impl CheckpointRegionKindImages {
                 .retain(|claim| !removed.contains(&claim.relation));
         }
     }
+    /// A closed corruption recorder changed the actual endpoints of a private
+    /// claim in both head and retained metadata. Re-record their kind projections.
+    pub(crate) fn repoint_current_claims_for_test(
+        &mut self,
+        partitions: &[crate::durability::data::PartitionCheckpointImage],
+        kind: crate::identity::data::KindId,
+    ) {
+        let mut endpoints = BTreeMap::new();
+        for partition in partitions {
+            for (index, extra) in partition.relation_arena.extra.iter().enumerate() {
+                if partition.relation_arena.kind_ids[index] != Some(kind) {
+                    continue;
+                }
+                if let Some(ends) = &extra.endpoints {
+                    let slot = partition
+                        .relation_arena
+                        .slots
+                        .get(index)
+                        .copied()
+                        .unwrap_or(index as u64);
+                    endpoints.insert(
+                        crate::identity::data::RelationId::new(
+                            partition.partition_id,
+                            slot,
+                            partition.relation_arena.generations[index],
+                        ),
+                        ends,
+                    );
+                }
+            }
+        }
+        for (partition, region) in &mut self.0 {
+            for claim in region.head.iter_mut().chain(&mut region.history) {
+                let Some(ends) = endpoints.get(&claim.relation) else {
+                    continue;
+                };
+                claim.outgoing.clear();
+                claim.incoming.clear();
+                if ends.source.partition_id == *partition {
+                    claim.outgoing.insert(ends.source.slot_index());
+                }
+                if ends.target.partition_id == *partition {
+                    claim.incoming.insert(ends.target.slot_index());
+                }
+            }
+        }
+    }
     pub(crate) fn restore(
         &self,
         partitions: &mut BTreeMap<PartitionId, PartitionState>,

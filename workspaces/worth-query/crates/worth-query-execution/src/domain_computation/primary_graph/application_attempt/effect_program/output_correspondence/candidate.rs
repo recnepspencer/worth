@@ -2,6 +2,8 @@ mod authoring;
 mod birth;
 mod completion;
 mod contract;
+mod projection;
+mod sealing;
 mod succession;
 
 use crate::equality_type_id::EqualityTypeId as TypeId;
@@ -29,6 +31,23 @@ struct CandidateOutputBinding {
     entity: EntityReference,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+struct CandidateClosureBinding {
+    entity_name: String,
+    entity_type: TypeId,
+    entity: EntityId,
+}
+impl CandidateClosureBinding {
+    fn committed(self) -> CommittedOutputBinding {
+        CommittedOutputBinding {
+            posture: WorthQueryApplicationOutputPosture::Retire,
+            entity_name: self.entity_name,
+            entity_type: self.entity_type,
+            entity: self.entity,
+        }
+    }
+}
+
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct WorthQueryApplicationOutputCorrespondenceCandidate {
     binding_type: Option<TypeId>,
@@ -36,6 +55,7 @@ pub struct WorthQueryApplicationOutputCorrespondenceCandidate {
     expected_roles: BTreeMap<String, ExpectedOutputBinding>,
     expected_families: Vec<ExpectedOutputFamily>,
     roles: BTreeMap<String, CandidateOutputBinding>,
+    closure_roles: BTreeMap<String, CandidateClosureBinding>,
 }
 
 impl WorthQueryApplicationOutputCorrespondenceCandidate {
@@ -210,100 +230,6 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
         self.validate_binding(&role, target, program)?;
         self.insert_binding(role, target);
         Ok(())
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn seal(
-        self,
-        commit: &CommitResult,
-    ) -> WorthQueryApplicationOutputCorrespondence {
-        let mut correspondence = self.seal_with(|created| commit.created_entity(created));
-        if let Some(members) = commit.primary_output_members() {
-            correspondence.separate_closure_evidence(members);
-        }
-        correspondence
-    }
-
-    pub(super) fn seal_with(
-        mut self,
-        resolve_created: impl Fn(
-            &worth_relational::facade::transactions::CreatedEntityRef,
-        ) -> Option<EntityId>,
-    ) -> WorthQueryApplicationOutputCorrespondence {
-        let roles = std::mem::take(&mut self.roles)
-            .into_iter()
-            .map(|(role, binding)| {
-                let entity = match binding.entity {
-                    EntityReference::Existing(entity_id) => entity_id,
-                    EntityReference::Created(created) => resolve_created(&created).expect(
-                        "a performed Relational commit resolves every admitted created output",
-                    ),
-                };
-                (
-                    role,
-                    CommittedOutputBinding {
-                        posture: binding.posture,
-                        entity_name: binding.entity_name,
-                        entity_type: binding.entity_type,
-                        entity,
-                    },
-                )
-            })
-            .collect();
-        self.finish_resolved_roles(roles)
-    }
-
-    /// Native has performed this exact participant's original typed roles. Its
-    /// canonical member identities resolve local Create refs independently of
-    /// other writers in the same atomic transaction.
-    pub(in crate::domain_computation::primary_graph) fn seal_from_publication(
-        mut self,
-        publication: &worth_relational::facade::mvcc::RelationalRequiredOutputPublication,
-    ) -> WorthQueryApplicationOutputCorrespondence {
-        let mut resolved = Vec::with_capacity(self.roles.len());
-        for (role, entity_name, _, entity) in publication.members() {
-            let (role, binding) = self
-                .roles
-                .remove_entry(role)
-                .expect("Native performed every role of this registered participant");
-            assert_eq!(
-                binding.entity_name, entity_name,
-                "Native performed the registered entity contract"
-            );
-            resolved.push((
-                role,
-                CommittedOutputBinding {
-                    posture: binding.posture,
-                    entity_name: binding.entity_name,
-                    entity_type: binding.entity_type,
-                    entity,
-                },
-            ));
-        }
-        assert!(
-            self.roles.is_empty(),
-            "Native performed the complete registered role set"
-        );
-        resolved.sort_unstable_by(|left, right| left.0.cmp(&right.0));
-        self.finish_resolved_roles(resolved)
-    }
-    fn finish_resolved_roles(
-        self,
-        roles: Vec<(String, CommittedOutputBinding)>,
-    ) -> WorthQueryApplicationOutputCorrespondence {
-        let optional_roles = self
-            .expected_roles
-            .into_iter()
-            .filter(|(_, expected)| expected.cardinality.admits_absence())
-            .map(|(role, _)| role)
-            .collect();
-        WorthQueryApplicationOutputCorrespondence {
-            binding_type: self.binding_type,
-            contract_type: self.contract_type,
-            storage: std::sync::Arc::new(super::CorrespondenceStorage::from_committed(
-                optional_roles,
-                roles,
-            )),
-        }
     }
 }
 

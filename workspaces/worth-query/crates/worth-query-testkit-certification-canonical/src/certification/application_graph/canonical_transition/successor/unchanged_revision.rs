@@ -87,3 +87,10 @@ pub fn assert_missing_revision_refused(
 }
 
 pub use super::OWNERSHIP;
+
+#[path = "../retire_source.rs"]
+#[expect(
+    clippy::duplicate_mod,
+    reason = "the missing-revision twin must preserve the same declared operations"
+)]
+pub mod retire_source;

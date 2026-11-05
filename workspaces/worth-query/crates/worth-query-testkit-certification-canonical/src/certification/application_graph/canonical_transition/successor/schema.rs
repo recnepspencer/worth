@@ -1,5 +1,7 @@
 //! One independently installed source field using the generated canonical binding.
-pub use super::{binding::NestedBinding, derived_query, edit, model::*, output, producer, query};
+pub use super::{
+    binding::NestedBinding, derived_query, edit, model::*, output, producer, query, retire_source,
+};
 pub use declaration::{application_schema::*, authentication::*};
 pub use worth_query_host::facade::{declaration, *};
 
@@ -48,6 +50,12 @@ worth_query_application_contribution! {
                 .operation_read_field(edit::Edit::reference(), DocumentValueField::reference())
                 .operation_write(edit::Edit::reference(), DocumentValueField::reference())
                 .application_mutation_binding::<edit::EditBinding>()
+                .operation(retire_source::RetireSource::reference().definition().no_external_effect().no_aftermath().finish())
+                .operation_projection_work_budget(retire_source::RetireSource::reference(),16)
+                .operation_read_entity(retire_source::RetireSource::reference(),Document::reference())
+                .operation_read_field(retire_source::RetireSource::reference(),DocumentIdentityField::reference())
+                .operation_delete(retire_source::RetireSource::reference(),Document::reference())
+                .application_mutation_binding::<retire_source::RetireBinding>()
         }
     }
 }

@@ -99,6 +99,7 @@ impl Denial {
                 };
                 match kind {
                     kind @ (Session::ProjectionContract { .. } | Session::HistoricalVisibility { .. }
+                    | Session::OutputCorrespondenceMismatch { .. }
                     | Session::ContentInconsistency
                     | Session::Content(_)
                     | Session::StorageUnavailable(_)
@@ -223,7 +224,8 @@ pub(super) fn execution_kind(
         Ok(Session::ExecutionIdentitiesNotCanonical { partition_identity }) => {
             Kind::ExecutionIdentitiesNotCanonical { partition_identity }
         }
-        Ok(Session::ProjectionContract { .. })
+        Ok(Session::OutputCorrespondenceMismatch { .. })
+        | Ok(Session::ProjectionContract { .. })
         | Ok(Session::HistoricalVisibility { .. })
         | Ok(Session::ForeignOperationAttempt)
         | Ok(Session::ForeignExecutionBasis)

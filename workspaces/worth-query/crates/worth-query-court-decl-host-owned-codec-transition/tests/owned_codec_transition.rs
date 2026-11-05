@@ -71,6 +71,56 @@ fn same_route_codec_retirement_covers_the_source_owned_origin() {
         })
         .unwrap();
     drop(after);
+    // A codec-retired route has no live output retirement origin. Its authored
+    // source may now be deleted ordinarily; the position owner must remove its
+    // retained presence in that same real Query commit.
+    let deleted = v2::host::restore(retired.clone());
+    let delete_scope = request_scope();
+    let delete_principal = authenticate_operator(deleted.installed_schema(), &delete_scope);
+    let delete_request = deleted.runtime().request(&delete_principal, &delete_scope);
+    let outcome = delete_request
+        .advanced()
+        .mutate(v2::retire_source::Input {
+            identity: "authored-nested".to_owned(),
+        })
+        .without_source()
+        .idempotency(&8127u64)
+        .execute_in_program(
+            &deleted,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
+    assert!(
+        matches!(
+            outcome,
+            WorthQueryApplicationMutationOutcome::Committed { .. }
+        ),
+        "{outcome:?}"
+    );
+    let contacts = deleted
+        .runtime()
+        .current_ownership_contacts_for_identity_for_test(source, &delete_scope)
+        .unwrap();
+    assert!(contacts.publication_rows.is_empty());
+    assert!(contacts.presence_rows.is_empty());
+    let removed = deleted
+        .runtime()
+        .with_host_advancement(|phase| {
+            deleted
+                .runtime()
+                .capture_application_checkpoint(&phase, CapturePolicy::SystemAllocation)
+                .unwrap()
+        })
+        .unwrap();
+    drop(deleted);
+    let deleted = v2::host::restore(removed);
+    let contacts = deleted
+        .runtime()
+        .current_ownership_contacts_for_identity_for_test(source, &delete_scope)
+        .unwrap();
+    assert!(contacts.publication_rows.is_empty());
+    assert!(contacts.presence_rows.is_empty());
+    drop(deleted);
     let after = v2::host::restore(retired);
     assert_eq!(v2::host::source_id(&after), source);
     let scope = request_scope();

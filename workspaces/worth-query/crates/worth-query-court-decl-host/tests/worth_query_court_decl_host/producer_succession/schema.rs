@@ -49,6 +49,8 @@ pub fn declare(
             Node::reference(),
             Node::reference(),
         )
+        .application_query(route_query::definition())
+        .application_query_binding::<route_query::Binding>()
         .application_query(query::definition())
         .application_query_binding::<ReadBinding>();
     let schema = realization::declare(schema);

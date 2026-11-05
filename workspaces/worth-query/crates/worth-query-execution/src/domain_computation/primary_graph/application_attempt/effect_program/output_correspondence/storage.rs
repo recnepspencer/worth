@@ -12,9 +12,8 @@ pub(super) struct CorrespondenceStorage {
 }
 impl PartialEq for CorrespondenceStorage {
     fn eq(&self, other: &Self) -> bool {
-        self.optional_roles == other.optional_roles
-            && self.roles == other.roles
-            && self.closure_evidence == other.closure_evidence
+        // Closure describes one host's performed admission, not durable roles.
+        self.optional_roles == other.optional_roles && self.roles == other.roles
     }
 }
 impl Eq for CorrespondenceStorage {}

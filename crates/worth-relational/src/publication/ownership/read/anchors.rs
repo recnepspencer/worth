@@ -95,6 +95,7 @@ pub(in crate::publication::ownership) fn validate(
     }
     if let Some(p) = live
         .into_values()
+        .filter(|p| roster.reached_scopes.contains(&p.meaning.source_scope))
         .min_by_key(|p| (p.publication, p.meaning.source_scope))
     {
         return Err(corrupt(

@@ -2,6 +2,7 @@
 
 mod availability;
 mod committed_session;
+mod correspondence;
 mod coupled;
 
 mod consumed_output;
@@ -183,6 +184,14 @@ pub(super) fn commit(
                 .map_err(transaction_commit_stop)?,
         )
     };
+    correspondence::admit(
+        &execution,
+        provider,
+        &mut attempt,
+        &mut members,
+        &candidate,
+        prepared_group_publications.as_ref(),
+    )?;
     let prepared_touched_records =
         touched_records::PreparedTouchedRecords::prepare(&candidate, allocation_policy)?;
     let source_fact_rebase = provider.graph.with_runtime(&execution, |runtime| source_fact_rebase.prepare_candidate(&candidate, runtime, before.as_snapshot(),

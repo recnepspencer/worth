@@ -76,6 +76,11 @@ pub enum WorthQueryProviderSessionDenialKind {
     SessionProtocolUnsupported,
     AllocationDenied,
     ProviderRejected,
+    /// Canonical output membership disagreed before the World transition.
+    OutputCorrespondenceMismatch {
+        cause:
+            crate::domain_computation::primary_graph::WorthQueryApplicationOutputProjectionDenial,
+    },
     ProviderPanicked,
     TokenNotMintedForPlan,
     EmptyPhysicalSessionIdentity,

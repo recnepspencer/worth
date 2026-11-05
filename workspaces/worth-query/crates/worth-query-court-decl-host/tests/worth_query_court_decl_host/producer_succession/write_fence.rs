@@ -1,23 +1,23 @@
 //! Ordinary callers cannot destroy another producer's canonical records.
 use super::{realization::*, *};
 #[derive(Clone, serde::Serialize)]
-pub struct Destroy {
+pub struct ExternalWrite {
     pub key: String,
     pub action: u8,
 }
-worth_query_structured_value_binding!(pub Input for Destroy { identity: "succession.destroy.input" });
+worth_query_structured_value_binding!(pub Input for ExternalWrite { identity: "succession.destroy.input" });
 worth_query_operation!(pub Operation for Schema, input Input; access {
-    read_entities: [Node, Realization]; read_fields: [Key, RealizationKey];
-    read_relations: [Realizes]; deletes: [Node, Realization]; unlinks: [Realizes];
+    read_entities: [Node, Realization]; read_fields: [Key, RealizationKey, RealizedValue];
+    read_relations: [Realizes]; writes: [RealizedValue]; deletes: [Node, Realization]; unlinks: [Realizes];
 });
-pub fn scope(input: &Destroy) -> String {
+pub fn scope(input: &ExternalWrite) -> String {
     input.key.clone()
 }
 pub struct Outputs;
 impl ApplicationMutationOutputContract<Schema> for Outputs {
     const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] = &[];
 }
-worth_query_mutation_binding!(pub Binding for Destroy, schema Schema,
+worth_query_mutation_binding!(pub Binding for ExternalWrite, schema Schema,
     identity "succession.destroy", input Input, operation Operation, result ResultBinding,
     idempotency u64, identity "succession.destroy.command", decision (Target, RealizationTarget), denial DenialBinding,
     handler identity "succession.destroy.handler", outputs Outputs,
@@ -28,7 +28,7 @@ pub struct Handler;
 impl OperationHandler<Schema, Binding> for Handler {
     fn decide(
         &self,
-        input: &Destroy,
+        input: &ExternalWrite,
         reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>,
     ) -> HandlerResult<(Target, RealizationTarget), Denial> {
         let result = (|| {
@@ -42,6 +42,9 @@ impl OperationHandler<Schema, Binding> for Handler {
                 .expect("settled real producer realization")
                 .from();
             reader.entity(output, Realization::reference())?;
+            if input.action == 3 {
+                reader.field(output, RealizedValue::reference())?;
+            }
             Ok((
                 reader.mutation_target(&node)?,
                 reader.mutation_target(output)?,
@@ -54,7 +57,7 @@ impl OperationHandler<Schema, Binding> for Handler {
     }
     fn build_candidate(
         &self,
-        input: &Destroy,
+        input: &ExternalWrite,
         target: (Target, RealizationTarget),
         writer: &mut CandidateWriter<'_, Schema, Binding>,
     ) -> HandlerResult<(), Denial> {
@@ -65,6 +68,7 @@ impl OperationHandler<Schema, Binding> for Handler {
                 0 => writer.unlink(Realizes::reference(), &output, &node),
                 1 => writer.delete_entity(Realization::reference(), &output),
                 2 => writer.delete_entity(Node::reference(), &node),
+                3 => writer.write_field(&output, RealizedValue::reference(), 42),
                 _ => unreachable!(),
             }
         })();

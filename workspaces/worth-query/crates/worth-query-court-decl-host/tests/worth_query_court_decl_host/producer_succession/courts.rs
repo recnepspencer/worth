@@ -59,6 +59,7 @@ fn settled_generator_roles_match_its_publication_and_closure_witnesses_are_separ
     #[derive(Debug)]
     struct Observed {
         publication: CommitId,
+        receipt: WorthQueryApplicationCommitReceipt,
         roles: Vec<Role>,
         children: Vec<(String, EntityId)>,
         realizations: Vec<(String, EntityId)>,
@@ -98,6 +99,7 @@ fn settled_generator_roles_match_its_publication_and_closure_witnesses_are_separ
             let closure = roles.closure_evidence();
             observed.lock().unwrap().push(Observed {
                 publication: receipt.commit_reference().commit_id,
+                receipt: receipt.clone(),
                 roles: published,
                 children: closure
                     .family_entries::<Children>()
@@ -132,6 +134,31 @@ fn settled_generator_roles_match_its_publication_and_closure_witnesses_are_separ
     close(shrunk, &request);
     drop(recorder);
     let seen = seen.lock().unwrap();
+    let policy = worth_foundational::facade::ExecutionRequestPolicy::new(
+        worth_foundational::facade::ExecutionPosture::Serial,
+        worth_foundational::facade::DeterminismContract::CanonicalBitwise,
+        worth_foundational::facade::ExecutionBudget::new(std::num::NonZeroUsize::MIN, None, None),
+    );
+    let payer = worth_execution::SerialRequest::from_policy(
+        &policy,
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&payer);
+    for publication in seen
+        .iter()
+        .filter(|p| !p.children.is_empty() || !p.realizations.is_empty())
+    {
+        assert!(
+            publication
+                .receipt
+                .output_correspondence()
+                .checkpoint_roundtrip_equal_for_test(&execution)
+                .unwrap(),
+            "a shrink's live and checkpoint-restored canonical correspondence have equal identity"
+        );
+    }
+
     let retirement = seen
         .iter()
         .find(|entry| !entry.realizations.is_empty())

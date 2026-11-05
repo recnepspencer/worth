@@ -180,10 +180,19 @@ impl RelationalRuntime {
             };
             match current {
                 Some(position) => Some(position),
-                None => crate::history::data::readmit_required_output_route(
-                    execution, self, basis, meaning,
-                )
-                .map_err(custody::cold_stop)?,
+                None => {
+                    let historical = crate::history::data::readmit_required_output_route(
+                        execution, self, basis, meaning,
+                    )
+                    .map_err(custody::cold_stop)?;
+                    if installed.source_scope_ownership.is_empty() {
+                        historical
+                    } else {
+                        crate::history::data::current_route_presence::require_current_owned_route(
+                            execution, self, basis, meaning, historical,
+                        )?
+                    }
+                }
             }
         } else {
             selected

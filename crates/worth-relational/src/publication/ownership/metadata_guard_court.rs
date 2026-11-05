@@ -54,6 +54,26 @@ impl RelationalRuntime {
                 .iter()
                 .map(|r| (r.kind, RecordRef::Relation(r.id))),
         );
+        for publication in &current.publications {
+            let claims = execution
+                .run_native_with_checkpoint(|context| {
+                    super::read::publication_claims(
+                        execution,
+                        basis,
+                        publication.entity,
+                        publication.value.origin.commit.commit_id,
+                        context,
+                    )
+                })
+                .map_err(super::request)?
+                .0?;
+            for link in &claims.links {
+                rows.push((link.kind, RecordRef::Relation(link.id)));
+                if link.kind == storage.edge_link {
+                    rows.push((storage.edge_kind, RecordRef::Entity(link.source)));
+                }
+            }
+        }
         let mut answer = Vec::new();
         for kind in storage.metadata_kinds() {
             let (_, record) = rows.iter().find(|(k, _)| *k == kind).ok_or_else(|| {

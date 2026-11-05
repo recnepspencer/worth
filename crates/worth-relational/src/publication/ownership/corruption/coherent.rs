@@ -6,6 +6,7 @@ use crate::{
     storage::data::RecordLifecycleState,
 };
 use std::collections::BTreeSet;
+mod claim;
 
 pub(super) fn alter(
     partition: &mut PartitionCheckpointImage,
@@ -13,6 +14,9 @@ pub(super) fn alter(
     change: u8,
     storage: &CurrentPublicationStorage,
 ) -> bool {
+    if change == 9 {
+        return claim::repoint(partition, publication, storage);
+    }
     let mut entities = BTreeSet::new();
     let mut changed = false;
     for index in 0..partition.entity_arena.extra.len() {
@@ -140,8 +144,9 @@ pub(super) fn alter(
             ]
             .contains(&k)
         });
-        let remove = p == Some(publication.0)
-            && ((position && matches!(change, 4 | 5)) || (roster && matches!(change, 3 | 5)))
+        let remove = change == 10 && kind == Some(storage.member_link) && p == Some(publication.0)
+            || p == Some(publication.0)
+                && ((position && matches!(change, 4 | 5)) || (roster && matches!(change, 3 | 5)))
             || extra
                 .endpoints
                 .as_ref()

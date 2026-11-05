@@ -151,3 +151,84 @@ D1138: Native current-record consequences must complete the canonical descriptiv
 Codec-retired opted-in routes retain their publication row and catalog route, while the roster writer removes their live member and edge claims. The independent position writer changes the route posture. Cold current selection consumes these authenticated current route facts before considering genuinely historical retirement or restoration selection. This preserves the one-to-one presence invariant through codec retirement and fresh regeneration.
 
 Touched-record navigation distinguishes an explicit write selector from a source reached only through a publication scope or position link. The latter reaches its own catalog and independent presence, without ascending into a publication that owns the source. Private custody is completed before deferred business neighbors; an already reached source is not promoted to a second write selector by the publication’s own edge. A real Query leaf count court pins one publication in a five-publication generator tree, and preflight coverage excludes scope-only contacts.
+
+## D1146 one-hop custody and explicit cascade breadth
+
+Boundary review: current region facts and independently maintained position
+presence remain authoritative. The ordinary custody reader must not reconstruct
+a closure by expanding a publication's other members. Every non-Created patch
+is a seed, including field updates. Business incidence belongs only to destroyed
+selectors and linked-owner selection. Publication completion legitimately needs
+all claim links of the exact route it replaces; that is its own publication's
+write cost, without visiting any member's ownership adjacency. Decoding the
+selected immutable row costs its serialized size; it does not demand the
+partitions or incidence of its other members.
+
+Implementation order:
+1. Replace the ordinary reach with direct kind-indexed incidence, row/catalog/
+   presence pairing and touched-link validation. Remove silent missing-relation
+   skips. Preserve complete own-route claim replacement in the publication writer.
+2. Make cascade expansion explicit in the existing source-scope closure owner;
+   use one-hop current reads for each admitted frontier. Linked-owner discovery
+   follows business edges only from the actual removed anchors/members.
+3. Court all four generator-tree selectors, exact contacted publication/presence
+   sets and a mid-level cascade. Add the warm unmatched-presence and codec-retired
+   source-deletion legs; refuse history/current contradictions explicitly.
+4. Validate correspondence membership even for equal counts, replace the closure
+   panic with a typed denial, and define receipt equality over canonical roles.
+   Court live/restored shrink equality and checked-in adjacency-kind diagnostics.
+5. Keep only required door-generation changes, regenerate a duplicate-free
+   inventory, and explain the upstream tooling delta in the commit/report.
+6. Run the full Native library and three Query court targets, required gates and
+   the 27 retained mutations plus both r3 survivors and far-endpoint expansion.
+   Record exact restoration and command exits outside source control.
+
+The accepted forged-checkpoint residual, stored format, cold recovery owners,
+public ownership declaration and obsolete pin remain outside this correction.
+
+## D1149 residuals and source route cardinality
+
+Root accepts coherent claim-only checkpoint loss as a forged-checkpoint residual,
+alongside coherent cold loss of both current fact families. Stored-byte integrity
+comes from commitments; semantic claim completeness comes from the single writer
+and its coverage, exact-claim-set and private-write courts. Cold load certifies
+one-to-one pairing of the independently written families in the region being
+loaded. It does not certify complete claim incidence. No cross-region grant,
+recursive cold load, additional locator or optional claim commitment is added.
+The characterization is archived, and no checked-in court asserts its admission.
+
+Presence enumeration of a touched source's own current rows is accepted under
+D1149. A declaration-bound gap remains: producer family identities are static,
+but a route also contains the admitted source-parameter partition. Ownership
+admission in `producer/registry/scope_ownership.rs::validate` checks entity scope
+without bounding source parameters. `WorthQueryObservedSource::partition_identity`
+uses the parameter-binding identity, and Native's `same_route` includes that
+partition. Distinct parameter values can therefore retain distinct current routes
+for the same source and declared family. The presence-row count is not bounded by
+the declared family count alone.
+
+D1149 explicitly required stopping if enumeration could grow with data; D1150 resolves this stop by accepting the touched source’s own route degree. The owner
+needing a ruling is SourceScopeCascade source-partition cardinality admission.
+No restriction of previously accepted parameterized sources, changed cost model,
+or new locator has been introduced. The implementation and 15 exactly restored mutation probes were preserved through that decision; the D1150 completion below supersedes the stop.
+
+
+## D1150 source degree and change-specific reach
+
+Boundary review: parameterized routes are accepted ownership, and each source's
+scope and position adjacency is its own current degree. It remains charged in
+the original request. A field-only update needs member and edge claims, while
+removal, endpoint retargeting, suspension, rematerialization and a publication
+lifecycle edit also need scope and position discovery. Reached publication rows
+still authenticate their own catalog and independent presence; discovering that
+dependency never expands another publication's members or roster row.
+
+Implement change-specific selectors in commit preparation, reuse complete source-scope preflight
+evidence only when it already covers all selectors, and share the one-hop reader with preflights. Pair
+only reached rows when the source's entire scope was not selected; when it was,
+require every incident presence and catalog route to have its publication row.
+Observe actual reads through a read-only scoped recorder. Court three distinct
+parameter routes in one family and two families at one source, exact row and
+presence contacts, charged incidence, an unrelated source, real field updates,
+and refused destructive edits with no effect. Keep the existing unrestricted
+opt-in contract. Resume all remaining mutation probes and final qualification.

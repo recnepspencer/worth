@@ -66,6 +66,45 @@ pub(super) fn try_install_program<
 where
     P::Outputs: installation::WorthQueryApplicationProgramRoots<Schema>,
 {
+    try_install_program_with_sources::<P>(
+        width,
+        selections,
+        fault,
+        child_width,
+        read_predecessor_orbits,
+        checkpoint,
+        &[],
+    )
+}
+pub fn install_degree() -> App {
+    try_install_program_with_sources::<Program>(
+        0,
+        Arc::default(),
+        Fault::None,
+        0,
+        false,
+        None,
+        &["outside"],
+    )
+    .unwrap()
+}
+fn try_install_program_with_sources<
+    P: ApplicationProgramDefinition<Schema, Contributions = (Contribution,)>,
+>(
+    width: u64,
+    selections: Selections,
+    fault: Fault,
+    child_width: u64,
+    read_predecessor_orbits: bool,
+    checkpoint: Option<installation::WorthQueryApplicationCheckpoint>,
+    others: &[&str],
+) -> Result<
+    installation::WorthQueryProgramApplicationRuntime<Schema, P>,
+    installation::WorthQueryInMemoryApplicationDenial,
+>
+where
+    P::Outputs: installation::WorthQueryApplicationProgramRoots<Schema>,
+{
     let schema = Schema::declaration().unwrap();
     let program = ApplicationProgramAuthoring::<Schema, P>::begin()
         .with_schema(&schema)
@@ -132,6 +171,19 @@ where
                 .field(Width::reference(), width)
                 .field(Produced::reference(), 0),
             )?;
+            for key in others {
+                graph.bind_entity(
+                    WorthQueryApplicationEntitySeed::new(
+                        Node::reference(),
+                        WorthQueryApplicationEntityKey::new(*key).unwrap(),
+                    )
+                    .field(Key::reference(), (*key).to_owned())
+                    .field(ParentName::reference(), String::new())
+                    .field(Value::reference(), 1)
+                    .field(Width::reference(), 0)
+                    .field(Produced::reference(), 0),
+                )?;
+            }
             if super::PRIVATE_AGGREGATES {
                 graph.bind_entity(
                     WorthQueryApplicationEntitySeed::new(

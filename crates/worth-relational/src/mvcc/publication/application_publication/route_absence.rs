@@ -130,10 +130,14 @@ impl crate::runtime::RelationalRuntime {
                     let selected = match positions.get(meaning, context)?.or(current) {
                         Some(position) => Some(position),
                         None if positions.unresolved_prefix().is_some() => {
-                            crate::history::data::readmit_required_output_route(
+                            let historical=crate::history::data::readmit_required_output_route(
                                 execution, self, basis, meaning,
-                            )
-                            .map_err(super::custody::cold_stop)?
+                            ).map_err(super::custody::cold_stop)?;
+                            if installed.source_scope_ownership.is_empty() {historical} else {
+                                crate::history::data::current_route_presence::require_current_owned_route(
+                                    execution,self,basis,meaning,historical,
+                                )?
+                            }
                         }
                         None => None,
                     };

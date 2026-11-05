@@ -59,6 +59,27 @@ fn coherent_whole_roster_and_route_drops_and_both_digest_corruptions_refuse_type
             owner
         )]
     );
+    let unmatched = host
+        .runtime()
+        .probe_unmatched_ownership_presence_for_test(host.runtime().current_world(), owner, &scope)
+        .unwrap()
+        .unwrap_err();
+    let worth_relational::facade::transactions::TransactionCommitError::Publication {
+        error, ..
+    } = unmatched
+    else {
+        panic!("{unmatched:?}")
+    };
+    assert_eq!(
+        error.authored_retirement_refusal(),
+        Some(AuthoredRetirementRefusal::CorruptCurrentOwnership { publication })
+    );
+    assert_eq!(
+        error.context.affected_records,
+        [worth_relational::facade::transactions::RecordRef::Entity(
+            owner
+        )]
+    );
     let checkpoint = host
         .with_host_advancement(|phase| {
             host.capture_application_checkpoint(
@@ -68,46 +89,28 @@ fn coherent_whole_roster_and_route_drops_and_both_digest_corruptions_refuse_type
             .unwrap()
         })
         .unwrap();
-    let bytes = checkpoint.bytes();
-    let magic = b"WORTH-REL-CHK18\n";
-    let start = bytes.windows(magic.len()).position(|b| b == magic).unwrap();
-    let length = u64::from_be_bytes(bytes[start - 16..start - 8].try_into().unwrap()) as usize;
-    let native =
-        RelationalNativeCheckpoint::from_untrusted_bytes(bytes[start..start + length].to_vec());
-    let policy = ExecutionRequestPolicy::new(
-        ExecutionPosture::Serial,
-        DeterminismContract::CanonicalBitwise,
-        ExecutionBudget::new(std::num::NonZeroUsize::MIN, Some(256 * 1024 * 1024), None),
-    );
-    let payer =
-        SerialRequest::from_policy(&policy, worth_execution::CancellationToken::new(), None);
-    let execution = ExecutionRequest::serial(&payer);
     for change in [3, 4, 6, 7, 8] {
-        let changed = native
-            .corrupt_current_publication_roster_for_test(&execution, publication, change)
-            .unwrap();
-        let mut frame = bytes.to_vec();
-        frame.splice(start..start + length, changed.bytes().iter().copied());
-        frame[start - 16..start - 8].copy_from_slice(&(changed.bytes().len() as u64).to_be_bytes());
-        let digest = Sha256::digest(&frame[40..]);
-        frame[8..40].copy_from_slice(&digest);
-        let recovery = try_reopen::<S>(WorthQueryApplicationCheckpoint::from_untrusted_bytes(
-            frame.into_boxed_slice(),
-        ));
+        let frame = corrupt_current(&checkpoint, publication, change);
+        let recovery = try_reopen::<S>(frame);
         match recovery {
             Err(WorthQueryInMemoryApplicationDenial::Graph(denial)) => {
-                let Some(RelationalRecoveryStop::Durability(error)) =
-                    denial.native_recovery_cause()
-                else {
-                    panic!("{change}: typed Native admission refusal: {denial:?}")
-                };
-                let Some(failure) = error.storage_unavailable else {
-                    panic!("{change}: {error:?}")
-                };
-                assert!(
-                    matches!(failure.cause,RelationalStorageUnavailableCause::CorruptCurrentOwnership{publication:actual,source,..} if actual==publication && source==owner),
-                    "{change}: {failure:?}"
-                );
+                if change == 8 {
+                    let WorthQueryPrimaryGraphInstallationDenialKind::ExecutionDenied {
+                        kind: WorthQueryProviderSessionDenialKind::StorageUnavailable(failure),
+                    } = denial.kind()
+                    else {
+                        panic!("{denial:?}")
+                    };
+                    assert_eq!(failure.cause, RelationalStorageUnavailableCause::Damaged);
+                    assert_eq!(
+                        failure.subject,
+                        worth_relational::facade::storage::RelationalStorageSubject::Region(
+                            owner.partition_id
+                        )
+                    );
+                } else {
+                    assert_owned_recovery(&denial, publication, owner, change);
+                }
             }
             Err(denial) => panic!("{change}: unexpected frame/admission failure: {denial:?}"),
             Ok(recovered) => {
@@ -166,4 +169,52 @@ fn coherent_whole_roster_and_route_drops_and_both_digest_corruptions_refuse_type
             }
         }
     }
+}
+
+pub(super) fn corrupt_current(
+    checkpoint: &WorthQueryApplicationCheckpoint,
+    publication: worth_relational::facade::history::CommitId,
+    change: u8,
+) -> WorthQueryApplicationCheckpoint {
+    let bytes = checkpoint.bytes();
+    let magic = b"WORTH-REL-CHK18\n";
+    let start = bytes.windows(magic.len()).position(|b| b == magic).unwrap();
+    let length = u64::from_be_bytes(bytes[start - 16..start - 8].try_into().unwrap()) as usize;
+    let native =
+        RelationalNativeCheckpoint::from_untrusted_bytes(bytes[start..start + length].to_vec());
+    let policy = ExecutionRequestPolicy::new(
+        ExecutionPosture::Serial,
+        DeterminismContract::CanonicalBitwise,
+        ExecutionBudget::new(std::num::NonZeroUsize::MIN, Some(256 * 1024 * 1024), None),
+    );
+    let payer =
+        SerialRequest::from_policy(&policy, worth_execution::CancellationToken::new(), None);
+    let execution = ExecutionRequest::serial(&payer);
+    let changed = native
+        .corrupt_current_publication_roster_for_test(&execution, publication, change)
+        .unwrap();
+    let mut frame = bytes.to_vec();
+    frame.splice(start..start + length, changed.bytes().iter().copied());
+    frame[start - 16..start - 8].copy_from_slice(&(changed.bytes().len() as u64).to_be_bytes());
+    let digest = Sha256::digest(&frame[40..]);
+    frame[8..40].copy_from_slice(&digest);
+    WorthQueryApplicationCheckpoint::from_untrusted_bytes(frame.into_boxed_slice())
+}
+
+pub(super) fn assert_owned_recovery(
+    denial: &WorthQueryPrimaryGraphInstallationDenial,
+    publication: worth_relational::facade::history::CommitId,
+    owner: worth_relational::facade::identity::EntityId,
+    change: u8,
+) {
+    let Some(RelationalRecoveryStop::Durability(error)) = denial.native_recovery_cause() else {
+        panic!("{change}: {denial:?}")
+    };
+    let Some(failure) = error.storage_unavailable else {
+        panic!("{change}: {error:?}")
+    };
+    assert!(
+        matches!(failure.cause,RelationalStorageUnavailableCause::CorruptCurrentOwnership{publication:actual,source,..} if actual==publication && source==owner),
+        "{change}: {failure:?}"
+    );
 }

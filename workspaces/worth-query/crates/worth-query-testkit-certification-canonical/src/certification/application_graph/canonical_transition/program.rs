@@ -1,5 +1,5 @@
 //! Program-owned source action and the real derived producer output root.
-pub use super::{edit, producer, query, schema::*};
+pub use super::{edit, producer, query, retire_source, schema::*};
 pub use worth_query_host::facade::{declaration::application_program::*, primary_graph::*};
 pub struct Program;
 pub struct SourceFeature;
@@ -8,6 +8,11 @@ pub struct SourcePort;
 pub struct DerivedInput;
 pub struct Connection;
 pub struct DerivedDelivery;
+pub struct RetireDelivery;
+impl ApplicationActionDelivery<CanonicalSchema, retire_source::RetireBinding> for RetireDelivery {
+    type Mode = ApplicationSourceCompletion;
+    const IDENTITY: &'static str = "canonical-transition.retire-source-completion.v1";
+}
 pub type Root = ApplicationOutputGraph<
     ApplicationConnectionRef<
         CanonicalSchema,
@@ -79,6 +84,8 @@ impl ApplicationProgramDefinition<CanonicalSchema> for Program {
             ApplicationFeatureSpec::root::<CanonicalSchema, SourceFeature>()
                 .provides::<SourcePort>()
                 .action::<edit::EditBinding, DerivedDelivery>()
+                .finish_action()
+                .action::<retire_source::RetireBinding, RetireDelivery>()
                 .finish_action()
                 .finish(),
             ApplicationFeatureSpec::root::<CanonicalSchema, DerivedFeature>()

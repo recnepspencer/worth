@@ -66,6 +66,7 @@ impl CanonicalCommitEnvelope {
 #[allow(clippy::too_many_arguments)]
 pub(super) fn install(
     envelope: &mut CanonicalCommitEnvelope,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalPreparationRuntime,
     basis: &AdmittedRelationalBranchBasis,
     created: &CommitCreatedEntityBindings,
@@ -83,6 +84,7 @@ pub(super) fn install(
         return if let Some(admission) = &group.binding.retirement_admission {
             super::authored_cascade::install(
                 envelope,
+                execution,
                 runtime,
                 basis,
                 created,
@@ -140,6 +142,7 @@ pub(super) fn install(
             if let Some(admission) = &group.binding.retirement_admission {
                 super::authored_cascade::install(
                     envelope,
+                    execution,
                     runtime,
                     basis,
                     created,
@@ -186,6 +189,7 @@ pub(super) fn install(
                 context,
             )?;
             envelope.install_completion(
+                execution,
                 runtime,
                 basis,
                 created,

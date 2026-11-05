@@ -9,5 +9,9 @@ mod correction_courts;
 mod courts;
 mod history_courts;
 mod independent_generator_courts;
+mod locality;
 mod refusal_courts;
 mod write_fence_courts;
+
+#[path = "route_degree/courts.rs"]
+mod route_degree;

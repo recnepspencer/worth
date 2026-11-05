@@ -36,6 +36,7 @@ impl CanonicalCommitEnvelope {
                 worth_execution::ExecutionWorkCeiling::new(execution.work_ceiling())
                     .run_with_checkpoint(lease, None, |context| {
                         self.install_completion(
+                            execution,
                             runtime,
                             basis,
                             created,
@@ -58,6 +59,7 @@ impl CanonicalCommitEnvelope {
     #[allow(clippy::too_many_arguments)]
     pub(super) fn install_completion(
         &mut self,
+        execution: &ExecutionRequest<'_, '_>,
         runtime: &crate::runtime::RelationalPreparationRuntime,
         basis: &AdmittedRelationalBranchBasis,
         created: &CommitCreatedEntityBindings,
@@ -94,6 +96,7 @@ impl CanonicalCommitEnvelope {
         if let Publication::CoupledAuthored { group } = publication {
             return super::coupled_authored::install(
                 self,
+                execution,
                 runtime,
                 basis,
                 created,
@@ -131,6 +134,7 @@ impl CanonicalCommitEnvelope {
         {
             return super::authored_cascade::install(
                 self,
+                execution,
                 runtime,
                 basis,
                 created,
@@ -218,6 +222,8 @@ impl CanonicalCommitEnvelope {
             && let Some(prior) = previous
             && let Some(closure) = producer_cascade::prepare(
                 self,
+                execution,
+                basis,
                 runtime,
                 &installed,
                 prior,

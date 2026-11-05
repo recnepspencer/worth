@@ -1,5 +1,5 @@
 //! External writes preserve the canonical producer records.
-use super::{settlement::*, write_fence::Destroy, *};
+use super::{settlement::*, write_fence::ExternalWrite, *};
 fn refused(action: u8) {
     let app = world::install_two_levels();
     let (scope, principal) = world::authenticate(&app);
@@ -35,7 +35,7 @@ fn refused(action: u8) {
     .unwrap();
     let outcome = request
         .advanced()
-        .mutate(Destroy {
+        .mutate(ExternalWrite {
             key: "root".into(),
             action,
         })
@@ -99,7 +99,7 @@ fn independent_publication_keeps_ordinary_unlink_behavior() {
     independent_generator_courts::settle_independent(&app, &request);
     let outcome = request
         .advanced()
-        .mutate(Destroy {
+        .mutate(ExternalWrite {
             key: "root".into(),
             action: 0,
         })

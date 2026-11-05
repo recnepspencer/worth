@@ -52,3 +52,10 @@ pub(crate) fn fields<'a>(
     };
     Some((CommitId(*publication), payload.as_bytes()))
 }
+
+/// The catalog and independent presence both describe this immutable row.
+pub(crate) fn route_matches(row: &Publication, digest: &[u8; 32], route: &Route) -> bool {
+    row.origin.meaning == route.meaning
+        && row.origin.commit.commit_id == route.publication
+        && digest == &route.digest
+}

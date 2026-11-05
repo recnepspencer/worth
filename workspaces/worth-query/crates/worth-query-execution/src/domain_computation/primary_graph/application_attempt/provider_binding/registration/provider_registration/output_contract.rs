@@ -32,3 +32,36 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
         self.effects.output_binding_type()
     }
 }
+
+impl super::WorthQueryPrimaryGraphApplicationAttempt {
+    pub(in crate::domain_computation::primary_graph) fn admit_output_correspondence(
+        &mut self,
+        prepared: &worth_relational::facade::mvcc::RelationalPreparedOutputPublications,
+    ) -> Result<
+        (),
+        (
+            crate::domain_computation::primary_graph::WorthQueryApplicationOutputProjectionDenial,
+            String,
+        ),
+    > {
+        self.effects.admit_output_correspondence(prepared)
+    }
+}
+
+impl WorthQueryPrimaryGraphApplicationAttempt {
+    pub(in crate::domain_computation::primary_graph) fn admit_owned_output_correspondence(
+        &mut self,
+        prepared: &worth_relational::facade::mvcc::RelationalPreparedOutputPublications,
+        producer: &str,
+        meaning: &worth_relational::facade::mvcc::RequiredOutputPublicationMeaning,
+    ) -> Result<
+        (),
+        (
+            crate::domain_computation::primary_graph::WorthQueryApplicationOutputProjectionDenial,
+            String,
+        ),
+    > {
+        self.effects
+            .admit_owned_output_correspondence(prepared, producer, meaning)
+    }
+}

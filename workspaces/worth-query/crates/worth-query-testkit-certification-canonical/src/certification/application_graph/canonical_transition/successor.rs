@@ -171,3 +171,10 @@ pub fn predecessor_checkpoint() -> installation::WorthQueryApplicationCheckpoint
 }
 
 pub use super::OWNERSHIP;
+
+#[path = "retire_source.rs"]
+#[expect(
+    clippy::duplicate_mod,
+    reason = "the successor declares source retirement against its own schema"
+)]
+pub mod retire_source;

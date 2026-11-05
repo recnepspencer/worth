@@ -164,6 +164,7 @@ fn execution_stop(cause: Result<Execution, Control>) -> Option<Denial> {
         | Ok(Execution::ProviderGenerationMismatch)
         | Ok(Execution::SessionProtocolUnsupported)
         | Ok(Execution::AllocationDenied)
+        | Ok(Execution::OutputCorrespondenceMismatch { .. })
         | Ok(Execution::ProviderRejected)
         | Ok(Execution::ProviderPanicked)
         | Ok(Execution::TokenNotMintedForPlan)

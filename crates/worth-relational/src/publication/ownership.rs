@@ -1,5 +1,7 @@
 //! Durable current publication custody; historical payload selection stays in History.
 mod certification;
+mod observation;
+pub use certification::CurrentOwnershipContactsForTest;
 mod cold_checkpoint_source;
 mod cold_pairing_court;
 mod locality_court;
@@ -13,7 +15,9 @@ mod read;
 pub(crate) mod record;
 pub(crate) use completion::complete;
 pub(crate) use evidence::PublicationEvidence;
-pub(crate) use read::{decode_payload, read, CurrentPublicationRoster};
+pub(crate) use read::{
+    decode_payload, linked_selectors, read, read_selected, CurrentPublicationRoster,
+};
 
 pub(crate) fn select_current(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

@@ -47,7 +47,7 @@ macro_rules! split_phase {
                 type Denial = Denial; type DenialBinding = DenialBinding; type Output = Outputs; type ScopeBinding = Scope;
                 type PrincipalBinding = PrincipalBinding; type Mapping = Mapping; type Principal = Principal;
                 type PrincipalIdentity = u64; type PrincipalIdentityBinding = U64ApplicationValueBinding;
-                type SourceExpectation = ApplicationQueryMutationSource<Query>;
+                type SourceExpectation = ApplicationQueryMutationSource<SourceQuery>;
                 const IDENTITY: &'static str = $identity; const HANDLER_IDENTITY: &'static str = $identity; const IDEMPOTENCY_IDENTITY: &'static str = $identity;
                 fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements { ApplicationWorkflowExecutionRequirements::not_applicable() }
                 fn scope_field() -> ApplicationFieldRef<Schema, Node, Facts, Key, String, ReadOnly, EqualityPredicate, NoApplicationUnit> { Key::reference() }
@@ -89,7 +89,7 @@ macro_rules! split_phase {
                             else { // Initial requires authoritative live absence. Historical
                             // correspondence deliberately refuses a retired generation;
                             // it cannot answer whether a current realization exists.
-                            reader.resolve_optional_entity(RealizationKey::reference(), input.0.key.clone())? };
+                            reader.resolve_optional_entity(RealizationKey::reference(), super::output_key(&input.0))? };
                         self.0.lock().unwrap().push(Selection { key: input.0.key.clone(), tier: TIER, preserve: $preserve, prior: prior.is_some() });
                         if !$preserve && prior.is_some() { return Ok(Err(Denial::InitialHasPriorOutput)); }
                         if $preserve && prior.is_none() { return Ok(Err(Denial::PreserveMissingOutput)); }
@@ -148,10 +148,10 @@ macro_rules! split_phase {
                         let output = match &decision.realization {
                             Some(prior) => { let output = writer.projected_entity(prior)?; writer.write_field(&output, RealizedValue::reference(), input.0.value + 10)?; output },
                             None => {
-                                let output = writer.create_entity_in_context(&source, Realization::reference(), WorthQueryApplicationEntityKey::new(format!("output:{}", input.0.key)).unwrap())?;
-                                writer.initialize_field(&output, RealizationKey::reference(), input.0.key.clone())?;
+                                let output = writer.create_entity_in_context(&source, Realization::reference(), WorthQueryApplicationEntityKey::new(format!("output:{}", super::output_key(&input.0))).unwrap())?;
+                                writer.initialize_field(&output, RealizationKey::reference(), super::output_key(&input.0))?;
                                 writer.initialize_field(&output, RealizedValue::reference(), input.0.value + 10)?;
-                                writer.link(Realizes::reference(), format!("realizes:{}", input.0.key), &output, &source)?;
+                                writer.link(Realizes::reference(), format!("realizes:{}", super::output_key(&input.0)), &output, &source)?;
                                 output
                             }
                         };
@@ -202,9 +202,14 @@ macro_rules! split_phase {
     };
 }
 macro_rules! split_family {
-    ($module:ident, $tier:expr, $profile:literal, $initial:literal, $preserve:literal, $initial_op:ident, $preserve_op:ident, $ownership:ident) => {
+    ($module:ident, $tier:expr, $profile:literal, $initial:literal, $preserve:literal, $initial_op:ident, $preserve_op:ident, $ownership:ident $(, $prefix:literal)?) => {
         pub mod $module {
             use super::*;
+            type SourceQuery = Query;
+            fn output_key(row: &Row) -> String {
+                let prefix = concat!("" $(, $prefix)?);
+                format!("{prefix}{}", row.key)
+            }
             const TIER: u8 = $tier;
             const PROFILE: &str = $profile;
             const OWNERSHIP: ProducerPublicationOwnership =
@@ -335,3 +340,17 @@ split_family!(
     IndependentParentPreserve,
     Independent
 );
+
+split_family!(
+    twin,
+    2,
+    "split-twin",
+    "dispatch.split.twin.initial",
+    "dispatch.split.twin.preserve",
+    SplitTwinInitial,
+    SplitTwinPreserve,
+    SourceScopeCascade,
+    "twin:"
+);
+#[path = "route_degree/family.rs"]
+pub mod parameter_routes;

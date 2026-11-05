@@ -105,3 +105,5 @@ mod current_roster;
 mod endpoint_fence;
 
 mod merged_generation;
+
+mod current_history;

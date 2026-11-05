@@ -103,10 +103,51 @@ pub(crate) fn current(
     records: &[crate::transactions::data::RecordRef],
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<Vec<SelectedOutputPublication>, crate::transactions::data::TransactionCommitError> {
-    let roster = Arc::new(crate::publication::ownership::read(
-        execution, basis, records, context,
-    )?);
-    from_current(roster, installed, context)
+    use crate::transactions::data::RecordRef;
+    use std::collections::BTreeSet;
+    let roots = records
+        .iter()
+        .filter_map(|r| {
+            if let RecordRef::Entity(id) = r {
+                Some(*id)
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<_>>();
+    let mut frontier = records.to_vec();
+    let mut visited = BTreeSet::new();
+    let mut latest: Vec<SelectedOutputPublication> = Vec::new();
+    while !frontier.is_empty() {
+        let mut selectors =
+            crate::publication::ownership::linked_selectors(execution, basis, &frontier, context)?;
+        selectors.append(&mut frontier);
+        let roster = Arc::new(crate::publication::ownership::read(
+            execution, basis, &selectors, context,
+        )?);
+        for publication in from_current(roster, installed, context)? {
+            charge(context, latest.len() + 1).map_err(super::authored_cascade::stopped)?;
+            if !latest
+                .iter()
+                .any(|p| p.origin.same_publication(&publication.origin))
+            {
+                latest.push(publication);
+            }
+        }
+        // This is the existing closure owner. Only publications selected under
+        // the actual cascade roots may contribute another ownership frontier.
+        let retiring =
+            select(&roots, &latest, context).map_err(super::authored_cascade::stopped)?;
+        for publication in retiring {
+            for member in &publication.origin.members {
+                charge(context, 1).map_err(super::authored_cascade::stopped)?;
+                if member.posture != Posture::Retire && visited.insert(member.id) {
+                    frontier.push(RecordRef::Entity(member.id));
+                }
+            }
+        }
+    }
+    Ok(latest)
 }
 
 pub(crate) fn from_current(

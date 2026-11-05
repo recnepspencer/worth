@@ -32,6 +32,7 @@ impl CanonicalAuthoredRetirement {
 #[allow(clippy::too_many_arguments)]
 pub(super) fn install(
     envelope: &mut CanonicalCommitEnvelope,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalPreparationRuntime,
     basis: &AdmittedRelationalBranchBasis,
     created: &CommitCreatedEntityBindings,
@@ -167,6 +168,7 @@ pub(super) fn install(
             .ok_or_else(refuse)?;
         envelope
             .install_completion(
+                execution,
                 runtime,
                 basis,
                 created,

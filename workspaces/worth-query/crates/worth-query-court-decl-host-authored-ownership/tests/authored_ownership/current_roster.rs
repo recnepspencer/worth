@@ -2,7 +2,7 @@
 use super::{
     correction_courts::install_definition,
     coupled::{
-        history::reopen,
+        history::try_reopen,
         multi::{create, settle, TwoProgram},
     },
     *,
@@ -56,7 +56,7 @@ fn dropped_added_and_repointed_current_routes_refuse_after_real_frame_admission(
     let payer =
         SerialRequest::from_policy(&policy, worth_execution::CancellationToken::new(), None);
     let execution = ExecutionRequest::serial(&payer);
-    for change in 0..=2 {
+    for change in [0, 1, 2, 9] {
         let changed = native
             .corrupt_current_publication_roster_for_test(&execution, publication, change)
             .unwrap();
@@ -65,9 +65,17 @@ fn dropped_added_and_repointed_current_routes_refuse_after_real_frame_admission(
         frame[start - 16..start - 8].copy_from_slice(&(changed.bytes().len() as u64).to_be_bytes());
         let digest = Sha256::digest(&frame[40..]);
         frame[8..40].copy_from_slice(&digest);
-        let recovered = reopen::<S>(WorthQueryApplicationCheckpoint::from_untrusted_bytes(
+        let recovery = try_reopen::<S>(WorthQueryApplicationCheckpoint::from_untrusted_bytes(
             frame.into_boxed_slice(),
         ));
+        let recovered = match recovery {
+            Ok(host) => host,
+            Err(WorthQueryInMemoryApplicationDenial::Graph(denial)) => {
+                super::coherent_roster::assert_owned_recovery(&denial, publication, owner, change);
+                continue;
+            }
+            Err(denial) => panic!("{change}: {denial:?}"),
+        };
         let scope = request_scope();
         let principal = authenticate_operator(recovered.installed_schema(), &scope);
         let request = recovered.runtime().request(&principal, &scope);
@@ -76,7 +84,7 @@ fn dropped_added_and_repointed_current_routes_refuse_after_real_frame_admission(
             .mutate(lifecycle::Plain {
                 replacement: false,
                 scope: 1,
-                id: 101,
+                id: if change == 9 { 10 } else { 101 },
                 descendants: vec![],
             })
             .without_source()

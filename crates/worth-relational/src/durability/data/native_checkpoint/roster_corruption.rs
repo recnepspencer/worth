@@ -46,7 +46,7 @@ impl RelationalNativeCheckpoint {
         change: u8,
         placement: &RelationalCheckpointArtifactPolicy<'_>,
     ) -> Result<Self, RelationalRecoveryStop> {
-        if change > 8 {
+        if change > 10 {
             return Err(DurabilityError::new(
                 RecoveryFailureClass::CorruptCheckpoint,
                 "unknown roster corruption",
@@ -104,6 +104,18 @@ impl RelationalNativeCheckpoint {
         checkpoint
             .mirror_kind_images
             .omit_deleted_current_records(&checkpoint.partition_images);
+        if change == 9 {
+            checkpoint
+                .mirror_kind_images
+                .repoint_current_claims_for_test(&checkpoint.partition_images, storage.member_link);
+            for root in &checkpoint.branch_roots {
+                checkpoint
+                    .root_kind_images
+                    .get_mut(&root.commit_id)
+                    .expect("real captured root kind image")
+                    .repoint_current_claims_for_test(&root.partition_images, storage.member_link);
+            }
+        }
         commitments::rebind(&mut checkpoint)?;
         let mut answer = None;
         let handoff = execution.run_native_with_checkpoint(|stage| {

@@ -10,14 +10,20 @@ use crate::{
     validation::engine::state_view::InvariantStateView,
 };
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, MapKernelContext};
+mod entity;
 mod integrity;
+mod linked;
+pub(crate) use linked::selectors as linked_selectors;
 mod payload;
 pub(crate) use payload::decode as decode_payload;
 pub(in crate::publication::ownership) mod anchors;
 mod reach;
+pub(super) use reach::claims as publication_claims;
 
 #[derive(Debug)]
 pub(crate) struct CurrentPublicationRoster {
+    pub(super) observed_position_work: u64,
+    pub(super) reached_scopes: std::collections::BTreeSet<EntityId>,
     pub(super) reached_entities: std::collections::BTreeSet<EntityId>,
     pub(super) reached_relations: std::collections::BTreeSet<RelationId>,
     pub(crate) basis: crate::branch::RelationalBranchBasisDescriptor,
@@ -78,22 +84,19 @@ pub(crate) fn read(
     records: &[RecordRef],
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<CurrentPublicationRoster, TransactionCommitError> {
-    let funding = execution
-        .in_scope(|lease| ExecutionMemoryReservation::reserve_in_scope(lease, 0))
-        .map_err(super::request)?
-        .map_err(|cause| super::request(crate::execution::denial::lease_denial(cause)))?;
-    let mut roster = CurrentPublicationRoster {
-        reached_entities: Default::default(),
-        reached_relations: Default::default(),
-        basis: basis.descriptor().clone(),
-        publications: Vec::new(),
-        codec_retired: Vec::new(),
-        catalogs: Vec::new(),
-        edges: Vec::new(),
-        links: Vec::new(),
-        positions: Vec::new(),
-        _funding: funding,
-    };
+    read_selected(execution, basis, records, records, context)
+}
+
+/// Field-only writes select claims; destructive and lifecycle selectors also
+/// discover the source's own scope and position incidence.
+pub(crate) fn read_selected(
+    execution: &ExecutionRequest<'_, '_>,
+    basis: &AdmittedRelationalBranchBasis,
+    records: &[RecordRef],
+    scopes: &[RecordRef],
+    context: &mut MapKernelContext<'_, '_>,
+) -> Result<CurrentPublicationRoster, TransactionCommitError> {
+    let mut roster = empty(execution, basis)?;
     let root = &basis.inner.root;
     let Some(storage) = &root
         .schema_authority()
@@ -112,16 +115,18 @@ pub(crate) fn read(
         storage,
         &view,
         records,
+        scopes,
         &mut roster,
         context,
     )?;
     anchors::validate(
         &mut roster,
         &root.output_publication_positions,
-        records,
+        scopes,
         context,
     )?;
     integrity::validate(&roster, storage, &view, context)?;
+    super::observation::record(&roster, basis);
     Ok(roster)
 }
 
@@ -155,4 +160,28 @@ fn damaged(record: &RecordRef) -> TransactionCommitError {
             },
         ),
     )
+}
+
+fn empty(
+    execution: &ExecutionRequest<'_, '_>,
+    basis: &AdmittedRelationalBranchBasis,
+) -> Result<CurrentPublicationRoster, TransactionCommitError> {
+    let funding = execution
+        .in_scope(|lease| ExecutionMemoryReservation::reserve_in_scope(lease, 0))
+        .map_err(super::request)?
+        .map_err(|cause| super::request(crate::execution::denial::lease_denial(cause)))?;
+    Ok(CurrentPublicationRoster {
+        observed_position_work: 0,
+        reached_scopes: Default::default(),
+        reached_entities: Default::default(),
+        reached_relations: Default::default(),
+        basis: basis.descriptor().clone(),
+        publications: Vec::new(),
+        codec_retired: Vec::new(),
+        catalogs: Vec::new(),
+        edges: Vec::new(),
+        links: Vec::new(),
+        positions: Vec::new(),
+        _funding: funding,
+    })
 }

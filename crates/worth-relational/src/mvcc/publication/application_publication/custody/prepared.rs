@@ -27,7 +27,7 @@ pub(crate) fn prepare(
             let mut total = 0usize;
             let mut selected = 0usize;
             for origin in envelope.output_origins() {
-                context.checkpoint(1).map_err(execution_stop)?;
+                crate::execution::request_stage::checkpoint(context, 1).map_err(execution_stop)?;
                 total = total.checked_add(1).ok_or_else(overflow)?;
                 if origin
                     .issuer
@@ -39,17 +39,17 @@ pub(crate) fn prepare(
             }
             // Completion checks immutable positions and seals only these selected
             // origins after World. All of that fixed work belongs to this request now.
-            context
-                .checkpoint(
-                    u64::try_from(
-                        total
-                            .checked_mul(3)
-                            .and_then(|n| n.checked_add(selected))
-                            .ok_or_else(overflow)?,
-                    )
-                    .map_err(|_| overflow())?,
+            crate::execution::request_stage::checkpoint(
+                context,
+                u64::try_from(
+                    total
+                        .checked_mul(3)
+                        .and_then(|n| n.checked_add(selected))
+                        .ok_or_else(overflow)?,
                 )
-                .map_err(execution_stop)?;
+                .map_err(|_| overflow())?,
+            )
+            .map_err(execution_stop)?;
             Ok::<_, TransactionCommitError>((total, selected))
         })
         .map_err(execution_stop)?
@@ -59,7 +59,7 @@ pub(crate) fn prepare(
     execution
         .run_native_with_checkpoint(|context| {
             for (ordinal, origin) in envelope.output_origins().enumerate() {
-                context.checkpoint(1).map_err(execution_stop)?;
+                crate::execution::request_stage::checkpoint(context, 1).map_err(execution_stop)?;
                 if origin
                     .issuer
                     .as_ref()
@@ -85,6 +85,55 @@ pub(crate) fn prepare(
     })
 }
 impl RelationalPreparedOutputPublications {
+    /// Descriptive primary roles before World, from this exact prepared envelope.
+    /// This borrows no publication authority and cannot finish the preparation.
+    pub fn primary_output_members(
+        &self,
+    ) -> Option<
+        impl ExactSizeIterator<
+            Item = (
+                &str,
+                &str,
+                crate::mvcc::RequiredOutputRolePosture,
+                crate::identity::data::EntityId,
+            ),
+        >,
+    > {
+        self.envelope.required_output_origin.as_ref().map(|origin| {
+            origin
+                .members
+                .iter()
+                .map(|m| (m.role.as_str(), m.entity_name.as_str(), m.posture, m.id))
+        })
+    }
+
+    /// Descriptive canonical roles of one prepared participant, without custody.
+    pub fn output_members_for(
+        &self,
+        producer: &str,
+        meaning: &crate::mvcc::RequiredOutputPublicationMeaning,
+    ) -> Option<
+        impl ExactSizeIterator<
+            Item = (
+                &str,
+                &str,
+                crate::mvcc::RequiredOutputRolePosture,
+                crate::identity::data::EntityId,
+            ),
+        >,
+    > {
+        self.selected
+            .elements()
+            .iter()
+            .find(|p| p.origin.producer == producer && p.origin.meaning.same_route(meaning))
+            .map(|p| {
+                p.origin
+                    .members
+                    .iter()
+                    .map(|m| (m.role.as_str(), m.entity_name.as_str(), m.posture, m.id))
+            })
+    }
+
     /// Only the actual performed result can complete this preparation. No new
     /// request work or allocation can refuse after that result's World effect.
     pub fn finish(self, performed: &CommitResult) -> Option<RelationalPerformedOutputPublications> {

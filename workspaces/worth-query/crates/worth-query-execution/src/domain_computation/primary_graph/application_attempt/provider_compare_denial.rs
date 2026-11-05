@@ -123,7 +123,9 @@ pub fn provider_session_denied(
         Kind::SessionProtocolUnsupported => {
             Denial::provider_rejected_with_detail(Stage::ProviderCommit, detail)
         }
-        Kind::AllocationDenied | Kind::ProviderRejected => {
+        Kind::AllocationDenied
+        | Kind::ProviderRejected
+        | Kind::OutputCorrespondenceMismatch { .. } => {
             Denial::provider_rejected_with_detail(Stage::ProviderCommit, detail)
         }
         Kind::ProviderPanicked => {

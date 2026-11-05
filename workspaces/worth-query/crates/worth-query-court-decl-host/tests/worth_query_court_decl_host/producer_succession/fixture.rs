@@ -23,6 +23,8 @@ macro_rules! producer_succession_fixture {
         mod realization;
         #[path = "../producer_succession/realization_read.rs"]
         mod realization_read;
+        #[path = "../producer_succession/route_degree/query.rs"]
+        mod route_query;
         #[path = "../producer_succession/schema.rs"]
         mod schema;
         #[path = "../producer_succession/settlement.rs"]
@@ -104,8 +106,10 @@ macro_rules! producer_succession_fixture {
             ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
                 producers::parent::contracts(c)?;
                 producers::child::contracts(c)?;
-                producers::leaf::contracts(c)
-                    .and_then(|()| producers::independent_parent::contracts(c))
+                producers::leaf::contracts(c)?;
+                producers::twin::contracts(c)?;
+                producers::parameter_routes::contracts(c)?;
+                producers::independent_parent::contracts(c)
             }
             fn configure(
                 configuration: Configuration,
@@ -133,6 +137,20 @@ macro_rules! producer_succession_fixture {
                     Fault::None,
                     configuration.child_width,
                     configuration.read_predecessor_orbits,
+                )?;
+                producers::twin::install(
+                    setup,
+                    configuration.selections.clone(),
+                    Fault::None,
+                    0,
+                    false,
+                )?;
+                producers::parameter_routes::install(
+                    setup,
+                    configuration.selections.clone(),
+                    Fault::None,
+                    0,
+                    false,
                 )?;
                 producers::leaf::install(
                     setup,

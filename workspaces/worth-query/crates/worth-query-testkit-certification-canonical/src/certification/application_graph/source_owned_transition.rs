@@ -91,3 +91,10 @@ pub use worth_query_host::facade::{
 };
 
 pub const OWNERSHIP: worth_query_host::facade::application_contribution::ProducerPublicationOwnership = worth_query_host::facade::application_contribution::ProducerPublicationOwnership::SourceScopeCascade;
+
+#[path = "canonical_transition/retire_source.rs"]
+#[expect(
+    clippy::duplicate_mod,
+    reason = "each transition schema compiles its own declared source-retirement binding"
+)]
+pub mod retire_source;

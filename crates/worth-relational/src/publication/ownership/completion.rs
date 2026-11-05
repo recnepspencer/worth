@@ -122,7 +122,14 @@ pub(crate) fn complete(
             )?;
             if changed(&row.value.origin.meaning) {
                 let mut witnesses = Vec::new();
-                for link in &roster.links {
+                let claims = super::read::publication_claims(
+                    execution,
+                    basis,
+                    row.entity,
+                    row.value.origin.commit.commit_id,
+                    writer.context(),
+                )?;
+                for link in &claims.links {
                     writer.checkpoint(1)?;
                     if (replaced(&row.value.origin.meaning)
                         && link.kind == storage.publication_link

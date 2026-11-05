@@ -267,31 +267,4 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
     }
 }
 
-impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S> {
-    #[doc(hidden)]
-    pub fn current_ownership_sources_for_record_for_test(
-        &self,
-        record: EntityId,
-        request: &WorthQueryRequestScope,
-    ) -> Result<Vec<EntityId>, WorthQueryAdvancementDenial> {
-        self.with_application_advancement(request, |phase| {
-            let execution = phase.execution_request_for(&self.runtime.product_runtime)?;
-            let (_, product, _) = self
-                .on_branch(self.current_world())
-                .select(&phase)
-                .expect("actual Query product")
-                .into_parts();
-            let graph = self.runtime.primary_graph().expect("actual Query graph");
-            Ok(graph
-                .integration_handle()
-                .with_runtime_mut(&execution, |runtime| {
-                    runtime.current_ownership_sources_for_record_for_test(
-                        &execution,
-                        product.relational_basis(),
-                        record,
-                    )
-                })
-                .expect("actual current custody count"))
-        })?
-    }
-}
+mod inspection;

@@ -1,4 +1,4 @@
-use super::producers::{child, independent_parent, leaf, parent};
+use super::producers::{child, independent_parent, leaf, parameter_routes, parent, twin};
 use super::*;
 macro_rules! feature {
     ($feature:ident, $inputs:ty, $name:literal) => {
@@ -16,7 +16,7 @@ feature!(
 );
 feature!(SplitParent, ApplicationFeatureInputList<SplitParentInput, ApplicationFeatureInputList<IndependentParentInput, ApplicationFeatureInputLeaf>>, "dispatch.split.parent");
 feature!(SplitChild, ApplicationFeatureInputList<SplitChildInput, ApplicationFeatureInputList<SplitChildRootInput, ApplicationFeatureInputList<IndependentChildInput, ApplicationFeatureInputLeaf>>>, "dispatch.split.child");
-feature!(SplitLeaf, ApplicationFeatureInputList<SplitLeafInput, ApplicationFeatureInputList<SplitLeafRootInput, ApplicationFeatureInputList<IndependentLeafInput, ApplicationFeatureInputLeaf>>>, "dispatch.split.leaf");
+feature!(SplitLeaf, ApplicationFeatureInputList<SplitLeafInput, ApplicationFeatureInputList<SplitLeafRootInput, ApplicationFeatureInputList<IndependentLeafInput, ApplicationFeatureInputList<TwinInput, ApplicationFeatureInputList<ParameterInput, ApplicationFeatureInputLeaf>>>>>, "dispatch.split.leaf");
 macro_rules! output_port {
     ($port:ident, $feature:ident, $name:literal) => {
         pub struct $port;
@@ -50,6 +50,8 @@ input_port!(IndependentLeafInput, SplitLeaf, "independent-leaf-input");
 input_port!(SplitChildInput, SplitChild, "child-input");
 input_port!(SplitChildRootInput, SplitChild, "child-root-input");
 input_port!(SplitLeafInput, SplitLeaf, "leaf-input");
+input_port!(TwinInput, SplitLeaf, "twin-input");
+input_port!(ParameterInput, SplitLeaf, "parameter-input");
 input_port!(SplitLeafRootInput, SplitLeaf, "leaf-root-input");
 macro_rules! connection {
     ($binding:ident, $alias:ident, $from:ident, $out:ident, $to:ident, $in:ident, $name:literal) => {
@@ -122,6 +124,40 @@ macro_rules! root_connection {
 }
 root_connection!(StartSplitParent, parent);
 root_connection!(StartSplitChild, child);
+connection!(
+    StartTwin,
+    TwinConnection,
+    SplitEntry,
+    SplitEntryOutput,
+    SplitLeaf,
+    TwinInput,
+    "dispatch.start-twin"
+);
+root_connection!(StartTwin, twin);
+connection!(
+    StartParameter,
+    ParameterConnection,
+    SplitEntry,
+    SplitEntryOutput,
+    SplitLeaf,
+    ParameterInput,
+    "dispatch.start-parameter"
+);
+impl WorthQueryApplicationRequiredOutputConnection<Schema> for StartParameter {
+    type Source = super::producers::parameter_routes::initial::Binding;
+    type Demand = super::producers::parameter_routes::Demand;
+    const IDENTITY: &'static str = <Self as ApplicationConnectionIdentity>::IDENTITY;
+    fn demand_from_source(
+        input: &super::producers::parameter_routes::initial::Input,
+    ) -> Result<Self::Demand, WorthQueryRequiredOutputConnectionDenial> {
+        Ok(super::producers::parameter_routes::Demand(
+            input.0.key.clone(),
+            input.0.width,
+        ))
+    }
+}
+pub type TwinTree = ApplicationDemandOutputGraph<TwinConnection, ApplicationOutputLeaf>;
+pub type ParameterTree = ApplicationDemandOutputGraph<ParameterConnection, ApplicationOutputLeaf>;
 connection!(
     StartIndependentParent,
     IndependentParentConnection,
@@ -218,6 +254,10 @@ pub fn features() -> Vec<ApplicationFeatureSpec> {
             .conditional_operation::<child::preserve::Operation>()
             .finish(),
         ApplicationFeatureSpec::root::<Schema, SplitLeaf>()
+            .conditional_operation::<twin::initial::Operation>()
+            .conditional_operation::<twin::preserve::Operation>()
+            .conditional_operation::<parameter_routes::initial::Operation>()
+            .conditional_operation::<parameter_routes::preserve::Operation>()
             .conditional_operation::<leaf::initial::Operation>()
             .conditional_operation::<leaf::preserve::Operation>()
             .finish(),
@@ -227,7 +267,10 @@ pub fn features() -> Vec<ApplicationFeatureSpec> {
 pub struct Program;
 impl ApplicationProgramDefinition<Schema> for Program {
     type Contributions = (Contribution,);
-    type Outputs = ApplicationProgramOutputs<(Tree, (ChildTree, IndependentTree))>;
+    type Outputs = ApplicationProgramOutputs<(
+        Tree,
+        (ChildTree, (IndependentTree, (TwinTree, ParameterTree))),
+    )>;
     type Rules = ApplicationRuleLeaf;
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("succession.program");

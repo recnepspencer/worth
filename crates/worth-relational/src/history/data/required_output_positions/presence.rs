@@ -9,7 +9,9 @@ use serde::{Deserialize, Serialize};
 pub(crate) mod admission;
 pub(crate) mod completion;
 mod current_selection;
+mod history_fallback;
 pub(crate) use current_selection::read_current;
+pub(crate) use history_fallback::require_current_owned_route;
 mod current_index;
 pub(crate) use current_index::CurrentPositions;
 
