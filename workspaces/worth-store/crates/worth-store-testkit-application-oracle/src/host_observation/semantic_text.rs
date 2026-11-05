@@ -38,7 +38,6 @@ fn scalar(value: &AspectValue, symbols: &SymbolTableSnapshot) -> Value {
         | AspectValue::Decimal(_)
         | AspectValue::BigInt(_)
         | AspectValue::Rational(_)
-        | AspectValue::Bytes(_)
         | AspectValue::Uuid(_)
         | AspectValue::Date(_)
         | AspectValue::Time(_)
