@@ -84,3 +84,25 @@ The destination rule (the lowest module that references a unit) sends most of th
 refusal helpers to `application_program`. The greedy layering ranks it near the bottom, 21st;
 the draft stack ranks it 50th. A simulation against the draft stack would place them
 differently. The layering, not only the moves, is part of the decision.
+
+## Wave-1 check: where the carried units would land (sink)
+
+Before applying the helpers-carry-types moves, I checked where they send items.
+
+| variant | primary_graph: largest destination | domain: largest destinations | after: component, PG / DC |
+|---|---|---|---|
+| greedy layering (applied as briefed) | `application_program` 709 of 1,073 | `domain_evidence_binding` 589, `artifact_owner` 410 of 1,205 | 57 / 9 |
+| draft stack | `record_reservations` 706 of 1,081 | `execution_runtime` 947 of 1,068 | 56 / 10 |
+| greedy, at most 6 items carried per move | `application_program` 644 of 899 | `domain_evidence_binding` 482, `artifact_owner` 335 | 57 / 9 |
+| greedy, users may also be lifted to what they need (cap 6) | `application_program` 644 of 1,010 | same | 56 / 9 |
+| as above, lifting first | `application_program` 649 of 1,029 | same | 55 / 9 |
+
+The destination rule sends a unit to the lowest module that references it, and each move
+takes the unit's types with it. Every variant therefore drains the refusal and evidence
+closure into one low module that touches any member of it.
+
+`application_program` makes only 6 references upward, among them `WorthQueryOutputDemandDenial`
+in a public signature. That denial transitively holds most of the refusal vocabulary, so
+round by round about 650 items collect there. Applying this would put the crate's refusal,
+observation and evidence types into modules that mean something else, against the
+domain-structure law. It is left for the owner to rule on (see the wave-1 report).

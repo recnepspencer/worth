@@ -46,11 +46,20 @@ def split(key):
 class World:
     """Item locations, item dependencies and the reference list of one parent."""
 
-    def __init__(self, model, parent, all_units, helpers, helpers_carry_types=False):
+    def __init__(self, model, parent, all_units, helpers, helpers_carry_types=False, stack=None):
         self.helpers_carry_types = helpers_carry_types
+        self.max_carry = 10 ** 9
+        self.bidirectional = False
+        self.up_first = False
         self.model, self.parent = model, parent
         self.children, edges, self.kinds = coupling(None, parent, None, model)
-        self.order = list(reversed(layering(self.children, {e: len(r) for e, r in edges.items()})))
+        if stack is not None:
+            self.order = [m for layer in stack['layers'] for m, _purpose in layer['modules']]
+            missing = set(self.children) ^ set(self.order)
+            if missing:
+                raise SystemExit(f'stack mismatch for {parent}: {sorted(missing)}')
+        else:
+            self.order = list(reversed(layering(self.children, {e: len(r) for e, r in edges.items()})))
         self.position = {n: i for i, n in enumerate(self.order)}
         self.refs = [(a, source, key) for (a, _b), refs in edges.items() for source, key in refs]
         self.units, self.helpers = all_units, helpers
@@ -157,6 +166,31 @@ class World:
         memo[memo_key] = result
         return result
 
+    def users(self):
+        """{item key: {items whose declaration or impls name it}} (units and helpers)."""
+        if getattr(self, '_users', None) is None:
+            found = defaultdict(set)
+            keys = ['::'.join(k[0] + (k[1],)) for k in self.units] + list(self.helpers)
+            for key in keys:
+                for target, _label in self.needs(key) or []:
+                    found[target].add(key)
+            self._users = found
+        return self._users
+
+    def lift_target(self, key):
+        """The highest module above `key`'s that `key` needs, or None when it needs none above."""
+        here = self.node(key)
+        if here is None:
+            return None
+        best = None
+        for target, _label in self.needs(key) or []:
+            node = self.node(target)
+            if node is None or self.position[node] <= self.position[here]:
+                continue
+            if best is None or self.position[node] > self.position[best]:
+                best = node
+        return best
+
     def move(self, key, destination):
         old = self.node(key)
         self.location[key] = destination
@@ -248,6 +282,9 @@ def simulate(world):
                 continue
             destination = min(froms, key=lambda m: world.position[m])
             ok, carried = world.judge(key, destination, memo)
+            if ok and len(carried) + 1 > world.max_carry:
+                ok = False
+                world.roots[(key, destination)] = set()
             if ok:
                 unit_moves.append((key, destination, carried))
             else:
@@ -262,12 +299,48 @@ def simulate(world):
             if world.position[destination] >= world.position[world.node(key)]:
                 continue
             ok, carried = world.judge(key, destination, memo, comove_types=world.helpers_carry_types)
-            if ok:
+            if ok and len(carried) + 1 <= world.max_carry:
                 helper_moves.append((key, destination, carried))
-        if not unit_moves and not helper_moves:
+        up_moves = []
+        if world.bidirectional:
+            # Lift the user instead: an item below that names an item above it, and that nothing
+            # below its new home names, goes up to the highest module it needs.
+            users = world.users()
+            planned = set() if world.up_first else {k for k, _d, c in helper_moves + unit_moves for k in {k} | c}
+            for key, froms in sorted(against.items()):
+                if key in planned or key in unit_destination and False:
+                    continue
+                if world.kind(key) not in TYPE_KINDS and world.kind(key) not in HELPER_KINDS:
+                    pass
+                for user in sorted(users.get(key, ())):
+                    if user in planned or user in world.moved:
+                        continue
+                    here = world.node(user)
+                    if here is None or here not in froms:
+                        continue
+                    up = world.lift_target(user)
+                    if up is None:
+                        continue
+                    if any(world.node(u) is not None and world.position[world.node(u)] < world.position[up]
+                           and u not in planned for u in users.get(user, ())):
+                        continue
+                    if any(self_ref for self_ref in []):
+                        continue
+                    up_moves.append((user, up, set()))
+                    planned.add(user)
+        if world.bidirectional and world.up_first and up_moves:
+            lifted = {u for u, _d, _c in up_moves}
+            lifted_for = set()
+            users = world.users()
+            for key in against:
+                if users.get(key, set()) & lifted:
+                    lifted_for.add(key)
+            unit_moves = [m for m in unit_moves if m[0] not in lifted_for]
+            helper_moves = [m for m in helper_moves if m[0] not in lifted_for]
+        if not unit_moves and not helper_moves and not up_moves:
             break
         moved_now = set()
-        for key, destination, carried in helper_moves + unit_moves:
+        for key, destination, carried in helper_moves + unit_moves + up_moves:
             for item in {key} | carried:
                 if item not in moved_now and world.node(item) != destination:
                     world.move(item, destination)
@@ -370,6 +443,14 @@ def main(argv=None):
     parser.add_argument('parents', nargs='+')
     parser.add_argument('--out', type=Path, required=True)
     parser.add_argument('--root', type=Path, default=Path.cwd())
+    parser.add_argument('--stacks', type=Path, nargs='*', default=[],
+                        help='stack files (ownership_analysis format) to use instead of the greedy layering')
+    parser.add_argument('--up-first', action='store_true',
+                        help='with --bidirectional, prefer lifting users over moving items down')
+    parser.add_argument('--bidirectional', action='store_true',
+                        help='also lift a user above the item it names when nothing below names the user')
+    parser.add_argument('--max-carry', type=int, default=10 ** 9,
+                        help='refuse a move that would carry more than this many items with it')
     parser.add_argument('--helpers-carry-types', action='store_true',
                         help='a helper may take the types it names with it (never another helper)')
     args = parser.parse_args(argv)
@@ -382,7 +463,11 @@ def main(argv=None):
     summary = {}
     for parent_path in args.parents:
         parent = tuple(parent_path.split('::'))
-        world = World(model, parent, all_units, helpers, args.helpers_carry_types)
+        stacks = {json.loads(p.read_text())['parent']: json.loads(p.read_text()) for p in args.stacks}
+        world = World(model, parent, all_units, helpers, args.helpers_carry_types, stacks.get(parent_path))
+        world.max_carry = args.max_carry
+        world.bidirectional = args.bidirectional
+        world.up_first = args.up_first
         result = simulate(world)
         target = args.out / parent[-1]
         target.mkdir(parents=True, exist_ok=True)
