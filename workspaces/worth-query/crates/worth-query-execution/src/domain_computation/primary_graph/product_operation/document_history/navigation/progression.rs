@@ -214,10 +214,17 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
                         &execution,
                         self.application.runtime.authority_identity().as_u64(),
                         &self.application.installed_schema.binding_identity(),
+                        &graph.layout,
                         historical.product().observation(),
                         custody.routes.iter(),
                     )
-                    .map_err(Denial::OutputLineage)?,
+                    .map_err(|cause| {
+                        use crate::domain_computation::primary_graph::output_lineage::HistoricalTransportDenial as Cause;
+                        match cause {
+                            Cause::Lookup(stop) => Denial::OutputLineage(stop),
+                            Cause::PublicationCorrespondence(subject) => Denial::OutputPublicationCorrespondence(subject),
+                        }
+                    })?,
             }),
             None => None,
         };

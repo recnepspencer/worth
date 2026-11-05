@@ -228,3 +228,5 @@ impl<
             .finish_non_exhaustive()
     }
 }
+
+pub use worth_query_execution::publication_boundary::document_history::WorthQueryHistoryPublicationCorrespondenceMismatch;

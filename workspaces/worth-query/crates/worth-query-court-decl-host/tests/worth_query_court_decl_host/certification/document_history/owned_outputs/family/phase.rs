@@ -107,7 +107,7 @@ macro_rules! phase {
                     installation.bind_output_readiness::<Producer, _, _, _, _, _, _>(node, ordinal)
                 }
             }
-            pub struct Handler;
+            pub struct Handler { pub derive: fn(u64) -> u64 }
             impl OperationHandler<Schema, Binding> for Handler {
                 fn decide(&self, input: &Input, reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>) -> HandlerResult<Decision, Denial> {
                     let result = (|| {
@@ -128,7 +128,7 @@ macro_rules! phase {
                 fn build_candidate(&self, input: &Input, decision: Decision, writer: &mut CandidateWriter<'_, Schema, Binding>) -> HandlerResult<(), Denial> {
                     let result = (|| {
                         let source = writer.projected_entity(&decision.source)?;
-                        let value = derived(input.0.value);
+                        let value = (self.derive)(input.0.value);
                         let output = match &decision.output {
                             Some(prior) => { let output = writer.projected_entity(prior)?; writer.write_field(&output, $value::reference(), value)?; output }
                             None => {

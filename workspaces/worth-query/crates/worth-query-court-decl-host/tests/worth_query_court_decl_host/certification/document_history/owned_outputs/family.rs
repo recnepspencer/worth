@@ -116,8 +116,14 @@ macro_rules! family {
             pub fn install(
                 setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
             ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-                setup.handler::<initial::Binding, _>(initial::Handler)?;
-                setup.handler::<preserve::Binding, _>(preserve::Handler)?;
+                install_with_derivation(setup, derived)
+            }
+            pub fn install_with_derivation(
+                setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
+                derive: fn(u64) -> u64,
+            ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+                setup.handler::<initial::Binding, _>(initial::Handler { derive })?;
+                setup.handler::<preserve::Binding, _>(preserve::Handler { derive })?;
                 setup.producer::<initial::Producer>(initial::Provider)?;
                 setup.producer::<preserve::Producer>(preserve::Provider)?;
                 setup.conditional::<initial::Readiness>(())?;

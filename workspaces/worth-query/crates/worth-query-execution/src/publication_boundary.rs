@@ -37,6 +37,7 @@ pub mod document_history {
     pub use crate::domain_computation::primary_graph::application_query::{
         WorthQueryDocumentHistoryRead, WorthQueryHistoryPreviewReadAdmission,
     };
+    pub use crate::domain_computation::primary_graph::output_lineage::WorthQueryHistoryPublicationCorrespondenceMismatch;
     #[doc(hidden)]
     pub use crate::domain_computation::primary_graph::WorthQueryDocumentHistoryCapturePauseForTest;
     #[doc(hidden)]

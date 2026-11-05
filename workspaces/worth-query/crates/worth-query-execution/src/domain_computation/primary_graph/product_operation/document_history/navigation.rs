@@ -106,6 +106,10 @@ pub enum WorthQueryHistoryNavigationDenial {
     /// The selected step retains no exact lineage row for a producer route
     /// Native restores, or its lookup stopped.
     OutputLineage(worth_relational::facade::mvcc::CompanionPreflightStop),
+    /// Descriptive Query roles disagree with this selected Native publication.
+    OutputPublicationCorrespondence(
+        crate::domain_computation::primary_graph::output_lineage::WorthQueryHistoryPublicationCorrespondenceMismatch,
+    ),
     RestoredOutputRead(worth_relational::facade::runtime::RelationalHistoricalSelectionReadDenial),
     RestoredOutputCurrentness(
         crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial,

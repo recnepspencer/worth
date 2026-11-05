@@ -49,9 +49,11 @@ pub(crate) mod retained_computation;
 pub(in crate::domain_computation::primary_graph) use retained_computation::PriorComputationRecord;
 mod fork_origin;
 mod historical_transport;
-pub use historical_transport::HistoricalAcceptedOrigin;
+pub use historical_transport::{
+    HistoricalAcceptedOrigin, WorthQueryHistoryPublicationCorrespondenceMismatch,
+};
 pub(in crate::domain_computation::primary_graph) use historical_transport::{
-    HistoricalSelectionCoordinate, PreparedHistoricalTransport,
+    HistoricalSelectionCoordinate, HistoricalTransportDenial, PreparedHistoricalTransport,
 };
 mod retention;
 pub(crate) mod settlement_identity;

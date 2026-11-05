@@ -3,8 +3,19 @@ use super::*;
 use worth_query_host::facade::product::WorthQueryProductBranch;
 pub type Host = WorthQueryProgramApplicationRuntime<Schema, program::Program>;
 pub type Document<'a> = WorthQueryApplicationHistoryDocument<'a, Schema, History>;
+#[derive(Clone, Copy)]
+pub struct Configuration {
+    pub second_derivation: Option<fn(u64) -> u64>,
+}
+impl Default for Configuration {
+    fn default() -> Self {
+        Self {
+            second_derivation: None,
+        }
+    }
+}
 impl WorthQueryApplicationContribution<Schema> for Contribution {
-    type Configuration = ();
+    type Configuration = Configuration;
     fn contracts(
         contracts: &mut WorthQueryApplicationContributionContracts<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
@@ -17,14 +28,17 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         restricted_owned::contracts(contracts)
     }
     fn configure(
-        _: (),
+        configuration: Configuration,
         setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         setup.handler::<edit::Binding, _>(edit::Handler)?;
         setup.handler::<member_edit::Binding, _>(member_edit::Handler)?;
         setup.handler::<member_delete::Binding, _>(member_delete::Handler)?;
         first::install(setup)?;
-        second::install(setup)?;
+        match configuration.second_derivation {
+            Some(derive) => second::install_with_derivation(setup, derive)?,
+            None => second::install(setup)?,
+        }
         child::install(setup)?;
         restricted::install(setup)?;
         upstream::install(setup)?;
@@ -39,6 +53,9 @@ pub fn install() -> Host {
 }
 /// The same world whose every request is a worker-only lease without accounting.
 pub fn install_worker_only() -> Host {
+    install_with(worker_limits())
+}
+fn worker_limits() -> WorthQueryInMemoryApplicationLimits {
     use worth_query_host::facade::runtime::*;
     let clock =
         worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system();
@@ -54,11 +71,11 @@ pub fn install_worker_only() -> Host {
             DeterminismContract::CanonicalBitwise,
             std::num::NonZeroUsize::new(8).unwrap(),
         ));
-    install_with(WorthQueryInMemoryApplicationLimits::new(
+    WorthQueryInMemoryApplicationLimits::new(
         world,
         WorthQueryApplicationQueryResourceProfile::new(std::num::NonZeroUsize::new(128).unwrap()),
         SignalConditionalEvaluationBudget::development(),
-    ))
+    )
 }
 fn install_with(limits: WorthQueryInMemoryApplicationLimits) -> Host {
     let schema = Schema::declaration().unwrap();
@@ -68,7 +85,7 @@ fn install_with(limits: WorthQueryInMemoryApplicationLimits) -> Host {
             .validated_program()
             .unwrap(),
         schema,
-        ((),),
+        (Configuration::default(),),
         ApplicationBuildIdentity::parse("91830000-0000-0000-0000-000000005356").unwrap(),
         limits,
         |_, graph, installed| {
@@ -156,4 +173,47 @@ pub fn outputs(host: &Host, branch: WorthQueryProductBranch) -> (query::Row, que
         .rows()[0]
         .clone();
     (first, second)
+}
+
+pub fn restore_changed_build(checkpoint: WorthQueryApplicationCheckpoint, worker: bool) -> Host {
+    restore_checkpoint(checkpoint, worker, true)
+}
+pub fn restore_same_build(checkpoint: WorthQueryApplicationCheckpoint, worker: bool) -> Host {
+    restore_checkpoint(checkpoint, worker, false)
+}
+fn restore_checkpoint(
+    checkpoint: WorthQueryApplicationCheckpoint,
+    worker: bool,
+    changed: bool,
+) -> Host {
+    let schema = Schema::declaration().unwrap();
+    let program = ApplicationProgramAuthoring::<Schema, program::Program>::begin()
+        .with_schema(&schema)
+        .validated_program()
+        .unwrap();
+    let limits = if worker {
+        worker_limits()
+    } else {
+        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system())
+    };
+    in_memory_program_from_checkpoint(
+        program,
+        schema,
+        (Configuration {
+            second_derivation: if changed {
+                Some(|value| value + 2000)
+            } else {
+                None
+            },
+        },),
+        ApplicationBuildIdentity::parse(if changed {
+            "91830000-0000-0000-0000-000000005357"
+        } else {
+            "91830000-0000-0000-0000-000000005356"
+        })
+        .unwrap(),
+        limits,
+        checkpoint,
+    )
+    .unwrap()
 }

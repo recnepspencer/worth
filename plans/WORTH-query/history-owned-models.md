@@ -1172,3 +1172,106 @@ trees. Direct verification of closed non-leaf discovery dependencies, original
 multi-tree recording, real changed-build isolation/cold evidence, owner-recorded
 fallback causes, nested later sources, codec-retired selection, remaining issue
 courts and #56 are still unfinished. No issue READY is implied.
+
+
+### Changed-build isolation fixture boundary
+
+Use a genuine Query checkpoint before history attachment: the ordinary checkpoint
+owner captures the default occurrence, so this journey does not claim persistence
+of the process-local document or its private branch selection. Reopen the same
+schema/program under a new ApplicationBuildIdentity and a genuinely changed
+immutable second-family handler (value +2000 rather than +1000). Refresh only
+the first family through its actual producer, then attach history over the mixed
+real current publications. Selecting that snapshot must retain the current-build
+first family unopened and regenerate only the old-build second family, at the
+same original output IDs. No lineage row, fact, build stamp or checkpoint bytes
+are edited by the fixture. Serial and worker variants use the existing world.
+
+Implementation shape: the fixture phase handler owns its immutable derivation
+function, with the existing family installer selecting its ordinary default;
+world configuration supplies the new second implementation only on the reopened
+build. The checkpoint capture/reopen path uses the public host facade. The public
+court asserts the resulting 2001 output and one contact during navigation.
+The shared Model-source projection cannot attribute reads per family; the
+separate mixed-scope court proves that the healthy first root stays unopened. A mutation that bypasses the build fences must
+be tested against this real journey, and any surviving independent refusal is
+reported honestly. Cold current-fact equality after HistoricalSelection remains
+an obligation of the Native custody owner; no private-document persistence API
+is inferred from a default-occurrence checkpoint.
+
+
+### Verified cold-witness gap in historical transport
+
+The real changed-build journey passes, but bypassing both direct build gates
+survived. A temporary diagnostic (restored byte-exactly) found second's original
+checkpoint facts present/comparable and its typed output witness absent. Ordinary
+checkpoint demand readmission reconstructs that witness through
+SealedNativeOutputWitness::from_checkpoint_facts; historical transport currently
+copies the empty witness slot. This is a transport gap, not build-only evidence.
+
+Repair at the canonical witness owner: prepare original output expectations from
+the authenticated checkpoint facts and installed role/aspect coverage. Never
+project expectations from H or D. Native historical-selection evidence and the
+existing currentness owner must still compare them before reuse. Carry the new
+witness only on the transported row; leave the original cold row unchanged, so
+ordinary and ScopeEntityRecord entrances retain their existing behavior.
+
+The new reconstructive call is bounded and charged, including role indexing and
+fact/aspect visits, and retains memory with its witness. A sorted flat role index
+makes transient storage explicit while preserving the existing ordered role
+lookup and conflict/missing-fact refusals. The original constructor remains the
+same semantic entrance, with an internal funded historical variant. No format,
+producer, source observation, output revision, grant or settlement is invented.
+Re-run the actual build-fence mutant, existing checkpoint-witness owner courts,
+serial/worker public journeys and static checks before the checkpoint claim.
+
+
+### Cold correspondence binding before witness construction
+
+Boundary review found that ordinary same-schema checkpoint admission validates
+installed role declarations but does not authenticate Query's role IDs against
+Native's publication. The historical locator alone names producer/source, not
+the complete Native role set. Reconstructing an output witness must not promote
+that descriptive metadata to ownership. Native remains the sole publication
+truth; closure evidence remains separate from published roles.
+
+Before transporting any selected row, the correspondence owner compares its
+complete role set to the selected Native publication: role, declaration name,
+live/retired posture and full-generation entity identity. A Native
+HistoricalSelection is a fresh Preserve of a live role, so Query's retained
+original Create is accepted against that Preserve only for this origin; retired
+roles cannot take that normalization. The sorted Query role index is
+looked up for each actual Native role with request-stage charge-or-poll; equal
+cardinality and Native's unique roles make omission or substitution impossible.
+A mismatch refuses with OutputPublicationCorrespondence carrying the actual
+publication, before the candidate is published or adopted. This is not a second
+ownership reader and grants no custody. The constructor still creates only
+original expected versions; the existing currentness owner verifies them.
+
+Evidence plan: cold same-build serial/worker navigation must retain both families
+with zero contacts and zero producer-source projections. A rechecksummed Query
+role with an impossible generation, leaving the actual Native publication intact,
+must refuse typed with that publication and leave document/head/outputs unchanged.
+Kill omission of the role binding, omission of reconstructed witness transport,
+and both build fences; restore every mutation with equal SHA256. Re-run all public
+history and checkpoint-witness owner courts, boundary/context and scoped caps.
+
+
+Cold witness and role-binding positive evidence: 33 owned-output courts pass
+(cold-binding-positive-3.log). All three compiled mutants are killed and their
+files restored SHA256-identically (cold-mutation-results.json). Dropping the
+witness contacts 2 instead of 0; bypassing both build fences yields 1001 rather
+than 2001. Role-binding omission loses the precise publication-correspondence
+refusal. The original constructor's two checkpoint owner courts also pass.
+Pristine whole-history/static qualification follows before committing.
+
+Pristine cold checkpoint qualification passes: 153 public history courts, the
+new master root-retirement court, both canonical checkpoint-witness owner
+courts, boundary/context and scoped line caps (cold-checkpoint-results.json).
+The final accounting includes the OnceLock/Arc headers. Primary structural
+review keeps correspondence matching with the correspondence owner, original
+expectation construction with the witness owner, and transport with lineage.
+The long constructor is one role/aspect-coverage operation; phase/transport
+orchestration retains its existing scope. No independent reviewer was assigned.
+Remaining #57 non-leaf discovery, owner-visible fallback causes, multi-tree edit
+recording, nested later sources and codec-retired selection remain unqualified.

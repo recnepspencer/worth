@@ -5,6 +5,8 @@ pub use accepted::HistoricalAcceptedOrigin;
 use worth_relational::facade::mvcc::{
     CompanionPreflightStop as Stop, RelationalRequiredOutputPublication,
 };
+mod denial;
+pub use denial::{HistoricalTransportDenial, WorthQueryHistoryPublicationCorrespondenceMismatch};
 mod coordinate;
 pub use coordinate::HistoricalSelectionCoordinate;
 
@@ -13,6 +15,7 @@ struct SelectedRow {
     cell: Arc<OnceLock<RecordedOutput>>,
     route: RelationalRequiredOutputPublication,
     locator: Option<native_prior_checkpoint::NativePriorCheckpointLocator>,
+    witness: Option<Arc<OnceLock<SealedNativeOutputWitness>>>,
 }
 
 /// Every restored route resolved to its exact selected row before World moves.
@@ -33,9 +36,10 @@ impl WorthQueryApplicationOutputLineage {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime_authority: u64,
         schema: &ApplicationSchemaBindingIdentity,
+        layout: &crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout,
         selected: &worth_runtime_world::facade::ProductBranchObservation,
         routes: impl ExactSizeIterator<Item = &'a RelationalRequiredOutputPublication>,
-    ) -> Result<PreparedHistoricalTransport, Stop> {
+    ) -> Result<PreparedHistoricalTransport, HistoricalTransportDenial> {
         let count = routes.len();
         let bytes = (count as u64).saturating_mul(
             (std::mem::size_of::<RecordedOutput>() + std::mem::size_of::<SelectedRow>() + 256)
@@ -99,8 +103,16 @@ impl WorthQueryApplicationOutputLineage {
                                 && prior.source() == meaning.source_epoch
                         });
                 if owns_route {
+                    if !origin
+                        .correspondence
+                        .matches_native_publication(execution, route)?
+                    {
+                        return Err(HistoricalTransportDenial::PublicationCorrespondence(
+                            WorthQueryHistoryPublicationCorrespondenceMismatch::new(route.clone()),
+                        ));
+                    }
                     if found.is_some() {
-                        return Err(Stop::SelectedSourceMismatch);
+                        return Err(Stop::SelectedSourceMismatch.into());
                     }
                     let locator = match &origin.native_prior_checkpoint {
                         Some(locator) => Some(
@@ -110,7 +122,35 @@ impl WorthQueryApplicationOutputLineage {
                         ),
                         None => None,
                     };
+                    let witness = match origin
+                        .native_output_witness_cell()
+                        .filter(|cell| cell.get().is_some())
+                    {
+                        Some(witness) => Some(Arc::clone(witness)),
+                        None if matches!(
+                            origin.source_identity,
+                            Some(RecordedSourceIdentity::Checkpoint(_))
+                        ) =>
+                        {
+                            match origin
+                                .observed_source_facts()
+                                .and_then(|facts| facts.for_comparison())
+                            {
+                                Some(facts) => {
+                                    SealedNativeOutputWitness::from_historical_checkpoint_facts(
+                                        execution,
+                                        &origin.correspondence,
+                                        layout,
+                                        &facts,
+                                    )?
+                                }
+                                None => None,
+                            }
+                        }
+                        None => None,
+                    };
                     found = Some(SelectedRow {
+                        witness,
                         cell: Arc::clone(cell),
                         route: route.clone(),
                         locator,
@@ -201,11 +241,7 @@ impl WorthQueryApplicationOutputLineage {
                 completed_handler_facts: None,
                 completed_decision_reuse: None,
                 prepared_input_reuse_key: None,
-                native_output_witness: origin
-                    .native_output_witness_cell()
-                    .map(Arc::clone)
-                    .map(OnceLock::from)
-                    .unwrap_or_default(),
+                native_output_witness: selected.witness.map(OnceLock::from).unwrap_or_default(),
                 mutable: std::sync::Mutex::new(RecordedOutputMutable::new(
                     None,
                     row.observed_source_facts(),

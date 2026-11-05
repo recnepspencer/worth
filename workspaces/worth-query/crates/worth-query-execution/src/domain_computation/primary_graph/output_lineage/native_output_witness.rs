@@ -58,10 +58,19 @@ pub struct PreparedNativeOutputWitness {
 /// Equality of all installed aspect revisions plus native liveness/generation
 /// proves that the previously performed output has not changed. A revision
 /// change conservatively requests ordinary producer execution, even for ABA.
-#[derive(Debug)]
 pub struct SealedNativeOutputWitness {
     roles: Vec<RoleProbe>,
     aspects: Vec<AspectProbe>,
+    // Reconstructed historical expectations retain their own admitted storage.
+    _memory: Option<worth_execution::ExecutionMemoryReservation>,
+}
+impl std::fmt::Debug for SealedNativeOutputWitness {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SealedNativeOutputWitness")
+            .field("roles", &self.roles)
+            .field("aspects", &self.aspects)
+            .finish()
+    }
 }
 
 /// A checked projection of the sealed performed roles into ordinary observed
@@ -152,6 +161,7 @@ impl PreparedNativeOutputWitness {
         let sealed = SealedNativeOutputWitness {
             roles: self.roles,
             aspects: self.aspects,
+            _memory: None,
         };
         self.cell.set(sealed).ok()?;
         Some(self.cell)

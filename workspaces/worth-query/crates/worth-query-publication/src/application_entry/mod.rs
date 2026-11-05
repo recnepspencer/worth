@@ -273,3 +273,5 @@ pub use workflow::{
     WorthQueryWorkflowProposalRequest, WorthQueryWorkflowSuccessionBindingDenial,
 };
 pub use worth_query_execution::facade::primary_graph::WorthQueryApplicationQueryBatchResourceDenial;
+
+pub use history::WorthQueryHistoryPublicationCorrespondenceMismatch;
