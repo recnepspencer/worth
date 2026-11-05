@@ -1,0 +1,15 @@
+{
+  "crates/worth-court-relational-certification/tests/worth_court_relational_certification/process/serial/relational/managed_source_work_account/public_only.rs": 82,
+  "crates/worth-court-relational-certification/tests/worth_court_relational_certification/process/serial/relational/managed_source_work_account.rs": 334,
+  "crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/index_catalog.rs": 292,
+  "crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/index_catalog/recovery.rs": 345,
+  "crates/worth-relational/src/tests/durability/contracts/caller_association.rs": 221,
+  "crates/worth-relational/src/tests/durability/medium/cold_envelope_matrix.rs": 115,
+  "crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/managed_source/nested.rs": 159,
+  "crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/managed_source/row_read.rs": 252,
+  "crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/managed_source/owner.rs": 287,
+  "crates/worth-court-relational-branch-reference-compile-time/tests/worth_court_relational_branch_reference_compile_time/sources/worth_relational/ui/change_source_pass/selected_commit_mints_receipt.rs": 25,
+  "crates/worth-relational/src/derived_relation/evaluation/memo/tests.rs": 351,
+  "crates/worth-relational/src/transactions/data/outcomes/created_entity_bindings.rs": 269,
+  "crates/worth-relational/src/transactions/data/outcomes/created_relation_bindings.rs": 194
+}
