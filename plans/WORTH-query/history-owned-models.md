@@ -685,3 +685,24 @@ selected-basis checks. Then integrate this evidence at the existing Query full
 verifier together with exact selected Product lineage transport; that subsequent
 cutover must preserve the branch/source fence for every ordinary verification
 and prove two-family zero-contact undo/redo before claiming #57.
+
+D1196 read-evidence checkpoint: `RelationalHistoricalSelectionRead` is
+implemented and courted at the Native projection owner. It is constructed only
+by `VisibilityReadContext::read_historical_selection` from two same-runtime
+observations whose restored commit is an `OwnedGraphSelection` envelope naming
+exactly the other observation's canonical basis. It retains both exact roots and
+the envelope under funded memory and request-stage checkpoints. A member comparison
+requires the entity's canonical selected kind in the committed selection and in all
+three views, then the final revision equal to the restoration baseline, then the
+selected-basis revision equal to the original expectation. Courts
+(`history_ownership::historical_read_evidence`): bridged original field and
+aspect revisions after a genuine edit and selection (direct comparison would
+reject); unrelated field/aspect edits keep the proof; a later relevant edit and
+ABA break it; an edited outside entity cannot use it; a wrong selected basis, an
+ordinary commit and foreign runtimes/views refuse typed; work and memory bounds
+refuse as request denials; worker-only requests poll without accounting.
+Mutations killed: admit an unrestored member, skip the field baseline, skip the
+aspect baseline, skip the exact selected-basis check. Removing the
+older-than-restoration version guard survives as an equivalent mutant: the
+baseline comparison already rejects every such view. This grants no mutation or
+producer settlement; the Query full-verifier integration (#57) is next.
