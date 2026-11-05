@@ -8,7 +8,11 @@ use worth_runtime_world::facade::{
 
 use super::WorthQuerySelectedProductOperation;
 use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphCommittedApplication;
-use {crate::domain_computation::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime};
+use {
+    crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime,
+    crate::domain_computation::request_execution::WorthQueryAdvancementPhase,
+};
 
 mod alternatives;
 mod authored_identity;

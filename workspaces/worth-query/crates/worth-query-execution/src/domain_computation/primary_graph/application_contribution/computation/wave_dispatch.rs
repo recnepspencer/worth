@@ -3,8 +3,14 @@ use super::prepared_request::{ComputedSlot, PreparedCompute};
 use super::WorthQueryMemberExecution;
 use worth_execution::{ExecutionMap, MapKernelFailure, MapOutcome, MapStop};
 use worth_foundational::PartitionIdentity;
-use {crate::domain_computation::request_execution::execution_stop::checkpoint_denial, crate::domain_computation::request_execution::execution_stop::lease_denial};
-use {crate::domain_computation::request_execution::QueryRequestExecution, crate::domain_computation::request_execution::WorthQueryAdvancementDenial};
+use {
+    crate::domain_computation::request_execution::execution_stop::checkpoint_denial,
+    crate::domain_computation::request_execution::execution_stop::lease_denial,
+};
+use {
+    crate::domain_computation::request_execution::QueryRequestExecution,
+    crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
+};
 
 // A member outcome cannot stop the map; only its request can.
 enum NoMemberFailure {}
@@ -76,7 +82,9 @@ pub fn dispatch(
             Ok(result)
         };
         let outcome =
-            match crate::domain_computation::request_execution::certified_wave_seed_for_test(wave.request()) {
+            match crate::domain_computation::request_execution::certified_wave_seed_for_test(
+                wave.request(),
+            ) {
                 Some(seed) => {
                     let (outcome, order) =
                         map.run_owned_native_perturbed_for_test(lease, seed, kernel);

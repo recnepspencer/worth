@@ -1,7 +1,10 @@
 use super::WorthQueryOwnedProductHead;
 use worth_relational::facade::branch::RelationalBranchBasisDenial;
 use worth_runtime_world::facade::{RuntimeWorldBranchAdmissionDenial, RuntimeWorldServiceDenial};
-use {crate::domain_computation::request_execution::WorthQueryAdvancementDenial, crate::domain_computation::primary_graph::WorthQueryManagedIndexDenial};
+use {
+    crate::domain_computation::primary_graph::WorthQueryManagedIndexDenial,
+    crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
+};
 
 #[derive(Debug)]
 pub enum WorthQueryDocumentHistoryDenial {

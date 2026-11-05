@@ -6,7 +6,13 @@ use super::{
 use crate::domain_computation::primary_graph::operation_body::BodyFieldExpectation;
 use crate::domain_computation::primary_graph::operation_body::PreparedBodySource;
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
-use {crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial, crate::domain_computation::request_execution::WorthQueryAdvancementDenial, crate::domain_computation::primary_graph::HandlerExecutionDenial, crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial, crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind};
+use {
+    crate::domain_computation::primary_graph::HandlerExecutionDenial,
+    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind,
+    crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial,
+    crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
+};
 
 impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'_, Schema> {
     /// Same canonical equivalence owner as native signing consequences. Both present
@@ -28,23 +34,32 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
             .decision_stage(|context| {
                 self.body_scalar_observe(identity, locator, |observed| {
                     if required && observed.is_none() {
-                        return Err(HandlerExecutionDenial::new(WorthQueryApplicationAttemptDenial::new(
-                            WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact,
-                            "reuse predecessor field",
-                        )));
+                        return Err(HandlerExecutionDenial::new(
+                            WorthQueryApplicationAttemptDenial::new(
+                                WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact,
+                                "reuse predecessor field",
+                            ),
+                        ));
                     }
                     let (Some(observed), Some(expected)) = (observed, expected) else {
                         return Ok(observed.is_none() && expected.is_none());
                     };
                     let bytes = Comparison::required_encoded_capacity_bytes(observed)
-                        .and_then(|n| n.checked_add(Comparison::required_encoded_capacity_bytes(expected)?))
-                        .ok_or_else(|| resource(WorthQueryManagedComputationResourceDenial::CapacityOverflow))?;
+                        .and_then(|n| {
+                            n.checked_add(Comparison::required_encoded_capacity_bytes(expected)?)
+                        })
+                        .ok_or_else(|| {
+                            resource(WorthQueryManagedComputationResourceDenial::CapacityOverflow)
+                        })?;
                     let _memory = execution.reserve(bytes).map_err(resource)?;
                     context.checkpoint(bytes).map_err(|cause| {
                         use crate::domain_computation::request_execution::advancement_denial;
-                        HandlerExecutionDenial::new(advancement_denial(worth_execution::WorkCeilingDenial::Stopped(cause)))
+                        HandlerExecutionDenial::new(advancement_denial(
+                            worth_execution::WorkCeilingDenial::Stopped(cause),
+                        ))
                     })?;
-                    Ok(Comparison::from_aspect_value(observed) == Comparison::from_aspect_value(expected))
+                    Ok(Comparison::from_aspect_value(observed)
+                        == Comparison::from_aspect_value(expected))
                 })
             })
             .map_err(HandlerExecutionDenial::new)?

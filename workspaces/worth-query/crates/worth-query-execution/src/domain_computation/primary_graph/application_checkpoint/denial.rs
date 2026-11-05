@@ -71,8 +71,12 @@ impl std::fmt::Display for WorthQueryCheckpointCaptureDenial {
 
 impl std::error::Error for WorthQueryCheckpointCaptureDenial {}
 
-impl From<crate::domain_computation::request_execution::WorthQueryForeignAdvancementPhase> for WorthQueryCheckpointCaptureDenial {
-    fn from(error: crate::domain_computation::request_execution::WorthQueryForeignAdvancementPhase) -> Self {
+impl From<crate::domain_computation::request_execution::WorthQueryForeignAdvancementPhase>
+    for WorthQueryCheckpointCaptureDenial
+{
+    fn from(
+        error: crate::domain_computation::request_execution::WorthQueryForeignAdvancementPhase,
+    ) -> Self {
         Self::ForeignPhase(error)
     }
 }

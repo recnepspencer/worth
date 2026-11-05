@@ -34,7 +34,9 @@ where
 {
     pub fn publish_application_runtime(
         self,
-        phase: &crate::domain_computation::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryBootstrapAdvancementPhase<
+            '_,
+        >,
         runtime: WorthQueryExecutionRuntime,
         authority: WorthQueryExecutionInstallationAuthority,
         installed_schema: WorthQueryInstalledApplicationSchema<Schema>,
@@ -64,7 +66,9 @@ where
     /// here before the application runtime can become visible.
     pub fn conditional_application_runtime_installation(
         self,
-        phase: &crate::domain_computation::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryBootstrapAdvancementPhase<
+            '_,
+        >,
         runtime: WorthQueryExecutionRuntime,
         authority: WorthQueryExecutionInstallationAuthority,
         installed_schema: WorthQueryInstalledApplicationSchema<Schema>,
@@ -91,7 +95,9 @@ where
     /// mechanism fixed for the lifetime of the resulting runtime.
     pub fn conditional_application_runtime_installation_with_authorization_time_source(
         self,
-        phase: &crate::domain_computation::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryBootstrapAdvancementPhase<
+            '_,
+        >,
         runtime: WorthQueryExecutionRuntime,
         authority: WorthQueryExecutionInstallationAuthority,
         installed_schema: WorthQueryInstalledApplicationSchema<Schema>,
@@ -122,7 +128,9 @@ where
     /// no Query authority and is never exposed to operation callers.
     pub fn publish_application_runtime_with_authorization_time_source(
         self,
-        phase: &crate::domain_computation::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryBootstrapAdvancementPhase<
+            '_,
+        >,
         runtime: WorthQueryExecutionRuntime,
         authority: WorthQueryExecutionInstallationAuthority,
         installed_schema: WorthQueryInstalledApplicationSchema<Schema>,
@@ -145,7 +153,9 @@ where
 
     pub(in crate::domain_computation::primary_graph) fn publish_application_runtime_with_ports(
         self,
-        phase: &crate::domain_computation::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryBootstrapAdvancementPhase<
+            '_,
+        >,
         runtime: WorthQueryExecutionRuntime,
         authority: WorthQueryExecutionInstallationAuthority,
         installed_schema: WorthQueryInstalledApplicationSchema<Schema>,

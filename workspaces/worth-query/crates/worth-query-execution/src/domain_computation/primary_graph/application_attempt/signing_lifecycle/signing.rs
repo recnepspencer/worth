@@ -1,7 +1,10 @@
 //! Signing admits and retains exact current membership before authentication, including absence.
 use super::super::signed_creation::WorthQuerySignedCreationPreparationDenial as SigningDenial;
 use super::super::WorthQueryApplicationEffectProgram;
-use {super::observation, super::Denial, super::Kind, crate::domain_computation::request_execution::QueryRequestExecution};
+use {
+    super::observation, super::Denial, super::Kind,
+    crate::domain_computation::request_execution::QueryRequestExecution,
+};
 
 pub(in crate::domain_computation::primary_graph::application_attempt) fn capture_signing<
     Schema,
@@ -25,7 +28,9 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn capture
     let lease = &candidate.read_set.lease;
     let request = execution.execution_request().map_err(|cause| {
         SigningDenial::Execution(
-            crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(cause),
+            crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(
+                cause,
+            ),
         )
     })?;
     let limit = spec.maximum_evidence;

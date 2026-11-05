@@ -4,7 +4,10 @@ use super::super::{
     WorthQueryApplicationObservedFact as Fact,
 };
 use super::sealing::WorthQuerySignedCreationPreparationDenial as Denial;
-use {crate::domain_computation::request_execution::QueryMemoryReservation, crate::domain_computation::request_execution::QueryRequestExecution};
+use {
+    crate::domain_computation::request_execution::QueryMemoryReservation,
+    crate::domain_computation::request_execution::QueryRequestExecution,
+};
 
 pub(super) fn capture<Schema, Operation, Input, Scope>(
     execution: &QueryRequestExecution<'_>,

@@ -2,8 +2,10 @@
 
 use super::{Form, QueryRequestExecution, Resource};
 use worth_execution::{ExecutionRequest, ExecutionWorkCeiling, WorkCeilingDenial};
-use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
-use {crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationCheckpointDenial, crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationInterruption};
+use {
+    crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationCheckpointDenial,
+    crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationInterruption,
+};
 
 /// Why an advancement could not return its ordinary result.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -88,7 +90,11 @@ impl QueryRequestExecution<'_> {
             Form::Leased { lease, .. } | Form::Serial { lease, .. } => lease
                 .as_ref()
                 .map(ExecutionRequest::leased)
-                .map_err(|denial| crate::domain_computation::request_execution::execution_stop::lease_denial(*denial)),
+                .map_err(|denial| {
+                    crate::domain_computation::request_execution::execution_stop::lease_denial(
+                        *denial,
+                    )
+                }),
         }
     }
 
@@ -131,20 +137,24 @@ pub(in crate::domain_computation) fn advancement_denial(
 ) -> WorthQueryAdvancementDenial {
     use WorthQueryAdvancementDenial as Denial;
     match denial {
-        WorkCeilingDenial::Admission(cause) => {
-            Denial::Resource(crate::domain_computation::request_execution::execution_stop::lease_denial(cause))
+        WorkCeilingDenial::Admission(cause) => Denial::Resource(
+            crate::domain_computation::request_execution::execution_stop::lease_denial(cause),
+        ),
+        WorkCeilingDenial::Stopped(stop) => {
+            match crate::domain_computation::request_execution::execution_stop::checkpoint_denial(
+                stop,
+            ) {
+                WorthQueryManagedComputationCheckpointDenial::Resource(cause) => {
+                    Denial::Resource(cause)
+                }
+                WorthQueryManagedComputationCheckpointDenial::Interrupted(cause) => {
+                    Denial::Interrupted(cause)
+                }
+                WorthQueryManagedComputationCheckpointDenial::NestedPatternStopped => {
+                    Denial::NestedStopped
+                }
+            }
         }
-        WorkCeilingDenial::Stopped(stop) => match crate::domain_computation::request_execution::execution_stop::checkpoint_denial(stop) {
-            WorthQueryManagedComputationCheckpointDenial::Resource(cause) => {
-                Denial::Resource(cause)
-            }
-            WorthQueryManagedComputationCheckpointDenial::Interrupted(cause) => {
-                Denial::Interrupted(cause)
-            }
-            WorthQueryManagedComputationCheckpointDenial::NestedPatternStopped => {
-                Denial::NestedStopped
-            }
-        },
         WorkCeilingDenial::Panicked => Denial::Panicked,
     }
 }

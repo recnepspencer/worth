@@ -56,9 +56,7 @@ pub enum WorthQueryBranchAdoptionPreparationDenial {
         >,
     ),
     /// The preparation call could not enter its execution request.
-    ExecutionDenied(
-        crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
-    ),
+    ExecutionDenied(crate::domain_computation::request_execution::WorthQueryAdvancementDenial),
     /// The runtime has no installed program support.
     ProgramSupportUnavailable,
     /// No program activation is published.
@@ -224,9 +222,7 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
         Input,
         Scope,
     >,
-    phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<
-        '_,
-    >,
+    phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
     selected: &WorthQuerySelectedProductOperation<'_, Schema>,
     target: &ApplicationProgramRevision,
     expected_requirements: &WorthQueryProgramAdoptionRequirements,

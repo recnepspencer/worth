@@ -155,23 +155,20 @@ where
     Contributions: WorthQueryApplicationContributionTuple<Schema>,
 {
     let policy = limits.world.execution_policy();
-    crate::domain_computation::request_execution::with_bootstrap_advancement(
-        policy,
-        |phase| {
-            in_memory_with_contributions_in_advancement::<Schema, Contributions>(
-                &phase,
-                declaration,
-                configuration,
-                build_identity,
-                limits,
-                initial_state,
-                authorization_time_source,
-                program_admission,
-                checkpoint,
-                checkpoint_transition,
-            )
-        },
-    )
+    crate::domain_computation::request_execution::with_bootstrap_advancement(policy, |phase| {
+        in_memory_with_contributions_in_advancement::<Schema, Contributions>(
+            &phase,
+            declaration,
+            configuration,
+            build_identity,
+            limits,
+            initial_state,
+            authorization_time_source,
+            program_admission,
+            checkpoint,
+            checkpoint_transition,
+        )
+    })
     .map_err(|cause| {
         WorthQueryInMemoryApplicationDenial::Graph(super::bootstrap::request_denial(cause))
     })?

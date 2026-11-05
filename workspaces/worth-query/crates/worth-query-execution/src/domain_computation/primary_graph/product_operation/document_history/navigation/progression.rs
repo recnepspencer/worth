@@ -5,7 +5,10 @@ use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::mvcc::{
     RelationalRetainedEntitySelectionPreparationError as Preparation, RelationalTransactionIntent,
 };
-use {crate::domain_computation::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryExpectedProductBranch};
+use {
+    crate::domain_computation::primary_graph::WorthQueryExpectedProductBranch,
+    crate::domain_computation::request_execution::WorthQueryAdvancementPhase,
+};
 
 impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
     pub(super) fn progress(

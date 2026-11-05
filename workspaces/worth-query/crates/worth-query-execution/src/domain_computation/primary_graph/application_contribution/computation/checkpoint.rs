@@ -2,7 +2,10 @@
 
 use crate::domain_computation::request_execution::execution_stop::checkpoint_denial;
 use crate::domain_computation::request_execution::QueryRequestExecution;
-use {crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationCheckpointDenial, crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationInterruption};
+use {
+    crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationCheckpointDenial,
+    crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationInterruption,
+};
 
 /// The request a managed computation runs for: its cancellation, its
 /// deadline and how its patterns are placed.

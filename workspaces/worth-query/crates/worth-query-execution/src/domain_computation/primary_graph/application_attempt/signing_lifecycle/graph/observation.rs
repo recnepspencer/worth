@@ -4,7 +4,11 @@ use crate::domain_computation::primary_graph::application_attempt::{
     fact::{observe_adjacency_with_work, AdjacencyObservationDenial},
     WorthQueryApplicationAdjacencyDirection as Direction,
 };
-use {super::attempt, super::capacity, super::stopped, super::unavailable, super::Batch, super::EntityId, super::Fact, super::KindId, super::Lease, super::Outcome, super::PathDirection, crate::domain_computation::request_execution::QueryRequestExecution};
+use {
+    super::attempt, super::capacity, super::stopped, super::unavailable, super::Batch,
+    super::EntityId, super::Fact, super::KindId, super::Lease, super::Outcome,
+    super::PathDirection, crate::domain_computation::request_execution::QueryRequestExecution,
+};
 pub(super) fn edges(
     lease: &Lease,
     anchor: EntityId,

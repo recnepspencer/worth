@@ -92,18 +92,19 @@ where
         Source: WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
         Source::Input: Clone + Send + Sync + 'static,
     {
-        let phase_request =
-            match phase.execution_request_for(&self.backing.runtime.runtime.product_runtime) {
-                Ok(request) => request,
-                Err(cause) => return Ok((
-                    crate::domain_computation::request_execution::WorthQueryAdvancementDenial::from(
-                        cause,
-                    )
-                    .into_commit_outcome(),
-                    None,
-                    None,
-                )),
-            };
+        let phase_request = match phase
+            .execution_request_for(&self.backing.runtime.runtime.product_runtime)
+        {
+            Ok(request) => request,
+            Err(cause) => return Ok((
+                crate::domain_computation::request_execution::WorthQueryAdvancementDenial::from(
+                    cause,
+                )
+                .into_commit_outcome(),
+                None,
+                None,
+            )),
+        };
         let execution = &phase_request;
 
         let root = TypeId::of::<Root>();
@@ -150,18 +151,19 @@ where
             WorthQueryApplicationDiscoveredOutputConnection<Schema, Source = Source>,
         Source::Input: Clone + Send + Sync + 'static,
     {
-        let phase_request =
-            match phase.execution_request_for(&self.backing.runtime.runtime.product_runtime) {
-                Ok(request) => request,
-                Err(cause) => return Ok((
-                    crate::domain_computation::request_execution::WorthQueryAdvancementDenial::from(
-                        cause,
-                    )
-                    .into_commit_outcome(),
-                    None,
-                    None,
-                )),
-            };
+        let phase_request = match phase
+            .execution_request_for(&self.backing.runtime.runtime.product_runtime)
+        {
+            Ok(request) => request,
+            Err(cause) => return Ok((
+                crate::domain_computation::request_execution::WorthQueryAdvancementDenial::from(
+                    cause,
+                )
+                .into_commit_outcome(),
+                None,
+                None,
+            )),
+        };
         let execution = &phase_request;
 
         let root = TypeId::of::<Root>();

@@ -11,7 +11,10 @@ use worth_relational::facade::{
     identity::{EntityId, KindId, PartitionId},
     transactions::planned_single_field_locator,
 };
-use {crate::domain_computation::primary_graph::application_checkpoint::facts::NativeFactPayloadBuilder, crate::domain_computation::request_execution::with_bootstrap_advancement};
+use {
+    crate::domain_computation::primary_graph::application_checkpoint::facts::NativeFactPayloadBuilder,
+    crate::domain_computation::request_execution::with_bootstrap_advancement,
+};
 
 fn fact(ordinal: usize) -> Fact {
     Fact::Field {

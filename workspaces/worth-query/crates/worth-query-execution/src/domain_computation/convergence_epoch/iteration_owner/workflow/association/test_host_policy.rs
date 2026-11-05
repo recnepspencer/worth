@@ -4,9 +4,7 @@ impl WorkflowIteratingEpochAssociation {
     pub(in crate::domain_computation::convergence_epoch) fn fixture_phase<'scope>(
         &self,
         host: &crate::domain_computation::request_execution::TestHostRequest<'scope>,
-    ) -> crate::domain_computation::request_execution::WorthQueryAdvancementPhase<
-        'scope,
-    > {
+    ) -> crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'scope> {
         host.phase_for_workflow(&self.managed_run)
     }
 }
@@ -17,9 +15,7 @@ impl
     pub(in crate::domain_computation::convergence_epoch) fn fixture_phase<'scope>(
         &self,
         host: &crate::domain_computation::request_execution::TestHostRequest<'scope>,
-    ) -> crate::domain_computation::request_execution::WorthQueryAdvancementPhase<
-        'scope,
-    > {
+    ) -> crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'scope> {
         self.managed.fixture_phase(host)
     }
 }
@@ -30,9 +26,7 @@ impl
     pub(in crate::domain_computation::convergence_epoch) fn fixture_phase<'scope>(
         &self,
         host: &crate::domain_computation::request_execution::TestHostRequest<'scope>,
-    ) -> crate::domain_computation::request_execution::WorthQueryAdvancementPhase<
-        'scope,
-    > {
+    ) -> crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'scope> {
         self.managed.fixture_phase(host)
     }
 }
@@ -41,9 +35,7 @@ impl WorkflowIterationAssociation<crate::domain_computation::WorthQueryYieldedWo
     pub(in crate::domain_computation::convergence_epoch) fn fixture_phase<'scope>(
         &self,
         host: &crate::domain_computation::request_execution::TestHostRequest<'scope>,
-    ) -> crate::domain_computation::request_execution::WorthQueryAdvancementPhase<
-        'scope,
-    > {
+    ) -> crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'scope> {
         self.managed.fixture_phase(host)
     }
 }

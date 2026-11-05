@@ -6,14 +6,21 @@ use worth_query_declaration::facade::application_operation::{
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationMutationBinding,
 };
-use {crate::domain_computation::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::request_execution::WorthQueryForeignAdvancementPhase, crate::domain_computation::primary_graph::HandlerExecutionDenial, crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation, crate::domain_computation::primary_graph::WorthQueryApplicationInvariantProjectionAuthority, crate::domain_computation::primary_graph::WorthQueryOperationProjectionDenial, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime};
+use {
+    crate::domain_computation::primary_graph::HandlerExecutionDenial,
+    crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation,
+    crate::domain_computation::primary_graph::WorthQueryApplicationInvariantProjectionAuthority,
+    crate::domain_computation::primary_graph::WorthQueryOperationProjectionDenial,
+    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime,
+    crate::domain_computation::request_execution::WorthQueryAdvancementPhase,
+    crate::domain_computation::request_execution::WorthQueryForeignAdvancementPhase,
+};
 
 /// Descriptive findings retain their native memory claim for their whole lifetime.
 /// This result carries no projection snapshot or mutation authority.
 pub struct WorthQueryCurrentBodyRequirementAssessment {
     findings: Vec<WorthQueryOperationBodyRequirementFinding>,
-    _memory:
-        Option<crate::domain_computation::request_execution::QueryMemoryReservation>,
+    _memory: Option<crate::domain_computation::request_execution::QueryMemoryReservation>,
 }
 
 impl WorthQueryCurrentBodyRequirementAssessment {

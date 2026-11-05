@@ -9,7 +9,12 @@ use crate::domain_computation::primary_graph::fact_verification_observation::cor
 use worth_execution::ExecutionRequest;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::runtime::RelationalRuntime;
-use {crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot, crate::domain_computation::primary_graph::output_reuse::first_moved_fact, crate::domain_computation::primary_graph::output_reuse::retained_fact_denial, crate::domain_computation::request_execution::WorthQueryAdvancementPhase};
+use {
+    crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot,
+    crate::domain_computation::primary_graph::output_reuse::first_moved_fact,
+    crate::domain_computation::primary_graph::output_reuse::retained_fact_denial,
+    crate::domain_computation::request_execution::WorthQueryAdvancementPhase,
+};
 
 pub(in crate::domain_computation::primary_graph::product_operation::correction_source) fn require<
     Schema: ApplicationSchema,

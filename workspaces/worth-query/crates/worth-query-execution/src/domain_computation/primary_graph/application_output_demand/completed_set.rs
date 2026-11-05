@@ -9,7 +9,13 @@ use crate::publication_boundary::{
 use std::sync::Arc;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_installation::facade::ApplicationSchema;
-use {crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial, crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind as Kind, crate::domain_computation::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation, crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation};
+use {
+    crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial,
+    crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind as Kind,
+    crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
+    crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation,
+    crate::domain_computation::request_execution::WorthQueryAdvancementPhase,
+};
 
 impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
     pub(super) fn qualify_completed_output_set<'s>(
@@ -37,9 +43,7 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
             .reserve_retained_memory(retained_bytes)
             .map_err(|cause| {
                 refused(Kind::ExecutionRequest(
-                    crate::domain_computation::request_execution::advancement_denial(
-                        cause,
-                    ),
+                    crate::domain_computation::request_execution::advancement_denial(cause),
                 ))
             })?;
         let settlements = std::iter::once(root).chain(dependents);

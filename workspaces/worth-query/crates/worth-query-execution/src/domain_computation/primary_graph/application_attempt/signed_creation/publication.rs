@@ -209,9 +209,7 @@ fn coordinates(
 
 enum PublicationRefusal {
     Denied(Denial),
-    Execution(
-        crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
-    ),
+    Execution(crate::domain_computation::request_execution::WorthQueryAdvancementDenial),
 }
 impl From<Denial> for PublicationRefusal {
     fn from(value: Denial) -> Self {

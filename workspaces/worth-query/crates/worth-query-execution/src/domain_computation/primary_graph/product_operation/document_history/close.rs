@@ -5,7 +5,11 @@ use super::{
 use crate::basis::WorthQueryProductBranch;
 use worth_query_declaration::facade::application_history::ApplicationHistoryBinding;
 use worth_query_installation::facade::ApplicationSchema;
-use {crate::domain_computation::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryApplicationProductBranchCleanupFailure, crate::domain_computation::primary_graph::WorthQueryApplicationProductBranchCloseDenial};
+use {
+    crate::domain_computation::primary_graph::WorthQueryApplicationProductBranchCleanupFailure,
+    crate::domain_computation::primary_graph::WorthQueryApplicationProductBranchCloseDenial,
+    crate::domain_computation::request_execution::WorthQueryAdvancementPhase,
+};
 
 #[must_use = "retain the live document or its actual retired cleanup obligation"]
 pub enum WorthQueryDocumentHistoryCloseFailure<

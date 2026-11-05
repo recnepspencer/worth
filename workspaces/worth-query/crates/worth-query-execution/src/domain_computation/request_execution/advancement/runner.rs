@@ -50,7 +50,9 @@ fn run_admitted_advancement(
     }
     let mut body_unwind = None;
     let execute = |lease: Option<&worth_execution::ExecutionResourceLease<'_>>| {
-        crate::domain_computation::request_execution::advancement::observation::record_workers(lease.map_or(1, |lease| lease.policy().max_workers().get()));
+        crate::domain_computation::request_execution::advancement::observation::record_workers(
+            lease.map_or(1, |lease| lease.policy().max_workers().get()),
+        );
         let active = ActiveAdvancement { execution };
         let source = match (source_instance, owner) {
             (Some(source), _) => AdvancementSource::Relational(source),
@@ -89,12 +91,16 @@ fn run_admitted_advancement(
     // The execution owner catches unwinds to close its accounting scope.
     // Preserve the host body's original unwind and its existing posture.
     if let Some(payload) = body_unwind {
-        crate::domain_computation::request_execution::advancement::observation::record_panicked(outcome.as_ref().ok().map(|(_, report)| *report));
+        crate::domain_computation::request_execution::advancement::observation::record_panicked(
+            outcome.as_ref().ok().map(|(_, report)| *report),
+        );
         std::panic::resume_unwind(payload);
     }
     outcome
         .map(|(result, report)| {
-            crate::domain_computation::request_execution::advancement::observation::record_report(report);
+            crate::domain_computation::request_execution::advancement::observation::record_report(
+                report,
+            );
             result
                 .expect("a completed advancement has its body result")
                 .release();

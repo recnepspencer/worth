@@ -76,4 +76,3 @@ pub(crate) mod read_consult;
 pub(crate) mod read_lock_probe;
 pub(in crate::domain_computation) use read_lock_probe::ReadLockProbeForTest;
 
-pub(in crate::domain_computation) use resources::test_product_world_resources;

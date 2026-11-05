@@ -9,9 +9,7 @@ use worth_runtime_world::facade::{
 #[derive(Debug)]
 pub enum WorthQueryExpectedProductBranchAdoptionDenial {
     ForeignPhase,
-    Stopped(
-        crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
-    ),
+    Stopped(crate::domain_computation::request_execution::WorthQueryAdvancementDenial),
     /// The application's actual head slot no longer names the selected source.
     HeadReplaced,
     CandidateAdmission(WorthQueryProductBranchAdmissionDenial),
@@ -241,10 +239,9 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryExpectedProductBranch<'runti
         self,
         stop: worth_execution::MapKernelStop,
     ) -> WorthQueryExpectedProductBranchAdoptionFailure<'runtime, Schema> {
-        let denial =
-            crate::domain_computation::request_execution::advancement_denial(
-                worth_execution::WorkCeilingDenial::Stopped(stop),
-            );
+        let denial = crate::domain_computation::request_execution::advancement_denial(
+            worth_execution::WorkCeilingDenial::Stopped(stop),
+        );
         self.adoption_failed(WorthQueryExpectedProductBranchAdoptionDenial::Stopped(
             denial,
         ))

@@ -215,7 +215,10 @@ impl<Value, Denial> DecisionCompletion<Value, Denial> {
 fn execution_failure<Value, Denial>(
     cause: crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
 ) -> HandlerResult<Value, Denial> {
-    use {crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationInterruption as Stop, crate::domain_computation::request_execution::WorthQueryAdvancementDenial as Failure};
+    use {
+        crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationInterruption as Stop,
+        crate::domain_computation::request_execution::WorthQueryAdvancementDenial as Failure,
+    };
     match cause {
         Failure::Interrupted(Stop::Cancelled) => HandlerResult::Cancelled,
         Failure::Interrupted(Stop::DeadlineExceeded) => HandlerResult::DeadlineExceeded,

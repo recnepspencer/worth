@@ -49,7 +49,10 @@ pub use target::WorthQueryHistoryNavigationIntent;
 
 use super::{selection::HistorySelectionCell, WorthQueryDocumentHistoryDenial};
 use std::sync::{Arc, Weak};
-use {crate::domain_computation::request_execution::WorthQueryAdvancementDenial, crate::domain_computation::primary_graph::WorthQueryExpectedProductBranchAdoptionDenial};
+use {
+    crate::domain_computation::primary_graph::WorthQueryExpectedProductBranchAdoptionDenial,
+    crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
+};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryHistoryNavigationEligibilityDenial {

@@ -5,7 +5,9 @@ impl WorthQueryExecutionInstallationAuthority {
     #[doc(hidden)]
     pub fn prepare_primary_graph_with_relational_runtime_for_test<Schema>(
         &self,
-        phase: &crate::domain_computation::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryBootstrapAdvancementPhase<
+            '_,
+        >,
         runtime: &WorthQueryExecutionRuntime,
         installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
         relational_runtime: RelationalRuntime,
@@ -29,7 +31,9 @@ impl WorthQueryExecutionInstallationAuthority {
     #[doc(hidden)]
     pub fn prepare_primary_graph_with_relational_runtime_and_invariants_for_test<Schema>(
         &self,
-        phase: &crate::domain_computation::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryBootstrapAdvancementPhase<
+            '_,
+        >,
         runtime: &WorthQueryExecutionRuntime,
         installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
         relational_runtime: RelationalRuntime,

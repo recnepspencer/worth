@@ -1,5 +1,10 @@
 //! Independent native cleanup never makes a conditional operation runnable again.
-use {crate::domain_computation::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryApplicationCleanupRequired, crate::domain_computation::primary_graph::WorthQueryApplicationManagedCleanup, crate::domain_computation::primary_graph::WorthQueryApplicationUncommitted};
+use {
+    crate::domain_computation::primary_graph::WorthQueryApplicationCleanupRequired,
+    crate::domain_computation::primary_graph::WorthQueryApplicationManagedCleanup,
+    crate::domain_computation::primary_graph::WorthQueryApplicationUncommitted,
+    crate::domain_computation::request_execution::WorthQueryAdvancementPhase,
+};
 pub(super) struct RetainedManagedCleanup {
     outcome: WorthQueryApplicationUncommitted,
     pending: Option<WorthQueryApplicationManagedCleanup>,

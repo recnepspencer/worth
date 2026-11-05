@@ -25,9 +25,7 @@ use crate::domain_computation::primary_graph::{
 #[derive(Debug)]
 pub(in crate::domain_computation::primary_graph) enum WorthQueryProductConditionalPublicationDenial
 {
-    ExecutionRequest(
-        crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
-    ),
+    ExecutionRequest(crate::domain_computation::request_execution::WorthQueryAdvancementDenial),
     ProductActivation(WorthQueryProductActivationDenial),
     WorldPreparation(NoEffectCompositePublication),
     BridgePreparation(BridgeConditionalDenial),

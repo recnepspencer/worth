@@ -44,10 +44,7 @@ where
         field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
         value: Value,
         request: &WorthQueryRequestScope,
-    ) -> Result<
-        (),
-        crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
-    >
+    ) -> Result<(), crate::domain_computation::request_execution::WorthQueryAdvancementDenial>
     where
         Field: DeclaredApplicationFieldValue<Value = Value>,
         Unit: ApplicationFieldUnit,

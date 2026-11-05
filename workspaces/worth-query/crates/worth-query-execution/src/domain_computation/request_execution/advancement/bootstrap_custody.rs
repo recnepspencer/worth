@@ -88,10 +88,7 @@ impl WorthQueryBootstrapAdvancementPhase<'_> {
     /// capped by that lease, which must be the request's funding lease or
     /// descend from it; a sibling or another lineage's lease refuses here,
     /// before any work or charge, rather than inside the capture after ACK.
-    pub(in crate::domain_computation) fn admit_capture_policy<
-        'policy,
-        'authority,
-    >(
+    pub(in crate::domain_computation) fn admit_capture_policy<'policy, 'authority>(
         &self,
         capture: worth_execution::ExecutionAllocationPolicy<'policy, 'authority>,
     ) -> Result<

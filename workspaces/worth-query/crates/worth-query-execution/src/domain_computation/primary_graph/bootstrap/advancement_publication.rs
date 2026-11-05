@@ -5,7 +5,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphBootstrap<Schema> {
     pub(in crate::domain_computation::primary_graph) fn publish_with_resource_support(
         mut self,
 
-        phase: &crate::domain_computation::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryBootstrapAdvancementPhase<
+            '_,
+        >,
         runtime: &mut WorthQueryExecutionRuntime,
         authority: &WorthQueryExecutionInstallationAuthority,
     ) -> Result<

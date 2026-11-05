@@ -4,7 +4,11 @@ use crate::basis::{
     WorthQueryExpectedProductBasisDescription, WorthQueryProductBranchAdmissionDenial,
 };
 use worth_relational::facade::branch::RelationalBranchBasisDenial;
-use {crate::domain_computation::request_execution::WorthQueryAdvancementDenial, crate::domain_computation::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation};
+use {
+    crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation,
+    crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
+    crate::domain_computation::request_execution::WorthQueryAdvancementPhase,
+};
 
 #[derive(Debug)]
 pub enum WorthQueryExpectedProductBasisSelectionDenial {

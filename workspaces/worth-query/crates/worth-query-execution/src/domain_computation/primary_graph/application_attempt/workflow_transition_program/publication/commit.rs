@@ -29,10 +29,12 @@ where
     {
         if let Err(cause) = phase.execution_request_for(&self.runtime.product_runtime) {
             return WorkflowProgressOutcome::Application(
-                crate::domain_computation::request_execution::WorthQueryAdvancementDenial::from(cause)
-                    .into_commit_outcome()
-                    .landed()
-                    .expect_err("a foreign phase cannot commit"),
+                crate::domain_computation::request_execution::WorthQueryAdvancementDenial::from(
+                    cause,
+                )
+                .into_commit_outcome()
+                .landed()
+                .expect_err("a foreign phase cannot commit"),
             );
         }
         if let Err(denial) = prepared.validate_approval_descriptor() {

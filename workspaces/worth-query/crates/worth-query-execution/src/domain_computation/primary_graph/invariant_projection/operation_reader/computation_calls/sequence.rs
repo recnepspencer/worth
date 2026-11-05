@@ -2,7 +2,10 @@
 use super::*;
 use crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource;
 use std::{collections::BTreeSet, ops::Range};
-use {crate::domain_computation::request_execution::QueryMemoryReservation, crate::domain_computation::request_execution::QueryRequestExecution};
+use {
+    crate::domain_computation::request_execution::QueryMemoryReservation,
+    crate::domain_computation::request_execution::QueryRequestExecution,
+};
 
 mod funding;
 mod issue;

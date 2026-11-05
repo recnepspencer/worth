@@ -83,9 +83,7 @@ pub struct WorthQueryApplicationManagedCleanup {
     bridge: std::sync::Arc<
         std::sync::RwLock<worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly>,
     >,
-    last_denial: Option<
-        crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
-    >,
+    last_denial: Option<crate::domain_computation::request_execution::WorthQueryAdvancementDenial>,
 }
 impl WorthQueryApplicationManagedCleanup {
     /// Borrows the exact failed managed-run owner.
@@ -95,9 +93,7 @@ impl WorthQueryApplicationManagedCleanup {
     /// The most recent fresh issuer or execution refusal, if retry stopped before native cleanup.
     pub fn last_retry_denial(
         &self,
-    ) -> Option<
-        &crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
-    > {
+    ) -> Option<&crate::domain_computation::request_execution::WorthQueryAdvancementDenial> {
         self.last_denial.as_ref()
     }
     /// Retries native cleanup under this exact runtime's fresh bounded issuer; refusal returns this owner.

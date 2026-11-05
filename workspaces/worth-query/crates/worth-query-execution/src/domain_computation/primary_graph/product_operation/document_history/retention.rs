@@ -3,7 +3,11 @@ use super::*;
 use worth_query_declaration::facade::application_history::{
     ApplicationHistoryModel, ApplicationHistoryRecentSteps, ApplicationHistoryRetentionBinding,
 };
-use {crate::domain_computation::primary_graph::application_query::CompletedMetadataRead, crate::domain_computation::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation};
+use {
+    crate::domain_computation::primary_graph::application_query::CompletedMetadataRead,
+    crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation,
+    crate::domain_computation::request_execution::WorthQueryAdvancementPhase,
+};
 
 #[derive(Clone, Copy, Debug)]
 pub struct WorthQueryHistoryRetentionStatus {

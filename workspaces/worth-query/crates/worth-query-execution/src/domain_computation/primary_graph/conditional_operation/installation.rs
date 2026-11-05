@@ -59,7 +59,9 @@ where
 {
     /// Admission witness for validation; the staged installation retains facts only.
     pub(in crate::domain_computation::primary_graph) fn new(
-        _phase: &crate::domain_computation::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
+        _phase: &crate::domain_computation::request_execution::WorthQueryBootstrapAdvancementPhase<
+            '_,
+        >,
         publication: ApplicationRuntimePublication<Schema>,
     ) -> Result<Self, WorthQueryConditionalRuntimeInstallationDenial> {
         publication
@@ -341,7 +343,9 @@ where
     }
     pub fn publish(
         self,
-        phase: &crate::domain_computation::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryBootstrapAdvancementPhase<
+            '_,
+        >,
     ) -> Result<
         WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         WorthQueryConditionalRuntimeInstallationDenial,
@@ -360,7 +364,9 @@ where
 
     pub(in crate::domain_computation::primary_graph) fn publish_contributions(
         self,
-        phase: &crate::domain_computation::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryBootstrapAdvancementPhase<
+            '_,
+        >,
         conditionals: &super::super::application_contribution::WorthQueryInstalledApplicationConditionalRegistry<Schema>,
     ) -> Result<
         WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -374,7 +380,9 @@ where
 
     fn publish_with_inventory(
         self,
-        phase: &crate::domain_computation::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryBootstrapAdvancementPhase<
+            '_,
+        >,
         expected: usize,
     ) -> Result<
         WorthQueryPrimaryGraphApplicationRuntime<Schema>,

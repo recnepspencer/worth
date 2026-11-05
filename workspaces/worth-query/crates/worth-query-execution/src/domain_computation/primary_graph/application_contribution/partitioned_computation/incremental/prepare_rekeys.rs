@@ -12,7 +12,10 @@ use worth_query_declaration::facade::application_program::{
     ApplicationComputationPartition, ApplicationFeature, ApplicationManagedComputation,
 };
 use worth_query_installation::facade::ApplicationSchema;
-use {crate::domain_computation::primary_graph::invariant_projection::CallVisit, crate::domain_computation::request_execution::QueryRequestExecution};
+use {
+    crate::domain_computation::primary_graph::invariant_projection::CallVisit,
+    crate::domain_computation::request_execution::QueryRequestExecution,
+};
 impl<K: ApplicationComputationPartition, I: ApplicationComputationPartition, R>
     IncrementalRun<K, I, R>
 {

@@ -1,13 +1,3 @@
-pub use worth_query_execution::facade::domain_computation::bound_advancement_requests_on_this_thread_for_test as bound;
-pub use worth_query_execution::facade::domain_computation::place_managed_computations_on_this_thread_for_test as place;
-pub use worth_query_execution::facade::domain_computation::WorthQueryExecutionPlacementForTest as Placement;
-pub use worth_query_execution::court_doors_for_test::domain_computation::request_execution::QueryRequestExecution;
-pub use worth_query_execution::court_doors_for_test::domain_computation::request_execution::Resource;
-pub use worth_execution::WorkCeilingDenial;
-pub use worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial;
-pub use worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase;
-pub use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationInterruption;
-pub use worth_query_execution::facade::application_contribution::with_bootstrap_advancement;
 pub use std::collections::BTreeMap;
 pub use std::num::NonZeroUsize;
 pub use worth_execution::ExecutionMap;
@@ -15,8 +5,18 @@ pub use worth_execution::KeylessPartition;
 pub use worth_execution::MapKernelFailure;
 pub use worth_execution::MapOutcome;
 pub use worth_execution::MapStop;
+pub use worth_execution::WorkCeilingDenial;
 pub use worth_foundational::ExecutionBudget;
 pub use worth_foundational::PartitionIdentity;
+pub use worth_query_execution::court_doors_for_test::domain_computation::request_execution::QueryRequestExecution;
+pub use worth_query_execution::court_doors_for_test::domain_computation::request_execution::Resource;
+pub use worth_query_execution::facade::application_contribution::with_bootstrap_advancement;
+pub use worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial;
+pub use worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase;
+pub use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationInterruption;
+pub use worth_query_execution::facade::domain_computation::bound_advancement_requests_on_this_thread_for_test as bound;
+pub use worth_query_execution::facade::domain_computation::place_managed_computations_on_this_thread_for_test as place;
+pub use worth_query_execution::facade::domain_computation::WorthQueryExecutionPlacementForTest as Placement;
 
 pub struct Restore(Placement, Option<ExecutionBudget>);
 impl Drop for Restore {

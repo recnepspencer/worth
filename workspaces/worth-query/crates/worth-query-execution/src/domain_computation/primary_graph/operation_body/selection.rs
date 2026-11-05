@@ -1,7 +1,7 @@
 //! One decision-owned selection supplies related field reads and predecessor retirement.
 use super::WorthQueryInvariantMutationTarget;
-use crate::domain_computation::request_execution::QueryMemoryReservation;
 use crate::domain_computation::primary_graph::WorthQueryInvariantEntityIdentity;
+use crate::domain_computation::request_execution::QueryMemoryReservation;
 use worth_query_declaration::facade::application_schema::ApplicationOperationDecisionReadTarget;
 pub(in crate::domain_computation::primary_graph) struct PreparedBodySelection<Schema> {
     pub(in crate::domain_computation::primary_graph) identity:

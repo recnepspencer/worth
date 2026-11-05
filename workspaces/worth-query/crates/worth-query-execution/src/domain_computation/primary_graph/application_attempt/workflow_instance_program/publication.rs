@@ -167,10 +167,12 @@ where
     {
         if let Err(cause) = phase.execution_request_for(&self.runtime.product_runtime) {
             return WorkflowInstanceStartOutcome::Application(
-                crate::domain_computation::request_execution::WorthQueryAdvancementDenial::from(cause)
-                    .into_commit_outcome()
-                    .landed()
-                    .expect_err("a foreign phase cannot commit"),
+                crate::domain_computation::request_execution::WorthQueryAdvancementDenial::from(
+                    cause,
+                )
+                .into_commit_outcome()
+                .landed()
+                .expect_err("a foreign phase cannot commit"),
             );
         }
         let PreparedWorkflowInstanceStart {

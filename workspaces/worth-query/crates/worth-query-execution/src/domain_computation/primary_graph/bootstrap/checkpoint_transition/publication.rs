@@ -5,7 +5,6 @@ use super::{
     WorthQueryCheckpointTransitionRecovery,
 };
 use crate::domain_computation::primary_graph::application_installation::WorthQueryInMemoryApplicationDenial;
-use crate::domain_computation::request_execution::WorthQueryBootstrapAdvancementPhase;
 use crate::domain_computation::primary_graph::{
     application_installation::program_admission::WorthQueryAdmittedProgramSupport,
     bootstrap::program_activation_recovery::read_activation,
@@ -16,6 +15,7 @@ use crate::domain_computation::primary_graph::{
     program_occurrence::{program_revision_rendering, WorthQueryProgramActivationCell},
     WorthQueryPrimaryGraphBootstrap,
 };
+use crate::domain_computation::request_execution::WorthQueryBootstrapAdvancementPhase;
 use std::collections::BTreeMap;
 use worth_foundational::facade::{AspectValue, InternedString};
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationSchema};

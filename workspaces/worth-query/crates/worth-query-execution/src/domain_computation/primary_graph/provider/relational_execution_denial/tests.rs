@@ -1,7 +1,10 @@
 use super::relational_execution_kind;
 use crate::domain_computation::WorthQueryProviderSessionDenialKind as Kind;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
-use {crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource, crate::domain_computation::request_execution::execution_refusal::WorthQueryMemoryLimitLevel as Level};
+use {
+    crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource,
+    crate::domain_computation::request_execution::execution_refusal::WorthQueryMemoryLimitLevel as Level,
+};
 
 #[test]
 fn committed_storage_failure_keeps_its_subject_and_pre_effect_posture() {

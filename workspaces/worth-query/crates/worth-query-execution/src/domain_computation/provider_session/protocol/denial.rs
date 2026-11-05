@@ -306,10 +306,13 @@ pub(in crate::domain_computation) fn advancement_denial_cause(
     crate::domain_computation::WorthQueryProviderSessionControlStopKind,
 > {
     use crate::domain_computation::request_execution::advancement::WorthQueryAdvancementDenial as Denial;
-    use {crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationInterruption, crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource};
     use crate::domain_computation::{
         WorthQueryProviderSessionControlStopKind as Control,
         WorthQueryProviderSessionDenialKind as Kind,
+    };
+    use {
+        crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationInterruption,
+        crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource,
     };
     match denial {
         Denial::Resource(denial) => Ok(Kind::ExecutionResource {

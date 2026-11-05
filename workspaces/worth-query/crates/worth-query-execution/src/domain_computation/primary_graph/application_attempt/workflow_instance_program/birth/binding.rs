@@ -4,7 +4,10 @@ use super::super::super::{
 };
 use super::{mismatch, WorkflowBirthAuthority, WorthQueryApplicationAttemptDenial};
 use crate::domain_computation::primary_graph::application_attempt::effect_program::WorthQueryApplicationCreationPartition;
-use {crate::domain_computation::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial};
+use {
+    crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial,
+    crate::domain_computation::request_execution::WorthQueryAdvancementPhase,
+};
 
 pub(in crate::domain_computation::primary_graph::application_attempt) struct WorkflowBirthBindingProof
 {

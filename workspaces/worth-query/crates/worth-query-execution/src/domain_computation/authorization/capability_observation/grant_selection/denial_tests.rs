@@ -9,7 +9,10 @@ fn grant_selection_names_deadlines_and_every_ceiling_as_operational_stops() {
         WorthQueryProviderSessionDenialKind as Session,
     };
     use WorthQueryOperationAuthorizationDenialKind as Denial;
-    use {crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource, crate::domain_computation::request_execution::execution_refusal::WorthQueryMemoryLimitLevel as Level};
+    use {
+        crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource,
+        crate::domain_computation::request_execution::execution_refusal::WorthQueryMemoryLimitLevel as Level,
+    };
     assert_eq!(
         grant_lookup_denial_kind(Kind::Execution(Cause::Cancelled)),
         Denial::Stopped(Err(Control::Cancelled))

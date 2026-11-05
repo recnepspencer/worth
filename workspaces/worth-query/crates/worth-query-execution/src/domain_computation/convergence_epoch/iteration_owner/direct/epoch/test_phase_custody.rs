@@ -5,9 +5,7 @@ impl WorthQueryStartedDirectConvergenceIteration {
     pub(crate) fn fixture_phase<'scope>(
         &self,
         host: &crate::domain_computation::request_execution::TestHostRequest<'scope>,
-    ) -> crate::domain_computation::request_execution::WorthQueryAdvancementPhase<
-        'scope,
-    > {
+    ) -> crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'scope> {
         self.association.fixture_phase(host)
     }
 }
@@ -16,9 +14,7 @@ impl WorthQueryPausedDirectConvergenceIteration {
     pub(crate) fn fixture_phase<'scope>(
         &self,
         host: &crate::domain_computation::request_execution::TestHostRequest<'scope>,
-    ) -> crate::domain_computation::request_execution::WorthQueryAdvancementPhase<
-        'scope,
-    > {
+    ) -> crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'scope> {
         self.association.fixture_phase(host)
     }
 }

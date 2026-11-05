@@ -343,7 +343,10 @@ impl WorthQueryExternalRedispatchDenial {
         cause: crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
     ) -> Self {
         let stage = Stage::ResourceAdmission;
-        use {crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationInterruption as Interruption, crate::domain_computation::request_execution::WorthQueryAdvancementDenial as Advancement};
+        use {
+            crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationInterruption as Interruption,
+            crate::domain_computation::request_execution::WorthQueryAdvancementDenial as Advancement,
+        };
         match cause {
             Advancement::Interrupted(Interruption::Cancelled) => return Self::AdmissionCancelled,
             Advancement::Interrupted(Interruption::DeadlineExceeded) => {

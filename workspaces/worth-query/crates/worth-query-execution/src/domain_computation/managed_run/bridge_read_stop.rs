@@ -4,7 +4,10 @@ use crate::domain_computation::{
     WorthQueryProviderSessionDenialKind as Kind,
 };
 use worth_runtime_bridge::facade::BridgeExecutionDenial as Bridge;
-use {crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource, crate::domain_computation::request_execution::execution_refusal::WorthQueryMemoryLimitLevel as Level};
+use {
+    crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource,
+    crate::domain_computation::request_execution::execution_refusal::WorthQueryMemoryLimitLevel as Level,
+};
 
 pub(super) fn stopped(cause: Bridge) -> Result<Kind, Control> {
     let resource = |denial, policy_ancestor| Kind::ExecutionResource {

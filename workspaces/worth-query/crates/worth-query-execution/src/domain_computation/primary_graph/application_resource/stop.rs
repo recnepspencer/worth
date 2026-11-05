@@ -169,9 +169,7 @@ impl WorthQueryResourceActionDenial {
 
     pub fn advancement_denial(
         &self,
-    ) -> Option<
-        &crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
-    > {
+    ) -> Option<&crate::domain_computation::request_execution::WorthQueryAdvancementDenial> {
         match &self.cause {
             ResourceCause::Advancement(cause) => Some(cause),
             _ => None,

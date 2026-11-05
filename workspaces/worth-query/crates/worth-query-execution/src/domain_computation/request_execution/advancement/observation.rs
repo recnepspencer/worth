@@ -147,9 +147,7 @@ pub fn advancement_requests_on_this_thread_for_test(
         .collect()
 }
 
-pub(in crate::domain_computation) fn record_event(
-    event: WorthQueryAdvancementEventForTest,
-) {
+pub(in crate::domain_computation) fn record_event(event: WorthQueryAdvancementEventForTest) {
     if !observing() {
         return;
     }

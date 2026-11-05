@@ -10,7 +10,8 @@ impl OpeningCustody {
     pub(super) fn enter() -> Result<Self, WorthQueryAdvancementDenial> {
         ACTIVE.with(|active| {
             if crate::domain_computation::request_execution::advancement::worker_custody::active()
-                || active.replace(true) {
+                || active.replace(true)
+            {
                 let denial = WorthQueryAdvancementDenial::NestedOpening;
                 Err(denial)
             } else {

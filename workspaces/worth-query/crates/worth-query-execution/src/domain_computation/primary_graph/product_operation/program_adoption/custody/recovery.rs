@@ -90,9 +90,7 @@ impl WorthQueryBranchAdoptionRecovery {
 pub enum WorthQueryBranchAdoptionRecoveryDenial {
     Authorization(super::super::authorization::WorthQueryProgramAdoptionAuthorizationDenial),
     /// The recovery call was refused before inspecting its owners.
-    ExecutionDenied(
-        crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
-    ),
+    ExecutionDenied(crate::domain_computation::request_execution::WorthQueryAdvancementDenial),
     /// The recovery expects a different product than the one selected.
     ProductAffinityMismatch,
     /// Runtime World could not inspect the unpublished owner effects.

@@ -89,7 +89,9 @@ impl WorthQueryCheckpointTransitionRecovery {
 
     pub fn repair_to_checkpoint(
         mut self,
-        phase: &crate::domain_computation::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryBootstrapAdvancementPhase<
+            '_,
+        >,
         policy: WorthQueryCheckpointCapturePolicy<'_, '_>,
     ) -> Result<WorthQueryApplicationCheckpoint, Self> {
         let request = phase.execution_request();
@@ -149,9 +151,7 @@ impl WorthQueryCheckpointTransitionRecovery {
         request.consult().map_err(|stop| {
             self.retain_capture_denial(WorthQueryCheckpointCaptureDenial::Execution(
                 super::super::request_denial(
-                    crate::domain_computation::request_execution::advancement_denial(
-                        stop,
-                    ),
+                    crate::domain_computation::request_execution::advancement_denial(stop),
                 ),
             ));
         })

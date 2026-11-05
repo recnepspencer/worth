@@ -7,7 +7,11 @@ use super::{
 use crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanupReceipt;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_world::facade::RuntimeWorldRecoveryDenial;
-use {crate::domain_computation::primary_graph::application_contribution::execution_denial, crate::domain_computation::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime};
+use {
+    crate::domain_computation::primary_graph::application_contribution::execution_denial,
+    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime,
+    crate::domain_computation::request_execution::WorthQueryAdvancementPhase,
+};
 
 impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     /// Dispose this exact original partial without new business admission.

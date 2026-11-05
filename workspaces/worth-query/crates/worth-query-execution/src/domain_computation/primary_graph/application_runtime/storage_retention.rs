@@ -4,7 +4,10 @@ use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::runtime::{
     RelationalRetentionPassProgress, RelationalRetentionPassStop,
 };
-use {crate::domain_computation::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::request_execution::WorthQueryForeignAdvancementPhase};
+use {
+    crate::domain_computation::request_execution::WorthQueryAdvancementPhase,
+    crate::domain_computation::request_execution::WorthQueryForeignAdvancementPhase,
+};
 
 /// Actual completed prefix. Maintenance can stop after reclaiming some records.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]

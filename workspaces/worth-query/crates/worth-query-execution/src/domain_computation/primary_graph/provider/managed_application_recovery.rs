@@ -50,9 +50,7 @@ pub enum WorthQueryManagedApplicationRecoveryOutcome {
 /// recovery remains retained by its provider entry for a later admitted try.
 #[derive(Debug)]
 pub enum WorthQueryManagedApplicationRecoveryDenial {
-    ExecutionDenied(
-        crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
-    ),
+    ExecutionDenied(crate::domain_computation::request_execution::WorthQueryAdvancementDenial),
     Authorization(WorthQueryOperationAuthorizationDenial),
     ForeignAdmission,
     BindingMismatch,

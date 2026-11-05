@@ -3,7 +3,11 @@ use super::super::WorthQueryDocumentHistory;
 use super::*;
 use worth_query_declaration::facade::application_history::ApplicationHistoryBinding;
 use worth_query_installation::facade::ApplicationSchema;
-use {crate::domain_computation::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation, crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding};
+use {
+    crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation,
+    crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding,
+    crate::domain_computation::request_execution::WorthQueryAdvancementPhase,
+};
 
 impl<'runtime, S: ApplicationSchema> WorthQueryDocumentHistoryNavigation<'runtime, S> {
     pub(super) fn registered_progress<'call, H, O, I, M>(

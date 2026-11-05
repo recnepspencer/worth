@@ -1,6 +1,10 @@
 //! The Query projection of Bridge's existing request execution carrier.
 use worth_runtime_bridge::facade::BridgeExecutionDenial as Bridge;
-use {crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationInterruption as Interruption, crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource, crate::domain_computation::request_execution::WorthQueryAdvancementDenial as Denial};
+use {
+    crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationInterruption as Interruption,
+    crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial as Resource,
+    crate::domain_computation::request_execution::WorthQueryAdvancementDenial as Denial,
+};
 
 /// A carried Bridge denial is in flight; interruptions belong to the demand,
 /// whereas resource and custody refusals keep their typed request carrier.
@@ -15,7 +19,9 @@ pub(super) fn query_cause(cause: Bridge) -> Result<Denial, Interruption> {
         Bridge::ChargedBytesOverflow => Denial::Resource(Resource::ChargedBytesOverflow),
         Bridge::UnrelatedNestedLease => Denial::Resource(Resource::NestedLeaseMisuse),
         Bridge::NoActiveExecutionScope => Denial::Resource(Resource::NoActiveExecutionScope),
-        Bridge::EquivalenceContractUnavailable => Denial::Resource(Resource::EquivalenceContractUnavailable),
+        Bridge::EquivalenceContractUnavailable => {
+            Denial::Resource(Resource::EquivalenceContractUnavailable)
+        }
         Bridge::Cancelled => return Err(Interruption::Cancelled),
         Bridge::DeadlineElapsed => return Err(Interruption::DeadlineExceeded),
         Bridge::WorkCounterOverflow => Denial::Resource(Resource::WorkCounterOverflow),

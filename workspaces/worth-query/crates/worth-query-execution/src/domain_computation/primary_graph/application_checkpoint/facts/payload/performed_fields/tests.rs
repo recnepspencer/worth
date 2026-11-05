@@ -9,7 +9,10 @@ use worth_relational::facade::{
     identity::{EntityId, KindId, PartitionId},
     transactions::planned_single_field_locator,
 };
-use {crate::domain_computation::primary_graph::application_checkpoint::facts::payload::FactStorage, crate::domain_computation::request_execution::with_bootstrap_advancement};
+use {
+    crate::domain_computation::primary_graph::application_checkpoint::facts::payload::FactStorage,
+    crate::domain_computation::request_execution::with_bootstrap_advancement,
+};
 #[test]
 fn performed_field_copy_severs_parent_and_retains_original_request_funding() {
     let policy = ExecutionRequestPolicy::new(

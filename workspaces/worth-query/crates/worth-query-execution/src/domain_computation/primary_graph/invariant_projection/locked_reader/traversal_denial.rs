@@ -11,9 +11,7 @@ pub enum WorthQueryInvariantProjectionTraversalDenialKind {
             crate::domain_computation::WorthQueryProviderSessionControlStopKind,
         >,
     ),
-    ExecutionRequest(
-        crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
-    ),
+    ExecutionRequest(crate::domain_computation::request_execution::WorthQueryAdvancementDenial),
     /// The relation is not installed.
     RelationNotInstalled,
     /// The actual installed relation does not declare the orbit law.

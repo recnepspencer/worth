@@ -6,7 +6,10 @@
 //! caller's lease, and the caller's charge reaches the lease it names.
 
 use worth_execution::ExecutionResourceLease;
-use {super::Form, super::QueryRequestExecution, crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationInterruption};
+use {
+    super::Form, super::QueryRequestExecution,
+    crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationInterruption,
+};
 
 impl<'a> QueryRequestExecution<'a> {
     /// The request's execution on a controlled child of the caller's `lease`,

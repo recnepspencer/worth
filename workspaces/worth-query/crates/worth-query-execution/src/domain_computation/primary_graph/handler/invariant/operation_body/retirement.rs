@@ -3,7 +3,18 @@ use super::{
     ApplicationMutationBinding, ApplicationSchema, DecisionReader, HandlerExecutionDenial,
 };
 use worth_query_declaration::facade::application_schema::ApplicationOperationBodyProgram;
-use {crate::domain_computation::primary_graph::operation_body::BodyFieldExpectation, crate::domain_computation::primary_graph::operation_body::PreparedBodyInputs, crate::domain_computation::primary_graph::operation_body::PreparedBodyRetirements, crate::domain_computation::primary_graph::operation_body::PreparedRetirementBatch, crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial, crate::domain_computation::request_execution::WorthQueryAdvancementDenial, crate::domain_computation::primary_graph::HandlerResult, crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial, crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind, crate::domain_computation::primary_graph::WorthQueryOperationBodyDenial};
+use {
+    crate::domain_computation::primary_graph::operation_body::BodyFieldExpectation,
+    crate::domain_computation::primary_graph::operation_body::PreparedBodyInputs,
+    crate::domain_computation::primary_graph::operation_body::PreparedBodyRetirements,
+    crate::domain_computation::primary_graph::operation_body::PreparedRetirementBatch,
+    crate::domain_computation::primary_graph::HandlerResult,
+    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
+    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind,
+    crate::domain_computation::primary_graph::WorthQueryOperationBodyDenial,
+    crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial,
+    crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
+};
 impl<S: ApplicationSchema, B: ApplicationMutationBinding<S>> DecisionReader<'_, '_, '_, S, B> {
     pub(in crate::domain_computation::primary_graph) fn body_retirements(
         &mut self,
@@ -62,9 +73,7 @@ impl<S: ApplicationSchema, B: ApplicationMutationBinding<S>> DecisionReader<'_, 
     }
 }
 fn reject_overlap<S>(
-    execution: &crate::domain_computation::request_execution::QueryRequestExecution<
-        '_,
-    >,
+    execution: &crate::domain_computation::request_execution::QueryRequestExecution<'_>,
     batches: &[PreparedRetirementBatch<S>],
 ) -> Result<(), HandlerExecutionDenial> {
     let count = batches

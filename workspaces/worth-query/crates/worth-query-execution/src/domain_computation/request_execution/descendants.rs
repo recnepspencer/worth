@@ -28,33 +28,25 @@ impl<'authority> QueryRequestExecution<'authority> {
             form,
         }
     }
-    pub(in crate::domain_computation) fn wave(
-        &self,
-    ) -> WaveRequestExecution<'authority> {
+    pub(in crate::domain_computation) fn wave(&self) -> WaveRequestExecution<'authority> {
         WaveRequestExecution {
             execution: self.descendant(),
         }
     }
 }
 impl<'authority> WaveRequestExecution<'authority> {
-    pub(in crate::domain_computation) fn request(
-        &self,
-    ) -> &QueryRequestExecution<'_> {
+    pub(in crate::domain_computation) fn request(&self) -> &QueryRequestExecution<'_> {
         &self.execution
     }
 
-    pub(in crate::domain_computation) fn member(
-        &self,
-    ) -> MemberRequestExecution<'authority> {
+    pub(in crate::domain_computation) fn member(&self) -> MemberRequestExecution<'authority> {
         MemberRequestExecution {
             execution: self.execution.descendant(),
         }
     }
 }
 impl MemberRequestExecution<'_> {
-    pub(in crate::domain_computation) fn request(
-        &self,
-    ) -> &QueryRequestExecution<'_> {
+    pub(in crate::domain_computation) fn request(&self) -> &QueryRequestExecution<'_> {
         &self.execution
     }
 }

@@ -226,7 +226,9 @@ pub mod integration {
     };
 
     pub fn prepare_primary_graph_with_relational_runtime<Schema>(
-        phase: &crate::domain_computation::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryBootstrapAdvancementPhase<
+            '_,
+        >,
         authority: &WorthQueryExecutionInstallationAuthority,
         runtime: &WorthQueryExecutionRuntime,
         installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
@@ -246,7 +248,9 @@ pub mod integration {
     }
 
     pub fn prepare_primary_graph_with_relational_runtime_and_invariants<Schema>(
-        phase: &crate::domain_computation::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryBootstrapAdvancementPhase<
+            '_,
+        >,
         authority: &WorthQueryExecutionInstallationAuthority,
         runtime: &WorthQueryExecutionRuntime,
         installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
@@ -278,7 +282,9 @@ pub mod integration {
     }
     #[doc(hidden)]
     pub fn prepare_primary_graph_with_active_snapshot_limit_for_test<Schema>(
-        phase: &crate::domain_computation::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryBootstrapAdvancementPhase<
+            '_,
+        >,
         authority: &WorthQueryExecutionInstallationAuthority,
         runtime: &WorthQueryExecutionRuntime,
         installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
@@ -337,7 +343,9 @@ pub mod integration {
     }
 
     pub fn publish_primary_graph<Schema>(
-        phase: &crate::domain_computation::request_execution::WorthQueryBootstrapAdvancementPhase<'_>,
+        phase: &crate::domain_computation::request_execution::WorthQueryBootstrapAdvancementPhase<
+            '_,
+        >,
         bootstrap: WorthQueryPrimaryGraphBootstrap<Schema>,
         runtime: &mut WorthQueryExecutionRuntime,
         authority: &WorthQueryExecutionInstallationAuthority,

@@ -35,9 +35,7 @@ pub enum WorthQueryApplicationConditionalDefinitionAdmissionDenial {
 #[derive(Debug)]
 pub enum WorthQueryConditionalDefinitionPublicationDenial {
     /// The host call was refused admission to its execution request.
-    ExecutionRequest(
-        crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
-    ),
+    ExecutionRequest(crate::domain_computation::request_execution::WorthQueryAdvancementDenial),
     /// The clock handle's conditional operation is not live in this
     /// application.
     ForeignConditionalOperation,

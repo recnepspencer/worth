@@ -29,9 +29,7 @@ pub use resume::{
 #[derive(Debug)]
 pub enum WorthQueryBranchSetAdoptionPreparationDenial {
     /// The preparation call could not enter its execution request.
-    ExecutionDenied(
-        crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
-    ),
+    ExecutionDenied(crate::domain_computation::request_execution::WorthQueryAdvancementDenial),
     /// Memory to hold the prepared branches could not be allocated.
     RetentionAllocationRejected,
     /// A covered branch could not be selected.

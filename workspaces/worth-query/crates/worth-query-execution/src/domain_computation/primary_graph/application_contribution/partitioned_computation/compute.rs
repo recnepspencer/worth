@@ -22,7 +22,11 @@ use super::{
     WorthQueryComputationPartitionView, WorthQueryInstalledPartitionedComputation,
     WorthQueryPartitionedComputationDenial, WorthQueryPartitionedComputationOwner,
 };
-use {super::super::WorthQueryManagedComputationCheckpoint, super::super::WorthQueryManagedComputationExecution, crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial};
+use {
+    super::super::WorthQueryManagedComputationCheckpoint,
+    super::super::WorthQueryManagedComputationExecution,
+    crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial,
+};
 
 pub(super) type Denial<Schema, Feature, Computation, Owner> =
     WorthQueryPartitionedComputationDenial<

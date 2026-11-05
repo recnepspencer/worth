@@ -1,6 +1,6 @@
 use super::WorthQueryProgramApplicationRuntime;
-use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 use crate::domain_computation::primary_graph::WorthQueryApplicationDiscoveredOutputConnection;
+use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use crate::facade::runtime::ExecutionAllocationPolicy;
 use worth_query_declaration::facade::application_program::{

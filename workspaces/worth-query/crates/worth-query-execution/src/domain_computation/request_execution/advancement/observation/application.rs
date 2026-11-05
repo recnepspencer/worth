@@ -11,9 +11,7 @@ pub(in crate::domain_computation) struct AppliedIdentity {
     previous: Option<Identity>,
     owner_thread: PhantomData<Rc<()>>,
 }
-pub(in crate::domain_computation) fn apply_identity(
-    identity: Identity,
-) -> AppliedIdentity {
+pub(in crate::domain_computation) fn apply_identity(identity: Identity) -> AppliedIdentity {
     AppliedIdentity {
         previous: MEMBER.with(|member| member.replace(Some(identity))),
         owner_thread: PhantomData,
@@ -34,9 +32,7 @@ pub(in crate::domain_computation) trait WorthQueryObservedCommit {
     fn observed_idempotency_intent(&self) -> [u8; 32];
 }
 
-pub(in crate::domain_computation) fn record_commit<
-    Commit: WorthQueryObservedCommit + ?Sized,
->(
+pub(in crate::domain_computation) fn record_commit<Commit: WorthQueryObservedCommit + ?Sized>(
     receipt: &Commit,
 ) {
     if !crate::domain_computation::execution_observation::is_installed() {

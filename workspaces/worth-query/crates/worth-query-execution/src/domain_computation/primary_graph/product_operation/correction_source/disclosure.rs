@@ -14,7 +14,12 @@ use worth_query_declaration::facade::{
     },
     application_schema::{ApplicationScalarValueBinding, ApplicationSchema},
 };
-use {crate::domain_computation::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryApplicationQueryAccessContext, crate::domain_computation::primary_graph::WorthQueryApplicationQueryControls, crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode};
+use {
+    crate::domain_computation::primary_graph::WorthQueryApplicationQueryAccessContext,
+    crate::domain_computation::primary_graph::WorthQueryApplicationQueryControls,
+    crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode,
+    crate::domain_computation::request_execution::WorthQueryAdvancementPhase,
+};
 
 #[derive(Debug)]
 /// A source-disclosure, semantic-comparison or inverse-derivation refusal.

@@ -4,7 +4,10 @@ use super::super::super::{
     WorthQueryApplicationRealizedEffect,
 };
 use super::{mismatch, WorkflowSuccessionAuthority, WorthQueryApplicationAttemptDenial};
-use {crate::domain_computation::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial};
+use {
+    crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial,
+    crate::domain_computation::request_execution::WorthQueryAdvancementPhase,
+};
 pub(in crate::domain_computation::primary_graph::application_attempt) struct WorkflowSuccessionBindingProof
 {
     binding: &'static str,

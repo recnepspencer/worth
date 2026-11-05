@@ -12,7 +12,15 @@ use worth_query_declaration::facade::{
     application_schema::ApplicationSchema,
 };
 use worth_query_installation::facade::WorthQueryInstalledDocumentHistory;
-use {crate::basis::WorthQueryProductBranchReadIdentity, crate::basis::WorthQueryProductObservationLease, crate::domain_computation::request_execution::WorthQueryAdvancementPhase, crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt, crate::domain_computation::primary_graph::WorthQueryCompletedRequiredOutputs, crate::domain_computation::primary_graph::WorthQueryExpectedProductBranch, crate::publication_boundary::WorthQueryProgramPublicationAccess};
+use {
+    crate::basis::WorthQueryProductBranchReadIdentity,
+    crate::basis::WorthQueryProductObservationLease,
+    crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+    crate::domain_computation::primary_graph::WorthQueryCompletedRequiredOutputs,
+    crate::domain_computation::primary_graph::WorthQueryExpectedProductBranch,
+    crate::domain_computation::request_execution::WorthQueryAdvancementPhase,
+    crate::publication_boundary::WorthQueryProgramPublicationAccess,
+};
 
 #[must_use = "retain the original reservation and actual candidate after refusal"]
 pub struct WorthQueryDocumentHistoryAdoptionFailure<'runtime, S> {

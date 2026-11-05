@@ -33,9 +33,7 @@ pub enum WorthQueryInboundAdmission {
 /// Why an authenticated completion could not enter or finish owner custody.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryInboundAdmissionDenial {
-    ExecutionDenied(
-        crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
-    ),
+    ExecutionDenied(crate::domain_computation::request_execution::WorthQueryAdvancementDenial),
     ForeignVerifier,
     Oversized,
     Verification(WorthQueryInboundVerificationDenial),

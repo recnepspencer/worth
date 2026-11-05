@@ -93,7 +93,7 @@ impl WorthQueryYieldedWorkflowRun {
     ) -> Result<
         worth_execution::ExecutionRequest<'a, 'a>,
         crate::domain_computation::request_execution::WorthQueryForeignAdvancementPhase,
-    >{
+    > {
         phase.request_for_managed(&self.relational_basis)
     }
 
@@ -261,7 +261,9 @@ impl WorthQueryYieldedWorkflowRun {
 
     pub fn readmit_same_runtime(
         self,
-        active_request: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
+        active_request: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<
+            '_,
+        >,
 
         query_runtime: &crate::domain_computation::WorthQueryExecutionRuntime,
         bridge_runtime: &worth_runtime_bridge::facade::RuntimeBridge,
