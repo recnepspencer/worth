@@ -39,6 +39,7 @@ mod semantic_denial_tests;
 pub use denial::{denied, production_denial};
 pub use production_denial::{
     production_denials, ProductionDiagnosticExpectation, ProductionSemanticDenialContract,
+    ProductionTypeMismatchPair,
 };
 pub use refusal::CompilerFixtureRefusal;
 pub use semantic_denial::{certification_semantic_denial, certification_uncoded_semantic_denial};

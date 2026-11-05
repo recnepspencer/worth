@@ -1,6 +1,8 @@
 use worth_testkit_compiler::{
     ProductionDiagnosticExpectation as Diagnostic, ProductionSemanticDenialContract as Contract,
 };
+mod contracts;
+
 #[test]
 fn bridge_phase_boundaries_are_compile_time_private() {
     worth_testkit_compiler::denied(concat!(
@@ -52,48 +54,7 @@ fn bridge_public_contracts_a_to_f_are_sealed() {
             env!("CARGO_MANIFEST_DIR"),
             "/tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/[a-f]*.rs"
         ),
-        &[Contract {
-            fixture: "builder_requires_relational_source_before_build.rs",
-            errors: &[
-                Diagnostic::Code {
-                    code: "E0624",
-                    symbols: &["new", "private"],
-                },
-                Diagnostic::Code {
-                    code: "E0308",
-                    symbols: &[
-                        "FoundationalAuthorityIdentity",
-                        "str",
-                        "BridgeTruthAuthority",
-                        "BridgeEvidenceReferenceIdentityKind",
-                    ],
-                },
-                Diagnostic::Code {
-                    code: "E0624",
-                    symbols: &["new", "private"],
-                },
-                Diagnostic::Code {
-                    code: "E0308",
-                    symbols: &[
-                        "FoundationalAuthorityIdentity",
-                        "str",
-                        "BridgeTruthAuthority",
-                        "BridgeEvidenceReferenceIdentityKind",
-                    ],
-                },
-                Diagnostic::Code {
-                    code: "E0599",
-                    symbols: &[
-                        "build",
-                        "RuntimeBridgeBuilder",
-                        "MissingCommittedPatchSource",
-                        "MissingSnapshotReadSource",
-                        "MissingSignalSink",
-                        "MissingTruthBranchHeadSource",
-                    ],
-                },
-            ],
-        }],
+        &contracts::between(b'a', b'f'),
     )
     .expect("production compiler denial");
 }
@@ -105,24 +66,7 @@ fn bridge_public_contracts_g_to_r_are_sealed() {
             env!("CARGO_MANIFEST_DIR"),
             "/tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/[g-r]*.rs"
         ),
-        &[Contract {
-            fixture: "grouped_truth_view_artifact_fields_private.rs",
-            errors: &[
-                Diagnostic::Code {
-                    code: "E0624",
-                    symbols: &["new", "private"],
-                },
-                Diagnostic::Code {
-                    code: "E0308",
-                    symbols: &[
-                        "FoundationalAuthorityIdentity",
-                        "str",
-                        "BridgeTruthAuthority",
-                        "BridgeEvidenceReferenceIdentityKind",
-                    ],
-                },
-            ],
-        }],
+        &contracts::between(b'g', b'r'),
     )
     .expect("production compiler denial");
 }
@@ -134,19 +78,7 @@ fn bridge_public_contracts_s_to_z_are_sealed() {
             env!("CARGO_MANIFEST_DIR"),
             "/tests/worth_court_runtime_bridge/sources/worth_runtime_bridge/ui/[s-z]*.rs"
         ),
-        &[Contract {
-            fixture: "snapshot_read_coordinate_constructor_private.rs",
-            errors: &[
-                Diagnostic::Code {
-                    code: "E0624",
-                    symbols: &["new_subscription_slice", "private"],
-                },
-                Diagnostic::Code {
-                    code: "E0308",
-                    symbols: &["SnapshotReadTargetIdentityTag", "str"],
-                },
-            ],
-        }],
+        &contracts::between(b's', b'z'),
     )
     .expect("production compiler denial");
 }

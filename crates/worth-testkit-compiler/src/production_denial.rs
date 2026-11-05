@@ -7,11 +7,29 @@ use crate::semantic_denial::{
 };
 use crate::{paths, session, CompilerFixtureRefusal};
 
+mod arity;
 mod assignment;
+mod type_pairs;
+
+/// One directional expected/supplied type observation in a compiler error.
+#[derive(Clone, Copy)]
+pub struct ProductionTypeMismatchPair<'a> {
+    pub expected: &'a str,
+    pub found: &'a str,
+}
 
 /// One error obligation in a production/check compiler observation.
 #[derive(Clone, Copy)]
 pub enum ProductionDiagnosticExpectation<'a> {
+    TypeMismatch {
+        pairs: &'a [ProductionTypeMismatchPair<'a>],
+        symbols: &'a [&'a str],
+    },
+    Arity {
+        required: usize,
+        supplied: usize,
+        symbols: &'a [&'a str],
+    },
     Code {
         code: &'a str,
         symbols: &'a [&'a str],
@@ -25,10 +43,30 @@ pub enum ProductionDiagnosticExpectation<'a> {
 impl<'a> ProductionDiagnosticExpectation<'a> {
     fn required(self) -> (RequiredDiagnostic<'a>, &'a [&'a str]) {
         match self {
+            Self::TypeMismatch { symbols, .. } => (RequiredDiagnostic::Code("E0308"), symbols),
+            Self::Arity { symbols, .. } => (RequiredDiagnostic::Code("E0061"), symbols),
             Self::Code { code, symbols } => (RequiredDiagnostic::Code(code), symbols),
             Self::Uncoded { cause, symbols } => {
                 (RequiredDiagnostic::ExplicitNullCause(cause), symbols)
             }
+        }
+    }
+
+    fn matches(self, message: &serde_json::Value, source: &Path) -> bool {
+        let (required, symbols) = self.required();
+        if !matches_error(message, source, required, symbols) {
+            return false;
+        }
+        match self {
+            Self::TypeMismatch { pairs, .. } => type_pairs::matches(message, pairs),
+            Self::Arity {
+                required, supplied, ..
+            } => arity::matches(
+                message["message"].as_str().unwrap_or_default(),
+                required,
+                supplied,
+            ),
+            Self::Code { .. } | Self::Uncoded { .. } => true,
         }
     }
 }
@@ -141,16 +179,39 @@ fn check_production_outcome(
     for requirement in requirements {
         let (required, symbols) = requirement.required();
         validate_requirement(required, symbols)?;
+        match requirement {
+            ProductionDiagnosticExpectation::TypeMismatch { pairs, .. } => {
+                if pairs.is_empty()
+                    || pairs
+                        .iter()
+                        .any(|pair| pair.expected.trim().is_empty() || pair.found.trim().is_empty())
+                {
+                    return Err(CompilerFixtureRefusal::InvalidPrebuild(
+                        "type mismatch requires nonempty directional type pairs".into(),
+                    ));
+                }
+            }
+            ProductionDiagnosticExpectation::Arity {
+                required, supplied, ..
+            } => {
+                if required == supplied {
+                    return Err(CompilerFixtureRefusal::InvalidPrebuild(
+                        "argument-count denial requires unequal required/supplied counts".into(),
+                    ));
+                }
+            }
+            ProductionDiagnosticExpectation::Code { .. }
+            | ProductionDiagnosticExpectation::Uncoded { .. } => (),
+        }
     }
     let errors = semantic_errors(source, outcome, RequiredEnvironment::Production)?;
     let candidates = requirements
         .iter()
         .map(|requirement| {
-            let (required, symbols) = requirement.required();
             errors
                 .iter()
                 .enumerate()
-                .filter(|(_, message)| matches_error(message, source, required, symbols))
+                .filter(|(_, message)| requirement.matches(message, source))
                 .map(|(index, _)| index)
                 .collect::<Vec<_>>()
         })

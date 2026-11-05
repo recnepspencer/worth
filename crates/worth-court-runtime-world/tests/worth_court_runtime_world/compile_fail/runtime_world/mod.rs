@@ -1,7 +1,5 @@
 //! Compile fail integration courts.
-use worth_testkit_compiler::{
-    ProductionDiagnosticExpectation as Diagnostic, ProductionSemanticDenialContract as Contract,
-};
+mod retention_contracts;
 
 #[test]
 fn owned_async_progression_requires_actual_cleanup_custody() {
@@ -15,17 +13,7 @@ fn compile_failures_protect_the_public_contract() {
             env!("CARGO_MANIFEST_DIR"),
             "/tests/worth_court_runtime_world/sources/worth_runtime_world/ui/*.rs"
         ),
-        &[Contract {
-            fixture: "private_product_head_surface.rs",
-            errors: &[Diagnostic::Code {
-                code: "E0432",
-                symbols: &[
-                    "ProductBranchHeadProtection",
-                    "ProductHeadRetentionObligation",
-                    "RetentionTransferReceipt",
-                ],
-            }],
-        }],
+        &retention_contracts::contracts(),
     )
     .expect("production compiler denial");
 }

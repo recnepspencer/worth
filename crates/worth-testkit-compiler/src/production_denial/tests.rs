@@ -2,6 +2,7 @@
 use super::*;
 use serde_json::{json, Value};
 use std::path::PathBuf;
+mod type_shapes;
 
 fn source() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("src/production_denial/tests.rs")
