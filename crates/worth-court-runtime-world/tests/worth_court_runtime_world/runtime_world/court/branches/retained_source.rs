@@ -165,15 +165,15 @@ fn moved_native_source_forks_exact_old_truth_without_replacing_current_or_siblin
         .snapshots()
         .release_snapshot(&committed.snapshot)
         .unwrap();
-    let retired_child = branch
-        .retire_product_branch(changed.new_product_head())
-        .unwrap();
+    let changed_child = court.observe(&child);
+    let retired_child = branch.retire_product_branch(&changed_child).unwrap();
     let retired_untouched = branch.retire_product_branch(&untouched).unwrap();
     assert_eq!(retired_child.owner_retirement_work().len(), 2);
     assert_eq!(retired_untouched.owner_retirement_work().len(), 2);
     drop((
         retired_child,
         retired_untouched,
+        changed_child,
         changed,
         child,
         untouched,
