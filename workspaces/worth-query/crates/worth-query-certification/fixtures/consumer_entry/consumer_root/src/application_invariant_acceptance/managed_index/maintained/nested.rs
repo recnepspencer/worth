@@ -3,6 +3,7 @@ mod authoring;
 pub(super) mod composition;
 #[cfg(test)]
 mod court;
+pub(in super::super) mod edit;
 mod host;
 #[path = "../mutation.rs"]
 mod mutation;

@@ -1,9 +1,7 @@
 //! Expectations use the generic item handler, which never performs a Query READ.
 use super::super::mutation;
 use super::*;
-use worth_query_decl::facade::{
-    application_operation::*, application_query::*, application_schema::*, *,
-};
+use worth_query_decl::facade::application_operation::*;
 macro_rules! binding {
     ($binding:ident, $intent:ident, $query:ty, $identity:literal) => {
         pub struct $binding;

@@ -1,6 +1,7 @@
 //! A real warm Source update must preserve structure before any invariant callback.
 use super::*;
-use prefix::structure::Fault;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
+use crate::application_invariant_acceptance::managed_index::structure_fault::Fault;
 #[test]
 fn malformed_warm_structure_preserves_predecessor_and_stable_slot_retry_commits() {
     lifecycle::run(|| {
@@ -10,7 +11,7 @@ fn malformed_warm_structure_preserves_predecessor_and_stable_slot_retry_commits(
     });
 }
 fn journey(fault: Fault) {
-    let provider = Arc::new(prefix::Calls::default());
+    let provider = Arc::new(prefix_observation::Calls::default());
     let rules = Arc::new(rule::Calls::new(provider.clone()));
     let world = host::install(provider.clone(), rules.clone());
     let scope = authentication::request_scope();

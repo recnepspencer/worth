@@ -1,6 +1,7 @@
 //! Public rebuild and invariant maintenance share actual Native cache material.
 use super::super::refresh;
 use super::*;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 use worth_query_host::facade::runtime::{MapKernelStop, WorkCeilingDenial};
 #[test]
 fn public_rebuild_refills_canonical_source_and_cancelled_build_stays_cold() {
@@ -26,7 +27,7 @@ fn journey() {
     let calls = Arc::new(provider::Calls::default());
     let config = Configuration::new(Arc::clone(&calls));
     let rules = Arc::clone(&config.rules);
-    let prefix_calls = Arc::new(prefix::Calls::default());
+    let prefix_calls = Arc::new(prefix_observation::Calls::default());
     let prefix_rules = Arc::new(prefix_rule::Calls::new(Arc::clone(&prefix_calls)));
     let world = host::install_geometry(prefix_calls, prefix_rules, config);
     let scope = authentication::request_scope();

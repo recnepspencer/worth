@@ -20,8 +20,10 @@ mod protected;
 mod query;
 mod refinement;
 mod rule;
+pub(super) mod rule_observation;
 mod schema;
 mod source_authorization;
+pub(super) mod source_observation;
 
 const PREFIX_MEMBERSHIP: worth_query_decl::facade::application_query::ApplicationManagedIndexMembership =
     worth_query_decl::facade::application_query::ApplicationManagedIndexMembership::CheckedSummarySourceTree;

@@ -1,5 +1,6 @@
 //! Genuine small Source populations expose full-tree traversal through actual callbacks.
 use super::*;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 
 #[test]
 fn checked_summary_pruning_visits_local_paths_and_preserves_boundary_membership() {
@@ -12,7 +13,7 @@ fn checked_summary_pruning_visits_local_paths_and_preserves_boundary_membership(
 fn journey(vertices: u32) {
     let calls = Arc::new(provider::Calls::default());
     let config = Configuration::new(calls.clone());
-    let prefixes = Arc::new(prefix::Calls::default());
+    let prefixes = Arc::new(prefix_observation::Calls::default());
     let world = host::install_growth(
         prefixes.clone(),
         Arc::new(prefix_rule::Calls::new(prefixes)),

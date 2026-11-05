@@ -1,6 +1,7 @@
 //! Native nested Sources, ordinary Parents and proposed rows face an authored graph oracle.
 use super::super::super::super::authentication;
-use super::{authoring::Edit, host, mutation, prefix, query, rule};
+use super::{host, mutation, prefix, query, rule};
+use crate::application_invariant_acceptance::managed_index::maintained::nested::edit::Edit;
 use std::sync::Arc;
 use worth_query_host::facade::{
     application_entry::*, primary_graph::*, runtime::ExecutionAllocationPolicy,

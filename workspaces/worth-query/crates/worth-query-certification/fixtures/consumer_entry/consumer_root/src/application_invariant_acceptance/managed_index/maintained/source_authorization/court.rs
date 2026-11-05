@@ -2,6 +2,7 @@
 use super::super::super::super::{authentication, managed_index::lifecycle};
 use super::super::{authoring::Edit, host, mutation, protected::status};
 use super::*;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 use std::sync::atomic::Ordering;
 use worth_query_host::facade::{
     admission::authenticated_principal::*, application_entry::*, runtime::ExecutionAllocationPolicy,
@@ -100,7 +101,7 @@ fn completed() -> FindCompleted {
         prefix: "sh".into(),
     }
 }
-fn callbacks(calls: &prefix::Calls) -> (usize, usize) {
+fn callbacks(calls: &prefix_observation::Calls) -> (usize, usize) {
     (
         calls.probe_validations.load(Ordering::SeqCst),
         calls.matched_sources.load(Ordering::SeqCst),

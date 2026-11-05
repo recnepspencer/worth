@@ -6,6 +6,7 @@ use super::{
     provider::{BoxIndex, Calls},
     query,
 };
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 use std::sync::{atomic::Ordering, Arc};
 use worth_query_consumer_values::{BoundsDenial, Box2, BoxIndexDenial};
 use worth_query_decl::facade::{
@@ -73,7 +74,10 @@ fn public_box_provider_preserves_closed_boundaries_source_slots_and_typed_bounds
 }
 fn run() {
     let calls = Arc::new(Calls::default());
-    let world = host::install_boxes(Arc::new(prefix::Calls::default()), Arc::clone(&calls));
+    let world = host::install_boxes(
+        Arc::new(prefix_observation::Calls::default()),
+        Arc::clone(&calls),
+    );
     let scope = authentication::request_scope();
     let adapter = authentication::admit(world.installed_schema());
     let principal = authentication::block_on(adapter.authenticate(

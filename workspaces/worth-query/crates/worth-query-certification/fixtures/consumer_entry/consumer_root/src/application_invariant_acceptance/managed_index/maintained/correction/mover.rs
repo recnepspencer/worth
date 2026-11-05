@@ -1,7 +1,6 @@
 //! A plain recorded ItemName writer supplies authentic source/reverse occurrences.
 use super::*;
-use worth_query_decl::facade::{application_operation::*, application_schema::*, *};
-use worth_query_host::facade::{application_entry::*, primary_graph::*};
+use worth_query_decl::facade::{application_operation::*, *};
 
 #[derive(Clone, Debug, serde::Serialize)]
 pub struct Input {

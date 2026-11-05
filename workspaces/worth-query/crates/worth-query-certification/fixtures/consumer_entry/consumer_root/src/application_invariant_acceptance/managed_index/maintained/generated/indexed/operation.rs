@@ -5,7 +5,7 @@ use super::super::operation::{
     ResultBinding,
 };
 use worth_query_decl::facade::{
-    application_operation::*, application_query::*, application_schema::*, *,
+    application_operation::*, application_query::*, application_schema::*,
 };
 pub struct Binding;
 impl ApplicationMutationAdmissionBinding<Catalog> for Binding {

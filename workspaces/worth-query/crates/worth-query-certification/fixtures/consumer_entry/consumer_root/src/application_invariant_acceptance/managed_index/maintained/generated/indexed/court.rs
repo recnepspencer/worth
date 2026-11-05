@@ -1,6 +1,7 @@
 //! Real managed Source epochs cross ordinary producer reuse and fresh delivery.
 use super::super::super::{authoring::Edit, host, prefix, query, rule, schema::Catalog};
 use super::{producer, program};
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 use crate::application_invariant_acceptance::{authentication, managed_index::lifecycle};
 use std::sync::Arc;
 use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
@@ -53,7 +54,7 @@ fn edit(world: &host::Host, request: &Request<'_, '_, '_>, input: Edit, key: u64
 #[test]
 fn managed_source_reuses_real_output_after_self_publication_and_irrelevant_edit() {
     lifecycle::run(|| {
-        let calls = Arc::new(prefix::Calls::default());
+        let calls = Arc::new(prefix_observation::Calls::default());
         let world = host::install(calls.clone(), Arc::new(rule::Calls::new(calls)));
         let original_receipt = {
             let scope = authentication::request_scope();
@@ -179,7 +180,7 @@ fn managed_source_reuses_real_output_after_self_publication_and_irrelevant_edit(
 fn managed_reused_output_refuses_changed_candidate_and_future_entrant() {
     lifecycle::run(|| {
         for changed in 0..3 {
-            let calls = Arc::new(prefix::Calls::default());
+            let calls = Arc::new(prefix_observation::Calls::default());
             let world = host::install(calls.clone(), Arc::new(rule::Calls::new(calls)));
             let scope = authentication::request_scope();
             let principal = authentication::block_on(
@@ -285,7 +286,7 @@ fn managed_reused_output_refuses_changed_candidate_and_future_entrant() {
 #[test]
 fn managed_source_producer_refuses_foreign_operation_scope_even_for_shared_row() {
     lifecycle::run(|| {
-        let calls = Arc::new(prefix::Calls::default());
+        let calls = Arc::new(prefix_observation::Calls::default());
         let world = host::install(calls.clone(), Arc::new(rule::Calls::new(calls)));
         let scope = authentication::request_scope();
         let principal = authentication::block_on(

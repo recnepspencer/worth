@@ -2,6 +2,7 @@
 use super::super::{host, lifecycle, prefix};
 use super::{geometry, query, BoxIndex, Calls, Coordinates};
 use crate::application_invariant_acceptance::authentication;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 use lifecycle::{authenticate, isolated_allocation_case, ALLOCATOR};
 use stats_alloc::Region;
 use std::sync::{Arc, Mutex};
@@ -31,7 +32,10 @@ fn cancelled_cold_box_build_releases_partial_bvh_and_rebuilds_with_fresh_request
 }
 fn cancelled_build() {
     let calls = Arc::new(Calls::default());
-    let world = host::install_boxes(Arc::new(prefix::Calls::default()), Arc::clone(&calls));
+    let world = host::install_boxes(
+        Arc::new(prefix_observation::Calls::default()),
+        Arc::clone(&calls),
+    );
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let principal = authenticate(&world, &scope);
@@ -140,7 +144,10 @@ fn final_release() {
     warm_allocation_observation();
     let region = Region::new(ALLOCATOR);
     let calls = Arc::new(Calls::default());
-    let world = host::install_boxes(Arc::new(prefix::Calls::default()), Arc::clone(&calls));
+    let world = host::install_boxes(
+        Arc::new(prefix_observation::Calls::default()),
+        Arc::clone(&calls),
+    );
     let scope = authentication::request_scope();
     let principal = authenticate(&world, &scope);
     let (index, sibling, rows, expected) = {
@@ -222,7 +229,7 @@ fn final_release() {
 fn warm_allocation_observation() {
     // Reuse the existing thread-local Execution/codec capacities before measuring.
     let world = host::install_boxes(
-        Arc::new(prefix::Calls::default()),
+        Arc::new(prefix_observation::Calls::default()),
         Arc::new(Calls::default()),
     );
     let scope = authentication::request_scope();

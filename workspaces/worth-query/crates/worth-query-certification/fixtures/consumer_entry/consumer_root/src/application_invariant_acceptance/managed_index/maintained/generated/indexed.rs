@@ -6,6 +6,8 @@ mod producer;
 pub(in super::super) mod program;
 mod readiness;
 pub(in super::super) mod request;
+#[cfg(test)]
+mod request_journey;
 use super::super::schema::Catalog;
 use worth_query_decl::facade::application_schema::*;
 use worth_query_host::facade::{application_contribution::*, primary_graph::*};

@@ -1,5 +1,6 @@
 //! Bounded installed authoring; the independent roster never comes from provider nodes.
 use super::*;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 pub(super) fn items(local: u32, remote: u32) -> Vec<authoring::ItemSeed> {
     let controls = [
         ("tie-z", "eq-shared"),
@@ -60,7 +61,7 @@ pub(super) fn invalid_batches(
     world: &host::Host,
     principal: &Principal,
     scope: &WorthQueryRequestScope,
-    provider: &prefix::Calls,
+    provider: &prefix_observation::Calls,
 ) {
     let request = world
         .runtime()

@@ -1,6 +1,7 @@
 //! Same genuine Source and probe have distinct candidate and exact meanings.
 use super::super::{authoring::Edit, refinement};
 use super::*;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 #[test]
 fn exact_refinement_prefix_agrees_with_native_and_routes_candidate_stable_changes() {
     lifecycle::isolated_allocation_case(
@@ -18,7 +19,7 @@ fn exact() -> refinement::FindExact {
     }
 }
 fn run() {
-    let calls = Arc::new(prefix::Calls::default());
+    let calls = Arc::new(prefix_observation::Calls::default());
     let world = host::install_watch(calls.clone(), Arc::new(rule::Calls::new(calls.clone())));
     let scope = authentication::request_scope();
     let principal = authentication::block_on(
@@ -284,7 +285,7 @@ fn exact_refinement_requires_the_declared_executable_at_installation() {
 }
 fn installation() {
     use worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationDenial;
-    let calls = Arc::new(prefix::Calls::default());
+    let calls = Arc::new(prefix_observation::Calls::default());
     calls.omit_refinement.store(true, Ordering::SeqCst);
     let denied =
         host::try_install_unpopulated(calls.clone(), Arc::new(rule::Calls::new(calls.clone())))

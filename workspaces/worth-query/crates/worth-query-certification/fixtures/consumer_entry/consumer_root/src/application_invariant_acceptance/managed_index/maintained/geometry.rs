@@ -44,7 +44,7 @@ pub(super) fn declare(
 ) -> ApplicationSchemaDeclarationBuilder<Catalog> {
     public_only::declare(refresh::declare(authoring::declare(
         schema::declare(schema)
-            .application_query(query::source_definition())
+            .application_query(query::source_definition(false))
             .application_query_binding::<query::SourceBinding>()
             .application_query(refinement::definition())
             .application_query_binding::<refinement::Binding>()

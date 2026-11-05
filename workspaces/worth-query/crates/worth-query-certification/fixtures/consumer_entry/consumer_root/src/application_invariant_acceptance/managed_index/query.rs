@@ -108,36 +108,27 @@ pub(super) fn authoring<
         .lanes(lanes)
 }
 pub fn source_definition(
-) -> ApplicationQueryDefinition<Catalog, SourceQuery, Parameters, ItemRow, Directory> {
-    base(
-        SourceQuery::reference(),
-        ApplicationQueryLaneEligibility::one_shot(),
-    )
-    .root_path(
-        ApplicationQueryRootPath::from(Directory::reference()).forward(Contains::reference()),
-    )
-    .order_by(name(), ApplicationQueryOrderingDirection::Descending)
-    .order_by(identity(), ApplicationQueryOrderingDirection::Descending)
-    .build()
-    .unwrap()
-}
-
-/// A real Phase 1 Source shape outside the invariant Source compiler: its two
-/// disjoint guarded paths cover the actual complete Boolean field universe.
-pub fn guarded_source_definition(
+    guarded: bool,
 ) -> ApplicationQueryDefinition<Catalog, SourceQuery, Parameters, ItemRow, Directory> {
     let mut builder = base(
         SourceQuery::reference(),
         ApplicationQueryLaneEligibility::one_shot(),
     );
-    for enabled in [true, false] {
+    if guarded {
+        // Disjoint paths cover the complete Boolean field universe.
+        for enabled in [true, false] {
+            builder = builder.root_path(
+                ApplicationQueryRootPath::from(Directory::reference())
+                    .forward(Contains::reference())
+                    .where_equal(
+                        ItemEnabled::reference(),
+                        ApplicationEncodedScalarValue::try_new(enabled).unwrap(),
+                    ),
+            );
+        }
+    } else {
         builder = builder.root_path(
-            ApplicationQueryRootPath::from(Directory::reference())
-                .forward(Contains::reference())
-                .where_equal(
-                    ItemEnabled::reference(),
-                    ApplicationEncodedScalarValue::try_new(enabled).unwrap(),
-                ),
+            ApplicationQueryRootPath::from(Directory::reference()).forward(Contains::reference()),
         );
     }
     builder
@@ -204,11 +195,7 @@ pub struct FindPrefix {
     pub directory: String,
     pub prefix: String,
 }
-#[derive(Clone, Debug, worth_foundational::facade::WorthValue)]
-pub struct FindPrefixAlias {
-    pub directory: String,
-    pub prefix: String,
-}
+use crate::application_invariant_acceptance::managed_index::prefix_alias_input::FindPrefixAlias;
 worth_query_structured_value_binding!(pub PrefixAliasInputBinding for FindPrefixAlias { identity: "managed-catalog.prefix-alias-input.v1" });
 worth_query_structured_value_binding!(pub SourceInputBinding for ReadSource { identity: "managed-catalog.source-input.v1" });
 worth_query_structured_value_binding!(pub PrefixInputBinding for FindPrefix { identity: "managed-catalog.prefix-input.v1" });
@@ -216,9 +203,6 @@ fn source_scope(input: ReadSource) -> String {
     input.directory
 }
 fn prefix_scope(input: FindPrefix) -> String {
-    input.directory
-}
-fn prefix_alias_scope(input: FindPrefixAlias) -> String {
     input.directory
 }
 worth_query_query_binding!(pub SourceBinding for ReadSource, schema Catalog,
@@ -250,5 +234,5 @@ worth_query_query_binding!(pub PrefixAliasBinding for FindPrefixAlias, schema Ca
     result ResultBinding, principal CatalogPrincipal, mapping ExternalMapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,
     scope Directory, DirectoryFacts, DirectoryIdentity, String, ReadOnly, NoApplicationUnit,
-    field DirectoryIdentity::reference(), value prefix_alias_scope, limits results 16
+    field DirectoryIdentity::reference(), value |input: FindPrefixAlias| input.directory, limits results 16
 );

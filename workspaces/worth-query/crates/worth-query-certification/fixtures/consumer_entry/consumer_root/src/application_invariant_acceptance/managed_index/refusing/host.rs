@@ -1,6 +1,7 @@
 //! A genuine fixed refusing program with explicit public bootstrap calls.
 use super::super::super::{authentication, resources};
 use super::{directory, mutation, prefix, query, rule, schema::*};
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 use std::sync::Arc;
 use worth_query_decl::facade::{
     application_program::*, application_query::*, application_schema::*,
@@ -20,7 +21,7 @@ impl ApplicationSchemaContribution<Catalog> for Contribution {
     }
 }
 pub struct Configuration {
-    pub(super) provider: Arc<prefix::Calls>,
+    pub(super) provider: Arc<prefix_observation::Calls>,
     pub(super) rules: Arc<rule::Calls>,
 }
 impl WorthQueryApplicationContribution<Catalog> for Contribution {

@@ -1,12 +1,13 @@
 //! Actual Native-performed/World-pending custody cannot publish prepared wakes.
 use super::*;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 use std::{num::NonZeroUsize, time::Duration};
 
 pub(super) fn run(
     world: &host::Host,
     principal: &WorthQueryAuthenticatedExternalPrincipal<super::super::super::schema::Catalog>,
     scope: &WorthQueryRequestScope,
-    calls: &prefix::Calls,
+    calls: &prefix_observation::Calls,
 ) {
     let request = world
         .runtime()

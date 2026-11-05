@@ -71,7 +71,7 @@ pub fn populate(
             assert!(
                 records
                     .iter()
-                    .any(|record| record.before.is_none() && record.after.is_empty()),
+                    .any(|record| record.source.before.is_none() && record.source.after.is_empty()),
                 "a new empty Source scope is invoked despite having no committed occurrence"
             );
         }

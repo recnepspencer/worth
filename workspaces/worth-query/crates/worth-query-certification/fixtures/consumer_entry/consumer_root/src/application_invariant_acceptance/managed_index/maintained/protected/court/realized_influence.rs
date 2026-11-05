@@ -1,11 +1,12 @@
 //! Genuine governed observations retain hidden influence through atomic expectations.
 use super::super::{super::mutation, expectation};
 use super::*;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 #[test]
 fn governed_realized_expectation_preserves_irrelevant_edits_and_rejects_changed_influence() {
     lifecycle::run(|| {
         for change in 0..4 {
-            let calls = Arc::new(prefix::Calls::default());
+            let calls = Arc::new(prefix_observation::Calls::default());
             let world = host::install(calls.clone(), Arc::new(rule::Calls::new(calls.clone())));
             let scope = authentication::request_scope();
             let principal = authentication::block_on(

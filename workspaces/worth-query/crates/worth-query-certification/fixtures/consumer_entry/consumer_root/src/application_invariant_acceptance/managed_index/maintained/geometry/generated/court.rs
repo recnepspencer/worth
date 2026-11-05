@@ -6,6 +6,7 @@ use super::super::super::{
 };
 use super::super::{authoring, provider, query, rule, schema::*, Configuration};
 use super::{operation, producer, program, request as action, source};
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 use std::sync::{atomic::Ordering, Arc};
 use worth_query_host::facade::{
     admission::authenticated_principal::*, application_entry::*, primary_graph::*,
@@ -103,7 +104,7 @@ fn journey() {
     let provider = Arc::new(provider::Calls::default());
     let config = Configuration::new(provider.clone());
     let rules = config.rules.clone();
-    let prefix = Arc::new(prefix::Calls::default());
+    let prefix = Arc::new(prefix_observation::Calls::default());
     let prefix_rules = Arc::new(prefix_rule::Calls::new(prefix.clone()));
     let world = host::install_geometry(prefix, prefix_rules, config);
     let scope = authentication::request_scope();

@@ -92,12 +92,6 @@ pub(super) fn application_limits_with_branches(
     ))
 }
 
-pub(super) fn application_limits_with_policy(
-    policy: worth_foundational::ExecutionRequestPolicy,
-) -> worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationLimits {
-    application_limits_with_observations(policy, ACTIVE_WORLD_OBSERVATIONS)
-}
-
 pub(super) fn application_limits_with_clock(
     policy: worth_foundational::ExecutionRequestPolicy,
     clock: WorthQueryAdmissionClock,

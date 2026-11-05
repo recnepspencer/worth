@@ -2,6 +2,7 @@
 use super::super::super::authentication;
 use super::super::{host, lifecycle, prefix};
 use super::*;
+use crate::application_invariant_acceptance::managed_index::prefix_observation;
 use std::sync::{atomic::Ordering, Arc};
 use worth_query_host::facade::{application_entry::*, primary_graph::*};
 
@@ -13,7 +14,10 @@ fn checked_summary_refuses_corrupt_cold_bounds_then_rebuilds_a_lawful_twin() {
 fn predecessor_lookup_on_a_genuine_cold_source_slot_refuses_before_a_lawful_build() {
     lifecycle::run(|| {
         let calls = Arc::new(Calls::default());
-        let world = host::install_boxes(Arc::new(prefix::Calls::default()), calls.clone());
+        let world = host::install_boxes(
+            Arc::new(prefix_observation::Calls::default()),
+            calls.clone(),
+        );
         let scope = authentication::request_scope();
         let principal = authentication::block_on(
             authentication::admit(world.installed_schema()).authenticate(
@@ -76,7 +80,10 @@ fn predecessor_lookup_on_a_genuine_cold_source_slot_refuses_before_a_lawful_buil
 }
 fn journey() {
     let calls = Arc::new(Calls::default());
-    let world = host::install_boxes(Arc::new(prefix::Calls::default()), calls.clone());
+    let world = host::install_boxes(
+        Arc::new(prefix_observation::Calls::default()),
+        calls.clone(),
+    );
     let scope = authentication::request_scope();
     let principal = authentication::block_on(
         authentication::admit(world.installed_schema()).authenticate(
