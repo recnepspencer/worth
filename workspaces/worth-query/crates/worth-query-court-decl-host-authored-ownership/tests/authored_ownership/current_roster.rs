@@ -68,14 +68,16 @@ fn dropped_added_and_repointed_current_routes_refuse_after_real_frame_admission(
         let recovery = try_reopen::<S>(WorthQueryApplicationCheckpoint::from_untrusted_bytes(
             frame.into_boxed_slice(),
         ));
-        let recovered = match recovery {
-            Ok(host) => host,
-            Err(WorthQueryInMemoryApplicationDenial::Graph(denial)) => {
-                super::coherent_roster::assert_owned_recovery(&denial, publication, owner, change);
-                continue;
-            }
-            Err(denial) => panic!("{change}: {denial:?}"),
-        };
+        if change < 3 {
+            let Err(WorthQueryInMemoryApplicationDenial::Graph(denial)) = recovery else {
+                panic!("{change}: contradictory catalog must refuse during reopen");
+            };
+            super::coherent_roster::assert_owned_recovery(&denial, publication, owner, change);
+            continue;
+        }
+        let recovered = recovery.unwrap_or_else(|denial| {
+            panic!("member-claim corruption is admitted for access validation: {denial:?}")
+        });
         let scope = request_scope();
         let principal = authenticate_operator(recovered.installed_schema(), &scope);
         let request = recovered.runtime().request(&principal, &scope);

@@ -232,3 +232,33 @@ parameter routes in one family and two families at one source, exact row and
 presence contacts, charged incidence, an unrelated source, real field updates,
 and refused destructive edits with no effect. Keep the existing unrestricted
 opt-in contract. Resume all remaining mutation probes and final qualification.
+
+## D1154 suspended-slot custody selection
+
+Boundary review: suspension preserves a slot's identity, kind and lifecycle but
+removes materialized metadata and relation endpoints. The current custody
+reader must distinguish that authenticated lifecycle from a missing slot or
+missing metadata on a live slot. Only an unavailable basis slot may use the
+candidate after-image to resolve a restored entity kind or relation endpoints;
+ordinary live reads and private custody links remain basis reads. An unavailable
+selector without a restored after-image refuses the existing typed materialization
+transition inconsistency, naming the record. Retained tombstone entity selectors
+remain valid for authored restoration. No history reconstruction or store scan is
+introduced.
+
+Implement a private selector-resolution owner under `ownership/read`, pass the
+unpublished working-state view from commit preparation, and keep reach one hop.
+Retained evidence coverage separately checks claim and scope selectors, including
+both endpoints of scoped relations. Add the Native payload/orbit round-trip in
+the existing relational certification court crate, leaving the grandfathered
+Native source court unchanged. Exercise the real Query suspension door in the
+producer-succession fixture: its independent producer has an incident Realizes
+relation, and its installed owned producers register current-publication storage.
+The earlier authored suspension fixture has no opted-in producer, so it cannot
+expose this regression. Keep private lifecycle and coverage tests free of runtime
+root construction, following the merged test-layout rules. Add a target-only owned-edge court whose
+external endpoint is not a scope. Pin roster corruptions 0–2 to their actual
+refusing stage. Preserve damage refusals with negative selector courts and run
+rematerialization, target-seed, coverage and damage mutations plus the requested
+four-probe sample. Requalify full Native, the three Query targets and required
+gates. The upstream tooling files are outside this correction.

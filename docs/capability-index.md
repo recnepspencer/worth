@@ -618,6 +618,11 @@ generated-output suspension does not make a current public physical read Ready.
 The generated Catalog prefix journey uses actual producer/reconstruction custody:
 logical rules preserve suspended rows, an exact manifest cannot bypass the
 reconstructed proposed-domain check, and valid restoration serves fresh reads.
+Current custody distinguishes an unavailable basis slot from storage damage.
+Rematerialization resolves restored entity kinds and incident relation endpoints
+from the unpublished after-image, including when publication custody storage is
+installed. Missing live metadata and genuinely missing slots still refuse.
+
 Exact authoritative-record correspondence can share the selected suspended
 Source payload without provider construction or maintenance, while publication
 mints a fresh available association. Any authoritative field difference declines

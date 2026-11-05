@@ -12,9 +12,10 @@ use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
 use worth_query_testkit_document_retention::facade::document_retention_model::operator_identity::*;
 use worth_relational::facade::publication::{AuthoredRetirementRefusal, PublicationError};
 type S = Model<6>;
-type Host = WorthQueryProgramApplicationRuntime<S, TwoProgram>;
 
-pub(super) fn denied(host: &Host) -> PublicationError {
+pub(super) fn denied<T: Scenario>(
+    host: &WorthQueryProgramApplicationRuntime<T, TwoProgram>,
+) -> PublicationError {
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.runtime().request(&principal, &scope);

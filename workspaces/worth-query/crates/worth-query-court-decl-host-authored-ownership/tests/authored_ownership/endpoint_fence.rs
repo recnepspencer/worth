@@ -12,8 +12,15 @@ use worth_relational::facade::{
 };
 #[test]
 fn external_owned_edge_endpoint_retarget_refuses_before_any_effect() {
-    type S = Model<6>;
-    let host = install_definition::<S, TwoProgram>();
+    run::<6>();
+}
+#[test]
+fn an_owned_edge_with_only_its_target_as_member_refuses_external_retargeting() {
+    run::<66>();
+}
+fn run<const MODE: u8>() {
+    type S<const M: u8> = Model<M>;
+    let host = install_definition::<S<MODE>, TwoProgram>();
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.runtime().request(&principal, &scope);
@@ -22,7 +29,7 @@ fn external_owned_edge_endpoint_retarget_refuses_before_any_effect() {
     let target = create(&host, &request, 40, vec![])
         .outputs_of::<CreatedOutputs>()
         .unwrap()
-        .entity::<Created<S>>()
+        .entity::<Created<S<MODE>>>()
         .unwrap()
         .entity_id();
     let expected = super::current_fence::denied(&host)
@@ -36,14 +43,29 @@ fn external_owned_edge_endpoint_retarget_refuses_before_any_effect() {
     let stage = body
         .outputs_of::<CreatedOutputs>()
         .unwrap()
-        .entity::<super::co_roles::CoCreated<S, 0>>()
+        .entity::<super::co_roles::CoCreated<S<MODE>, 0>>()
         .unwrap()
         .unwrap()
         .entity_id();
-    host.runtime()
-        .probe_owned_edge_retarget_for_test(body.product_branch(), owner, stage, &scope)
-        .unwrap()
-        .expect("unchanged endpoints keep existing custody");
+    if MODE == 6 {
+        host.runtime()
+            .probe_owned_edge_retarget_for_test(body.product_branch(), owner, stage, &scope)
+            .unwrap()
+            .expect("unchanged endpoints keep existing custody");
+    } else {
+        let external = host
+            .runtime()
+            .current_ownership_contacts_for_record_for_test(stage, &scope)
+            .unwrap();
+        assert!(
+            external.publication_rows.is_empty(),
+            "edge source is not a member or scope"
+        );
+        assert!(
+            external.presence_rows.is_empty(),
+            "edge source scopes no route"
+        );
+    }
     let before = host
         .with_host_advancement(|phase| {
             host.capture_application_checkpoint(

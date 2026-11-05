@@ -11,6 +11,7 @@ pub(super) fn read(
     view: &InvariantStateView<'_>,
     records: &[RecordRef],
     scopes: &[RecordRef],
+    after: Option<&InvariantStateView<'_>>,
     roster: &mut CurrentPublicationRoster,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), TransactionCommitError> {
@@ -25,6 +26,7 @@ pub(super) fn read(
         basis,
         storage,
         view,
+        after,
         roster,
         context,
         entities: BTreeSet::new(),
@@ -37,10 +39,15 @@ pub(super) fn read(
         match *record {
             RecordRef::Entity(id) => reach.seed(id, scoped.contains(record))?,
             RecordRef::Relation(id) => {
-                let row = reach.relation(id)?;
+                reach.demand(id.partition_id)?;
+                let row = selector::relation(view, after, id)?;
                 reach.seed(row.source, scoped.contains(record))?;
                 reach.seed(row.target, scoped.contains(record))?;
                 reach.roster.reached_relations.insert(id);
+                if scoped.contains(record) {
+                    retain::<RelationId>(&mut reach.roster._funding)?;
+                    reach.roster.reached_relation_scopes.insert(id);
+                }
             }
         }
     }
@@ -57,6 +64,7 @@ struct Reach<'a, 'request, 'scope, 'kernel, 'authority> {
     basis: &'a AdmittedRelationalBranchBasis,
     storage: &'a CurrentPublicationStorage,
     view: &'a InvariantStateView<'a>,
+    after: Option<&'a InvariantStateView<'a>>,
     roster: &'a mut CurrentPublicationRoster,
     context: &'a mut MapKernelContext<'kernel, 'authority>,
     entities: BTreeSet<EntityId>,
@@ -175,23 +183,9 @@ impl Reach<'_, '_, '_, '_, '_> {
     fn claims(&mut self, id: EntityId) -> Result<(), TransactionCommitError> {
         retain::<EntityId>(&mut self.roster._funding)?;
         self.demand(id.partition_id)?;
-        let basis = self.basis;
-        let root = &basis.inner.root;
-        let head = root
-            .get_current_partition(id.partition_id)
-            .ok_or_else(|| damaged(&RecordRef::Entity(id)))?;
-        let row = head
-            .entity_arena()
-            .get(&id)
-            .ok_or_else(|| damaged(&RecordRef::Entity(id)))?;
-        // A retained tombstone is a valid restoration selector, but a missing
-        // partition, slot or exact generation is damaged current storage.
-        if !row.is_live() {
+        let Some(kind) = selector::entity_kind(self.view, self.after, id)? else {
             return Ok(());
-        }
-        let kind = row
-            .kind_id()
-            .ok_or_else(|| damaged(&RecordRef::Entity(id)))?;
+        };
         if kind == self.storage.publication_kind {
             self.publications.insert(id);
         }
@@ -207,7 +201,7 @@ impl Reach<'_, '_, '_, '_, '_> {
         Ok(())
     }
     fn scope(&mut self, id: EntityId) -> Result<(), TransactionCommitError> {
-        if self.view.entity_metadata(id).is_none() {
+        if selector::entity_kind(self.view, self.after, id)?.is_none() {
             return Ok(());
         }
         // A source seed owns its own route set. Loading a catalog as a row's
@@ -282,6 +276,7 @@ pub(in crate::publication::ownership) fn claims(
         basis,
         storage,
         view: &view,
+        after: None,
         roster: &mut roster,
         context,
         entities: BTreeSet::new(),

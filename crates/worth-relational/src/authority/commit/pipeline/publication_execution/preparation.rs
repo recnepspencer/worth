@@ -183,6 +183,7 @@ pub(super) fn prepare_publication_phase(
         &branch_basis,
         &canonical_commit_envelope,
         &adjacency_deltas,
+        &working_state,
         required_output_publication.as_ref(),
     )?;
     let runtime_with_current = runtime.with_current_ownership(current_ownership);

@@ -10,9 +10,11 @@ use crate::{
     validation::engine::state_view::InvariantStateView,
 };
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, MapKernelContext};
+mod coverage;
 mod entity;
 mod integrity;
 mod linked;
+mod selector;
 pub(crate) use linked::selectors as linked_selectors;
 mod payload;
 pub(crate) use payload::decode as decode_payload;
@@ -23,6 +25,7 @@ pub(super) use reach::claims as publication_claims;
 #[derive(Debug)]
 pub(crate) struct CurrentPublicationRoster {
     pub(super) observed_position_work: u64,
+    pub(super) reached_relation_scopes: std::collections::BTreeSet<RelationId>,
     pub(super) reached_scopes: std::collections::BTreeSet<EntityId>,
     pub(super) reached_entities: std::collections::BTreeSet<EntityId>,
     pub(super) reached_relations: std::collections::BTreeSet<RelationId>,
@@ -51,12 +54,17 @@ pub(in crate::publication::ownership) struct LinkRow {
 }
 
 impl CurrentPublicationRoster {
-    pub(crate) fn covers(&self, records: &[RecordRef]) -> bool {
-        records.iter().all(|r| match r {
-            RecordRef::Entity(id) => self.reached_entities.contains(id),
-            RecordRef::Relation(id) => self.reached_relations.contains(id),
-        })
+    pub(crate) fn covers(&self, records: &[RecordRef], scopes: &[RecordRef]) -> bool {
+        coverage::covers(
+            &self.reached_entities,
+            &self.reached_relations,
+            &self.reached_scopes,
+            &self.reached_relation_scopes,
+            records,
+            scopes,
+        )
     }
+
     pub(crate) fn coordinates(
         &self,
     ) -> impl ExactSizeIterator<
@@ -84,7 +92,7 @@ pub(crate) fn read(
     records: &[RecordRef],
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<CurrentPublicationRoster, TransactionCommitError> {
-    read_selected(execution, basis, records, records, context)
+    read_selected(execution, basis, records, records, None, context)
 }
 
 /// Field-only writes select claims; destructive and lifecycle selectors also
@@ -94,6 +102,7 @@ pub(crate) fn read_selected(
     basis: &AdmittedRelationalBranchBasis,
     records: &[RecordRef],
     scopes: &[RecordRef],
+    after: Option<&InvariantStateView<'_>>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<CurrentPublicationRoster, TransactionCommitError> {
     let mut roster = empty(execution, basis)?;
@@ -116,6 +125,7 @@ pub(crate) fn read_selected(
         &view,
         records,
         scopes,
+        after,
         &mut roster,
         context,
     )?;
@@ -172,6 +182,7 @@ fn empty(
         .map_err(|cause| super::request(crate::execution::denial::lease_denial(cause)))?;
     Ok(CurrentPublicationRoster {
         observed_position_work: 0,
+        reached_relation_scopes: Default::default(),
         reached_scopes: Default::default(),
         reached_entities: Default::default(),
         reached_relations: Default::default(),

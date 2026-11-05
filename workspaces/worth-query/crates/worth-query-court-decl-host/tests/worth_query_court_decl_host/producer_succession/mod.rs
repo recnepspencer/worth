@@ -15,3 +15,5 @@ mod write_fence_courts;
 
 #[path = "route_degree/courts.rs"]
 mod route_degree;
+
+mod materialization;

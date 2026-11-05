@@ -240,7 +240,16 @@ impl<S: Scenario> OperationHandler<S, Binding<S>> for Provider {
             }
             if let Some(stage) = &target.stage {
                 let stage = writer.projected_entity(stage)?;
-                writer.link(Peer::reference(), "body-stage", &cell, &stage)?;
+                if S::MODE == 66 {
+                    writer.link(
+                        Peer::reference(),
+                        "external-to-owned-member",
+                        &stage,
+                        &created,
+                    )?;
+                } else {
+                    writer.link(Peer::reference(), "body-stage", &cell, &stage)?;
+                }
             }
             if matches!(S::MODE, 42 | 64) {
                 writer.link(OwnCell::reference(), "owned-cell", &cell, &created)?;

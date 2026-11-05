@@ -4,8 +4,7 @@ pub trait Scenario:
 {
     type Heterogeneous: heterogeneous::Profile;
     const MODE: u8;
-    const COUPLED: bool =
-        matches!(Self::MODE, 6..=12 | 14..=28 | 30 | 39 | 40 | 41 | 42 | 43 | 48 | 60 | 61 | 64);
+    const COUPLED: bool = matches!(Self::MODE, 6..=12 | 14..=28 | 30 | 39 | 40 | 41 | 42 | 43 | 48 | 60 | 61 | 64 | 66);
     const TWO_BODIES: bool = matches!(
         Self::MODE,
         7 | 8 | 9 | 15..=18 | 20 | 27 | 28 | 42 | 43 | 61 | 64

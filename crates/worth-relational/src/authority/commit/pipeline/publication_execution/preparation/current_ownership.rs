@@ -14,6 +14,7 @@ pub(super) fn select(
     basis: &AdmittedRelationalBranchBasis,
     candidate: &crate::history::data::CanonicalCommitEnvelope,
     adjacency: &[crate::authority::mutation::AdjacencyDelta],
+    working: &crate::storage::overlay::WorkingState,
     admission: Option<&crate::mvcc::RequiredOutputPublicationAdmission>,
 ) -> Result<Option<Arc<CurrentPublicationRoster>>, TransactionCommitError> {
     if basis
@@ -79,6 +80,12 @@ pub(super) fn select(
         ));
     }
     records.extend(scopes.iter().cloned());
+    let after_image =
+        crate::storage::overlay::OverlayStateView::new(basis.inner.root.as_ref(), working);
+    let after = crate::validation::engine::state_view::InvariantStateView::new(
+        &after_image,
+        candidate.commit.version_id,
+    );
     let run = || {
         let destroyed = candidate
             .patch
@@ -106,11 +113,12 @@ pub(super) fn select(
                 if let Some(current) =
                     admission.and_then(|a| a.publication.current_ownership_evidence())
                     && current.basis == *basis.descriptor()
-                    && current.covers(&linked)
+                    && current.covers(&linked, &scoped)
                 {
                     return Ok(Arc::clone(current));
                 }
-                ownership::read_selected(execution, basis, &linked, &scoped, context).map(Arc::new)
+                ownership::read_selected(execution, basis, &linked, &scoped, Some(&after), context)
+                    .map(Arc::new)
             })
             .map_err(ownership::request)?
             .0
