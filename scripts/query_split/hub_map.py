@@ -141,7 +141,7 @@ def receiver(signature):
     return 'self'
 
 
-def hub_methods(model, key, expand, parent):
+def hub_methods(model, key, expand, parent, root=Path('.').resolve()):
     methods, blocks = [], Counter()
     home = key[0][len(parent)] if key[0][:len(parent)] == parent and len(key[0]) > len(parent) else None
     for names in sorted(model.views):
@@ -180,7 +180,7 @@ def hub_methods(model, key, expand, parent):
                 line = file_text[:node.offset + start + inner_start + s].count('\n') + 1
                 methods.append({
                     'name': name, 'module': module, 'source_module': '::'.join(names),
-                    'file': str(node.source), 'trait': trait, 'receiver': receiver(signature),
+                    'file': str(Path(node.source).resolve().relative_to(root)) if Path(node.source).resolve().is_relative_to(root) else str(node.source), 'trait': trait, 'receiver': receiver(signature),
                     'lines': item.count('\n') + 1,
                     'fields': {f: sorted(modes) for f, modes in sorted(touched.items())},
                     'calls': sorted(calls), 'field_calls': sorted(field_calls), 'line': line,
