@@ -16,3 +16,7 @@ step 5 request_execution moved to domain_computation (domain level): component 1
   - product_publication -> primary_graph (7): the runtime's own impl blocks (owner_close, discovery) and the unpublished-idempotency disposition.
   - provider_session <-> authorization (3/78) and operation_binding <-> provider_session (13/12): each side embeds the other's refusal or plan types as data; no move without relocating a refusal family, left as is.
   - execution_runtime -> managed_run (1): the #[doc(hidden)] integration_managed_run_admission door on the product runtime.
+# Phase 2: runtime hub to host traits (rulings: facade on the runtime, module-owned host traits, &dyn by default)
+phase 2 after output_demand, product_activation, application_discovery, application_checkpoint, principal_currentness_capture, resolution, authorization, application_resource: component 57 of 79; 152 upward edges, 1520 refs; 108 mutual pairs, lighter-side weight 980; 
+  domain level: component 12 of 21; 20 upward edges, 615 refs; 17 mutual pairs, lighter-side weight 462; 
+  scale: 762 runtime-typed references in 409 files plus 275 runtime impl blocks at the start of phase 2; converted modules route not-yet-converted callees through the identity host's temporary application_runtime() bridge
