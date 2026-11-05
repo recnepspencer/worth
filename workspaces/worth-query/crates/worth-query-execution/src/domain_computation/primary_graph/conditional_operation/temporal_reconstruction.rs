@@ -172,7 +172,6 @@ where
     let admission = isolate_principal_source(access)?;
     let (external, request) = admission.into_parts();
     let selected = runtime
-        .application_runtime()
         .on_product(execution, product.retained_clone())
         .map_err(product_denial)?;
     let principal = selected
@@ -218,7 +217,6 @@ where
         )
         .map_err(denial::query_authorization)?;
     let result = runtime
-        .application_runtime()
         .execute_application_query_one_shot_with_request(execution, plan)
         .map_err(denial::one_shot)?;
     let receipt = result.receipt();

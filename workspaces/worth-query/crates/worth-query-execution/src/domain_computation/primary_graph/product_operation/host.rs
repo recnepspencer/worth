@@ -7,9 +7,8 @@ pub trait ProductOperationHost<Schema>:
         Schema,
     > + crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<
         Schema,
-    > + crate::domain_computation::primary_graph::conditional_operation::host::ConditionalOperationHost<
-        Schema,
     > + crate::basis::WorthQuerySourceProgramResolver
+    + crate::domain_computation::product_publication::host::ProductPublicationHost<Schema>
 {
     /// This host as the trait object `product_operation` is handed.
     fn product_operation_host(&self) -> &dyn ProductOperationHost<Schema>;
@@ -17,4 +16,5 @@ pub trait ProductOperationHost<Schema>:
     fn basis_leases(&self) -> &crate::domain_computation::primary_graph::application_query::resource_lifecycle::WorthQueryApplicationBasisRegistry;
     fn installed_producers(&self) -> &crate::domain_computation::primary_graph::application_contribution::WorthQueryInstalledApplicationProducerRegistry<Schema>;
     fn workflow_coverage(&self) -> &crate::domain_computation::primary_graph::application_attempt::workflow::adoption::WorkflowVocabularyCoverageRegistry;
+    fn conditional_operations(&self) -> &std::sync::Mutex<crate::domain_computation::primary_graph::conditional_operation::WorthQueryConditionalOperationRegistry<Schema>>;
 }

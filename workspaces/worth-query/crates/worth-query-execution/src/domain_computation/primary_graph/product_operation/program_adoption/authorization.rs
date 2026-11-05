@@ -1,4 +1,5 @@
 //! Source-program dispatch into the existing typed capability admission owner.
+use crate::domain_computation::authorization::OperationProgressionOps;
 mod effect;
 pub(super) use effect::{AdoptionEffect, AdoptionEffectOutcome, AdoptionEffectRefusal};
 use worth_query_admission::facade::authenticated_principal::{
@@ -113,7 +114,6 @@ impl<'effect, Schema: ApplicationSchema> ApplicationProgramAdoptionAuthorization
             if !self
                 .selected
                 .application()
-                .application_runtime()
                 .installed_program_support()
                 .is_some_and(|support| {
                     support.adoption_authorization_matches(
@@ -157,7 +157,6 @@ impl<'effect, Schema: ApplicationSchema> ApplicationProgramAdoptionAuthorization
             let admission = self
                 .selected
                 .application()
-                .application_runtime()
                 .authorize_capability_operation(self.phase, access, &operation, Default::default())
                 .map_err(Denial::Authorization)?;
             Ok(admission)
@@ -216,7 +215,6 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         };
         let Some(admission) = self
             .application()
-            .application_runtime()
             .installed_program_support()
             .and_then(|support| support.adoption_admission(&source))
         else {

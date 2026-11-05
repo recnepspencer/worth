@@ -46,9 +46,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         let runtime = self.runtime();
         // This consumes real C READ admission before parent/basis lookup. Its
         // captured parameters, principal and full-GEN scope are never rebuilt.
-        runtime
-            .application_runtime()
-            .validate_history_output_control(phase, authority, binding, &control)?;
+        runtime.validate_history_output_control(phase, authority, binding, &control)?;
         if !parent.profile.same_custody(authority.profile())
             || !parent.profile.matches_program(self)
             || !std::sync::Arc::ptr_eq(&parent.original, authority.original())
@@ -84,11 +82,9 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
             .select_dependent_output_basis(&execution, &parent.settled, basis, minimum)
             .map_err(Denial::Demand)?;
         let query = binding.query().identity().clone();
-        let result = runtime
-            .application_runtime()
-            .execute_history_output_query_on_selected(
-                phase, authority, binding, external, control, retained,
-            )?;
+        let result = runtime.execute_history_output_query_on_selected(
+            phase, authority, binding, external, control, retained,
+        )?;
         Ok(WorthQueryHistoryDependentOutputRead {
             source: HistoryDependentSource {
                 authority,
@@ -131,11 +127,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         let source = read.source;
         source
             .authority
-            .validate(
-                phase,
-                self.runtime().application_runtime(),
-                source.authority.request(),
-            )
+            .validate(phase, self.runtime(), source.authority.request())
             .map_err(Denial::Authority)?;
         let installed = self
             .runtime()
@@ -163,12 +155,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
             .into_output_demand_source();
         let disclosed = source
             .authority
-            .confirm_read(
-                phase,
-                self.runtime().application_runtime(),
-                source.authority.request(),
-                disclosed,
-            )
+            .confirm_read(phase, self.runtime(), source.authority.request(), disclosed)
             .map_err(Denial::Authority)?;
         let admitted = self
             .admit_program_dependent_output::<D, C>(

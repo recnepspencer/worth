@@ -156,7 +156,6 @@ where
         super::super::WorthQueryTemporalOperationAuthorization<Schema, Operation, Input, Scope>,
 {
     let selected = runtime
-        .application_runtime()
         .on_product(request_execution, product.retained_clone())
         .map_err(super::super::WorthQueryConditionalReentryFailure::ProductSelection)?;
     let fresh = access.resolve_fresh_operation_access(request_execution, &selected)?;

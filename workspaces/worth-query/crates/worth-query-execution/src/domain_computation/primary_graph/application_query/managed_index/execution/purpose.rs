@@ -41,9 +41,7 @@ pub(in crate::domain_computation::primary_graph::application_query::managed_inde
         storage.work(work)?;
         allocation.claim(execution, bytes)
     };
-    let support = application
-        .application_runtime()
-        .graph_work_resource_support_ref();
+    let support = application.graph_work_resource_support_ref();
     let prepared = prepare_managed_index_read_graph_work(association, support, &mut admit)
         .map_err(Denial::Capacity)?;
     let admitted =

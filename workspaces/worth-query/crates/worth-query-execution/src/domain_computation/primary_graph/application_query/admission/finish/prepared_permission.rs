@@ -228,9 +228,7 @@ where
         basis.identity(),
         basis.retained_product(),
         security_product,
-        application
-            .application_runtime()
-            .graph_work_provider_identity(),
+        application.graph_work_provider_identity(),
         graph.product_read_session_port(),
     )
     .map_err(|cause| graph_work_denial(format!("{}: {cause:?}", query.name())))

@@ -114,10 +114,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn validate_
     principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
     subject: &str,
 ) -> Result<(), WorthQueryApplicationOneShotDenial> {
-    if application
-        .application_runtime()
-        .authentication_is_expired(principal.valid_until())
-    {
+    if application.authentication_is_expired(principal.valid_until()) {
         Err(denial(
             WorthQueryApplicationOneShotDenialKind::StalePrincipal,
             subject,

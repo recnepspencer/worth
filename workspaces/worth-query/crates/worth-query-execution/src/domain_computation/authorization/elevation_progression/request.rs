@@ -141,7 +141,7 @@ where
             })?;
         progress_capability_operation(
             execution,
-            self.application_runtime(),
+            self.authorization_host(),
             access,
             operation,
             preconditions,

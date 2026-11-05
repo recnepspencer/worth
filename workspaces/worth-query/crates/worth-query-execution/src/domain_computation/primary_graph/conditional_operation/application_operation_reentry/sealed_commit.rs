@@ -62,8 +62,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         LifecycleField::Binding: ApplicationReadableScalarValueBinding<Value = LifecycleValue>,
         LifecycleValue: Clone,
     {
-        let reads = runtime
-            .application_runtime().begin_projected_application_read_attempt_with_request(execution, projected.admission, projected.projection, worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+        let reads = runtime.begin_projected_application_read_attempt_with_request(execution, projected.admission, projected.projection, worth_execution::ExecutionAllocationPolicy::SystemAllocation)
             .map_err(|denial| super::super::WorthQueryConditionalReentryFailure::ApplicationAttempt(denial.kind()))?;
         let mut effects = reads
             .complete_projected_dependencies_with_request(execution, crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)
@@ -95,7 +94,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
             .map_err(|denial| super::super::WorthQueryConditionalReentryFailure::ApplicationAttempt(denial.kind()))?;
         let program = effects.finish().map_err(|denial| super::super::WorthQueryConditionalReentryFailure::ApplicationAttempt(denial.kind()))?;
         Ok(classify_commit(
-            runtime.application_runtime().compare_and_commit_conditional_operation(execution, phase, program, idempotency.binding()),
+            runtime.compare_and_commit_conditional_operation(execution, phase, program, idempotency.binding()),
         ))
     }
 }

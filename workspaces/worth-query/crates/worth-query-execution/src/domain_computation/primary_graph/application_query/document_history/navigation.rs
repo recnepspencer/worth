@@ -1,5 +1,6 @@
 //! Complete current READ/metadata before admitting the independent NAV operation.
 use super::*;
+use crate::domain_computation::authorization::OperationProgressionOps;
 mod outputs;
 use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationOperation, WorthQueryDocumentHistoryNavigation,
@@ -75,7 +76,6 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             .installed_operation(reference)
             .map_err(NavigationDenial::OperationInstallation)?;
         let admission = runtime
-            .application_runtime()
             .authorize_capability_operation(phase, capability, &operation, Default::default())
             .map_err(NavigationDenial::Authorization)?;
         Ok((completed, admission))

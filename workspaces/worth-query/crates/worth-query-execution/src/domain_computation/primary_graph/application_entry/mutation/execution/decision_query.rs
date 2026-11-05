@@ -105,7 +105,7 @@ pub trait DecisionQueryOps<S: ApplicationSchema>:
         };
         let request = admission.publication_request().clone();
         let access = SourceQueryReaderAccess::ordinary(
-            self.application_runtime(),
+            self.application_query_host(),
             &shared,
             principal,
             &request,
@@ -151,8 +151,7 @@ trait DecisionQueryOwnOps<S: ApplicationSchema>:
         work.mutation_lease()
             .ok_or(DecisionQueryPreparationStop::MissingProduct)
             .and_then(|lease| {
-                self.application_runtime()
-                    .on_mutation_product(execution, lease)
+                self.on_mutation_product(execution, lease)
                     .map_err(DecisionQueryPreparationStop::Product)
             })
             .and_then(|selected| {

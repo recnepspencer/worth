@@ -1,4 +1,5 @@
 use super::*;
+use crate::domain_computation::execution_runtime::ApplicationAdvancementOps;
 use crate::domain_computation::primary_graph::application_attempt::RetainedCommitScopedOps;
 use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 
@@ -57,7 +58,6 @@ pub trait WorthQueryProgramOwner<Schema>: sealed::WorthQueryProgramOwnership {
     {
         let request = program.request_scope().clone();
         self.runtime()
-            .application_runtime()
             .with_application_advancement(&request, |active_phase| {
                 self.commit_program_action_in_advancement(
                     &active_phase,
@@ -177,9 +177,7 @@ pub trait WorthQueryProgramOwner<Schema>: sealed::WorthQueryProgramOwnership {
             source,
             allocation_policy,
         );
-        self.owned_runtime()
-            .application_runtime()
-            .retained_commit_outcome(outcome)
+        self.owned_runtime().retained_commit_outcome(outcome)
     }
 
     /// Commits one action through the presented program and retains its
@@ -206,7 +204,6 @@ pub trait WorthQueryProgramOwner<Schema>: sealed::WorthQueryProgramOwnership {
     {
         let request = program.request_scope().clone();
         self.runtime()
-            .application_runtime()
             .with_application_advancement(&request, |active_phase| {
                 self.commit_program_action_retained_in_advancement(
                     &active_phase,
@@ -218,7 +215,6 @@ pub trait WorthQueryProgramOwner<Schema>: sealed::WorthQueryProgramOwnership {
             })
             .unwrap_or_else(|denial| {
                 self.runtime()
-                    .application_runtime()
                     .retained_commit_outcome(denial.into_commit_outcome())
             })
     }

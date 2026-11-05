@@ -160,7 +160,7 @@ where
         };
         let admission = match progress_capability_operation(
             execution,
-            self.application_runtime(),
+            self.authorization_host(),
             access,
             operation,
             preconditions,
@@ -197,7 +197,7 @@ where
     Input: 'static,
 {
     let (capability_identity, installed) = installed_lifecycle_owner(
-        runtime.application_runtime(),
+        runtime,
         access.installed_capability_identity(),
         operation,
         WorthQueryElevationLifecycleOperationRole::Revoke,

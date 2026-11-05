@@ -68,7 +68,7 @@ impl WorthQueryObservedDelegationSupport {
         Input: ApplicationCapabilityRequest<Schema, CommandCapability>,
     {
         let prepared = super::binding::bind_activation(
-            runtime.application_runtime(),
+            runtime,
             installed,
             proposed,
             self.resolved,

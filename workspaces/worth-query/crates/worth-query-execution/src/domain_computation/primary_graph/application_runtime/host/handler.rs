@@ -16,4 +16,7 @@ impl<Schema: ApplicationSchema> HandlerHost<Schema>
     {
         &self.mutation_handlers
     }
+    fn installed_conditionals(&self) -> &crate::domain_computation::primary_graph::application_contribution::WorthQueryInstalledApplicationConditionalRegistry<Schema>{
+        &self.installed_conditionals
+    }
 }

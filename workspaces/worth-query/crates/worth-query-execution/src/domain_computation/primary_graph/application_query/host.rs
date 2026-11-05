@@ -4,7 +4,6 @@
 pub trait ApplicationQueryHost<Schema>:
     crate::domain_computation::primary_graph::runtime_host::WorthQueryRuntimeIdentityHost<Schema>
     + crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>
-    + crate::domain_computation::primary_graph::causal_inspection::host::CausalInspectionHost<Schema>
 {
     /// This host as the trait object `application_query` is handed.
     fn application_query_host(&self) -> &dyn ApplicationQueryHost<Schema>;

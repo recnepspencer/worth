@@ -82,7 +82,6 @@ pub(in crate::domain_computation::primary_graph) fn seal<
             ))
         })?;
     let support = application
-        .application_runtime()
         .installed_program_support()
         .ok_or(Denial::OwnerUnavailable)?;
     let occurrence =

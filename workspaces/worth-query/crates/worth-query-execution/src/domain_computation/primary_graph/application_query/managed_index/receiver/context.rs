@@ -88,7 +88,7 @@ pub(super) fn prepare<'a, S: ApplicationSchema, B: ApplicationQueryBinding<S>>(
     };
     // The occurrence token is Copy. Query-owned retained-basis copies are
     // admitted at their actual selected-observation owner before allocation.
-    let selected = application.application_runtime().on_branch(product.product_branch())
+    let selected = application.on_branch(product.product_branch())
         .select_for_managed_index(execution, |observed| {
             let bytes = super::super::super::WorthQueryApplicationBasisIdentity::retained_basis_clone_heap_bytes(
                 observed.basis().relational_basis(),

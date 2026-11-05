@@ -22,8 +22,7 @@ where
     > {
         let runtime = self.application();
         let operation = runtime
-            .application_runtime()
-            .conditional_operations
+            .conditional_operations()
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .admit_clock(handle.binding_identity(), handle.lease())
@@ -42,7 +41,7 @@ where
             .read()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         operation
-            .admit_product_binding(execution, &bridge, runtime, &truth)
+            .admit_product_binding(execution, &bridge, runtime.application_runtime(), &truth)
             .map_err(|denial| {
                 WorthQueryConditionalClockObservationDenial::new(
                     WorthQueryConditionalClockObservationDenialKind::ProductAdmission(
@@ -53,7 +52,7 @@ where
             })?;
         drop(bridge);
         Ok(WorthQueryConditionalClockObservationPort {
-            runtime,
+            runtime: runtime.application_runtime(),
             operation,
             truth,
             marker: std::marker::PhantomData,

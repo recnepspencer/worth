@@ -176,9 +176,8 @@ impl ContinuationState {
             PublicationState::Closed | PublicationState::Closing => None,
         };
         if let Some(recovery) = recovery
-            && let Err(failure) = runtime
-                .application_runtime()
-                .close_product_publication_recovery_in_advancement(phase, recovery)
+            && let Err(failure) =
+                runtime.close_product_publication_recovery_in_advancement(phase, recovery)
         {
             let denial = close_failure(&failure);
             self.prior_cleanup = Some(failure);
@@ -206,7 +205,6 @@ impl ContinuationState {
         use WorthQueryProductUnpublishedRecoveryReleaseFailure as Failure;
         let result = match failure {
             Failure::Recovery(failure) => runtime
-                .application_runtime()
                 .close_product_publication_recovery_in_advancement(phase, failure.into_recovery()),
             Failure::OwnerCleanup(failure) => failure
                 .into_cleanup()

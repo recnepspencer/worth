@@ -34,13 +34,12 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
             phase,
         } = self;
 
-        if let Err(outcome) = application
-            .application_runtime()
-            .require_occurrence_owns_output_source(execution, presented, &program)
+        if let Err(outcome) =
+            application.require_occurrence_owns_output_source(execution, presented, &program)
         {
             return outcome;
         }
-        let Some(support) = application.application_runtime().program_support.as_ref() else {
+        let Some(support) = application.program_support().as_ref() else {
             return WorthQueryApplicationCommitOutcome::Denied(
                 WorthQueryApplicationCommitDenial::application_program_required(),
             );
@@ -85,8 +84,7 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
         } = self;
 
         if !application
-            .application_runtime()
-            .installed_conditionals
+            .installed_conditionals()
             .contains_operation::<Operation>()
         {
             return WorthQueryApplicationCommitOutcome::Denied(
@@ -94,10 +92,11 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
                 ),
             );
         }
-        if let Err(outcome) = application
-            .application_runtime()
-            .require_occurrence_program_commit_binding(execution, &program, selected_program)
-        {
+        if let Err(outcome) = application.require_occurrence_program_commit_binding(
+            execution,
+            &program,
+            selected_program,
+        ) {
             return outcome;
         }
         Self {
@@ -133,8 +132,7 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
         } = self;
 
         if application
-            .application_runtime()
-            .installed_conditionals
+            .installed_conditionals()
             .contains_operation::<Operation>()
             || !presented.acts_through_operation(TypeId::of::<Operation>())
         {
@@ -142,7 +140,7 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
                 WorthQueryApplicationCommitDenial::application_program_required(),
             );
         }
-        let Some(support) = application.application_runtime().program_support.as_ref() else {
+        let Some(support) = application.program_support().as_ref() else {
             return WorthQueryApplicationCommitOutcome::Denied(
                 WorthQueryApplicationCommitDenial::application_program_required(),
             );

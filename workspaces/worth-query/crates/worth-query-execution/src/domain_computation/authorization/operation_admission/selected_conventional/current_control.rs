@@ -47,7 +47,7 @@ where
     }
     authorize_mutation_products(
         execution,
-        runtime.application_runtime(),
+        runtime,
         SelectedMutationProducts {
             mutation,
             control: Some(control),

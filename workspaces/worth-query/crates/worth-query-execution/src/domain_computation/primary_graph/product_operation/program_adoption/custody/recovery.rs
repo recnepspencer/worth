@@ -1,4 +1,5 @@
 use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
+use crate::domain_computation::execution_runtime::ApplicationAdvancementOps;
 use crate::domain_computation::primary_graph::product_operation::ProductOperationContextScopedOps;
 pub(crate) mod readmission;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
@@ -201,7 +202,6 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         let mut retained = Some(recovery);
         let result = self
             .application()
-            .application_runtime()
             .with_application_advancement(request, |phase| {
                 self.recover_branch_adoption_authorized_in_advancement(
                     &phase,
@@ -239,43 +239,42 @@ pub trait RecoveryOps<Schema: ApplicationSchema>:
         ),
     > {
         let mut retained = Some(recovery);
-        self.application_runtime()
-            .with_application_advancement(request, |phase| {
-                let phase_request = match phase.execution_request_for(self.product_runtime()) {
-                    Ok(request) => request,
-                    Err(_) => {
-                        return Err((
-                            crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(
-                                AdmissionRefusal::ForeignPhase,
-                            ),
-                            retained.take().expect("one retained recovery"),
-                        ))
-                    }
-                };
-                let execution = &phase_request;
-                let recovery = retained.take().expect("one admitted recovery");
+        self.with_application_advancement(request, |phase| {
+            let phase_request = match phase.execution_request_for(self.product_runtime()) {
+                Ok(request) => request,
+                Err(_) => {
+                    return Err((
+                        crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(
+                            AdmissionRefusal::ForeignPhase,
+                        ),
+                        retained.take().expect("one retained recovery"),
+                    ))
+                }
+            };
+            let execution = &phase_request;
+            let recovery = retained.take().expect("one admitted recovery");
 
-                let product = match self
-                    .product_runtime()
-                    .admit_product_occurrence(branch.occurrence())
-                {
-                    Ok(product) => product,
-                    Err(denial) => return Err((denial, recovery)),
-                };
-                let selected = match self.on_product_for_owner_recovery(execution, product) {
-                    Ok(selected) => selected,
-                    Err(denial) => return Err((denial, recovery)),
-                };
-                Ok(selected.recover_branch_adoption_authorized_in_advancement(
-                    &phase, recovery, principal, request,
-                ))
-            })
-            .unwrap_or_else(|cause| {
-                Ok(Err(failure(
-                    WorthQueryBranchAdoptionRecoveryDenial::ExecutionDenied(cause),
-                    retained.expect("a refused root keeps recovery facts"),
-                )))
-            })
+            let product = match self
+                .product_runtime()
+                .admit_product_occurrence(branch.occurrence())
+            {
+                Ok(product) => product,
+                Err(denial) => return Err((denial, recovery)),
+            };
+            let selected = match self.on_product_for_owner_recovery(execution, product) {
+                Ok(selected) => selected,
+                Err(denial) => return Err((denial, recovery)),
+            };
+            Ok(selected.recover_branch_adoption_authorized_in_advancement(
+                &phase, recovery, principal, request,
+            ))
+        })
+        .unwrap_or_else(|cause| {
+            Ok(Err(failure(
+                WorthQueryBranchAdoptionRecoveryDenial::ExecutionDenied(cause),
+                retained.expect("a refused root keeps recovery facts"),
+            )))
+        })
     }
 }
 

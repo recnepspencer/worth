@@ -77,7 +77,6 @@ where
     IdentityUnit: ApplicationFieldUnit,
 {
     let selected = runtime
-        .application_runtime()
         .on_product(execution, product.retained_clone())
         .map_err(super::product_denial)?;
     candidates

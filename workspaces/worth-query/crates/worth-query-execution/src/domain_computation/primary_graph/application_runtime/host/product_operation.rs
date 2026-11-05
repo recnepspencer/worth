@@ -10,6 +10,9 @@ impl<Schema: ApplicationSchema> ProductOperationHost<Schema>
     fn product_operation_host(&self) -> &dyn ProductOperationHost<Schema> {
         self
     }
+    fn conditional_operations(&self) -> &std::sync::Mutex<crate::domain_computation::primary_graph::conditional_operation::WorthQueryConditionalOperationRegistry<Schema>>{
+        &self.conditional_operations
+    }
     fn application_readiness_schema_token(&self) -> &str {
         &self.runtime.application_readiness_schema_token
     }

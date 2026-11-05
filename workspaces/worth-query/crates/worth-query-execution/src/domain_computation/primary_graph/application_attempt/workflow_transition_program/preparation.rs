@@ -253,8 +253,7 @@ where
             );
         let (_, projection, _) = self
             .application()
-            .application_runtime()
-            .mutation_projection
+            .mutation_projection()
             .project_admitted_operation_with_request(
                 execution,
                 &admission,

@@ -38,17 +38,15 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
             );
         }
         if !application
-            .application_runtime()
-            .installed_conditionals
+            .installed_conditionals()
             .contains_operation::<Operation>()
         {
             return WorthQueryApplicationCommitOutcome::Denied(
                 WorthQueryApplicationCommitDenial::application_program_required(),
             );
         }
-        if let Err(outcome) = application
-            .application_runtime()
-            .require_occurrence_program_commit_binding(execution, &program, None)
+        if let Err(outcome) =
+            application.require_occurrence_program_commit_binding(execution, &program, None)
         {
             return outcome;
         }

@@ -70,7 +70,7 @@ where
     admit_request(request, capability.contract().operation())?;
     let prepared = prepare_capability_admission(
         execution,
-        runtime.application_runtime(),
+        runtime,
         product,
         principal,
         capability,
@@ -121,7 +121,7 @@ where
     admit_request(request, capability.contract().operation())?;
     let mut prepared = prepare_capability_admission(
         execution,
-        runtime.application_runtime(),
+        runtime,
         product,
         principal,
         capability,

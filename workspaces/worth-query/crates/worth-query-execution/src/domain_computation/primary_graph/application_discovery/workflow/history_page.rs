@@ -86,10 +86,11 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
             return Err(Denial::PolicyMismatch);
         }
         if let Some(prior) = after
-            && (!prior.basis.0.belongs_to_selected_occurrence(
-                self.application().application_runtime(),
-                data.product().observation(),
-            ) || prior.instance != target.instance
+            && (!prior
+                .basis
+                .0
+                .belongs_to_selected_occurrence(self.application(), data.product().observation())
+                || prior.instance != target.instance
                 || prior.subject != target.subject
                 || prior.scope != access.resource_entity_id()
                 || prior.width != width

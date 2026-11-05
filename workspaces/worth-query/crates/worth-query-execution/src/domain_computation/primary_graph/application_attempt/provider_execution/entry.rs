@@ -26,15 +26,13 @@ where
     fn direct_operation_commit_denial<Operation: 'static>(
         &self,
     ) -> Option<WorthQueryApplicationCommitDenial> {
-        if self
-            .application_runtime()
-            .operation_requires_workflow_authority::<Operation>()
-        {
+        if self.operation_requires_workflow_authority(
+            crate::equality_type_id::EqualityTypeId::of::<Operation>(),
+        ) {
             Some(WorthQueryApplicationCommitDenial::workflow_authority_required())
-        } else if self
-            .application_runtime()
-            .operation_requires_application_program::<Operation>()
-        {
+        } else if self.operation_requires_application_program(
+            crate::equality_type_id::EqualityTypeId::of::<Operation>(),
+        ) {
             Some(WorthQueryApplicationCommitDenial::program_lane_required::<
                 Operation,
             >())

@@ -25,7 +25,6 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         let parent = parent.retained.retained_read();
         let retained = self
             .runtime()
-            .application_runtime()
             .select_application_read_observation_with_request(execution, basis);
         if let Err(cause @ Branch::Stopped(_)) = retained {
             return Err(WorthQueryOutputDemandDenial::product_selection(
@@ -35,7 +34,6 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         }
         let minimum_retained = retained.as_ref().ok().map(|_| {
             self.runtime()
-                .application_runtime()
                 .select_application_read_observation_with_request(execution, minimum)
         });
         if let Some(Err(cause @ Branch::Stopped(_))) = &minimum_retained {

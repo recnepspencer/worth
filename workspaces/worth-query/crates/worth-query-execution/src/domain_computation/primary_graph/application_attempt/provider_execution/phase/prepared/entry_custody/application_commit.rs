@@ -1,4 +1,5 @@
 use super::*;
+use crate::domain_computation::execution_runtime::ApplicationAdvancementOps;
 use crate::domain_computation::primary_graph::application_attempt::EntryScopedOps;
 use crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation;
 impl<Schema: ApplicationSchema, Operation, Input, Scope>
@@ -86,7 +87,6 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
         let request = self.request_scope().clone();
         let application = self.application;
         application
-            .application_runtime()
             .with_funded_application_advancement(&request, allocation_policy, |phase| {
                 let entry = match self.in_advancement(&phase) {
                     Ok(entry) => entry,

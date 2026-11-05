@@ -121,7 +121,6 @@ where
     )?;
     let projection = runtime
         .runtime()
-        .application_runtime()
         .mutation_projection
         .retain_for_installation();
     Ok((runtime, projection))

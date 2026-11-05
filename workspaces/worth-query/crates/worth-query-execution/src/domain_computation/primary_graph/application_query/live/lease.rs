@@ -137,7 +137,9 @@ where
         &self,
         host: &crate::domain_computation::request_execution::TestHostRequest<'scope>,
     ) -> crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'scope> {
-        host.phase_for_application(self.runtime.application_runtime())
+        host.phase_for_application(
+            self.runtime as &dyn crate::domain_computation::execution_runtime::WorthQueryApplicationIdentityHost<Schema>,
+        )
     }
 
     pub fn next(

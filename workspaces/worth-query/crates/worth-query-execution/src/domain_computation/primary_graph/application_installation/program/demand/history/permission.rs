@@ -24,8 +24,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         ),
     > {
         use crate::domain_computation::primary_graph::WorthQueryHistoryNavigationDenial as Denial;
-        if let Err(cause) = authority.validate(phase, self.runtime().application_runtime(), request)
-        {
+        if let Err(cause) = authority.validate(phase, self.runtime(), request) {
             return Err((value, cause));
         }
         if !authority.profile().matches_program(self) {
@@ -38,11 +37,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         };
         authority
             .producer_invocation()
-            .confirm_in_execution_preserving(
-                &execution,
-                self.runtime().application_runtime(),
-                value,
-            )
+            .confirm_in_execution_preserving(&execution, self.runtime(), value)
     }
 
     pub(super) fn validate_history_demand<D: WorthQueryApplicationOutputDemand<S>>(
@@ -55,7 +50,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
     ) -> Result<(), WorthQueryHistoryOutputAdvanceDenial> {
         use WorthQueryHistoryOutputAdvanceDenial as Denial;
         authority
-            .validate(phase, self.runtime().application_runtime(), request)
+            .validate(phase, self.runtime(), request)
             .map_err(Denial::Authority)?;
         if !demand.profile.same_custody(authority.profile())
             || !demand.profile.matches_program(self)
@@ -98,7 +93,6 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         // No retained E lookup or currentness requirement. Recovery may still
         // own partial Native work whose original World settlement is unfinished.
         runtime
-            .application_runtime()
             .authorize_retained_history_query::<Source<S, D>>(
                 &execution,
                 authority.producer_invocation(),

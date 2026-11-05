@@ -135,7 +135,7 @@ pub(in crate::domain_computation::primary_graph::causal_inspection::application_
                     WorthQueryManagedGraphWorkSession::inspection_start_backing_bytes(
                         basis_ref,
                         &product,
-                        runtime.application_runtime().graph_work_provider_identity(),
+                        runtime.graph_work_provider_identity(),
                     )?,
                 )
             })
@@ -155,7 +155,7 @@ pub(in crate::domain_computation::primary_graph::causal_inspection::application_
                 WorthQueryGraphWorkAccessContextAffinity::entity(scope.entity_id()),
                 basis_ref,
                 product,
-                runtime.application_runtime().graph_work_provider_identity(),
+                runtime.graph_work_provider_identity(),
                 graph.product_read_session_port(),
             ),
         ))

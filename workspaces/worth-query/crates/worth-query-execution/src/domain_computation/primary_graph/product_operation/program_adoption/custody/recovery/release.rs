@@ -84,10 +84,12 @@ pub(in crate::domain_computation::primary_graph::product_operation::program_adop
             product,
             support_custody,
         } = recovery;
-        match self
-            .application_runtime()
-            .release_product_recovery_in_request(execution, product, minimum_age_ticks, retirements)
-        {
+        match self.release_product_recovery_in_request(
+            execution,
+            product,
+            minimum_age_ticks,
+            retirements,
+        ) {
             Ok(receipt) => Ok(receipt),
             Err(WorthQueryProductUnpublishedRecoveryReleaseFailure::Recovery(failure)) => {
                 let denial = failure.denial();

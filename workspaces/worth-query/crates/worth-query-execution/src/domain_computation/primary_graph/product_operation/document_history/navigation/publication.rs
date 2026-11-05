@@ -1,6 +1,7 @@
 //! Original World publication and candidate-affine recovery retain exact D.
 use super::*;
 use crate::domain_computation::primary_graph::product_operation::ProductOperationContextScopedOps;
+use crate::domain_computation::product_publication::DiscoveryOps;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_installation::facade::ApplicationSchema;
 use {
@@ -84,7 +85,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
         let exact = crate::basis::WorthQueryProductObservationLease::new(observation);
         if self.output_profile.is_some() {
             self.output_source = Some(crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation::from_product_with_memory(
-                self.application.application_runtime(), exact.retained_clone(), self.output_source_memory.take(),
+                self.application, exact.retained_clone(), self.output_source_memory.take(),
             ));
         }
         self.phase = if self.output_profile.is_some() {
@@ -189,7 +190,6 @@ PublicationDenial::Stopped(cause) => Denial::Stopped(advancement_denial(cause)),
                 self.performed(candidate, performed);
                 self.prior_cleanup = self
                     .application
-                    .application_runtime()
                     .release_product_publication_recovery_in_advancement(phase, recovery, 0)
                     .err();
                 Ok(())
@@ -202,7 +202,6 @@ PublicationDenial::Stopped(cause) => Denial::Stopped(advancement_denial(cause)),
                 };
                 self.prior_cleanup = self
                     .application
-                    .application_runtime()
                     .release_product_publication_recovery_in_advancement(phase, recovery, 0)
                     .err();
                 Ok(())

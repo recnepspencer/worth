@@ -1,4 +1,5 @@
 use crate::domain_computation::primary_graph::application_attempt::ApplicationCommitOps;
+use crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost;
 use std::sync::Arc;
 
 use worth_query_installation::facade::ApplicationSchema;
@@ -72,7 +73,7 @@ where
             publication.composite_commit()
         );
         let retained = WorthQueryApplicationReadObservation::from_product(
-            self.application_runtime(),
+            self.application_runtime().application_query_host(),
             crate::basis::WorthQueryProductObservationLease::new(observation),
         );
         WorthQueryApplicationRetainedCommitOutcome::Committed { receipt, retained }

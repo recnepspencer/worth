@@ -3,6 +3,7 @@
 /// The runtime's identity plus what `application_installation` reads or calls above itself.
 pub trait ApplicationInstallationHost<Schema>:
     crate::domain_computation::primary_graph::runtime_host::WorthQueryRuntimeIdentityHost<Schema>
+    + crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>
 {
     /// This host as the trait object `application_installation` is handed.
     fn application_installation_host(&self) -> &dyn ApplicationInstallationHost<Schema>;

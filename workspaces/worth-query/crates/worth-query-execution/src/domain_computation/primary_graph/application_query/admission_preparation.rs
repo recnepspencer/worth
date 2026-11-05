@@ -193,10 +193,7 @@ where
             Scope,
         >,
     ) -> Result<(), WorthQueryApplicationQueryAdmissionDenial> {
-        if self
-            .application_runtime()
-            .authentication_is_expired(access.principal().valid_until())
-        {
+        if self.authentication_is_expired(access.principal().valid_until()) {
             return Err(denial(
                 WorthQueryApplicationQueryAdmissionDenialKind::StalePrincipal,
                 access.principal().binding(),

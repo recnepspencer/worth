@@ -91,10 +91,9 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
             WorthQueryOutputDemandDenial::new(kind, "completed required-output qualification")
         };
         if !fulfilled.matches_source(source)
-            || !fulfilled.retained_output().belongs_to_selected_occurrence(
-                self.application().application_runtime(),
-                self.product().observation(),
-            )
+            || !fulfilled
+                .retained_output()
+                .belongs_to_selected_occurrence(self.application(), self.product().observation())
             || !Arc::ptr_eq(fulfilled.retained_output(), root.retained_read_ref())
             || fulfilled.posture() != root.posture()
         {

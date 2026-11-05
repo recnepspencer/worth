@@ -5,6 +5,7 @@
 //! effect is prepared, so a handle onto a rostered peer program cannot commit
 //! on an occurrence that never activated it.
 
+use crate::domain_computation::primary_graph::application_attempt::OutputSourceOps;
 use crate::domain_computation::primary_graph::application_attempt::RetainedCommitScopedOps;
 use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 use crate::equality_type_id::EqualityTypeId as TypeId;
@@ -66,24 +67,22 @@ where
         );
     }
     let runtime = owner.owned_runtime();
-    let Some(support) = runtime.application_runtime().installed_program_support() else {
+    let Some(support) = runtime.installed_program_support() else {
         return WorthQueryApplicationCommitOutcome::Denied(program_required());
     };
     let presented = match support.present_for_commit(owner.owned_revision()) {
         Ok(presented) => presented,
         Err(denial) => return WorthQueryApplicationCommitOutcome::Denied(denial),
     };
-    runtime
-        .application_runtime()
-        .compare_and_commit_application_for_program_action(
-            &execution,
-            phase,
-            &presented,
-            program,
-            idempotency,
-            causality,
-            allocation_policy,
-        )
+    runtime.compare_and_commit_application_for_program_action(
+        &execution,
+        phase,
+        &presented,
+        program,
+        idempotency,
+        causality,
+        allocation_policy,
+    )
 }
 
 pub(super) fn commit_program_action_retained<Schema, Binding, Owner>(
@@ -108,8 +107,5 @@ where
         idempotency,
         allocation_policy,
     );
-    owner
-        .owned_runtime()
-        .application_runtime()
-        .retained_commit_outcome(outcome)
+    owner.owned_runtime().retained_commit_outcome(outcome)
 }

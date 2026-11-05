@@ -63,8 +63,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         };
         let operation = self
             .application()
-            .application_runtime()
-            .conditional_operations
+            .conditional_operations()
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .admit_clock(handle.binding_identity(), handle.lease());
@@ -82,9 +81,12 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             .read()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         let mut installed = operation.lock_operation();
-        if let Err(denial) =
-            installed.select_product_binding(execution, &bridge, self.application(), &truth)
-        {
+        if let Err(denial) = installed.select_product_binding(
+            execution,
+            &bridge,
+            self.application().application_runtime(),
+            &truth,
+        ) {
             return Err(
                 WorthQueryPerformedRelationalProductChangeDeliveryDenial::new(
                     Kind::ConditionalProductAdmission,
@@ -100,7 +102,6 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         drop(bridge);
         let outcome = self
             .application()
-            .application_runtime()
             .granular_invalidation_installation()
             .retain_product_shared_root()
             .deliver_performed_relational_change(phase, &lowering, dependency_ordinal, change)?;

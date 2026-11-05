@@ -33,7 +33,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         let runtime = self.runtime();
         self.validate_history_demand(phase, demand, authority, request, branch)?;
         authority
-            .confirm_read(phase, runtime.application_runtime(), request, ())
+            .confirm_read(phase, runtime, request, ())
             .map_err(Denial::Authority)?;
         let execution = phase.execution_request_for(runtime.product_runtime()).map_err(|cause| {
             Denial::Demand(WorthQueryOutputDemandDenial::new(
@@ -42,7 +42,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
             ))
         })?;
         let admitted = &mut demand.admitted;
-        let progress = runtime.application_runtime().advance_history_output_demand(
+        let progress = runtime.advance_history_output_demand(
             &execution,
             phase,
             &mut admitted.admitted,
@@ -54,7 +54,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         // The actual demand retains partial work and cleanup while delivery is
         // withheld. Do not move that cleanup into a diagnostic before this seal.
         let progress = authority
-            .confirm_read(phase, runtime.application_runtime(), request, progress)
+            .confirm_read(phase, runtime, request, progress)
             .map_err(Denial::Authority)?;
         if let Ok(WorthQueryOutputDemandAdvance::Settled(retained)) = &progress
             && let Some(completion) = &admitted.original_root_completion

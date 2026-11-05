@@ -100,7 +100,6 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             .capability(capability, operation)
             .map_err(Denial::MetadataCapabilityInstallation)?;
         let selected = runtime
-            .application_runtime()
             .on_branch(
                 crate::basis::WorthQueryProductBranchReadIdentity::from_observation(
                     self.plan.basis.selected_product().observation(),

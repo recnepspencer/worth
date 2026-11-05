@@ -18,4 +18,7 @@ pub trait WorthQueryRuntimeIdentityHost<Schema>: WorthQueryApplicationIdentityHo
         &self,
     ) -> &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>;
     fn bridge(&self) -> &crate::domain_computation::primary_graph::managed_bridge::WorthQueryInstalledApplicationBridge;
+    fn granular_invalidation_installation(
+        &self,
+    ) -> crate::domain_computation::primary_graph::WorthQueryGranularInvalidationInstallation;
 }

@@ -148,13 +148,13 @@ where
         Input: ApplicationCapabilityRequest<Schema, Capability>,
         Input: 'static,
     {
-        let draft = match bind_review(self.application_runtime(), &mandatory, &access, operation) {
+        let draft = match bind_review(self.authorization_host(), &mandatory, &access, operation) {
             Ok(draft) => draft,
             Err(denial) => return Err(review_denial(mandatory, denial)),
         };
         let admission = match progress_capability_operation(
             execution,
-            self.application_runtime(),
+            self.authorization_host(),
             access,
             operation,
             preconditions,

@@ -9,4 +9,5 @@ pub trait HandlerHost<Schema>:
     fn mutation_handlers(
         &self,
     ) -> &crate::domain_computation::primary_graph::handler::InstalledMutationHandlerRegistry<Schema>;
+    fn installed_conditionals(&self) -> &crate::domain_computation::primary_graph::application_contribution::WorthQueryInstalledApplicationConditionalRegistry<Schema>;
 }

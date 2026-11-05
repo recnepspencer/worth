@@ -158,7 +158,7 @@ pub(in crate::domain_computation) trait ReplayScopedOps<Schema: ApplicationSchem
             None => return Ok(None),
         };
         let Ok(prepared) = super::binding::bind_activation(
-            self.application_runtime(),
+            self.authorization_host(),
             installed,
             &proposed,
             resolved,
@@ -169,7 +169,7 @@ pub(in crate::domain_computation) trait ReplayScopedOps<Schema: ApplicationSchem
         };
         let admission = match progress_capability_operation(
             execution,
-            self.application_runtime(),
+            self.authorization_host(),
             access,
             operation,
             preconditions,

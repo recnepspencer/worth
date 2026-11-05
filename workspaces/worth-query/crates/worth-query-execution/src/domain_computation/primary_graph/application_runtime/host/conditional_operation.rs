@@ -10,9 +10,6 @@ impl<Schema: ApplicationSchema> ConditionalOperationHost<Schema>
     fn conditional_operation_host(&self) -> &dyn ConditionalOperationHost<Schema> {
         self
     }
-    fn conditional_operations(&self) -> &std::sync::Mutex<crate::domain_computation::primary_graph::conditional_operation::WorthQueryConditionalOperationRegistry<Schema>>{
-        &self.conditional_operations
-    }
     fn granular_invalidation(
         &self,
     ) -> &crate::domain_computation::primary_graph::WorthQueryGranularInvalidationInstallation {

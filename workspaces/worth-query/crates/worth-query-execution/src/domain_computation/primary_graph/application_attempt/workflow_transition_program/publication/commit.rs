@@ -143,8 +143,7 @@ where
             }
             (false, None) => {}
         }
-        let presented = match self
-            .application_runtime().installed_program_support()
+        let presented = match self.installed_program_support()
             .ok_or_else(super::super::super::WorthQueryApplicationCommitDenial::application_program_required)
             .and_then(|support| support.present_for_commit(&program_revision))
         {

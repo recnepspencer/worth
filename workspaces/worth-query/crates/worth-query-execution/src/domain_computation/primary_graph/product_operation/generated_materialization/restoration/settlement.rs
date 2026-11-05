@@ -59,7 +59,7 @@ pub(super) trait SettlementParentOps<Schema: ApplicationSchema>:
         super::WorthQueryRestoredGeneratedOutput,
         WorthQueryGeneratedOutputRestorationRecoveryFailure,
     > {
-        match self.application_runtime().release_product_recovery_in_request(execution, old, 0, retirements) {
+        match self.release_product_recovery_in_request(execution, old, 0, retirements) {
             Ok(_) => Err(failure(
                 WorthQueryGeneratedOutputRestorationRecoveryStage::AdoptionPublication,
                 RecoveryState::World {
@@ -104,7 +104,7 @@ pub(super) trait SettlementParentOps<Schema: ApplicationSchema>:
         super::WorthQueryRestoredGeneratedOutput,
         WorthQueryGeneratedOutputRestorationRecoveryFailure,
     > {
-        match self.application_runtime().release_product_recovery_in_request(execution, recovery, 0, retirements) {
+        match self.release_product_recovery_in_request(execution, recovery, 0, retirements) {
             Ok(_) => Ok(settlement.finish(execution, self.product_operation_host())),
             Err(
                 crate::domain_computation::WorthQueryProductUnpublishedRecoveryReleaseFailure::Recovery(

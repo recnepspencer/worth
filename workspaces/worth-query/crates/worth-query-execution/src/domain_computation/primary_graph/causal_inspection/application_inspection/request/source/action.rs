@@ -136,14 +136,12 @@ impl<Schema: ApplicationSchema, Disclosure: ApplicationSourceDisclosureBinding<S
                 .map_err(InspectionCause::Admission)?;
                 let selected = self
                     .runtime
-                    .application_runtime()
                     .on_branch(original.publication.product_branch())
                     .select_with_request(execution)
                     .map_err(InspectionCause::Selection)?;
                 let storage = &mut memory;
                 let (report, terminal) = self
                     .runtime
-                    .application_runtime()
                     .with_fresh_inspection_scope_identities(
                         execution,
                         &installed,

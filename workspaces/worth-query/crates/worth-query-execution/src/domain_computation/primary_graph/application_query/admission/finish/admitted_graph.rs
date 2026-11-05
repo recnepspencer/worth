@@ -57,11 +57,9 @@ pub(super) trait AdmittedGraphParentOps<Schema: ApplicationSchema>:
             worth_query_installation::facade::WorthQueryCanonicalWorkEvidence::zero(),
             worth_query_installation::facade::WorthQueryCanonicalWorkEvidence::zero(),
         );
-        let plan = admit_application_query_graph_work(
-            reviewed,
-            self.application_runtime().graph_work_resource_support_ref(),
-        )
-        .map_err(|cause| graph_work_denial(format!("{}: {cause:?}", query.name())))?;
+        let plan =
+            admit_application_query_graph_work(reviewed, self.graph_work_resource_support_ref())
+                .map_err(|cause| graph_work_denial(format!("{}: {cause:?}", query.name())))?;
         Ok(PreparedApplicationQueryGraphWork {
             plan,
             obligation_identity,

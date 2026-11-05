@@ -1,3 +1,4 @@
+use crate::domain_computation::execution_runtime::ApplicationAdvancementOps;
 use crate::domain_computation::primary_graph::product_activation::PublicationScopedOps;
 use std::sync::Arc;
 
@@ -135,7 +136,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         Node: 'static,
         Provider: WorthQueryHostConditionalPredicateProvider<Node>,
     {
-        self.application().application_runtime().with_host_advancement(|active_phase| {
+        self.application().with_host_advancement(|active_phase| {
             let phase = &active_phase;
 
         let (anchor, request) = admission::definition_request(self.application(), self.product(), handle, provider)?;

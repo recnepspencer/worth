@@ -122,7 +122,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                     migration,
                     custody,
                 );
-                let cleanup = self.application().application_runtime().release_product_recovery_in_request(
+                let cleanup = self.application().release_product_recovery_in_request(
                     execution,
                     product,
                     IMMEDIATE_RECOVERY_RELEASE_AGE_TICKS,
@@ -182,7 +182,7 @@ Err(PublicationDenial::Stopped(stop)) => Err(failure(
                         .unpublished_idempotency_disposition(),
                     support_custody,
                 );
-                let prior_cleanup = self.application().application_runtime().release_product_recovery_in_request(
+                let prior_cleanup = self.application().release_product_recovery_in_request(
                     execution,
                     product,
                     IMMEDIATE_RECOVERY_RELEASE_AGE_TICKS,

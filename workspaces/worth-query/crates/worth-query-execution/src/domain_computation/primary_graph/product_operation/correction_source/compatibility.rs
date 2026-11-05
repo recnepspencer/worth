@@ -118,7 +118,6 @@ where
         .map_err(Denial::TargetProgram)?;
     let support = target
         .application()
-        .application_runtime()
         .installed_program_support()
         .ok_or(Denial::UnsupportedTargetProgram)?;
     let record = support
@@ -190,7 +189,6 @@ where
         .map_err(Denial::TargetProgram)?;
     let support = target
         .application()
-        .application_runtime()
         .installed_program_support()
         .ok_or(Denial::UnsupportedTargetProgram)?;
     let record = support

@@ -142,7 +142,6 @@ where
         WorthQueryTemporalQueryAuthorizationDenial,
     > {
         runtime
-            .application_runtime()
             .admit_application_query(execution, query, access, parameters, controls)
             .map_err(WorthQueryTemporalQueryAuthorizationDenial::Query)
     }
@@ -278,8 +277,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
             None,
         )
         .map_err(WorthQueryTemporalQueryAuthorizationDenial::Authorization)?;
-        runtime
-            .application_runtime().admit_governed_application_query(execution, query, access, capability, parameters, controls)
+        runtime.admit_governed_application_query(execution, query, access, capability, parameters, controls)
             .map_err(WorthQueryTemporalQueryAuthorizationDenial::Query)
     }
 }

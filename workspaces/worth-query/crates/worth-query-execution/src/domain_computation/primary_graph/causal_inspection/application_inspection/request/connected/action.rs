@@ -99,14 +99,12 @@ impl<
             let selected = self
                 .request
                 .runtime
-                .application_runtime()
                 .on_branch(original.product_branch())
                 .select_with_request(execution)
                 .map_err(InspectionCause::Selection)?;
             let (report, terminal) = self
                 .request
                 .runtime
-                .application_runtime()
                 .with_fresh_retained_query_identities(
                     execution,
                     &query,
@@ -144,65 +142,62 @@ impl<
                         .map_err(|cause| {
                             FreshQueryPermissionStop::Inspect(InspectionCause::Admission(cause))
                         })?;
-                        self.request
-                            .runtime
-                            .application_runtime()
-                            .with_fresh_inspection_scope_identities(
-                                execution,
-                                &source_binding,
-                                None,
-                                self.request.external,
-                                source.disclosure.scope(),
-                                &selected,
-                                self.request.request,
-                                |_, source_principal, source_scope| {
-                                    let inspect = || -> Result<_, InspectionCause> {
-                                        let policies = source_pending(
+                        self.request.runtime.with_fresh_inspection_scope_identities(
+                            execution,
+                            &source_binding,
+                            None,
+                            self.request.external,
+                            source.disclosure.scope(),
+                            &selected,
+                            self.request.request,
+                            |_, source_principal, source_scope| {
+                                let inspect = || -> Result<_, InspectionCause> {
+                                    let policies = source_pending(
+                                        execution,
+                                        &source_binding,
+                                        source_principal.principal().principal_entity_id(),
+                                        source_scope.scope().entity_id(),
+                                        &mut memory,
+                                    )?;
+                                    let mut read = admission::connected::prepare::<
+                                        Schema,
+                                        Binding,
+                                        Disclosure::Disclosure,
+                                    >(
+                                        self.request.runtime,
+                                        execution,
+                                        &source_binding,
+                                        &selected,
+                                        self.request.request,
+                                        principal,
+                                        scope,
+                                        source_principal,
+                                        source_scope,
+                                        self.request.original,
+                                        &source,
+                                        query_prepared,
+                                        self.rich,
+                                        policies,
+                                        &mut memory,
+                                    )
+                                    .map_err(InspectionCause::Admission)?;
+                                    let report = read
+                                        .materialize_connected(
                                             execution,
-                                            &source_binding,
-                                            source_principal.principal().principal_entity_id(),
-                                            source_scope.scope().entity_id(),
-                                            &mut memory,
-                                        )?;
-                                        let mut read = admission::connected::prepare::<
-                                            Schema,
-                                            Binding,
-                                            Disclosure::Disclosure,
-                                        >(
-                                            self.request.runtime,
-                                            execution,
-                                            &source_binding,
-                                            &selected,
-                                            self.request.request,
-                                            principal,
-                                            scope,
-                                            source_principal,
-                                            source_scope,
-                                            self.request.original,
-                                            &source,
-                                            query_prepared,
-                                            self.rich,
-                                            policies,
-                                            &mut memory,
+                                            query.query(),
+                                            source_binding.query(),
+                                            self.source,
+                                            self.purpose,
                                         )
                                         .map_err(InspectionCause::Admission)?;
-                                        let report = read
-                                            .materialize_connected(
-                                                execution,
-                                                query.query(),
-                                                source_binding.query(),
-                                                self.source,
-                                                self.purpose,
-                                            )
-                                            .map_err(InspectionCause::Admission)?;
-                                        let terminal = read
-                                            .terminal(execution)
-                                            .map_err(InspectionCause::Admission)?;
-                                        Ok((report, terminal))
-                                    };
-                                    inspect().map_err(FreshQueryPermissionStop::Inspect)
-                                },
-                            )
+                                    let terminal = read
+                                        .terminal(execution)
+                                        .map_err(InspectionCause::Admission)?;
+                                    Ok((report, terminal))
+                                };
+                                inspect().map_err(FreshQueryPermissionStop::Inspect)
+                            },
+                        )
                     },
                 )
                 .map_err(|cause| match cause {

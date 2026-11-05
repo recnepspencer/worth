@@ -222,7 +222,6 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                         lineage,
                         workflow.program_revision(),
                         self.application()
-                            .application_runtime()
                             .installed_program_support()
                             .ok_or(Denial::PolicyMismatch)?,
                         workflow.resources(),

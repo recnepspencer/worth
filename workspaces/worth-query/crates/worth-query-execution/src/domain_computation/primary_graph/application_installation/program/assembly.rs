@@ -180,7 +180,7 @@ where
         .copied()
         .map(TypeId::into_external)
         .collect::<std::collections::HashSet<_>>();
-    if let Some(support) = runtime.application_runtime().installed_program_support() {
+    if let Some(support) = runtime.installed_program_support() {
         answered.extend(
             runtime
                 .installed_schema()

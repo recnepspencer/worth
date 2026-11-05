@@ -160,7 +160,6 @@ where
     }
     let source_product = read_set.lease.product().observation().clone();
     let mutation_partition = application
-        .application_runtime()
         .issue_application_mutation_partition()
         .ok_or(WorthQueryProgramMigrationPreparationDenial::MutationPartitionUnavailable)?;
     let effect_count = effects.len();

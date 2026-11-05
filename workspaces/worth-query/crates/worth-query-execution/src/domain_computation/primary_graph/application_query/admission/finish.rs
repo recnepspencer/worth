@@ -207,11 +207,9 @@ where
                 query.name(),
             ));
         }
-        let plan = admit_application_query_graph_work(
-            reviewed.work,
-            &self.application_runtime().graph_work_resource_support(),
-        )
-        .map_err(|denial| graph_work_denial(format!("{}: {denial:?}", query.name())))?;
+        let plan =
+            admit_application_query_graph_work(reviewed.work, &self.graph_work_resource_support())
+                .map_err(|denial| graph_work_denial(format!("{}: {denial:?}", query.name())))?;
         validate_one_shot_shape(query)?;
         let disclosure = compile_disclosure_contract(query, &graph.layout).map_err(|denial| {
             WorthQueryApplicationQueryAdmissionDenial::new(
@@ -317,7 +315,7 @@ where
             basis.identity(),
             basis.retained_product(),
             security_product,
-            self.application_runtime().graph_work_provider_identity(),
+            self.graph_work_provider_identity(),
             graph.product_read_session_port(),
         )
         .map_err(|denial| graph_work_denial(format!("{}: {denial:?}", query.name())))

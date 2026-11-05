@@ -1,3 +1,6 @@
+use crate::domain_computation::execution_runtime::ApplicationAdvancementOps;
+use crate::domain_computation::primary_graph::application_attempt::ApplicationCommitOps;
+use crate::domain_computation::primary_graph::application_attempt::OutputSourceOps;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::WorthQueryProductEntry;
@@ -71,7 +74,6 @@ where
         let request = self.change.program.request_scope().clone();
         let runtime = self.entry.application;
         runtime
-            .application_runtime()
             .with_application_advancement(&request, |phase| {
                 let application = self.entry.application;
                 if !self.change.program.belongs_to_application(
@@ -83,14 +85,12 @@ where
                 if self.change.program.product_branch() != self.entry.branch {
                     return Err(WorthQueryProductTransactionCommitError::BranchMismatch);
                 }
-                Ok(application
-                    .application_runtime()
-                    .compare_and_commit_application_in_advancement(
-                        &phase,
-                        self.change.program,
-                        self.change.idempotency,
-                        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-                    ))
+                Ok(application.compare_and_commit_application_in_advancement(
+                    &phase,
+                    self.change.program,
+                    self.change.idempotency,
+                    crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                ))
             })
             .unwrap_or_else(|cause| Ok(cause.into_commit_outcome()))
     }
@@ -112,7 +112,7 @@ where
         }
         let request = self.change.program.request_scope().clone();
         let runtime = self.entry.application;
-        runtime.application_runtime().with_application_advancement(&request, |phase| {
+        runtime.with_application_advancement(&request, |phase| {
         let application = self.entry.application;
         if let Err(stop) = execution.consult() {
             return Ok(program_request_stop(stop));
@@ -135,7 +135,7 @@ where
         // This erased transaction carries no mutation-binding type. If any
         // binding for the operation is workflow-guarded, the typed program
         // owner door must adjudicate that binding instead.
-        if application.application_runtime().operation_requires_workflow_authority::<Operation>() {
+        if application.operation_requires_workflow_authority(crate::equality_type_id::EqualityTypeId::of::<Operation>()) {
             return Ok(WorthQueryApplicationCommitOutcome::Denied(
                 crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::workflow_authority_required(),
             ));
@@ -146,7 +146,7 @@ where
             ));
         };
         Ok(
-            application.application_runtime().compare_and_commit_application_for_program_action(&execution, &phase,
+            application.compare_and_commit_application_for_program_action(&execution, &phase,
                 &presented,
                 self.change.program,
                 self.change.idempotency,

@@ -10,6 +10,8 @@ pub trait ApplicationAttemptHost<Schema>:
     + crate::domain_computation::primary_graph::handler::host::HandlerHost<Schema>
     + crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<
         Schema,
+    > + crate::domain_computation::primary_graph::product_activation::host::ProductActivationHost<
+        Schema,
     >
 {
     /// This host as the trait object `application_attempt` is handed.
@@ -32,4 +34,13 @@ pub trait ApplicationAttemptHost<Schema>:
     fn signing_owners(&self) -> &std::sync::Mutex<std::collections::BTreeMap<worth_query_declaration::facade::application_program::ApplicationProgramRevision, worth_query_admission::facade::authentication_event::WorthQueryAuthenticationEventSigningOwner<Schema>>>;
     fn next_application_mutation_partition(&self) -> &std::sync::atomic::AtomicU32;
     fn next_external_dispatch_attempt(&self) -> &std::sync::atomic::AtomicU64;
+    fn operation_requires_application_program(
+        &self,
+        operation: crate::equality_type_id::EqualityTypeId,
+    ) -> bool;
+    fn operation_requires_workflow_authority(
+        &self,
+        operation: crate::equality_type_id::EqualityTypeId,
+    ) -> bool;
+    fn mutation_projection(&self) -> &crate::domain_computation::primary_graph::WorthQueryApplicationInvariantProjectionAuthority<Schema>;
 }

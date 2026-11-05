@@ -261,7 +261,7 @@ where
         Operation: ApplicationOperationMarkerIdentity<Schema>,
     {
         operation_progression::validate_capability_operation_authority(
-            runtime.application_runtime(),
+            runtime,
             self,
             operation,
             progression,
@@ -291,7 +291,7 @@ where
         Schema: ApplicationSchema,
     {
         operation_progression::bind_capability_operation_preconditions(
-            runtime.application_runtime(),
+            runtime,
             self,
             operation,
             preconditions,
@@ -322,7 +322,7 @@ where
     {
         operation_progression::transition_capability_operation(
             execution,
-            runtime.application_runtime(),
+            runtime,
             self,
             operation,
             preconditions,
@@ -358,12 +358,7 @@ where
     where
         Schema: ApplicationSchema,
     {
-        exact_observation::with_exact_observation(
-            execution,
-            self,
-            runtime.application_runtime(),
-            observe,
-        )
+        exact_observation::with_exact_observation(execution, self, runtime, observe)
     }
 
     pub(in crate::domain_computation::authorization) fn retain_observed_support(

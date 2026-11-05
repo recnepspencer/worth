@@ -74,8 +74,7 @@ where
     let context = Cell::new(DecisionContextUse::default());
     let interruption = Cell::new(None);
     let operation_scope = read_set.admission.operation_scope_binding().clone();
-    let (plan, projection, _) = runtime
-        .application_runtime().mutation_projection
+    let (plan, projection, _) = runtime.mutation_projection()
         .project_existing_operation(
             &request,
             &read_set.admission,

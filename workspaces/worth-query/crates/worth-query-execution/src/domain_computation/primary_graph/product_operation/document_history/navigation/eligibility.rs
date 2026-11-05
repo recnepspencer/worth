@@ -101,7 +101,6 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
         return Err(correction(Eligibility::ProgramChanged));
     }
     let supported = application
-        .application_runtime()
         .installed_program_support()
         .and_then(|support| support.native_program(current_program.revision()))
         .ok_or_else(|| correction(Eligibility::ProgramUnavailable))?;

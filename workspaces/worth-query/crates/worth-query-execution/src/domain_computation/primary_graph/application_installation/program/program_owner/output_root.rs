@@ -15,7 +15,6 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         use WorthQuerySelectedProgramOwnerDenial as Denial;
         let selected = self
             .runtime()
-            .application_runtime()
             .select_application_read_observation(phase, observation)
             .map_err(Denial::ProductSelection)?;
         let owner = self.selected_program_owner(&selected)?;

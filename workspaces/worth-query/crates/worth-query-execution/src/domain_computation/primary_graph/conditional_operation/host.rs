@@ -4,10 +4,10 @@
 pub trait ConditionalOperationHost<Schema>:
     crate::domain_computation::primary_graph::runtime_host::WorthQueryRuntimeIdentityHost<Schema>
     + crate::domain_computation::authorization::host::AuthorizationHost<Schema>
+    + crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
 {
     /// This host as the trait object `conditional_operation` is handed.
     fn conditional_operation_host(&self) -> &dyn ConditionalOperationHost<Schema>;
-    fn conditional_operations(&self) -> &std::sync::Mutex<crate::domain_computation::primary_graph::conditional_operation::WorthQueryConditionalOperationRegistry<Schema>>;
     fn granular_invalidation(
         &self,
     ) -> &crate::domain_computation::primary_graph::WorthQueryGranularInvalidationInstallation;

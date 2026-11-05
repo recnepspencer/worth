@@ -67,7 +67,6 @@ impl WorthQueryWorkflowSuccessionAdapter {
                 predecessor,
                 selected
                     .application()
-                    .application_runtime()
                     .installed_program_support()
                     .ok_or_else(|| denied("installed program support unavailable"))?,
                 selected.application().authorization_clock(),

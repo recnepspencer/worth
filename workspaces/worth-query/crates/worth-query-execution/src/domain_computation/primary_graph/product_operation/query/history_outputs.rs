@@ -1,5 +1,6 @@
 //! Current C supplies query authority; the admitted original D supplies rows.
 use super::*;
+use crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost;
 use crate::domain_computation::primary_graph::application_query::OutputReadScopedOps;
 use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
 use worth_query_declaration::facade::{
@@ -110,7 +111,7 @@ pub trait HistoryOutputsOps<S: ApplicationSchema>:
                 Denial::Authority(WorthQueryHistoryNavigationDenial::Stopped(cause))
             })?;
         authority.profile().source_intent().require_control(
-            self.application_runtime(),
+            self.application_runtime().application_query_host(),
             &execution,
             binding,
             &control,

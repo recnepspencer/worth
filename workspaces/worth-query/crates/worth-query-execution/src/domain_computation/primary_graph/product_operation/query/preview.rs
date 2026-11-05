@@ -88,7 +88,6 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             .security_observation_for(execution, self.product())
             .map_err(|cause| super::selection_denial(cause, query.name()))?;
         let retained = runtime
-            .application_runtime()
             .select_application_read_observation_with_request(execution, preview.source())
             .map_err(|cause| super::selection_denial(cause, query.name()))?;
         let producer = retained.original_settled_producer().cloned();

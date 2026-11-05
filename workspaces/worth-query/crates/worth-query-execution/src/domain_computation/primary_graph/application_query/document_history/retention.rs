@@ -1,5 +1,6 @@
 //! Fresh ordinary READ/metadata precedes each independently admitted policy step.
 use super::*;
+use crate::domain_computation::authorization::OperationProgressionOps;
 use crate::domain_computation::primary_graph::{
     product_operation::document_history::HistoryRetentionChange,
     WorthQueryAdmittedApplicationOperation, WorthQueryHistoryNodeId,
@@ -45,7 +46,6 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         let request = self.plan.controls.request_scope().clone();
         let completed = self.complete_metadata_read(runtime, phase, document, access)?;
         let selected = runtime
-            .application_runtime()
             .on_branch(completed.source().identity().product_branch())
             .select(phase)
             .map_err(Denial::CandidateSelection)?;
@@ -67,7 +67,6 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             .installed_operation(reference)
             .map_err(Denial::RetentionOperationInstallation)?;
         let admission = runtime
-            .application_runtime()
             .authorize_capability_operation(phase, capability, &operation, Default::default())
             .map_err(Denial::OperationAdmission)?;
         Ok((completed, admission))

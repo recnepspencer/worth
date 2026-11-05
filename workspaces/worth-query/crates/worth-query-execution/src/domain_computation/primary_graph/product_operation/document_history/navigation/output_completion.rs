@@ -70,7 +70,6 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         )?;
         let selected = self
             .runtime()
-            .application_runtime()
             .select_application_read_observation(phase, original.original_endpoint())
             .map_err(Denial::Observation)?;
         let owner = self
@@ -107,10 +106,7 @@ impl<S: ApplicationSchema> NavigationProgress<'_, S> {
                 .compare(exact.observation())
                 .is_err()
             || !endpoint.same_application_occurrence(source)
-            || !endpoint.belongs_to_selected_occurrence(
-                self.application.application_runtime(),
-                exact.observation(),
-            )
+            || !endpoint.belongs_to_selected_occurrence(self.application, exact.observation())
         {
             return Err(Denial::IntentDrift);
         }

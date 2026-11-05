@@ -27,12 +27,7 @@ impl<Schema: ApplicationSchema, Program> WorthQueryProgramApplicationRuntime<Sch
         owner: WorthQueryAuthenticationEventSigningOwner<Schema>,
     ) -> Result<(), WorthQuerySigningOwnerInstallationDenial> {
         validate(self.runtime(), &revision, &owner)?;
-        AdmittedSigningOwner::admit(
-            &self.runtime().application_runtime().signing_owners,
-            revision,
-            owner,
-        )?
-        .install();
+        AdmittedSigningOwner::admit(&self.runtime().signing_owners, revision, owner)?.install();
         Ok(())
     }
 }
@@ -46,7 +41,6 @@ pub(super) fn validate<Schema: ApplicationSchema>(
         return Err(WorthQuerySigningOwnerInstallationDenial::ForeignSchema);
     }
     if runtime
-        .application_runtime()
         .installed_program_support()
         .and_then(|support| support.present(revision))
         .is_none()

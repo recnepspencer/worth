@@ -78,8 +78,7 @@ pub trait AssessmentOps<Schema: ApplicationSchema>:
         let request = phase
             .execution_request_for(self.product_runtime())
             .map_err(WorthQueryOperationBodyAssessmentDenial::Phase)?;
-        self.application_runtime()
-            .validate_projected_source_facts(&request, admission)
+        self.validate_projected_source_facts(&request, admission)
             .map_err(WorthQueryOperationBodyAssessmentDenial::Source)?;
         let projected = projection
             .project_admitted_operation(

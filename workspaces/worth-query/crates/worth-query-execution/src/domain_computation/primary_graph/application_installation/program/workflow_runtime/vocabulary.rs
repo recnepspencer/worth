@@ -101,7 +101,6 @@ where
         let execution = &phase_request;
         match self
             .runtime
-            .application_runtime()
             .on_branch(branch)
             .select_with_request(execution)
         {

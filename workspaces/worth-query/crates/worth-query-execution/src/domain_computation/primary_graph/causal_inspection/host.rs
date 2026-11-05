@@ -4,6 +4,7 @@
 pub trait CausalInspectionHost<Schema>:
     crate::domain_computation::primary_graph::runtime_host::WorthQueryRuntimeIdentityHost<Schema>
     + crate::domain_computation::authorization::host::AuthorizationHost<Schema>
+    + crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
 {
     /// This host as the trait object `causal_inspection` is handed.
     fn causal_inspection_host(&self) -> &dyn CausalInspectionHost<Schema>;

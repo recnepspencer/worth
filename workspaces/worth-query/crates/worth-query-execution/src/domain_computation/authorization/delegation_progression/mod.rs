@@ -168,14 +168,14 @@ where
         validate_activation_operation(installed, operation)?;
         let observed = authorize_target_support(
             execution,
-            self.application_runtime(),
+            self.authorization_host(),
             target,
             &access,
             &proposed,
         )?;
         let mut access = access;
         let prepared = observed.prepare_activation(
-            self.application_runtime(),
+            self.authorization_host(),
             installed,
             &proposed,
             target,
@@ -184,7 +184,7 @@ where
         )?;
         let admitted = progress_capability_operation(
             execution,
-            self.application_runtime(),
+            self.authorization_host(),
             access,
             operation,
             preconditions,

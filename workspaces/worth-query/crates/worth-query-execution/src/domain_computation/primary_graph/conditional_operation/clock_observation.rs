@@ -1,3 +1,4 @@
+use crate::domain_computation::execution_runtime::ApplicationAdvancementOps;
 use std::marker::PhantomData;
 
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryClockCoordinate};
@@ -271,13 +272,10 @@ where
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> WorthQueryConditionalClockObservationOutcome<Clock> {
         self.runtime
-            .application_runtime()
             .with_host_advancement(|active_phase| {
                 let phase = &active_phase;
-                let granular_invalidation_installation = self
-                    .runtime
-                    .application_runtime()
-                    .granular_invalidation_installation();
+                let granular_invalidation_installation =
+                    self.runtime.granular_invalidation_installation();
                 let granular_source_read_basis = self.truth.granular_source_read_basis();
                 let bridge_root = self.runtime.bridge().conditional_operations();
                 let bridge = bridge_root

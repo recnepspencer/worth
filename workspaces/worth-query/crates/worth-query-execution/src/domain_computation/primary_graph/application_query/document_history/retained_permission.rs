@@ -72,7 +72,6 @@ pub(in crate::domain_computation::primary_graph) trait RetainedPermissionScopedO
             .map_err(|cause| Stop::Installation(cause.kind()))?;
         let limits = self.resolve_application_query_limits(installed.limits());
         let selected = self
-            .application_runtime()
             .on_branch(crate::basis::WorthQueryProductBranch::from_occurrence(
                 history.current().observation().lifecycle_incarnation(),
             ))

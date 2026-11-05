@@ -203,10 +203,7 @@ where
         Err(outcome) => return terminal(outcome),
     }
     .with_workflow_approval_authority(workflow_approval_authority);
-    let Some(mutation_partition) = application
-        .application_runtime()
-        .issue_application_mutation_partition()
-    else {
+    let Some(mutation_partition) = application.issue_application_mutation_partition() else {
         return terminal(denied(DenialStage::ProposalBinding));
     };
     let effect_posture = provider.effect_posture;

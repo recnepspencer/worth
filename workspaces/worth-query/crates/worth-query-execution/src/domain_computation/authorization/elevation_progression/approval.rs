@@ -28,8 +28,7 @@ use super::operation_role::installed_lifecycle_owner;
 use super::transition_contract::{approval_program_targets, lifecycle_decision_reads};
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationIdempotencyResolutionDenial,
-    WorthQueryElevationApprovalOutcome,
-    WorthQueryRequestedElevation,
+    WorthQueryElevationApprovalOutcome, WorthQueryRequestedElevation,
 };
 
 mod support_currentness;
@@ -170,7 +169,7 @@ where
     {
         let draft = match bind_approval(
             execution,
-            self.application_runtime(),
+            self.authorization_host(),
             &requested,
             &access,
             operation,
@@ -180,7 +179,7 @@ where
         };
         let support_sample = match refresh_exact_support(
             execution,
-            self.application_runtime(),
+            self.authorization_host(),
             &mut requested,
             &mut access,
         ) {
@@ -194,7 +193,7 @@ where
         }
         let admission = match progress_capability_operation(
             execution,
-            self.application_runtime(),
+            self.authorization_host(),
             access,
             operation,
             preconditions,

@@ -222,10 +222,7 @@ fn validate_continuation_projection<Schema>(
 ) -> Result<(), WorthQueryApplicationContinuationDenial> {
     validate_request(&finalization.request)
         .map_err(|validation| denial(map_validation_denial(validation), &finalization.subject))?;
-    if application
-        .application_runtime()
-        .authentication_is_expired(finalization.authentication_valid_until)
-    {
+    if application.authentication_is_expired(finalization.authentication_valid_until) {
         return Err(denial(
             WorthQueryApplicationContinuationDenialKind::StalePrincipal,
             &finalization.subject,

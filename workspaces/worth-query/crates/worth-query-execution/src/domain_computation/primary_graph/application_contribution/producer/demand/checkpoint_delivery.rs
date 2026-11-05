@@ -190,8 +190,7 @@ fn deliver_output_checkpoint_with_finish(
                 .expect("installation requires one readiness route for every output producer");
             (&route.lowering, route.delivery_dependency_ordinal)
         };
-        let root = self
-            .application_runtime().granular_invalidation_installation()
+        let root = self.granular_invalidation_installation()
             .retain_product_shared_root();
         let outcome = root.deliver_performed_relational_change(phase, lowering, ordinal, change);
         let delivered = match outcome {

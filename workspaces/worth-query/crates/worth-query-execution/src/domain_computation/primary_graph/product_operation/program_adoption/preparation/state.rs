@@ -135,7 +135,6 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
                 .collect()
         });
     let support = application
-        .application_runtime()
         .installed_program_support()
         .ok_or(WorthQueryBranchAdoptionPreparationDenial::ProgramSupportUnavailable)?;
     let support_custody = support
@@ -332,7 +331,6 @@ pub(super) fn requirements<Schema: ApplicationSchema>(
         })?
         .revision();
     let support = application
-        .application_runtime()
         .installed_program_support()
         .ok_or(WorthQueryBranchAdoptionPreparationDenial::ProgramSupportUnavailable)?;
     let requirements = support

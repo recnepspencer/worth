@@ -119,26 +119,6 @@ pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
 }
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub(in crate::domain_computation) fn operation_requires_application_program<
-        Operation: 'static,
-    >(
-        &self,
-    ) -> bool {
-        self.program_support.is_some()
-            || self
-                .program_required_operations
-                .contains(&TypeId::of::<Operation>())
-    }
-
-    pub(in crate::domain_computation) fn operation_requires_workflow_authority<
-        Operation: 'static,
-    >(
-        &self,
-    ) -> bool {
-        self.workflow_guarded_operations
-            .contains(&TypeId::of::<Operation>())
-    }
-
     pub fn requires_application_program<Binding>(&self) -> bool
     where
         Schema: worth_query_installation::facade::ApplicationSchema,

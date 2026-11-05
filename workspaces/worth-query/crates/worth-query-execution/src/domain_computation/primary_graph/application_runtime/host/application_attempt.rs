@@ -44,4 +44,19 @@ impl<Schema: ApplicationSchema> ApplicationAttemptHost<Schema>
     fn next_external_dispatch_attempt(&self) -> &std::sync::atomic::AtomicU64 {
         &self.runtime.next_external_dispatch_attempt
     }
+    fn operation_requires_application_program(
+        &self,
+        operation: crate::equality_type_id::EqualityTypeId,
+    ) -> bool {
+        self.program_support.is_some() || self.program_required_operations.contains(&operation)
+    }
+    fn operation_requires_workflow_authority(
+        &self,
+        operation: crate::equality_type_id::EqualityTypeId,
+    ) -> bool {
+        self.workflow_guarded_operations.contains(&operation)
+    }
+    fn mutation_projection(&self) -> &crate::domain_computation::primary_graph::WorthQueryApplicationInvariantProjectionAuthority<Schema>{
+        &self.mutation_projection
+    }
 }

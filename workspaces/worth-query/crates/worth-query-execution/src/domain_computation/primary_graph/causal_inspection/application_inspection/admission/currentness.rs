@@ -80,7 +80,6 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
             .ok_or(InspectionAdmissionDenial::ForeignIssuedAccess)?;
         let security = self
             .runtime
-            .application_runtime()
             .admit_product_security_basis(execution, product)
             .map_err(InspectionAdmissionDenial::Security)?;
         let graph = self

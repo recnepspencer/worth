@@ -1,3 +1,4 @@
+use crate::domain_computation::execution_runtime::ApplicationAdvancementOps;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryProgramAdoptionRequirements};
@@ -32,7 +33,6 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         request: &WorthQueryRequestScope,
     ) -> Result<WorthQueryPreparedBranchAdoption, WorthQueryBranchAdoptionPreparationDenial> {
         self.application()
-            .application_runtime()
             .with_application_advancement(request, |phase| {
                 self.prepare_branch_adoption_in_advancement(
                     &phase,
@@ -58,7 +58,6 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         request: &WorthQueryRequestScope,
     ) -> Result<WorthQueryPreparedBranchAdoption, WorthQueryBranchAdoptionPreparationDenial> {
         self.application()
-            .application_runtime()
             .with_application_advancement(request, |phase| {
                 self.prepare_branch_adoption_in_advancement(
                     &phase,
@@ -98,7 +97,6 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         request: &WorthQueryRequestScope,
     ) -> Result<WorthQueryPreparedBranchAdoption, WorthQueryBranchAdoptionPreparationDenial> {
         self.application()
-            .application_runtime()
             .with_application_advancement(request, |phase| {
                 self.prepare_branch_adoption_in_advancement(
                     &phase,

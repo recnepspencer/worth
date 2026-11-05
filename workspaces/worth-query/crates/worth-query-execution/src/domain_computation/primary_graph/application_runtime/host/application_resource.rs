@@ -13,18 +13,6 @@ impl<Schema: ApplicationSchema> ApplicationResourceHost<Schema>
     fn installed_resources(&self) -> &crate::domain_computation::primary_graph::application_resource::installation::InstalledResourceRegistry<Schema>{
         &self.installed_resources
     }
-    fn on_branch(
-        &self,
-        branch: crate::basis::WorthQueryProductBranch,
-    ) -> crate::domain_computation::primary_graph::product_operation::WorthQueryProductEntry<
-        '_,
-        Schema,
-    > {
-        Self::on_branch(self, branch)
-    }
-    fn select_application_read_observation_with_request(&self, execution: &worth_execution::ExecutionRequest<'_, '_>, observation: &crate::domain_computation::primary_graph::application_query::WorthQueryApplicationReadObservation) -> Result<crate::domain_computation::primary_graph::product_operation::WorthQuerySelectedProductOperation<'_, Schema>, crate::basis::WorthQueryProductBranchAdmissionDenial>{
-        Self::select_application_read_observation_with_request(self, execution, observation)
-    }
     fn refuse_completed_external_effect(&self, record: &crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxRecord) -> Result<(), crate::domain_computation::application_aftermath::external_effect::WorthQueryTerminalEffectRefusal>{
         Self::refuse_completed_external_effect(self, record)
     }

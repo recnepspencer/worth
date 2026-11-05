@@ -64,7 +64,7 @@ impl WorthQueryApplicationReadObservation {
     }
 
     pub(in crate::domain_computation::primary_graph) fn from_product<Schema>(
-        runtime: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
+        runtime: &dyn crate::domain_computation::execution_runtime::WorthQueryApplicationIdentityHost<Schema>,
         product: WorthQueryProductObservationLease,
     ) -> Arc<Self>
     where
@@ -76,7 +76,7 @@ impl WorthQueryApplicationReadObservation {
     pub(in crate::domain_computation::primary_graph) fn from_product_with_memory<
         Schema: ApplicationSchema,
     >(
-        runtime: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
+        runtime: &dyn crate::domain_computation::execution_runtime::WorthQueryApplicationIdentityHost<Schema>,
         product: WorthQueryProductObservationLease,
         memory: Option<worth_execution::ExecutionMemoryReservation>,
     ) -> Arc<Self> {
@@ -124,7 +124,7 @@ impl WorthQueryApplicationReadObservation {
     /// application and branch occurrence without authorizing the new read.
     pub(in crate::domain_computation::primary_graph) fn belongs_to_selected_occurrence<Schema>(
         &self,
-        runtime: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
+        runtime: &dyn crate::domain_computation::execution_runtime::WorthQueryApplicationIdentityHost<Schema>,
         selected: &worth_runtime_world::facade::ProductBranchObservation,
     ) -> bool
     where

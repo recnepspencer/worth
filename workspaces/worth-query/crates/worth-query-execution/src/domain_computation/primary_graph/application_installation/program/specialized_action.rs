@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost;
 use crate::domain_computation::primary_graph::application_attempt::EntryCustodyScopedOps;
 use crate::domain_computation::primary_graph::application_attempt::InstalledReadmissionScopedOps;
 mod capability_advancement;
@@ -39,11 +40,9 @@ where
     > {
         // This token names an operation, not a mutation binding. It cannot
         // distinguish an ordinary sibling from a guarded one at commit time.
-        if self
-            .backing
-            .runtime
-            .operation_requires_workflow_authority::<Operation>()
-        {
+        if self.backing.runtime.operation_requires_workflow_authority(
+            crate::equality_type_id::EqualityTypeId::of::<Operation>(),
+        ) {
             return Err(WorthQueryApplicationCommitDenial::workflow_authority_required());
         }
         let operation = TypeId::of::<Operation>();

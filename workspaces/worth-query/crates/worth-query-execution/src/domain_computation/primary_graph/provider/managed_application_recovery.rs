@@ -2,6 +2,8 @@ use crate::domain_computation::execution_runtime::product_world::publication_den
     WorthQueryProductPublicationDenial as PublicationDenial,
     WorthQueryProductPublicationOutcome as PublicationOutcome,
 };
+use crate::domain_computation::execution_runtime::ApplicationAdvancementOps;
+use crate::domain_computation::product_publication::DiscoveryOps;
 use crate::domain_computation::request_execution::advancement_denial;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_world::facade::{
@@ -101,16 +103,15 @@ where
             .validate_installed_operation(self.installed_operations())
             .and_then(|()| admission.validate_current_authority())
             .map_err(WorthQueryManagedApplicationRecoveryDenial::Authorization)?;
-        self.application_runtime()
-            .with_application_advancement(admission.publication_request(), |phase| {
-                self.recover_admitted_unpublished_application_in_advancement(
-                    &phase,
-                    recovery,
-                    admission,
-                    idempotency,
-                )
-            })
-            .map_err(WorthQueryManagedApplicationRecoveryDenial::ExecutionDenied)?
+        self.with_application_advancement(admission.publication_request(), |phase| {
+            self.recover_admitted_unpublished_application_in_advancement(
+                &phase,
+                recovery,
+                admission,
+                idempotency,
+            )
+        })
+        .map_err(WorthQueryManagedApplicationRecoveryDenial::ExecutionDenied)?
     }
 
     fn recover_admitted_unpublished_application_in_advancement<Operation, Input, Scope>(
@@ -302,8 +303,7 @@ Err(PublicationDenial::Stopped(stop)) => {
                 Ok(PublicationOutcome::ProductUnpublished(effects)) => {
                     let next = effects.into_recovery();
                     guard.retain_successor(next.record_handle());
-                    let prior_cleanup_failure = self
-                        .application_runtime().release_product_publication_recovery_in_advancement(
+                    let prior_cleanup_failure = self.release_product_publication_recovery_in_advancement(
                             phase,
                             recovery.clone(),
                             0,
@@ -337,7 +337,7 @@ Err(PublicationDenial::Stopped(stop)) => {
                     guard.finish();
                     let (prior_cleanup_failure, pending_cleanup) = match delivery {
                         RecoveredPublicationDelivery::Ordinary => (
-                            self.application_runtime().release_product_publication_recovery_in_advancement(
+                            self.release_product_publication_recovery_in_advancement(
                                 phase,
                                 recovery.clone(),
                                 0,

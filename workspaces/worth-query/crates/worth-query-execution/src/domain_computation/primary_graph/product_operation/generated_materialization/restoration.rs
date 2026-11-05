@@ -1,3 +1,4 @@
+use crate::domain_computation::execution_runtime::ApplicationAdvancementOps;
 use crate::domain_computation::primary_graph::product_operation::generated_materialization::restoration::in_phase::InPhaseParentOps;
 mod in_phase;
 mod publication;
@@ -124,15 +125,13 @@ where
     {
         let mut retained = Some(completed);
         let mut completed_result = None;
-        let result = self
-            .application_runtime()
-            .with_application_advancement(request, |phase| {
-                completed_result = Some(self.restore_generated_output_in_phase(
-                    retained.take().expect("one admitted restoration"),
-                    &phase,
-                    request,
-                ));
-            });
+        let result = self.with_application_advancement(request, |phase| {
+            completed_result = Some(self.restore_generated_output_in_phase(
+                retained.take().expect("one admitted restoration"),
+                &phase,
+                request,
+            ));
+        });
         // The callback owns the actual outcome after it consumes custody. A
         // final outer control refusal cannot discard that outcome or recovery.
         if let Some(result) = completed_result {

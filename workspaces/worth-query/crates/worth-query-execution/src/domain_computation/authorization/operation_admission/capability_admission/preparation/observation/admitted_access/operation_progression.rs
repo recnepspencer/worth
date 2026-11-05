@@ -122,7 +122,7 @@ where
         Input: ApplicationCapabilityRequest<Schema, Capability>,
     {
         crate::domain_computation::authorization::operation_progression::progress_capability_operation(execution,
-            self.application_runtime(),
+            self.authorization_host(),
             access,
             operation,
             preconditions,

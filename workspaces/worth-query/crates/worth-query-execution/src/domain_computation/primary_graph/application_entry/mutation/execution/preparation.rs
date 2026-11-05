@@ -106,10 +106,7 @@ pub(in crate::domain_computation::primary_graph) trait PreparationScopedOps<
                 WorthQueryMutationHandlerWork::NotStarted,
             ));
         }
-        let handler = match self
-            .application_runtime()
-            .mutation_handler_for_attempt::<Binding>()
-        {
+        let handler = match self.mutation_handler_for_attempt::<Binding>() {
             Ok(installed) => installed,
             Err(denial) => {
                 return Err(WorthQueryMutationHandlerExecutionReport::new(
@@ -153,17 +150,14 @@ pub(in crate::domain_computation::primary_graph) trait PreparationScopedOps<
                 ))
             }
         };
-        if let Err(denial) = self
-            .application_runtime()
-            .validate_projected_source_facts(&phase_request, &admission)
-        {
+        if let Err(denial) = self.validate_projected_source_facts(&phase_request, &admission) {
             return Err(WorthQueryMutationHandlerExecutionReport::new(
                 Err(MutationHandlerExecutionDenial::Attempt(denial)),
                 WorthQueryMutationHandlerWork::NotStarted,
             ));
         }
         let projected = {
-            self.application_runtime().mutation_projection
+            self.mutation_projection()
                 .project_admitted_operation_with_source_access(
                     &phase_request,
                     &admission,
@@ -178,7 +172,7 @@ pub(in crate::domain_computation::primary_graph) trait PreparationScopedOps<
                             &context_use,
                             &interruption,
                             crate::domain_computation::primary_graph::handler::ConditionalDefinitionAdmission::new(
-                                self.application_runtime(), admission.graph_work().mutation_product(),
+                                self.handler_host(), admission.graph_work().mutation_product(),
                             ),
                         );
                         on_contact();

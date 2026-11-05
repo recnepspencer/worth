@@ -1,3 +1,4 @@
+use crate::domain_computation::execution_runtime::ApplicationAdvancementOps;
 use crate::domain_computation::primary_graph::product_operation::ContextOps;
 use std::collections::VecDeque;
 
@@ -303,38 +304,37 @@ pub trait BranchSetOps<Schema: ApplicationSchema>:
         request: &WorthQueryRequestScope,
     ) -> Result<WorthQueryPreparedBranchSetAdoption, WorthQueryBranchSetAdoptionPreparationDenial>
     {
-        self.application_runtime()
-            .with_application_advancement(request, |phase| {
-                let phase_request = phase
-                    .execution_request_for(self.product_runtime())
-                    .map_err(|cause| {
-                        WorthQueryBranchSetAdoptionPreparationDenial::ExecutionDenied(cause.into())
-                    })?;
-                let execution = &phase_request;
-                let (pending, total_selection_work_units) = self.prepare_branch_set_targets(
-                    execution,
-                    &phase,
-                    &coverage.branches,
-                    target,
-                    maximum_selection_work_per_branch,
-                    principal,
-                    request,
-                )?;
-                let mut progress = Vec::new();
-                progress
-                    .try_reserve_exact(coverage.branches.len())
-                    .map_err(|_| {
-                        WorthQueryBranchSetAdoptionPreparationDenial::RetentionAllocationRejected
-                    })?;
-                Ok(WorthQueryPreparedBranchSetAdoption {
-                    pending,
-                    progress,
-                    resolution_required: None,
-                    target: *target,
-                    total_selection_work_units,
-                })
+        self.with_application_advancement(request, |phase| {
+            let phase_request = phase
+                .execution_request_for(self.product_runtime())
+                .map_err(|cause| {
+                    WorthQueryBranchSetAdoptionPreparationDenial::ExecutionDenied(cause.into())
+                })?;
+            let execution = &phase_request;
+            let (pending, total_selection_work_units) = self.prepare_branch_set_targets(
+                execution,
+                &phase,
+                &coverage.branches,
+                target,
+                maximum_selection_work_per_branch,
+                principal,
+                request,
+            )?;
+            let mut progress = Vec::new();
+            progress
+                .try_reserve_exact(coverage.branches.len())
+                .map_err(|_| {
+                    WorthQueryBranchSetAdoptionPreparationDenial::RetentionAllocationRejected
+                })?;
+            Ok(WorthQueryPreparedBranchSetAdoption {
+                pending,
+                progress,
+                resolution_required: None,
+                target: *target,
+                total_selection_work_units,
             })
-            .map_err(WorthQueryBranchSetAdoptionPreparationDenial::ExecutionDenied)?
+        })
+        .map_err(WorthQueryBranchSetAdoptionPreparationDenial::ExecutionDenied)?
     }
 }
 

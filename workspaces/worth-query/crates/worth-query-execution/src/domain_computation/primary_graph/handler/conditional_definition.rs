@@ -63,8 +63,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
         })?;
         let handle = context
             .application
-            .application_runtime()
-            .installed_conditionals
+            .installed_conditionals()
             .binding::<Conditional>()
             .ok_or_else(|| {
                 HandlerExecutionDenial::new(AdmissionDenial::ConditionalBindingUnavailable {

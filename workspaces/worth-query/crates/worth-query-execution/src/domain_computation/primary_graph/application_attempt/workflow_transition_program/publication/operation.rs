@@ -321,8 +321,7 @@ impl WorkflowOperationAuthority {
             return Err(mismatch());
         }
         check_request_live(request, "workflow operation authority")?;
-        let selected = runtime
-            .application_runtime().on_branch(self.observation.product_branch())
+        let selected = runtime.on_branch(self.observation.product_branch())
             .select_with_request(execution)
             .map_err(|denial| match denial {
                 crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(cause) => WorthQueryApplicationAttemptDenial::new(

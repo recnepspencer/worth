@@ -1,4 +1,5 @@
 //! Admission and custody progression under one runtime-issued advancement.
+use crate::domain_computation::execution_runtime::ApplicationAdvancementOps;
 use crate::domain_computation::primary_graph::product_operation::generated_materialization::suspension::recovery::settlement::RecoverySettlementParentOps;
 use super::*;
 
@@ -19,34 +20,32 @@ pub trait RecoveryAdvancementOps<Schema: ApplicationSchema>:
         let mut retirements = OwnerCleanupRetirements::default();
         let mut retained = Some(recovery);
         let mut attempted = None;
-        let result = self
-            .application_runtime()
-            .with_application_advancement(request, |phase| {
-                attempted = Some((|| {
-                    let execution = match phase.execution_request_for(self.product_runtime()) {
-                        Ok(execution) => execution,
-                        Err(cause) => {
-                            return Err(failure(
-                                WorthQueryGeneratedOutputSuspensionRecoveryStage::ExecutionDenied(
-                                    cause.into(),
-                                ),
-                                retained.take().expect("one refused recovery").state,
-                            ));
-                        }
-                    };
-                    let execution = &execution;
-                    let recovery = retained.take().expect("one admitted recovery");
-
-                    if !retry_matches::<Schema, Producer>(
-                        self.product_operation_host(),
-                        recovery.state.retry(),
-                    ) {
+        let result = self.with_application_advancement(request, |phase| {
+            attempted = Some((|| {
+                let execution = match phase.execution_request_for(self.product_runtime()) {
+                    Ok(execution) => execution,
+                    Err(cause) => {
                         return Err(failure(
-                            WorthQueryGeneratedOutputSuspensionRecoveryStage::StaleOccurrence,
-                            recovery.state,
+                            WorthQueryGeneratedOutputSuspensionRecoveryStage::ExecutionDenied(
+                                cause.into(),
+                            ),
+                            retained.take().expect("one refused recovery").state,
                         ));
                     }
-                    match recovery.state {
+                };
+                let execution = &execution;
+                let recovery = retained.take().expect("one admitted recovery");
+
+                if !retry_matches::<Schema, Producer>(
+                    self.product_operation_host(),
+                    recovery.state.retry(),
+                ) {
+                    return Err(failure(
+                        WorthQueryGeneratedOutputSuspensionRecoveryStage::StaleOccurrence,
+                        recovery.state,
+                    ));
+                }
+                match recovery.state {
                     RecoveryState::Unpublished { product, retry } => {
                         let needs_settlement = product.relational_requires_settlement();
                         self.continue_world(
@@ -123,8 +122,8 @@ pub trait RecoveryAdvancementOps<Schema: ApplicationSchema>:
                         )),
                     },
                 }
-                })());
-            });
+            })());
+        });
         if let Some(actual) = attempted {
             return actual;
         }

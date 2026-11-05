@@ -54,8 +54,7 @@ fn selected_program_owner(
             .inspect_selected_program()
             .map_err(WorthQuerySelectedProgramOwnerDenial::Inspection)?;
         let revision = inspection.revision();
-        let record = self
-            .application_runtime().installed_program_support()
+        let record = self.installed_program_support()
             .and_then(|support| support.native_program(revision))
             .ok_or(WorthQuerySelectedProgramOwnerDenial::InstalledOwnerUnavailable)?;
         Ok(WorthQuerySelectedProgramOwner {

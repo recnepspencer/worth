@@ -77,7 +77,6 @@ where
     )
     .map_err(InspectionAdmissionDenial::Authorization)?;
     let (authorization, _) = runtime
-        .application_runtime()
         .observe_issued_query_read_authorization(execution, installed.query(), &root, reserved)
         .map_err(InspectionAdmissionDenial::Authorization)?;
     let disclosure = compile_inspection_disclosure_contract(&contract, execution, memory)
@@ -96,7 +95,6 @@ where
         .primary_graph()
         .ok_or(InspectionAdmissionDenial::MissingGraph)?;
     let security = runtime
-        .application_runtime()
         .admit_product_security_basis(execution, &product)
         .map_err(InspectionAdmissionDenial::Security)?;
     let resolution = graph.retain_entity_resolution_context();

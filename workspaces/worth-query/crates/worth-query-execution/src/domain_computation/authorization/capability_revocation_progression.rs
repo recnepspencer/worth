@@ -211,7 +211,7 @@ where
         let resource = access.resource_entity_id();
         let admitted = progress_capability_operation(
             execution,
-            self.application_runtime(),
+            self.authorization_host(),
             access,
             operation,
             preconditions,

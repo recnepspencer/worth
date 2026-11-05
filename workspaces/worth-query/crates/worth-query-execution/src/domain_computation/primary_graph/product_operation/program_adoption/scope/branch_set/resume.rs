@@ -1,3 +1,4 @@
+use crate::domain_computation::execution_runtime::ApplicationAdvancementOps;
 use crate::domain_computation::primary_graph::product_operation::program_adoption::scope::branch_set::BranchSetParentOps;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
@@ -121,7 +122,7 @@ pub trait ResumeOps<Schema: ApplicationSchema>:
         request: &WorthQueryRequestScope,
     ) -> Result<WorthQueryPreparedBranchSetAdoption, WorthQueryBranchSetAdoptionResumeFailure> {
         let mut retained = Some(adoption);
-        let result = self.application_runtime().with_application_advancement(request, |phase| {
+        let result = self.with_application_advancement(request, |phase| {
         let phase = &phase;
             let phase_request = match phase.execution_request_for(self.product_runtime()) {
                 Ok(request) => request,

@@ -99,7 +99,7 @@ where
         Operation: ApplicationOperationMarkerIdentity<Schema>,
         Input: ApplicationCapabilityRequest<Schema, Capability> + Clone + Send + Sync + 'static,
     {
-        let draft = match bind_approval(execution, self.application_runtime(), &requested, &access, operation) {
+        let draft = match bind_approval(execution, self.authorization_host(), &requested, &access, operation) {
             Ok(draft) => draft,
             Err(denial) => match denial.kind() {
                 crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Stopped(_) => {
@@ -117,7 +117,7 @@ where
         };
         let admission = match progress_capability_operation(
             execution,
-            self.application_runtime(),
+            self.authorization_host(),
             access,
             operation,
             preconditions,

@@ -73,10 +73,7 @@ pub(super) fn validate_execution_lifetimes<Schema, Principal, PrincipalIdentity>
     if controls.basis_is_expired() {
         return Err(WorthQueryApplicationQueryExecutionValidationDenial::ExpiredBasis);
     }
-    if application
-        .application_runtime()
-        .authentication_is_expired(principal.valid_until())
-    {
+    if application.authentication_is_expired(principal.valid_until()) {
         return Err(WorthQueryApplicationQueryExecutionValidationDenial::StalePrincipal);
     }
     Ok(())

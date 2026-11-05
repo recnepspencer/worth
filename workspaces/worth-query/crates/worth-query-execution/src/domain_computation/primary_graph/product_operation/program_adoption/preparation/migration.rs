@@ -188,7 +188,6 @@ trait MigrationOwnOps<Schema: ApplicationSchema>:
         Binding: ApplicationMutationBinding<Schema>,
     {
         let support = self
-            .application_runtime()
             .installed_program_support()
             .ok_or(WorthQueryProgramMigrationPreparationDenial::ProgramSupportUnavailable)?;
         let entry = support

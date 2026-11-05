@@ -174,9 +174,8 @@ impl ContinuationState {
             return Ok(None);
         }
         if let Some(recovery) = outcome.take_original_cleanup()
-            && let Err(failure) = runtime
-                .application_runtime()
-                .close_product_publication_recovery_in_advancement(phase, recovery)
+            && let Err(failure) =
+                runtime.close_product_publication_recovery_in_advancement(phase, recovery)
         {
             self.prior_cleanup = Some(failure);
             return Ok(None);

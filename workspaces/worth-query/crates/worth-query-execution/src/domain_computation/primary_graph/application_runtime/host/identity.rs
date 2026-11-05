@@ -52,4 +52,9 @@ impl<Schema: ApplicationSchema> WorthQueryRuntimeIdentityHost<Schema>
     fn bridge(&self) -> &crate::domain_computation::primary_graph::managed_bridge::WorthQueryInstalledApplicationBridge{
         &self.runtime.bridge
     }
+    fn granular_invalidation_installation(
+        &self,
+    ) -> crate::domain_computation::primary_graph::WorthQueryGranularInvalidationInstallation {
+        self.runtime.granular_invalidation_installation()
+    }
 }

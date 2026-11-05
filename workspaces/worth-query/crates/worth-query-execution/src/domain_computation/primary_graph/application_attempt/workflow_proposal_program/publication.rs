@@ -174,7 +174,6 @@ pub(in crate::domain_computation::primary_graph) trait WorkflowProposalProgramPu
             progress_update,
         } = prepared;
         let presented = match self
-            .application_runtime()
             .installed_program_support()
             .ok_or_else(
                 super::super::WorthQueryApplicationCommitDenial::application_program_required,

@@ -28,7 +28,6 @@ fn retry_release<S: ApplicationSchema>(
 ) -> Result<(), WorthQueryProductUnpublishedRecoveryReleaseFailure> {
     match pending {
         WorthQueryProductUnpublishedRecoveryReleaseFailure::Recovery(failure) => application
-            .application_runtime()
             .close_product_publication_recovery_in_advancement(phase, failure.into_recovery())
             .map(|_| ()),
         WorthQueryProductUnpublishedRecoveryReleaseFailure::OwnerCleanup(failure) => failure
@@ -150,9 +149,8 @@ impl<S: ApplicationSchema> NavigationCleanup<'_, S> {
             return Err(Denial::Cleanup);
         }
         if let Some(recovery) = self.recovery.take()
-            && let Err(prior) = application
-                .application_runtime()
-                .close_product_publication_recovery_in_advancement(phase, recovery)
+            && let Err(prior) =
+                application.close_product_publication_recovery_in_advancement(phase, recovery)
         {
             self.prior = Some(prior);
             return Err(Denial::Cleanup);

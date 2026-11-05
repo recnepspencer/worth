@@ -1,5 +1,6 @@
 //! One original advancement owns success, refusal and every nested temporary.
 use super::*;
+use crate::domain_computation::execution_runtime::ApplicationAdvancementOps;
 use crate::domain_computation::request_execution::WorthQueryAdvancementDenial;
 pub(super) fn open<T, Schema: ApplicationSchema>(
     runtime: &dyn crate::domain_computation::primary_graph::causal_inspection::host::CausalInspectionHost<Schema>,
@@ -8,9 +9,8 @@ pub(super) fn open<T, Schema: ApplicationSchema>(
     body: impl FnOnce(&ExecutionRequest<'_, '_>) -> Result<T, InspectionCause>,
 ) -> Result<T, InspectionCause> {
     let mut completed = None;
-    let handoff = runtime
-        .application_runtime()
-        .with_funded_application_advancement(request, allocation_policy, |phase| {
+    let handoff =
+        runtime.with_funded_application_advancement(request, allocation_policy, |phase| {
             completed = Some(
                 match phase.checked_execution_request_for(runtime.product_runtime()) {
                     Ok(execution) => body(&execution),

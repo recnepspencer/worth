@@ -117,7 +117,6 @@ where
     > {
         require_equivalent_installation(self.installed_packages(), &candidate)?;
         let selected = self
-            .application_runtime()
             .on_branch(product_branch)
             .select_with_request(execution)
             .map_err(|denial| match denial {

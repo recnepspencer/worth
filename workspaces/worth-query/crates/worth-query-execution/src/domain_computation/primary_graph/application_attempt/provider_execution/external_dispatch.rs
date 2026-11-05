@@ -148,8 +148,7 @@ where
         };
         // A completed effect may already have released its committed owner
         // row, so the terminal owner answers before that row is read.
-        self.application_runtime()
-            .refuse_completed_external_effect(record)
+        self.refuse_completed_external_effect(record)
             .map_err(|refusal| match refusal {
                 WorthQueryTerminalEffectRefusal::AlreadyCompleted => {
                     WorthQueryExternalRedispatchDenial::AlreadyCompleted
@@ -256,27 +255,21 @@ where
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     ) -> Result<WorthQueryExternalEffectDispatch, WorthQueryExternalDispatchPreparationDenial> {
         if committed.record().inbound().is_some()
-            && self
-                .application_runtime()
-                .has_retained_installed_transport_completion(committed.record().correlation())
+            && self.has_retained_installed_transport_completion(committed.record().correlation())
         {
-            let resumed = self
-                .application_runtime()
-                .resume_installed_transport_completion(
+            let resumed = self.resume_installed_transport_completion(
+                execution,
+                phase,
+                committed.record().correlation(),
+                request,
+            );
+            if matches!(resumed, InstalledTransportResumeOutcome::Performed) {
+                let _ = self.progress_retained_inbound_occurrence(
                     execution,
                     phase,
-                    committed.record().correlation(),
+                    *committed.record().correlation().bytes(),
                     request,
                 );
-            if matches!(resumed, InstalledTransportResumeOutcome::Performed) {
-                let _ = self
-                    .application_runtime()
-                    .progress_retained_inbound_occurrence(
-                        execution,
-                        phase,
-                        *committed.record().correlation().bytes(),
-                        request,
-                    );
             }
             return Err(match resumed {
                 InstalledTransportResumeOutcome::Performed => {
@@ -289,7 +282,6 @@ where
         }
         let completion_owner = committed.clone();
         let admitted = self
-            .application_runtime()
             .admit_external_dispatch_attempt(committed)
             .map_err(denial::from_attempt_admission)?;
         let in_flight = self
@@ -311,30 +303,25 @@ where
             let in_flight = in_flight.expect("inbound dispatch reserved an in-flight slot");
             // The original outbox reserved finite provenance before transport.
             // Keep its actual completion observation even if World needs retry.
-            let _ = self
-                .application_runtime()
-                .record_installed_transport_completion(evidence, in_flight);
+            let _ = self.record_installed_transport_completion(evidence, in_flight);
             if matches!(
-                self.application_runtime()
-                    .resume_installed_transport_completion(
-                        execution,
-                        phase,
-                        dispatch.correlation(),
-                        request
-                    ),
+                self.resume_installed_transport_completion(
+                    execution,
+                    phase,
+                    dispatch.correlation(),
+                    request
+                ),
                 InstalledTransportResumeOutcome::Performed,
             ) {
                 // A callback may have entered signed custody while the
                 // physical send was still in flight. Transport terminal truth
                 // now owns the effect; release that redundant accepted slot.
-                let _ = self
-                    .application_runtime()
-                    .progress_retained_inbound_occurrence(
-                        execution,
-                        phase,
-                        *dispatch.correlation().bytes(),
-                        request,
-                    );
+                let _ = self.progress_retained_inbound_occurrence(
+                    execution,
+                    phase,
+                    *dispatch.correlation().bytes(),
+                    request,
+                );
             }
         }
         Ok(dispatch)
