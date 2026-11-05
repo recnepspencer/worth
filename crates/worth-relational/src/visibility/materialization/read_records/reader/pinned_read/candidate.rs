@@ -4,7 +4,7 @@ mod changes;
 use crate::{
     branch::AdmittedRelationalBranchBasis,
     mvcc::RelationalMutationProposalIdentity,
-    runtime::{PendingSymbolMeanings, RelationalPreparationRuntime},
+    runtime::{PendingSymbolMeanings, RelationalPreparationRuntime, RuntimeServices},
     storage::overlay::{CurrentPartitionAccess, WorkingState},
     transactions::data::TransactionCommitError,
 };
@@ -111,7 +111,7 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
                     })?;
                 Self::capture_root(
                     execution,
-                    &runtime.with_candidate_symbols(symbols),
+                    &runtime.with_candidate_symbols(symbols).services,
                     basis,
                     RelationalAppliedCandidateReadIdentity {
                         proposal: identity.clone(),
@@ -127,7 +127,7 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
     }
     pub(crate) fn capture_prepared(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &RelationalPreparationRuntime,
+        services: &RuntimeServices,
         basis: &AdmittedRelationalBranchBasis,
         proposal: &RelationalMutationProposalIdentity,
         candidate_id: u64,
@@ -136,7 +136,7 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
     ) -> Result<Self, TransactionCommitError> {
         Self::capture_root(
             execution,
-            runtime,
+            services,
             basis,
             RelationalAppliedCandidateReadIdentity {
                 proposal: proposal.clone(),
@@ -150,7 +150,7 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
 
     fn capture_root(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &RelationalPreparationRuntime,
+        services: &RuntimeServices,
         basis: &AdmittedRelationalBranchBasis,
         identity: RelationalAppliedCandidateReadIdentity,
         root: Arc<crate::branch::RelationalBranchRoot>,
@@ -173,7 +173,7 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
             }
         };
         let context = QueryPlanContextId {
-            runtime_instance_id: runtime.runtime_instance_id(),
+            runtime_instance_id: services.runtime_instance_id(),
             snapshot_id: crate::snapshots::data::SnapshotId(0),
             version_id: identity.proposal.proposed_version_id(),
             schema_version: schema.schema_version(),
@@ -185,19 +185,18 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
             identity.proposal.proposed_version_id(),
             root,
         );
-        let resident =
-            ResidentVisibilitySnapshotBasis::admit(source, execution, &runtime.services.symbols)
-                .map_err(request_stop)?;
+        let resident = ResidentVisibilitySnapshotBasis::admit(source, execution, &services.symbols)
+            .map_err(request_stop)?;
         let applied_changes =
             changes::capture(execution, basis.inner.root.id(), changed_records, aggregate)?;
         Ok(Self {
             applied_changes: Some(applied_changes),
             current_version: identity.proposal.proposed_version_id(),
-            instrumentation: runtime.services.instrumentation.clone(),
+            instrumentation: services.instrumentation.clone(),
             snapshot: identity,
             basis: resident,
             context,
-            symbols: runtime.services.symbols.interner_snapshot(),
+            symbols: services.symbols.interner_snapshot(),
             indexes: BTreeMap::new(),
         })
     }

@@ -239,7 +239,7 @@ macro_rules! worth_query_mutation_binding {
         workflow_authority $($workflow_authority:ident)?,
         workflow_requirements $($workflow_requirements:expr_2021)?,
         inspection_disclosure $($InspectionDisclosure:ty)?,
-        coupled_outputs $(|$coupled_visitor:ident| $coupled_outputs:block)?,
+        $(coupled_outputs $(|$coupled_visitor:ident| $coupled_outputs:block)?,)?
         outputs $Output:ty,
         principal $PrincipalBinding:path, mapping $Mapping:ty, principal_entity $Principal:ty,
         principal_identity $PrincipalIdentity:ty, identity_binding $PrincipalIdentityBinding:path,
@@ -285,7 +285,7 @@ macro_rules! worth_query_mutation_binding {
                 $crate::worth_query_mutation_binding!(@workflow_requirements [$($workflow_authority)?] [$($workflow_requirements)?])
             }
 
-            $crate::worth_query_mutation_binding!(@coupled_outputs $Schema; $(|$coupled_visitor| $coupled_outputs)?);
+            $crate::worth_query_mutation_binding!(@coupled_outputs $Schema; $($(|$coupled_visitor| $coupled_outputs)?)?);
 
             fn visit_source_disclosure<Visitor: $crate::facade::application_operation::ApplicationSourceDisclosureVisitor<$Schema, Self>>(visitor: Visitor) -> Visitor::Output {
                 $crate::worth_query_mutation_binding!(@inspection_disclosure visitor; $($InspectionDisclosure)?)

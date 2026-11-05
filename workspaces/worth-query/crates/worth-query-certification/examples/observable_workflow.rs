@@ -1,3 +1,5 @@
+#![recursion_limit = "130"]
+// Minimum for this example's concrete coupled Native/Query auto-trait graph.
 //! Neutral owning workflow: capture, condition, distinct approval and real archival ingress.
 //!
 //! `cargo run -p worth-query-certification --example observable_workflow` writes

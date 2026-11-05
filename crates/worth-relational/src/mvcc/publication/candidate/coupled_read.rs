@@ -5,12 +5,13 @@ use crate::{
     mvcc::RelationalMutationProposalIdentity,
     runtime::{
         RelationalAppliedCandidateReadIdentity, RelationalPinnedRead, RelationalPreparationRuntime,
+        RuntimeServices,
     },
     transactions::data::TransactionCommitError,
 };
 
 pub(super) struct CoupledCandidateReadContext {
-    runtime: RelationalPreparationRuntime,
+    services: RuntimeServices,
     before: AdmittedRelationalBranchBasis,
     proposal: RelationalMutationProposalIdentity,
 }
@@ -34,7 +35,7 @@ impl PreparedRelationalCommitCandidate {
         assert!(payload
             .coupled_read
             .replace(CoupledCandidateReadContext {
-                runtime: runtime.clone(),
+                services: runtime.services.clone(),
                 before,
                 proposal,
             })
@@ -61,7 +62,7 @@ impl PreparedRelationalCommitCandidate {
         };
         RelationalPinnedRead::capture_prepared(
             execution,
-            &read.runtime,
+            &read.services,
             &read.before,
             &read.proposal,
             self.candidate_id,

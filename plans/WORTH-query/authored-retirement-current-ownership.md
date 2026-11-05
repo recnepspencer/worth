@@ -262,3 +262,48 @@ refusing stage. Preserve damage refusals with negative selector courts and run
 rematerialization, target-seed, coverage and damage mutations plus the requested
 four-probe sample. Requalify full Native, the three Query targets and required
 gates. The upstream tooling files are outside this correction.
+
+## D1160 build boundary regressions
+
+Boundary review: the mutation binding macro owns omission of coupled-output
+connections. An omitted internal slot must have the same empty default as the
+public grammar; unchanged direct binding callers must retain their authority
+and workflow contracts. Make that slot optional, including its normalized empty
+form. The full declaration unit suite courts those unchanged callers.
+
+The batch added CoupledCandidateReadContext, which retained the entire
+RelationalPreparationRuntime, and BoundAuthoredCoupling's CoupledAppliedCandidate,
+which retains an exact proposal and applied mutation. The auto-trait path runs
+through that proposal's actual Source interpretation, publication lifecycle,
+registered candidate payloads, settlement and deferred index state. The prepared
+reader actually needs only RuntimeServices, its before basis and the proposal.
+Narrow that retention and its capture receiver to those existing services. Keep
+the applied-root construction on its genuine preparation runtime.
+
+The remaining concrete proposal and lifecycle links are required by the existing
+read/currentness and single-use adoption contracts. Local private read/adoption
+interfaces and an opaque weak-identity trial do not make this consumer fit the
+default compiler recursion limit; they are removed. A broader erasure of the
+Native and Query runtime graphs would cross other owners and is not this fix.
+Use D1160's authorized recursion fallback only at observable_workflow. The
+minimum shared limit is 130: both binary and test harness build at 130, while
+129 fails the binary with E0275. Document
+the compile-time requirement for consumers, and name it in the commit. Preserve
+all concrete proof, identity, lifetime, denial and runtime work bounds.
+
+Plan: repair the internal grammar and remove unnecessary prepared-runtime
+retention; measure and set the example-only minimum compiler limit. Run the
+full declaration library and existing Native/Query lifecycle courts. Build all
+targets of both workspaces with UUID build identities, run relational/
+query-execution/query-rest/query-process/boundary through the real gate, and
+rerun full Native, the three Query courts and certification examples. Record
+actual compiler causes for red suites. The root compile-time deadline court is
+pre-existing master debt and stays untouched. Finish with scoped format, caps,
+boundary, context and Clippy. Public APIs and stored formats are unchanged.
+
+The broad gate also reaches the authentic predecessor workflow readmission
+court. Its refusal stage and UnsupportedLegacySemantics checks are correct, but
+its required-frame assertion still names CHK15. Update only that expectation to
+CHK18, the batch's recorded current format. Keep the authentic predecessor
+fixture bytes and Query-only reheader tamper unchanged. Court the exact denial
+and no-effect checks, then repeat the selected gate on this final test tree.
