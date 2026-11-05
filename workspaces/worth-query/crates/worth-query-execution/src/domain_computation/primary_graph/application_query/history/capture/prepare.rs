@@ -18,7 +18,8 @@ use crate::domain_computation::primary_graph::{
     application_query::{
         authorized_read::WorthQueryAuthorizedApplicationReadDenial,
         read_execution::relational_read_denial,
-    }, WorthQueryPrimaryGraphLayout,
+    },
+    WorthQueryPrimaryGraphLayout,
 };
 
 /// Called only from the genuine authorized-read callback at its admitted security snapshot.

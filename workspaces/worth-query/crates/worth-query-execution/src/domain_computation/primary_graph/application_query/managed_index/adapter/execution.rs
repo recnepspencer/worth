@@ -12,7 +12,8 @@ use crate::domain_computation::{
             retention::ManagedIndexState,
             selection::ManagedSelectionLease,
         },
-        source_facts::SourceFactsAllocation, WorthQuerySelectedProductOperation,
+        source_facts::SourceFactsAllocation,
+        WorthQuerySelectedProductOperation,
     },
     provider_session::WorthQueryManagedGraphWorkSession,
 };

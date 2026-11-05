@@ -6,7 +6,8 @@ use crate::domain_computation::{
             retention::ManagedIndexState,
             source::{occurrences::PersistentSourceRows, service::retain_root},
             source_image::SourceImage,
-        }, WorthQuerySelectedProductOperation,
+        },
+        WorthQuerySelectedProductOperation,
     },
     provider_session::{WorthQueryManagedGraphWorkSession, WorthQueryManagedIndexReadSession},
 };

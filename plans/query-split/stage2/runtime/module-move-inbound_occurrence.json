@@ -1,0 +1,27 @@
+{
+ "move": "domain_computation::primary_graph::application_runtime::inbound_occurrence -> domain_computation::primary_graph::application_inbound::inbound_occurrence",
+ "files": 29,
+ "edited_files": 18,
+ "widenings": [],
+ "removed_reexports": [
+  "domain_computation::primary_graph::application_runtime::WorthQueryInstalledTransportCompletionBinding",
+  "domain_computation::primary_graph::application_runtime::WorthQueryAdmittedInboundOccurrence",
+  "domain_computation::primary_graph::application_runtime::WorthQueryAuthenticatedInboundOccurrence",
+  "domain_computation::primary_graph::application_runtime::WorthQueryCorrelatedInboundOccurrence",
+  "domain_computation::primary_graph::application_runtime::WorthQueryInboundAdmissionDenial",
+  "domain_computation::primary_graph::application_runtime::WorthQueryInboundAuthenticatedPermanentDenial",
+  "domain_computation::primary_graph::application_runtime::WorthQueryInboundCostObservation",
+  "domain_computation::primary_graph::application_runtime::WorthQueryInboundIndexRepairDenial",
+  "domain_computation::primary_graph::application_runtime::WorthQueryInboundMaintenanceReport",
+  "domain_computation::primary_graph::application_runtime::WorthQueryInboundPendingReason",
+  "domain_computation::primary_graph::application_runtime::WorthQueryInboundPermanentDenialKind",
+  "domain_computation::primary_graph::application_runtime::WorthQueryInboundReceipt",
+  "domain_computation::primary_graph::application_runtime::WorthQueryInboundReceiptPosture",
+  "domain_computation::primary_graph::application_runtime::WorthQueryInboundSourceControlDenial",
+  "domain_computation::primary_graph::application_runtime::WorthQueryInboundSourcePosture",
+  "domain_computation::primary_graph::application_runtime::WorthQueryInboundTerminalObservation",
+  "domain_computation::primary_graph::application_runtime::WorthQueryInboundVerifierHandle",
+  "domain_computation::primary_graph::application_runtime::WorthQueryInboundVerifierInstallationDenial"
+ ],
+ "problems": []
+}

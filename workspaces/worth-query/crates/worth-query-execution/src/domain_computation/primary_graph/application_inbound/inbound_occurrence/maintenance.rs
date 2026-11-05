@@ -6,11 +6,14 @@ use std::sync::atomic::Ordering;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_installation::facade::ApplicationSchema;
 
-use super::super::{InstalledTransportPendingReason, InstalledTransportResumeOutcome};
 use super::receive::{
     WorthQueryInboundAdmissionDenial as Denial, WorthQueryInboundReceiptPosture as Posture,
 };
 use super::{WorthQueryInboundVerifierHandle, WorthQueryPrimaryGraphApplicationRuntime};
+use {
+    crate::domain_computation::primary_graph::application_inbound::inbound_publication::InstalledTransportPendingReason,
+    crate::domain_computation::primary_graph::application_inbound::inbound_publication::InstalledTransportResumeOutcome,
+};
 
 /// Counts from one finite owner-maintenance batch.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -99,14 +102,16 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             );
             let inbound_available = self
                 .runtime
-                .inbound_custody
+                .inbound
+                .custody()
                 .lock()
                 .unwrap_or_else(|poisoned| poisoned.into_inner())
                 .pending_work_count(handle.operation());
             let transport_available = self.pending_transport_maintenance_count(handle.operation());
             let prefer_transport = self
                 .runtime
-                .inbound_maintenance_turn
+                .inbound
+                .maintenance_turn()
                 .fetch_add(1, Ordering::Relaxed)
                 & 1
                 == 1;
@@ -126,7 +131,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             let inbound_candidates = {
                 let mut custody = self
                     .runtime
-                    .inbound_custody
+                    .inbound
+                    .custody()
                     .lock()
                     .unwrap_or_else(|poisoned| poisoned.into_inner());
                 custody.maintenance_candidates(handle.operation(), inbound_work)
@@ -159,7 +165,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         report.blocked += 1;
                         if self
                             .runtime
-                            .inbound_custody
+                            .inbound
+                            .custody()
                             .lock()
                             .unwrap_or_else(|poisoned| poisoned.into_inner())
                             .is_retryable_correlation(&correlation)
@@ -242,7 +249,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             let (inbound_remaining, next_expiry) = {
                 let custody = self
                     .runtime
-                    .inbound_custody
+                    .inbound
+                    .custody()
                     .lock()
                     .unwrap_or_else(|poisoned| poisoned.into_inner());
                 (

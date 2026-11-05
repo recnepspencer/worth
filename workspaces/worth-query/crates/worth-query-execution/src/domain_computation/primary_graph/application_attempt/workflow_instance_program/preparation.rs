@@ -21,7 +21,8 @@ use crate::domain_computation::primary_graph::application_attempt::{
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationOperation, WorthQueryApplicationAttemptDenial,
-    WorthQueryApplicationIdempotencyBinding, WorthQueryOperationProjectionDenial, WorthQuerySelectedProductOperation,
+    WorthQueryApplicationIdempotencyBinding, WorthQueryOperationProjectionDenial,
+    WorthQuerySelectedProductOperation,
 };
 
 /// Why a workflow instance request could not bind to the branch's program: the installed

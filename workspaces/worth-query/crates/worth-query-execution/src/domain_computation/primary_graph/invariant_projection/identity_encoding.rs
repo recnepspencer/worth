@@ -10,9 +10,9 @@ impl Serialize for ProjectionAuthorityEncoding {
 
 mod tests {
     use super::super::*;
-    
+
     use worth_query_declaration::facade::application_program::ApplicationComputationPartition;
-    
+
     impl ApplicationComputationPartition for WorthQueryInvariantEntityIdentity<(), ()> {
         const IDENTITY: &'static str = "projection-identity-encoding-test";
     }

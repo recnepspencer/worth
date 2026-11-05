@@ -11,8 +11,9 @@ use worth_relational::facade::{
 use super::super::WorthQueryPrimaryGraphProvider;
 use super::{hex, string, WorthQueryInboundCompletionPreparationDenial as Denial};
 use crate::domain_computation::application_aftermath::WorthQueryExternalEffectDispatch;
-use crate::domain_computation::primary_graph::{
-    WorthQueryCommittedDispatchOutboxObservation, WorthQueryInstalledTransportCompletionBinding,
+use {
+    crate::domain_computation::primary_graph::application_inbound::inbound_occurrence::WorthQueryInstalledTransportCompletionBinding,
+    crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxObservation,
 };
 
 impl WorthQueryPrimaryGraphProvider {

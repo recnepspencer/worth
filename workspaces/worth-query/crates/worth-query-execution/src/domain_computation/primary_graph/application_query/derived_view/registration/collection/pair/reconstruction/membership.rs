@@ -1,8 +1,6 @@
 //! Authenticate the census and charge canonical reconstruction membership staging.
 use super::super::reconstruction_denial as denial;
-use super::super::{
-    Denial, WorthQueryApplicationOneShotResult, WorthQueryManagedDerivedView,
-};
+use super::super::{Denial, WorthQueryApplicationOneShotResult, WorthQueryManagedDerivedView};
 use super::owner_stage;
 use crate::basis::WorthQueryProductBranchLease;
 use crate::domain_computation::primary_graph::application_query::derived_view::registration::RegistrationOwnOps;

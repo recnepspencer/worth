@@ -4,9 +4,9 @@ use super::outcome::{
     WorthQueryApplicationLiveOpenDenial, WorthQueryApplicationLiveOpenDenialKind,
 };
 use crate::domain_computation::managed_run::{
-        admit_live_lower_execution_basis, WorthQueryManagedLowerExecutionBasis,
-        WorthQueryManagedTruthReadRequest,
-    };
+    admit_live_lower_execution_basis, WorthQueryManagedLowerExecutionBasis,
+    WorthQueryManagedTruthReadRequest,
+};
 
 static NEXT_APPLICATION_QUERY_LIVE_LEASE: AtomicU64 = AtomicU64::new(1);
 

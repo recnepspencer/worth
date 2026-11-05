@@ -9,8 +9,7 @@ use crate::domain_computation::authorization::{
     WorthQueryPrincipalCurrentnessDependency, WorthQueryRetainedAuthorizationDecisionFacts,
 };
 use crate::domain_computation::primary_graph::{
-    validate_freshness_at_snapshot,
-    WorthQueryPrincipalResolutionMode,
+    validate_freshness_at_snapshot, WorthQueryPrincipalResolutionMode,
 };
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_query_declaration::facade::authentication::WorthQueryExternalPrincipalIdentityBinding;

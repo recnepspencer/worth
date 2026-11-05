@@ -11,7 +11,7 @@ use crate::domain_computation::primary_graph::tests::inbound_admission::verifier
 use crate::domain_computation::primary_graph::tests::inbound_admission::verifier::signed_envelope_for_seconds;
 use crate::domain_computation::primary_graph::tests::inbound_admission::verifier::TestVerifier;
 use worth_query_execution::court_doors_for_test::domain_computation::application_aftermath::external_effect::inbound::custody::WorthQueryInboundPublicationClaim;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_runtime::inbound_occurrence::receive::WorthQueryInboundAdmission;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_inbound::inbound_occurrence::receive::WorthQueryInboundAdmission;
 use worth_query_execution::facade::domain_computation::WorthQueryInboundPendingReason as Reason;
 use worth_query_execution::facade::domain_computation::WorthQueryInboundReceiptPosture as Posture;
 

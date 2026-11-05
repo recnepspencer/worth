@@ -4,9 +4,7 @@ use crate::{
     basis::WorthQueryProductObservationLease,
     domain_computation::{
         execution_runtime::product_world::WorthQueryPreparedProductPublication,
-        primary_graph::{
-            WorthQueryApplicationIdempotencyBinding, WorthQueryExpectedProductBranch,
-        },
+        primary_graph::{WorthQueryApplicationIdempotencyBinding, WorthQueryExpectedProductBranch},
         WorthQueryProductUnpublishedRecovery,
     },
 };

@@ -9,7 +9,8 @@ use crate::domain_computation::{
             },
             WorthQueryObservedScopeSelector,
         },
-        source_facts::SourceFactsAllocation, WorthQuerySelectedProductOperation,
+        source_facts::SourceFactsAllocation,
+        WorthQuerySelectedProductOperation,
     },
     provider_session::WorthQueryManagedGraphWorkSession,
 };

@@ -30,8 +30,7 @@ pub(super) use reconciliation::{reconcile_prepared_temporal_intents, reconcile_t
 mod tests;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationProjection, WorthQueryApplicationQueryAccessContext,
-    WorthQueryApplicationQueryControls,
-    WorthQueryPrincipalResolutionMode,
+    WorthQueryApplicationQueryControls, WorthQueryPrincipalResolutionMode,
 };
 use source_record_binding::bind_source_records;
 pub(super) use source_record_binding::WorthQueryReconstructedTemporalIntent;

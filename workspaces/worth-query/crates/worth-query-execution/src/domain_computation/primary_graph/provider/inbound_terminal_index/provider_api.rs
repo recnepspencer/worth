@@ -9,8 +9,8 @@ use super::{WorthQueryCanonicalInboundCompletion, WorthQueryInboundTerminalIndex
 use crate::domain_computation::application_aftermath::{
     ExternalEffectCorrelationIdentity, WorthQueryInboundTerminalOwnerResult,
 };
+use crate::domain_computation::primary_graph::application_inbound::inbound_publication::PerformedInstalledTransportCompletion;
 use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider;
-use crate::domain_computation::primary_graph::PerformedInstalledTransportCompletion;
 
 impl WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation::primary_graph) fn mark_inbound_completion_publication_pending(

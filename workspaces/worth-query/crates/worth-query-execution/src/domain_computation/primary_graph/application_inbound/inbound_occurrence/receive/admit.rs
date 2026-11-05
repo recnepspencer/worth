@@ -36,7 +36,8 @@ where
         let installed = &authenticated.installed;
         let custody = self
             .runtime
-            .inbound_custody
+            .inbound
+            .custody()
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
         installed
@@ -180,7 +181,8 @@ where
             CorrelationDecision::ExistingCustody(existing) => {
                 let mut custody = self
                     .runtime
-                    .inbound_custody
+                    .inbound
+                    .custody()
                     .lock()
                     .unwrap_or_else(|poisoned| poisoned.into_inner());
                 map_custody(&mut custody, existing).map_err(|denial| {
@@ -196,7 +198,8 @@ where
                 }
                 let mut custody = self
                     .runtime
-                    .inbound_custody
+                    .inbound
+                    .custody()
                     .lock()
                     .unwrap_or_else(|poisoned| poisoned.into_inner());
                 installed

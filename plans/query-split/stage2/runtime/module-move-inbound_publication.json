@@ -1,0 +1,33 @@
+{
+ "move": "domain_computation::primary_graph::application_runtime::inbound_publication -> domain_computation::primary_graph::application_inbound::inbound_publication",
+ "files": 14,
+ "edited_files": 29,
+ "widenings": [
+  {
+   "item": "domain_computation::primary_graph::application_runtime::inbound_publication @224",
+   "from": "pub(super)",
+   "to": "pub(in crate::domain_computation::primary_graph)"
+  },
+  {
+   "item": "domain_computation::primary_graph::application_runtime::inbound_publication::custody @3635",
+   "from": "pub(in crate::domain_computation::primary_graph::application_runtime)",
+   "to": "pub(in crate::domain_computation::primary_graph)"
+  },
+  {
+   "item": "domain_computation::primary_graph::application_runtime::inbound_publication::outcome @708",
+   "from": "pub(in crate::domain_computation::primary_graph::application_runtime)",
+   "to": "pub(in crate::domain_computation::primary_graph)"
+  }
+ ],
+ "removed_reexports": [
+  "domain_computation::primary_graph::application_runtime::InstalledTransportCompletion",
+  "domain_computation::primary_graph::application_runtime::InstalledTransportPendingReason",
+  "domain_computation::primary_graph::application_runtime::InstalledTransportResumeOutcome",
+  "domain_computation::primary_graph::application_runtime::PerformedInstalledTransportCompletion",
+  "domain_computation::primary_graph::application_runtime::WorthQueryInboundPublicationDenial",
+  "domain_computation::primary_graph::application_runtime::WorthQueryInboundPublicationOutcome",
+  "domain_computation::primary_graph::application_runtime::WorthQueryPerformedInboundCompletion",
+  "domain_computation::primary_graph::application_runtime::WorthQueryUnpublishedInboundCompletion"
+ ],
+ "problems": []
+}

@@ -27,19 +27,8 @@ pub struct WorthQueryApplicationRuntimeCore {
     pub(in crate::domain_computation::primary_graph) next_external_dispatch_attempt: AtomicU64,
     pub(in crate::domain_computation::primary_graph) external_effect_transport:
         std::sync::OnceLock<std::sync::Arc<dyn WorthQueryExternalEffectTransport>>,
-    pub(super) inbound_verifiers: std::sync::Mutex<
-        std::collections::BTreeMap<
-            String,
-            std::sync::Arc<inbound_occurrence::WorthQueryInstalledInboundVerifier>,
-        >,
-    >,
-    pub(super) inbound_custody: Arc<std::sync::Mutex<
-        crate::domain_computation::application_aftermath::WorthQueryInboundCustody,
-    >>,
-    pub(super) transport_completion_custody: std::sync::Mutex<
-        inbound_publication::InstalledTransportCompletionCustody,
-    >,
-    pub(super) inbound_maintenance_turn: AtomicU64,
+    pub(in crate::domain_computation::primary_graph) inbound:
+        super::super::application_inbound::WorthQueryInboundProcessing,
     pub(crate) recovery_handles: Arc<WorthQueryRecoveryHandleRegistry>,
     pub(in crate::domain_computation::primary_graph) next_application_mutation_partition: AtomicU32,
     pub(in crate::domain_computation::primary_graph) workflow_coverage:

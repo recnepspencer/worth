@@ -183,7 +183,6 @@ pub use observed_source::retained_dependencies::{
     WorthQueryRequiredSetCurrentnessDenial, WorthQueryRetainedQueryDependencies,
 };
 
-
 pub(in crate::domain_computation::primary_graph) use projection::retained_projection::materialize_original_projection;
 pub use projection::retained_projection::{
     WorthQueryMaterializedFieldValue, WorthQueryMaterializedQueryField,

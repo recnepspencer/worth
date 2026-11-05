@@ -18,6 +18,7 @@ pub(in crate::domain_computation) use application_contribution::ComputationPrior
 pub(in crate::domain_computation) use application_contribution::SealedComputationRetention;
 pub(crate) mod application_discovery;
 mod application_entry;
+pub(crate) mod application_inbound;
 pub(crate) mod application_installation;
 pub(crate) mod application_invariant;
 mod application_invariant_preparation;
@@ -185,12 +186,12 @@ pub(in crate::domain_computation) use application_branch::primary_truth_branch_i
 pub(crate) use application_query::WorthQueryApplicationQueryControls;
 pub(in crate::domain_computation) use crate::domain_computation::application_aftermath::external_effect::WorthQueryAdmittedExternalDispatchAttempt;
 pub(in crate::domain_computation) use application_runtime::WorthQueryExternalDispatchAttemptOrdinal;
-pub(in crate::domain_computation) use application_runtime::WorthQueryPerformedInboundCompletion;
-pub(in crate::domain_computation) use application_runtime::WorthQueryUnpublishedInboundCompletion;
-pub(in crate::domain_computation::primary_graph) use application_runtime::InstalledTransportCompletion;
-pub(in crate::domain_computation::primary_graph) use application_runtime::InstalledTransportResumeOutcome;
-pub(in crate::domain_computation::primary_graph) use application_runtime::PerformedInstalledTransportCompletion;
-pub(in crate::domain_computation) use application_runtime::WorthQueryInstalledTransportCompletionBinding;
+pub(in crate::domain_computation) use crate::domain_computation::primary_graph::application_inbound::inbound_publication::WorthQueryPerformedInboundCompletion;
+pub(in crate::domain_computation) use crate::domain_computation::primary_graph::application_inbound::inbound_publication::WorthQueryUnpublishedInboundCompletion;
+pub(in crate::domain_computation::primary_graph) use crate::domain_computation::primary_graph::application_inbound::inbound_publication::InstalledTransportCompletion;
+pub(in crate::domain_computation::primary_graph) use crate::domain_computation::primary_graph::application_inbound::inbound_publication::InstalledTransportResumeOutcome;
+pub(in crate::domain_computation::primary_graph) use crate::domain_computation::primary_graph::application_inbound::inbound_publication::PerformedInstalledTransportCompletion;
+pub(in crate::domain_computation) use crate::domain_computation::primary_graph::application_inbound::inbound_occurrence::WorthQueryInstalledTransportCompletionBinding;
 pub(in crate::domain_computation) use entity_resolution::WorthQueryEntityResolutionTruth;
 pub(in crate::domain_computation) use entity_resolution::WorthQueryObservedScopeSelector;
 pub(in crate::domain_computation) use entity_resolution::WorthQueryInstalledEntityResolutionContext;
@@ -210,7 +211,6 @@ pub(in crate::domain_computation) use schema_layout::WorthQueryPrimaryPrincipalB
 pub(in crate::domain_computation) use application_contribution::SealedComputationRun;
 
 pub(in crate::domain_computation) use application_contribution::observe_discarded;
-
 
 pub use observations::principal_target_reads_on_this_thread_for_test;
 

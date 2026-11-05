@@ -138,7 +138,8 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
     ) -> Result<(), WorthQueryTerminalEffectRefusal> {
         if self
             .runtime
-            .inbound_custody
+            .inbound
+            .custody()
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .terminal_by_correlation(record.correlation())

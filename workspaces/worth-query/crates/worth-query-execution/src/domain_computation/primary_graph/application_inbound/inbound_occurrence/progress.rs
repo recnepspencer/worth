@@ -5,11 +5,14 @@ use std::sync::Arc;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_installation::facade::ApplicationSchema;
 
-use super::super::{WorthQueryInboundPublicationOutcome, WorthQueryPrimaryGraphApplicationRuntime};
 use super::receive::{WorthQueryInboundAdmissionDenial, WorthQueryInboundReceiptPosture};
 use super::WorthQueryInboundSourcePosture;
 use crate::domain_computation::application_aftermath::{
     WorthQueryAcceptedInboundOccurrence, WorthQueryInboundTerminalOwnerResult,
+};
+use {
+    crate::domain_computation::primary_graph::application_inbound::inbound_publication::WorthQueryInboundPublicationOutcome,
+    crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime,
 };
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
@@ -27,7 +30,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             == Some(WorthQueryInboundSourcePosture::Revoked)
         {
             self.runtime
-                .inbound_custody
+                .inbound
+                .custody()
                 .lock()
                 .unwrap_or_else(|p| p.into_inner())
                 .mark_publication_retryable(&accepted);
@@ -49,7 +53,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     }
                     _ => {
                         self.runtime
-                            .inbound_custody
+                            .inbound
+                            .custody()
                             .lock()
                             .unwrap_or_else(|p| p.into_inner())
                             .mark_publication_retryable(&accepted);
@@ -57,7 +62,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     }
                 };
                 self.runtime
-                    .inbound_custody
+                    .inbound
+                    .custody()
                     .lock()
                     .unwrap_or_else(|poisoned| poisoned.into_inner())
                     .release_accepted_after_external_terminal(&accepted, completion_world);
@@ -69,7 +75,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 ));
                 let retained = self
                     .runtime
-                    .inbound_custody
+                    .inbound
+                    .custody()
                     .lock()
                     .unwrap_or_else(|poisoned| poisoned.into_inner())
                     .retain_terminal(&accepted, terminal);
@@ -83,7 +90,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             WorthQueryInboundPublicationOutcome::ProductUnpublished(unpublished) => {
                 let retained = self
                     .runtime
-                    .inbound_custody
+                    .inbound
+                    .custody()
                     .lock()
                     .unwrap_or_else(|poisoned| poisoned.into_inner())
                     .retain_unpublished(&accepted, unpublished);
@@ -95,7 +103,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             }
             WorthQueryInboundPublicationOutcome::Denied(denial) => {
                 self.runtime
-                    .inbound_custody
+                    .inbound
+                    .custody()
                     .lock()
                     .unwrap_or_else(|poisoned| poisoned.into_inner())
                     .mark_publication_retryable(&accepted);
@@ -103,7 +112,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             }
             WorthQueryInboundPublicationOutcome::NoEffect => {
                 self.runtime
-                    .inbound_custody
+                    .inbound
+                    .custody()
                     .lock()
                     .unwrap_or_else(|poisoned| poisoned.into_inner())
                     .mark_publication_retryable(&accepted);
@@ -118,7 +128,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     ) -> Result<(), WorthQueryInboundAdmissionDenial> {
         let terminal = self
             .runtime
-            .inbound_custody
+            .inbound
+            .custody()
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .terminal_for(accepted)
@@ -129,7 +140,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         }
         let mut custody = self
             .runtime
-            .inbound_custody
+            .inbound
+            .custody()
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
         let (terminal, pending) = custody

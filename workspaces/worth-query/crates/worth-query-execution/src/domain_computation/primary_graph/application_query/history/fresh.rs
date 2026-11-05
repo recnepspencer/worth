@@ -20,8 +20,7 @@ use super::{
     WorthQueryCapturedApplicationHistorySubjects as Subjects,
 };
 use crate::domain_computation::primary_graph::{
-    WorthQueryProductQueryControls,
-    WorthQuerySelectedProductOperation,
+    WorthQueryProductQueryControls, WorthQuerySelectedProductOperation,
 };
 
 mod opening;

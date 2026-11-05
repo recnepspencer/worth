@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use crate::domain_computation::application_aftermath::WorthQueryInboundTerminalOwnerResult;
 use crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanup;
-use crate::domain_computation::primary_graph::WorthQueryUnpublishedInboundCompletion;
+use crate::domain_computation::primary_graph::application_inbound::inbound_publication::WorthQueryUnpublishedInboundCompletion;
 use crate::domain_computation::WorthQueryProductUnpublishedRecovery;
 
 use super::{

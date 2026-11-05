@@ -1,8 +1,7 @@
 //! Governed source read inside the original producer reader and native borrow.
 use super::*;
 use crate::domain_computation::primary_graph::{
-    SharedSelectedProductOperation,
-    WorthQueryPrincipalResolutionMode,
+    SharedSelectedProductOperation, WorthQueryPrincipalResolutionMode,
 };
 use std::num::NonZeroUsize;
 use std::sync::Arc;

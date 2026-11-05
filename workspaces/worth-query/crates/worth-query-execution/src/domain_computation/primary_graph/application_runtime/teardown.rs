@@ -10,9 +10,9 @@ pub(super) struct ApplicationPostConditionalTeardown {
     authority: Option<worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority>,
     meanings: Option<super::super::application_query::observed_source::source_identity::WorthQueryObservedSourceMeaningRegistry>,
     transport: Option<std::sync::Arc<dyn crate::domain_computation::application_aftermath::WorthQueryExternalEffectTransport>>,
-    verifiers: std::collections::BTreeMap<String, std::sync::Arc<super::inbound_occurrence::WorthQueryInstalledInboundVerifier>>,
+    verifiers: std::collections::BTreeMap<String, std::sync::Arc<crate::domain_computation::primary_graph::application_inbound::inbound_occurrence::WorthQueryInstalledInboundVerifier>>,
     inbound: Option<std::sync::Arc<std::sync::Mutex<crate::domain_computation::application_aftermath::WorthQueryInboundCustody>>>,
-    completions: super::inbound_publication::InstalledTransportCompletionCustody,
+    completions: crate::domain_computation::primary_graph::application_inbound::inbound_publication::InstalledTransportCompletionCustody,
     recovery: Option<std::sync::Arc<crate::domain_computation::managed_run::WorthQueryRecoveryHandleRegistry>>,
 }
 impl ApplicationPostConditionalTeardown {
@@ -21,17 +21,9 @@ impl ApplicationPostConditionalTeardown {
         self.authority = core.primary_graph_authority.take();
         self.meanings = core.source_meanings.take();
         self.transport = core.external_effect_transport.take();
-        self.verifiers = std::mem::take(
-            core.inbound_verifiers
-                .get_mut()
-                .unwrap_or_else(std::sync::PoisonError::into_inner),
-        );
-        self.inbound = Some(std::sync::Arc::clone(&core.inbound_custody));
-        self.completions = std::mem::take(
-            core.transport_completion_custody
-                .get_mut()
-                .unwrap_or_else(std::sync::PoisonError::into_inner),
-        );
+        self.verifiers = core.inbound.take_verifiers();
+        self.inbound = Some(std::sync::Arc::clone(core.inbound.custody()));
+        self.completions = core.inbound.take_completions();
         self.recovery = Some(std::sync::Arc::clone(&core.recovery_handles));
     }
 }

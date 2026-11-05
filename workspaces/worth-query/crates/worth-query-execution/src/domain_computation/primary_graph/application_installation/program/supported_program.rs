@@ -14,7 +14,6 @@ use worth_query_declaration::facade::application_program::{
 };
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationProgram};
 
-
 /// What one rostered, installed program authorizes on this host.
 ///
 /// A record is minted only from a [`WorthQueryInstalledApplicationProgram`], so

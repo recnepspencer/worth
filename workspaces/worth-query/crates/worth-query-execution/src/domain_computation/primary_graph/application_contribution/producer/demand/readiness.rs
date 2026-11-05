@@ -10,7 +10,6 @@ use super::progression::denial;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
 
-
 pub(super) trait ReadinessParentOps<Schema>: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> where
     Schema: ApplicationSchema + 'static, {
 fn evaluate_current_output_readiness(

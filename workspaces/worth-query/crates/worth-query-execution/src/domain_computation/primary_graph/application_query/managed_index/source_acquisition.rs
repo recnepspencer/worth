@@ -12,8 +12,8 @@ use crate::domain_computation::{
             WorthQueryApplicationQueryAccessContext, WorthQueryApplicationQueryControls,
             WorthQueryObservedScopeSelector,
         },
-        source_facts::SourceFactsAllocation, WorthQueryPrincipalResolutionMode,
-        WorthQuerySelectedProductOperation,
+        source_facts::SourceFactsAllocation,
+        WorthQueryPrincipalResolutionMode, WorthQuerySelectedProductOperation,
     },
     provider_session::WorthQueryManagedGraphWorkSession,
 };

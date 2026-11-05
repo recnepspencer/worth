@@ -14,7 +14,6 @@ use super::WorthQueryApplicationQueryAdmissionDenial;
 use super::WorthQueryApplicationQueryAdmissionDenialKind;
 use super::WorthQueryApplicationQueryControls;
 
-
 mod fresh_source;
 
 pub(super) trait AdmissionPreparationParentOps<Schema>:

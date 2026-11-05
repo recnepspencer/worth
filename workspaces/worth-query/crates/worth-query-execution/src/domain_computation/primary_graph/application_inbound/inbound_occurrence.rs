@@ -8,9 +8,9 @@ use worth_query_installation::facade::{
     ApplicationSchema, InstalledInboundOccurrenceContract, WorthQueryInstalledApplicationOperation,
 };
 
-use super::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::application_aftermath::WorthQueryInboundOccurrenceVerifier;
 use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
+use crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime;
 
 pub(crate) mod receive;
 pub(crate) mod transport_binding;
@@ -128,7 +128,8 @@ where
         }
         let mut installed = self
             .runtime
-            .inbound_verifiers
+            .inbound
+            .verifiers()
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
         let entry = match installed.entry(operation.operation().to_owned()) {
@@ -160,7 +161,8 @@ where
         }
         let installed = self
             .runtime
-            .inbound_verifiers
+            .inbound
+            .verifiers()
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
         let current = installed.get(&handle.operation)?;
@@ -172,7 +174,8 @@ where
         operation: &str,
     ) -> Option<WorthQueryInboundSourcePosture> {
         self.runtime
-            .inbound_verifiers
+            .inbound
+            .verifiers()
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .get(operation)

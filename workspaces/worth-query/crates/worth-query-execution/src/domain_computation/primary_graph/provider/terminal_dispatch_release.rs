@@ -7,8 +7,9 @@ use super::{
     WorthQueryPrimaryGraphProvider, WorthQueryTerminalDispatchReleaseDenial,
 };
 use crate::domain_computation::application_aftermath::WorthQueryInboundTerminalOwnerResult;
-use crate::domain_computation::primary_graph::{
-    PerformedInstalledTransportCompletion, WorthQueryCommittedDispatchOutboxObservation,
+use {
+    crate::domain_computation::primary_graph::application_inbound::inbound_publication::PerformedInstalledTransportCompletion,
+    crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxObservation,
 };
 
 impl WorthQueryPrimaryGraphProvider {

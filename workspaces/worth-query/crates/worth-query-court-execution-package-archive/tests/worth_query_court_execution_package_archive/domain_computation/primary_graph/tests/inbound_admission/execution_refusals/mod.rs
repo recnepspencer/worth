@@ -4,12 +4,12 @@ use worth_query_execution::court_doors_for_test::domain_computation::application
 use worth_query_execution::facade::domain_computation::WorthQueryExternalDispatchRequest;
 use worth_query_execution::facade::domain_computation::WorthQueryExternalEffectTransport;
 use worth_query_execution::facade::domain_computation::WorthQueryExternalTransportOutcome;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_runtime::inbound_publication::custody::InstalledTransportPendingReason as Pending;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_runtime::inbound_publication::progression::completion_candidate as authenticated_completion_candidate;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_runtime::inbound_publication::transport_progression::completion_candidate as transport_completion_candidate;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_runtime::inbound_publication::installed_transport::InstalledTransportPublicationOutcome as TransportOutcome;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_runtime::inbound_publication::outcome::WorthQueryInboundPublicationDenial as PublicationDenial;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_runtime::inbound_publication::outcome::WorthQueryInboundPublicationOutcome as PublicationOutcome;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_inbound::inbound_publication::custody::InstalledTransportPendingReason as Pending;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_inbound::inbound_publication::progression::completion_candidate as authenticated_completion_candidate;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_inbound::inbound_publication::transport_progression::completion_candidate as transport_completion_candidate;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_inbound::inbound_publication::installed_transport::InstalledTransportPublicationOutcome as TransportOutcome;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_inbound::inbound_publication::outcome::WorthQueryInboundPublicationDenial as PublicationDenial;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_inbound::inbound_publication::outcome::WorthQueryInboundPublicationOutcome as PublicationOutcome;
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::bootstrap_publication::commit_refusals::refused_commit;
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::bootstrap_publication::commit_refusals::work_refusal;
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::bootstrap_publication::execution_refusals::isolated;
@@ -17,7 +17,7 @@ use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_co
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::inbound_completion::preparation_denial::preparation_denial as completion_preparation_denial;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::inbound_completion::preparation_denial::validation_denial as completion_validation_denial;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::inbound_completion::WorthQueryInboundCompletionPreparationDenial as Preparation;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_runtime::inbound_publication::installed_transport::InstalledTransportCompletion;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_inbound::inbound_publication::installed_transport::InstalledTransportCompletion;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitDenialStage as Stage;
 use worth_query_execution::facade::domain_computation::WorthQueryInboundAdmissionDenial as Retry;
 use worth_query_execution::facade::domain_computation::WorthQueryInboundPendingReason as ReceiptPending;

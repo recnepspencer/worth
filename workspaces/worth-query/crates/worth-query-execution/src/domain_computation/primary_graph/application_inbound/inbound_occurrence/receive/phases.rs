@@ -239,7 +239,8 @@ impl<Schema: ApplicationSchema> Drop for WorthQueryAdmittedInboundOccurrence<'_,
         };
         self.runtime
             .runtime
-            .inbound_custody
+            .inbound
+            .custody()
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .mark_publication_retryable(accepted);

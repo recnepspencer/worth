@@ -13,7 +13,6 @@ use super::super::super::WorthQueryApplicationQueryAdmissionDenial;
 use super::super::super::WorthQueryApplicationQueryAdmissionDenialKind;
 use super::super::super::WorthQueryApplicationQueryControls;
 
-
 pub(in crate::domain_computation::primary_graph) trait ReadmittedScopedOps<
     Schema: ApplicationSchema,
 >:

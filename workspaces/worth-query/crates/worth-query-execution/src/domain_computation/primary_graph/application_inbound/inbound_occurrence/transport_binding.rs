@@ -2,8 +2,8 @@
 
 use worth_query_installation::facade::{ApplicationSchema, InstalledInboundOccurrenceContract};
 
-use super::super::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
+use crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxObservation;
 
 /// Runtime-sealed operation and verifier audience for one installed outbox.
@@ -71,7 +71,8 @@ where
             .ok_or(Denial::OutboxOperationUnbound)?;
         let installed = self
             .runtime
-            .inbound_verifiers
+            .inbound
+            .verifiers()
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
         let verifier = installed.get(operation).ok_or(Denial::VerifierMissing)?;

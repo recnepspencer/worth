@@ -18,8 +18,7 @@ use super::{WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDeni
 use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationOperation, WorthQueryApplicationEntityIdentity,
     WorthQueryApplicationOperationInvariantProjectionSnapshot,
-    WorthQueryInstalledEntityResolutionContext,
-    WorthQueryPrincipalResolutionMode,
+    WorthQueryInstalledEntityResolutionContext, WorthQueryPrincipalResolutionMode,
 };
 mod fact_routes;
 pub(in crate::domain_computation::primary_graph) use fact_routes::FactRoutes;

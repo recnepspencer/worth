@@ -13,9 +13,6 @@ use worth_foundational::facade::CanonicalDigestId;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_installation::facade::ApplicationSchema;
 
-use super::super::{
-    WorthQueryPerformedInboundCompletion, WorthQueryPrimaryGraphApplicationRuntime,
-};
 use super::receive::{
     WorthQueryInboundAdmissionDenial as Denial, WorthQueryInboundReceiptPosture as Posture,
 };
@@ -27,6 +24,10 @@ use crate::domain_computation::application_aftermath::{
 };
 use crate::domain_computation::execution_runtime::product_world::WorthQueryReservedProductPublicationReceipt;
 use crate::domain_computation::WorthQueryProductUnpublishedApplication;
+use {
+    crate::domain_computation::primary_graph::application_inbound::inbound_publication::WorthQueryPerformedInboundCompletion,
+    crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime,
+};
 
 mod custody_cleanup;
 
@@ -84,14 +85,16 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         ));
         let accepted = self
             .runtime
-            .inbound_custody
+            .inbound
+            .custody()
             .lock()
             .unwrap_or_else(|p| p.into_inner())
             .accepted_by_correlation(&correlation)
             .ok_or(Denial::UnknownCorrelation)?;
         let claim = self
             .runtime
-            .inbound_custody
+            .inbound
+            .custody()
             .lock()
             .unwrap_or_else(|p| p.into_inner())
             .claim_retryable_publication(&accepted);
@@ -125,7 +128,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .map_err(|cause| Denial::ExecutionDenied(cause.into()))?;
         let state = self
             .runtime
-            .inbound_custody
+            .inbound
+            .custody()
             .lock()
             .unwrap_or_else(|p| p.into_inner())
             .claim_unpublished_recovery(&accepted)
@@ -134,7 +138,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 _ => Denial::PublicationInProgress,
             })?;
         let mut guard = RecoveryGuard {
-            custody: &self.runtime.inbound_custody,
+            custody: &self.runtime.inbound.custody(),
             accepted: Arc::clone(&accepted),
             state: Some(state),
         };

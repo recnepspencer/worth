@@ -216,7 +216,8 @@ where
                 let unpublished = posture == WorthQueryInboundReceiptPosture::AcceptedPending
                     && self
                         .runtime
-                        .inbound_custody
+                        .inbound
+                        .custody()
                         .lock()
                         .unwrap_or_else(|poisoned| poisoned.into_inner())
                         .retains_unpublished(accepted);
@@ -245,7 +246,8 @@ where
     ) -> Result<WorthQueryInboundReceipt, WorthQueryInboundAdmissionDenial> {
         let retained = self
             .runtime
-            .inbound_custody
+            .inbound
+            .custody()
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .accepted_by_correlation(accepted.owner().record().correlation())

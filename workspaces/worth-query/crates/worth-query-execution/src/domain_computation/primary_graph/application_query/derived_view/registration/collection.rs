@@ -9,9 +9,7 @@ use worth_query_installation::facade::{
     WorthQueryInstalledApplicationQuery, WorthQueryInstalledApplicationQueryAuthorization,
 };
 
-use super::{
-    Denial, WorthQueryManagedDerivedValue, WorthQueryManagedDerivedView,
-};
+use super::{Denial, WorthQueryManagedDerivedValue, WorthQueryManagedDerivedView};
 use crate::basis::WorthQueryProductBranchLease;
 use crate::domain_computation::primary_graph::application_query::{
     WorthQueryAdmittedApplicationQueryPlan, WorthQueryApplicationProjection,

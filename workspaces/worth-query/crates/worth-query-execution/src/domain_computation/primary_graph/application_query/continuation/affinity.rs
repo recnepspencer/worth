@@ -9,8 +9,8 @@ use worth_relational::facade::{
 
 use super::authority::WorthQueryApplicationQueryContinuation;
 use crate::domain_computation::primary_graph::application_query::{
-        WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryAdmissionDenialKind,
-    };
+    WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryAdmissionDenialKind,
+};
 
 pub(super) struct WorthQueryValidatedContinuationAffinity {
     pub(super) parameter_basis: WorthQueryApplicationParameterCanonicalArtifact,

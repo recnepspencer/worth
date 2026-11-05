@@ -26,7 +26,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let work = {
             let mut custody = self
                 .runtime
-                .transport_completion_custody
+                .inbound
+                .completions()
                 .lock()
                 .unwrap_or_else(|poisoned| poisoned.into_inner());
             let Some(entry) = custody.entries.get_mut(correlation) else {
@@ -80,7 +81,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     .publish_installed_transport_completion(execution, phase, evidence, request);
                 let mut custody = self
                     .runtime
-                    .transport_completion_custody
+                    .inbound
+                    .completions()
                     .lock()
                     .unwrap_or_else(|poisoned| poisoned.into_inner());
                 let entry = custody
@@ -124,7 +126,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 );
                 let mut custody = self
                     .runtime
-                    .transport_completion_custody
+                    .inbound
+                    .completions()
                     .lock()
                     .unwrap_or_else(|poisoned| poisoned.into_inner());
                 let entry = custody
@@ -156,7 +159,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         }
         let mut custody = self
             .runtime
-            .transport_completion_custody
+            .inbound
+            .completions()
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
         let entry = custody

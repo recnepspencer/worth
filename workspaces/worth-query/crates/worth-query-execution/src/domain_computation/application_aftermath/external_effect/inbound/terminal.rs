@@ -7,7 +7,7 @@ use worth_runtime_world::facade::ProductBranchIncarnation;
 
 use super::WorthQueryAcceptedInboundOccurrence;
 use crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationReceipt;
-use crate::domain_computation::primary_graph::WorthQueryPerformedInboundCompletion;
+use crate::domain_computation::primary_graph::application_inbound::inbound_publication::WorthQueryPerformedInboundCompletion;
 
 /// Aftermath's retained completion owner. Neither an authenticated envelope
 /// nor an accepted occurrence can construct this terminal result.

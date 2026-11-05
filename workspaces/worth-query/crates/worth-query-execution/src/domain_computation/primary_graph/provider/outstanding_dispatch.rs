@@ -14,8 +14,9 @@ use crate::domain_computation::application_aftermath::{
     ExternalEffectCorrelationIdentity, WorthQueryDispatchOutboxRecord,
     WorthQueryInboundTerminalOwnerResult,
 };
-use crate::domain_computation::primary_graph::{
-    PerformedInstalledTransportCompletion, WorthQueryCommittedDispatchOutboxObservation,
+use {
+    crate::domain_computation::primary_graph::application_inbound::inbound_publication::PerformedInstalledTransportCompletion,
+    crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxObservation,
 };
 
 pub(crate) mod in_flight;

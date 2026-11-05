@@ -11,7 +11,7 @@ use crate::domain_computation::primary_graph::application_runtime::WorthQueryExt
 use crate::domain_computation::primary_graph::provider::WorthQueryOutstandingInFlightDenial;
 use crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxReadDenial;
 
-use crate::domain_computation::primary_graph::application_runtime::InstalledTransportPendingReason;
+use crate::domain_computation::primary_graph::application_inbound::inbound_publication::InstalledTransportPendingReason;
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage as Stage;
 use crate::domain_computation::{
     WorthQueryProviderSessionControlStopKind as Control,

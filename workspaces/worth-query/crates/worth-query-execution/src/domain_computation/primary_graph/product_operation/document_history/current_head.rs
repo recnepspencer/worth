@@ -1,8 +1,8 @@
 use super::WorthQueryDocumentHistoryDenial as Denial;
 use crate::basis::WorthQueryProductObservationLease;
+use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_world::facade::ProductBranchCurrentnessFailure;
-use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 
 /// Validate through the same Native commit lane and World head guard as adoption.
 /// Prepared values enter and leave the guard without allocation or authored effects.

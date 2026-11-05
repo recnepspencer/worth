@@ -24,9 +24,7 @@ use crate::domain_computation::{
         application_disclosure::WorthQueryApplicationQueryGovernance,
         WorthQueryRetainedAuthorizationDecisionFacts,
     },
-    primary_graph::{
-        WorthQueryApplicationBasisIdentity, WorthQueryApplicationEntityIdentity,
-    },
+    primary_graph::{WorthQueryApplicationBasisIdentity, WorthQueryApplicationEntityIdentity},
     provider_session::{WorthQueryManagedGraphWorkSession, WorthQuerySessionInspectionReadProof},
 };
 use std::sync::Arc;

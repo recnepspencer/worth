@@ -12,7 +12,8 @@ use worth_query_installation::facade::{
 use crate::domain_computation::primary_graph::{
     PreparedWorkflowDefinitionPublication, WorkflowDefinitionExpectedPredecessor,
     WorkflowDefinitionPreparationDenial, WorkflowDefinitionPublicationOutcome,
-    WorthQueryAdmittedApplicationOperation, WorthQueryApplicationIdempotencyBinding, WorthQuerySelectedProductOperation,
+    WorthQueryAdmittedApplicationOperation, WorthQueryApplicationIdempotencyBinding,
+    WorthQuerySelectedProductOperation,
 };
 
 /// Narrow cross-crate adapter used by Publication's application-entry owner.

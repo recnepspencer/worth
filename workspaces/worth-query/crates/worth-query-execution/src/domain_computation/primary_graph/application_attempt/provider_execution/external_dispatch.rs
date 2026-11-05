@@ -29,12 +29,13 @@ use crate::domain_computation::application_aftermath::{
 use crate::domain_computation::authorization::{
     WorthQueryAdmissionLapse, WorthQueryAdmittedApplicationOperation,
 };
-use crate::domain_computation::primary_graph::{
-    InstalledTransportCompletion, InstalledTransportResumeOutcome,
-};
 pub use denial::{
     WorthQueryExternalDispatchAttemptDenial, WorthQueryExternalDispatchPreparationDenial,
     WorthQueryExternalRedispatchDenial, WorthQueryExternalTransportInstallationDenial,
+};
+use {
+    crate::domain_computation::primary_graph::application_inbound::inbound_publication::InstalledTransportCompletion,
+    crate::domain_computation::primary_graph::application_inbound::inbound_publication::InstalledTransportResumeOutcome,
 };
 
 /// Owner-sealed material for one re-dispatch that actually crossed the

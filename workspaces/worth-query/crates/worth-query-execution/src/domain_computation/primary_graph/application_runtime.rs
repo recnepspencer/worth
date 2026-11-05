@@ -30,33 +30,13 @@ mod facade;
 mod host;
 mod mutation_partition;
 mod teardown;
-pub use execution_memory::WorthQueryExecutionLeaseDenial;
-pub(crate) mod inbound_occurrence;
-pub(crate) mod inbound_publication;
 pub use certification_cost::{
     WorthQueryCertificationApplicationWork, WorthQueryCertificationCostObservation,
     WorthQueryCertificationCostRuntimeExt, WorthQueryCertificationCostScope,
     WorthQueryCertificationWorldHistory, WorthQueryCertificationWorldRetention,
 };
-pub(in crate::domain_computation) use inbound_occurrence::WorthQueryInstalledTransportCompletionBinding;
-pub use inbound_occurrence::{
-    WorthQueryAdmittedInboundOccurrence, WorthQueryAuthenticatedInboundOccurrence,
-    WorthQueryCorrelatedInboundOccurrence, WorthQueryInboundAdmissionDenial,
-    WorthQueryInboundAuthenticatedPermanentDenial, WorthQueryInboundCostObservation,
-    WorthQueryInboundIndexRepairDenial, WorthQueryInboundMaintenanceReport,
-    WorthQueryInboundPendingReason, WorthQueryInboundPermanentDenialKind, WorthQueryInboundReceipt,
-    WorthQueryInboundReceiptPosture, WorthQueryInboundSourceControlDenial,
-    WorthQueryInboundSourcePosture, WorthQueryInboundTerminalObservation,
-    WorthQueryInboundVerifierHandle, WorthQueryInboundVerifierInstallationDenial,
-};
-pub(in crate::domain_computation::primary_graph) use inbound_publication::{
-    InstalledTransportCompletion, InstalledTransportPendingReason, InstalledTransportResumeOutcome,
-    PerformedInstalledTransportCompletion,
-};
-pub(in crate::domain_computation) use inbound_publication::{
-    WorthQueryInboundPublicationDenial, WorthQueryInboundPublicationOutcome,
-    WorthQueryPerformedInboundCompletion, WorthQueryUnpublishedInboundCompletion,
-};
+pub use execution_memory::WorthQueryExecutionLeaseDenial;
+
 mod derived_relation;
 mod graph_participation;
 pub use derived_relation::WorthQueryRuleReadableCollectionLifecycleForTest;

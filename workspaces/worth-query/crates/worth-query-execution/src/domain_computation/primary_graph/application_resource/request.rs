@@ -7,11 +7,11 @@ mod progression;
 mod start;
 use super::{installation::InstalledResourceBinding, stop::ResourceCause};
 use crate::domain_computation::authorization::{
-        application_disclosure::{
-            prepare_pending_disclosure, WorthQueryPendingApplicationQueryGovernance,
-        },
-        WorthQueryAdmittedApplicationCapabilityAccess,
-    };
+    application_disclosure::{
+        prepare_pending_disclosure, WorthQueryPendingApplicationQueryGovernance,
+    },
+    WorthQueryAdmittedApplicationCapabilityAccess,
+};
 pub use inspection::{WorthQueryResourceCleanupDetail, WorthQueryResourceState};
 use std::sync::Arc;
 use worth_query_admission::facade::authenticated_principal::{

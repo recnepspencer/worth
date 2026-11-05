@@ -304,7 +304,6 @@ impl WorthQueryPrimaryGraphProvider {
 
 pub(super) struct WorthQueryPrimaryLogicalGraph;
 
-
 pub(in crate::domain_computation::primary_graph) use application_attempt_state::PreparedRebaseDenial;
 pub(in crate::domain_computation::primary_graph) use application_attempt_state::PreparedSourceFactRebase;
 

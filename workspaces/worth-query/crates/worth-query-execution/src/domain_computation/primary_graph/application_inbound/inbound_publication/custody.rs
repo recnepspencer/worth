@@ -108,8 +108,7 @@ struct CustodyEntry {
 }
 
 #[derive(Default)]
-pub(in crate::domain_computation::primary_graph::application_runtime) struct InstalledTransportCompletionCustody
-{
+pub(in crate::domain_computation::primary_graph) struct InstalledTransportCompletionCustody {
     entries: BTreeMap<ExternalEffectCorrelationIdentity, CustodyEntry>,
     pending_by_operation: BTreeMap<String, BTreeSet<ExternalEffectCorrelationIdentity>>,
     maintenance_cursor_by_operation: BTreeMap<String, ExternalEffectCorrelationIdentity>,
@@ -168,7 +167,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         in_flight: OutstandingDispatchInFlightLease,
     ) -> Result<(), InstalledTransportCustodyDenial> {
         self.runtime
-            .transport_completion_custody
+            .inbound
+            .completions()
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .retain(evidence, in_flight)
@@ -180,7 +180,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         correlation: &ExternalEffectCorrelationIdentity,
     ) -> bool {
         self.runtime
-            .transport_completion_custody
+            .inbound
+            .completions()
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .entries

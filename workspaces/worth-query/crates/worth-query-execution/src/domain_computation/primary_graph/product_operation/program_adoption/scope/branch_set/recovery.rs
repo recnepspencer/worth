@@ -17,8 +17,7 @@ use crate::domain_computation::execution_runtime::product_world::{
 use crate::domain_computation::primary_graph::product_operation::program_adoption::custody::WorthQueryBranchAdoptionRecoveryReleaseFailure;
 use crate::domain_computation::primary_graph::{
     WorthQueryBranchAdoptionRecovery, WorthQueryBranchAdoptionRecoveryFailure,
-    WorthQueryBranchAdoptionRecoveryOutcome,
-    WorthQueryUnpublishedBranchAdoption,
+    WorthQueryBranchAdoptionRecoveryOutcome, WorthQueryUnpublishedBranchAdoption,
 };
 use crate::domain_computation::{
     WorthQueryProductUnpublishedRecoveryReleaseDenial,

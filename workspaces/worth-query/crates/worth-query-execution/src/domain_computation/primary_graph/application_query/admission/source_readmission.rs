@@ -12,7 +12,6 @@ use super::super::WorthQueryApplicationQueryAdmissionDenialKind;
 use super::super::WorthQueryApplicationQueryControls;
 use super::super::WorthQueryObservedSource;
 
-
 /// The original selector and parameters have passed fresh installed-query,
 /// principal, scope, request and parent-meter admission. The selected basis
 /// remains owned here until Query read permission and graph work are admitted.

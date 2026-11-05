@@ -1,6 +1,5 @@
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 
-
 pub(super) trait InstalledSchemaCurrentnessParentOps<Schema: ApplicationSchema>:
     crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
 {

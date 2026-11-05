@@ -22,7 +22,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             return Err(WorthQueryTransportPublicationPermitDenial::ForeignBinding);
         }
         WorthQueryInboundCustody::reserve_transport_publication(
-            Arc::clone(&self.runtime.inbound_custody),
+            Arc::clone(&self.runtime.inbound.custody()),
             binding.operation(),
             binding.contract(),
         )

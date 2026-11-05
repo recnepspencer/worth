@@ -9,9 +9,9 @@ pub use worth_query_execution::court_doors_for_test::domain_computation::applica
 pub use worth_query_execution::facade::domain_computation::WorthQueryExternalDispatchRequest;
 pub use worth_query_execution::facade::domain_computation::WorthQueryExternalEffectTransport;
 pub use worth_query_execution::facade::domain_computation::WorthQueryExternalTransportOutcome;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_runtime::inbound_publication::custody::InstalledTransportPendingReason;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_runtime::inbound_publication::installed_transport::InstalledTransportCompletion;
-pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_runtime::inbound_publication::custody::InstalledTransportResumeOutcome;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_inbound::inbound_publication::custody::InstalledTransportPendingReason;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_inbound::inbound_publication::installed_transport::InstalledTransportCompletion;
+pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_inbound::inbound_publication::custody::InstalledTransportResumeOutcome;
 pub use worth_query_execution::facade::domain_computation::WorthQueryInboundReceiptPosture;
 
 pub struct CompletingTransport(AtomicUsize);

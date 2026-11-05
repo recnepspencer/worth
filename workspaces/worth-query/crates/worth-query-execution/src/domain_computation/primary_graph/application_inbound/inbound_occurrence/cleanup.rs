@@ -21,7 +21,8 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
         >,
     > {
         self.runtime
-            .inbound_custody
+            .inbound
+            .custody()
             .lock()
             .unwrap()
             .accepted_by_correlation(correlation)
@@ -36,7 +37,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
         crate::domain_computation::application_aftermath::WorthQueryInboundPublicationClaim,
         bool,
     ) {
-        let mut custody = self.runtime.inbound_custody.lock().unwrap();
+        let mut custody = self.runtime.inbound.custody().lock().unwrap();
         (
             custody.claim_retryable_publication(accepted),
             custody.mark_publication_retryable(accepted),
@@ -68,7 +69,8 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
             .min(usize::try_from(limits.maximum_cleanup_work.get()).unwrap_or(usize::MAX));
         let correlations = self
             .runtime
-            .inbound_custody
+            .inbound
+            .custody()
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .eligible_expired_terminal_correlations(handle.operation(), *now, work);
@@ -78,7 +80,8 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
         }
         let compact = self
             .runtime
-            .inbound_custody
+            .inbound
+            .custody()
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .eligible_expired_compact_terminals(
@@ -102,7 +105,8 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
         }
         let mut custody = self
             .runtime
-            .inbound_custody
+            .inbound
+            .custody()
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
         let settled = custody.cleanup_completed_exact(handle.operation(), *now, &correlations);

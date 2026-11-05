@@ -49,7 +49,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         maximum_work: usize,
     ) -> (Vec<ExternalEffectCorrelationIdentity>, usize) {
         self.runtime
-            .transport_completion_custody
+            .inbound
+            .completions()
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .candidates(operation, maximum_work)
@@ -60,7 +61,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         operation: &str,
     ) -> usize {
         self.runtime
-            .transport_completion_custody
+            .inbound
+            .completions()
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .pending_count(operation)

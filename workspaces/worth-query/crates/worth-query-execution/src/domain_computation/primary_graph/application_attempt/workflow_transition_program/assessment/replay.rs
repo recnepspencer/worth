@@ -6,7 +6,8 @@ use crate::domain_computation::primary_graph::{
     PreparedWorkflowAdvance, RequiredWorkflowAssessment, WorkflowProgressOutcome,
     WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationIdempotencyResolution,
     WorthQueryApplicationIdempotencyResolutionDenial, WorthQueryApplicationUncommitted,
-    WorthQueryObservedSource, WorthQueryOutputDemandSettlement, WorthQueryWorkflowAssessmentPosture,
+    WorthQueryObservedSource, WorthQueryOutputDemandSettlement,
+    WorthQueryWorkflowAssessmentPosture,
 };
 
 impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation, Input, Scope>

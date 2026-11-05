@@ -7,7 +7,6 @@ use worth_relational::facade::branch::AdmittedRelationalBranchBasis;
 use worth_relational::facade::runtime::{ProjectionAspectRequirement, ProjectionAspectScope};
 use worth_relational::facade::storage::RecordLifecycleState;
 
-
 /// The rostered program actually carried by one selected product occurrence.
 /// This is descriptive operator evidence; it grants no mutation or adoption
 /// authority.

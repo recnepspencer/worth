@@ -84,7 +84,8 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
         let cost = &installed.cost;
         let (accepted_occurrences, accepted_charged_bytes) = self
             .runtime
-            .inbound_custody
+            .inbound
+            .custody()
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .usage_for_operation(handle.operation());
@@ -113,7 +114,8 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
         operation: &str,
     ) -> Option<std::sync::Arc<super::WorthQueryInstalledInboundVerifier>> {
         self.runtime
-            .inbound_verifiers
+            .inbound
+            .verifiers()
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .get(operation)

@@ -14,8 +14,8 @@ use worth_query_execution::court_doors_for_test::domain_computation::application
 use worth_query_execution::facade::domain_computation::WorthQueryExternalDispatchRequest;
 use worth_query_execution::facade::domain_computation::WorthQueryExternalEffectTransport;
 use worth_query_execution::facade::domain_computation::WorthQueryExternalTransportOutcome;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_runtime::inbound_publication::installed_transport::InstalledTransportCompletion;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_runtime::inbound_publication::custody::InstalledTransportResumeOutcome;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_inbound::inbound_publication::installed_transport::InstalledTransportCompletion;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_inbound::inbound_publication::custody::InstalledTransportResumeOutcome;
 use worth_query_execution::facade::domain_computation::WorthQueryInboundAdmissionDenial;
 use worth_query_execution::facade::domain_computation::WorthQueryInboundReceiptPosture;
 

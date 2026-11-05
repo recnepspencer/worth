@@ -17,8 +17,7 @@ use crate::basis::WorthQueryProductBranchReadIdentity;
 use crate::domain_computation::primary_graph::{
     PreparedWorkflowDefinitionRetirement, PublishedWorkflowDefinitionRef,
     WorkflowDefinitionRetirementOutcome, WorthQueryAdmittedApplicationOperation,
-    WorthQueryApplicationIdempotencyBinding,
-    WorthQuerySelectedProductOperation,
+    WorthQueryApplicationIdempotencyBinding, WorthQuerySelectedProductOperation,
 };
 
 impl<Schema> WorthQuerySelectedProductOperation<'_, Schema>
