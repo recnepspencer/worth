@@ -11,6 +11,7 @@ mod aspects;
 mod branches;
 mod cascades;
 pub(super) mod codec_retirements;
+mod content_schema;
 mod contracts;
 mod diagnostics;
 mod envelope;

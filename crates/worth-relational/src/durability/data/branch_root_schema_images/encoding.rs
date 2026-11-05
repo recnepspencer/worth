@@ -5,12 +5,7 @@ use serde::{Serialize, Serializer};
 
 impl Serialize for DurableBranchRootSchemaImage {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        let domains = !self.0.projected_member_domains.is_empty();
-        let derived = domains || !self.0.derived_relations.is_empty();
-        let mut output = serializer.serialize_struct(
-            "DurableBranchRootSchemaImage",
-            8 + usize::from(derived) + usize::from(domains),
-        )?;
+        let mut output = serializer.serialize_struct("DurableBranchRootSchemaImage", 10)?;
         output.serialize_field("format_version", &self.0.format_version)?;
         output.serialize_field("carrier_digest", &self.0.carrier_digest)?;
         output.serialize_field("schema_root", &self.0.schema_root)?;
@@ -24,12 +19,8 @@ impl Serialize for DurableBranchRootSchemaImage {
             "retained_aspect_contracts",
             &self.0.retained_aspect_contracts,
         )?;
-        if derived {
-            output.serialize_field("derived_relations", &self.0.derived_relations)?;
-        }
-        if domains {
-            output.serialize_field("projected_member_domains", &self.0.projected_member_domains)?;
-        }
+        output.serialize_field("derived_relations", &self.0.derived_relations)?;
+        output.serialize_field("projected_member_domains", &self.0.projected_member_domains)?;
         output.serialize_field("content_formats", &self.0.content_formats)?;
         output.end()
     }

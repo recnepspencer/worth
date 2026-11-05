@@ -32,6 +32,7 @@ pub(super) fn authority(
                 >(value, request, |value| {
                     derived(value, request)
                 })?,
+                "content_formats" => super::content_schema::quote(value, request)?,
                 "projected_member_domains" => vector::<
                     crate::projected_member_domain::ProjectedMemberDomainParts,
                 >(value, request, |value| {
