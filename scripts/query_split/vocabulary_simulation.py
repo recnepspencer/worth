@@ -37,10 +37,66 @@ MOVABLE_TYPES = ('struct', 'enum', 'type', 'union')
 VOCABULARY = 'vocabulary:'
 
 
+def host_order(root, parent, children, stack):
+    """Bottom-to-top order of `parent`'s children by the host supertraits that compile: a module
+    whose host extends another's sits above it; application_runtime and application_installation
+    sit on top; the stack breaks the ties the host order leaves open."""
+    import re
+    dc = root / 'workspaces/worth-query/crates/worth-query-execution/src/domain_computation'
+    owner_of = {}
+    texts = {}
+    for path in dc.rglob('host.rs'):
+        if 'application_runtime' in path.parts:
+            continue
+        text = path.read_text(encoding='utf-8')
+        m = re.search(r'pub trait (\w+Host)<Schema>:(.*?)\{', text, re.S)
+        if not m:
+            continue
+        rel = path.relative_to(dc).parts[:-1]
+        owner_of[m.group(1)] = rel
+        texts[m.group(1)] = re.findall(r'(\w+Host)<', m.group(2))
+    identity = dc / 'execution_runtime/application_identity.rs'
+    owner_of['WorthQueryApplicationIdentityHost'] = ('execution_runtime',)
+    owner_of['WorthQueryRuntimeIdentityHost'] = ('primary_graph', 'runtime_host')
+    depth = len(parent) - 1          # parent is ('domain_computation', ...)
+    def child(rel):
+        return rel[depth] if len(rel) > depth and rel[:depth] == parent[1:] else None
+    below = defaultdict(set)         # module -> modules it must sit above
+    for host, supers in texts.items():
+        a = child(owner_of[host])
+        for sup in supers:
+            if sup not in owner_of:
+                continue
+            b = child(owner_of[sup])
+            if a and b and a != b:
+                below[a].add(b)
+    rank = {m: i for i, m in enumerate(stack)}
+    top = [m for m in ('application_installation', 'application_runtime') if m in children]
+    # The known seam: authorization's host names a primary-graph host; the primary graph's hosts
+    # extend authorization's, which wins (merges.md section 2 lowers the shared vocabulary).
+    if 'authorization' in below and 'primary_graph' in below['authorization']:
+        below['authorization'].discard('primary_graph')
+    order, placed = [], set()
+    remaining = [m for m in children if m not in top]
+    while remaining:
+        ready = [m for m in remaining if not (below[m] - placed - set(top))]
+        if not ready:
+            ready = remaining
+        pick = min(ready, key=lambda m: (rank.get(m, len(rank)), m))
+        order.append(pick)
+        placed.add(pick)
+        remaining.remove(pick)
+    return order + top
+
+
 class VocabularyWorld(World):
-    def __init__(self, model, parent, all_units, helpers):
+    def __init__(self, model, parent, all_units, helpers, order=None, excluded=frozenset()):
         super().__init__(model, parent, all_units, helpers, helpers_carry_types=True)
         self.vocabularies = set()
+        self.excluded = excluded
+        if order is not None:
+            self.order = order
+            self.position = {n: i for i, n in enumerate(order)}
         self.impl_limit = 250
 
     def owner(self, key):
@@ -55,6 +111,8 @@ class VocabularyWorld(World):
         return name
 
     def movable_kind(self, key):
+        if split(key)[1] in self.excluded:
+            return False
         kind = self.kind(key)
         if not (kind in MOVABLE_TYPES or kind in HELPER_KINDS or (kind is None and split(key)[1].isupper())):
             return False
@@ -104,7 +162,10 @@ class VocabularyWorld(World):
         fresh = list(reversed(layering(nodes, dict(graph))))
         position = {n: i for i, n in enumerate(fresh)}
         against = sum(w for (a, b), w in graph.items() if position[a] < position[b])
-        return {'largest_component': largest, 'against_fresh_layering': against}, position
+        fixed = dict(self.position)
+        against_order = sum(w for (a, b), w in graph.items() if fixed.get(a, -1) < fixed.get(b, -1))
+        return {'largest_component': largest, 'against_fresh_layering': against,
+                'against_host_order': against_order}, fixed
 
 
 def item_lines(world, key):
@@ -224,6 +285,10 @@ def main(argv=None):
     parser.add_argument('parents', nargs='+')
     parser.add_argument('--out', type=Path, required=True)
     parser.add_argument('--root', type=Path, default=Path.cwd())
+    parser.add_argument('--host-order', type=Path, nargs='*', default=None,
+                        help='stack files breaking ties; layer by the host supertraits that compile')
+    parser.add_argument('--exclude-designed', type=Path, nargs='*', default=[],
+                        help='design documents whose backticked item names stay for their packets')
     parser.add_argument('--impl-limit', type=int, default=250,
                         help='a type whose impls together exceed this many lines is behaviour and stays')
     args = parser.parse_args(argv)
@@ -236,7 +301,23 @@ def main(argv=None):
     summary = {}
     for parent_path in args.parents:
         parent = tuple(parent_path.split('::'))
-        world = VocabularyWorld(model, parent, all_units, helpers)
+        import re
+        excluded = set()
+        for doc in args.exclude_designed:
+            excluded |= {n for n in re.findall(r'`([A-Za-z_][A-Za-z0-9_]*)(?:[<`(:])', doc.read_text())
+                         if n[:1].isupper() or '_' in n}
+        order = None
+        if args.host_order is not None:
+            from coupling_graph import layering as greedy  # noqa: F401
+            from module_coupling import coupling
+            children, _edges, _kinds = coupling(None, parent, None, model)
+            stack = []
+            for p in args.host_order:
+                data = json.loads(p.read_text())
+                if data['parent'] == parent_path:
+                    stack = [m for layer in data['layers'] for m, _purpose in layer['modules']]
+            order = host_order(args.root, parent, children, stack)
+        world = VocabularyWorld(model, parent, all_units, helpers, order, frozenset(excluded))
         world.impl_limit = args.impl_limit
         result = simulate(world)
         target = args.out / parent[-1]

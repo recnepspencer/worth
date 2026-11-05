@@ -51,6 +51,7 @@ class World:
         self.max_carry = 10 ** 9
         self.bidirectional = False
         self.up_first = False
+        self.not_destinations = set()
         self.model, self.parent = model, parent
         self.children, edges, self.kinds = coupling(None, parent, None, model)
         if stack is not None:
@@ -118,6 +119,8 @@ class World:
         result = defaultdict(Counter)
         for a, source, key in self.refs:
             a = self.source_node(a, source, key)
+            if a in self.not_destinations:
+                continue
             b = self.node(key)
             if b is None or a == b:
                 continue
@@ -445,6 +448,8 @@ def main(argv=None):
     parser.add_argument('--root', type=Path, default=Path.cwd())
     parser.add_argument('--stacks', type=Path, nargs='*', default=[],
                         help='stack files (ownership_analysis format) to use instead of the greedy layering')
+    parser.add_argument('--not-destination', nargs='*', default=[],
+                        help='modules whose references never pull a unit down (treated as seams instead)')
     parser.add_argument('--up-first', action='store_true',
                         help='with --bidirectional, prefer lifting users over moving items down')
     parser.add_argument('--bidirectional', action='store_true',
@@ -468,6 +473,7 @@ def main(argv=None):
         world.max_carry = args.max_carry
         world.bidirectional = args.bidirectional
         world.up_first = args.up_first
+        world.not_destinations = set(args.not_destination)
         result = simulate(world)
         target = args.out / parent[-1]
         target.mkdir(parents=True, exist_ok=True)

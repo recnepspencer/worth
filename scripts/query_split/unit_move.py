@@ -150,28 +150,34 @@ class UnitMove:
         return result
 
     def plan(self):
-        groups = defaultdict(list)          # (source module, file, destination) -> [(start, end, key)]
+        """{(declaration file, destination): [(module, file, start, end, key)]}: a unit's impls
+        land in the same new file as its declaration, wherever they were written."""
+        groups = defaultdict(list)
         for key, to in sorted(self.target.items()):
             d = self.declaration[key]
             node = self.model.index[d.module]
             text = node.source.read_text(encoding='utf-8')
             start = comment_start(text, d.start)
             end = removal_end(text, d.end)
-            groups[(d.module, node.source, to)].append((start, end, key))
+            groups[(node.source, to)].append((d.module, node.source, start, end, key))
             for module, source, s, e in self.impl_spans(key):
-                groups[(module, source, to)].append((s, e, key))
+                groups[(node.source, to)].append((module, source, s, e, key))
         self.groups = groups
 
     def new_module(self, source, to):
-        """A fresh child module name in `to` for items from `source`."""
+        """A fresh child module name in `to` for items from `source`: the file's stem, or its
+        parent directory and stem when the stem is taken (`read_execution_denial`)."""
         stem = source.stem if source.stem != 'mod' else source.parent.name
+        parent = source.parent.name if source.stem != 'mod' else source.parent.parent.name
         taken = {c.names[-1] for c in self.model.index[to].children} | \
-            {names[-1] for names in self.created.values() if names[:-1] == to}
-        name, k = stem, 2
-        while name in taken:
-            name = f'{stem}_{k}'
+            {names[-1] for names in self.files.values() if names[:-1] == to}
+        for name in (stem, f'{parent}_{stem}'):
+            if name not in taken:
+                return to + (name,)
+        k = 2
+        while f'{parent}_{stem}_{k}' in taken:
             k += 1
-        return to + (name,)
+        return to + (f'{parent}_{stem}_{k}',)
 
     def absolute(self, node, segments):
         found = self.paths.resolve(node, segments)
@@ -191,23 +197,21 @@ class UnitMove:
 
     def build(self):
         self.plan()
-        # Assign each moved key its new module first: references are rewritten to it.
-        files = {}
-        for (module, source, to), spans in sorted(self.groups.items(), key=lambda kv: (str(kv[0][1]), kv[0][2])):
-            key_group = (source, to)
-            if key_group not in files:
-                files[key_group] = self.new_module(source, to)
-                self.created[('<file>', key_group)] = files[key_group]
-            for _s, _e, key in spans:
-                self.created[key] = files[key_group]
-        self.files = files
+        self.files = {}
+        for (source, to) in sorted(self.groups, key=lambda g: (str(g[0]), g[1])):
+            self.files[(source, to)] = self.new_module(source, to)
+            for _m, _f, _s, _e, key in self.groups[(source, to)]:
+                self.created[key] = self.files[(source, to)]
         bodies = defaultdict(list)
-        for (module, source, to), spans in self.groups.items():
-            node = self.model.index[module]
-            text = source.read_text(encoding='utf-8')
-            for start, end, key in sorted(set(spans)):
-                piece = text[start:end]
-                bodies[files[(source, to)]].append((module, node, start - node.offset, piece))
+        seen = set()
+        for group, spans in self.groups.items():
+            for module, source, start, end, key in sorted(set(spans), key=lambda x: (str(x[1]), x[2])):
+                if (source, start) in seen:
+                    continue
+                seen.add((source, start))
+                node = self.model.index[module]
+                text = source.read_text(encoding='utf-8')
+                bodies[self.files[group]].append((module, node, start - node.offset, text[start:end]))
                 self.edit(source, start, end, '')
         for new, pieces in bodies.items():
             self.write_file(new, pieces)
@@ -216,7 +220,7 @@ class UnitMove:
         """The destination file: imports of every name the moved text used, then the text."""
         imports = set()
         texts = []
-        here = {key[1] for key, home in self.created.items() if key[0] != '<file>' and home == new}
+        here = {key[1] for key, home in self.created.items() if home == new}
         for module, node, offset, piece in pieces:
             rewritten, names = self.rewrite_piece(node, offset, piece, new)
             texts.append(rewritten.strip('\n'))
@@ -239,7 +243,7 @@ class UnitMove:
                 imports.add(('crate::' + '::'.join(home + (origin[1],)), name if origin[1] != name else None))
         doc = f'//! Moved whole from `{"::".join(pieces[0][0])}`: the items below and every impl they own.\n'
         lines = [doc]
-        for path, alias in sorted(imports):
+        for path, alias in sorted(imports, key=lambda pa: (pa[0], pa[1] or '')):
             lines.append(f'use {path}' + (f' as {alias}' if alias else '') + ';\n')
         body = '\n\n'.join(texts) + '\n'
         source = self.module_file(new)
@@ -305,9 +309,9 @@ class UnitMove:
 
     def library(self):
         moved_spans = defaultdict(list)
-        for (module, source, _to), spans in self.groups.items():
-            node = self.model.index[module]
-            for s, e, _k in spans:
+        for _group, spans in self.groups.items():
+            for module, _source, s, e, _k in spans:
+                node = self.model.index[module]
                 moved_spans[module].append((s - node.offset, e - node.offset))
         for names, node in sorted(self.model.index.items()):
             skip = [(c.declaration.start, c.declaration.end) for c in node.children if c.declaration.body]
@@ -393,8 +397,6 @@ class UnitMove:
         """Court and testkit paths `worth_query_execution::[court_doors_for_test::]...::Item`."""
         old_paths = {}
         for key, home in self.created.items():
-            if key[0] == '<file>':
-                continue
             old_paths[key[0] + (key[1],)] = home + (key[1],)
         for path in files:
             text = path.read_text(encoding='utf-8')
@@ -463,7 +465,7 @@ def main(argv=None):
              for f in d.rglob('*.rs') if 'target' not in f.parts]
     mover.external(files)
     written = mover.apply(args.dry_run)
-    report = {'moves': len(mover.target), 'files_created': len(mover.files), 'files_edited': written,
+    report = {'moves': len(mover.target), 'files_created': len(set(mover.files.values())), 'files_edited': written,
               'widenings': mover.widenings, 'removed_reexports': sorted(set(mover.removed_reexports)),
               'problems': mover.problems}
     if args.report:
