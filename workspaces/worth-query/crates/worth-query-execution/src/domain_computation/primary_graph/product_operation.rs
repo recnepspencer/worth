@@ -99,6 +99,7 @@ pub use query::WorthQueryProductQueryControls;
 pub use query::WorthQueryRetainedBatchQueryAdmissionDenial;
 pub(in crate::domain_computation::primary_graph) use security_basis::MatchingHeadScopedOps;
 pub(in crate::domain_computation::primary_graph) use security_basis::ProductOperationSecurityBasisScopedOps;
+pub(in crate::domain_computation) use security_basis::SecurityBasisScopedOps;
 pub(in crate::domain_computation::primary_graph) use shared_query_basis::SharedQueryBasisScopedOps;
 pub use transaction::{
     WorthQueryAdmittedChange, WorthQueryAppliedProductTransaction, WorthQueryProductTransaction,

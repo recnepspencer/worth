@@ -33,7 +33,7 @@ impl<Schema: ApplicationSchema> OutputDemandHost<Schema>
         &self,
         branch: crate::basis::WorthQueryProductBranch,
     ) -> WorthQueryProductEntry<'_, Schema> {
-        Self::on_branch(self, branch)
+        <Self as crate::domain_computation::primary_graph::product_operation::context::ContextOps<Schema>>::on_branch(self, branch)
     }
     fn select_application_read_observation_with_request(
         &self,

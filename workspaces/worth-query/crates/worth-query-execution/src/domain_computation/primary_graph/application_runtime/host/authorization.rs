@@ -45,7 +45,7 @@ impl<Schema: ApplicationSchema> AuthorizationHost<Schema>
         WorthQueryProductSecurityBasis<'static>,
         crate::basis::WorthQueryProductBranchAdmissionDenial,
     > {
-        Self::admit_product_security_basis(self, execution, product)
+        <Self as crate::domain_computation::primary_graph::product_operation::SecurityBasisScopedOps<Schema>>::admit_product_security_basis(self, execution, product)
     }
     fn admit_capability_read_security_basis(
         &self,
@@ -56,6 +56,6 @@ impl<Schema: ApplicationSchema> AuthorizationHost<Schema>
         WorthQueryProductSecurityBasis<'static>,
         crate::basis::WorthQueryProductBranchAdmissionDenial,
     > {
-        Self::admit_capability_read_security_basis(self, execution, product, prepared)
+        <Self as crate::domain_computation::primary_graph::product_operation::SecurityBasisScopedOps<Schema>>::admit_capability_read_security_basis(self, execution, product, prepared)
     }
 }

@@ -24,7 +24,7 @@ pub trait AdmissionOps<Schema>: crate::domain_computation::primary_graph::applic
 fn output_demand_resource_profile(
         &self,
     ) -> crate::domain_computation::execution_runtime::WorthQueryOutputDemandResourceProfile {
-        self.output_demand_resource_profile()
+        self.execution().output_demand_resource_profile()
     }
 
 fn admit_output_demand<Family>(
