@@ -159,28 +159,26 @@ impl InstalledTransportCompletionCustody {
     }
 }
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    /// Retain the actual completed observation before any completion publication.
-    pub(in crate::domain_computation::primary_graph) fn record_installed_transport_completion(
+pub(in crate::domain_computation::primary_graph) trait CustodyScopedOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema>
+{
+    fn record_installed_transport_completion(
         &self,
         evidence: InstalledTransportCompletion,
         in_flight: OutstandingDispatchInFlightLease,
     ) -> Result<(), InstalledTransportCustodyDenial> {
-        self.runtime
-            .inbound
+        self.inbound()
             .completions()
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .retain(evidence, in_flight)
     }
 
-    /// Dispatch admission consults this before authorizing another physical send.
-    pub(in crate::domain_computation::primary_graph) fn has_retained_installed_transport_completion(
+    fn has_retained_installed_transport_completion(
         &self,
         correlation: &ExternalEffectCorrelationIdentity,
     ) -> bool {
-        self.runtime
-            .inbound
+        self.inbound()
             .completions()
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
@@ -189,4 +187,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     }
 }
 
+impl<Schema: ApplicationSchema, HostRuntime: crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema> + ?Sized> CustodyScopedOps<Schema> for HostRuntime {}
+
 mod court_doors_for_test;
+pub use court_doors_for_test::CustodyCustodyDoorsOps;
+pub use court_doors_for_test::CustodyDoorsOps;
+pub(in crate::domain_computation::primary_graph) use maintenance::MaintenanceScopedOps;
+pub use resume::ResumeDoorsOps;
+pub(in crate::domain_computation::primary_graph) use resume::ResumeScopedOps;

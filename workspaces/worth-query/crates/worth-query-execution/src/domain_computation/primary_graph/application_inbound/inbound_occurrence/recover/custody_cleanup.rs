@@ -3,8 +3,10 @@ use super::*;
 use crate::domain_computation::product_publication::DiscoveryScopedOps;
 use crate::domain_computation::WorthQueryProductUnpublishedRecoveryReleaseFailure;
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub(super) fn finish_inbound_handoff(
+pub(super) trait CustodyCleanupParentOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema>
+{
+    fn finish_inbound_handoff(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         old: crate::domain_computation::WorthQueryProductUnpublishedRecovery,
@@ -34,7 +36,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         }
     }
 
-    pub(super) fn finish_inbound_published(
+    fn finish_inbound_published(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         old: crate::domain_computation::WorthQueryProductUnpublishedRecovery,
@@ -64,7 +66,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         }
     }
 
-    pub(super) fn finish_inbound_stale(
+    fn finish_inbound_stale(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         old: crate::domain_computation::WorthQueryProductUnpublishedRecovery,
@@ -87,3 +89,5 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         }
     }
 }
+
+impl<Schema: ApplicationSchema, HostRuntime: crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema> + ?Sized> CustodyCleanupParentOps<Schema> for HostRuntime {}

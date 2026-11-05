@@ -1,5 +1,11 @@
 //! Bounded custodian continuation independent of source signature lifetime.
 
+use crate::domain_computation::execution_runtime::ApplicationAdvancementOps;
+use crate::domain_computation::primary_graph::application_inbound::CleanupOps;
+use crate::domain_computation::primary_graph::application_inbound::InboundOccurrenceScopedOps;
+use crate::domain_computation::primary_graph::application_inbound::MaintenanceScopedOps;
+use crate::domain_computation::primary_graph::application_inbound::RecoverScopedOps;
+use crate::domain_computation::primary_graph::application_inbound::ResumeScopedOps;
 use std::num::NonZeroUsize;
 use std::sync::atomic::Ordering;
 
@@ -75,13 +81,10 @@ impl WorthQueryInboundMaintenanceReport {
     }
 }
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    /// Continue accepted evidence and release finished custody with the exact
-    /// installed route. The owner selects raw correlations internally; this
-    /// entry never accepts a caller-chosen selector or re-verifies expired
-    /// signed bytes. Hosts invoke it on retained-work cues or explicit owner
-    /// continuation, then use the reported next expiry for one cleanup timer.
-    pub fn maintain_inbound_occurrences(
+pub trait MaintenanceOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema>
+{
+    fn maintain_inbound_occurrences(
         &self,
         handle: &WorthQueryInboundVerifierHandle,
         maximum_work: NonZeroUsize,
@@ -90,7 +93,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         self.with_application_advancement(request, |phase| {
             let phase = &phase;
             let phase_request = phase
-                .execution_request_for(&self.runtime.product_runtime)
+                .execution_request_for(self.product_runtime())
                 .map_err(|cause| Denial::advancement(cause.into()))?;
             let execution = &phase_request;
             let installed = self
@@ -101,16 +104,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     .unwrap_or(usize::MAX),
             );
             let inbound_available = self
-                .runtime
-                .inbound
+                .inbound()
                 .custody()
                 .lock()
                 .unwrap_or_else(|poisoned| poisoned.into_inner())
                 .pending_work_count(handle.operation());
             let transport_available = self.pending_transport_maintenance_count(handle.operation());
             let prefer_transport = self
-                .runtime
-                .inbound
+                .inbound()
                 .maintenance_turn()
                 .fetch_add(1, Ordering::Relaxed)
                 & 1
@@ -130,8 +131,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             inbound_work += (unused - extra_transport).min(inbound_available - inbound_work);
             let inbound_candidates = {
                 let mut custody = self
-                    .runtime
-                    .inbound
+                    .inbound()
                     .custody()
                     .lock()
                     .unwrap_or_else(|poisoned| poisoned.into_inner());
@@ -164,8 +164,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     Err(Denial::RecoveryStaleProduct) => {
                         report.blocked += 1;
                         if self
-                            .runtime
-                            .inbound
+                            .inbound()
                             .custody()
                             .lock()
                             .unwrap_or_else(|poisoned| poisoned.into_inner())
@@ -248,8 +247,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             }
             let (inbound_remaining, next_expiry) = {
                 let custody = self
-                    .runtime
-                    .inbound
+                    .inbound()
                     .custody()
                     .lock()
                     .unwrap_or_else(|poisoned| poisoned.into_inner());
@@ -266,3 +264,5 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         .map_err(Denial::advancement)?
     }
 }
+
+impl<Schema: ApplicationSchema, HostRuntime: crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema> + ?Sized> MaintenanceOps<Schema> for HostRuntime {}

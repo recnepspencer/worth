@@ -1,5 +1,6 @@
 //! Read-only observation of actual World-performed inbound completion.
 
+use crate::domain_computation::primary_graph::application_inbound::InboundOccurrenceScopedOps;
 use worth_foundational::facade::CanonicalDigestId;
 use worth_runtime_world::facade::{CompositeCommitIdentity, CompositePublicationAttemptIdentity};
 
@@ -28,13 +29,10 @@ impl WorthQueryInboundTerminalObservation {
     }
 }
 
-impl<Schema: worth_query_installation::facade::ApplicationSchema>
-    WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub trait ObserveOps<Schema: worth_query_installation::facade::ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema>
 {
-    /// A selector for inspection only. The result comes from the sealed World
-    /// Performed carrier or its owner-indexed canonical summary after accepted
-    /// payload custody has turned over.
-    pub fn observe_inbound_terminal(
+    fn observe_inbound_terminal(
         &self,
         handle: &WorthQueryInboundVerifierHandle,
         correlation_token: [u8; 32],
@@ -44,8 +42,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
             correlation_token,
         ));
         let terminal = self
-            .runtime
-            .inbound
+            .inbound()
             .custody()
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
@@ -75,8 +72,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
             });
         }
         let completed = self
-            .runtime
-            .primary_provider
+            .primary_provider()
             .lookup_completed_inbound(&correlation)
             .ok()??;
         if completed.operation() != handle.operation() {
@@ -89,3 +85,5 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
         })
     }
 }
+
+impl<Schema: worth_query_installation::facade::ApplicationSchema, HostRuntime: crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema> + ?Sized> ObserveOps<Schema> for HostRuntime {}

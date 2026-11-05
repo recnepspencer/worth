@@ -10,6 +10,9 @@
 
 #![deny(private_interfaces)]
 
+use crate::domain_computation::primary_graph::application_inbound::CustodyScopedOps;
+use crate::domain_computation::primary_graph::application_inbound::RecoverScopedOps;
+use crate::domain_computation::primary_graph::application_inbound::ResumeScopedOps;
 use crate::domain_computation::primary_graph::provider::ProviderCommittedDispatchOutboxScopedOps;
 use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 

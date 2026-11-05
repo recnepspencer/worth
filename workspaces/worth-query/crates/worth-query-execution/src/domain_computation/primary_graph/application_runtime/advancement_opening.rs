@@ -1,6 +1,7 @@
-//! Installed runtime owners lend one branded request for each public call, through the
-//! product runtime they install.
+//! The runtime's consumer advancement doors: each opens through the execution runtime's
+//! application advancement.
 use super::WorthQueryPrimaryGraphApplicationRuntime;
+use crate::domain_computation::execution_runtime::ApplicationAdvancementOps;
 use crate::domain_computation::request_execution::advancement::WorthQueryAdvancementSource as _;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_installation::facade::ApplicationSchema;
@@ -15,50 +16,37 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         &self,
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
-        self.runtime.product_runtime.with_advancement(body)
+        <Self as ApplicationAdvancementOps<Schema>>::with_host_advancement(self, body)
     }
 
-    /// Runs one host call funded as `allocation_policy` says. Under
-    /// `Execution(lease)` the call's budget is a controlled child of `lease`,
-    /// so every worker descends from it and the caller's charges stay inside
-    /// one budget; any other lease is unrelated to those workers and refuses
-    /// `UnrelatedNestedLease`. `SystemAllocation` uses the World's placement.
+    /// Runs one host call funded as `allocation_policy` says; see the execution runtime's
+    /// application advancement.
     pub fn with_funded_host_advancement<R>(
         &self,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
-        self.runtime.product_runtime.with_funded_advancement(
+        <Self as ApplicationAdvancementOps<Schema>>::with_funded_host_advancement(
+            self,
             allocation_policy,
-            worth_execution::CancellationToken::new(),
-            None,
             body,
         )
     }
 
-    /// [`Self::with_application_advancement`] funded as `allocation_policy`
-    /// says, under the request's cancellation and deadline. A lane that takes
-    /// the caller's allocation policy opens through this, so `Execution(lease)`
-    /// is the call's one budget rather than a second one inside the World's.
+    /// [`Self::with_application_advancement`] funded as `allocation_policy` says, under the
+    /// request's cancellation and deadline.
     pub fn with_funded_application_advancement<R>(
         &self,
         request: &WorthQueryRequestScope,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
-        match allocation_policy {
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation => {
-                self.with_application_advancement(request, body)
-            }
-            worth_execution::ExecutionAllocationPolicy::Execution(_) => {
-                self.runtime.product_runtime.with_funded_advancement(
-                    allocation_policy,
-                    request.cancellation().execution_token(),
-                    request.deadline(),
-                    body,
-                )
-            }
-        }
+        <Self as ApplicationAdvancementOps<Schema>>::with_funded_application_advancement(
+            self,
+            request,
+            allocation_policy,
+            body,
+        )
     }
 
     /// Checks borrowed advancement custody before a Publication entry reader.
@@ -66,23 +54,18 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
     ) -> Result<(), WorthQueryForeignAdvancementPhase> {
-        phase
-            .execution_request_for(&self.runtime.product_runtime)
-            .map(|_| ())
+        <Self as ApplicationAdvancementOps<Schema>>::validate_application_advancement(self, phase)
     }
 
     /// The higher-ranked callback prevents a phase from escaping in its result.
-    /// Custody covers the host call and its descendant workers; unrelated calls own theirs.
-    /// Zero memory reports `PolicyMemoryLimit` in serial placement and a policy
-    /// `MemoryLimit` in leased placement; both refuse before any read.
     pub fn with_application_advancement<R>(
         &self,
         request: &WorthQueryRequestScope,
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
-        self.runtime
-            .product_runtime
-            .with_request_advancement(request, body)
+        <Self as ApplicationAdvancementOps<Schema>>::with_application_advancement(
+            self, request, body,
+        )
     }
 }
 

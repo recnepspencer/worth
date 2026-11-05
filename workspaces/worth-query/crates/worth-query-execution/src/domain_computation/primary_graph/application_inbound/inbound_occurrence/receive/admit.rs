@@ -8,11 +8,12 @@ use super::WorthQueryInboundPermanentDenialKind as Permanent;
 use super::*;
 use crate::domain_computation::primary_graph::provider::CommittedDispatchOutboxScopedOps;
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub(in crate::domain_computation) trait AdmitScopedOps<Schema>:
+    crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema>
 where
     Schema: worth_query_installation::facade::ApplicationSchema,
 {
-    pub(in crate::domain_computation) fn admit_inbound_occurrence(
+    fn admit_inbound_occurrence(
         &self,
         handle: &WorthQueryInboundVerifierHandle,
         envelope: &[u8],
@@ -22,8 +23,17 @@ where
             .accept()
             .map(WorthQueryAdmittedInboundOccurrence::into_admission)
     }
+}
 
-    pub(super) fn correlate_authenticated_inbound<'a>(
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema> + ?Sized> AdmitScopedOps<Schema> for HostRuntime where
+    Schema: worth_query_installation::facade::ApplicationSchema, {}
+
+pub(super) trait AdmitParentOps<Schema>:
+    crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema>
+where
+    Schema: worth_query_installation::facade::ApplicationSchema,
+{
+    fn correlate_authenticated_inbound<'a>(
         &'a self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         authenticated: WorthQueryAuthenticatedInboundOccurrence<'a, Schema>,
@@ -35,8 +45,7 @@ where
         let envelope = authenticated.envelope;
         let installed = &authenticated.installed;
         let custody = self
-            .runtime
-            .inbound
+            .inbound()
             .custody()
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
@@ -64,8 +73,7 @@ where
             .terminal_key_probes
             .fetch_add(1, Ordering::Relaxed);
         match self
-            .runtime
-            .primary_provider
+            .primary_provider()
             .lookup_completed_inbound(&correlation)
         {
             Ok(Some(terminal)) => {
@@ -113,15 +121,14 @@ where
         let publication = owner.committed_product_publication();
         if owner.relational_runtime_instance_id()
             != self
-                .runtime
-                .product_runtime
+                .product_runtime()
                 .source
                 .authoritative_source_profile()
                 .runtime_instance_id()
             || publication.product_branch().owner_identity()
-                != self.runtime.product_runtime.owner.owner_identity()
+                != self.product_runtime().owner.owner_identity()
             || publication.product_incarnation().owner_identity()
-                != self.runtime.product_runtime.owner.owner_identity()
+                != self.product_runtime().owner.owner_identity()
             || owner.commit_reference() != publication.relational_commit()
         {
             return Err(Denial::ForeignOwner);
@@ -145,7 +152,7 @@ where
         })
     }
 
-    pub(super) fn accept_correlated_inbound<'a>(
+    fn accept_correlated_inbound<'a>(
         &'a self,
         correlated: WorthQueryCorrelatedInboundOccurrence<'a, Schema>,
     ) -> Result<WorthQueryAdmittedInboundOccurrence<'a, Schema>, WorthQueryInboundAdmissionDenial>
@@ -164,8 +171,7 @@ where
         } = authenticated;
         // A caller may hold either public phase beyond the signed cutoff.
         let sample = self
-            .runtime
-            .authorization_clock
+            .authorization_clock()
             .sample(ApplicationCapabilityValidityTimeline::UnixEpochSeconds)
             .map_err(|_| Denial::TimeUnavailable)?;
         let AspectValue::UInt64(now) = sample.value() else {
@@ -180,8 +186,7 @@ where
             }
             CorrelationDecision::ExistingCustody(existing) => {
                 let mut custody = self
-                    .runtime
-                    .inbound
+                    .inbound()
                     .custody()
                     .lock()
                     .unwrap_or_else(|poisoned| poisoned.into_inner());
@@ -197,8 +202,7 @@ where
                     WorthQueryInboundSourcePosture::Revoked => return Err(Denial::SourceRevoked),
                 }
                 let mut custody = self
-                    .runtime
-                    .inbound
+                    .inbound()
                     .custody()
                     .lock()
                     .unwrap_or_else(|poisoned| poisoned.into_inner());
@@ -221,6 +225,9 @@ where
         })
     }
 }
+
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema> + ?Sized> AdmitParentOps<Schema> for HostRuntime where
+    Schema: worth_query_installation::facade::ApplicationSchema, {}
 
 fn authenticated_owner_conflict(
     denial: WorthQueryInboundAdmissionDenial,
@@ -302,3 +309,4 @@ fn map_custody(
 }
 
 mod court_doors_for_test;
+pub use court_doors_for_test::AdmitDoorsOps;

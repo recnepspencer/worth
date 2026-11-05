@@ -8,17 +8,20 @@ use super::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::application_aftermath::ExternalEffectCorrelationIdentity;
 use crate::domain_computation::primary_graph::provider::WorthQueryInboundTerminalIndexDenial as Denial;
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub(in crate::domain_computation) fn verify_completed_inbound_for_cleanup(
+pub(in crate::domain_computation) trait ReconstructScopedOps<Schema>:
+    crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema>
+{
+    fn verify_completed_inbound_for_cleanup(
         &self,
         correlations: &[ExternalEffectCorrelationIdentity],
         now_unix_seconds: u64,
     ) -> Result<(), Denial> {
-        self.runtime
-            .primary_provider
+        self.primary_provider()
             .verify_completed_inbound_for_cleanup(correlations, now_unix_seconds)
     }
 }
+
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema> + ?Sized> ReconstructScopedOps<Schema> for HostRuntime {}
 
 pub(super) fn pair_world_history(
     history: &CompositeHistoryTraversal,
@@ -84,3 +87,4 @@ fn matches_receipt(
 }
 
 mod court_doors_for_test;
+pub use court_doors_for_test::ReconstructDoorsOps;

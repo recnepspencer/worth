@@ -100,19 +100,17 @@ pub enum WorthQueryInboundSourceControlDenial {
     ForeignVerifier,
 }
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub trait InboundOccurrenceOps<Schema>:
+    crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema>
 where
     Schema: ApplicationSchema,
 {
-    /// Install a product verifier for this operation's immutable inbound
-    /// source/protocol contract. The returned handle selects the mechanism;
-    /// incoming bytes cannot choose one.
-    pub fn install_inbound_occurrence_verifier<Operation, Input>(
+    fn install_inbound_occurrence_verifier<Operation, Input>(
         &self,
         operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
         verifier: Arc<dyn WorthQueryInboundOccurrenceVerifier>,
     ) -> Result<WorthQueryInboundVerifierHandle, WorthQueryInboundVerifierInstallationDenial> {
-        if operation.binding_identity() != &self.installed_schema.binding_identity() {
+        if operation.binding_identity() != &self.installed_schema().binding_identity() {
             return Err(WorthQueryInboundVerifierInstallationDenial::ForeignSchemaBinding);
         }
         let contract = operation
@@ -127,8 +125,7 @@ where
             return Err(WorthQueryInboundVerifierInstallationDenial::IncompatibleVerifier);
         }
         let mut installed = self
-            .runtime
-            .inbound
+            .inbound()
             .verifiers()
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
@@ -146,45 +143,13 @@ where
         });
         entry.insert(Arc::clone(&installed));
         Ok(WorthQueryInboundVerifierHandle {
-            runtime: self.runtime.authority_identity(),
+            runtime: self.authority_identity(),
             operation: operation.operation().to_owned(),
             installed,
         })
     }
 
-    pub(in crate::domain_computation) fn installed_inbound_verifier(
-        &self,
-        handle: &WorthQueryInboundVerifierHandle,
-    ) -> Option<Arc<WorthQueryInstalledInboundVerifier>> {
-        if handle.runtime != self.runtime.authority_identity() {
-            return None;
-        }
-        let installed = self
-            .runtime
-            .inbound
-            .verifiers()
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
-        let current = installed.get(&handle.operation)?;
-        Arc::ptr_eq(current, &handle.installed).then(|| Arc::clone(current))
-    }
-
-    pub(in crate::domain_computation) fn inbound_source_posture_for_operation(
-        &self,
-        operation: &str,
-    ) -> Option<WorthQueryInboundSourcePosture> {
-        self.runtime
-            .inbound
-            .verifiers()
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .get(operation)
-            .map(|installed| installed.source_posture())
-    }
-
-    /// Stop admitting new source messages. Already accepted work remains
-    /// owned by the aftermath custodian and may finish recovery.
-    pub fn retire_inbound_occurrence_source(
+    fn retire_inbound_occurrence_source(
         &self,
         handle: &WorthQueryInboundVerifierHandle,
     ) -> Result<(), WorthQueryInboundSourceControlDenial> {
@@ -195,10 +160,7 @@ where
         Ok(())
     }
 
-    /// Security revocation fences fresh consumption, including an accepted
-    /// occurrence that has not yet reached World Performed. Custody stays live
-    /// for explicit resolution rather than being silently discarded.
-    pub fn revoke_inbound_occurrence_source(
+    fn revoke_inbound_occurrence_source(
         &self,
         handle: &WorthQueryInboundVerifierHandle,
     ) -> Result<(), WorthQueryInboundSourceControlDenial> {
@@ -210,4 +172,68 @@ where
     }
 }
 
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema> + ?Sized> InboundOccurrenceOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema, {}
+
+pub(in crate::domain_computation) trait InboundOccurrenceScopedOps<Schema>:
+    crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema>
+where
+    Schema: ApplicationSchema,
+{
+    fn installed_inbound_verifier(
+        &self,
+        handle: &WorthQueryInboundVerifierHandle,
+    ) -> Option<Arc<WorthQueryInstalledInboundVerifier>> {
+        if handle.runtime != self.authority_identity() {
+            return None;
+        }
+        let installed = self
+            .inbound()
+            .verifiers()
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let current = installed.get(&handle.operation)?;
+        Arc::ptr_eq(current, &handle.installed).then(|| Arc::clone(current))
+    }
+
+    fn inbound_source_posture_for_operation(
+        &self,
+        operation: &str,
+    ) -> Option<WorthQueryInboundSourcePosture> {
+        self.inbound()
+            .verifiers()
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .get(operation)
+            .map(|installed| installed.source_posture())
+    }
+}
+
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema> + ?Sized> InboundOccurrenceScopedOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema, {}
+
 mod publication_retry;
+pub use cleanup::CleanupCleanupDoorsOps;
+pub use cleanup::CleanupDoorsOps;
+pub use cleanup::CleanupOps;
+pub(in crate::domain_computation::primary_graph) use cleanup::CleanupScopedOps;
+pub use cost::CostOps;
+pub(in crate::domain_computation::primary_graph) use cost::CostScopedOps;
+pub use maintenance::MaintenanceOps;
+pub use observe::ObserveOps;
+pub use progress::ProgressDoorsOps;
+pub(in crate::domain_computation) use progress::ProgressScopedOps;
+pub use rebuild::RebuildOps;
+pub(in crate::domain_computation) use rebuild::RebuildScopedOps;
+pub use receive::AdmitDoorsOps;
+pub(in crate::domain_computation) use receive::AdmitScopedOps;
+pub use receive::PhasesOps;
+pub use receive::ReceiveOps;
+pub use reconstruct::ReconstructDoorsOps;
+pub(in crate::domain_computation) use reconstruct::ReconstructScopedOps;
+pub use recover::RecoverDoorsOps;
+pub(in crate::domain_computation) use recover::RecoverScopedOps;
+pub use transport_binding::TransportBindingDoorsOps;
+pub(in crate::domain_computation) use transport_binding::TransportBindingScopedOps;
+pub use transport_publication_permit::TransportPublicationPermitDoorsOps;
+pub(in crate::domain_computation) use transport_publication_permit::TransportPublicationPermitScopedOps;

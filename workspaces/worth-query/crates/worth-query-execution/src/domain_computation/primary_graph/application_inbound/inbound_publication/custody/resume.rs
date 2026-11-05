@@ -1,10 +1,12 @@
 //! Explicit retirement custody outlives all transport/custody continuation guards.
+use crate::domain_computation::primary_graph::application_inbound::TransportProgressionScopedOps;
+use crate::domain_computation::primary_graph::application_inbound::inbound_publication::custody::recovery::RecoveryParentOps;
 use super::*;
 use crate::domain_computation::execution_runtime::product_world::OwnerCleanupRetirements;
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    /// Continue one retained observation. A World-performed result stays in
-    /// custody until the exact World protection and provider seal both succeed.
-    pub(in crate::domain_computation::primary_graph) fn resume_installed_transport_completion(
+pub(in crate::domain_computation::primary_graph) trait ResumeScopedOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema>
+{
+    fn resume_installed_transport_completion(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -25,8 +27,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         }
         let work = {
             let mut custody = self
-                .runtime
-                .inbound
+                .inbound()
                 .completions()
                 .lock()
                 .unwrap_or_else(|poisoned| poisoned.into_inner());
@@ -56,8 +57,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     {
                         Ok(()) => {
                             entry.state = RetainedCompletion::Ready(evidence);
-                            self.runtime
-                                .primary_provider
+                            self.primary_provider()
                                 .clear_inbound_completion_publication_pending(correlation);
                             return Resume::Pending(Pending::RecoveryStaleProduct);
                         }
@@ -80,8 +80,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 let outcome = self
                     .publish_installed_transport_completion(execution, phase, evidence, request);
                 let mut custody = self
-                    .runtime
-                    .inbound
+                    .inbound()
                     .completions()
                     .lock()
                     .unwrap_or_else(|poisoned| poisoned.into_inner());
@@ -125,8 +124,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     &mut retirements,
                 );
                 let mut custody = self
-                    .runtime
-                    .inbound
+                    .inbound()
                     .completions()
                     .lock()
                     .unwrap_or_else(|poisoned| poisoned.into_inner());
@@ -144,8 +142,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     }
                     RecoveryProgress::StaleReleased => {
                         entry.state = RetainedCompletion::Ready(evidence);
-                        self.runtime
-                            .primary_provider
+                        self.primary_provider()
                             .clear_inbound_completion_publication_pending(correlation);
                         return Resume::Pending(Pending::RecoveryStaleProduct);
                     }
@@ -158,8 +155,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             Work::Seal => {}
         }
         let mut custody = self
-            .runtime
-            .inbound
+            .inbound()
             .completions()
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
@@ -182,8 +178,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         }
         let identity = performed.publication().publication().commit().identity();
         let protection = match self
-            .runtime
-            .product_runtime
+            .product_runtime()
             .owner
             .inspection_port()
             .protect_performed_publication(identity)
@@ -192,8 +187,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             Err(_) => return Resume::Pending(Pending::TerminalProtectionUnavailable),
         };
         if self
-            .runtime
-            .primary_provider
+            .primary_provider()
             .release_installed_transport_dispatch_provenance(performed, protection)
             .is_err()
         {
@@ -204,4 +198,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     }
 }
 
+impl<Schema: ApplicationSchema, HostRuntime: crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema> + ?Sized> ResumeScopedOps<Schema> for HostRuntime {}
+
 mod court_doors_for_test;
+pub use court_doors_for_test::ResumeDoorsOps;

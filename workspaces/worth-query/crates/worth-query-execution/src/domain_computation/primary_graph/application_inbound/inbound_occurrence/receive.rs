@@ -1,5 +1,10 @@
 //! Authentication, exact correlation and owner-retained acceptance.
 
+use crate::domain_computation::execution_runtime::ApplicationAdvancementOps;
+use crate::domain_computation::primary_graph::application_inbound::InboundOccurrenceScopedOps;
+use crate::domain_computation::primary_graph::application_inbound::ProgressScopedOps;
+use crate::domain_computation::primary_graph::application_inbound::RecoverScopedOps;
+use crate::domain_computation::primary_graph::application_inbound::inbound_occurrence::receive::phases::PhasesParentOps;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
@@ -95,14 +100,12 @@ pub use receipt::{
     WorthQueryInboundPendingReason, WorthQueryInboundReceipt, WorthQueryInboundReceiptPosture,
 };
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub trait ReceiveOps<Schema>:
+    crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema>
 where
     Schema: worth_query_installation::facade::ApplicationSchema,
 {
-    /// Accept only through the installed verifier and exact original dispatch.
-    /// The resulting World publication, if performed, is sealed in aftermath
-    /// custody before the original dispatch lease is released.
-    pub fn receive_inbound_occurrence(
+    fn receive_inbound_occurrence(
         &self,
 
         handle: &WorthQueryInboundVerifierHandle,
@@ -121,7 +124,16 @@ where
         })
         .map_err(WorthQueryInboundAdmissionDenial::advancement)?
     }
+}
 
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema> + ?Sized> ReceiveOps<Schema> for HostRuntime where
+    Schema: worth_query_installation::facade::ApplicationSchema, {}
+
+trait ReceiveOwnOps<Schema>:
+    crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema>
+where
+    Schema: worth_query_installation::facade::ApplicationSchema,
+{
     fn execute_inbound_admission(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -215,8 +227,7 @@ where
             Ok(posture) => {
                 let unpublished = posture == WorthQueryInboundReceiptPosture::AcceptedPending
                     && self
-                        .runtime
-                        .inbound
+                        .inbound()
                         .custody()
                         .lock()
                         .unwrap_or_else(|poisoned| poisoned.into_inner())
@@ -245,8 +256,7 @@ where
         denial: WorthQueryInboundAdmissionDenial,
     ) -> Result<WorthQueryInboundReceipt, WorthQueryInboundAdmissionDenial> {
         let retained = self
-            .runtime
-            .inbound
+            .inbound()
             .custody()
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
@@ -265,6 +275,9 @@ where
     }
 }
 
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema> + ?Sized> ReceiveOwnOps<Schema> for HostRuntime where
+    Schema: worth_query_installation::facade::ApplicationSchema, {}
+
 impl WorthQueryInboundAdmissionDenial {
     pub(in crate::domain_computation::primary_graph) fn advancement(
         cause: crate::domain_computation::request_execution::WorthQueryAdvancementDenial,
@@ -277,3 +290,6 @@ impl WorthQueryInboundAdmissionDenial {
         }
     }
 }
+pub use admit::AdmitDoorsOps;
+pub(in crate::domain_computation) use admit::AdmitScopedOps;
+pub use phases::PhasesOps;

@@ -41,14 +41,12 @@ pub enum WorthQueryTransportCompletionBindingDenial {
     VerifierMissing,
 }
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub(in crate::domain_computation) trait TransportBindingScopedOps<Schema>:
+    crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema>
 where
     Schema: ApplicationSchema,
 {
-    /// Resolve the operation slot co-committed in the original outbox through
-    /// the existing installed-operation registry. A transport result cannot
-    /// select a different operation after the external effect has occurred.
-    pub(in crate::domain_computation) fn resolve_installed_transport_completion_binding(
+    fn resolve_installed_transport_completion_binding(
         &self,
         owner: &WorthQueryCommittedDispatchOutboxObservation,
     ) -> Result<
@@ -70,8 +68,7 @@ where
             .operation_slot()
             .ok_or(Denial::OutboxOperationUnbound)?;
         let installed = self
-            .runtime
-            .inbound
+            .inbound()
             .verifiers()
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
@@ -83,9 +80,13 @@ where
             operation: operation.to_owned(),
             audience: verifier.verifier.audience().to_owned(),
             contract: verifier.contract.clone(),
-            runtime: self.runtime.authority_identity(),
+            runtime: self.authority_identity(),
         })
     }
 }
 
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema> + ?Sized> TransportBindingScopedOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema, {}
+
 mod court_doors_for_test;
+pub use court_doors_for_test::TransportBindingDoorsOps;

@@ -1,5 +1,6 @@
 //! Runtime-owned admission for one physical post-commit dispatch attempt.
 
+use crate::domain_computation::primary_graph::application_inbound::CustodyScopedOps;
 use std::sync::Arc;
 
 use super::WorthQueryPrimaryGraphApplicationRuntime;

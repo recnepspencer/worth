@@ -1,4 +1,7 @@
 //! Owner-only continuation of accepted completion and exact World recovery.
+use crate::domain_computation::primary_graph::application_inbound::InboundOccurrenceScopedOps;
+use crate::domain_computation::primary_graph::application_inbound::ProgressScopedOps;
+use crate::domain_computation::primary_graph::application_inbound::inbound_occurrence::recover::custody_cleanup::CustodyCleanupParentOps;
 use crate::domain_computation::execution_runtime::product_world::publication_denial::{
     WorthQueryProductPublicationDenial as PublicationDenial,
     WorthQueryProductPublicationOutcome as PublicationOutcome,
@@ -68,11 +71,10 @@ enum RecoveryStep {
     StaleReleased,
 }
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    /// Revisit only evidence already admitted by this owner. Raw correlation
-    /// selection stays inside the custodian; source retries enter through the
-    /// installed verifier with the exact signed envelope.
-    pub(in crate::domain_computation) fn progress_retained_inbound_occurrence(
+pub(in crate::domain_computation) trait RecoverScopedOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema>
+{
+    fn progress_retained_inbound_occurrence(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -84,16 +86,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             correlation_token,
         ));
         let accepted = self
-            .runtime
-            .inbound
+            .inbound()
             .custody()
             .lock()
             .unwrap_or_else(|p| p.into_inner())
             .accepted_by_correlation(&correlation)
             .ok_or(Denial::UnknownCorrelation)?;
         let claim = self
-            .runtime
-            .inbound
+            .inbound()
             .custody()
             .lock()
             .unwrap_or_else(|p| p.into_inner())
@@ -115,7 +115,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         }
     }
 
-    pub(in crate::domain_computation) fn progress_unpublished_inbound_occurrence(
+    fn progress_unpublished_inbound_occurrence(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
 
@@ -124,11 +124,10 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     ) -> Result<Posture, Denial> {
         let mut retirements = OwnerCleanupRetirements::default();
         let execution = phase
-            .execution_request_for(&self.runtime.product_runtime)
+            .execution_request_for(self.product_runtime())
             .map_err(|cause| Denial::ExecutionDenied(cause.into()))?;
         let state = self
-            .runtime
-            .inbound
+            .inbound()
             .custody()
             .lock()
             .unwrap_or_else(|p| p.into_inner())
@@ -138,7 +137,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 _ => Denial::PublicationInProgress,
             })?;
         let mut guard = RecoveryGuard {
-            custody: &self.runtime.inbound.custody(),
+            custody: &self.inbound().custody(),
             accepted: Arc::clone(&accepted),
             state: Some(state),
         };
@@ -147,8 +146,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .committed_product_publication()
             .product_incarnation();
         let lane = self
-            .runtime
-            .primary_provider
+            .primary_provider()
             .application_branch_commit_lane_for_occurrence(incarnation);
         let _coordination = lane.enter();
         let state = guard
@@ -175,8 +173,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             }
             RecoveryStep::StaleReleased => {
                 guard.state.take();
-                self.runtime
-                    .primary_provider
+                self.primary_provider()
                     .clear_inbound_completion_publication_pending(
                         accepted.owner().record().correlation(),
                     );
@@ -185,7 +182,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             }
         }
     }
+}
 
+impl<Schema: ApplicationSchema, HostRuntime: crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema> + ?Sized> RecoverScopedOps<Schema> for HostRuntime {}
+
+trait RecoverOwnOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema>
+{
     fn continue_inbound_recovery_state(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -288,11 +291,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .owner()
             .committed_product_publication()
             .product_incarnation();
-        let lease = match self
-            .runtime
-            .product_runtime
-            .admit_product_occurrence(incarnation)
-        {
+        let lease = match self.product_runtime().admit_product_occurrence(incarnation) {
             Ok(lease) => lease,
             Err(_) => {
                 return RecoveryStep::Retain(
@@ -373,8 +372,7 @@ Err(PublicationDenial::Stopped(stop)) => RecoveryStep::Retain(
                 let next = WorthQueryProductUnpublishedApplication::new(
                     effects,
                     world_recovery,
-                    self.runtime
-                        .primary_provider
+                    self.primary_provider()
                         .unpublished_idempotency_disposition(),
                 )
                 .into_recovery();
@@ -384,4 +382,7 @@ Err(PublicationDenial::Stopped(stop)) => RecoveryStep::Retain(
     }
 }
 
+impl<Schema: ApplicationSchema, HostRuntime: crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema> + ?Sized> RecoverOwnOps<Schema> for HostRuntime {}
+
 mod court_doors_for_test;
+pub use court_doors_for_test::RecoverDoorsOps;

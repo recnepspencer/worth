@@ -41,30 +41,30 @@ impl InstalledTransportCompletionCustody {
     }
 }
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    /// Select one finite batch without scanning another installed operation.
-    pub(in crate::domain_computation::primary_graph) fn transport_maintenance_candidates(
+pub(in crate::domain_computation::primary_graph) trait MaintenanceScopedOps<
+    Schema: ApplicationSchema,
+>:
+    crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema>
+{
+    fn transport_maintenance_candidates(
         &self,
         operation: &str,
         maximum_work: usize,
     ) -> (Vec<ExternalEffectCorrelationIdentity>, usize) {
-        self.runtime
-            .inbound
+        self.inbound()
             .completions()
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .candidates(operation, maximum_work)
     }
 
-    pub(in crate::domain_computation::primary_graph) fn pending_transport_maintenance_count(
-        &self,
-        operation: &str,
-    ) -> usize {
-        self.runtime
-            .inbound
+    fn pending_transport_maintenance_count(&self, operation: &str) -> usize {
+        self.inbound()
             .completions()
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .pending_count(operation)
     }
 }
+
+impl<Schema: ApplicationSchema, HostRuntime: crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema> + ?Sized> MaintenanceScopedOps<Schema> for HostRuntime {}

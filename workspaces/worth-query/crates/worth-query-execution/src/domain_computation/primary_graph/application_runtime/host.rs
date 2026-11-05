@@ -5,6 +5,7 @@ mod application_checkpoint;
 mod application_contribution;
 mod application_discovery;
 mod application_entry;
+mod application_inbound;
 mod application_installation;
 mod application_query;
 mod application_resource;

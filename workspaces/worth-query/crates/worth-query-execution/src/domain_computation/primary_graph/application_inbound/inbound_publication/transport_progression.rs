@@ -3,6 +3,8 @@ use crate::domain_computation::execution_runtime::product_world::publication_den
     WorthQueryProductPublicationDenial as PublicationDenial,
     WorthQueryProductPublicationOutcome as PublicationOutcome,
 };
+use crate::domain_computation::primary_graph::application_inbound::TransportBindingScopedOps;
+use crate::domain_computation::primary_graph::application_inbound::TransportPublicationPermitScopedOps;
 use crate::domain_computation::primary_graph::provider::WorthQueryInboundCompletionPreparationDenial as Preparation;
 use crate::domain_computation::request_execution::advancement_denial;
 use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
@@ -21,14 +23,12 @@ use crate::domain_computation::execution_runtime::product_world::WorthQueryReser
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::WorthQueryProductUnpublishedApplication;
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub(in crate::domain_computation::primary_graph) trait TransportProgressionScopedOps<Schema>:
+    crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema>
 where
     Schema: worth_query_installation::facade::ApplicationSchema,
 {
-    /// Continue one real completed dispatch into the same Relational + World
-    /// terminal owner used by authenticated inbound completion. This consumes
-    /// no signature claim and keeps the actual dispatch proof in every result.
-    pub(in crate::domain_computation::primary_graph) fn publish_installed_transport_completion(
+    fn publish_installed_transport_completion(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -36,8 +36,7 @@ where
         evidence: Arc<InstalledTransportCompletion>,
         request: &WorthQueryRequestScope,
     ) -> Outcome {
-        let publication_execution = match phase.execution_request_for(&self.runtime.product_runtime)
-        {
+        let publication_execution = match phase.execution_request_for(self.product_runtime()) {
             Ok(execution) => execution,
             Err(cause) => return Outcome::Denied(evidence, Denial::ExecutionDenied(cause.into())),
         };
@@ -45,8 +44,7 @@ where
         let original = owner.committed_product_publication();
         let incarnation = original.product_incarnation();
         let runtime_instance = self
-            .runtime
-            .product_runtime
+            .product_runtime()
             .source
             .authoritative_source_profile()
             .runtime_instance_id();
@@ -54,7 +52,7 @@ where
             return Outcome::Denied(evidence, Denial::ForeignRelationalRuntime);
         }
         if original.product_branch().owner_identity()
-            != self.runtime.product_runtime.owner.owner_identity()
+            != self.product_runtime().owner.owner_identity()
         {
             return Outcome::Denied(evidence, Denial::ForeignProductWorld);
         }
@@ -66,14 +64,12 @@ where
             Err(_) => return Outcome::Denied(evidence, Denial::BindingUnavailable),
         };
         let lane = self
-            .runtime
-            .primary_provider
+            .primary_provider()
             .application_branch_commit_lane_for_occurrence(incarnation);
 
         let _coordination = lane.enter();
         match self
-            .runtime
-            .primary_provider
+            .primary_provider()
             .lookup_completed_inbound(owner.record().correlation())
         {
             Ok(Some(terminal)) if terminal.matches_transport_observation(&evidence, &binding) => {
@@ -87,18 +83,13 @@ where
             Ok(permit) => permit,
             Err(_) => return Outcome::Denied(evidence, Denial::PublicationPermit),
         };
-        let lease = match self
-            .runtime
-            .product_runtime
-            .admit_product_occurrence(incarnation)
-        {
+        let lease = match self.product_runtime().admit_product_occurrence(incarnation) {
             Ok(lease) => lease,
             Err(_) => return Outcome::Denied(evidence, Denial::ProductAdmission),
         };
         let candidate = match completion_candidate(
             Arc::clone(&evidence),
-            self.runtime
-                .primary_provider
+            self.primary_provider()
                 .prepare_installed_transport_completion_candidate(
                     execution,
                     lease.relational_basis(),
@@ -130,8 +121,7 @@ Err(PublicationDenial::Stopped(stop)) => {
             false,
         );
         let correlation = *owner.record().correlation();
-        self.runtime
-            .primary_provider
+        self.primary_provider()
             .mark_inbound_completion_publication_pending(&correlation);
         match prepared.execute(publication_execution) {
             Ok(PublicationOutcome::Performed(performed)) => {
@@ -143,20 +133,17 @@ Err(PublicationDenial::Stopped(stop)) => {
                 ))
             }
             Err(PublicationDenial::ClockMismatch) => {
-                self.runtime
-                    .primary_provider
+                self.primary_provider()
                     .clear_inbound_completion_publication_pending(&correlation);
                 Outcome::Denied(evidence, Denial::ExecutionDenied(crate::domain_computation::request_execution::WorthQueryAdvancementDenial::Resource(crate::domain_computation::request_execution::execution_refusal::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)))
             }
             Err(PublicationDenial::Stopped(stop)) => {
-                self.runtime
-                    .primary_provider
+                self.primary_provider()
                     .clear_inbound_completion_publication_pending(&correlation);
                 Outcome::Denied(evidence, Denial::ExecutionDenied(advancement_denial(stop)))
             }
             Err(PublicationDenial::Refused(_)) => {
-                self.runtime
-                    .primary_provider
+                self.primary_provider()
                     .clear_inbound_completion_publication_pending(&correlation);
                 Outcome::NoEffect(evidence)
             }
@@ -166,8 +153,7 @@ Err(PublicationDenial::Stopped(stop)) => {
                     WorthQueryProductUnpublishedApplication::new(
                         effects,
                         recovery,
-                        self.runtime
-                            .primary_provider
+                        self.primary_provider()
                             .unpublished_idempotency_disposition(),
                     ),
                 ))
@@ -175,6 +161,9 @@ Err(PublicationDenial::Stopped(stop)) => {
         }
     }
 }
+
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema> + ?Sized> TransportProgressionScopedOps<Schema> for HostRuntime where
+    Schema: worth_query_installation::facade::ApplicationSchema, {}
 
 // Both entry routes keep HEAD's preparation-refusal posture. The complete
 // refusal travels with the publication outcome rather than becoming a string.

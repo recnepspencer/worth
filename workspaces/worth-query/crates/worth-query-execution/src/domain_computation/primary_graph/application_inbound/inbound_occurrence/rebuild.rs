@@ -1,5 +1,6 @@
 //! Explicit finite repair of the disposable terminal correlation index.
 
+use crate::domain_computation::primary_graph::application_inbound::InboundOccurrenceScopedOps;
 use std::num::NonZeroUsize;
 
 use worth_runtime_world::facade::{CompositeComponentChangePosture, RuntimeWorldPublicationRow};
@@ -11,34 +12,26 @@ use crate::domain_computation::primary_graph::provider::{
     WorthQueryInboundTerminalIndexDenial as Denial,
 };
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    /// Spend one bounded World page and at most `maximum_changed_records` on
-    /// each Relational commit in it. `Ok(false)` means a resumable cursor is
-    /// retained and ordinary lookups remain unavailable until `Ok(true)`.
-    pub(in crate::domain_computation) fn rebuild_completed_inbound_index(
+pub(in crate::domain_computation) trait RebuildScopedOps<Schema>:
+    crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema>
+{
+    fn rebuild_completed_inbound_index(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         maximum_world_slots: NonZeroUsize,
         maximum_changed_records: NonZeroUsize,
         maximum_ancestry_commits: NonZeroUsize,
     ) -> Result<bool, Denial> {
-        let (cursor, generation) = self
-            .runtime
-            .primary_provider
-            .inbound_reconstruction_cursor();
-        let inspection = self.runtime.product_runtime.owner.inspection_port();
+        let (cursor, generation) = self.primary_provider().inbound_reconstruction_cursor();
+        let inspection = self.product_runtime().owner.inspection_port();
         let page = inspection
             .performed_publication_page(cursor.as_ref(), maximum_world_slots)
             .map_err(|_| {
-                self.runtime
-                    .primary_provider
-                    .abandon_inbound_reconstruction();
+                self.primary_provider().abandon_inbound_reconstruction();
                 Denial::IndexUnavailable
             })?;
         if page.pending() {
-            self.runtime
-                .primary_provider
-                .abandon_inbound_reconstruction();
+            self.primary_provider().abandon_inbound_reconstruction();
             return Err(Denial::IndexUnavailable);
         }
         let mut entries = Vec::new();
@@ -52,9 +45,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
                 Ok(Some(entry)) => entries.push(entry),
                 Ok(None) => {}
                 Err(denial) => {
-                    self.runtime
-                        .primary_provider
-                        .abandon_inbound_reconstruction();
+                    self.primary_provider().abandon_inbound_reconstruction();
                     return Err(denial);
                 }
             }
@@ -64,21 +55,23 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
                 .publication_frontier_is_current(page.frontier())
                 .map_err(|_| Denial::IndexUnavailable)?
         {
-            self.runtime
-                .primary_provider
-                .abandon_inbound_reconstruction();
+            self.primary_provider().abandon_inbound_reconstruction();
             return Err(Denial::IndexUnavailable);
         }
-        self.runtime
-            .primary_provider
-            .advance_inbound_reconstruction(
-                generation,
-                page.frontier(),
-                page.next_after().cloned(),
-                entries,
-            )
+        self.primary_provider().advance_inbound_reconstruction(
+            generation,
+            page.frontier(),
+            page.next_after().cloned(),
+            entries,
+        )
     }
+}
 
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema> + ?Sized> RebuildScopedOps<Schema> for HostRuntime {}
+
+trait RebuildOwnOps<Schema>:
+    crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema>
+{
     fn rebuild_one_terminal(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -90,8 +83,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
             return Ok(None);
         };
         let row = self
-            .runtime
-            .primary_provider
+            .primary_provider()
             .completion_row_from_commit_patch(execution, relational, maximum_changed_records)
             .map_err(|denial| match denial {
                 WorthQueryInboundCompletionReadDenial::ReadRequest(cause) => {
@@ -116,8 +108,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
             return Err(Denial::WorldPairMismatch);
         }
         let history = self
-            .runtime
-            .product_runtime
+            .product_runtime()
             .owner
             .inspection_port()
             .trace_ancestry(world.commit().identity().clone(), maximum_ancestry_commits)
@@ -138,6 +129,8 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     }
 }
 
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema> + ?Sized> RebuildOwnOps<Schema> for HostRuntime {}
+
 /// Explicit repair result; ordinary exact lookup never invokes this lane.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryInboundIndexRepairDenial {
@@ -154,16 +147,10 @@ pub enum WorthQueryInboundIndexRepairDenial {
     WorldPairMismatch,
 }
 
-impl<Schema: worth_query_installation::facade::ApplicationSchema>
-    WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub trait RebuildOps<Schema: worth_query_installation::facade::ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema>
 {
-    /// Inspect one owner-wide World page under three finite work axes. The
-    /// installed route caps page width; changed-record and ancestry budgets
-    /// are explicit repair-only ceilings and may need to exceed ordinary
-    /// discovery work for a long-lived branch.
-    /// `Ok(false)` retains the cursor; until `Ok(true)`, exact terminal lookup
-    /// remains unavailable. Reconstruction is separate from ordinary discovery.
-    pub fn repair_completed_inbound_index(
+    fn repair_completed_inbound_index(
         &self,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         handle: &WorthQueryInboundVerifierHandle,
@@ -172,7 +159,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
         maximum_ancestry_commits_per_completion: NonZeroUsize,
     ) -> Result<bool, WorthQueryInboundIndexRepairDenial> {
         let execution = phase
-            .execution_request_for(&self.runtime.product_runtime)
+            .execution_request_for(self.product_runtime())
             .map_err(|_| WorthQueryInboundIndexRepairDenial::ForeignPhase)?;
         let installed = self
             .installed_inbound_verifier(handle)
@@ -203,3 +190,5 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
         })
     }
 }
+
+impl<Schema: worth_query_installation::facade::ApplicationSchema, HostRuntime: crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema> + ?Sized> RebuildOps<Schema> for HostRuntime {}

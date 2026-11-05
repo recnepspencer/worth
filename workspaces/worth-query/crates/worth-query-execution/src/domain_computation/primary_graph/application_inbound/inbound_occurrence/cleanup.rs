@@ -1,5 +1,7 @@
 //! Bounded host-requested turnover of settled inbound terminal custody.
 
+use crate::domain_computation::primary_graph::application_inbound::InboundOccurrenceScopedOps;
+use crate::domain_computation::primary_graph::application_inbound::ReconstructScopedOps;
 use std::num::NonZeroUsize;
 
 use worth_foundational::facade::AspectValue;
@@ -9,10 +11,12 @@ use super::receive::WorthQueryInboundAdmissionDenial as Denial;
 use super::{WorthQueryInboundVerifierHandle, WorthQueryPrimaryGraphApplicationRuntime};
 use crate::domain_computation::application_aftermath::WorthQueryInboundCleanupReport;
 
-impl<Schema: worth_query_installation::facade::ApplicationSchema>
-    WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub(in crate::domain_computation::primary_graph) trait CleanupScopedOps<
+    Schema: worth_query_installation::facade::ApplicationSchema,
+>:
+    crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema>
 {
-    pub(in crate::domain_computation::primary_graph) fn retained_accepted_for_cleanup_test(
+    fn retained_accepted_for_cleanup_test(
         &self,
         correlation: &crate::domain_computation::application_aftermath::ExternalEffectCorrelationIdentity,
     ) -> Option<
@@ -20,15 +24,14 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
             crate::domain_computation::application_aftermath::WorthQueryAcceptedInboundOccurrence,
         >,
     > {
-        self.runtime
-            .inbound
+        self.inbound()
             .custody()
             .lock()
             .unwrap()
             .accepted_by_correlation(correlation)
     }
 
-    pub(in crate::domain_computation::primary_graph) fn stale_publication_claim_for_cleanup_test(
+    fn stale_publication_claim_for_cleanup_test(
         &self,
         accepted: &std::sync::Arc<
             crate::domain_computation::application_aftermath::WorthQueryAcceptedInboundOccurrence,
@@ -37,17 +40,20 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
         crate::domain_computation::application_aftermath::WorthQueryInboundPublicationClaim,
         bool,
     ) {
-        let mut custody = self.runtime.inbound.custody().lock().unwrap();
+        let mut custody = self.inbound().custody().lock().unwrap();
         (
             custody.claim_retryable_publication(accepted),
             custody.mark_publication_retryable(accepted),
         )
     }
+}
 
-    /// Reclaim expired signed custody after rechecking its canonical World
-    /// terminal pair. Transport terminals retain their own canonical truth;
-    /// only their compact accepted-message meaning expires here.
-    pub fn cleanup_completed_inbound_occurrences(
+impl<Schema: worth_query_installation::facade::ApplicationSchema, HostRuntime: crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema> + ?Sized> CleanupScopedOps<Schema> for HostRuntime {}
+
+pub trait CleanupOps<Schema: worth_query_installation::facade::ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema>
+{
+    fn cleanup_completed_inbound_occurrences(
         &self,
         handle: &WorthQueryInboundVerifierHandle,
         maximum_work: NonZeroUsize,
@@ -56,8 +62,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
             .installed_inbound_verifier(handle)
             .ok_or(Denial::ForeignVerifier)?;
         let sample = self
-            .runtime
-            .authorization_clock
+            .authorization_clock()
             .sample(ApplicationCapabilityValidityTimeline::UnixEpochSeconds)
             .map_err(|_| Denial::TimeUnavailable)?;
         let AspectValue::UInt64(now) = sample.value() else {
@@ -68,8 +73,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
             .get()
             .min(usize::try_from(limits.maximum_cleanup_work.get()).unwrap_or(usize::MAX));
         let correlations = self
-            .runtime
-            .inbound
+            .inbound()
             .custody()
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
@@ -79,8 +83,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
                 .map_err(|_| Denial::TerminalCleanupUnavailable)?;
         }
         let compact = self
-            .runtime
-            .inbound
+            .inbound()
             .custody()
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
@@ -91,8 +94,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
             );
         for (correlation, original, completion) in &compact {
             let terminal = self
-                .runtime
-                .primary_provider
+                .primary_provider()
                 .lookup_completed_inbound(correlation)
                 .map_err(|_| Denial::TerminalCleanupUnavailable)?
                 .ok_or(Denial::TerminalCleanupUnavailable)?;
@@ -104,8 +106,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
             }
         }
         let mut custody = self
-            .runtime
-            .inbound
+            .inbound()
             .custody()
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
@@ -115,4 +116,8 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
     }
 }
 
+impl<Schema: worth_query_installation::facade::ApplicationSchema, HostRuntime: crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema> + ?Sized> CleanupOps<Schema> for HostRuntime {}
+
 mod court_doors_for_test;
+pub use court_doors_for_test::CleanupCleanupDoorsOps;
+pub use court_doors_for_test::CleanupDoorsOps;

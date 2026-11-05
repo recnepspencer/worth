@@ -1,5 +1,7 @@
 //! Owner-controlled continuation from one retained accepted occurrence.
 
+use crate::domain_computation::primary_graph::application_inbound::InboundOccurrenceScopedOps;
+use crate::domain_computation::primary_graph::application_inbound::ProgressionScopedOps;
 use std::sync::Arc;
 
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
@@ -15,8 +17,10 @@ use {
     crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime,
 };
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub(in crate::domain_computation) fn progress_accepted_inbound_occurrence(
+pub(in crate::domain_computation) trait ProgressScopedOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema>
+{
+    fn progress_accepted_inbound_occurrence(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
@@ -29,8 +33,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         if self.inbound_source_posture_for_operation(accepted.operation())
             == Some(WorthQueryInboundSourcePosture::Revoked)
         {
-            self.runtime
-                .inbound
+            self.inbound()
                 .custody()
                 .lock()
                 .unwrap_or_else(|p| p.into_inner())
@@ -42,8 +45,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         match outcome {
             WorthQueryInboundPublicationOutcome::AlreadyCompleted => {
                 let completion_world = match self
-                    .runtime
-                    .primary_provider
+                    .primary_provider()
                     .lookup_completed_inbound(accepted.owner().record().correlation())
                 {
                     Ok(Some(terminal))
@@ -52,8 +54,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         terminal.completion_world_commit().clone()
                     }
                     _ => {
-                        self.runtime
-                            .inbound
+                        self.inbound()
                             .custody()
                             .lock()
                             .unwrap_or_else(|p| p.into_inner())
@@ -61,8 +62,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         return Err(WorthQueryInboundAdmissionDenial::TerminalCleanupUnavailable);
                     }
                 };
-                self.runtime
-                    .inbound
+                self.inbound()
                     .custody()
                     .lock()
                     .unwrap_or_else(|poisoned| poisoned.into_inner())
@@ -74,8 +74,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     performed,
                 ));
                 let retained = self
-                    .runtime
-                    .inbound
+                    .inbound()
                     .custody()
                     .lock()
                     .unwrap_or_else(|poisoned| poisoned.into_inner())
@@ -89,8 +88,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             }
             WorthQueryInboundPublicationOutcome::ProductUnpublished(unpublished) => {
                 let retained = self
-                    .runtime
-                    .inbound
+                    .inbound()
                     .custody()
                     .lock()
                     .unwrap_or_else(|poisoned| poisoned.into_inner())
@@ -102,8 +100,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 Ok(Posture::AcceptedPending)
             }
             WorthQueryInboundPublicationOutcome::Denied(denial) => {
-                self.runtime
-                    .inbound
+                self.inbound()
                     .custody()
                     .lock()
                     .unwrap_or_else(|poisoned| poisoned.into_inner())
@@ -111,8 +108,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 Err(denial.retry_denial())
             }
             WorthQueryInboundPublicationOutcome::NoEffect => {
-                self.runtime
-                    .inbound
+                self.inbound()
                     .custody()
                     .lock()
                     .unwrap_or_else(|poisoned| poisoned.into_inner())
@@ -122,13 +118,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         }
     }
 
-    pub(in crate::domain_computation) fn release_retained_inbound_terminal(
+    fn release_retained_inbound_terminal(
         &self,
         accepted: &Arc<WorthQueryAcceptedInboundOccurrence>,
     ) -> Result<(), WorthQueryInboundAdmissionDenial> {
         let terminal = self
-            .runtime
-            .inbound
+            .inbound()
             .custody()
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
@@ -139,8 +134,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             return Err(WorthQueryInboundAdmissionDenial::TerminalCleanupUnavailable);
         }
         let mut custody = self
-            .runtime
-            .inbound
+            .inbound()
             .custody()
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
@@ -149,16 +143,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .ok_or(WorthQueryInboundAdmissionDenial::TerminalCleanupUnavailable)?;
         if pending {
             let world_protection = self
-                .runtime
-                .product_runtime
+                .product_runtime()
                 .owner
                 .inspection_port()
                 .protect_performed_publication(
                     terminal.publication().publication().commit().identity(),
                 )
                 .map_err(|_| WorthQueryInboundAdmissionDenial::TerminalCleanupUnavailable)?;
-            self.runtime
-                .primary_provider
+            self.primary_provider()
                 .release_terminal_dispatch_provenance(&terminal, world_protection)
                 .map_err(|_| WorthQueryInboundAdmissionDenial::TerminalCleanupUnavailable)?;
             custody.mark_terminal_release_complete(accepted);
@@ -167,4 +159,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     }
 }
 
+impl<Schema: ApplicationSchema, HostRuntime: crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema> + ?Sized> ProgressScopedOps<Schema> for HostRuntime {}
+
 mod court_doors_for_test;
+pub use court_doors_for_test::ProgressDoorsOps;

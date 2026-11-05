@@ -1,5 +1,9 @@
 //! Sealed host progression from authenticated bytes to owner admission.
 
+use crate::domain_computation::execution_runtime::ApplicationAdvancementOps;
+use crate::domain_computation::primary_graph::application_inbound::InboundOccurrenceScopedOps;
+use crate::domain_computation::primary_graph::application_inbound::inbound_occurrence::receive::ReceiveOwnOps;
+use crate::domain_computation::primary_graph::application_inbound::inbound_occurrence::receive::admit::AdmitParentOps;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
@@ -25,7 +29,7 @@ use crate::domain_computation::primary_graph::{
 /// Exact bounded envelope authenticated by this runtime's installed verifier.
 /// Fields and constructor are private; signed bytes alone cannot mint this phase.
 pub struct WorthQueryAuthenticatedInboundOccurrence<'a, Schema> {
-    pub(super) runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    pub(super) runtime: &'a dyn crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema>,
     pub(super) operation: String,
     pub(super) installed: Arc<WorthQueryInstalledInboundVerifier>,
     pub(super) envelope: &'a [u8],
@@ -49,15 +53,15 @@ pub struct WorthQueryCorrelatedInboundOccurrence<'a, Schema> {
 
 /// Finite accepted custody, or an already completed exact owner result.
 pub struct WorthQueryAdmittedInboundOccurrence<'a, Schema: ApplicationSchema> {
-    pub(super) runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    pub(super) runtime: &'a dyn crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema>,
     pub(super) envelope: &'a [u8],
     pub(super) admission: Option<WorthQueryInboundAdmission>,
 }
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    /// Authenticate exact bytes against the installed source, sampled Query
-    /// clock and finite verifier work before any correlation or owner lookup.
-    pub fn authenticate_inbound_occurrence<'a>(
+pub trait PhasesOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema>
+{
+    fn authenticate_inbound_occurrence<'a>(
         &'a self,
         handle: &WorthQueryInboundVerifierHandle,
         envelope: &'a [u8],
@@ -67,9 +71,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         })
         .map_err(Denial::advancement)?
     }
+}
 
-    /// The phase witnesses admission before verifier, provenance, or custody access.
-    pub(super) fn authenticate_inbound_in_advancement<'a>(
+impl<Schema: ApplicationSchema, HostRuntime: crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema> + ?Sized> PhasesOps<Schema> for HostRuntime {}
+
+pub(super) trait PhasesParentOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema>
+{
+    fn authenticate_inbound_in_advancement<'a>(
         &'a self,
         _phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         handle: &WorthQueryInboundVerifierHandle,
@@ -88,8 +97,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .verifier_input_bytes
             .fetch_add(envelope_len, Ordering::Relaxed);
         let sample = self
-            .runtime
-            .authorization_clock
+            .authorization_clock()
             .sample(ApplicationCapabilityValidityTimeline::UnixEpochSeconds)
             .map_err(|_| Denial::TimeUnavailable)?;
         let AspectValue::UInt64(now) = sample.value() else {
@@ -124,7 +132,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             return Err(Denial::Expired);
         }
         Ok(WorthQueryAuthenticatedInboundOccurrence {
-            runtime: self,
+            runtime: self.application_inbound_host(),
             operation: handle.operation().to_owned(),
             installed,
             envelope,
@@ -132,6 +140,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         })
     }
 }
+
+impl<Schema: ApplicationSchema, HostRuntime: crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema> + ?Sized> PhasesParentOps<Schema> for HostRuntime {}
 
 impl<'a, Schema: ApplicationSchema> WorthQueryAuthenticatedInboundOccurrence<'a, Schema> {
     /// Resolve exact owner provenance. This does not yet reserve accepted custody.
@@ -148,7 +158,7 @@ impl<'a, Schema: ApplicationSchema> WorthQueryAuthenticatedInboundOccurrence<'a,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
     ) -> Result<WorthQueryCorrelatedInboundOccurrence<'a, Schema>, Denial> {
         let execution = phase
-            .execution_request_for(&self.runtime.runtime.product_runtime)
+            .execution_request_for(self.runtime.product_runtime())
             .map_err(|cause| Denial::advancement(cause.into()))?;
         self.runtime
             .correlate_authenticated_inbound(&execution, self)
@@ -201,7 +211,7 @@ impl<Schema: ApplicationSchema> WorthQueryAdmittedInboundOccurrence<'_, Schema> 
         request: &WorthQueryRequestScope,
     ) -> Result<WorthQueryInboundReceipt, Denial> {
         let execution = phase
-            .execution_request_for(&self.runtime.runtime.product_runtime)
+            .execution_request_for(self.runtime.product_runtime())
             .map_err(|cause| Denial::advancement(cause.into()))?;
         // Progression owns settlement of this claim. Disarm Drop before it can
         // become retryable and another caller can claim the same custody slot.
@@ -238,8 +248,7 @@ impl<Schema: ApplicationSchema> Drop for WorthQueryAdmittedInboundOccurrence<'_,
             _ => return,
         };
         self.runtime
-            .runtime
-            .inbound
+            .inbound()
             .custody()
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())

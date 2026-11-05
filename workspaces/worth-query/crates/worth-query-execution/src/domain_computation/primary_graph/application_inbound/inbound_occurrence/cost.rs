@@ -1,5 +1,6 @@
 //! Read-only, operation-scoped cost evidence for the signed inbound lane.
 
+use crate::domain_computation::primary_graph::application_inbound::InboundOccurrenceScopedOps;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use super::{WorthQueryInboundVerifierHandle, WorthQueryPrimaryGraphApplicationRuntime};
@@ -72,19 +73,17 @@ impl WorthQueryInboundCostObservation {
     }
 }
 
-impl<Schema: worth_query_installation::facade::ApplicationSchema>
-    WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub trait CostOps<Schema: worth_query_installation::facade::ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema>
 {
-    /// The handle selects the installed operation; correlation bytes cannot select a cost scope.
-    pub fn observe_inbound_cost(
+    fn observe_inbound_cost(
         &self,
         handle: &WorthQueryInboundVerifierHandle,
     ) -> Option<WorthQueryInboundCostObservation> {
         let installed = self.installed_inbound_verifier(handle)?;
         let cost = &installed.cost;
         let (accepted_occurrences, accepted_charged_bytes) = self
-            .runtime
-            .inbound
+            .inbound()
             .custody()
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
@@ -103,18 +102,24 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
             accepted_occurrences,
             accepted_charged_bytes,
             outstanding_dispatches: self
-                .runtime
-                .primary_provider
+                .primary_provider()
                 .outstanding_dispatch_count_for_operation(&installed.contract),
         })
     }
+}
 
-    pub(in crate::domain_computation::primary_graph) fn inbound_cost_for_operation(
+impl<Schema: worth_query_installation::facade::ApplicationSchema, HostRuntime: crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema> + ?Sized> CostOps<Schema> for HostRuntime {}
+
+pub(in crate::domain_computation::primary_graph) trait CostScopedOps<
+    Schema: worth_query_installation::facade::ApplicationSchema,
+>:
+    crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema>
+{
+    fn inbound_cost_for_operation(
         &self,
         operation: &str,
     ) -> Option<std::sync::Arc<super::WorthQueryInstalledInboundVerifier>> {
-        self.runtime
-            .inbound
+        self.inbound()
             .verifiers()
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
@@ -122,3 +127,5 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
             .cloned()
     }
 }
+
+impl<Schema: worth_query_installation::facade::ApplicationSchema, HostRuntime: crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema> + ?Sized> CostScopedOps<Schema> for HostRuntime {}

@@ -12,21 +12,28 @@ use crate::domain_computation::application_aftermath::{
     WorthQueryTransportPublicationPermitDenial,
 };
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub(in crate::domain_computation) fn reserve_installed_transport_publication(
+pub(in crate::domain_computation) trait TransportPublicationPermitScopedOps<
+    Schema: ApplicationSchema,
+>:
+    crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema>
+{
+    fn reserve_installed_transport_publication(
         &self,
         binding: &WorthQueryInstalledTransportCompletionBinding,
     ) -> Result<WorthQueryTransportPublicationPermit, WorthQueryTransportPublicationPermitDenial>
     {
-        if binding.runtime() != self.runtime.authority_identity() {
+        if binding.runtime() != self.authority_identity() {
             return Err(WorthQueryTransportPublicationPermitDenial::ForeignBinding);
         }
         WorthQueryInboundCustody::reserve_transport_publication(
-            Arc::clone(&self.runtime.inbound.custody()),
+            Arc::clone(&self.inbound().custody()),
             binding.operation(),
             binding.contract(),
         )
     }
 }
 
+impl<Schema: ApplicationSchema, HostRuntime: crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema> + ?Sized> TransportPublicationPermitScopedOps<Schema> for HostRuntime {}
+
 mod court_doors_for_test;
+pub use court_doors_for_test::TransportPublicationPermitDoorsOps;

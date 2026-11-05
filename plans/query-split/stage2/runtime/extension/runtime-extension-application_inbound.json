@@ -1,0 +1,372 @@
+{
+ "module": "domain_computation::primary_graph::application_inbound",
+ "blocks": 33,
+ "methods": 56,
+ "traits": [
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_inbound/inbound_occurrence.rs",
+   "trait": "InboundOccurrenceOps",
+   "visibility": "pub",
+   "methods": [
+    "install_inbound_occurrence_verifier",
+    "retire_inbound_occurrence_source",
+    "revoke_inbound_occurrence_source"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_inbound/inbound_occurrence.rs",
+   "trait": "InboundOccurrenceScopedOps",
+   "visibility": "pub(in crate::domain_computation)",
+   "methods": [
+    "installed_inbound_verifier",
+    "inbound_source_posture_for_operation"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_inbound/inbound_occurrence/cleanup.rs",
+   "trait": "CleanupScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph)",
+   "methods": [
+    "retained_accepted_for_cleanup_test",
+    "stale_publication_claim_for_cleanup_test"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_inbound/inbound_occurrence/cleanup.rs",
+   "trait": "CleanupOps",
+   "visibility": "pub",
+   "methods": [
+    "cleanup_completed_inbound_occurrences"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_inbound/inbound_occurrence/cleanup/court_doors_for_test.rs",
+   "trait": "CleanupDoorsOps",
+   "visibility": "pub",
+   "methods": [
+    "retained_accepted_for_cleanup_test_for_test"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_inbound/inbound_occurrence/cleanup/court_doors_for_test.rs",
+   "trait": "CleanupCleanupDoorsOps",
+   "visibility": "pub",
+   "methods": [
+    "stale_publication_claim_for_cleanup_test_for_test"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_inbound/inbound_occurrence/cost.rs",
+   "trait": "CostOps",
+   "visibility": "pub",
+   "methods": [
+    "observe_inbound_cost"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_inbound/inbound_occurrence/cost.rs",
+   "trait": "CostScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph)",
+   "methods": [
+    "inbound_cost_for_operation"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_inbound/inbound_occurrence/maintenance.rs",
+   "trait": "MaintenanceOps",
+   "visibility": "pub",
+   "methods": [
+    "maintain_inbound_occurrences"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_inbound/inbound_occurrence/observe.rs",
+   "trait": "ObserveOps",
+   "visibility": "pub",
+   "methods": [
+    "observe_inbound_terminal"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_inbound/inbound_occurrence/progress.rs",
+   "trait": "ProgressScopedOps",
+   "visibility": "pub(in crate::domain_computation)",
+   "methods": [
+    "progress_accepted_inbound_occurrence",
+    "release_retained_inbound_terminal"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_inbound/inbound_occurrence/progress/court_doors_for_test.rs",
+   "trait": "ProgressDoorsOps",
+   "visibility": "pub",
+   "methods": [
+    "progress_accepted_inbound_occurrence_for_test"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_inbound/inbound_occurrence/rebuild.rs",
+   "trait": "RebuildScopedOps",
+   "visibility": "pub(in crate::domain_computation)",
+   "methods": [
+    "rebuild_completed_inbound_index"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_inbound/inbound_occurrence/rebuild.rs",
+   "trait": "RebuildOwnOps",
+   "visibility": "private",
+   "methods": [
+    "rebuild_one_terminal"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_inbound/inbound_occurrence/rebuild.rs",
+   "trait": "RebuildOps",
+   "visibility": "pub",
+   "methods": [
+    "repair_completed_inbound_index"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_inbound/inbound_occurrence/receive.rs",
+   "trait": "ReceiveOps",
+   "visibility": "pub",
+   "methods": [
+    "receive_inbound_occurrence"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_inbound/inbound_occurrence/receive.rs",
+   "trait": "ReceiveOwnOps",
+   "visibility": "private",
+   "methods": [
+    "execute_inbound_admission",
+    "accepted_progress_result",
+    "accepted_progress_error"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_inbound/inbound_occurrence/receive/admit.rs",
+   "trait": "AdmitScopedOps",
+   "visibility": "pub(in crate::domain_computation)",
+   "methods": [
+    "admit_inbound_occurrence"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_inbound/inbound_occurrence/receive/admit.rs",
+   "trait": "AdmitParentOps",
+   "visibility": "pub(super)",
+   "methods": [
+    "correlate_authenticated_inbound",
+    "accept_correlated_inbound"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_inbound/inbound_occurrence/receive/admit/court_doors_for_test.rs",
+   "trait": "AdmitDoorsOps",
+   "visibility": "pub",
+   "methods": [
+    "admit_inbound_occurrence_for_test"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_inbound/inbound_occurrence/receive/phases.rs",
+   "trait": "PhasesOps",
+   "visibility": "pub",
+   "methods": [
+    "authenticate_inbound_occurrence"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_inbound/inbound_occurrence/receive/phases.rs",
+   "trait": "PhasesParentOps",
+   "visibility": "pub(super)",
+   "methods": [
+    "authenticate_inbound_in_advancement"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_inbound/inbound_occurrence/reconstruct.rs",
+   "trait": "ReconstructScopedOps",
+   "visibility": "pub(in crate::domain_computation)",
+   "methods": [
+    "verify_completed_inbound_for_cleanup"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_inbound/inbound_occurrence/reconstruct/court_doors_for_test.rs",
+   "trait": "ReconstructDoorsOps",
+   "visibility": "pub",
+   "methods": [
+    "verify_completed_inbound_for_cleanup_for_test"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_inbound/inbound_occurrence/recover.rs",
+   "trait": "RecoverScopedOps",
+   "visibility": "pub(in crate::domain_computation)",
+   "methods": [
+    "progress_retained_inbound_occurrence",
+    "progress_unpublished_inbound_occurrence"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_inbound/inbound_occurrence/recover.rs",
+   "trait": "RecoverOwnOps",
+   "visibility": "private",
+   "methods": [
+    "continue_inbound_recovery_state",
+    "continue_active_inbound_recovery"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_inbound/inbound_occurrence/recover/court_doors_for_test.rs",
+   "trait": "RecoverDoorsOps",
+   "visibility": "pub",
+   "methods": [
+    "progress_retained_inbound_occurrence_for_test"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_inbound/inbound_occurrence/recover/custody_cleanup.rs",
+   "trait": "CustodyCleanupParentOps",
+   "visibility": "pub(super)",
+   "methods": [
+    "finish_inbound_handoff",
+    "finish_inbound_published",
+    "finish_inbound_stale"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_inbound/inbound_occurrence/transport_binding.rs",
+   "trait": "TransportBindingScopedOps",
+   "visibility": "pub(in crate::domain_computation)",
+   "methods": [
+    "resolve_installed_transport_completion_binding"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_inbound/inbound_occurrence/transport_binding/court_doors_for_test.rs",
+   "trait": "TransportBindingDoorsOps",
+   "visibility": "pub",
+   "methods": [
+    "resolve_installed_transport_completion_binding_for_test"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_inbound/inbound_occurrence/transport_publication_permit.rs",
+   "trait": "TransportPublicationPermitScopedOps",
+   "visibility": "pub(in crate::domain_computation)",
+   "methods": [
+    "reserve_installed_transport_publication"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_inbound/inbound_occurrence/transport_publication_permit/court_doors_for_test.rs",
+   "trait": "TransportPublicationPermitDoorsOps",
+   "visibility": "pub",
+   "methods": [
+    "reserve_installed_transport_publication_for_test"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_inbound/inbound_publication/custody.rs",
+   "trait": "CustodyScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph)",
+   "methods": [
+    "record_installed_transport_completion",
+    "has_retained_installed_transport_completion"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_inbound/inbound_publication/custody/court_doors_for_test.rs",
+   "trait": "CustodyDoorsOps",
+   "visibility": "pub",
+   "methods": [
+    "has_retained_installed_transport_completion_for_test"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_inbound/inbound_publication/custody/court_doors_for_test.rs",
+   "trait": "CustodyCustodyDoorsOps",
+   "visibility": "pub",
+   "methods": [
+    "record_installed_transport_completion_for_test"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_inbound/inbound_publication/custody/maintenance.rs",
+   "trait": "MaintenanceScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph)",
+   "methods": [
+    "transport_maintenance_candidates",
+    "pending_transport_maintenance_count"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_inbound/inbound_publication/custody/recovery.rs",
+   "trait": "RecoveryParentOps",
+   "visibility": "pub(super)",
+   "methods": [
+    "finish_recovery_release",
+    "continue_transport_recovery"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_inbound/inbound_publication/custody/resume.rs",
+   "trait": "ResumeScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph)",
+   "methods": [
+    "resume_installed_transport_completion"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_inbound/inbound_publication/custody/resume/court_doors_for_test.rs",
+   "trait": "ResumeDoorsOps",
+   "visibility": "pub",
+   "methods": [
+    "resume_installed_transport_completion_for_test"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_inbound/inbound_publication/progression.rs",
+   "trait": "ProgressionScopedOps",
+   "visibility": "pub(in crate::domain_computation)",
+   "methods": [
+    "publish_inbound_completion"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_inbound/inbound_publication/transport_progression.rs",
+   "trait": "TransportProgressionScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph)",
+   "methods": [
+    "publish_installed_transport_completion"
+   ]
+  }
+ ],
+ "facades": 10,
+ "host": {
+  "core_fields": [
+   "authorization_clock",
+   "inbound",
+   "primary_provider",
+   "product_runtime"
+  ],
+  "top_fields": [
+   "installed_schema"
+  ],
+  "core_methods": [
+   "authority_identity"
+  ],
+  "foreign": [
+   "observe_committed_dispatch_outbox_for_correlation",
+   "release_product_recovery_in_request",
+   "with_application_advancement",
+   "with_host_advancement"
+  ],
+  "hand": []
+ }
+}

@@ -3,6 +3,8 @@ use crate::domain_computation::execution_runtime::product_world::publication_den
     WorthQueryProductPublicationDenial as PublicationDenial,
     WorthQueryProductPublicationOutcome as PublicationOutcome,
 };
+use crate::domain_computation::primary_graph::application_inbound::TransportBindingScopedOps;
+use crate::domain_computation::primary_graph::application_inbound::TransportPublicationPermitScopedOps;
 use crate::domain_computation::product_publication::DiscoveryScopedOps;
 use crate::domain_computation::request_execution::advancement_denial;
 
@@ -23,8 +25,10 @@ use crate::domain_computation::{
     WorthQueryProductUnpublishedRecoveryReleaseFailure,
 };
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub(super) fn finish_recovery_release(
+pub(super) trait RecoveryParentOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema>
+{
+    fn finish_recovery_release(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         release: RecoveryRelease,
@@ -49,7 +53,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         }
     }
 
-    pub(super) fn continue_transport_recovery(
+    fn continue_transport_recovery(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
 
@@ -59,8 +63,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         retirements: &mut OwnerCleanupRetirements,
     ) -> RecoveryProgress {
         use InstalledTransportPendingReason as Pending;
-        let publication_execution = match phase.execution_request_for(&self.runtime.product_runtime)
-        {
+        let publication_execution = match phase.execution_request_for(self.product_runtime()) {
             Ok(execution) => execution,
             Err(cause) => {
                 return RecoveryProgress::Pending(
@@ -73,8 +76,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let owner = evidence.committed();
         let incarnation = owner.committed_product_publication().product_incarnation();
         let lane = self
-            .runtime
-            .primary_provider
+            .primary_provider()
             .application_branch_commit_lane_for_occurrence(incarnation);
 
         let _coordination = lane.enter();
@@ -105,11 +107,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 return RecoveryProgress::Pending(prior, None, Pending::ProductRecoveryRequired)
             }
         };
-        let lease = match self
-            .runtime
-            .product_runtime
-            .admit_product_occurrence(incarnation)
-        {
+        let lease = match self.product_runtime().admit_product_occurrence(incarnation) {
             Ok(lease) => lease,
             Err(_) => {
                 return RecoveryProgress::Pending(prior, None, Pending::ProductRecoveryRequired)
@@ -196,8 +194,7 @@ Err(PublicationDenial::Stopped(stop)) => RecoveryProgress::Pending(
                 let next = WorthQueryProductUnpublishedApplication::new(
                     effects,
                     world_recovery,
-                    self.runtime
-                        .primary_provider
+                    self.primary_provider()
                         .unpublished_idempotency_disposition(),
                 )
                 .into_recovery();
@@ -213,3 +210,5 @@ Err(PublicationDenial::Stopped(stop)) => RecoveryProgress::Pending(
         }
     }
 }
+
+impl<Schema: ApplicationSchema, HostRuntime: crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema> + ?Sized> RecoveryParentOps<Schema> for HostRuntime {}
