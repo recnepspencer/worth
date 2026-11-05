@@ -1,5 +1,6 @@
 //! Original World publication and candidate-affine recovery retain exact D.
 use super::*;
+use crate::domain_computation::primary_graph::product_operation::ProductOperationContextScopedOps;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_installation::facade::ApplicationSchema;
 use {
@@ -35,7 +36,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
         publication: WorthQueryPreparedProductPublication,
     ) -> Result<(), WorthQueryHistoryNavigationDenial> {
         let execution =
-            match phase.checked_execution_request_for(&self.application.runtime.product_runtime) {
+            match phase.checked_execution_request_for(self.application.product_runtime()) {
                 Ok(execution) => execution,
                 Err(cause) => {
                     self.phase = NavigationPhase::Publication {
@@ -83,7 +84,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
         let exact = crate::basis::WorthQueryProductObservationLease::new(observation);
         if self.output_profile.is_some() {
             self.output_source = Some(crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation::from_product_with_memory(
-                self.application, exact.retained_clone(), self.output_source_memory.take(),
+                self.application.application_runtime(), exact.retained_clone(), self.output_source_memory.take(),
             ));
         }
         self.phase = if self.output_profile.is_some() {
@@ -108,14 +109,9 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
     ) -> WorthQueryProductUnpublishedRecovery {
         WorthQueryProductUnpublishedApplication::new(
             effects,
+            self.application.product_runtime().owner.recovery_port(),
             self.application
-                .runtime
-                .product_runtime
-                .owner
-                .recovery_port(),
-            self.application
-                .runtime
-                .primary_provider
+                .primary_provider()
                 .unpublished_idempotency_disposition(),
         )
         .into_recovery()
@@ -131,12 +127,11 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
         use WorthQueryHistoryNavigationDenial as Denial;
         let prepared = (|| {
             let execution = phase
-                .checked_execution_request_for(&self.application.runtime.product_runtime)
+                .checked_execution_request_for(self.application.product_runtime())
                 .map_err(Denial::Stopped)?;
             let product = self
                 .application
-                .runtime
-                .product_runtime
+                .product_runtime()
                 .admit_product_occurrence(candidate.branch().occurrence())
                 .map_err(Denial::ProductAdmission)?;
             let selected = self
@@ -178,7 +173,7 @@ PublicationDenial::Stopped(cause) => Denial::Stopped(advancement_denial(cause)),
             }
         };
         let execution =
-            match phase.checked_execution_request_for(&self.application.runtime.product_runtime) {
+            match phase.checked_execution_request_for(self.application.product_runtime()) {
                 Ok(execution) => execution,
                 Err(cause) => {
                     drop(publication);
@@ -194,6 +189,7 @@ PublicationDenial::Stopped(cause) => Denial::Stopped(advancement_denial(cause)),
                 self.performed(candidate, performed);
                 self.prior_cleanup = self
                     .application
+                    .application_runtime()
                     .release_product_publication_recovery_in_advancement(phase, recovery, 0)
                     .err();
                 Ok(())
@@ -206,6 +202,7 @@ PublicationDenial::Stopped(cause) => Denial::Stopped(advancement_denial(cause)),
                 };
                 self.prior_cleanup = self
                     .application
+                    .application_runtime()
                     .release_product_publication_recovery_in_advancement(phase, recovery, 0)
                     .err();
                 Ok(())

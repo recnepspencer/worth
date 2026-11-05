@@ -1,0 +1,383 @@
+{
+ "module": "domain_computation::primary_graph::product_operation",
+ "blocks": 32,
+ "methods": 60,
+ "traits": [
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/application_basis.rs",
+   "trait": "ApplicationBasisScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph)",
+   "methods": [
+    "retain_product_application_basis"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/branches.rs",
+   "trait": "BranchesOps",
+   "visibility": "pub",
+   "methods": [
+    "current_world",
+    "branches"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/conditional_definition/admission.rs",
+   "trait": "AdmissionScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph)",
+   "methods": [
+    "admit_conditional_definition_on_product"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/context.rs",
+   "trait": "ContextOps",
+   "visibility": "pub",
+   "methods": [
+    "product_runtime",
+    "on_branch"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/context.rs",
+   "trait": "ContextScopedOps",
+   "visibility": "pub(crate)",
+   "methods": [
+    "select_product_branch",
+    "on_product"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/context.rs",
+   "trait": "ProductOperationContextScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph)",
+   "methods": [
+    "on_mutation_product",
+    "on_product_for_owner_recovery"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/context.rs",
+   "trait": "ContextOwnOps",
+   "visibility": "private",
+   "methods": [
+    "on_product_with_basis_admission"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/context/court_doors_for_test.rs",
+   "trait": "ContextDoorsOps",
+   "visibility": "pub",
+   "methods": [
+    "select_product_branch_for_test"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/context/court_doors_for_test.rs",
+   "trait": "ContextContextDoorsOps",
+   "visibility": "pub",
+   "methods": [
+    "on_product_for_test"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/document_history/constraint.rs",
+   "trait": "ConstraintOps",
+   "visibility": "pub",
+   "methods": [
+    "validate_history_execution_predecessor",
+    "validate_history_operation"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/generated_materialization/reconstruction.rs",
+   "trait": "ReconstructionOps",
+   "visibility": "pub",
+   "methods": [
+    "reconstruct_generated_output"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/generated_materialization/restoration.rs",
+   "trait": "RestorationOps",
+   "visibility": "pub",
+   "methods": [
+    "restore_generated_output"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/generated_materialization/restoration.rs",
+   "trait": "RestorationParentOps",
+   "visibility": "pub(super)",
+   "methods": [
+    "materialization_publication_binding",
+    "unpublished_materialization",
+    "unpublished_materialization_from_binding"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/generated_materialization/restoration/in_phase.rs",
+   "trait": "InPhaseParentOps",
+   "visibility": "pub(super)",
+   "methods": [
+    "restore_generated_output_in_phase"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/generated_materialization/restoration/publication.rs",
+   "trait": "PublicationParentOps",
+   "visibility": "pub(super)",
+   "methods": [
+    "publish_restoration"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/generated_materialization/restoration/recovery.rs",
+   "trait": "RecoveryOwnOps",
+   "visibility": "private",
+   "methods": [
+    "continue_restoration_world",
+    "adopt_settled_restoration"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/generated_materialization/restoration/recovery/advancement.rs",
+   "trait": "AdvancementOps",
+   "visibility": "pub",
+   "methods": [
+    "continue_generated_output_restoration_recovery"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/generated_materialization/restoration/republication.rs",
+   "trait": "RepublicationParentOps",
+   "visibility": "pub(super)",
+   "methods": [
+    "record_restored_generated_output"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/generated_materialization/restoration/republication/court_doors_for_test.rs",
+   "trait": "RepublicationDoorsOps",
+   "visibility": "pub",
+   "methods": [
+    "record_restored_generated_output_for_test"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/generated_materialization/restoration/settlement.rs",
+   "trait": "SettlementParentOps",
+   "visibility": "pub(super)",
+   "methods": [
+    "finish_restoration_handoff",
+    "finish_restoration_published"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/generated_materialization/suspension/recovery.rs",
+   "trait": "SuspensionRecoveryOwnOps",
+   "visibility": "private",
+   "methods": [
+    "continue_world",
+    "adopt_settled"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/generated_materialization/suspension/recovery/advancement.rs",
+   "trait": "RecoveryAdvancementOps",
+   "visibility": "pub",
+   "methods": [
+    "continue_generated_output_suspension_recovery"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/generated_materialization/suspension/recovery/settlement.rs",
+   "trait": "RecoverySettlementParentOps",
+   "visibility": "pub(super)",
+   "methods": [
+    "finish_handoff",
+    "finish_published"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/observation_room.rs",
+   "trait": "ObservationRoomScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph)",
+   "methods": [
+    "admit_with_observation_room"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/program_adoption/custody/recovery.rs",
+   "trait": "RecoveryOps",
+   "visibility": "pub",
+   "methods": [
+    "integration_recover_branch_adoption"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/program_adoption/custody/recovery/release.rs",
+   "trait": "ReleaseScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph::product_operation::program_adoption)",
+   "methods": [
+    "release_branch_adoption_custody"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/program_adoption/custody/recovery/release.rs",
+   "trait": "ReleaseOps",
+   "visibility": "pub",
+   "methods": [
+    "release_branch_adoption_recovery"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/program_adoption/preparation/migration.rs",
+   "trait": "MigrationOps",
+   "visibility": "pub",
+   "methods": [
+    "admit_program_migration",
+    "seal_program_migration"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/program_adoption/preparation/migration.rs",
+   "trait": "MigrationOwnOps",
+   "visibility": "private",
+   "methods": [
+    "require_target_binding"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/program_adoption/scope/branch_set.rs",
+   "trait": "BranchSetOps",
+   "visibility": "pub",
+   "methods": [
+    "prepare_branch_set_adoption"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/program_adoption/scope/branch_set.rs",
+   "trait": "BranchSetParentOps",
+   "visibility": "pub(super)",
+   "methods": [
+    "prepare_branch_set_targets"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/program_adoption/scope/branch_set/admission.rs",
+   "trait": "AdmissionOps",
+   "visibility": "pub",
+   "methods": [
+    "authorize_branch_set_adoption"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/program_adoption/scope/branch_set/recovery.rs",
+   "trait": "BranchSetRecoveryOps",
+   "visibility": "pub",
+   "methods": [
+    "recover_branch_set_adoption",
+    "release_branch_set_adoption_recovery"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/program_adoption/scope/branch_set/resume.rs",
+   "trait": "ResumeOps",
+   "visibility": "pub",
+   "methods": [
+    "resume_branch_set_adoption"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/query/history_outputs.rs",
+   "trait": "HistoryOutputsOps",
+   "visibility": "pub",
+   "methods": [
+    "execute_history_root_output_query"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/security_basis.rs",
+   "trait": "SecurityBasisOwnOps",
+   "visibility": "private",
+   "methods": [
+    "retain_security_basis",
+    "admit_product_security_basis_with_query_basis"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/security_basis.rs",
+   "trait": "SecurityBasisScopedOps",
+   "visibility": "pub(in crate::domain_computation)",
+   "methods": [
+    "admit_product_security_basis",
+    "admit_capability_read_security_basis"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/security_basis.rs",
+   "trait": "ProductOperationSecurityBasisScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph)",
+   "methods": [
+    "admit_query_product_security_basis",
+    "admit_query_prepared_read_security_basis"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/security_basis/matching_head.rs",
+   "trait": "MatchingHeadScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph)",
+   "methods": [
+    "admit_matching_head_query_prepared_read_security_basis_with_native_access",
+    "admit_matching_head_query_permission_basis",
+    "admit_matching_head_query_permission_basis_with_native_access"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/shared_query_basis.rs",
+   "trait": "SharedQueryBasisScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph)",
+   "methods": [
+    "retain_selected_query_basis_admitted",
+    "retain_issued_query_basis_admitted"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/shared_query_basis/court_doors_for_test.rs",
+   "trait": "SharedQueryBasisDoorsOps",
+   "visibility": "pub",
+   "methods": [
+    "retain_selected_query_basis_admitted_for_test"
+   ]
+  }
+ ],
+ "facades": 20,
+ "host": {
+  "core_fields": [
+   "basis_leases",
+   "installed_operations",
+   "output_demands",
+   "primary_provider",
+   "product_runtime"
+  ],
+  "top_fields": [
+   "installed_producers",
+   "installed_schema"
+  ],
+  "core_methods": [
+   "authority_identity",
+   "primary_graph"
+  ],
+  "foreign": [
+   "bind_selected_program_interpretation",
+   "execute_history_output_query_on_selected",
+   "installed_program_support",
+   "release_product_recovery_in_request",
+   "retain_selected_program_interpretation",
+   "select_application_read_observation",
+   "validate_history_output_control",
+   "with_application_advancement"
+  ],
+  "hand": []
+ }
+}

@@ -1,3 +1,5 @@
+use crate::domain_computation::primary_graph::product_operation::program_adoption::custody::recovery::ReleaseScopedOps;
+use crate::domain_computation::primary_graph::product_operation::ContextOps;
 use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 use crate::domain_computation::execution_runtime::product_world::OwnerCleanupRetirements;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
@@ -239,8 +241,10 @@ impl WorthQueryPreparedBranchSetAdoption {
     }
 }
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub fn recover_branch_set_adoption(
+pub trait BranchSetRecoveryOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>
+{
+    fn recover_branch_set_adoption(
         &self,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         recovery: WorthQueryBranchSetAdoptionRecovery,
@@ -250,7 +254,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         WorthQueryBranchSetAdoptionRecoveryOutcome,
         WorthQueryBranchSetAdoptionRecoveryFailure,
     > {
-        let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
+        let phase_request = match phase.execution_request_for(self.product_runtime()) {
             Ok(request) => request,
             Err(_) => {
                 return Err(
@@ -319,7 +323,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         }
     }
 
-    pub fn release_branch_set_adoption_recovery(
+    fn release_branch_set_adoption_recovery(
         &self,
         recovery: WorthQueryBranchSetAdoptionRecovery,
         minimum_age_ticks: u64,
@@ -362,6 +366,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             ),
         }
     }
+}
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<
+                Schema,
+            > + ?Sized,
+    > BranchSetRecoveryOps<Schema> for HostRuntime
+{
 }
 
 fn cancel_unstarted(

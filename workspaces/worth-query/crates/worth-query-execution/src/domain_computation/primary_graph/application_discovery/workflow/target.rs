@@ -82,11 +82,10 @@ impl WorthQueryWorkflowReadTarget {
     {
         // Fresh security precedes even locator affinity and existence-dependent reads.
         let access = admit(current, phase, binding, principal, input, request)?;
-        if !self
-            .basis
-            .0
-            .belongs_to_selected_occurrence(current.application(), data.product().observation())
-            || !std::ptr::eq(current.application(), data.application())
+        if !self.basis.0.belongs_to_selected_occurrence(
+            current.application().application_runtime(),
+            data.product().observation(),
+        ) || !std::ptr::eq(current.application(), data.application())
             || current.product().branch_identity() != data.product().branch_identity()
             || self.basis.selected_commit() != data.product().selected_commit()
             || self.basis.branch_identity() != data.product().branch_identity()
@@ -95,11 +94,10 @@ impl WorthQueryWorkflowReadTarget {
             return Err(Denial::PolicyMismatch);
         }
         let execution = phase
-            .execution_request_for(&current.application().runtime.product_runtime)
+            .execution_request_for(current.application().product_runtime())
             .map_err(Denial::Phase)?;
         let graph = current
             .application()
-            .runtime
             .primary_graph()
             .ok_or(Denial::BasisUnavailable)?;
         graph

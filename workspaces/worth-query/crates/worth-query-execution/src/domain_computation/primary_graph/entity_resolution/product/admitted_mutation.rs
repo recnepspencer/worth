@@ -45,7 +45,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 field.field(),
             )
         })?;
-        let graph = self.application().runtime.primary_graph().ok_or_else(|| {
+        let graph = self.application().primary_graph().ok_or_else(|| {
             entity_denial(
                 WorthQueryEntityResolutionDenialKind::Refused(
                     ResolutionRefusal::PrimaryGraphNotInstalled,

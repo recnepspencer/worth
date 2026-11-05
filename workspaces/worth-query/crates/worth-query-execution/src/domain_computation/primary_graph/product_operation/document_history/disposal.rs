@@ -44,7 +44,7 @@ pub enum WorthQueryDocumentHistoryClosingDenial<'a> {
 /// A closing document cannot become a live document again.
 #[must_use = "retain and retry every refused document cleanup owner"]
 pub struct WorthQueryDocumentHistoryClosing<'runtime, S> {
-    application: &'runtime WorthQueryPrimaryGraphApplicationRuntime<S>,
+    application: &'runtime dyn crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<S>,
     current: Option<WorthQueryOwnedProductHead<'runtime, S>>,
     past: IntoValues<u64, PastHead<'runtime, S>>,
     pending: Option<HistoryHeadCustody<'runtime, S>>,
@@ -99,8 +99,7 @@ impl<'runtime, S: ApplicationSchema> WorthQueryDocumentHistoryClosing<'runtime, 
         mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
     ) -> Result<WorthQueryDocumentHistoryCloseReceipt, Self> {
-        if let Err(cause) =
-            phase.checked_execution_request_for(&self.application.runtime.product_runtime)
+        if let Err(cause) = phase.checked_execution_request_for(self.application.product_runtime())
         {
             self.opening_denial = Some(cause);
             return Err(self);

@@ -294,3 +294,4 @@ mod tests {
         }
     }
 }
+pub use migration::MigrationOps;

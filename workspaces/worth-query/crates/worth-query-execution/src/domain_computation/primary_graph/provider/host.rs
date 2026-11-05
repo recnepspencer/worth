@@ -11,9 +11,5 @@ pub trait ProviderHost<Schema>:
     ) -> &std::sync::Arc<
         crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider,
     >;
-    fn installed_operations(
-        &self,
-    ) -> &std::sync::Arc<worth_query_installation::facade::InstalledOperationCatalog>;
-    fn bridge(&self) -> &crate::domain_computation::primary_graph::managed_bridge::WorthQueryInstalledApplicationBridge;
     fn recovered_program_source_delivery(&self) -> &crate::domain_computation::primary_graph::provider::recovered_program_source_delivery::RecoveredProgramSourceDeliveryRegistration;
 }

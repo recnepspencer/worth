@@ -16,21 +16,19 @@ use worth_query_installation::facade::ApplicationSchema;
 use crate::basis::WorthQueryProductBranchAdmissionDenial as Denial;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    /// Admit a product observation, making room for it from observations
-    /// nothing holds. One request's work funds every reclaim of this
-    /// admission.
-    pub(in crate::domain_computation::primary_graph) fn admit_with_observation_room<Admitted>(
+pub(in crate::domain_computation::primary_graph) trait ObservationRoomScopedOps<
+    Schema: ApplicationSchema,
+>:
+    crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>
+{
+    fn admit_with_observation_room<Admitted>(
         &self,
         mut admit: impl FnMut() -> Result<Admitted, Denial>,
     ) -> Result<Admitted, Denial> {
         loop {
             match admit() {
                 Err(Denial::Refused(AdmissionRefusal::ObservationCapacityExhausted)) => {
-                    if !matches!(
-                        self.runtime.output_demands.reclaim_unheld_observation(),
-                        Ok(true)
-                    ) {
+                    if !matches!(self.output_demands().reclaim_unheld_observation(), Ok(true)) {
                         return Err(Denial::Refused(
                             AdmissionRefusal::ObservationCapacityExhausted,
                         ));
@@ -40,4 +38,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             }
         }
     }
+}
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<
+                Schema,
+            > + ?Sized,
+    > ObservationRoomScopedOps<Schema> for HostRuntime
+{
 }

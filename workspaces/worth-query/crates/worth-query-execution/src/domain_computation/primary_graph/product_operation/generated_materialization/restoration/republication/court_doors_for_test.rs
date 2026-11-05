@@ -1,9 +1,11 @@
 //! Sealed test doors over this module's private members.
 use super::*;
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+pub trait RepublicationDoorsOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>
+{
     #[doc(hidden)]
-    pub fn record_restored_generated_output_for_test(
+    fn record_restored_generated_output_for_test(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         observation: &ProductBranchObservation,
@@ -18,4 +20,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             producer,
         )
     }
+}
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<
+                Schema,
+            > + ?Sized,
+    > RepublicationDoorsOps<Schema> for HostRuntime
+{
 }

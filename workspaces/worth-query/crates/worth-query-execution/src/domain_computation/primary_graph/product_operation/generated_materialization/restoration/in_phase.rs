@@ -1,7 +1,10 @@
 //! Admit and execute one restoration inside its original application phase.
+use crate::domain_computation::primary_graph::product_operation::generated_materialization::restoration::publication::PublicationParentOps;
 use super::*;
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub(super) fn restore_generated_output_in_phase<Producer>(
+pub(super) trait InPhaseParentOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>
+{
+    fn restore_generated_output_in_phase<Producer>(
         &self,
         completed: WorthQueryCompletedGeneratedOutputReconstruction<Schema, Producer>,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
@@ -10,7 +13,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     where
         Producer: WorthQueryApplicationProducerBinding<Schema>,
     {
-        let execution = match phase.execution_request_for(&self.runtime.product_runtime) {
+        let execution = match phase.execution_request_for(self.product_runtime()) {
             Ok(execution) => execution,
             Err(cause) => {
                 return Err(restoration_failure(
@@ -28,8 +31,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         } = completed;
         if !std::sync::Arc::ptr_eq(
             &suspended.publication.root_identity(),
-            &self.runtime.product_runtime.root_identity(),
-        ) || !suspended.matches_runtime(self)
+            &self.product_runtime().root_identity(),
+        ) || !suspended.matches_runtime(self.product_operation_host())
         {
             return Err(restoration_failure(
                 suspended,
@@ -43,22 +46,21 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             ));
         }
         if !suspended.matches_provider_version::<Schema, Producer>()
-            || self.installed_producers.provider::<Producer>().is_none()
+            || self.installed_producers().provider::<Producer>().is_none()
         {
             return Err(restoration_failure(
                 suspended,
                 WorthQueryGeneratedOutputRestorationFailureCause::StaleProducerVersion,
             ));
         }
-        if !suspended.matches_retained_lineage::<Schema, Producer>(self) {
+        if !suspended.matches_retained_lineage::<Schema, Producer>(self.product_operation_host()) {
             return Err(restoration_failure(
                 suspended,
                 WorthQueryGeneratedOutputRestorationFailureCause::StaleOutputLineage,
             ));
         }
         let gate = match self
-            .runtime
-            .product_runtime
+            .product_runtime()
             .activations
             .gate(suspended.publication.observation().branch_identity())
         {
@@ -86,22 +88,18 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             correspondence,
             producer,
         } = suspended;
-        let prepared = self
-            .runtime
-            .primary_provider
-            .graph
-            .with_runtime(&execution, |runtime| {
-                runtime
-                    .owner_component_services()
-                    .materialization_port()
-                    .prepare_generated_rematerialization(
-                        &execution,
-                        publication.observation().basis().relational_basis(),
-                        custody,
-                        entities,
-                        relations,
-                    )
-            });
+        let prepared = self.provider_graph().with_runtime(&execution, |runtime| {
+            runtime
+                .owner_component_services()
+                .materialization_port()
+                .prepare_generated_rematerialization(
+                    &execution,
+                    publication.observation().basis().relational_basis(),
+                    custody,
+                    entities,
+                    relations,
+                )
+        });
         let prepared = match prepared {
             Ok(prepared) => prepared,
             Err(failure) => {
@@ -152,4 +150,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             request,
         )
     }
+}
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<
+                Schema,
+            > + ?Sized,
+    > InPhaseParentOps<Schema> for HostRuntime
+{
 }

@@ -107,16 +107,21 @@ impl<S: ApplicationSchema> NavigationProgress<'_, S> {
                 .compare(exact.observation())
                 .is_err()
             || !endpoint.same_application_occurrence(source)
-            || !endpoint.belongs_to_selected_occurrence(self.application, exact.observation())
+            || !endpoint.belongs_to_selected_occurrence(
+                self.application.application_runtime(),
+                exact.observation(),
+            )
         {
             return Err(Denial::IntentDrift);
         }
         let selected = self
             .application
+            .application_runtime()
             .select_application_read_observation(phase, endpoint)
             .map_err(Denial::ProductAdmission)?;
         let owner = self
             .application
+            .application_runtime()
             .selected_program_owner(&selected)
             .map_err(|_| {
                 Denial::RequiresSemanticCorrection(
@@ -133,7 +138,7 @@ impl<S: ApplicationSchema> NavigationProgress<'_, S> {
         let endpoint = endpoint.retained_product_lease();
         drop(selected);
         phase
-            .check_live_for(&self.application.runtime.product_runtime)
+            .check_live_for(self.application.product_runtime())
             .map_err(Denial::Stopped)?;
         let NavigationPhase::AwaitingOutputs {
             candidate,

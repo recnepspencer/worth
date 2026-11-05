@@ -37,39 +37,31 @@ pub use owned_head::{WorthQueryOwnedProductHead, WorthQueryOwnedProductHeadClose
 /// application's commit lane and output lineage.
 pub struct WorthQueryApplicationProductBranches<'runtime, Schema> {
     branches: WorthQueryProductBranches<'runtime>,
-    pub(super) application: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    pub(super) application: &'runtime dyn crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>,
 }
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub fn current_world(&self) -> WorthQueryProductBranch {
-        self.runtime.product_runtime.root_product_branch()
-    }
-
-    pub fn branches(&self) -> WorthQueryApplicationProductBranches<'_, Schema> {
-        WorthQueryApplicationProductBranches {
-            branches: self.runtime.product_runtime.product_branches(),
-            application: self,
-        }
-    }
-}
-
-impl<Schema: ApplicationSchema> crate::basis::WorthQuerySourceProgramResolver
-    for WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub trait BranchesOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>
 {
-    fn source_program(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        source: &crate::basis::WorthQueryProductBranchLease,
-    ) -> Result<
-        Option<worth_query_declaration::facade::application_program::ApplicationProgramRevision>,
-        crate::basis::WorthQueryProductBranchAdmissionDenial,
-    > {
-        match crate::domain_computation::primary_graph::product_activation::inspect_selected_program(execution, self, source.relational_basis()) {
-            Ok(selected) => Ok(Some(*selected.revision())),
-            Err(crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::ReadExecution(stop)) => Err(crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(stop)),
-            Err(crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::ProgramSupportUnavailable | crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnavailable | crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnreadable | crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnrostered) => Ok(None),
+    fn current_world(&self) -> WorthQueryProductBranch {
+        self.product_runtime().root_product_branch()
+    }
+
+    fn branches(&self) -> WorthQueryApplicationProductBranches<'_, Schema> {
+        WorthQueryApplicationProductBranches {
+            branches: self.product_runtime().product_branches(),
+            application: self.product_operation_host(),
         }
     }
+}
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<
+                Schema,
+            > + ?Sized,
+    > BranchesOps<Schema> for HostRuntime
+{
 }
 
 impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'runtime, Schema> {
@@ -84,8 +76,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
         let coverage = WorthQueryProgramAdoptionCoverage::issue(branches, maximum_targets)?;
         let unadmitted = self
             .application
-            .runtime
-            .product_runtime
+            .product_runtime()
             .activations
             .first_unadmitted_live_occurrence(
                 coverage.branches().iter().map(|branch| branch.occurrence()),
@@ -120,15 +111,8 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
 
     pub fn fork(self, source: WorthQueryProductBranch) -> WorthQueryProductBranchFork<'runtime> {
         self.branches.fork(source).with_application_lifecycle(
-            std::sync::Arc::clone(
-                &self
-                    .application
-                    .runtime
-                    .primary_provider
-                    .graph
-                    .output_lineage,
-            ),
-            &self.application.runtime.primary_provider,
+            std::sync::Arc::clone(&self.application.provider_graph().output_lineage),
+            &self.application.primary_provider(),
             self.application,
         )
     }
@@ -155,26 +139,22 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
     pub fn pending_cleanup(&self) -> Vec<WorthQueryApplicationProductBranchCleanup> {
         for occurrence in self
             .application
-            .runtime
-            .product_runtime
+            .product_runtime()
             .pending_application_retired_product_occurrences()
         {
             self.application
-                .runtime
-                .output_demands
+                .output_demands()
                 .release_product_occurrence(occurrence.incarnation());
             self.application
-                .runtime
-                .primary_provider
+                .primary_provider()
                 .release_product_occurrence_retention(
                     occurrence.branch(),
                     occurrence.incarnation(),
                 );
         }
-        let conditional = self.application.runtime.bridge.conditional_operations();
+        let conditional = self.application.bridge().conditional_operations();
         self.application
-            .runtime
-            .product_runtime
+            .product_runtime()
             .pending_owner_cleanup()
             .into_iter()
             .map(|cleanup| {

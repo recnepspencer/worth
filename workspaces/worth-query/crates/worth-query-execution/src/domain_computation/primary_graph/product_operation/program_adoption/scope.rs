@@ -5,6 +5,10 @@ mod coverage;
 mod progress;
 mod single_branch;
 
+pub use branch_set::AdmissionOps;
+pub use branch_set::BranchSetOps;
+pub use branch_set::BranchSetRecoveryOps;
+pub use branch_set::ResumeOps;
 pub use branch_set::{
     WorthQueryBranchSetAdoptionAdvanceDenial, WorthQueryBranchSetAdoptionCancellation,
     WorthQueryBranchSetAdoptionCloseDenial, WorthQueryBranchSetAdoptionPreparationDenial,

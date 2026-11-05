@@ -2,6 +2,7 @@ use crate::domain_computation::execution_runtime::product_world::publication_den
     WorthQueryProductPublicationDenial as PublicationDenial,
     WorthQueryProductPublicationOutcome as PublicationOutcome,
 };
+use crate::domain_computation::primary_graph::product_operation::ContextOps;
 use crate::domain_computation::request_execution::advancement_denial;
 use worth_runtime_world::facade::NoEffectCompositePublication;
 
@@ -33,12 +34,12 @@ pub enum WorthQueryBranchAdoptionPublicationOutcome {
 impl WorthQueryPreparedBranchAdoption {
     pub fn publish<Schema: worth_query_installation::facade::ApplicationSchema>(
         self,
-        application: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        application: &dyn crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>,
         principal: &worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal<Schema>,
         scope: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     ) -> WorthQueryBranchAdoptionPublicationOutcome {
         let mut retained = Some(self);
-        let result = application.with_application_advancement(scope, |phase| {
+        let result = application.application_runtime().with_application_advancement(scope, |phase| {
             let prepared = retained.take().expect("one fresh publication attempt");
             let selected = match application.on_branch(prepared.branch).select(&phase) {
                 Ok(selected) => selected,

@@ -22,4 +22,8 @@ pub trait WorthQueryRuntimeIdentityHost<Schema> {
     fn application_runtime(
         &self,
     ) -> &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>;
+    fn bridge(&self) -> &crate::domain_computation::primary_graph::managed_bridge::WorthQueryInstalledApplicationBridge;
+    fn installed_operations(
+        &self,
+    ) -> &std::sync::Arc<worth_query_installation::facade::InstalledOperationCatalog>;
 }

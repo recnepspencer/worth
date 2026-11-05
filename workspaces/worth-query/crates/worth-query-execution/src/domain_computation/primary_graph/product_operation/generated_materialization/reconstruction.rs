@@ -108,8 +108,10 @@ pub struct WorthQueryCompletedGeneratedOutputReconstruction<Schema, Producer> {
     pub(super) marker: PhantomData<fn() -> (Schema, Producer)>,
 }
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub fn reconstruct_generated_output<Producer>(
+pub trait ReconstructionOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>
+{
+    fn reconstruct_generated_output<Producer>(
         &self,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         suspended: WorthQuerySuspendedGeneratedOutput,
@@ -120,12 +122,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     where
         Producer: WorthQueryApplicationProducerBinding<Schema>,
     {
-        let request = match phase.request_for_source(
-            self.runtime
-                .primary_provider
-                .graph
-                .relational_runtime_instance_id(),
-        ) {
+        let request = match phase
+            .request_for_source(self.provider_graph().relational_runtime_instance_id())
+        {
             Ok(request) => request,
             Err(_) => {
                 return Err(reconstruction_failure(
@@ -137,8 +136,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let execution = &request;
         if !Arc::ptr_eq(
             &suspended.publication.root_identity(),
-            &self.runtime.product_runtime.root_identity(),
-        ) || !suspended.matches_runtime(self)
+            &self.product_runtime().root_identity(),
+        ) || !suspended.matches_runtime(self.product_operation_host())
         {
             return Err(reconstruction_failure(
                 suspended,
@@ -152,26 +151,26 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             ));
         }
         if !suspended.matches_provider_version::<Schema, Producer>()
-            || self.installed_producers.provider::<Producer>().is_none()
+            || self.installed_producers().provider::<Producer>().is_none()
         {
             return Err(reconstruction_failure(
                 suspended,
                 WorthQueryGeneratedOutputReconstructionDenial::StaleProducerVersion,
             ));
         }
-        if !suspended.matches_retained_lineage::<Schema, Producer>(self) {
+        if !suspended.matches_retained_lineage::<Schema, Producer>(self.product_operation_host()) {
             return Err(reconstruction_failure(
                 suspended,
                 WorthQueryGeneratedOutputReconstructionDenial::StaleOutputLineage,
             ));
         }
-        let retained_entities = match self.runtime.primary_provider.graph.with_runtime(execution, |runtime| {
+        let retained_entities = match self.provider_graph().with_runtime(execution, |runtime| {
             let port = runtime.owner_component_services().materialization_port();
             suspended.correspondence().checkpoint_roles().into_iter()
                 .filter(|role| role.posture ==
                     crate::domain_computation::primary_graph::WorthQueryApplicationOutputPosture::Preserve)
                 .map(|role| {
-                    let expected = self.runtime.primary_provider.graph.layout.entity_kind(&role.entity_name)
+                    let expected = self.provider_graph().layout.entity_kind(&role.entity_name)
                         .ok_or(WorthQueryGeneratedOutputReconstructionDenial::RetainedEntityKindMismatch)?;
                     let actual = port.retained_entity_kind(
                         execution,
@@ -191,11 +190,20 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             Err(denial) => return Err(reconstruction_failure(suspended, denial)),
         };
         Ok(WorthQueryGeneratedOutputReconstruction::new(
-            &self.runtime.primary_provider.graph.layout,
+            &self.provider_graph().layout,
             suspended,
             retained_entities,
         ))
     }
+}
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<
+                Schema,
+            > + ?Sized,
+    > ReconstructionOps<Schema> for HostRuntime
+{
 }
 
 impl<'runtime, Schema, Producer> WorthQueryGeneratedOutputReconstruction<'runtime, Schema, Producer>

@@ -1,6 +1,8 @@
 use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 use crate::basis::{WorthQueryProductBranchAdmissionDenial, WorthQueryProductBranchLease};
 use crate::domain_computation::primary_graph::product_activation::InspectionScopedOps;
+use crate::domain_computation::primary_graph::product_operation::ApplicationBasisScopedOps;
+use crate::domain_computation::primary_graph::product_operation::ObservationRoomScopedOps;
 use crate::domain_computation::primary_graph::selected_read_indexes::PreparedSelectedReadIndexes;
 use crate::domain_computation::primary_graph::{
     application_query::{
@@ -88,7 +90,9 @@ impl WorthQueryProductSecurityBasis<'_> {
     }
 }
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+trait SecurityBasisOwnOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>
+{
     fn retain_security_basis<'basis>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -111,7 +115,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         }
         if matches!(index_currency, SecurityIndexCurrency::GraphRead) {
             let graph = self
-                .runtime
                 .primary_graph()
                 .ok_or(WorthQueryProductBranchAdmissionDenial::Refused(
                     AdmissionRefusal::ObservationRejected,
@@ -157,75 +160,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Ok((SecurityApplicationBasis::Owned(application_basis), None))
     }
 
-    pub(in crate::domain_computation) fn admit_product_security_basis(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        product: &(impl WorthQueryProductObservationSource + ?Sized),
-    ) -> Result<WorthQueryProductSecurityBasis<'static>, WorthQueryProductBranchAdmissionDenial>
-    {
-        self.admit_product_security_basis_with_query_basis(
-            execution,
-            product,
-            None,
-            SecurityIndexCurrency::GraphRead,
-        )
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn admit_query_product_security_basis<
-        'basis,
-    >(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        product: &(impl WorthQueryProductObservationSource + ?Sized),
-        query_basis: &'basis WorthQueryApplicationQueryBasisCustody,
-    ) -> Result<WorthQueryProductSecurityBasis<'basis>, WorthQueryProductBranchAdmissionDenial>
-    {
-        self.admit_product_security_basis_with_query_basis(
-            execution,
-            product,
-            Some(query_basis),
-            SecurityIndexCurrency::GraphRead,
-        )
-    }
-
-    /// Reobserve Product security with the ordinary graph-read program and
-    /// snapshot path after the exact selected native indexes were prepared.
-    /// A newer native basis refuses this proof before using its old currency.
-    pub(in crate::domain_computation::primary_graph) fn admit_query_prepared_read_security_basis<
-        'basis,
-    >(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        product: &(impl WorthQueryProductObservationSource + ?Sized),
-        query_basis: &'basis WorthQueryApplicationQueryBasisCustody,
-        prepared: &PreparedSelectedReadIndexes,
-    ) -> Result<WorthQueryProductSecurityBasis<'basis>, WorthQueryProductBranchAdmissionDenial>
-    {
-        self.admit_product_security_basis_with_query_basis(
-            execution,
-            product,
-            Some(query_basis),
-            SecurityIndexCurrency::PreparedSelectedGraphRead(prepared),
-        )
-    }
-
-    /// Fresh security selection consumes exact currency from the actual admitted access.
-    /// If the branch moved since that preparation, matches_basis refuses before any read.
-    pub(in crate::domain_computation) fn admit_capability_read_security_basis(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        product: &(impl WorthQueryProductObservationSource + ?Sized),
-        prepared: &PreparedSelectedReadIndexes,
-    ) -> Result<WorthQueryProductSecurityBasis<'static>, WorthQueryProductBranchAdmissionDenial>
-    {
-        self.admit_product_security_basis_with_query_basis(
-            execution,
-            product,
-            None,
-            SecurityIndexCurrency::PreparedSelectedGraphRead(prepared),
-        )
-    }
-
     fn admit_product_security_basis_with_query_basis<'basis>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -237,7 +171,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let selected = product.product_observation();
         let Some(guard) = product.current_security_guard() else {
             return self.admit_with_observation_room(|| {
-                self.runtime.product_runtime.with_product_observation(
+                self.product_runtime().with_product_observation(
                     selected.branch_identity(),
                     |observation| {
                         if observation.lifecycle_incarnation() != selected.lifecycle_incarnation() {
@@ -261,9 +195,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             });
         };
         self.admit_with_observation_room(|| {
-            self.runtime.product_runtime.with_product_observation(
-                guard.branch_identity(),
-                |current| {
+            self.product_runtime()
+                .with_product_observation(guard.branch_identity(), |current| {
                     if current.lifecycle_incarnation() != guard.lifecycle_incarnation()
                         || current.selected_commit() != guard.selected_commit()
                         || current
@@ -291,8 +224,105 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         application_basis,
                         _selected_program: selected_program,
                     })
-                },
-            )
+                })
         })
     }
 }
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<
+                Schema,
+            > + ?Sized,
+    > SecurityBasisOwnOps<Schema> for HostRuntime
+{
+}
+
+pub(in crate::domain_computation) trait SecurityBasisScopedOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>
+{
+    fn admit_product_security_basis(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        product: &(impl WorthQueryProductObservationSource + ?Sized),
+    ) -> Result<WorthQueryProductSecurityBasis<'static>, WorthQueryProductBranchAdmissionDenial>
+    {
+        self.admit_product_security_basis_with_query_basis(
+            execution,
+            product,
+            None,
+            SecurityIndexCurrency::GraphRead,
+        )
+    }
+
+    fn admit_capability_read_security_basis(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        product: &(impl WorthQueryProductObservationSource + ?Sized),
+        prepared: &PreparedSelectedReadIndexes,
+    ) -> Result<WorthQueryProductSecurityBasis<'static>, WorthQueryProductBranchAdmissionDenial>
+    {
+        self.admit_product_security_basis_with_query_basis(
+            execution,
+            product,
+            None,
+            SecurityIndexCurrency::PreparedSelectedGraphRead(prepared),
+        )
+    }
+}
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<
+                Schema,
+            > + ?Sized,
+    > SecurityBasisScopedOps<Schema> for HostRuntime
+{
+}
+
+pub(in crate::domain_computation::primary_graph) trait ProductOperationSecurityBasisScopedOps<
+    Schema: ApplicationSchema,
+>:
+    crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>
+{
+    fn admit_query_product_security_basis<'basis>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        product: &(impl WorthQueryProductObservationSource + ?Sized),
+        query_basis: &'basis WorthQueryApplicationQueryBasisCustody,
+    ) -> Result<WorthQueryProductSecurityBasis<'basis>, WorthQueryProductBranchAdmissionDenial>
+    {
+        self.admit_product_security_basis_with_query_basis(
+            execution,
+            product,
+            Some(query_basis),
+            SecurityIndexCurrency::GraphRead,
+        )
+    }
+
+    fn admit_query_prepared_read_security_basis<'basis>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        product: &(impl WorthQueryProductObservationSource + ?Sized),
+        query_basis: &'basis WorthQueryApplicationQueryBasisCustody,
+        prepared: &PreparedSelectedReadIndexes,
+    ) -> Result<WorthQueryProductSecurityBasis<'basis>, WorthQueryProductBranchAdmissionDenial>
+    {
+        self.admit_product_security_basis_with_query_basis(
+            execution,
+            product,
+            Some(query_basis),
+            SecurityIndexCurrency::PreparedSelectedGraphRead(prepared),
+        )
+    }
+}
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<
+                Schema,
+            > + ?Sized,
+    > ProductOperationSecurityBasisScopedOps<Schema> for HostRuntime
+{
+}
+pub(in crate::domain_computation::primary_graph) use matching_head::MatchingHeadScopedOps;

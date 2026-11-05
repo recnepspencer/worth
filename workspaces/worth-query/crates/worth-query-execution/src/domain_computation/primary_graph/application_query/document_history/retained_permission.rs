@@ -1,5 +1,6 @@
 //! A cache-entry permission check reads only current C, never output truth E.
 use super::*;
+use crate::domain_computation::primary_graph::product_operation::SharedQueryBasisScopedOps;
 use crate::domain_computation::primary_graph::{
     application_query::{FreshQueryPermissionStop, WorthQueryApplicationQueryControls},
     product_operation::{

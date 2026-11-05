@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::product_operation::generated_materialization::restoration::republication::RepublicationParentOps;
 use super::*;
 use crate::domain_computation::execution_runtime::product_world::publication_denial::{
     WorthQueryProductPublicationDenial as PublicationDenial,
@@ -5,11 +6,12 @@ use crate::domain_computation::execution_runtime::product_world::publication_den
 };
 use crate::domain_computation::request_execution::advancement_denial;
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub(super) trait PublicationParentOps<Schema>:
+    crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub(super) fn publish_restoration(
+    fn publish_restoration(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
@@ -22,8 +24,7 @@ where
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     ) -> Result<WorthQueryRestoredGeneratedOutput, WorthQueryGeneratedOutputRestorationFailure>
     {
-        let publication_execution = match phase.execution_request_for(&self.runtime.product_runtime)
-        {
+        let publication_execution = match phase.execution_request_for(self.product_runtime()) {
             Ok(execution) => execution,
             Err(cause) => {
                 return Err(restoration_failure(
@@ -163,4 +164,15 @@ Err(PublicationDenial::Stopped(stop)) => Err(restoration_failure(
             }
         }
     }
+}
+
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<
+                Schema,
+            > + ?Sized,
+    > PublicationParentOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
 }

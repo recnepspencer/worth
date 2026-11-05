@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::product_operation::generated_materialization::restoration::in_phase::InPhaseParentOps;
 mod in_phase;
 mod publication;
 use worth_query_installation::facade::ApplicationSchema;
@@ -109,11 +110,12 @@ impl WorthQueryUnpublishedGeneratedOutputRestoration {
     }
 }
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub trait RestorationOps<Schema>:
+    crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub fn restore_generated_output<Producer>(
+    fn restore_generated_output<Producer>(
         &self,
         completed: WorthQueryCompletedGeneratedOutputReconstruction<Schema, Producer>,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
@@ -123,13 +125,15 @@ where
     {
         let mut retained = Some(completed);
         let mut completed_result = None;
-        let result = self.with_application_advancement(request, |phase| {
-            completed_result = Some(self.restore_generated_output_in_phase(
-                retained.take().expect("one admitted restoration"),
-                &phase,
-                request,
-            ));
-        });
+        let result = self
+            .application_runtime()
+            .with_application_advancement(request, |phase| {
+                completed_result = Some(self.restore_generated_output_in_phase(
+                    retained.take().expect("one admitted restoration"),
+                    &phase,
+                    request,
+                ));
+            });
         // The callback owns the actual outcome after it consumes custody. A
         // final outer control refusal cannot discard that outcome or recovery.
         if let Some(result) = completed_result {
@@ -143,17 +147,32 @@ where
             )),
         }
     }
+}
 
-    pub(super) fn materialization_publication_binding(
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<
+                Schema,
+            > + ?Sized,
+    > RestorationOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
+}
+
+pub(super) trait RestorationParentOps<Schema>:
+    crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>
+where
+    Schema: ApplicationSchema,
+{
+    fn materialization_publication_binding(
         &self,
         observation: worth_runtime_world::facade::ProductBranchObservation,
     ) -> WorthQueryProductPublicationBinding {
-        self.runtime
-            .product_runtime
-            .publication_binding(observation)
+        self.product_runtime().publication_binding(observation)
     }
 
-    pub(super) fn unpublished_materialization(
+    fn unpublished_materialization(
         &self,
         effects: worth_runtime_world::facade::ProductUnpublishedOwnerEffects,
         product: &crate::basis::WorthQueryProductBranchLease,
@@ -161,7 +180,7 @@ where
         self.unpublished_materialization_from_binding(effects, &product.publication_binding())
     }
 
-    pub(super) fn unpublished_materialization_from_binding(
+    fn unpublished_materialization_from_binding(
         &self,
         effects: worth_runtime_world::facade::ProductUnpublishedOwnerEffects,
         publication: &WorthQueryProductPublicationBinding,
@@ -169,11 +188,21 @@ where
         crate::domain_computation::WorthQueryProductUnpublishedApplication::new(
             effects,
             publication.recovery(),
-            self.runtime
-                .primary_provider
+            self.primary_provider()
                 .unpublished_idempotency_disposition(),
         )
     }
+}
+
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<
+                Schema,
+            > + ?Sized,
+    > RestorationParentOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
 }
 
 fn suspended_from_completion(
@@ -191,3 +220,5 @@ fn suspended_from_completion(
         producer,
     }
 }
+pub use recovery::AdvancementOps;
+pub use republication::RepublicationDoorsOps;

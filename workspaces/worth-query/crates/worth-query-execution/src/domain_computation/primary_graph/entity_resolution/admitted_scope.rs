@@ -52,7 +52,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         // Context retention copies its Arc and 80-byte schema binding identity.
 
         let application = self.application();
-        let graph = application.runtime.primary_graph().ok_or_else(|| {
+        let graph = application.primary_graph().ok_or_else(|| {
             entity_denial(
                 Kind::Refused(ResolutionRefusal::PrimaryGraphNotInstalled),
                 entity,

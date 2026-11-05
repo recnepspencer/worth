@@ -149,9 +149,9 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             selection::require_current_target(&after.target, &target)?;
         }
         let execution = phase
-            .execution_request_for(&self.application().runtime.product_runtime)
+            .execution_request_for(self.application().product_runtime())
             .map_err(|_| Denial::ForeignPhase)?;
-        let provider = &self.application().runtime.primary_provider;
+        let provider = self.application().primary_provider();
         let history: WorthQueryCorrectionHistoryProgress = provider
             .correction_alternatives_progress_at_basis(
                 &execution,
@@ -224,7 +224,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             &resolution.target,
             &WorthQueryProductBranchReadIdentity::from_observation(self.product().observation()),
         )?;
-        let provider = &self.application().runtime.primary_provider;
+        let provider = self.application().primary_provider();
         let selected = provider
             .performed_correction_source(&selected.fact)
             .ok_or(Denial::SemanticMaterialUnavailable)?;
@@ -239,7 +239,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             || lineage.root() != &resolution.root { return Err(Denial::ForeignAlternative); }
         let operated = fact.recorded_source();
         let execution = phase
-            .execution_request_for(&self.application().runtime.product_runtime)
+            .execution_request_for(self.application().product_runtime())
             .map_err(|_| Denial::ForeignPhase)?;
         let canonical = provider
             .reversal_of_source_at_basis(&execution, self.product().relational_basis(), operated)
@@ -291,11 +291,10 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
     ) -> Result<ProductBranchAncestorSelection, WorthQueryCorrectionDerivationDenial> {
         use WorthQueryCorrectionDerivationDenial as Denial;
         let execution = phase
-            .execution_request_for(&self.application().runtime.product_runtime)
+            .execution_request_for(self.application().product_runtime())
             .map_err(|_| Denial::ForeignPhase)?;
         self.application()
-            .runtime
-            .product_runtime
+            .product_runtime()
             .owner
             .observation_port()
             .select_retained_product_branch_ancestor(

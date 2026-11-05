@@ -143,11 +143,10 @@ where
         return Ok(WorthQueryWorkflowAudit::Withheld);
     };
     let execution = phase
-        .execution_request_for(&current.application().runtime.product_runtime)
+        .execution_request_for(current.application().product_runtime())
         .map_err(WorkflowReadAdmissionDenial::Phase)?;
     let graph = current
         .application()
-        .runtime
         .primary_graph()
         .ok_or(WorkflowReadAdmissionDenial::BasisUnavailable)?;
     graph.integration_handle().with_runtime(&execution,|runtime| {

@@ -53,7 +53,7 @@ impl WorkflowCapturedInputs {
             selected.product().observation(),
         );
         for (node, mut input) in inputs {
-            if input.runtime != selected.application().runtime.authority_identity().as_u64()
+            if input.runtime != selected.application().authority_identity().as_u64()
                 || input.basis != basis
                 || input.contract.resource != admission.scope_entity_id()
             {

@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::product_operation::program_adoption::scope::branch_set::BranchSetParentOps;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
 use worth_query_installation::facade::ApplicationSchema;
@@ -108,8 +109,10 @@ impl WorthQueryPreparedBranchSetAdoption {
     }
 }
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub fn resume_branch_set_adoption(
+pub trait ResumeOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>
+{
+    fn resume_branch_set_adoption(
         &self,
 
         adoption: WorthQueryStoppedBranchSetAdoption,
@@ -119,9 +122,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         request: &WorthQueryRequestScope,
     ) -> Result<WorthQueryPreparedBranchSetAdoption, WorthQueryBranchSetAdoptionResumeFailure> {
         let mut retained = Some(adoption);
-        let result = self.with_application_advancement(request, |phase| {
+        let result = self.application_runtime().with_application_advancement(request, |phase| {
         let phase = &phase;
-            let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
+            let phase_request = match phase.execution_request_for(self.product_runtime()) {
                 Ok(request) => request,
                 Err(cause) => return Err(resume_failure(WorthQueryBranchSetAdoptionResumeDenial::Preparation(WorthQueryBranchSetAdoptionPreparationDenial::ExecutionDenied(cause.into())), retained.take().expect("one admitted resume"))),
             };
@@ -196,6 +199,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             )),
         }
     }
+}
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<
+                Schema,
+            > + ?Sized,
+    > ResumeOps<Schema> for HostRuntime
+{
 }
 
 fn resume_failure(

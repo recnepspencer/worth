@@ -118,7 +118,7 @@ impl<'runtime, S: ApplicationSchema> WorthQueryDocumentHistoryNavigation<'runtim
             .validate_current_authority()
             .map_err(Denial::Authorization)?;
         let execution = phase
-            .checked_execution_request_for(&progress.application.runtime.product_runtime)
+            .checked_execution_request_for(progress.application.product_runtime())
             .map_err(Denial::Stopped)?;
         execution.check_live().map_err(|cause| {
             Denial::Stopped(
@@ -144,7 +144,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
             .as_ref()
             .expect("pending navigation owns its retained source");
         let execution = phase
-            .checked_execution_request_for(&self.application.runtime.product_runtime)
+            .checked_execution_request_for(self.application.product_runtime())
             .map_err(Denial::Stopped)?;
         let restoration = selected
             .journal

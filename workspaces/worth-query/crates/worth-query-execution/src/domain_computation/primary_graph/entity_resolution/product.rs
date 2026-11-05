@@ -46,7 +46,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         Unit: ApplicationFieldUnit,
     {
         let execution = phase
-            .execution_request_for(&self.application().runtime.product_runtime)
+            .execution_request_for(self.application().product_runtime())
             .map_err(|_| {
                 entity_denial(
                     WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::ForeignPhase),
@@ -119,7 +119,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     ) -> Result<WorthQueryApplicationEntityIdentity<Schema, Entity>, WorthQueryEntityResolutionDenial>
     {
         let application = self.application();
-        let graph = application.runtime.primary_graph().ok_or_else(|| {
+        let graph = application.primary_graph().ok_or_else(|| {
             entity_denial(
                 WorthQueryEntityResolutionDenialKind::Refused(
                     ResolutionRefusal::PrimaryGraphNotInstalled,

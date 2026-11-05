@@ -201,7 +201,7 @@ where
                 installed,
                 instance,
                 request_kind,
-                &self.application().runtime.authorization_clock,
+                self.application().authorization_clock(),
             )
             .map_err(WorkflowTransitionPreparationDenial::Attempt)
     }
@@ -253,6 +253,7 @@ where
             );
         let (_, projection, _) = self
             .application()
+            .application_runtime()
             .mutation_projection
             .project_admitted_operation_with_request(
                 execution,
@@ -294,7 +295,7 @@ where
                 required,
                 proposal,
                 decision,
-                &self.application().runtime.authorization_clock,
+                self.application().authorization_clock(),
             )
             .map_err(WorkflowTransitionPreparationDenial::Attempt)
     }

@@ -31,8 +31,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         }
         let security = self
             .application()
-            .runtime
-            .product_runtime
+            .product_runtime()
             .security_observation_for(execution, self.product())
             .map_err(|stop| super::selection_denial(stop, query_name))?;
         let (application, _current_security, _) = self.into_parts();
@@ -107,7 +106,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
     where
         Input: ApplicationCapabilityRequest<Schema, Capability, Scope = Scope>,
     {
-        let request = match phase.execution_request_for(&self.application().runtime.product_runtime) {
+        let request = match phase.execution_request_for(self.application().product_runtime()) {
             Ok(request) => request,
             Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::Authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase)), query.name())),
         };

@@ -7,7 +7,6 @@ pub trait ApplicationResourceHost<Schema>:
 {
     /// This host as the trait object `application_resource` is handed.
     fn application_resource_host(&self) -> &dyn ApplicationResourceHost<Schema>;
-    fn bridge(&self) -> &crate::domain_computation::primary_graph::managed_bridge::WorthQueryInstalledApplicationBridge;
     fn installed_resources(&self) -> &crate::domain_computation::primary_graph::application_resource::installation::InstalledResourceRegistry<Schema>;
     fn on_branch(
         &self,

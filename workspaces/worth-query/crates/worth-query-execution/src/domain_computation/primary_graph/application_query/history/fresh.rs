@@ -48,7 +48,7 @@ where
     Schema: ApplicationSchema,
     History: ApplicationHistoryQueryBinding<Schema>,
 {
-    if !std::ptr::eq(application, truth.application()) {
+    if !std::ptr::addr_eq(application, truth.application()) {
         return Err(Denial::SubjectMismatch);
     }
     let shared_truth = truth

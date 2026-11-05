@@ -10,9 +10,4 @@ impl<Schema: ApplicationSchema> ApplicationEntryHost<Schema>
     fn application_entry_host(&self) -> &dyn ApplicationEntryHost<Schema> {
         self
     }
-    fn installed_operations(
-        &self,
-    ) -> &std::sync::Arc<worth_query_installation::facade::InstalledOperationCatalog> {
-        &self.runtime.installed_operations
-    }
 }

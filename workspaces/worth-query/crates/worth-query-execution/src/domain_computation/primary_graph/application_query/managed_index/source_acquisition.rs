@@ -78,7 +78,7 @@ pub(super) fn acquire<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>
             .map_err(|_| AcquisitionCause::ForeignContext)?;
         let installed = adapter.installed();
         let access_contract = association.access_contract();
-        if !std::ptr::eq(application, selected.application())
+        if !std::ptr::addr_eq(application, selected.application())
             || context.runtime() != application.runtime.authority_identity()
             || !installed.is_installed_in(application.installed_schema())
             || !installed.admits_association(association)

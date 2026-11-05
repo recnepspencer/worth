@@ -184,7 +184,6 @@ impl WorthQueryApplicationSnapshotLease {
         let selected = shared.selected();
         let graph = selected
             .application()
-            .runtime
             .primary_graph()
             .ok_or(CompanionPreflightStop::SelectedSourceMismatch)?;
         let basis = selected.application_basis().retain_shared()?;

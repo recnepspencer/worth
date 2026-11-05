@@ -29,7 +29,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         M::ScopeBinding: ApplicationMutationScopeBinding<S, Scope = ApplicationHistoryModel<S, H>>,
     {
         if !std::ptr::eq(self, document.application())
-            || !std::ptr::eq(self, selected.application())
+            || !std::ptr::addr_eq(self, selected.application())
         {
             return Err(Denial::ForeignRuntime);
         }

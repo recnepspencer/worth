@@ -148,7 +148,7 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
             .as_ref()
             .map_or(self.shared, |history| history.current)
             .selected();
-        if !std::ptr::eq(application, selected.application()) {
+        if !std::ptr::addr_eq(application, selected.application()) {
             return Err(Stop::ForeignClosure.into());
         }
         let installed = application

@@ -55,7 +55,7 @@ use worth_query_declaration::facade::application_operation::{
 /// A locator backed by the target's retained World ancestry and performed evidence.
 /// Preparing a correction still requires a fresh target and current authority.
 pub struct WorthQuerySelectedCorrectionSource<'runtime, Schema> {
-    application: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &'runtime dyn crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>,
     ancestry: ProductBranchAncestorSelection,
     occurrence: WorthQueryPrimaryGraphCommittedApplication,
 }
@@ -168,12 +168,11 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         WorthQueryCorrectionSelectionDenial,
     > {
         let application = self.application();
-        if receipt.runtime_authority() != application.runtime.authority_identity() {
+        if receipt.runtime_authority() != application.authority_identity() {
             return Err(WorthQueryCorrectionSelectionDenial::ForeignRuntime);
         }
         let occurrence = application
-            .runtime
-            .primary_provider
+            .primary_provider()
             .observe_completed_application(receipt.commit_reference())
             .ok_or(WorthQueryCorrectionSelectionDenial::SourceUnavailable)?;
         let performed = occurrence.committed_product_publication();
@@ -233,8 +232,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
     > {
         let occurrence = self
             .application()
-            .runtime
-            .primary_provider
+            .primary_provider()
             .observe_completed_application(locator.relational())
             .ok_or(WorthQueryCorrectionSelectionDenial::SourceUnavailable)?;
         let actual = occurrence
@@ -269,7 +267,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
     > {
         let application = self.application();
         let execution = phase
-            .execution_request_for(&application.runtime.product_runtime)
+            .execution_request_for(application.product_runtime())
             .map_err(|_| WorthQueryCorrectionSelectionDenial::ForeignPhase)?;
         let performed = occurrence.committed_product_publication();
         let original = occurrence.commit_evidence().original_authority();
@@ -280,8 +278,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             return Err(WorthQueryCorrectionSelectionDenial::SourceNotCorrectable);
         }
         let ancestry = application
-            .runtime
-            .product_runtime
+            .product_runtime()
             .owner
             .observation_port()
             .select_retained_product_branch_ancestor(
@@ -370,7 +367,7 @@ impl<Schema> WorthQuerySelectedCorrectionSource<'_, Schema> {
     pub(in crate::domain_computation::primary_graph) fn application(
         &self,
     ) -> &WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-        self.application
+        self.application.application_runtime()
     }
 
     pub(in crate::domain_computation::primary_graph) fn ancestry(

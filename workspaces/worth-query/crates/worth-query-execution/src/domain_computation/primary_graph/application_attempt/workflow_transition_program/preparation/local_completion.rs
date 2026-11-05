@@ -44,7 +44,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
     {
         use WorkflowTransitionPreparationDenial as D;
         let runtime = selected.application();
-        if !std::ptr::eq(workflow.runtime(), runtime) {
+        if !std::ptr::addr_eq(workflow.runtime(), runtime) {
             return Err(D::Attempt(local_mismatch(
                 "foreign local completion runtime",
             )));
@@ -67,7 +67,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
         .map_err(D::Attempt)?;
         let receipt_identity = performed.identity();
         let execution = phase
-            .execution_request_for(&runtime.runtime.product_runtime)
+            .execution_request_for(runtime.product_runtime())
             .map_err(|_| D::Attempt(local_mismatch("foreign local completion phase")))?;
         let binding = idempotency.bind_local_workflow_settlement(
             required.transition_identity_bytes(),
@@ -139,7 +139,7 @@ where
         .local_action
         .as_ref()
         .ok_or_else(|| D::Attempt(local_mismatch("not an issued local action")))?;
-    if required.original_runtime() != selected.application().runtime.authority_identity().as_u64()
+    if required.original_runtime() != selected.application().authority_identity().as_u64()
         || required.original_program_revision() != installed.program_revision()
         || origin.spec != Spec::IDENTITY.as_str()
         || &origin.support != installed.support_identity_bytes()

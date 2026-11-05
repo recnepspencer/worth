@@ -54,7 +54,7 @@ impl InspectionSubject<'_> {
                         .same_branch_occurrence_observation(selected.product().observation())
             }
         };
-        if !std::ptr::eq(runtime, selected.application()) || !valid {
+        if !std::ptr::addr_eq(runtime, selected.application()) || !valid {
             return Err(InspectionAdmissionDenial::ForeignIssuedAccess);
         }
         Ok(contract)

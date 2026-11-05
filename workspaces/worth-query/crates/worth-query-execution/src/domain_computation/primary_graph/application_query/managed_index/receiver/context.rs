@@ -1,5 +1,6 @@
 //! Full Parent admission precedes any Source, provider, or retained-root lookup.
 use super::*;
+use crate::domain_computation::primary_graph::product_operation::ObservationRoomScopedOps;
 use crate::domain_computation::primary_graph::{
     application_query::{
         authorized_read::{refresh_governed_authorization, validate_before_callback},

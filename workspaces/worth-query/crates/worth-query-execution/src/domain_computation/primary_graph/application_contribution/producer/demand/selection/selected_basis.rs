@@ -69,7 +69,7 @@ where
 {
     let selected = shared.selected();
     let selected_observation = selected.product().observation();
-    Ok(std::ptr::eq(runtime, selected.application())
+    Ok(std::ptr::addr_eq(runtime, selected.application())
         && retained.belongs_to_selected_occurrence(runtime, selected_observation))
 }
 
@@ -86,7 +86,7 @@ where
 {
     let selected = shared.selected();
     let selected_observation = selected.product().observation();
-    if std::ptr::eq(runtime, selected.application())
+    if std::ptr::addr_eq(runtime, selected.application())
         && source.matches_observation(selected_observation)
     {
         Ok(())

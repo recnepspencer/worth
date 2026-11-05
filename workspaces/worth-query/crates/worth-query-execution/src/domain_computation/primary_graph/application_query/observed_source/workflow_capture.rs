@@ -30,11 +30,11 @@ impl<S: worth_query_installation::facade::ApplicationSchema>
             .ok_or_else(|| deny(WorthQuerySourceExpectationDenialKind::SourceContractMismatch))?;
         let runtime = self.application();
         let identity = runtime
-            .installed_schema
+            .installed_schema()
             .installed_query_identity_by_name(query)
             .ok_or_else(|| deny(WorthQuerySourceExpectationDenialKind::SourceContractMismatch))?;
         let installed = runtime
-            .installed_schema
+            .installed_schema()
             .installed_mutation_binding::<B>()
             .map_err(|_| deny(WorthQuerySourceExpectationDenialKind::SourceContractMismatch))?;
         let body_context = installed
@@ -64,8 +64,8 @@ impl<S: worth_query_installation::facade::ApplicationSchema>
             ));
         }
         source.validate_affinity(
-            runtime.runtime.authority_identity().as_u64(),
-            &runtime.installed_schema.binding_identity(),
+            runtime.authority_identity().as_u64(),
+            &runtime.installed_schema().binding_identity(),
             self.application_basis().identity().branch_id(),
             scope.entity_id(),
             &crate::basis::WorthQueryProductBranchReadIdentity::from_observation(

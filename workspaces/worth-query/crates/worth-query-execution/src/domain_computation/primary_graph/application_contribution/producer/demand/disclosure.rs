@@ -126,7 +126,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
 where
     Schema: ApplicationSchema + 'static,
 {
-    if !std::ptr::eq(runtime, shared.selected().application())
+    if !std::ptr::addr_eq(runtime, shared.selected().application())
         || shared
             .selected()
             .product()

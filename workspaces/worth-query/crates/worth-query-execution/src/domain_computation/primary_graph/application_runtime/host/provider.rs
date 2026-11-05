@@ -17,14 +17,6 @@ impl<Schema: ApplicationSchema> ProviderHost<Schema>
     > {
         &self.runtime.primary_provider
     }
-    fn installed_operations(
-        &self,
-    ) -> &std::sync::Arc<worth_query_installation::facade::InstalledOperationCatalog> {
-        &self.runtime.installed_operations
-    }
-    fn bridge(&self) -> &crate::domain_computation::primary_graph::managed_bridge::WorthQueryInstalledApplicationBridge{
-        &self.runtime.bridge
-    }
     fn recovered_program_source_delivery(&self) -> &crate::domain_computation::primary_graph::provider::recovered_program_source_delivery::RecoveredProgramSourceDeliveryRegistration{
         &self.runtime.recovered_program_source_delivery
     }

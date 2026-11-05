@@ -1,4 +1,5 @@
 //! Suspending the current generated output of a selected product.
+use crate::domain_computation::primary_graph::product_operation::generated_materialization::restoration::RestorationParentOps;
 use crate::domain_computation::execution_runtime::product_world::publication_denial::{
     WorthQueryProductPublicationDenial as PublicationDenial,
     WorthQueryProductPublicationOutcome as PublicationOutcome,
@@ -52,6 +53,7 @@ where
         let mut outcome = None;
         let admission = self
             .application()
+            .application_runtime()
             .with_application_advancement(request, |phase| {
                 outcome = Some(
                     self.suspend_observed_generated_output::<Producer>(&phase, request, source),

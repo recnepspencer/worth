@@ -3,6 +3,8 @@ use crate::basis::{
     WorthQueryProductBranch, WorthQueryProductBranchAdmissionDenial, WorthQueryProductBranchLease,
 };
 use crate::domain_computation::primary_graph::product_activation::InspectionScopedOps;
+use crate::domain_computation::primary_graph::product_operation::ApplicationBasisScopedOps;
+use crate::domain_computation::primary_graph::product_operation::ObservationRoomScopedOps;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_world::facade::ProductBranchIdentity;
@@ -29,7 +31,7 @@ impl SelectedQueryOrigin {
 /// Shared application entry bound to one retained World occurrence. Selecting
 /// another occurrence requires a new admission; this context never resolves latest.
 pub struct WorthQuerySelectedProductOperation<'runtime, Schema> {
-    application: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &'runtime dyn crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>,
     selection_origin: SelectedQueryOrigin,
     product: WorthQueryProductBranchLease,
     application_basis:
@@ -46,20 +48,34 @@ pub struct WorthQuerySelectedProductOperation<'runtime, Schema> {
 /// Public application entry naming one product occurrence. It performs no
 /// lookup until a concrete operation asks for an admitted selection.
 pub struct WorthQueryProductEntry<'runtime, Schema> {
-    pub(super) application: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    pub(super) application: &'runtime dyn crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>,
     pub(super) branch: WorthQueryProductBranch,
 }
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    /// Installed host owner for lending a phase to public operations.
-    pub fn product_runtime(
-        &self,
-    ) -> &crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime
-    {
-        &self.runtime.product_runtime
+pub trait ContextOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>
+{
+    fn on_branch(&self, branch: WorthQueryProductBranch) -> WorthQueryProductEntry<'_, Schema> {
+        WorthQueryProductEntry {
+            application: self.product_operation_host(),
+            branch,
+        }
     }
+}
 
-    pub(crate) fn select_product_branch(
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<
+                Schema,
+            > + ?Sized,
+    > ContextOps<Schema> for HostRuntime
+{
+}
+
+pub(crate) trait ContextScopedOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>
+{
+    fn select_product_branch(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         identity: &ProductBranchIdentity,
@@ -69,36 +85,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     > {
         self.on_product(
             execution,
-            self.runtime
-                .product_runtime
-                .admit_product_branch(identity)?,
+            self.product_runtime().admit_product_branch(identity)?,
         )
     }
 
-    /// Selects only a Query-issued occurrence token.
-    ///
-    /// ```compile_fail
-    /// use worth_query_execution::facade::{
-    ///     primary_graph::WorthQueryPrimaryGraphApplicationRuntime,
-    ///     runtime::ProductBranchIdentity,
-    /// };
-    /// use worth_query_installation::facade::ApplicationSchema;
-    ///
-    /// fn raw_world_identity_cannot_select<Schema: ApplicationSchema>(
-    ///     app: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    ///     raw: ProductBranchIdentity,
-    /// ) {
-    ///     let _ = app.on_branch(raw);
-    /// }
-    /// ```
-    pub fn on_branch(&self, branch: WorthQueryProductBranch) -> WorthQueryProductEntry<'_, Schema> {
-        WorthQueryProductEntry {
-            application: self,
-            branch,
-        }
-    }
-
-    pub(crate) fn on_product(
+    fn on_product(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         product: WorthQueryProductBranchLease,
@@ -108,8 +99,23 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     > {
         self.on_product_with_basis_admission(execution, product, |_| Ok(()))
     }
+}
 
-    pub(in crate::domain_computation::primary_graph) fn on_mutation_product(
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<
+                Schema,
+            > + ?Sized,
+    > ContextScopedOps<Schema> for HostRuntime
+{
+}
+
+pub(in crate::domain_computation::primary_graph) trait ProductOperationContextScopedOps<
+    Schema: ApplicationSchema,
+>:
+    crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>
+{
+    fn on_mutation_product(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         lease: &super::super::application_attempt::WorthQueryApplicationSnapshotLease,
@@ -122,6 +128,49 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Ok(selected)
     }
 
+    fn on_product_for_owner_recovery(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        product: WorthQueryProductBranchLease,
+    ) -> Result<
+        WorthQuerySelectedProductOperation<'_, Schema>,
+        WorthQueryProductBranchAdmissionDenial,
+    > {
+        if product.observation().owner_identity() != self.product_runtime().owner.owner_identity() {
+            return Err(WorthQueryProductBranchAdmissionDenial::Refused(
+                AdmissionRefusal::ForeignOwner,
+            ));
+        }
+        let application_basis =
+            self.retain_product_application_basis(execution, product.observation())?;
+        let selected_program = super::super::product_activation::inspect_selected_program(
+            execution,
+            self.product_activation_host(),
+            product.relational_basis(),
+        );
+        Ok(WorthQuerySelectedProductOperation {
+            application: self.product_operation_host(),
+            selection_origin: SelectedQueryOrigin::default(),
+            product,
+            application_basis,
+            selected_program,
+            producer: None,
+        })
+    }
+}
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<
+                Schema,
+            > + ?Sized,
+    > ProductOperationContextScopedOps<Schema> for HostRuntime
+{
+}
+
+trait ContextOwnOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>
+{
     fn on_product_with_basis_admission<Stop: From<WorthQueryProductBranchAdmissionDenial>>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -130,9 +179,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             &worth_runtime_world::facade::ProductBranchObservation,
         ) -> Result<(), Stop>,
     ) -> Result<WorthQuerySelectedProductOperation<'_, Schema>, Stop> {
-        if product.observation().owner_identity()
-            != self.runtime.product_runtime.owner.owner_identity()
-        {
+        if product.observation().owner_identity() != self.product_runtime().owner.owner_identity() {
             return Err(WorthQueryProductBranchAdmissionDenial::Refused(
                 AdmissionRefusal::ForeignOwner,
             )
@@ -147,7 +194,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             &mut application_basis,
         )?;
         Ok(WorthQuerySelectedProductOperation {
-            application: self,
+            application: self.product_operation_host(),
             selection_origin: SelectedQueryOrigin::default(),
             product,
             application_basis,
@@ -155,38 +202,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             producer: None,
         })
     }
+}
 
-    pub(in crate::domain_computation::primary_graph) fn on_product_for_owner_recovery(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        product: WorthQueryProductBranchLease,
-    ) -> Result<
-        WorthQuerySelectedProductOperation<'_, Schema>,
-        WorthQueryProductBranchAdmissionDenial,
-    > {
-        if product.observation().owner_identity()
-            != self.runtime.product_runtime.owner.owner_identity()
-        {
-            return Err(WorthQueryProductBranchAdmissionDenial::Refused(
-                AdmissionRefusal::ForeignOwner,
-            ));
-        }
-        let application_basis =
-            self.retain_product_application_basis(execution, product.observation())?;
-        let selected_program = super::super::product_activation::inspect_selected_program(
-            execution,
-            self,
-            product.relational_basis(),
-        );
-        Ok(WorthQuerySelectedProductOperation {
-            application: self,
-            selection_origin: SelectedQueryOrigin::default(),
-            product,
-            application_basis,
-            selected_program,
-            producer: None,
-        })
-    }
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<
+                Schema,
+            > + ?Sized,
+    > ContextOwnOps<Schema> for HostRuntime
+{
 }
 
 impl<'runtime, Schema> WorthQueryProductEntry<'runtime, Schema>
@@ -206,8 +230,7 @@ where
         let application = self.application;
         let product = application.admit_with_observation_room(|| {
             application
-                .runtime
-                .product_runtime
+                .product_runtime()
                 .admit_product_occurrence(self.branch.occurrence())
         })?;
         let mut selected =
@@ -224,7 +247,7 @@ where
         WorthQueryProductBranchAdmissionDenial,
     > {
         let request = phase
-            .execution_request_for(&self.application.runtime.product_runtime)
+            .execution_request_for(self.application.product_runtime())
             .map_err(|_| {
                 WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::ForeignPhase)
             })?;
@@ -243,8 +266,7 @@ where
             request,
             application.admit_with_observation_room(|| {
                 application
-                    .runtime
-                    .product_runtime
+                    .product_runtime()
                     .admit_product_occurrence(self.branch.occurrence())
             })?,
         )?;
@@ -277,7 +299,7 @@ impl<'runtime, Schema> WorthQuerySelectedProductOperation<'runtime, Schema> {
         &self.product
     }
 
-    pub(crate) fn application(&self) -> &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    pub(crate) fn application(&self) -> &'runtime dyn crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>{
         self.application
     }
 
@@ -311,7 +333,11 @@ impl<'runtime, Schema> WorthQuerySelectedProductOperation<'runtime, Schema> {
         WorthQueryProductBranchLease,
         super::super::application_query::resource_lifecycle::WorthQueryApplicationBasisLease,
     ) {
-        (self.application, self.product, self.application_basis)
+        (
+            self.application.application_runtime(),
+            self.product,
+            self.application_basis,
+        )
     }
 }
 
@@ -343,3 +369,5 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
 }
 
 mod court_doors_for_test;
+pub use court_doors_for_test::ContextContextDoorsOps;
+pub use court_doors_for_test::ContextDoorsOps;

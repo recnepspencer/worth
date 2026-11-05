@@ -39,7 +39,7 @@ where
         let basis_identity = self.application_basis().identity().clone();
         let schema_binding = application.installed_schema().binding_identity();
         let basis_token = basis_token(
-            &application.runtime.application_readiness_schema_token,
+            application.application_readiness_schema_token(),
             basis_identity.runtime_instance_id(),
             basis_identity.descriptor(),
         );

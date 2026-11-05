@@ -20,13 +20,15 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         WorthQueryApplicationQueryAdmissionDenial,
     > {
         let runtime = self.application();
-        let execution = phase.execution_request_for(&runtime.runtime.product_runtime)
+        let execution = phase.execution_request_for(runtime.product_runtime())
             .map_err(|_| WorthQueryApplicationQueryAdmissionDenial::new(
                 crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::ForeignBasis,
                 query.name()))?;
         let controls =
             self.document_preview_controls(&execution, phase, preview, query, access, controls)?;
-        runtime.admit_application_query(&execution, query, access, parameters, controls)
+        runtime
+            .application_runtime()
+            .admit_application_query(&execution, query, access, parameters, controls)
     }
 
     pub fn admit_document_preview_governed_application_query<Q, P, R, A, I, E, C, O, Input>(
@@ -46,15 +48,17 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         Input: ApplicationCapabilityRequest<Schema, C, Scope = E>,
     {
         let runtime = self.application();
-        let execution = phase.execution_request_for(&runtime.runtime.product_runtime)
+        let execution = phase.execution_request_for(runtime.product_runtime())
             .map_err(|_| WorthQueryApplicationQueryAdmissionDenial::new(
                 crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::ForeignBasis,
                 query.name()))?;
         let controls =
             self.document_preview_controls(&execution, phase, preview, query, access, controls)?;
-        runtime.admit_governed_application_query(
-            &execution, query, access, capability, parameters, controls,
-        )
+        runtime
+            .application_runtime()
+            .admit_governed_application_query(
+                &execution, query, access, capability, parameters, controls,
+            )
     }
 
     fn document_preview_controls<Q, P, R, A, I, E>(
@@ -78,11 +82,11 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             HistoryModelIdentity::from_resolved(access.scope()),
         )?;
         let security = runtime
-            .runtime
-            .product_runtime
+            .product_runtime()
             .security_observation_for(execution, self.product())
             .map_err(|cause| super::selection_denial(cause, query.name()))?;
         let retained = runtime
+            .application_runtime()
             .select_application_read_observation_with_request(execution, preview.source())
             .map_err(|cause| super::selection_denial(cause, query.name()))?;
         let producer = retained.original_settled_producer().cloned();

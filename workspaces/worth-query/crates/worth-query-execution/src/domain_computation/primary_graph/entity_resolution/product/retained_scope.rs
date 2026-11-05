@@ -67,7 +67,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         // entity or field name. Fund that one possible copy before validation.
 
         admit_request(request, field.field())?;
-        let graph = self.application().runtime.primary_graph().ok_or_else(|| {
+        let graph = self.application().primary_graph().ok_or_else(|| {
             entity_denial(
                 WorthQueryEntityResolutionDenialKind::Refused(
                     ResolutionRefusal::PrimaryGraphNotInstalled,

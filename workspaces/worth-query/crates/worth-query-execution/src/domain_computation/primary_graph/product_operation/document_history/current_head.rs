@@ -10,7 +10,7 @@ use {
 /// Validate through the same Native commit lane and World head guard as adoption.
 /// Prepared values enter and leave the guard without allocation or authored effects.
 pub(in crate::domain_computation::primary_graph) fn confirm<S: ApplicationSchema, Value>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+    runtime: &dyn crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<S>,
     phase: &WorthQueryAdvancementPhase<'_>,
     product: &WorthQueryProductObservationLease,
     value: Value,
@@ -21,7 +21,7 @@ pub(in crate::domain_computation::primary_graph) fn confirm<S: ApplicationSchema
 /// Read delivery can additionally depend on its original authentication request.
 /// This is a short owner handoff, never a producer callback.
 pub(super) fn confirm_with_request<S: ApplicationSchema, Value>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+    runtime: &dyn crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<S>,
     phase: &WorthQueryAdvancementPhase<'_>,
     product: &WorthQueryProductObservationLease,
     request: Option<
@@ -35,7 +35,7 @@ pub(super) fn confirm_with_request<S: ApplicationSchema, Value>(
     ),
     (Value, Denial),
 > {
-    let execution = match phase.execution_request_for(&runtime.runtime.product_runtime) {
+    let execution = match phase.execution_request_for(runtime.product_runtime()) {
         Ok(execution) => execution,
         Err(_) => return Err((value, Denial::ForeignPhase)),
     };
@@ -44,7 +44,7 @@ pub(super) fn confirm_with_request<S: ApplicationSchema, Value>(
 
 /// Internal callers carry the execution already checked by their advancement.
 pub(super) fn confirm_in_execution<S: ApplicationSchema, Value>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+    runtime: &dyn crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<S>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     product: &WorthQueryProductObservationLease,
     request: Option<
@@ -63,7 +63,7 @@ pub(super) fn confirm_in_execution<S: ApplicationSchema, Value>(
 
 /// Only the document owner supplies this platform metadata transition.
 pub(super) fn confirm_in_execution_with_effect<S: ApplicationSchema, Value>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+    runtime: &dyn crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<S>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     product: &WorthQueryProductObservationLease,
     request: Option<
@@ -82,34 +82,29 @@ pub(super) fn confirm_in_execution_with_effect<S: ApplicationSchema, Value>(
         return Err((value, stopped(stop)));
     }
     let lane = runtime
-        .runtime
-        .primary_provider
+        .primary_provider()
         .application_branch_commit_lane_for_occurrence(
             product.observation().lifecycle_incarnation(),
         );
     let _coordination = lane.enter();
-    runtime
-        .runtime
-        .primary_provider
-        .graph
-        .with_runtime(execution, |native| {
-            confirm_in_native_with_effect(
-                runtime,
-                execution,
-                product,
-                request,
-                &_coordination,
-                native,
-                value,
-                effect,
-            )
-        })
+    runtime.provider_graph().with_runtime(execution, |native| {
+        confirm_in_native_with_effect(
+            runtime,
+            execution,
+            product,
+            request,
+            &_coordination,
+            native,
+            value,
+            effect,
+        )
+    })
 }
 
 /// The caller holds this occurrence's lane, and supplies the actual Native owner.
 /// This core never acquires Query's Native transport or an earlier-order seal.
 pub(super) fn confirm_in_native<S: ApplicationSchema, Value>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+    runtime: &dyn crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<S>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     product: &WorthQueryProductObservationLease,
     request: Option<
@@ -138,7 +133,7 @@ pub(super) fn confirm_in_native<S: ApplicationSchema, Value>(
 }
 
 fn confirm_in_native_with_effect<S: ApplicationSchema, Value>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+    runtime: &dyn crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<S>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     product: &WorthQueryProductObservationLease,
     request: Option<
@@ -165,7 +160,7 @@ fn confirm_in_native_with_effect<S: ApplicationSchema, Value>(
     {
         return Err((value, Denial::NativeBasis(denial)));
     }
-    let world = runtime.runtime.product_runtime.owner.observation_port();
+    let world = runtime.product_runtime().owner.observation_port();
     match world.while_product_branch_current(product.observation(), value, |mut value, _current| {
         if let Err(stop) = execution.check_live() {
             return Err((value, stopped(stop)));

@@ -1,3 +1,5 @@
+use crate::domain_computation::primary_graph::product_operation::generated_materialization::restoration::RestorationParentOps;
+use crate::domain_computation::primary_graph::product_operation::generated_materialization::restoration::settlement::SettlementParentOps;
 use crate::domain_computation::execution_runtime::product_world::OwnerCleanupRetirements;
 mod advancement;
 use crate::domain_computation::execution_runtime::product_world::publication_denial::{
@@ -140,7 +142,9 @@ impl WorthQueryGeneratedOutputRestorationRecoveryFailure {
     }
 }
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+trait RecoveryOwnOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>
+{
     fn continue_restoration_world(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -260,12 +264,21 @@ Err(PublicationDenial::Stopped(stop)) => Err(failure(
     }
 }
 
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<
+                Schema,
+            > + ?Sized,
+    > RecoveryOwnOps<Schema> for HostRuntime
+{
+}
+
 fn restoration_retry_matches<Schema: ApplicationSchema>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>,
     retry: &RestorationRetry,
 ) -> bool {
-    retry.producer.runtime_authority == runtime.runtime.authority_identity().as_u64()
-        && retry.producer.schema == runtime.installed_schema.binding_identity()
+    retry.producer.runtime_authority == runtime.authority_identity().as_u64()
+        && retry.producer.schema == runtime.installed_schema().binding_identity()
 }
 
 pub(super) fn failure(
@@ -277,3 +290,4 @@ pub(super) fn failure(
         recovery: WorthQueryGeneratedOutputRestorationRecovery { state },
     }
 }
+pub use advancement::AdvancementOps;

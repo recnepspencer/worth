@@ -1,5 +1,6 @@
 //! One queued native delivery retains decode custody through its final ACK.
 use super::*;
+use crate::domain_computation::primary_graph::product_operation::ApplicationBasisScopedOps;
 
 impl<
         Schema,

@@ -3,6 +3,7 @@ use super::super::WorthQueryApplicationProductBranchCloseDenial;
 use super::{WorthQueryExpectedProductBranch, WorthQueryExpectedProductBranchAdoptionFailure};
 use crate::basis::WorthQueryProductBranch;
 use crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchCloseReceipt;
+use crate::domain_computation::primary_graph::product_operation::ContextOps;
 use worth_query_installation::facade::ApplicationSchema;
 use {
     crate::domain_computation::primary_graph::WorthQueryApplicationProductBranchCleanupFailure,
@@ -38,7 +39,7 @@ use {
 /// ```
 #[must_use = "transfer the head to its application owner or close it explicitly"]
 pub struct WorthQueryOwnedProductHead<'runtime, Schema> {
-    application: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &'runtime dyn crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>,
     branch: WorthQueryProductBranch,
 }
 
@@ -46,11 +47,11 @@ impl<'runtime, Schema> WorthQueryOwnedProductHead<'runtime, Schema> {
     pub(in crate::domain_computation::primary_graph) fn application(
         &self,
     ) -> &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-        self.application
+        self.application.application_runtime()
     }
 
     pub(super) fn from_created_branch(
-        application: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        application: &'runtime dyn crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>,
         branch: WorthQueryProductBranch,
     ) -> Self {
         Self {

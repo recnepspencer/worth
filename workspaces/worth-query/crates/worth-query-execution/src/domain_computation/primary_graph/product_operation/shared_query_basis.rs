@@ -35,8 +35,10 @@ impl<'runtime, Schema> SharedSelectedProductOperation<'runtime, Schema> {
     }
 }
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub(in crate::domain_computation::primary_graph) fn retain_selected_query_basis_admitted(
+pub(in crate::domain_computation::primary_graph) trait SharedQueryBasisScopedOps<Schema>:
+    crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>
+{
+    fn retain_selected_query_basis_admitted(
         &self,
         shared: &SharedSelectedProductOperation<'_, Schema>,
     ) -> Result<
@@ -49,7 +51,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         self.retain_issued_query_basis_admitted(shared.selected())
     }
 
-    pub(in crate::domain_computation::primary_graph) fn retain_issued_query_basis_admitted(
+    fn retain_issued_query_basis_admitted(
         &self,
         selected: &WorthQuerySelectedProductOperation<'_, Schema>,
     ) -> Result<
@@ -59,7 +61,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         ),
         SelectedQueryBasisRetentionStop,
     > {
-        if !std::ptr::eq(self, selected.application()) {
+        if !std::ptr::addr_eq(self, selected.application()) {
             return Err(SelectedQueryBasisRetentionStop::Basis);
         }
         // The sealed progression owns the unchanged pair bound by on_product.
@@ -76,4 +78,14 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     }
 }
 
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<
+                Schema,
+            > + ?Sized,
+    > SharedQueryBasisScopedOps<Schema> for HostRuntime
+{
+}
+
 mod court_doors_for_test;
+pub use court_doors_for_test::SharedQueryBasisDoorsOps;

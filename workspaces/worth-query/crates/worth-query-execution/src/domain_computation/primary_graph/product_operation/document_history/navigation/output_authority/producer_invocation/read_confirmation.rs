@@ -5,10 +5,10 @@ impl HistoryProducerInvocation<'_> {
     pub(in crate::domain_computation::primary_graph) fn confirm_read<S: ApplicationSchema, T>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+        runtime: &dyn crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<S>,
         value: T,
     ) -> Result<T, WorthQueryHistoryNavigationDenial> {
-        let execution = phase.execution_request_for(&runtime.runtime.product_runtime)
+        let execution = phase.execution_request_for(runtime.product_runtime())
             .map_err(|_| WorthQueryHistoryNavigationDenial::Document(
                 crate::domain_computation::primary_graph::WorthQueryDocumentHistoryDenial::ForeignPhase,
             ))?;
@@ -21,7 +21,7 @@ impl HistoryProducerInvocation<'_> {
     >(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+        runtime: &dyn crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<S>,
         value: T,
     ) -> Result<T, WorthQueryHistoryNavigationDenial> {
         self.confirm_in_execution_preserving(execution, runtime, value)
@@ -34,7 +34,7 @@ impl HistoryProducerInvocation<'_> {
     >(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+        runtime: &dyn crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<S>,
         value: T,
     ) -> Result<T, (T, WorthQueryHistoryNavigationDenial)> {
         use WorthQueryHistoryNavigationDenial as Denial;

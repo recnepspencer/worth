@@ -347,16 +347,12 @@ fn admit_resolution_request(
 }
 
 fn validate_principal_clock(
-    runtime: &super::WorthQueryApplicationRuntimeCore,
+    runtime_clock: &crate::domain_computation::authorization::WorthQueryRuntimeClock,
     principal: &worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock,
     request: &WorthQueryRequestScope,
     binding: &str,
 ) -> Result<(), WorthQueryPrincipalResolutionDenial> {
-    if runtime
-        .authorization_clock
-        .admission_clock
-        .same_clock(principal)
-        && principal.same_clock(request.clock())
+    if runtime_clock.admission_clock.same_clock(principal) && principal.same_clock(request.clock())
     {
         Ok(())
     } else {

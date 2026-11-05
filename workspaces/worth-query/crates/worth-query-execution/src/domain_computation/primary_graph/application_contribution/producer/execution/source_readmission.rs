@@ -1,4 +1,5 @@
 use crate::domain_computation::primary_graph::product_operation::SelectedQueryBasisRetentionStop;
+use crate::domain_computation::primary_graph::product_operation::SharedQueryBasisScopedOps;
 use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::application_query::ApplicationQueryBinding;

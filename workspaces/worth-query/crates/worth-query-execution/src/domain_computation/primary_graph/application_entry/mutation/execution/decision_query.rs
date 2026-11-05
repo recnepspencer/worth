@@ -1,6 +1,7 @@
 //! Ordinary authenticated decisions borrow Query reads at their exact admitted product.
 use super::*;
 use crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess;
+use crate::domain_computation::primary_graph::product_operation::ProductOperationContextScopedOps;
 use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
 
 #[derive(Debug)]

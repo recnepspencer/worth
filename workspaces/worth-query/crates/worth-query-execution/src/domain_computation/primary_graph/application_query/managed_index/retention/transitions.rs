@@ -34,7 +34,7 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> ManagedIndexSta
         execution
             .consult()
             .map_err(|cause| Denial::Execution(cause.into()))?;
-        if selected.application().runtime.authority_identity() != self.runtime
+        if selected.application().authority_identity() != self.runtime
             || selected.product().observation().lifecycle_incarnation() != self.incarnation
             || !self
                 .adapter

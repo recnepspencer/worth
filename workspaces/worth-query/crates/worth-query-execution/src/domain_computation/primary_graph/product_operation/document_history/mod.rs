@@ -111,7 +111,7 @@ pub struct WorthQueryDocumentHistory<
     S: ApplicationSchema,
     H: ApplicationHistoryBinding<S>,
 > {
-    pub(in crate::domain_computation::primary_graph) application: &'runtime crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<S>,
+    pub(in crate::domain_computation::primary_graph) application: &'runtime dyn crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<S>,
     pub(in crate::domain_computation::primary_graph) selection:
         std::sync::Arc<HistorySelectionCell<'runtime, S>>,
     pub(in crate::domain_computation::primary_graph) model: HistoryModelIdentity,
@@ -131,7 +131,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
     WorthQueryDocumentHistory<'runtime, S, H>
 {
     pub fn application(&self) -> &'runtime crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<S>{
-        self.application
+        self.application.application_runtime()
     }
 
     /// Descriptive targeting for the Publication owner; it grants no READ permission.
@@ -148,3 +148,4 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>> std::fmt::Debug
             .finish_non_exhaustive()
     }
 }
+pub use constraint::ConstraintOps;

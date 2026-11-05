@@ -30,7 +30,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         let runtime = self.application();
         let execution = phase
-            .execution_request_for(&runtime.runtime.product_runtime)
+            .execution_request_for(runtime.product_runtime())
             .map_err(|cause| {
                 denial(WorthQueryOutputDemandDenialKind::ExecutionRequest(
                     cause.into(),
@@ -38,8 +38,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             })?;
 
         runtime
-            .runtime
-            .primary_provider
+            .primary_provider()
             .graph
             .with_runtime(&execution, |relational| {
                 self.require_current_settlements_in(execution, relational, settlements)
@@ -56,7 +55,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         let runtime = self.application();
         let execution = phase
-            .execution_request_for(&runtime.runtime.product_runtime)
+            .execution_request_for(runtime.product_runtime())
             .map_err(|cause| {
                 denial(WorthQueryOutputDemandDenialKind::ExecutionRequest(
                     cause.into(),
@@ -64,20 +63,18 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             })?;
 
         runtime
-            .runtime
-            .primary_provider
+            .primary_provider()
             .graph
             .with_runtime(&execution, |relational| {
                 for receipt in receipts {
                     if receipt.runtime_authority() != runtime.authority_identity()
                         || receipt.principal_scope().binding_identity()
-                            != &runtime.installed_schema.binding_identity()
+                            != &runtime.installed_schema().binding_identity()
                     {
                         return Err(denial(WorthQueryOutputDemandDenialKind::ForeignSettlement));
                     }
                     let lineage = runtime
-                        .runtime
-                        .primary_provider
+                        .primary_provider()
                         .graph
                         .output_lineage
                         .lock()
@@ -85,7 +82,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                     let read = lineage_read(|| {
                         lineage.source_facts_for_receipt(
                             runtime.authority_identity().as_u64(),
-                            &runtime.installed_schema.binding_identity(),
+                            &runtime.installed_schema().binding_identity(),
                             self.product().observation(),
                             receipt,
                             &execution,
@@ -142,8 +139,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         )?;
         let owner = &self
             .application()
-            .runtime
-            .primary_provider
+            .primary_provider()
             .graph
             .source_owner
             .invalidation_owner;

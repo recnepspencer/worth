@@ -1,5 +1,6 @@
 //! Fresh typed admission resumes the original managed publication, never its handler.
 use super::*;
+use crate::domain_computation::primary_graph::product_operation::ProductOperationContextScopedOps;
 use crate::domain_computation::primary_graph::provider::ProducerScopedOps;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationIdempotencyResolution as Resolution,

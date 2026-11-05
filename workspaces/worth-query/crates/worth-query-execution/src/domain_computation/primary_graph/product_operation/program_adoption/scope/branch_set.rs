@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::product_operation::ContextOps;
 use std::collections::VecDeque;
 
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
@@ -130,7 +131,7 @@ impl WorthQueryPreparedBranchSetAdoption {
 
     pub fn advance<Schema: ApplicationSchema>(
         &mut self,
-        application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        application: &dyn crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>,
         principal: &worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
     ) -> Result<
@@ -289,8 +290,10 @@ impl WorthQueryBranchSetAdoptionCancellation {
     }
 }
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub fn prepare_branch_set_adoption(
+pub trait BranchSetOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>
+{
+    fn prepare_branch_set_adoption(
         &self,
 
         coverage: WorthQueryOrderedProgramAdoptionCoverage,
@@ -300,40 +303,54 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         request: &WorthQueryRequestScope,
     ) -> Result<WorthQueryPreparedBranchSetAdoption, WorthQueryBranchSetAdoptionPreparationDenial>
     {
-        self.with_application_advancement(request, |phase| {
-            let phase_request = phase
-                .execution_request_for(&self.runtime.product_runtime)
-                .map_err(|cause| {
-                    WorthQueryBranchSetAdoptionPreparationDenial::ExecutionDenied(cause.into())
-                })?;
-            let execution = &phase_request;
-            let (pending, total_selection_work_units) = self.prepare_branch_set_targets(
-                execution,
-                &phase,
-                &coverage.branches,
-                target,
-                maximum_selection_work_per_branch,
-                principal,
-                request,
-            )?;
-            let mut progress = Vec::new();
-            progress
-                .try_reserve_exact(coverage.branches.len())
-                .map_err(|_| {
-                    WorthQueryBranchSetAdoptionPreparationDenial::RetentionAllocationRejected
-                })?;
-            Ok(WorthQueryPreparedBranchSetAdoption {
-                pending,
-                progress,
-                resolution_required: None,
-                target: *target,
-                total_selection_work_units,
+        self.application_runtime()
+            .with_application_advancement(request, |phase| {
+                let phase_request = phase
+                    .execution_request_for(self.product_runtime())
+                    .map_err(|cause| {
+                        WorthQueryBranchSetAdoptionPreparationDenial::ExecutionDenied(cause.into())
+                    })?;
+                let execution = &phase_request;
+                let (pending, total_selection_work_units) = self.prepare_branch_set_targets(
+                    execution,
+                    &phase,
+                    &coverage.branches,
+                    target,
+                    maximum_selection_work_per_branch,
+                    principal,
+                    request,
+                )?;
+                let mut progress = Vec::new();
+                progress
+                    .try_reserve_exact(coverage.branches.len())
+                    .map_err(|_| {
+                        WorthQueryBranchSetAdoptionPreparationDenial::RetentionAllocationRejected
+                    })?;
+                Ok(WorthQueryPreparedBranchSetAdoption {
+                    pending,
+                    progress,
+                    resolution_required: None,
+                    target: *target,
+                    total_selection_work_units,
+                })
             })
-        })
-        .map_err(WorthQueryBranchSetAdoptionPreparationDenial::ExecutionDenied)?
+            .map_err(WorthQueryBranchSetAdoptionPreparationDenial::ExecutionDenied)?
     }
+}
 
-    pub(super) fn prepare_branch_set_targets(
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<
+                Schema,
+            > + ?Sized,
+    > BranchSetOps<Schema> for HostRuntime
+{
+}
+
+pub(super) trait BranchSetParentOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>
+{
+    fn prepare_branch_set_targets(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
@@ -394,3 +411,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Ok((pending, total_selection_work_units))
     }
 }
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<
+                Schema,
+            > + ?Sized,
+    > BranchSetParentOps<Schema> for HostRuntime
+{
+}
+pub use admission::AdmissionOps;
+pub use recovery::BranchSetRecoveryOps;
+pub use resume::ResumeOps;

@@ -90,7 +90,7 @@ where
                 installed,
                 published,
                 start_key_identity,
-                &self.application().runtime.authorization_clock,
+                self.application().authorization_clock(),
             )
             .map_err(WorkflowInstancePreparationDenial::Attempt)
     }
@@ -130,7 +130,7 @@ where
                 target,
                 resume_at,
                 start_key_identity,
-                &self.application().runtime.authorization_clock,
+                self.application().authorization_clock(),
             )
             .map_err(WorkflowInstancePreparationDenial::Attempt)
     }
@@ -207,6 +207,7 @@ where
             );
         let (_, projection, _) = self
             .application()
+            .application_runtime()
             .mutation_projection
             .project_admitted_operation_with_request(
                 execution,

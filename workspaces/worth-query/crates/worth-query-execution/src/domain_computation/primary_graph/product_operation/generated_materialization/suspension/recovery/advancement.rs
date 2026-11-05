@@ -1,11 +1,11 @@
 //! Admission and custody progression under one runtime-issued advancement.
+use crate::domain_computation::primary_graph::product_operation::generated_materialization::suspension::recovery::settlement::RecoverySettlementParentOps;
 use super::*;
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    /// Opens one advancement under the fresh request scope and lends its native
-    /// execution request through recovery. Admission refusal returns the original
-    /// recovery before inspecting or consuming its custody.
-    pub fn continue_generated_output_suspension_recovery<Producer>(
+pub trait RecoveryAdvancementOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>
+{
+    fn continue_generated_output_suspension_recovery<Producer>(
         &self,
         recovery: WorthQueryGeneratedOutputSuspensionRecovery,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
@@ -19,29 +19,34 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let mut retirements = OwnerCleanupRetirements::default();
         let mut retained = Some(recovery);
         let mut attempted = None;
-        let result = self.with_application_advancement(request, |phase| {
-            attempted = Some((|| {
-                let execution = match phase.execution_request_for(&self.runtime.product_runtime) {
-                    Ok(execution) => execution,
-                    Err(cause) => {
+        let result = self
+            .application_runtime()
+            .with_application_advancement(request, |phase| {
+                attempted = Some((|| {
+                    let execution = match phase.execution_request_for(self.product_runtime()) {
+                        Ok(execution) => execution,
+                        Err(cause) => {
+                            return Err(failure(
+                                WorthQueryGeneratedOutputSuspensionRecoveryStage::ExecutionDenied(
+                                    cause.into(),
+                                ),
+                                retained.take().expect("one refused recovery").state,
+                            ));
+                        }
+                    };
+                    let execution = &execution;
+                    let recovery = retained.take().expect("one admitted recovery");
+
+                    if !retry_matches::<Schema, Producer>(
+                        self.product_operation_host(),
+                        recovery.state.retry(),
+                    ) {
                         return Err(failure(
-                            WorthQueryGeneratedOutputSuspensionRecoveryStage::ExecutionDenied(
-                                cause.into(),
-                            ),
-                            retained.take().expect("one refused recovery").state,
+                            WorthQueryGeneratedOutputSuspensionRecoveryStage::StaleOccurrence,
+                            recovery.state,
                         ));
                     }
-                };
-                let execution = &execution;
-                let recovery = retained.take().expect("one admitted recovery");
-
-                if !retry_matches::<Schema, Producer>(self, recovery.state.retry()) {
-                    return Err(failure(
-                        WorthQueryGeneratedOutputSuspensionRecoveryStage::StaleOccurrence,
-                        recovery.state,
-                    ));
-                }
-                match recovery.state {
+                    match recovery.state {
                     RecoveryState::Unpublished { product, retry } => {
                         let needs_settlement = product.relational_requires_settlement();
                         self.continue_world(
@@ -118,8 +123,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         )),
                     },
                 }
-            })());
-        });
+                })());
+            });
         if let Some(actual) = attempted {
             return actual;
         }
@@ -131,4 +136,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             )),
         }
     }
+}
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<
+                Schema,
+            > + ?Sized,
+    > RecoveryAdvancementOps<Schema> for HostRuntime
+{
 }

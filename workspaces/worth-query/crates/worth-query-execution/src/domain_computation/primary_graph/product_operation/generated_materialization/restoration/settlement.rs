@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::product_operation::generated_materialization::restoration::republication::RepublicationParentOps;
 use crate::domain_computation::execution_runtime::product_world::OwnerCleanupRetirements;
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -18,7 +19,7 @@ impl PublishedRestorationSettlement {
     pub(super) fn finish<Schema: ApplicationSchema>(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>,
     ) -> super::WorthQueryRestoredGeneratedOutput {
         let Self {
             observation,
@@ -44,8 +45,10 @@ impl PublishedRestorationSettlement {
     }
 }
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub(super) fn finish_restoration_handoff(
+pub(super) trait SettlementParentOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>
+{
+    fn finish_restoration_handoff(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         old: WorthQueryProductUnpublishedRecovery,
@@ -56,7 +59,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         super::WorthQueryRestoredGeneratedOutput,
         WorthQueryGeneratedOutputRestorationRecoveryFailure,
     > {
-        match self.release_product_recovery_in_request(execution, old, 0, retirements) {
+        match self.application_runtime().release_product_recovery_in_request(execution, old, 0, retirements) {
             Ok(_) => Err(failure(
                 WorthQueryGeneratedOutputRestorationRecoveryStage::AdoptionPublication,
                 RecoveryState::World {
@@ -91,7 +94,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         }
     }
 
-    pub(super) fn finish_restoration_published(
+    fn finish_restoration_published(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         recovery: WorthQueryProductUnpublishedRecovery,
@@ -101,8 +104,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         super::WorthQueryRestoredGeneratedOutput,
         WorthQueryGeneratedOutputRestorationRecoveryFailure,
     > {
-        match self.release_product_recovery_in_request(execution, recovery, 0, retirements) {
-            Ok(_) => Ok(settlement.finish(execution, self)),
+        match self.application_runtime().release_product_recovery_in_request(execution, recovery, 0, retirements) {
+            Ok(_) => Ok(settlement.finish(execution, self.product_operation_host())),
             Err(
                 crate::domain_computation::WorthQueryProductUnpublishedRecoveryReleaseFailure::Recovery(
                     failed,
@@ -127,4 +130,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             )),
         }
     }
+}
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<
+                Schema,
+            > + ?Sized,
+    > SettlementParentOps<Schema> for HostRuntime
+{
 }

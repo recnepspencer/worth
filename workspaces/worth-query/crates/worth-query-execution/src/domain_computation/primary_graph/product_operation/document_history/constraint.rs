@@ -76,10 +76,10 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
     }
 }
 
-impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
-    /// Only fresh business execution needs the group predecessor. Original
-    /// outcome lookup/recovery must survive that member's own publication.
-    pub fn validate_history_execution_predecessor<SOp, Input, Model>(
+pub trait ConstraintOps<S: ApplicationSchema>:
+    crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<S>
+{
+    fn validate_history_execution_predecessor<SOp, Input, Model>(
         &self,
         _access: &WorthQueryProgramPublicationAccess,
         restriction: &WorthQueryDocumentHistoryOperationConstraint,
@@ -98,7 +98,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         Ok(())
     }
 
-    pub fn validate_history_operation<SOp, Input, Model>(
+    fn validate_history_operation<SOp, Input, Model>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         _access: &WorthQueryProgramPublicationAccess,
@@ -107,8 +107,8 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         binding: WorthQueryApplicationIdempotencyBinding,
     ) -> Result<(), Denial> {
         if !admitted.belongs_to(
-            self.runtime.authority_identity(),
-            &self.installed_schema.binding_identity(),
+            self.authority_identity(),
+            &self.installed_schema().binding_identity(),
         ) {
             return Err(Denial::ForeignRuntime);
         }
@@ -116,7 +116,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             return Err(Denial::ForeignModel);
         }
         admitted
-            .validate_installed_operation(&self.runtime.installed_operations)
+            .validate_installed_operation(self.installed_operations())
             .map_err(Denial::OperationAdmission)?;
         admitted
             .validate_current_authority()
@@ -136,16 +136,30 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             return Err(Denial::ForeignRecording);
         }
         let current = self
-            .runtime
-            .product_runtime
+            .product_runtime()
             .admit_product_occurrence(restriction.original_source().occurrence())
             .map_err(Denial::CandidateSelection)?;
         if current.observation() != restriction.source.observation() {
             return Err(Denial::HeadDiverged);
         }
         drop(current);
-        confirm_document_head(self, phase, &restriction.source, ()).map_err(|(_, denial)| denial)
+        confirm_document_head(
+            self.product_operation_host(),
+            phase,
+            &restriction.source,
+            (),
+        )
+        .map_err(|(_, denial)| denial)
     }
+}
+
+impl<
+        S: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<
+                S,
+            > + ?Sized,
+    > ConstraintOps<S> for HostRuntime
+{
 }
 
 mod court_doors_for_test;

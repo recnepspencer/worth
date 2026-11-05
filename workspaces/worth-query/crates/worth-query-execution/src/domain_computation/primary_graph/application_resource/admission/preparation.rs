@@ -58,7 +58,7 @@ where
     Binding: ApplicationResourceBinding<Schema>,
 {
     require_request(execution, request)?;
-    if !std::ptr::eq(runtime, selected.application())
+    if !std::ptr::addr_eq(runtime, selected.application())
         || !std::ptr::eq(principal.selected(), selected)
         || !std::ptr::eq(scope.selected(), selected)
         || !principal.request().same_request(request)

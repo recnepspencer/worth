@@ -110,7 +110,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
             proposal: proposal.clone(),
         };
         context::<Schema, Spec, Binding>(
-            selected.application().runtime.authority_identity().as_u64(),
+            selected.application().authority_identity().as_u64(),
             workflow.workflow_spec_for(selected),
             instance,
             command,

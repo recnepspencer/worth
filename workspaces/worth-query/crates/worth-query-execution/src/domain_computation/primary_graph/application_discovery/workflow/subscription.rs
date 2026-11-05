@@ -62,9 +62,9 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
             data, phase, vocabulary, principal, input, request, target,
         )?;
         let execution = phase
-            .execution_request_for(&self.application().runtime.product_runtime)
+            .execution_request_for(self.application().product_runtime())
             .map_err(Denial::Phase)?;
-        let source = &self.application().runtime.primary_provider.live_delivery;
+        let source = &self.application().primary_provider().live_delivery;
         // Both cursors are native owner positions. A retired exact start position is a discontinuity.
         let subscription = source
             .open(data.product().observation())
@@ -74,8 +74,7 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
         let touches = match basis.commit_id() {
             Some(commit) => self
                 .application()
-                .runtime
-                .primary_provider
+                .primary_provider()
                 .graph
                 .source_owner
                 .invalidation_owner
@@ -120,7 +119,7 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
             return Err(Denial::PolicyMismatch);
         }
         let execution = phase
-            .execution_request_for(&self.application().runtime.product_runtime)
+            .execution_request_for(self.application().product_runtime())
             .map_err(Denial::Phase)?;
         execution.consult().map_err(Denial::Work)?;
         let Some(subscription) = interest.subscription.as_ref() else {
@@ -130,8 +129,7 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
         let mut closed = false;
         match self
             .application()
-            .runtime
-            .primary_provider
+            .primary_provider()
             .live_delivery
             .poll(subscription, interest.cursor)
         {
@@ -155,8 +153,7 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
         let basis = self.product().relational_basis().observation();
         let batch = self
             .application()
-            .runtime
-            .primary_provider
+            .primary_provider()
             .graph
             .source_owner
             .invalidation_owner
@@ -194,7 +191,7 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
         W: ApplicationWorkflowSpec<Schema = S>,
         B: ApplicationWorkflowReadBinding<S>,
     {
-        if !std::ptr::eq(vocabulary.runtime(), self.application()) {
+        if !std::ptr::addr_eq(vocabulary.runtime(), self.application()) {
             return Err(Denial::PolicyMismatch);
         }
         let workflow = vocabulary.workflow_spec_for(self);

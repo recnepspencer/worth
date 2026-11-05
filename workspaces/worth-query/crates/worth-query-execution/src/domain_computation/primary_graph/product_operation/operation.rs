@@ -55,7 +55,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         WorthQueryOperationAuthorizationDenial,
     > {
-        let execution = phase.execution_request_for(&self.application().runtime.product_runtime)
+        let execution = phase.execution_request_for(self.application().product_runtime())
             .map_err(|_| WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), operation.operation()))?;
         self.authorize_operation_with_request(
             &execution,
@@ -132,7 +132,7 @@ phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase
             >,
         Input: ApplicationCapabilityRequest<Schema, Capability> + 'static,
 {
-        let execution = phase.execution_request_for(&self.application().runtime.product_runtime)
+        let execution = phase.execution_request_for(self.application().product_runtime())
             .map_err(|_| WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "capability access"))?;
         self.admit_capability_access_with_request(&execution, principal, capability, input, request)
     }
@@ -198,7 +198,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
         Input: ApplicationCapabilityRequest<Schema, Capability> + 'static,
     {
-        let execution = phase.execution_request_for(&self.application().runtime.product_runtime)
+        let execution = phase.execution_request_for(self.application().product_runtime())
             .map_err(|_| WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "encoded capability access"))?;
         self.admit_encoded_capability_access_with_request(
             &execution,
@@ -275,7 +275,7 @@ phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase
             >,
         Input: ApplicationCapabilityRequest<Schema, Capability> + 'static,
 {
-        let execution = phase.execution_request_for(&self.application().runtime.product_runtime)
+        let execution = phase.execution_request_for(self.application().product_runtime())
             .map_err(|_| WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "approved elevation access"))?;
         self.admit_approved_elevation_access_with_request(
             &execution, approved, principal, capability, input, request,

@@ -13,9 +13,6 @@ impl<Schema: ApplicationSchema> ConditionalOperationHost<Schema>
     fn conditional_operations(&self) -> &std::sync::Mutex<crate::domain_computation::primary_graph::conditional_operation::WorthQueryConditionalOperationRegistry<Schema>>{
         &self.conditional_operations
     }
-    fn bridge(&self) -> &crate::domain_computation::primary_graph::managed_bridge::WorthQueryInstalledApplicationBridge{
-        &self.runtime.bridge
-    }
     fn granular_invalidation(
         &self,
     ) -> &crate::domain_computation::primary_graph::WorthQueryGranularInvalidationInstallation {

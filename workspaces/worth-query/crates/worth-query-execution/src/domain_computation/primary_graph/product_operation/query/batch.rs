@@ -60,7 +60,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         >,
         WorthQueryRetainedBatchQueryAdmissionDenial,
     > {
-        let request = match phase.execution_request_for(&self.application().runtime.product_runtime) {
+        let request = match phase.execution_request_for(self.application().product_runtime()) {
             Ok(request) => request,
             Err(_) => return Err(WorthQueryRetainedBatchQueryAdmissionDenial::Admission(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::Authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase)), query.name()))),
         };
@@ -73,8 +73,8 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             query.name(),
         )
         };
-        let application: &'read crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema> = self.application();
-        if !std::ptr::eq(application, retained.application())
+        let application: &'read crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema> = self.application().application_runtime();
+        if !std::ptr::addr_eq(application, retained.application())
             || self.product().branch_identity() != retained.product().branch_identity()
         {
             return Err(Admission(unavailable()));

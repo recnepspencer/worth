@@ -32,6 +32,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         request: &WorthQueryRequestScope,
     ) -> Result<WorthQueryPreparedBranchAdoption, WorthQueryBranchAdoptionPreparationDenial> {
         self.application()
+            .application_runtime()
             .with_application_advancement(request, |phase| {
                 self.prepare_branch_adoption_in_advancement(
                     &phase,
@@ -57,6 +58,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         request: &WorthQueryRequestScope,
     ) -> Result<WorthQueryPreparedBranchAdoption, WorthQueryBranchAdoptionPreparationDenial> {
         self.application()
+            .application_runtime()
             .with_application_advancement(request, |phase| {
                 self.prepare_branch_adoption_in_advancement(
                     &phase,
@@ -96,6 +98,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         request: &WorthQueryRequestScope,
     ) -> Result<WorthQueryPreparedBranchAdoption, WorthQueryBranchAdoptionPreparationDenial> {
         self.application()
+            .application_runtime()
             .with_application_advancement(request, |phase| {
                 self.prepare_branch_adoption_in_advancement(
                     &phase,
@@ -126,7 +129,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     ) -> Result<WorthQueryPreparedBranchAdoption, WorthQueryBranchAdoptionPreparationDenial> {
         let application = self.application();
         let _phase_request = phase
-            .execution_request_for(&application.runtime.product_runtime)
+            .execution_request_for(application.product_runtime())
             .map_err(|cause| {
                 WorthQueryBranchAdoptionPreparationDenial::ExecutionDenied(cause.into())
             })?;

@@ -1,4 +1,5 @@
 use super::*;
+use crate::domain_computation::primary_graph::product_operation::MatchingHeadScopedOps;
 
 /// The exact prepared Query permission after its issued World head was
 /// checked. Actor currentness still runs outside the World guard.

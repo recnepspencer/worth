@@ -37,13 +37,13 @@ impl<'runtime, Schema: ApplicationSchema>
     {
         let binding = installed_binding.binding();
         validate_principal_clock(
-            &self.application().runtime,
+            self.application().authorization_clock(),
             external.clock(),
             scope,
             binding,
         )?;
         admit_resolution_request(scope, binding, external.is_expired())?;
-        let runtime = self.application().runtime.execution();
+        let runtime = self.application().execution();
         if let Some(validated) = validated {
             if !runtime
                 .installed_packages()
@@ -133,7 +133,7 @@ impl<'runtime, Schema: ApplicationSchema>
             })
         })?;
         validate_principal_clock(
-            &self.application().runtime,
+            self.application().authorization_clock(),
             external.clock(),
             scope,
             binding,

@@ -141,9 +141,9 @@ where
         let application = self.application();
         admission
             .validate_installed_entry(
-                application.runtime.authority_identity(),
-                &application.installed_schema.binding_identity(),
-                &application.runtime.installed_operations,
+                application.authority_identity(),
+                &application.installed_schema().binding_identity(),
+                application.installed_operations(),
             )
             .and_then(|()| admission.validate_current_authority())
             .map_err(|denial| WorkflowDefinitionPreparationDenial::Projection(denial.into()))?;
@@ -153,6 +153,7 @@ where
             .map_err(WorkflowDefinitionPreparationDenial::Binding)?;
         let (_, projection, _) = self
             .application()
+            .application_runtime()
             .mutation_projection
             .project_admitted_operation_with_request(
                 execution,

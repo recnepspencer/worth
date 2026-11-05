@@ -12,7 +12,7 @@ impl HistoryProducerInvocation<'_> {
     >(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+        runtime: &dyn crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<S>,
         lane: &WorthQueryApplicationBranchCommitLane,
         native: &worth_relational::facade::runtime::RelationalRuntime,
         value: T,

@@ -46,6 +46,7 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
             );
         let (_, projection, _) = self
             .application()
+            .application_runtime()
             .mutation_projection
             .project_admitted_operation_with_request(
                 execution,
@@ -99,7 +100,7 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
                 installed,
                 instance,
                 request_kind,
-                &self.application().runtime.authorization_clock,
+                self.application().authorization_clock(),
             )
             .map_err(WorkflowTransitionPreparationDenial::Attempt)
     }

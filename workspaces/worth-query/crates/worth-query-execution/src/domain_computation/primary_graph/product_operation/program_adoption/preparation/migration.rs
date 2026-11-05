@@ -121,8 +121,10 @@ impl WorthQueryPreparedProgramMigration {
     }
 }
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub fn admit_program_migration<Binding>(
+pub trait MigrationOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>
+{
+    fn admit_program_migration<Binding>(
         &self,
         target: &ApplicationProgramRevision,
     ) -> Result<
@@ -139,33 +141,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         })
     }
 
-    /// Seals a candidate completed by the exact mutation binding admitted for
-    /// the target program.
-    ///
-    /// A completed candidate cannot be relabelled as another binding, even
-    /// when both bindings happen to use the same associated types:
-    ///
-    /// ```compile_fail,E0308
-    /// use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
-    /// use worth_query_execution::facade::primary_graph::{
-    ///     WorthQueryAdmittedProgramMigration, WorthQueryCompletedMutationCandidate,
-    ///     WorthQueryPrimaryGraphApplicationRuntime,
-    /// };
-    /// use worth_query_installation::facade::ApplicationSchema;
-    ///
-    /// fn cannot_relabel_candidate<Schema, First, Second>(
-    ///     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    ///     admitted: WorthQueryAdmittedProgramMigration<Schema, Second>,
-    ///     candidate: WorthQueryCompletedMutationCandidate<Schema, First>,
-    /// ) where
-    ///     Schema: ApplicationSchema,
-    ///     First: ApplicationMutationBinding<Schema>,
-    ///     Second: ApplicationMutationBinding<Schema>,
-    /// {
-    ///     let _ = runtime.seal_program_migration::<Second>(admitted, candidate);
-    /// }
-    /// ```
-    pub fn seal_program_migration<Binding>(
+    fn seal_program_migration<Binding>(
         &self,
         admitted: WorthQueryAdmittedProgramMigration<Schema, Binding>,
         candidate: WorthQueryCompletedMutationCandidate<Schema, Binding>,
@@ -177,7 +153,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let (program, _result) = candidate.into_parts();
         let (source_product, batch, effect_count) =
             crate::domain_computation::primary_graph::application_attempt::prepare_program_migration_effects(
-                self, program,
+                self.application_attempt_host(), program,
             )?;
         Ok(WorthQueryPreparedProgramMigration {
             target: admitted.target,
@@ -191,7 +167,20 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             batch,
         })
     }
+}
 
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<
+                Schema,
+            > + ?Sized,
+    > MigrationOps<Schema> for HostRuntime
+{
+}
+
+trait MigrationOwnOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>
+{
     fn require_target_binding<Binding>(
         &self,
         target: &ApplicationProgramRevision,
@@ -200,6 +189,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Binding: ApplicationMutationBinding<Schema>,
     {
         let support = self
+            .application_runtime()
             .installed_program_support()
             .ok_or(WorthQueryProgramMigrationPreparationDenial::ProgramSupportUnavailable)?;
         let entry = support
@@ -210,6 +200,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         }
         Ok(())
     }
+}
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<
+                Schema,
+            > + ?Sized,
+    > MigrationOwnOps<Schema> for HostRuntime
+{
 }
 
 impl From<crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial>

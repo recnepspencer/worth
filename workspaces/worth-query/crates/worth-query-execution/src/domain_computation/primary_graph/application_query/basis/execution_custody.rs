@@ -2,6 +2,7 @@ use super::super::resource_lifecycle::{
     WorthQueryApplicationBasisIdentity, WorthQueryApplicationBasisLease,
     WorthQueryApplicationBasisReleaseReceipt,
 };
+use crate::domain_computation::primary_graph::product_operation::SharedQueryBasisScopedOps;
 
 /// The basis admitted by the query pipeline owns the exact selected World
 /// occurrence and its matching application component lease.
@@ -11,7 +12,7 @@ pub struct WorthQueryApplicationQueryBasisCustody {
 }
 
 impl WorthQueryApplicationQueryBasisCustody {
-    pub(in crate::domain_computation::primary_graph) fn from_selected<Schema>(
+    pub(in crate::domain_computation::primary_graph) fn from_selected<Schema: worth_query_installation::facade::ApplicationSchema>(
         runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         shared: &crate::domain_computation::primary_graph::SharedSelectedProductOperation<'_, Schema>,
     ) -> Result<Self, crate::domain_computation::primary_graph::product_operation::SelectedQueryBasisRetentionStop>{
@@ -29,7 +30,7 @@ impl WorthQueryApplicationQueryBasisCustody {
         }
     }
 
-    pub(in crate::domain_computation::primary_graph::application_query) fn from_issued_selected<Schema>(
+    pub(in crate::domain_computation::primary_graph::application_query) fn from_issued_selected<Schema: worth_query_installation::facade::ApplicationSchema>(
         runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         selected: &crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<'_, Schema>,
     ) -> Result<Self, crate::domain_computation::primary_graph::product_operation::SelectedQueryBasisRetentionStop>{

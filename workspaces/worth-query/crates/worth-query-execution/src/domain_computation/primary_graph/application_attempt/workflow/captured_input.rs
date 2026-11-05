@@ -135,10 +135,10 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
     {
         let runtime = self.application();
         let execution = phase
-            .execution_request_for(&runtime.runtime.product_runtime)
+            .execution_request_for(runtime.product_runtime())
             .map_err(|_| WorkflowCapturedInputDenial::ForeignSelection)?;
-        if scope.runtime_authority() != runtime.runtime.authority_identity()
-            || scope.binding_identity() != &runtime.installed_schema.binding_identity()
+        if scope.runtime_authority() != runtime.authority_identity()
+            || scope.binding_identity() != &runtime.installed_schema().binding_identity()
         {
             return Err(WorkflowCapturedInputDenial::ForeignSelection);
         }
@@ -146,11 +146,10 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
             return Err(WorkflowCapturedInputDenial::Binding);
         }
         let binding = runtime
-            .installed_schema
+            .installed_schema()
             .installed_mutation_binding::<B>()
             .map_err(|_| WorkflowCapturedInputDenial::Binding)?;
         let graph = runtime
-            .runtime
             .primary_graph()
             .ok_or(WorkflowCapturedInputDenial::ForeignSelection)?;
         let selection = graph.integration_handle().with_runtime(&execution, |relational| {
@@ -207,7 +206,7 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
             basis: crate::basis::WorthQueryProductBranchReadIdentity::from_observation(
                 self.product().observation(),
             ),
-            runtime: runtime.runtime.authority_identity().as_u64(),
+            runtime: runtime.authority_identity().as_u64(),
             request_work: identities.canonical_work(),
             precondition_work: bound.canonical_work(),
             contract: WorkflowCapturedInputContract {

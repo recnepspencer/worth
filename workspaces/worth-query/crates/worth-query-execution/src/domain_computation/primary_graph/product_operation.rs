@@ -38,6 +38,8 @@ pub(in crate::domain_computation::primary_graph) use security_basis::{
     SelectedPermissionSecurityStop, WorthQuerySelectedPermissionSecurityBasis,
 };
 
+pub(in crate::domain_computation::primary_graph) use application_basis::ApplicationBasisScopedOps;
+pub use branches::BranchesOps;
 pub use branches::{
     WorthQueryApplicationProductBranches, WorthQueryExpectedProductBasisSelectionDenial,
     WorthQueryExpectedProductBranch, WorthQueryExpectedProductBranchAdoptionDenial,
@@ -50,6 +52,7 @@ pub use cleanup::{
     WorthQueryApplicationProductBranchCleanupFailure,
 };
 pub use close::WorthQueryApplicationProductBranchCloseDenial;
+pub(in crate::domain_computation::primary_graph) use conditional_definition::AdmissionScopedOps;
 pub use conditional_definition::{
     WorthQueryAdmittedApplicationConditionalDefinition,
     WorthQueryApplicationConditionalDefinitionAdmissionDenial,
@@ -57,7 +60,18 @@ pub use conditional_definition::{
     WorthQueryConditionalDefinitionPublicationOutcome,
     WorthQueryPerformedConditionalDefinitionPublication,
 };
+pub use context::ContextContextDoorsOps;
+pub use context::ContextDoorsOps;
+pub use context::ContextOps;
+pub(crate) use context::ContextScopedOps;
+pub(in crate::domain_computation::primary_graph) use context::ProductOperationContextScopedOps;
 pub use context::{WorthQueryProductEntry, WorthQuerySelectedProductOperation};
+pub use document_history::ConstraintOps;
+pub use generated_materialization::AdvancementOps;
+pub use generated_materialization::ReconstructionOps;
+pub use generated_materialization::RecoveryAdvancementOps;
+pub use generated_materialization::RepublicationDoorsOps;
+pub use generated_materialization::RestorationOps;
 pub use generated_materialization::{
     WorthQueryCompletedGeneratedOutputReconstruction, WorthQueryGeneratedEntity,
     WorthQueryGeneratedOutputInvariantAdmissionDenial,
@@ -75,6 +89,14 @@ pub use generated_materialization::{
     WorthQuerySuspendedGeneratedOutput, WorthQueryUnpublishedGeneratedOutputRestoration,
 };
 pub use history::{WorthQueryProductHistory, WorthQueryProductHistoryEntry};
+pub(in crate::domain_computation::primary_graph) use observation_room::ObservationRoomScopedOps;
+pub use program_adoption::AdmissionOps;
+pub use program_adoption::BranchSetOps;
+pub use program_adoption::BranchSetRecoveryOps;
+pub use program_adoption::MigrationOps;
+pub use program_adoption::RecoveryOps;
+pub use program_adoption::ReleaseOps;
+pub use program_adoption::ResumeOps;
 pub use program_adoption::{
     WorthQueryAdmittedProgramMigration, WorthQueryBranchAdoptionActivationDenial,
     WorthQueryBranchAdoptionPreparationDenial, WorthQueryBranchAdoptionPublicationOutcome,
@@ -95,12 +117,19 @@ pub use program_adoption::{
     WorthQueryProgramMigrationDescription, WorthQueryProgramMigrationPreparationDenial,
     WorthQueryStoppedBranchSetAdoption, WorthQueryUnpublishedBranchAdoption,
 };
+pub use query::HistoryOutputsOps;
 pub use query::WorthQueryHistoryOutputControlDenial;
 pub use query::WorthQueryHistoryOutputReadDenial;
 pub use query::WorthQueryHistoryRootOutputRead;
 pub use query::WorthQueryProductQueryControls;
 pub use query::WorthQueryRetainedBatchQueryAdmissionDenial;
+pub(in crate::domain_computation::primary_graph) use security_basis::MatchingHeadScopedOps;
+pub(in crate::domain_computation::primary_graph) use security_basis::ProductOperationSecurityBasisScopedOps;
+pub(in crate::domain_computation) use security_basis::SecurityBasisScopedOps;
+pub use shared_query_basis::SharedQueryBasisDoorsOps;
+pub(in crate::domain_computation::primary_graph) use shared_query_basis::SharedQueryBasisScopedOps;
 pub use transaction::{
     WorthQueryAdmittedChange, WorthQueryAppliedProductTransaction, WorthQueryProductTransaction,
     WorthQueryProductTransactionCommitError,
 };
+pub(crate) mod host;

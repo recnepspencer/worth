@@ -1,9 +1,11 @@
 //! Sealed test doors over this module's private members.
 use super::*;
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+pub trait ContextDoorsOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>
+{
     #[doc(hidden)]
-    pub fn select_product_branch_for_test(
+    fn select_product_branch_for_test(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         identity: &ProductBranchIdentity,
@@ -13,6 +15,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     > {
         Self::select_product_branch(self, execution, identity)
     }
+}
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<
+                Schema,
+            > + ?Sized,
+    > ContextDoorsOps<Schema> for HostRuntime
+{
 }
 
 impl<'runtime, Schema> WorthQuerySelectedProductOperation<'runtime, Schema> {
@@ -61,9 +72,11 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
     }
 }
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+pub trait ContextContextDoorsOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>
+{
     #[doc(hidden)]
-    pub fn on_product_for_test(
+    fn on_product_for_test(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         product: WorthQueryProductBranchLease,
@@ -73,6 +86,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     > {
         Self::on_product(self, execution, product)
     }
+}
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<
+                Schema,
+            > + ?Sized,
+    > ContextContextDoorsOps<Schema> for HostRuntime
+{
 }
 
 impl<'runtime, Schema> WorthQueryProductEntry<'runtime, Schema>

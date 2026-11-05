@@ -1,4 +1,5 @@
 use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
+use crate::domain_computation::primary_graph::product_operation::ContextScopedOps;
 use std::{collections::BTreeMap, num::NonZeroUsize};
 
 use worth_query_installation::facade::{

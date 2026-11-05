@@ -6,29 +6,39 @@ use crate::domain_computation::primary_graph::{
 };
 use worth_runtime_world::facade::ProductBranchObservation;
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub(in crate::domain_computation::primary_graph) fn retain_product_application_basis(
+pub(in crate::domain_computation::primary_graph) trait ApplicationBasisScopedOps<Schema>:
+    crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>
+{
+    fn retain_product_application_basis(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         observation: &ProductBranchObservation,
     ) -> Result<WorthQueryApplicationBasisLease, WorthQueryProductBranchAdmissionDenial> {
-        if observation.owner_identity() != self.runtime.product_runtime.owner.owner_identity() {
+        if observation.owner_identity() != self.product_runtime().owner.owner_identity() {
             return Err(WorthQueryProductBranchAdmissionDenial::Refused(
                 AdmissionRefusal::ForeignOwner,
             ));
         }
         let mut lease = self
-            .runtime
-            .basis_leases
+            .basis_leases()
             .register(
                 execution,
                 observation.basis().relational_basis().clone(),
-                self.runtime.primary_provider.graph.clone(),
+                self.provider_graph().clone(),
             )
             .map_err(map_registration_denial)?;
         lease.bind_product_observation(observation);
         Ok(lease)
     }
+}
+
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<
+                Schema,
+            > + ?Sized,
+    > ApplicationBasisScopedOps<Schema> for HostRuntime
+{
 }
 fn map_registration_denial(
     denial: crate::domain_computation::primary_graph::application_query::resource_lifecycle::WorthQueryApplicationBasisRegistrationDenial,

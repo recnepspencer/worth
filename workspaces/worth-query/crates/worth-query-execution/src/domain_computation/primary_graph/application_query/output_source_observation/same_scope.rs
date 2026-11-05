@@ -35,7 +35,7 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
             .installed_query_binding::<B>()
             .map_err(Stop::Installation)?;
         let selected = self.shared.selected();
-        if !std::ptr::eq(self.application, selected.application()) {
+        if !std::ptr::addr_eq(self.application, selected.application()) {
             return Err(Stop::ForeignClosure.into());
         }
         let principal = selected

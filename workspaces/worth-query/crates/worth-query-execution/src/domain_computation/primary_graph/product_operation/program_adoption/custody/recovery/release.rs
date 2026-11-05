@@ -60,8 +60,12 @@ impl std::fmt::Debug for WorthQueryBranchAdoptionRecoveryReleaseFailure {
     }
 }
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub(in crate::domain_computation::primary_graph::product_operation::program_adoption) fn release_branch_adoption_custody(
+pub(in crate::domain_computation::primary_graph::product_operation::program_adoption) trait ReleaseScopedOps<
+    Schema: ApplicationSchema,
+>:
+    crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>
+{
+    fn release_branch_adoption_custody(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         retirements: &mut OwnerCleanupRetirements,
@@ -80,12 +84,10 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             product,
             support_custody,
         } = recovery;
-        match self.release_product_recovery_in_request(
-            execution,
-            product,
-            minimum_age_ticks,
-            retirements,
-        ) {
+        match self
+            .application_runtime()
+            .release_product_recovery_in_request(execution, product, minimum_age_ticks, retirements)
+        {
             Ok(receipt) => Ok(receipt),
             Err(WorthQueryProductUnpublishedRecoveryReleaseFailure::Recovery(failure)) => {
                 let denial = failure.denial();
@@ -107,8 +109,21 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             }
         }
     }
+}
 
-    pub fn release_branch_adoption_recovery(
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<
+                Schema,
+            > + ?Sized,
+    > ReleaseScopedOps<Schema> for HostRuntime
+{
+}
+
+pub trait ReleaseOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>
+{
+    fn release_branch_adoption_recovery(
         &self,
         recovery: WorthQueryBranchAdoptionRecovery,
         minimum_age_ticks: u64,
@@ -129,4 +144,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             minimum_age_ticks,
         )
     }
+}
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<
+                Schema,
+            > + ?Sized,
+    > ReleaseOps<Schema> for HostRuntime
+{
 }

@@ -59,8 +59,7 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
     }
     let application = current.application();
     if application
-        .runtime
-        .primary_provider
+        .primary_provider()
         .graph
         .layout
         .is_live_control_entity_kind(model.kind())
@@ -68,13 +67,13 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
         return Err(correction(Eligibility::LiveControlDomain));
     }
     application
-        .runtime
-        .product_runtime
+        .product_runtime()
         .require_live_product_occurrence(
             source.source.product_observation().lifecycle_incarnation(),
         )
         .map_err(Denial::ProductAdmission)?;
     let historical = application
+        .application_runtime()
         .select_application_read_observation(phase, &source.source)
         .map_err(Denial::ProductAdmission)?;
     if historical
@@ -102,6 +101,7 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
         return Err(correction(Eligibility::ProgramChanged));
     }
     let supported = application
+        .application_runtime()
         .installed_program_support()
         .and_then(|support| support.native_program(current_program.revision()))
         .ok_or_else(|| correction(Eligibility::ProgramUnavailable))?;
@@ -147,13 +147,12 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
         }
     }
     let execution = phase
-        .checked_execution_request_for(&application.runtime.product_runtime)
+        .checked_execution_request_for(application.product_runtime())
         .map_err(Denial::Stopped)?;
     // This real admission on C catches medium/schema/source eligibility before
     // fork. Actual preparation later repeats admission on the new C-derived target.
     application
-        .runtime
-        .primary_provider
+        .primary_provider()
         .graph
         .with_runtime(&execution, |native| {
             let transaction = native

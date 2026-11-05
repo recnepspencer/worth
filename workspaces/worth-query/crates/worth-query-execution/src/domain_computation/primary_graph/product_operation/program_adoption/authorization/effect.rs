@@ -50,7 +50,7 @@ impl AdoptionEffect<'_> {
         admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     ) -> AdoptionEffectOutcome {
         let execution = phase
-            .execution_request_for(&selected.application().runtime.product_runtime)
+            .execution_request_for(selected.application().product_runtime())
             .expect("capability progression checked the phase owner");
         match self {
             Self::Read => AdoptionEffectOutcome::Read(admission.validate_current_authority()),
@@ -63,8 +63,7 @@ impl AdoptionEffect<'_> {
                 let prepared = (|| {
                     let gate = selected
                         .application()
-                        .runtime
-                        .product_runtime
+                        .product_runtime()
                         .activations
                         .gate(selected.product().branch_identity())
                         .map_err(|denial| {

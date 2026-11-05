@@ -69,11 +69,10 @@ where
         return Err(Denial::PolicyMismatch);
     }
     let execution = phase
-        .execution_request_for(&current.application().runtime.product_runtime)
+        .execution_request_for(current.application().product_runtime())
         .map_err(Denial::Phase)?;
     let graph = current
         .application()
-        .runtime
         .primary_graph()
         .ok_or(Denial::BasisUnavailable)?;
     let snapshot = data.application_basis().snapshot_handle();

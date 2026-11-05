@@ -93,7 +93,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         source: &WorthQueryApplicationOutputDemandSource<Query, Value>,
     ) -> Result<WorthQueryRetainedQueryDependencies, WorthQueryRequiredSetCurrentnessDenial> {
         let execution = phase
-            .checked_execution_request_for(&self.application().runtime.product_runtime)
+            .checked_execution_request_for(self.application().product_runtime())
             .map_err(execution_denial)?;
         let set = source.result_set_observation().ok_or_else(|| {
             source_denial(WorthQuerySourceExpectationDenialKind::MissingExpectation)
@@ -131,8 +131,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             }
         }
         self.application()
-            .runtime
-            .primary_provider
+            .primary_provider()
             .graph
             .with_runtime(&execution, |relational| {
                 self.retain_original_dependencies(
@@ -156,7 +155,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         I: Iterator<Item = &'a WorthQueryRetainedQueryDependencies> + Clone,
     {
         let execution = phase
-            .checked_execution_request_for(&self.application().runtime.product_runtime)
+            .checked_execution_request_for(self.application().product_runtime())
             .map_err(execution_denial)?;
 
         let count = parts.clone().try_fold(0usize, |count, part| {
@@ -193,8 +192,8 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         // Capture checked the full pairing; merge/currentness carry that exact
         // query and parameter identity, including installed certification queries.
         source.validate_affinity(
-            runtime.runtime.authority_identity().as_u64(),
-            &runtime.installed_schema.binding_identity(),
+            runtime.authority_identity().as_u64(),
+            &runtime.installed_schema().binding_identity(),
             self.application_basis().identity().branch_id(),
             source.model_root,
             &selected,

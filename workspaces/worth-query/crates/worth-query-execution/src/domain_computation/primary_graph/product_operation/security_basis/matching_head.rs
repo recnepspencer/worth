@@ -21,13 +21,12 @@ impl SelectedPreparedReadSecurityBasis<'_> {
     }
 }
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    /// Check exact selected-index currency before sealing this same
-    /// issued Product/Query basis against the current World head. A moved head
-    /// or different Native basis cannot authorize the graph read.
-    pub(in crate::domain_computation::primary_graph) fn admit_matching_head_query_prepared_read_security_basis_with_native_access<
-        'basis,
-    >(
+pub(in crate::domain_computation::primary_graph) trait MatchingHeadScopedOps<
+    Schema: ApplicationSchema,
+>:
+    crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>
+{
+    fn admit_matching_head_query_prepared_read_security_basis_with_native_access<'basis>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         product: &crate::basis::WorthQueryProductObservationLease,
@@ -53,12 +52,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         })
     }
 
-    /// Bind the selected Product and already inspected Query snapshot to the
-    /// exact installed World head. No new Native snapshot or program authority
-    /// is issued. The World callback is a short currentness seal only.
-    pub(in crate::domain_computation::primary_graph) fn admit_matching_head_query_permission_basis<
-        'basis,
-    >(
+    fn admit_matching_head_query_permission_basis<'basis>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         product: &crate::basis::WorthQueryProductObservationLease,
@@ -70,9 +64,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         self.admit_matching_head_query_permission_basis_with_native_access(execution, product, query_basis, &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess::acquire())
     }
 
-    pub(in crate::domain_computation::primary_graph) fn admit_matching_head_query_permission_basis_with_native_access<
-        'basis,
-    >(
+    fn admit_matching_head_query_permission_basis_with_native_access<'basis>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         product: &crate::basis::WorthQueryProductObservationLease,
@@ -92,15 +84,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let guard_matches = product
             .current_security_guard()
             .is_none_or(|guard| guard == expected);
-        if expected.owner_identity() != self.runtime.product_runtime.owner.owner_identity()
+        if expected.owner_identity() != self.product_runtime().owner.owner_identity()
             || !guard_matches
         {
             return Ok(None);
         }
-        let graph = self
-            .runtime
-            .primary_graph()
-            .ok_or(SelectedPermissionSecurityStop)?;
+        let graph = self.primary_graph().ok_or(SelectedPermissionSecurityStop)?;
         let reusable = native.with_runtime_mut(
             graph,
             execution,
@@ -114,8 +103,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             return Ok(None);
         };
         let current = self
-            .runtime
-            .product_runtime
+            .product_runtime()
             .owner
             .observation_port()
             .while_product_branch_current(expected, (), |(), _head| true);
@@ -136,4 +124,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             }
         }
     }
+}
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<
+                Schema,
+            > + ?Sized,
+    > MatchingHeadScopedOps<Schema> for HostRuntime
+{
 }

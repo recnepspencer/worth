@@ -110,11 +110,10 @@ where
         return Err(Denial::TargetIncarnationChanged);
     }
     let execution = phase
-        .execution_request_for(&application.runtime.product_runtime)
+        .execution_request_for(application.product_runtime())
         .map_err(|_| Denial::ForeignPhase)?;
     let ancestry = application
-        .runtime
-        .product_runtime
+        .product_runtime()
         .owner
         .observation_port()
         .select_retained_product_branch_ancestor(
@@ -195,6 +194,7 @@ where
         request,
     );
     let plan = application
+        .application_runtime()
         .admit_correction_disclosure(
             &execution,
             installed.query(),
@@ -204,6 +204,7 @@ where
         )
         .map_err(Denial::Admission)?;
     if !application
+        .application_runtime()
         .execute_correction_disclosure(&execution, plan, selector.subject())
         .map_err(Denial::Read)?
     {

@@ -117,27 +117,25 @@ impl WorthQuerySuspendedGeneratedOutput {
 
     pub(super) fn matches_runtime<Schema>(
         &self,
-        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>,
     ) -> bool
     where
         Schema: ApplicationSchema,
     {
-        self.producer.runtime_authority == runtime.runtime.authority_identity().as_u64()
-            && self.producer.schema == runtime.installed_schema.binding_identity()
+        self.producer.runtime_authority == runtime.authority_identity().as_u64()
+            && self.producer.schema == runtime.installed_schema().binding_identity()
     }
 
     pub(super) fn matches_retained_lineage<Schema, Producer>(
         &self,
-        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>,
     ) -> bool
     where
         Schema: ApplicationSchema,
         Producer: WorthQueryApplicationProducerBinding<Schema>,
     {
         runtime
-            .runtime
-            .primary_provider
-            .graph
+            .provider_graph()
             .output_lineage
             .lock()
             .expect("application output lineage lock is available")
@@ -220,3 +218,8 @@ impl std::fmt::Debug for WorthQueryGeneratedOutputSuspensionFailure {
 }
 
 mod court_doors_for_test;
+pub use reconstruction::ReconstructionOps;
+pub use restoration::AdvancementOps;
+pub use restoration::RepublicationDoorsOps;
+pub use restoration::RestorationOps;
+pub use suspension::RecoveryAdvancementOps;

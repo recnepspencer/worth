@@ -132,7 +132,7 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> ManagedIndexSta
         let context = parent
             .retain_query_source_context()
             .map_err(|_| Denial::ForeignAssociation)?;
-        if context.runtime() != selected.application().runtime.authority_identity()
+        if context.runtime() != selected.application().authority_identity()
             || !adapter
                 .installed()
                 .is_installed_in(selected.application().installed_schema())

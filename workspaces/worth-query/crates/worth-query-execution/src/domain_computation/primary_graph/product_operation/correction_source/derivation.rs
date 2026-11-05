@@ -67,10 +67,10 @@ where
         .encoded_input::<<C::Source as ApplicationMutationBinding<Schema>>::InputBinding>()
         .ok_or(Denial::UnsupportedSourceMeaning)?;
     let execution = phase
-        .execution_request_for(&target.application().runtime.product_runtime)
+        .execution_request_for(target.application().product_runtime())
         .map_err(|_| Denial::ForeignPhase)?;
     let inverse = super::material::derive::<Schema, C>(source, execution, input.input())?;
-    let input = target.application().capture_operation_input_in_advancement::<<ApplicationInverseBinding<Schema, C> as ApplicationMutationBinding<Schema>>::InputBinding>(
+    let input = target.application().application_runtime().capture_operation_input_in_advancement::<<ApplicationInverseBinding<Schema, C> as ApplicationMutationBinding<Schema>>::InputBinding>(
         phase, access, request, inverse.input(),
     ).map_err(Denial::InputCapture)?;
     let prepared = super::WorthQueryPreparedCorrectionSource::retain::<

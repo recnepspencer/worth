@@ -3,6 +3,8 @@ use super::*;
 use crate::basis::{
     WorthQueryExpectedProductBasisDescription, WorthQueryProductBranchAdmissionDenial,
 };
+use crate::domain_computation::primary_graph::product_operation::ContextScopedOps;
+use crate::domain_computation::primary_graph::product_operation::ObservationRoomScopedOps;
 use worth_relational::facade::branch::RelationalBranchBasisDenial;
 use {
     crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation,
@@ -38,7 +40,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
         use WorthQueryExpectedProductBasisSelectionDenial as Denial;
         let application = self.application;
         let execution = phase
-            .execution_request_for(&application.runtime.product_runtime)
+            .execution_request_for(application.product_runtime())
             .map_err(|_| {
                 Denial::Admission(WorthQueryProductBranchAdmissionDenial::Refused(
                     crate::basis::WorthQueryProductBranchAdmissionRefusalKind::ForeignPhase,
@@ -52,16 +54,14 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
         let product = application
             .admit_with_observation_room(|| {
                 application
-                    .runtime
-                    .product_runtime
+                    .product_runtime()
                     .readmit_product_reference(description.world())
             })
             .map_err(Denial::Admission)?;
         // Native readmission also admits retained history. Currentness must
         // therefore be checked by that same owner before composing the selection.
         let (native, currentness) = application
-            .runtime
-            .primary_provider
+            .primary_provider()
             .graph
             .with_runtime(&execution, |runtime| {
                 let port = runtime.owner_component_services().basis_port();

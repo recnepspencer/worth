@@ -57,19 +57,19 @@ impl WorthQueryHistoryOutputAuthority<'_, '_> {
     pub(in crate::domain_computation::primary_graph) fn validate<S: ApplicationSchema>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+        runtime: &dyn crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<S>,
         request: &WorthQueryRequestScope,
     ) -> Result<(), WorthQueryHistoryNavigationDenial> {
         use WorthQueryHistoryNavigationDenial as Denial;
         if !std::ptr::eq(phase, self.phase)
-            || self.runtime != runtime.runtime.authority_identity().as_u64()
+            || self.runtime != runtime.authority_identity().as_u64()
             || self.binding != runtime.installed_schema().binding_identity()
             || !self.request.same_request(request)
         {
             return Err(Denial::ForeignDocument);
         }
         phase
-            .check_live_for(&runtime.runtime.product_runtime)
+            .check_live_for(runtime.product_runtime())
             .map_err(Denial::Stopped)?;
         if let Some(lapse) = self.request.lapse() {
             return Err(Denial::Authorization(
@@ -139,7 +139,7 @@ impl WorthQueryHistoryOutputAuthority<'_, '_> {
     pub(in crate::domain_computation::primary_graph) fn confirm_read<S: ApplicationSchema, T>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+        runtime: &dyn crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<S>,
         request: &WorthQueryRequestScope,
         value: T,
     ) -> Result<T, WorthQueryHistoryNavigationDenial> {

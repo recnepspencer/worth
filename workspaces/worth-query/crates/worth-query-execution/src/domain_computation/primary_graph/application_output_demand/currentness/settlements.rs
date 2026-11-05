@@ -42,8 +42,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             }
             settlement.require_original_provenance(&execution)?;
             let lineage = runtime
-                .runtime
-                .primary_provider
+                .primary_provider()
                 .graph
                 .output_lineage
                 .lock()
@@ -52,7 +51,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 if let Some(receipt) = settlement.application_commit_receipt() {
                     lineage.source_facts_for_receipt(
                         runtime.authority_identity().as_u64(),
-                        &runtime.installed_schema.binding_identity(),
+                        &runtime.installed_schema().binding_identity(),
                         self.product().observation(),
                         receipt,
                         &execution,
@@ -60,7 +59,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 } else if let Some(stable) = settlement.stable.as_ref() {
                     lineage.source_facts_for_stable_output(
                         runtime.authority_identity().as_u64(),
-                        &runtime.installed_schema.binding_identity(),
+                        &runtime.installed_schema().binding_identity(),
                         self.product().observation(),
                         stable,
                         &execution,
@@ -68,7 +67,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 } else {
                     lineage.source_facts_for_restored_output(
                         runtime.authority_identity().as_u64(),
-                        &runtime.installed_schema.binding_identity(),
+                        &runtime.installed_schema().binding_identity(),
                         self.product().observation(),
                         settlement,
                         &execution,

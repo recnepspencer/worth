@@ -10,9 +10,6 @@ impl<Schema: ApplicationSchema> ApplicationResourceHost<Schema>
     fn application_resource_host(&self) -> &dyn ApplicationResourceHost<Schema> {
         self
     }
-    fn bridge(&self) -> &crate::domain_computation::primary_graph::managed_bridge::WorthQueryInstalledApplicationBridge{
-        &self.runtime.bridge
-    }
     fn installed_resources(&self) -> &crate::domain_computation::primary_graph::application_resource::installation::InstalledResourceRegistry<Schema>{
         &self.installed_resources
     }

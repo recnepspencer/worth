@@ -64,7 +64,7 @@ pub(super) enum NavigationPhase<'runtime, S> {
 
 pub(super) struct NavigationProgress<'runtime, S> {
     pub(super) pending_slot: Option<super::pending_capacity::PendingNavigationSlot>,
-    pub(super) application: &'runtime WorthQueryPrimaryGraphApplicationRuntime<S>,
+    pub(super) application: &'runtime dyn crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<S>,
     pub(super) meaning: WorthQueryApplicationIdempotencyBinding,
     pub(super) output_profile: Option<WorthQueryHistoryOutputProfile>,
     pub(super) output_source:

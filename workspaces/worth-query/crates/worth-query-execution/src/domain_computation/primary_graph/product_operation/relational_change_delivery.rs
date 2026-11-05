@@ -27,7 +27,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         use WorthQueryPerformedRelationalProductChangeDeliveryDenialKind as Kind;
 
         let request_execution =
-            match phase.execution_request_for(&self.application().runtime.product_runtime) {
+            match phase.execution_request_for(self.application().product_runtime()) {
                 Ok(request) => request,
                 Err(cause) => {
                     return Err(
@@ -63,6 +63,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         };
         let operation = self
             .application()
+            .application_runtime()
             .conditional_operations
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
@@ -76,7 +77,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
                 ),
             );
         };
-        let bridge_root = self.application().runtime.bridge.conditional_operations();
+        let bridge_root = self.application().bridge().conditional_operations();
         let bridge = bridge_root
             .read()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
@@ -99,6 +100,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         drop(bridge);
         let outcome = self
             .application()
+            .application_runtime()
             .granular_invalidation_installation()
             .retain_product_shared_root()
             .deliver_performed_relational_change(phase, &lowering, dependency_ordinal, change)?;

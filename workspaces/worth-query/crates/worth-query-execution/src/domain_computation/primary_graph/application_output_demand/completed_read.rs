@@ -58,8 +58,10 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
         dependents: impl IntoIterator<Item = &'s WorthQueryOutputDemandSettlement>,
         dependencies: Option<&WorthQueryRetainedQueryDependencies>,
     ) -> Result<WorthQueryCompletedReadOutputs, WorthQueryRequiredSetCurrentnessDenial> {
-        if !source.belongs_to_selected_occurrence(self.application(), self.product().observation())
-        {
+        if !source.belongs_to_selected_occurrence(
+            self.application().application_runtime(),
+            self.product().observation(),
+        ) {
             return Err(WorthQueryOutputDemandDenial::new(
                 WorthQueryOutputDemandDenialKind::ForeignSettlement,
                 "completed read-output source occurrence",

@@ -64,8 +64,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         let mut verification = RetainedFactVerification::new(execution, relational, snapshot, None);
         let owner = &self
             .application()
-            .runtime
-            .primary_provider
+            .primary_provider()
             .graph
             .source_owner
             .invalidation_owner;
@@ -75,7 +74,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 .check_live()
                 .map_err(storage)?;
             let prepared = source.admit_fact_materialization(
-                &self.application().runtime.primary_provider.graph.layout,
+                &self.application().primary_provider().graph.layout,
                 &source.query_identifier,
                 SourceFactExpansionControl::in_request(*execution, None),
             )?;

@@ -75,14 +75,10 @@ impl<'authority, 'phase, 'scope, Q, R>
     }
 }
 
-impl<S: ApplicationSchema>
-    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<S>
+pub trait HistoryOutputsOps<S: ApplicationSchema>:
+    crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<S>
 {
-    /// Execute the original root source at D within this history callback.
-    /// Dependent sources require their own retained observation and scope;
-    /// this receiver deliberately binds only the history model's root read.
-    /// A raw admitted plan cannot escape the live read-delivery seal.
-    pub fn execute_history_root_output_query<'control, 'authority, 'phase, 'scope, B>(
+    fn execute_history_root_output_query<'control, 'authority, 'phase, 'scope, B>(
         &'control self,
         phase: &WorthQueryAdvancementPhase<'_>,
         authority: &'authority WorthQueryHistoryOutputAuthority<'phase, 'scope>,
@@ -98,7 +94,8 @@ impl<S: ApplicationSchema>
         Rows<S, B>: WorthQueryApplicationProjection<S, B::Query>,
     {
         use WorthQueryHistoryOutputReadDenial as Denial;
-        self.validate_history_output_control(phase, authority, binding, &control)?;
+        self.application_runtime()
+            .validate_history_output_control(phase, authority, binding, &control)?;
         let access =
             WorthQueryApplicationQueryAccessContext::new(control.principal(), control.scope());
         if !authority.matches_read_access(&access) {
@@ -107,22 +104,36 @@ impl<S: ApplicationSchema>
             ));
         }
         let execution = phase
-            .checked_execution_request_for(&self.runtime.product_runtime)
+            .checked_execution_request_for(self.product_runtime())
             .map_err(|cause| {
                 Denial::Authority(WorthQueryHistoryNavigationDenial::Stopped(cause))
             })?;
-        authority
-            .profile()
-            .source_intent()
-            .require_control(self, &execution, binding, &control)?;
+        authority.profile().source_intent().require_control(
+            self.application_runtime(),
+            &execution,
+            binding,
+            &control,
+        )?;
         let retained = self
+            .application_runtime()
             .select_application_read_observation(phase, authority.original())
             .map_err(|cause| {
                 Denial::Admission(super::selection_denial(cause, binding.query().name()))
             })?;
-        let result = self.execute_history_output_query_on_selected(
-            phase, authority, binding, external, control, retained,
-        )?;
+        let result = self
+            .application_runtime()
+            .execute_history_output_query_on_selected(
+                phase, authority, binding, external, control, retained,
+            )?;
         Ok(WorthQueryHistoryRootOutputRead { authority, result })
     }
+}
+
+impl<
+        S: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<
+                S,
+            > + ?Sized,
+    > HistoryOutputsOps<S> for HostRuntime
+{
 }

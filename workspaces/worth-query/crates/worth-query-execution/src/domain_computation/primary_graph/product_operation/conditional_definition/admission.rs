@@ -5,12 +5,10 @@ use crate::domain_computation::primary_graph::{
     conditional_operation::QueryTemporalPredicateProvider, WorthQueryPrimaryGraphApplicationRuntime,
 };
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub(in crate::domain_computation::primary_graph) fn admit_conditional_definition_on_product<
-        Node,
-        Clock,
-        Provider,
-    >(
+pub(in crate::domain_computation::primary_graph) trait AdmissionScopedOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>
+{
+    fn admit_conditional_definition_on_product<Node, Clock, Provider>(
         &self,
         product: &WorthQueryProductBranchLease,
         handle: &WorthQueryConditionalClockHandle<Schema, Node, Clock>,
@@ -23,14 +21,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Node: 'static,
         Provider: WorthQueryHostConditionalPredicateProvider<Node>,
     {
-        let (anchor, request) = definition_request(self, product, handle, provider)
+        let (anchor, request) = definition_request(self.product_operation_host(), product, handle, provider)
             .map_err(|cause| match cause {
                 WorthQueryConditionalDefinitionPublicationDenial::ForeignConditionalOperation => WorthQueryApplicationConditionalDefinitionAdmissionDenial::ForeignConditionalOperation,
                 WorthQueryConditionalDefinitionPublicationDenial::BridgePreparation(cause) => WorthQueryApplicationConditionalDefinitionAdmissionDenial::BridgePreparation(cause),
                 _ => unreachable!("definition preparation does not publish"),
             })?;
         Ok(WorthQueryAdmittedApplicationConditionalDefinition::new(
-            self,
+            self.product_operation_host(),
             product,
             *handle.binding_identity_digest(),
             anchor,
@@ -39,8 +37,17 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     }
 }
 
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<
+                Schema,
+            > + ?Sized,
+    > AdmissionScopedOps<Schema> for HostRuntime
+{
+}
+
 pub(super) fn definition_request<Schema: ApplicationSchema, Node: 'static, Clock, Provider>(
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>,
     product: &WorthQueryProductBranchLease,
     handle: &WorthQueryConditionalClockHandle<Schema, Node, Clock>,
     provider: Arc<Provider>,
@@ -55,13 +62,13 @@ where
     Provider: WorthQueryHostConditionalPredicateProvider<Node>,
 {
     let operation = application
-        .conditional_operations
+        .conditional_operations()
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
         .admit_clock(handle.binding_identity(), handle.lease())
         .ok_or(WorthQueryConditionalDefinitionPublicationDenial::ForeignConditionalOperation)?;
     let operation_anchor = operation.operation_anchor();
-    let bridge_root = application.runtime.bridge.conditional_operations();
+    let bridge_root = application.bridge().conditional_operations();
     let bridge = bridge_root
         .read()
         .unwrap_or_else(std::sync::PoisonError::into_inner);

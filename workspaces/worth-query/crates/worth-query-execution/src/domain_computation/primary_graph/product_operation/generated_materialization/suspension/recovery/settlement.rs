@@ -33,8 +33,10 @@ impl PublishedSuspensionSettlement {
     }
 }
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub(super) fn finish_handoff(
+pub(super) trait RecoverySettlementParentOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>
+{
+    fn finish_handoff(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         old: WorthQueryProductUnpublishedRecovery,
@@ -45,7 +47,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         super::WorthQuerySuspendedGeneratedOutput,
         WorthQueryGeneratedOutputSuspensionRecoveryFailure,
     > {
-        match self.release_product_recovery_in_request(execution, old, 0, retirements) {
+        match self.application_runtime().release_product_recovery_in_request(execution, old, 0, retirements) {
             Ok(_) => Err(failure(
                 WorthQueryGeneratedOutputSuspensionRecoveryStage::AdoptionPublication,
                 RecoveryState::World {
@@ -80,7 +82,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         }
     }
 
-    pub(super) fn finish_published(
+    fn finish_published(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         recovery: WorthQueryProductUnpublishedRecovery,
@@ -90,7 +92,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         super::WorthQuerySuspendedGeneratedOutput,
         WorthQueryGeneratedOutputSuspensionRecoveryFailure,
     > {
-        match self.release_product_recovery_in_request(execution, recovery, 0, retirements) {
+        match self.application_runtime().release_product_recovery_in_request(execution, recovery, 0, retirements) {
             Ok(_) => Ok(settlement.finish()),
             Err(
                 crate::domain_computation::WorthQueryProductUnpublishedRecoveryReleaseFailure::Recovery(
@@ -116,4 +118,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             )),
         }
     }
+}
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<
+                Schema,
+            > + ?Sized,
+    > RecoverySettlementParentOps<Schema> for HostRuntime
+{
 }

@@ -7,6 +7,7 @@ use crate::domain_computation::primary_graph::application_contribution::producer
 use crate::domain_computation::primary_graph::application_query::FreshQueryPermissionStop;
 use crate::domain_computation::primary_graph::application_query::PreparedApplicationQueryPermission;
 use crate::domain_computation::primary_graph::product_operation::SelectedQueryBasisRetentionStop;
+use crate::domain_computation::primary_graph::product_operation::SharedQueryBasisScopedOps;
 use crate::domain_computation::primary_graph::product_operation::SharedSelectedProductOperation;
 use worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryBinding;

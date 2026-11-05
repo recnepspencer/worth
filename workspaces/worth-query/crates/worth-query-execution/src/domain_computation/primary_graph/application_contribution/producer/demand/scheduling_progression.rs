@@ -125,7 +125,7 @@ where
         let selected_product = shared.selected();
         let observation = selected_product.product().observation();
 
-        if !std::ptr::eq(self, selected_product.application())
+        if !std::ptr::addr_eq(self, selected_product.application())
             || observation.lifecycle_incarnation() != branch.occurrence()
         {
             return Err(denial(

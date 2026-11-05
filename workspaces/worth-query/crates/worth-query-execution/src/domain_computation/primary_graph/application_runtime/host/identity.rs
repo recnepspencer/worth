@@ -32,4 +32,12 @@ impl<Schema: ApplicationSchema> WorthQueryRuntimeIdentityHost<Schema>
     fn application_runtime(&self) -> &WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         self
     }
+    fn bridge(&self) -> &crate::domain_computation::primary_graph::managed_bridge::WorthQueryInstalledApplicationBridge{
+        &self.runtime.bridge
+    }
+    fn installed_operations(
+        &self,
+    ) -> &std::sync::Arc<worth_query_installation::facade::InstalledOperationCatalog> {
+        &self.runtime.installed_operations
+    }
 }

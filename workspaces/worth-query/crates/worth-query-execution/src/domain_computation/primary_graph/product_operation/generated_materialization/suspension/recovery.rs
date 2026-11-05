@@ -1,3 +1,7 @@
+use crate::domain_computation::primary_graph::product_operation::ContextOps;
+use crate::domain_computation::primary_graph::product_operation::generated_materialization::restoration::RestorationParentOps;
+use crate::domain_computation::primary_graph::product_operation::generated_materialization::suspension::recovery::settlement::RecoverySettlementParentOps;
+use worth_proof::ExecutionReadyRecipeDxExt;
 use crate::domain_computation::execution_runtime::product_world::OwnerCleanupRetirements;
 mod advancement;
 use crate::basis::WorthQueryProductBranchAdmissionDenial as Admission;
@@ -137,7 +141,9 @@ impl WorthQueryGeneratedOutputSuspensionRecoveryFailure {
     }
 }
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+trait SuspensionRecoveryOwnOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>
+{
     fn continue_world(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -171,7 +177,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         WorthQueryGeneratedOutputSuspensionRecoveryFailure,
     > {
         let source_read = {
-            let _read = self.runtime.product_runtime.enter_named_read(crate::domain_computation::execution_runtime::product_world::read_consult::NamedRead::GeneratedRecoverySourceSelection);
+            let _read = self.product_runtime().enter_named_read(crate::domain_computation::execution_runtime::product_world::read_consult::NamedRead::GeneratedRecoverySourceSelection);
             execution
                 .consult()
                 .map_err(|cause| {
@@ -288,6 +294,15 @@ Err(PublicationDenial::Stopped(stop)) => Err(failure(
     }
 }
 
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<
+                Schema,
+            > + ?Sized,
+    > SuspensionRecoveryOwnOps<Schema> for HostRuntime
+{
+}
+
 fn failure(
     stage: WorthQueryGeneratedOutputSuspensionRecoveryStage,
     state: RecoveryState,
@@ -299,4 +314,5 @@ fn failure(
 }
 
 mod retry_identity;
+pub use advancement::RecoveryAdvancementOps;
 use retry_identity::retry_matches;

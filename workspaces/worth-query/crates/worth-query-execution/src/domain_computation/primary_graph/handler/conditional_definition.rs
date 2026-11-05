@@ -1,6 +1,7 @@
 //! Decision-phase definition preparation uses the operation's exact product.
 use super::{CandidateWriter, DecisionReader};
 use crate::basis::WorthQueryProductBranchLease;
+use crate::domain_computation::primary_graph::product_operation::AdmissionScopedOps;
 use crate::domain_computation::primary_graph::{
     application_contribution::WorthQueryApplicationConditionalBinding, HandlerExecutionDenial,
     WorthQueryAdmittedApplicationConditionalDefinition, WorthQueryApplicationAttemptDenial,

@@ -1,5 +1,6 @@
 //! Source and Parent admissions share one installed permission/session owner.
 use super::*;
+use crate::domain_computation::primary_graph::product_operation::SharedQueryBasisScopedOps;
 use crate::domain_computation::primary_graph::{
     WorthQueryIssuedSelectedPrincipal, WorthQueryIssuedSelectedScope,
 };

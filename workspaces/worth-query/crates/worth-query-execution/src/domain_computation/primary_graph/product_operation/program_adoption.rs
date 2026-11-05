@@ -19,11 +19,15 @@ mod preparation;
 mod publication;
 mod scope;
 
+pub use custody::RecoveryOps;
+pub use custody::ReleaseOps;
+pub(in crate::domain_computation::primary_graph::product_operation::program_adoption) use custody::ReleaseScopedOps;
 pub use custody::{
     WorthQueryBranchAdoptionRecovery, WorthQueryBranchAdoptionRecoveryDenial,
     WorthQueryBranchAdoptionRecoveryFailure, WorthQueryBranchAdoptionRecoveryOutcome,
     WorthQueryBranchAdoptionRecoveryReleaseFailure,
 };
+pub use preparation::MigrationOps;
 pub use preparation::{
     WorthQueryAdmittedProgramMigration, WorthQueryBranchAdoptionActivationDenial,
     WorthQueryBranchAdoptionPreparationDenial, WorthQueryPreparedBranchAdoption,
@@ -35,6 +39,10 @@ pub use publication::{
     WorthQueryBranchAdoptionPublicationOutcome, WorthQueryPerformedBranchAdoption,
     WorthQueryUnpublishedBranchAdoption,
 };
+pub use scope::AdmissionOps;
+pub use scope::BranchSetOps;
+pub use scope::BranchSetRecoveryOps;
+pub use scope::ResumeOps;
 pub use scope::{
     WorthQueryBranchSetAdoptionAdvanceDenial, WorthQueryBranchSetAdoptionCancellation,
     WorthQueryBranchSetAdoptionCloseDenial, WorthQueryBranchSetAdoptionPreparationDenial,

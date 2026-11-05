@@ -6,6 +6,7 @@ use crate::basis::{
     WorthQueryProductBranchReadIdentity,
 };
 use crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchCloseReceipt;
+use crate::domain_computation::primary_graph::product_operation::ContextOps;
 use worth_query_declaration::facade::branch::WorthQueryProductBranchComponents;
 use {
     crate::domain_computation::primary_graph::WorthQueryApplicationProductBranchCloseDenial,
@@ -21,7 +22,7 @@ pub use adoption::{
 
 #[must_use = "configure and create the expected-source fork, or drop its admission"]
 pub struct WorthQueryExpectedProductBranchFork<'runtime, Schema> {
-    application: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &'runtime dyn crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>,
     fork: WorthQueryProductBranchFork<'runtime>,
 }
 
@@ -30,7 +31,7 @@ pub struct WorthQueryExpectedProductBranchFork<'runtime, Schema> {
 /// adoption as an application model's head.
 #[must_use = "retain the expected-source continuation or explicitly close the candidate"]
 pub struct WorthQueryExpectedProductBranch<'runtime, Schema> {
-    application: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &'runtime dyn crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>,
     branch: WorthQueryProductBranch,
     source: WorthQueryProductBranchLease,
 }
@@ -62,15 +63,8 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
                 .branches
                 .fork_expected(source)
                 .with_application_lifecycle(
-                    std::sync::Arc::clone(
-                        &self
-                            .application
-                            .runtime
-                            .primary_provider
-                            .graph
-                            .output_lineage,
-                    ),
-                    &self.application.runtime.primary_provider,
+                    std::sync::Arc::clone(&self.application.provider_graph().output_lineage),
+                    &self.application.primary_provider(),
                     self.application,
                 ),
         })
@@ -127,7 +121,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryExpectedProductBranch<'runti
     pub(in crate::domain_computation::primary_graph) fn application(
         &self,
     ) -> &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-        self.application
+        self.application.application_runtime()
     }
 
     pub(in crate::domain_computation::primary_graph) fn retained_expected_source(

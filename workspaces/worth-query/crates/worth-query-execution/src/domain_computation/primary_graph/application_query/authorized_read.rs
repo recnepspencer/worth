@@ -1,5 +1,6 @@
 use crate::domain_computation::authorization::CapabilityRevalidationScopedOps;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::primary_graph::product_operation::ProductOperationSecurityBasisScopedOps;
 use crate::domain_computation::primary_graph::{
     application_query::{
         graph_read_plan_binding::WorthQueryQueryIndexPosture,

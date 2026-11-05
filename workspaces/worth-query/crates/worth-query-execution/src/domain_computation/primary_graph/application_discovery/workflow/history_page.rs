@@ -37,7 +37,7 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
         Subject: ApplicationWorkflowReadBinding<S>,
         Audit: ApplicationWorkflowReadBinding<S>,
     {
-        if !std::ptr::eq(vocabulary.runtime(), self.application()) {
+        if !std::ptr::addr_eq(vocabulary.runtime(), self.application()) {
             return Err(Denial::PolicyMismatch);
         }
         let workflow = vocabulary.workflow_spec_for(self);
@@ -86,11 +86,10 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
             return Err(Denial::PolicyMismatch);
         }
         if let Some(prior) = after
-            && (!prior
-                .basis
-                .0
-                .belongs_to_selected_occurrence(self.application(), data.product().observation())
-                || prior.instance != target.instance
+            && (!prior.basis.0.belongs_to_selected_occurrence(
+                self.application().application_runtime(),
+                data.product().observation(),
+            ) || prior.instance != target.instance
                 || prior.subject != target.subject
                 || prior.scope != access.resource_entity_id()
                 || prior.width != width
@@ -102,11 +101,10 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
             return Err(Denial::ContinuationMismatch);
         }
         let execution = phase
-            .execution_request_for(&self.application().runtime.product_runtime)
+            .execution_request_for(self.application().product_runtime())
             .map_err(Denial::Phase)?;
         let graph = self
             .application()
-            .runtime
             .primary_graph()
             .ok_or(Denial::BasisUnavailable)?;
         let index = graph

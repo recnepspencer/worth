@@ -1,6 +1,7 @@
 //! Query audience binding for bounded World-owned product history.
 
 use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
+use crate::domain_computation::primary_graph::product_operation::ContextScopedOps;
 use std::num::NonZeroUsize;
 
 use worth_query_installation::facade::ApplicationSchema;
@@ -16,7 +17,7 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationR
 /// A bounded owner-issued ancestry page for one Query product occurrence.
 /// The page keeps its exact World history and component obligations alive.
 pub struct WorthQueryProductHistory<'runtime, Schema> {
-    application: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &'runtime dyn crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>,
     history: ProductBranchHistoryTraversal,
 }
 
@@ -35,14 +36,13 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
     ) -> Result<WorthQueryProductHistory<'runtime, Schema>, WorthQueryProductBranchAdmissionDenial>
     {
         let execution = phase
-            .execution_request_for(&self.application.runtime.product_runtime)
+            .execution_request_for(self.application.product_runtime())
             .map_err(|_| {
                 WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::ForeignPhase)
             })?;
         let history = self
             .application
-            .runtime
-            .product_runtime
+            .product_runtime()
             .trace_product_history(&execution, branch, maximum)?;
         Ok(WorthQueryProductHistory {
             application: self.application,
@@ -77,14 +77,13 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryProductHistory<'runtime, Sch
         maximum: Option<NonZeroUsize>,
     ) -> Result<Self, WorthQueryProductBranchAdmissionDenial> {
         let execution = phase
-            .execution_request_for(&self.application.runtime.product_runtime)
+            .execution_request_for(self.application.product_runtime())
             .map_err(|_| {
                 WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::ForeignPhase)
             })?;
         let history = self
             .application
-            .runtime
-            .product_runtime
+            .product_runtime()
             .continue_product_history(&execution, &self.history, maximum)?;
         Ok(Self {
             application: self.application,
@@ -100,15 +99,14 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryProductHistory<'runtime, Sch
         WorthQuerySelectedProductOperation<'runtime, Schema>,
         WorthQueryProductBranchAdmissionDenial,
     > {
-        let phase_request =
-            match phase.execution_request_for(&self.application.runtime.product_runtime) {
-                Ok(request) => request,
-                Err(_) => {
-                    return Err(WorthQueryProductBranchAdmissionDenial::Refused(
-                        AdmissionRefusal::ForeignPhase,
-                    ))
-                }
-            };
+        let phase_request = match phase.execution_request_for(self.application.product_runtime()) {
+            Ok(request) => request,
+            Err(_) => {
+                return Err(WorthQueryProductBranchAdmissionDenial::Refused(
+                    AdmissionRefusal::ForeignPhase,
+                ))
+            }
+        };
         let execution = &phase_request;
 
         let expected = self.history.commits().nth(entry.index).ok_or(
@@ -121,8 +119,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryProductHistory<'runtime, Sch
         }
         let product = self
             .application
-            .runtime
-            .product_runtime
+            .product_runtime()
             .admit_product_history_entry(&self.history, entry.index)?;
         self.application.on_product(execution, product)
     }

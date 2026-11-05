@@ -22,12 +22,13 @@ pub(super) struct NavigationCleanup<'runtime, S> {
 }
 
 fn retry_release<S: ApplicationSchema>(
-    application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+    application: &dyn crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<S>,
     phase: &WorthQueryAdvancementPhase<'_>,
     pending: WorthQueryProductUnpublishedRecoveryReleaseFailure,
 ) -> Result<(), WorthQueryProductUnpublishedRecoveryReleaseFailure> {
     match pending {
         WorthQueryProductUnpublishedRecoveryReleaseFailure::Recovery(failure) => application
+            .application_runtime()
             .close_product_publication_recovery_in_advancement(phase, failure.into_recovery())
             .map(|_| ()),
         WorthQueryProductUnpublishedRecoveryReleaseFailure::OwnerCleanup(failure) => failure
@@ -129,12 +130,12 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
 impl<S: ApplicationSchema> NavigationCleanup<'_, S> {
     fn retry(
         &mut self,
-        application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+        application: &dyn crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<S>,
         phase: &WorthQueryAdvancementPhase<'_>,
     ) -> Result<usize, WorthQueryHistoryNavigationDenial> {
         use WorthQueryHistoryNavigationDenial as Denial;
         let _execution = phase
-            .checked_execution_request_for(&application.runtime.product_runtime)
+            .checked_execution_request_for(application.product_runtime())
             .map_err(Denial::Stopped)?;
         if let Some(fork) = self.fork.take()
             && let Err(fork) = fork.release(phase)
@@ -149,8 +150,9 @@ impl<S: ApplicationSchema> NavigationCleanup<'_, S> {
             return Err(Denial::Cleanup);
         }
         if let Some(recovery) = self.recovery.take()
-            && let Err(prior) =
-                application.close_product_publication_recovery_in_advancement(phase, recovery)
+            && let Err(prior) = application
+                .application_runtime()
+                .close_product_publication_recovery_in_advancement(phase, recovery)
         {
             self.prior = Some(prior);
             return Err(Denial::Cleanup);
@@ -251,7 +253,7 @@ impl<S: ApplicationSchema> WorthQueryDocumentHistoryNavigation<'_, S> {
         let key = {
             let progress = self.attempt.progress.try_lock().map_err(|_| Denial::Busy)?;
             phase
-                .checked_execution_request_for(&progress.application.runtime.product_runtime)
+                .checked_execution_request_for(progress.application.product_runtime())
                 .map_err(Denial::Stopped)?;
             if matches!(progress.phase, NavigationPhase::Selected(_)) {
                 return Err(Denial::AlreadySelected);
@@ -277,7 +279,7 @@ impl<S: ApplicationSchema> WorthQueryDocumentHistoryNavigation<'_, S> {
             Err(std::sync::TryLockError::Poisoned(poison)) => poison.into_inner(),
         };
         let _execution = phase
-            .checked_execution_request_for(&progress.application.runtime.product_runtime)
+            .checked_execution_request_for(progress.application.product_runtime())
             .map_err(WorthQueryHistoryNavigationDenial::Stopped)?;
         if matches!(progress.phase, NavigationPhase::Selected(_)) {
             return Err(WorthQueryHistoryNavigationDenial::AlreadySelected);

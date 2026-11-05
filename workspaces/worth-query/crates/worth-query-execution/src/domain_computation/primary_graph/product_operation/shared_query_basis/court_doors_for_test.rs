@@ -11,9 +11,11 @@ impl<'runtime, Schema> WorthQuerySelectedProductOperation<'runtime, Schema> {
     }
 }
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+pub trait SharedQueryBasisDoorsOps<Schema>:
+    crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>
+{
     #[doc(hidden)]
-    pub fn retain_selected_query_basis_admitted_for_test(
+    fn retain_selected_query_basis_admitted_for_test(
         &self,
         shared: &SharedSelectedProductOperation<'_, Schema>,
     ) -> Result<
@@ -25,4 +27,13 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     > {
         Self::retain_selected_query_basis_admitted(self, shared)
     }
+}
+
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<
+                Schema,
+            > + ?Sized,
+    > SharedQueryBasisDoorsOps<Schema> for HostRuntime
+{
 }

@@ -92,7 +92,7 @@ impl WorthQueryPreparedCorrectionSource {
             .cloned()
             .ok_or(Denial::MissingTargetParent)?;
         let execution = phase
-            .execution_request_for(&target.application().runtime.product_runtime)
+            .execution_request_for(target.application().product_runtime())
             .map_err(|_| Denial::ForeignPhase)?;
         let authored_identity = if lineage.role() == WorthQueryAftermathCausalRole::RecordedReverse
         {
@@ -130,7 +130,7 @@ impl WorthQueryPreparedCorrectionSource {
             target_program,
             required_root,
             material: source.occurrence().clone(),
-            runtime: target.application().runtime.authority_identity(),
+            runtime: target.application().authority_identity(),
             actor: actor.principal_entity_id(),
             scope: scope.entity_id(),
             action_input: *input.identity(),

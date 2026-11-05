@@ -116,7 +116,7 @@ impl<'a, S: ApplicationSchema> SourceQueryReaderAccess<'a, S> {
         let history = match (current, invocation) {
             (None, None) => None,
             (Some(current), Some(invocation))
-                if std::ptr::eq(application, current.selected().application())
+                if std::ptr::addr_eq(application, current.selected().application())
                     && current.selected().product().observation()
                         == invocation.current().observation()
                     && invocation.admits_request(request) =>

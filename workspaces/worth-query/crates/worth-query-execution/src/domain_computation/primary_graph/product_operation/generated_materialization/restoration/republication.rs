@@ -14,24 +14,17 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationOutputCorrespondence, WorthQueryPrimaryGraphApplicationRuntime,
 };
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    /// A restoration republishes the exact retained output on the runtime
-    /// that performed it. Its row therefore continues the suspended performed
-    /// record: the same consumed outputs, completed read and prepared input,
-    /// and a witness sealed over the re-created entities at the restoration
-    /// commit. The row's first reader compares it in full, so a demand reuses
-    /// the restored output instead of performing it a second time.
-    ///
-    /// A suspended record that retained no performed proof has nothing to
-    /// continue. It is recorded as a restored row, Fresh until verified.
-    pub(super) fn record_restored_generated_output(
+pub(super) trait RepublicationParentOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<Schema>
+{
+    fn record_restored_generated_output(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         observation: &ProductBranchObservation,
         correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
         producer: ProducerQualification,
     ) {
-        let graph = &self.runtime.primary_provider.graph;
+        let graph = &self.provider_graph();
         let owner = &graph.source_owner.invalidation_owner;
 
         let sealed = graph.with_runtime_mut(execution, |runtime| {
@@ -136,4 +129,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     }
 }
 
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::product_operation::host::ProductOperationHost<
+                Schema,
+            > + ?Sized,
+    > RepublicationParentOps<Schema> for HostRuntime
+{
+}
+
 mod court_doors_for_test;
+pub use court_doors_for_test::RepublicationDoorsOps;

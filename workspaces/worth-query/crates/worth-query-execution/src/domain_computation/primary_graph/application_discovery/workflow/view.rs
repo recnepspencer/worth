@@ -91,7 +91,7 @@ impl WorthQueryWorkflowReadBasis {
         // Retain only the native read lease for the result's observer lifetime.
         // The selected operation's publication source and fresh admission stay private.
         Self(WorthQueryApplicationReadObservation::from_product(
-            selected.application(),
+            selected.application().application_runtime(),
             selected.product().read_lease(),
         ))
     }

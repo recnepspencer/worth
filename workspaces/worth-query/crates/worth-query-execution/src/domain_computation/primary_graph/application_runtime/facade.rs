@@ -9,4 +9,5 @@ mod authorization;
 mod causal_inspection;
 mod conditional_operation;
 mod operation_body;
+mod product_operation;
 mod provider;

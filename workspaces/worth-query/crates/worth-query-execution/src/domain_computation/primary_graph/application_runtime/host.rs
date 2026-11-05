@@ -15,5 +15,6 @@ mod output_demand;
 mod output_lineage;
 mod principal_currentness_capture;
 mod product_activation;
+mod product_operation;
 mod provider;
 mod resolution;

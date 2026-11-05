@@ -1,5 +1,6 @@
 //! Current original-branch authority is checked before lookup and before release.
 use super::*;
+use crate::domain_computation::authorization::host::AuthorizationHost;
 use crate::domain_computation::authorization::CapabilityRevalidationScopedOps;
 use crate::domain_computation::primary_graph::{
     admitted_capture::{checkpoint, run_retained_stage, RetainedStorageDenial},

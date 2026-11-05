@@ -8,7 +8,6 @@ pub trait ConditionalOperationHost<Schema>:
     /// This host as the trait object `conditional_operation` is handed.
     fn conditional_operation_host(&self) -> &dyn ConditionalOperationHost<Schema>;
     fn conditional_operations(&self) -> &std::sync::Mutex<crate::domain_computation::primary_graph::conditional_operation::WorthQueryConditionalOperationRegistry<Schema>>;
-    fn bridge(&self) -> &crate::domain_computation::primary_graph::managed_bridge::WorthQueryInstalledApplicationBridge;
     fn granular_invalidation(
         &self,
     ) -> &crate::domain_computation::primary_graph::WorthQueryGranularInvalidationInstallation;

@@ -135,7 +135,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         Node: 'static,
         Provider: WorthQueryHostConditionalPredicateProvider<Node>,
     {
-        self.application().with_host_advancement(|active_phase| {
+        self.application().application_runtime().with_host_advancement(|active_phase| {
             let phase = &active_phase;
 
         let (anchor, request) = admission::definition_request(self.application(), self.product(), handle, provider)?;
@@ -164,3 +164,4 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         }).map_err(WorthQueryConditionalDefinitionPublicationDenial::ExecutionRequest)?
     }
 }
+pub(in crate::domain_computation::primary_graph) use admission::AdmissionScopedOps;

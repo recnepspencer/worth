@@ -94,6 +94,7 @@ where
             );
         let (_, projection, _) = self
             .application()
+            .application_runtime()
             .mutation_projection
             .project_admitted_operation_with_request(
                 execution,
@@ -134,7 +135,7 @@ where
                 input_identity,
                 source_identity,
                 captured,
-                &self.application().runtime.authorization_clock,
+                self.application().authorization_clock(),
             )
             .map_err(WorkflowProposalPreparationDenial::Attempt)
     }
@@ -246,7 +247,7 @@ impl WorthQueryWorkflowProposalAdapter {
         Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
-        let phase_request = match phase.execution_request_for(&selected.application().runtime.product_runtime) {
+        let phase_request = match phase.execution_request_for(selected.application().product_runtime()) {
             Ok(request) => request,
             Err(_) => return Err(WorkflowProposalPreparationDenial::Attempt(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::ForeignPhase, "workflow-phase"))),
         };

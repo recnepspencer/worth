@@ -1,5 +1,6 @@
 //! The admitted output handle's frozen source meaning is the only fallback read.
 
+use crate::domain_computation::primary_graph::product_operation::SharedQueryBasisScopedOps;
 use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_installation::facade::ApplicationSchema;

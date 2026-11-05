@@ -57,7 +57,7 @@ impl WorthQueryWorkflowSuccessionAdapter {
             ));
         }
         let execution = phase
-            .execution_request_for(&selected.application().runtime.product_runtime)
+            .execution_request_for(selected.application().product_runtime())
             .map_err(|_| denied("foreign succession phase"))?;
         let mut read = selected.begin_instance_read_set(&execution, installed, admission)?;
         let (compiled, carry, output_match, predecessor) = read
@@ -67,9 +67,10 @@ impl WorthQueryWorkflowSuccessionAdapter {
                 predecessor,
                 selected
                     .application()
+                    .application_runtime()
                     .installed_program_support()
                     .ok_or_else(|| denied("installed program support unavailable"))?,
-                &selected.application().runtime.authorization_clock,
+                selected.application().authorization_clock(),
             )
             .map_err(WorkflowInstancePreparationDenial::Attempt)?;
         let (instance_identity, identity) = super::super::intent_identity::succession_identity(
