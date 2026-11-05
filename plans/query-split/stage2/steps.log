@@ -23,3 +23,6 @@ phase 2 after output_demand, product_activation, application_discovery, applicat
 phase 2 after application_entry, operation_body, handler, output_lineage, conditional_operation, provider, application_installation, causal_inspection, application_attempt, product_operation, application_query; unused imports dropped: component 57 of 79; 147 upward edges, 1425 refs; 105 mutual pairs, lighter-side weight 964; 
   domain level: component 12 of 21; 20 upward edges, 580 refs; 17 mutual pairs, lighter-side weight 427; 
   lib unit-test build checked from workspaces/worth-query (the root build does not link the crate's dev-dependencies): clean
+phase 2 checkpoint (b78fc0c6b6 + milestone fixes): every module below the runtime on a host trait, inbound out of the runtime, 33 bridges left: component 59 of 80; 150 upward edges, 1506 refs; 108 mutual pairs, lighter-side weight 974; 
+  domain level: component 12 of 21; 20 upward edges, 581 refs; 17 mutual pairs, lighter-side weight 427; 
+  milestone: cargo check --workspace --tests over workspaces/worth-query clean (2b7b9d8f37); holding for the owner's decision on proposal 03 and the ownership simulation
