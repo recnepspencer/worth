@@ -1,0 +1,9 @@
+# Items held back after the post-move check (they name modules above the vocabulary layer)
+
+`ComponentSelection` `RequiredWorkMembership` `WorthQueryApplicationOutputCorrespondence` `WorthQueryApplicationOutputFamilyEntry` `WorthQueryBoundGraphExecutionAssociation` `WorthQueryExecutionBoundOperationAuthority` `attach_constructed_receiver`
+
+Module-relative paths into code that stays (second check): `dispatch` `observe_field` `WorthQueryApplicationAttemptOperationControl` `WorthQueryApplicationQueryBatchAdmission` `HandlerExecutionDenial`
+
+Third check (domain vocabulary naming the primary graph through a visible import): `SourceFactsAllocation`
+
+Fourth check (impls or fields that name their original family, or sealed authority whose seal stays with its owner): `CausalConstructionAuthority` `DispatchPostureState` `ExternalAcknowledgementEvent` `ExternalCompletionEvent` `ExternalEffectCausalLink` `ExternalEffectClassification` `ExternalEffectPosture` `ExternalEffectPostureIdentity` `InstalledTransportCompletion` `PerformedInstalledTransportCompletion` `PublicationCustody` `WorthQueryAcceptedInboundOccurrence` `WorthQueryApplicationBranchCommitCoordination` `WorthQueryCommitHistoryHold` `WorthQueryCommittedDispatchOutboxObservation` `WorthQueryCommittedProductPublication` `WorthQueryExternalDispatchPosture` `WorthQueryExternalEffectCausalLadder` `WorthQueryExternalEffectDispatch` `WorthQueryInvariantWorkMint` `WorthQueryMutationWorkCommitSeal` `WorthQueryPerformedExternalRedispatchSeal` `WorthQueryPerformedInboundCompletion` `WorthQueryPerformedRelationalProductChange` `WorthQueryPrimaryMutationWorkCounters` `WorthQueryPrimaryMutationWorkEvidence` `WorthQueryProductPublicationCustody` `WorthQueryProductPublicationReceipt` `WorthQueryProductRootIdentity` `provider_commit_identity`

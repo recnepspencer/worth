@@ -41,6 +41,7 @@ from path_resolution import Paths  # noqa: E402
 from rust_source import replace_spans, tokens  # noqa: E402
 from src_door_items import DOOR  # noqa: E402
 from src_occurrences import scan  # noqa: E402
+from src_paths import resolve  # noqa: E402
 from src_scope import scope_items  # noqa: E402
 from vocabulary_visibility import scope_of, stated  # noqa: E402
 
@@ -69,6 +70,8 @@ class UnitMove:
         self.removed_reexports = []
         self.problems = []
         self.target = {}            # (module, name) -> new module tuple
+        self.into = set()           # destinations that take the items into their own file
+        self.roots = set()          # family modules that take their root file's items
         self.span_of = {}           # (module, name) -> [(source, start, end)]
         found = {}
         for d in declarations(model, (), KEYWORDS):
@@ -78,6 +81,8 @@ class UnitMove:
             parts = tuple(move['item'].split('::'))
             key = (parts[:-1], parts[-1])
             to = tuple(move['to'].split('::'))
+            if move.get('into'):
+                self.into.add(to)
             if key not in found:
                 macro = self.macro_static(key)
                 if macro is None:
@@ -96,7 +101,7 @@ class UnitMove:
         node = self.model.index.get(key[0])
         if node is None:
             return None
-        for m in re.finditer(r'thread_local!\s*\{', node.text):
+        for m in re.finditer(r'(?:std::)?thread_local!\s*\{', node.text):
             depth, i = 0, m.end() - 1
             while i < len(node.text):
                 if node.text[i] == '{':
@@ -164,11 +169,41 @@ class UnitMove:
                 groups[(node.source, to)].append((module, source, s, e, key))
         self.groups = groups
 
+    def opened(self, key, piece):
+        """A moved declaration without a visibility is still named from its old module: it is
+        opened to the level it moves within (recorded as a widening)."""
+        level = 'crate::' + '::'.join(self.target[key][:2] if self.target[key][:2] ==
+                                      ('domain_computation', 'primary_graph') else self.target[key][:1])
+        if 'thread_local!' in piece:
+            body = re.sub(r'(?<![\w)])static\s', f'pub(in {level}) static ', piece, count=1)
+            if not body.lstrip().startswith(('std::', '#', '//')):
+                body = body.replace('thread_local!', 'std::thread_local!', 1)
+            self.widenings.append({'item': '::'.join(key[0] + (key[1],)), 'from': 'private', 'to': f'pub(in {level})'})
+            return body
+        stream = tokens(piece)
+        for token in stream:
+            if token.value == 'pub':
+                return piece
+            if token.value in KEYWORDS + ('impl', 'unsafe', 'async'):
+                head = piece[:token.start]
+                self.widenings.append({'item': '::'.join(key[0] + (key[1],)), 'from': 'private', 'to': f'pub(in {level})'})
+                return head + f'pub(in {level}) ' + piece[token.start:]
+        return piece
+
     def new_module(self, source, to):
+        if to in self.into:
+            return to
+        return self.fresh_module(source, to)
+
+    def fresh_module(self, source, to):
         """A fresh child module name in `to` for items from `source`: the file's stem, or its
-        parent directory and stem when the stem is taken (`read_execution_denial`)."""
+        parent directory and stem when the stem is taken (`read_execution_denial`); `to` itself
+        for the family's root file, so no child repeats its parent's name."""
         stem = source.stem if source.stem != 'mod' else source.parent.name
         parent = source.parent.name if source.stem != 'mod' else source.parent.parent.name
+        if stem == to[-1]:          # the family's own root file: its items go in the family module
+            self.roots.add(to)
+            return to
         taken = {c.names[-1] for c in self.model.index[to].children} | \
             {names[-1] for names in self.files.values() if names[:-1] == to}
         for name in (stem, f'{parent}_{stem}'):
@@ -188,9 +223,22 @@ class UnitMove:
             origin = self.model.surface.origin(module, rest[0])[0]
             if origin and origin[0] != '<external>' and origin[1]:
                 key = (origin[0], origin[1])
-                home = self.created_home(key) or origin[0]
-                return ('crate',) + home + (origin[1],) + tuple(rest[1:])
+                home = self.created_home(key)
+                if home is not None:
+                    return ('crate',) + home + (origin[1],) + tuple(rest[1:])
+                return ('crate',) + self.shallowest(key, module) + (origin[1],) + tuple(rest[1:])
         return ('crate',) + module + tuple(rest)
+
+    def shallowest(self, key, fallback):
+        """The shallowest ancestor of the defining module that names `key` itself (its
+        re-export), so a path never spells a private inner module; `fallback` otherwise."""
+        defining = key[0]
+        for depth in range(1, len(defining) + 1):
+            module = defining[:depth]
+            if module in self.model.surface.scopes and \
+                    self.model.surface.origin(module, key[1])[0] == key:
+                return module
+        return fallback
 
     def created_home(self, key):
         return self.created.get(key)
@@ -211,7 +259,10 @@ class UnitMove:
                 seen.add((source, start))
                 node = self.model.index[module]
                 text = source.read_text(encoding='utf-8')
-                bodies[self.files[group]].append((module, node, start - node.offset, text[start:end]))
+                piece = text[start:end]
+                opens = key if module == self.declaration[key].module and \
+                    start == comment_start(text, self.declaration[key].start) else None
+                bodies[self.files[group]].append((module, node, start - node.offset, piece, opens))
                 self.edit(source, start, end, '')
         for new, pieces in bodies.items():
             self.write_file(new, pieces)
@@ -221,34 +272,75 @@ class UnitMove:
         imports = set()
         texts = []
         here = {key[1] for key, home in self.created.items() if home == new}
-        for module, node, offset, piece in pieces:
+        if (new in self.into or new in self.roots) and new in self.model.surface.scopes:
+            scope = self.model.surface.scopes[new]   # names the destination already has in scope
+            here |= set(scope.declared) | set(scope.imports)
+        for module, node, offset, piece, opens in pieces:
             rewritten, names = self.rewrite_piece(node, offset, piece, new)
+            if opens is not None:
+                rewritten = self.opened(opens, rewritten)
             texts.append(rewritten.strip('\n'))
             for name in names - here:
-                origin = self.model.surface.origin(module, name)[0] if module in self.model.surface.scopes else None
-                if origin is None or origin[0] == '<external>':
-                    scope = self.paths.node_scope(node)
-                    if name in scope.imports:
-                        segments = scope.imports[name]
-                        path = self.absolute(node, segments) if segments and segments[0] in ('crate', 'super', 'self') or \
-                            (segments and self.paths.head_module(node, segments[0])) else tuple(segments)
-                        if path:
-                            imports.add(('::'.join(path), name if path[-1] != name else None))
+                found = self.visible_path(module, name)
+                if found is None:
                     continue
-                if origin[1] is None:
-                    continue
-                home = self.created.get((origin[0], origin[1])) or origin[0]
-                if home == new:
-                    continue
-                imports.add(('crate::' + '::'.join(home + (origin[1],)), name if origin[1] != name else None))
+                path, defining = found
+                if defining is not None:
+                    home = self.created.get(defining)
+                    if home == new:
+                        continue
+                    if home is not None:
+                        path = ('crate',) + home + (defining[1],)
+                imports.add(('::'.join(path), name if path[-1] != name else None))
         doc = f'//! Moved whole from `{"::".join(pieces[0][0])}`: the items below and every impl they own.\n'
         lines = [doc]
         for path, alias in sorted(imports, key=lambda pa: (pa[0], pa[1] or '')):
             lines.append(f'use {path}' + (f' as {alias}' if alias else '') + ';\n')
         body = '\n\n'.join(texts) + '\n'
+        if new in self.into or new in self.roots:
+            node = self.model.index[new]
+            point = 0
+            while node.text.startswith(('//!', '#!['), point):  # after inner docs and attributes
+                point = node.text.index('\n', point) + 1
+            self.edit(node.source, node.offset + point, node.offset + point, ''.join(lines[1:]))
+            end = len(node.source.read_text(encoding='utf-8'))
+            self.edit(node.source, end, end, '\n' + body)
+            return
         source = self.module_file(new)
         self.edit(source, 0, 0, ''.join(lines) + '\n' + body)
         self.declare(new)
+
+    def visible_path(self, module, name, seen=frozenset()):
+        """(a path naming `name` as `module` sees it, the defining (module, name) or None): the
+        module's own import as spelled (absolutized), its own declaration, or through its globs;
+        never the defining path through private modules."""
+        if (module, name) in seen or module not in self.model.surface.scopes:
+            return None
+        seen = seen | {(module, name)}
+        scope = self.model.surface.scopes[module]
+        origin = self.model.surface.origin(module, name)[0]
+        defining = (origin[0], origin[1]) if origin and origin[0] != '<external>' and origin[1] else None
+        if name in scope.declared:
+            if defining is None:
+                return None
+            return ('crate',) + self.shallowest(defining, module) + (name,), defining
+        if name in scope.imports:
+            segments = tuple(scope.imports[name])
+            resolved = resolve(segments, module, self.model.index)
+            if resolved is None:
+                return segments, None              # an external crate's path, as written
+            target, rest = resolved
+            if defining is not None and len(rest) == 1:
+                return ('crate',) + self.shallowest(defining, target) + (defining[1],), defining
+            return ('crate',) + target + tuple(rest), defining
+        for segments in scope.globs:
+            resolved = resolve(segments, module, self.model.index)
+            if resolved is None or resolved[1]:
+                continue
+            found = self.visible_path(resolved[0], name, seen)
+            if found is not None:
+                return found
+        return None
 
     def rewrite_piece(self, node, offset, piece, new):
         """The piece with its rooted paths written from `crate::`, and the bare names it uses."""
@@ -284,11 +376,13 @@ class UnitMove:
         parent = self.model.index[new[:-1]]
         text = parent.text
         point = 0
+        while text.startswith('//!', point):
+            point = text.index('\n', point) + 1
         for _a, _v, keyword, _n, s, e in scope_items(text):
             if keyword == 'mod':
                 point = removal_end(text, e)
-        self.edit(parent.source, parent.offset + point, parent.offset + point,
-                  f'pub(in crate::{"::".join(new[:-1])}) mod {new[-1]};\n')
+        # pub(crate): the public facade re-exports moved public items through this path.
+        self.edit(parent.source, parent.offset + point, parent.offset + point, f'pub(crate) mod {new[-1]};\n')
 
     # references elsewhere
     def moved_origin(self, node, segments):
@@ -320,7 +414,7 @@ class UnitMove:
             for use in uses:
                 if any(a <= use.start < b for a, b in skip):
                     continue
-                leaves, changed = [], False
+                leaves, private, changed = [], [], False
                 for segments, glob, alias in use.leaves:
                     hit = self.moved_origin(node, segments) if segments and not glob else None
                     if hit is None:
@@ -334,18 +428,18 @@ class UnitMove:
                         # a re-export inside the old owner: no shim at an old path
                         self.removed_reexports.append('::'.join(names + (alias or segments[-1],)))
                         if (alias or segments[-1]) in self.own_words(node, use):
-                            leaves.append((('crate',) + self.created[key] + (key[1],) + rest, False,
-                                           alias if alias and alias != key[1] else None))
-                            self.private_use.append((node, use))
+                            # the module still names it: a private import, apart from the
+                            # statement's other (still re-exported) leaves
+                            private.append((('crate',) + self.created[key] + (key[1],) + rest, False,
+                                            alias if alias and alias != key[1] else None))
                         continue
                     new = ('crate',) + self.created[key] + (key[1],) + rest
                     keep = alias if alias else (segments[-1] if new[-1] != segments[-1] else None)
                     leaves.append((new, False, keep))
                 if changed:
-                    visibility = use.visibility
-                    if (node, use) in self.private_use:
-                        visibility = ''
-                    text = use_text(visibility, leaves) if leaves else ''
+                    text = use_text(use.visibility, leaves) if leaves else ''
+                    if private:
+                        text = (text + '\n' if text else '') + use_text('', private)
                     self.edit(node.source, node.offset + use.start, node.offset + use.end, text)
             for path in paths:
                 if any(a <= path.start < b for a, b in skip):
@@ -357,6 +451,31 @@ class UnitMove:
                 new = ('crate',) + self.created[key] + (key[1],) + rest
                 self.edit(node.source, node.offset + path.start, node.offset + path.end, '::'.join(new))
         self.globs()
+        self.local_users(moved_spans)
+
+    def local_users(self, moved_spans):
+        """A module that lost items and still names them in its own remaining text imports them
+        from their new module (the sibling code of a moved declaration)."""
+        lost = defaultdict(set)
+        for key in self.target:
+            lost[key[0]].add(key[1])
+        for names, node in sorted(self.model.index.items()):
+            if names not in lost:
+                continue
+            skip = [(c.declaration.start, c.declaration.end) for c in node.children if c.declaration.body]
+            skip += moved_spans.get(names, [])
+            words = {t.value for t in tokens(node.text) if t.kind == 'ident'
+                     and not any(a <= t.start < b for a, b in skip)}
+            added = sorted('use crate::' + '::'.join(self.created[(names, word)] + (word,)) + ';\n'
+                           for word in words & lost[names] if (names, word) in self.created)
+            if added:
+                point = 0
+                while node.text.startswith('//!', point):
+                    point = node.text.index('\n', point) + 1
+                for _a, _v, keyword, _n, s, e in scope_items(node.text):
+                    if keyword == 'use':
+                        point = removal_end(node.text, e)
+                self.edit(node.source, node.offset + point, node.offset + point, ''.join(added))
 
     def own_words(self, node, use):
         text = node.text
@@ -388,6 +507,8 @@ class UnitMove:
                     added.append('use crate::' + '::'.join(self.created[key] + (key[1],)) + ';\n')
             if added:
                 point = 0
+                while node.text.startswith('//!', point):
+                    point = node.text.index('\n', point) + 1
                 for _a, _v, keyword, _n, s, e in scope_items(node.text):
                     if keyword == 'use':
                         point = removal_end(node.text, e)
