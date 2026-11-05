@@ -1,4 +1,4 @@
-mod installed_readmission;
+pub(crate) mod installed_readmission;
 use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 use worth_query_installation::facade::ApplicationSchema;
 

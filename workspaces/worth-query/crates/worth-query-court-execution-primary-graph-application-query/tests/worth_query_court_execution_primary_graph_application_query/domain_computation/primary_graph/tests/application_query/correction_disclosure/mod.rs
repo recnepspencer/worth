@@ -1,4 +1,5 @@
 //! History disclosure is decided by native roots, independently of projection code.
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::one_shot::correction_disclosure::court_doors_for_test::CorrectionDisclosureDoorsOps;
 use crate::domain_computation::primary_graph::tests::application_query::*;
 
 #[test]

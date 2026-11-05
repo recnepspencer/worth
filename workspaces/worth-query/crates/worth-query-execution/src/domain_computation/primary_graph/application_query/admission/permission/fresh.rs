@@ -15,7 +15,7 @@ use crate::domain_computation::primary_graph::WorthQueryObservedSource;
 use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenial;
 use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode;
 
-mod access;
+pub(crate) mod access;
 
 type Parameters<Schema, Binding> =
     <<Binding as ApplicationQueryBinding<Schema>>::ParameterBinding as ApplicationStructuredValueBinding>::Value;

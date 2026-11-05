@@ -156,5 +156,5 @@ pub(in crate::domain_computation::primary_graph) trait ExternalDispatchAttemptSc
 
 impl<Schema: worth_query_installation::facade::ApplicationSchema, HostRuntime: crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema> + ?Sized> ExternalDispatchAttemptScopedOps<Schema> for HostRuntime {}
 
-mod court_doors_for_test;
+pub(crate) mod court_doors_for_test;
 pub use court_doors_for_test::ExternalDispatchAttemptDoorsOps;

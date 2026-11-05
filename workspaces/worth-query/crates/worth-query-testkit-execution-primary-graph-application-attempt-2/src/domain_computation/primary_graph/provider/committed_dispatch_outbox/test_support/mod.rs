@@ -1,4 +1,5 @@
 //! Real World commit-to-dispatch support for causal tests.
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::external_dispatch_attempt::court_doors_for_test::ExternalDispatchAttemptDoorsOps;
 
 use worth_relational::facade::transactions::RecordRef;
 

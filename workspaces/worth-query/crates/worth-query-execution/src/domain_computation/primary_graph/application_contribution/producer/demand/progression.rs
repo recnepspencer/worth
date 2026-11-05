@@ -18,7 +18,7 @@ use crate::domain_computation::primary_graph::application_output_demand::denial:
 
 pub(in crate::domain_computation::primary_graph) use required_wave::CurrentBasis;
 pub(in crate::domain_computation::primary_graph) use required_wave::CurrentProof;
-mod admission;
+pub(crate) mod admission;
 mod caller_pass;
 use caller_pass::CallerPass;
 mod refresh;
@@ -349,9 +349,9 @@ pub fn denial(
     WorthQueryOutputDemandDenial::new(kind, subject)
 }
 
-pub(in crate::domain_computation::primary_graph) mod caller_pass_observation;
+pub(crate) mod caller_pass_observation;
 
-mod court_doors_for_test;
+pub(crate) mod court_doors_for_test;
 pub use admission::AdmissionOps;
 pub(in crate::domain_computation) use admission::AdmissionScopedOps;
 pub use admission::AdmissionDoorsOps;

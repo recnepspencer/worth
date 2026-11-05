@@ -331,4 +331,4 @@ where
 impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema> + ?Sized> ExternalDispatchOwnOps<Schema> for HostRuntime where
     Schema: ApplicationSchema, {}
 
-mod court_doors_for_test;
+pub(crate) mod court_doors_for_test;

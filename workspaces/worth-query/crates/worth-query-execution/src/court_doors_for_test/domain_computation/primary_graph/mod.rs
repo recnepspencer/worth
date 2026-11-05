@@ -11,6 +11,8 @@ pub mod application_branch;
 pub mod application_checkpoint;
 #[path = "application_contribution/mod.rs"]
 pub mod application_contribution;
+#[path = "application_inbound/mod.rs"]
+pub mod application_inbound;
 #[path = "application_installation/mod.rs"]
 pub mod application_installation;
 #[path = "application_invariant/mod.rs"]
@@ -19,8 +21,6 @@ pub mod application_invariant;
 pub mod application_output_demand;
 #[path = "application_query/mod.rs"]
 pub mod application_query;
-#[path = "application_runtime/mod.rs"]
-pub mod application_runtime;
 #[path = "bootstrap_publication/mod.rs"]
 pub mod bootstrap_publication;
 #[path = "causal_inspection/mod.rs"]

@@ -34,7 +34,7 @@ mod elevation_request_outcome;
 mod elevation_request_program;
 pub(crate) mod fact;
 mod idempotency;
-mod idempotency_resolution;
+pub(crate) mod idempotency_resolution;
 mod mandatory_review_outcome;
 mod mandatory_review_program;
 mod mandatory_review_replay;

@@ -45,7 +45,11 @@ pub fn adoption_cycles_retain_linear_history() {
             host.runtime().branches().pending_cleanup().is_empty(),
             "cycle {cycle}: the replaced head's cleanup completes"
         );
-        let evidence = host.runtime().completed_evidence_retained_for_test();
+        let evidence = host
+            .runtime()
+            .runtime_for_test()
+            .primary_provider_for_test()
+            .completed_evidence_retained_for_test();
         if cycle == 2 {
             steady_evidence = evidence;
         }

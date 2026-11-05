@@ -64,3 +64,23 @@ impl<Schema: ApplicationSchema> super::super::WorthQueryPrimaryGraphApplicationR
         <Self as crate::domain_computation::product_publication::DiscoveryOps<Schema>>::release_product_publication_recovery_in_advancement(self, phase, recovery, minimum_age_ticks)
     }
 }
+
+impl<S: ApplicationSchema>
+    crate::domain_computation::primary_graph::application_output_demand::denial::recovery_release::WorthQueryProductRecoveryClose
+    for super::super::WorthQueryPrimaryGraphApplicationRuntime<S>
+{
+    fn close_recovery_in_advancement(
+        &self,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
+        recovery: crate::domain_computation::product_publication::WorthQueryProductUnpublishedRecovery,
+    ) -> Result<
+        crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanupReceipt,
+        crate::domain_computation::product_publication::WorthQueryProductUnpublishedRecoveryReleaseFailure,
+    > {
+        crate::domain_computation::primary_graph::application_output_demand::denial::recovery_release::WorthQueryProductRecoveryClose::close_recovery_in_advancement(
+            crate::domain_computation::product_publication::host::ProductPublicationHost::product_publication_host(self),
+            phase,
+            recovery,
+        )
+    }
+}

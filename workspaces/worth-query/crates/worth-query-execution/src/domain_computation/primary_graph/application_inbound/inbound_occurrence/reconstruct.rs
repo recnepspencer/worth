@@ -86,5 +86,5 @@ fn matches_receipt(
         && identity.authoring_branch() == &receipt.branch_id
 }
 
-mod court_doors_for_test;
+pub(crate) mod court_doors_for_test;
 pub use court_doors_for_test::ReconstructDoorsOps;

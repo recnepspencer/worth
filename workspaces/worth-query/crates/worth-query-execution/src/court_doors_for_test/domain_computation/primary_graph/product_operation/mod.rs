@@ -1,4 +1,6 @@
 //! Doors under `domain_computation::primary_graph::product_operation`.
+#[path = "context/mod.rs"]
+pub mod context;
 #[path = "correction_source/mod.rs"]
 pub mod correction_source;
 #[path = "document_history/mod.rs"]

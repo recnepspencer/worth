@@ -12,7 +12,7 @@ pub(in crate::domain_computation::primary_graph) use invariant_admission::admit_
 mod no_effect;
 mod receipt;
 mod recovery;
-mod republication;
+pub(crate) mod republication;
 mod settlement;
 
 pub use failure::WorthQueryGeneratedOutputRestorationFailureCause;

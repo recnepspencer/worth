@@ -384,5 +384,5 @@ Err(PublicationDenial::Stopped(stop)) => RecoveryStep::Retain(
 
 impl<Schema: ApplicationSchema, HostRuntime: crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema> + ?Sized> RecoverOwnOps<Schema> for HostRuntime {}
 
-mod court_doors_for_test;
+pub(crate) mod court_doors_for_test;
 pub use court_doors_for_test::RecoverDoorsOps;

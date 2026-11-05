@@ -9,7 +9,7 @@ pub(in crate::domain_computation::primary_graph::application_query) use admitted
 pub(in crate::domain_computation::primary_graph::application_query) use admitted::settle_admitted_read;
 mod history_capture;
 pub use history_capture::WorthQueryApplicationHistoryCaptureResult;
-mod correction_disclosure;
+pub(crate) mod correction_disclosure;
 mod dependent_pair;
 pub use dependent_pair::WorthQueryDependentPairReadContext;
 mod batch;
@@ -308,7 +308,7 @@ pub fn map_authorized_read_denial(
     denial(kind, query, subject)
 }
 
-mod court_doors_for_test;
+pub(crate) mod court_doors_for_test;
 pub(in crate::domain_computation::primary_graph::application_query) use admitted::AdmittedScopedOps;
 pub use batch::BatchOps;
 pub(in crate::domain_computation) use batch::BatchScopedOps;

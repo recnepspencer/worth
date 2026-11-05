@@ -84,7 +84,7 @@ pub enum WorthQueryInboundAdmissionDenial {
     OwnerReadDenied(WorthQueryCommittedDispatchOutboxReadDenial),
 }
 
-mod admit;
+pub(crate) mod admit;
 mod denial;
 mod phases;
 mod progress_error;

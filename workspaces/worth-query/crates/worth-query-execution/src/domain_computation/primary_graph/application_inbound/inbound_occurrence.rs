@@ -14,16 +14,16 @@ use crate::domain_computation::primary_graph::application_runtime::WorthQueryPri
 
 pub(crate) mod receive;
 pub(crate) mod transport_binding;
-mod transport_publication_permit;
+pub(crate) mod transport_publication_permit;
 pub(in crate::domain_computation) use transport_binding::WorthQueryInstalledTransportCompletionBinding;
-mod cleanup;
+pub(crate) mod cleanup;
 mod cost;
 mod maintenance;
 mod observe;
-mod progress;
+pub(crate) mod progress;
 mod rebuild;
-mod reconstruct;
-mod recover;
+pub(crate) mod reconstruct;
+pub(crate) mod recover;
 pub use cost::WorthQueryInboundCostObservation;
 pub use maintenance::WorthQueryInboundMaintenanceReport;
 pub use observe::WorthQueryInboundTerminalObservation;

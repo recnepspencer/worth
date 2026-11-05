@@ -1,4 +1,5 @@
 //! Source binding validates admission authority before retention or mutation.
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::prepared_expectation::court_doors_for_test::PreparedExpectationDoorsOps;
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::*;
 use std::num::NonZeroUsize;
 use std::time::Duration;
@@ -145,7 +146,7 @@ pub fn check(fault: Fault, entry: Entry) {
                     .map(drop)
             } else {
                 match pending {
-                    Some(pending) => pending.consume_into(source, &phase, &mut admission),
+                    Some(pending) => pending.consume_into(source.runtime(), &phase, &mut admission),
                     None => source
                         .bind_application_source_expectation::<OrdinaryBinding<Schema>, _>(
                             &phase,

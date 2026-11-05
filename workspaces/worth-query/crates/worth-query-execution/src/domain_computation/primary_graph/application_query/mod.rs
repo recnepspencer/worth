@@ -6,7 +6,7 @@ pub(in crate::domain_computation) use admission::CapturedApplicationQueryParamet
 pub(in crate::domain_computation::primary_graph) use admission::{
     FreshQueryPermissionStop, PreparedApplicationQueryPermission, SelectedIssuedAccessRoot,
 };
-mod admission_preparation;
+pub(crate) mod admission_preparation;
 mod admitted_result;
 mod authorization_observation;
 mod authorization_work;
@@ -245,3 +245,9 @@ pub(in crate::domain_computation::primary_graph) use projection::ProjectionConte
 pub use readiness::ReadinessOps;
 pub use retained_read::RetainedReadOps;
 pub(crate) mod host;
+pub use derived_view::ReconcileOps;
+pub use derived_view::ReconstructDependentOps;
+pub use derived_view::ReconstructLazyOps;
+pub use derived_view::ReconstructParallelOps;
+pub use derived_view::RefreshBatchOps;
+pub use document_history::OutputIntentOps;

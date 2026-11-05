@@ -308,5 +308,5 @@ fn map_custody(
     }
 }
 
-mod court_doors_for_test;
+pub(crate) mod court_doors_for_test;
 pub use court_doors_for_test::AdmitDoorsOps;

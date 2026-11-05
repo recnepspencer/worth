@@ -3,7 +3,7 @@ pub(crate) mod application_attempt_affinity;
 mod capability_revocation;
 mod delegation_activation;
 pub(crate) mod elevation_currentness;
-mod elevation_lifecycle;
+pub(crate) mod elevation_lifecycle;
 mod elevation_refusal;
 mod entry;
 pub(crate) mod external_dispatch;

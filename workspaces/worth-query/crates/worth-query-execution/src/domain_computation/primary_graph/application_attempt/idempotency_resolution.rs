@@ -5,7 +5,7 @@ use worth_query_installation::facade::ApplicationSchema;
 #[path = "idempotency_resolution/denial.rs"]
 mod denial;
 #[path = "idempotency_resolution/external_settlement.rs"]
-mod external_settlement;
+pub(crate) mod external_settlement;
 #[path = "idempotency_resolution/historical_commit.rs"]
 mod historical_commit;
 

@@ -128,6 +128,6 @@ mod elevation_close;
 mod elevation_request;
 mod mandatory_review;
 
-mod court_doors_for_test;
+pub(crate) mod court_doors_for_test;
 pub use court_doors_for_test::EntryCustodyDoorsOps;
 pub use court_doors_for_test::EntryCustodyEntryCustodyDoorsOps;

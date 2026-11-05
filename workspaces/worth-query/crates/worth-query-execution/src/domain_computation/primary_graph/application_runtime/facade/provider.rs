@@ -49,3 +49,34 @@ impl<Schema: ApplicationSchema> super::super::WorthQueryPrimaryGraphApplicationR
         <Self as crate::domain_computation::primary_graph::provider::ManagedApplicationRecoveryOps<Schema>>::recover_admitted_unpublished_application_in_advancement(self, phase, recovery, admission, idempotency)
     }
 }
+
+impl<Schema: ApplicationSchema> super::super::WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    pub fn recover_admitted_unpublished_program_source<Operation, Input, Scope>(
+        &self,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
+        unused_1: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        recovery: &WorthQueryProductUnpublishedRecovery,
+        admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+        idempotency: WorthQueryApplicationIdempotencyBinding,
+    ) -> Result<(WorthQueryManagedApplicationRecoveryOutcome, Option<crate::domain_computation::primary_graph::application_installation::WorthQueryRecoveredProgramOutputSource>), WorthQueryManagedApplicationRecoveryDenial>
+    where Input: Clone + Send + Sync + 'static,{
+        <Self as crate::domain_computation::primary_graph::provider::ManagedApplicationRecoveryOps<Schema>>::recover_admitted_unpublished_program_source(self, phase, unused_1, recovery, admission, idempotency)
+    }
+
+    pub fn recover_admitted_unpublished_source_operation<Operation, Input, Scope>(
+        &self,
+        phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
+        unused_1: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        recovery: &WorthQueryProductUnpublishedRecovery,
+        admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+        idempotency: WorthQueryApplicationIdempotencyBinding,
+    ) -> Result<
+        WorthQueryManagedApplicationRecoveryOutcome,
+        WorthQueryManagedApplicationRecoveryDenial,
+    >
+    where
+        Input: Clone + Send + Sync + 'static,
+    {
+        <Self as crate::domain_computation::primary_graph::provider::ManagedApplicationRecoveryOps<Schema>>::recover_admitted_unpublished_source_operation(self, phase, unused_1, recovery, admission, idempotency)
+    }
+}

@@ -1,4 +1,5 @@
 //! Installed authorization-world fixture compiler and its population phases.
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::product_operation::context::court_doors_for_test::ContextDoorsOps;
 
 use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId as TypeId;
 use crate::domain_computation::primary_graph::tests::fixture::authorization_world_installation::publication::publish_authorization_world;

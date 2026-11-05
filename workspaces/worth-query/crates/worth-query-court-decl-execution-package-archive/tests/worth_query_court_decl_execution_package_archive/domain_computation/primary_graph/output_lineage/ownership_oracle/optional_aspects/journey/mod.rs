@@ -1,4 +1,6 @@
 //! Actual Query reads and installed producer completion.
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::demand::progression::admission::court_doors_for_test::AdmissionDoorsOps;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::producer::demand::progression::court_doors_for_test::ProgressionDoorsOps;
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::installation::Application;
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::installation::ANCHOR;
 use crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::*;
@@ -150,7 +152,7 @@ pub fn demand_expected<Schema: BirthSchema>(
             if matches!(expected, Expected::Materialized | Expected::RequiredAdmission) {
                 assert!(matches!(advanced, WorthQueryOutputDemandAdvance::Progressed), "the original born-stale publication progressed without settling current");
                 let locator = (*(*(*(*runtime.runtime_for_test()).primary_provider_for_test()).graph_for_test()).layout_for_test()).field_locator_for_test("Body", "SourceNotes", "SourceSelection").unwrap();
-                demand.assert_born_stale_absence_for_test(runtime, &phase, &execution, root, locator, |receipt| {
+                demand.assert_born_stale_absence_for_test(runtime.runtime(), &phase, &execution, root, locator, |receipt| {
                     original_roster = Some(crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::court::own_effect::observe_performed_receipt(runtime, &phase, receipt, WorthQueryApplicationOutputPosture::Create));
                     if matches!(expected, Expected::Materialized) {
                         original_output_revision = Some(crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::court::output_revision::created(runtime, &phase, receipt));
@@ -165,7 +167,7 @@ pub fn demand_expected<Schema: BirthSchema>(
                 if Schema::RENEW_OUTPUT {
                     assert!(matches!(advanced, WorthQueryOutputDemandAdvance::Progressed),
                         "P2's change to the actual query input needs fresh source disclosure before P3");
-                    demand.assert_changed_successor_for_test(runtime, &phase, &execution, root, |receipt| {
+                    demand.assert_changed_successor_for_test(runtime.runtime(), &phase, &execution, root, |receipt| {
                         let p2 = crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::court::output_revision::created(runtime, &phase, receipt);
                         let p1 = original_output_revision.expect("independently observed P1 creator");
                         assert_eq!(p2.0, p1.0, "same original full-GEN output");
@@ -183,7 +185,7 @@ pub fn demand_expected<Schema: BirthSchema>(
                 panic!("the synchronous real MODE2 handler must settle")
             };
             if let Some(original) = original_roster {
-                demand.assert_preserve_successor_for_test(runtime, root, contacts);
+                demand.assert_preserve_successor_for_test(runtime.runtime(), root, contacts);
                 assert_eq!(settlement.producer_identity(), <Preserve<Schema> as WorthQueryApplicationProducerBinding<Schema>>::IDENTITY);
                 assert_eq!(crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::court::own_effect::observe_performed_receipt(runtime, &phase, settlement.application_commit_receipt().expect("real successor receipt"), WorthQueryApplicationOutputPosture::Preserve), original, "all four native IDs/generations and real incidence survive the executed Preserve");
             }

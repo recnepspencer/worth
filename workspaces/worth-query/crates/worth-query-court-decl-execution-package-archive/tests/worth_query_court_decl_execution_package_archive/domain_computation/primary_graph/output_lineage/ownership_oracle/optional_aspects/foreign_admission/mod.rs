@@ -103,7 +103,7 @@ pub fn execute_source_bound(
                     &input,
                 )
                 .unwrap()
-                .consume_into(source, &phase, &mut admission)
+                .consume_into(source.runtime(), &phase, &mut admission)
                 .unwrap();
             (admission, *principal.principal_identity())
         })

@@ -5,7 +5,7 @@ pub(crate) mod historical_authority;
 mod index_currency_denial;
 mod product_admission;
 mod selected_indexes;
-mod truth_view_admission;
+pub(crate) mod truth_view_admission;
 
 pub(super) use admission::{
     admit_application_query_basis, admit_application_query_permission_basis,

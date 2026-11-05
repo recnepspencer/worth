@@ -7,8 +7,12 @@ pub mod dependency_identity;
 pub mod effect_program;
 #[path = "effect_validation/mod.rs"]
 pub mod effect_validation;
+#[path = "external_dispatch_attempt/mod.rs"]
+pub mod external_dispatch_attempt;
 #[path = "fact/mod.rs"]
 pub mod fact;
+#[path = "idempotency_resolution/mod.rs"]
+pub mod idempotency_resolution;
 #[path = "migration/mod.rs"]
 pub mod migration;
 #[path = "observation/mod.rs"]

@@ -9,6 +9,12 @@ use crate::domain_computation::primary_graph::application_query::derived_view::W
 use crate::domain_computation::primary_graph::application_query::observed_source::*;
 use crate::domain_computation::primary_graph::application_query::one_shot::*;
 use crate::domain_computation::primary_graph::application_query::HistoryOutputControlPlan;
+use crate::domain_computation::primary_graph::application_query::OutputIntentOps;
+use crate::domain_computation::primary_graph::application_query::ReconcileOps;
+use crate::domain_computation::primary_graph::application_query::ReconstructDependentOps;
+use crate::domain_computation::primary_graph::application_query::ReconstructLazyOps;
+use crate::domain_computation::primary_graph::application_query::ReconstructParallelOps;
+use crate::domain_computation::primary_graph::application_query::RefreshBatchOps;
 use crate::domain_computation::primary_graph::application_query::WorthQueryAdmittedApplicationHistoryCapture;
 use crate::domain_computation::primary_graph::application_query::WorthQueryAdmittedApplicationQueryPlan;
 use crate::domain_computation::primary_graph::application_query::WorthQueryApplicationBasisIdentity;
@@ -32,7 +38,11 @@ use crate::domain_computation::primary_graph::application_query::WorthQueryAppli
 use crate::domain_computation::primary_graph::application_query::WorthQueryCapturedApplicationHistorySubjects;
 use crate::domain_computation::primary_graph::application_query::WorthQueryDocumentHistoryRead;
 use crate::domain_computation::primary_graph::application_query::WorthQueryHistoryPreviewReadAdmission;
+use crate::domain_computation::primary_graph::application_query::WorthQueryManagedDerivedCollectionBatchRefreshDenial;
+use crate::domain_computation::primary_graph::application_query::WorthQueryManagedDerivedMemberToken;
 use crate::domain_computation::primary_graph::application_query::WorthQueryManagedDerivedViewDenial;
+use crate::domain_computation::primary_graph::application_query::WorthQueryManagedDerivedViewKey;
+use crate::domain_computation::primary_graph::application_query::WorthQueryManagedDerivedViewReconciliation;
 use crate::domain_computation::primary_graph::application_query::WorthQueryManagedIndex;
 use crate::domain_computation::primary_graph::application_query::WorthQueryManagedIndexDenial;
 use crate::domain_computation::primary_graph::application_query::WorthQueryManagedIndexWatch;
@@ -41,6 +51,7 @@ use crate::domain_computation::primary_graph::application_query::WorthQueryObser
 use crate::domain_computation::primary_graph::product_operation::WorthQueryOwnedProductHead;
 use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation;
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
+use crate::domain_computation::primary_graph::WorthQueryCompletedHistoryOutputs;
 use crate::domain_computation::primary_graph::WorthQueryDocumentHistory;
 use crate::domain_computation::primary_graph::WorthQueryDocumentHistoryAttachmentFailure;
 use crate::domain_computation::primary_graph::WorthQueryDocumentHistoryDenial;
@@ -50,8 +61,11 @@ use crate::domain_computation::primary_graph::WorthQueryHistoryNavigationComplet
 use crate::domain_computation::primary_graph::WorthQueryHistoryNavigationDenial;
 use crate::domain_computation::primary_graph::WorthQueryHistoryNavigationIntent;
 use crate::domain_computation::primary_graph::WorthQueryHistoryNodeId;
+use crate::domain_computation::primary_graph::WorthQueryHistoryOutputIntent;
+use crate::domain_computation::primary_graph::WorthQueryHistoryOutputNavigationAdvance;
 use crate::domain_computation::primary_graph::WorthQueryHistoryOutputNavigationDenial;
 use crate::domain_computation::primary_graph::WorthQueryHistoryOutputProfile;
+use crate::domain_computation::primary_graph::WorthQueryHistoryOutputReadDenial;
 use crate::domain_computation::primary_graph::WorthQueryHistoryPage;
 use crate::domain_computation::primary_graph::WorthQueryHistoryPageCursor;
 use crate::domain_computation::primary_graph::WorthQueryHistoryPageLimits;
@@ -63,6 +77,7 @@ use crate::domain_computation::primary_graph::WorthQueryHistoryStep;
 use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
 use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 use crate::publication_boundary::WorthQueryProgramPublicationAccess;
+use worth_execution::ExecutionRequest;
 use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest;
@@ -87,6 +102,7 @@ use worth_query_installation::facade::WorthQueryInstalledApplicationHistoryQuery
 use worth_query_installation::facade::WorthQueryInstalledApplicationQuery;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryBinding;
 use worth_query_installation::facade::WorthQueryInstalledDocumentHistory;
+use worth_relational::facade::identity::EntityId;
 impl<S: ApplicationSchema> super::super::WorthQueryPrimaryGraphApplicationRuntime<S> {
     pub fn attach_document_history<'head, H: ApplicationHistoryBinding<S>>(
         &self,
@@ -1325,5 +1341,414 @@ impl<Schema: ApplicationSchema> super::super::WorthQueryPrimaryGraphApplicationR
         <Self as crate::domain_computation::primary_graph::application_query::RetainedReadOps<
             Schema,
         >>::select_application_read_observation(self, phase, observation)
+    }
+}
+
+impl<S: ApplicationSchema> super::super::WorthQueryPrimaryGraphApplicationRuntime<S> {
+    pub fn reconstruct_managed_derived_collection_pair_dependent_in_batch<
+        MQ,
+        MR,
+        Member,
+        FQ,
+        FR,
+        SQ,
+        SR,
+        Value,
+        Link,
+    >(
+        &self,
+        request: ExecutionRequest<'_, '_>,
+        view: &WorthQueryManagedDerivedView<MQ, Value>,
+        product: &WorthQueryProductBranchLease,
+        membership_result: &WorthQueryApplicationOneShotResult<MQ, MR>,
+        members: impl Fn(&MR) -> Vec<(EntityId, Member)>,
+        batch: &WorthQueryApplicationQueryBatchAdmission,
+        first_for: impl FnMut(
+            &Member,
+            &mut WorthQueryDependentPairReadContext<'_, '_, '_, '_, '_, S, FQ, FR>,
+        ) -> Result<(), WorthQueryManagedDerivedViewDenial>,
+        second_for: impl FnMut(
+            &FR,
+            &mut WorthQueryDependentPairReadContext<'_, '_, '_, '_, '_, S, SQ, SR>,
+        ) -> Result<(), WorthQueryManagedDerivedViewDenial>,
+        first_link: impl Fn(&FR) -> Link,
+        second_link: impl Fn(&SR) -> Link,
+        project: impl FnMut(&FR, &SR) -> Value,
+    ) -> Result<Vec<WorthQueryManagedDerivedViewKey>, WorthQueryManagedDerivedViewDenial>
+    where
+        FR: WorthQueryApplicationProjection<S, FQ>,
+        SR: WorthQueryApplicationProjection<S, SQ>,
+        Member: WorthQueryManagedDerivedMemberToken,
+        Value: WorthQueryManagedDerivedValue,
+        Link: Eq,
+    {
+        <Self as crate::domain_computation::primary_graph::application_query::ReconstructDependentOps<S>>::reconstruct_managed_derived_collection_pair_dependent_in_batch(self, request, view, product, membership_result, members, batch, first_for, second_for, first_link, second_link, project)
+    }
+
+    pub fn advance_document_history_navigation_with_outputs<'runtime, 'scope, H, N, B, E>(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'scope>,
+        access: &WorthQueryProgramPublicationAccess,
+        document: &WorthQueryDocumentHistory<'runtime, S, H>,
+        history_access: &H::Access,
+        read: WorthQueryDocumentHistoryRead<'_, S, H>,
+        navigation: &WorthQueryDocumentHistoryNavigation<'runtime, S>,
+        key: u128,
+        profile: &WorthQueryHistoryOutputProfile,
+        source_binding: &WorthQueryInstalledApplicationQueryBinding<S, B>,
+        source: HistoryOutputControlPlan<'_, S, B>,
+        callback: impl for<'authority> FnOnce(
+            [u8; 32],
+            WorthQueryHistoryOutputNavigationAdvance<'authority, 'scope>,
+        )
+            -> Result<Option<WorthQueryCompletedHistoryOutputs>, E>,
+    ) -> Result<Result<Option<WorthQueryHistoryNavigationCompletion>, E>, WorthQueryHistoryOutputNavigationDenial>
+    where
+        H: ApplicationHistoryBinding<S>,
+        N: ApplicationHistoryNavigationBinding<S, H>,
+        B: ApplicationQueryBinding<S>,
+    <<ApplicationHistoryAccessBinding<S, H> as ApplicationQueryBinding<S>>::ResultBinding as ApplicationStructuredValueBinding>::Value: WorthQueryApplicationProjection<S, <ApplicationHistoryAccessBinding<S, H> as ApplicationQueryBinding<S>>::Query>,{
+        <Self as crate::domain_computation::primary_graph::application_query::OutputsOps<S>>::advance_document_history_navigation_with_outputs::<H, N, B, E>(self, phase, access, document, history_access, read, navigation, key, profile, source_binding, source, callback)
+    }
+
+    pub fn capture_history_output_intent<
+        H: ApplicationHistoryBinding<S>,
+        B: ApplicationQueryBinding<S>,
+    >(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        unused_1: &WorthQueryProgramPublicationAccess,
+        document: &WorthQueryDocumentHistory<'_, S, H>,
+        binding: &WorthQueryInstalledApplicationQueryBinding<S, B>,
+        control: HistoryOutputControlPlan<'_, S, B>,
+    ) -> Result<WorthQueryHistoryOutputIntent, WorthQueryHistoryOutputReadDenial> {
+        <Self as crate::domain_computation::primary_graph::application_query::OutputIntentOps<S>>::capture_history_output_intent(self, phase, unused_1, document, binding, control)
+    }
+}
+
+impl<Schema: ApplicationSchema> super::super::WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    pub fn refresh_managed_derived_collection_pair_entry<
+        'a,
+        MembershipQuery,
+        FirstQuery,
+        FirstParameters,
+        FirstResult,
+        FirstPrincipal,
+        FirstPrincipalIdentity,
+        FirstScope,
+        SecondQuery,
+        SecondResult,
+        Value,
+        LinkKey,
+    >(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        view: &WorthQueryManagedDerivedView<MembershipQuery, Value>,
+        product: &WorthQueryProductBranchLease,
+        key: &WorthQueryManagedDerivedViewKey,
+        first: WorthQueryAdmittedApplicationQueryPlan<
+            'a,
+            Schema,
+            FirstQuery,
+            FirstParameters,
+            FirstResult,
+            FirstPrincipal,
+            FirstPrincipalIdentity,
+            FirstScope,
+        >,
+        second_for: impl FnOnce(
+            &FirstResult,
+        ) -> Result<
+            WorthQueryApplicationOneShotResult<SecondQuery, SecondResult>,
+            WorthQueryManagedDerivedViewDenial,
+        >,
+        first_link: impl FnOnce(&FirstResult) -> LinkKey,
+        second_link: impl FnOnce(&SecondResult) -> LinkKey,
+        project: impl FnOnce(&FirstResult, &SecondResult) -> Value,
+    ) -> Result<std::sync::Arc<Value>, WorthQueryManagedDerivedViewDenial>
+    where
+        FirstQuery: 'a,
+        FirstParameters: 'a,
+        FirstResult: WorthQueryApplicationProjection<Schema, FirstQuery> + 'a,
+        FirstPrincipal: 'a,
+        FirstPrincipalIdentity: 'a,
+        FirstScope: 'a,
+        SecondResult: WorthQueryApplicationProjection<Schema, SecondQuery> + 'a,
+        Value: WorthQueryManagedDerivedValue,
+        LinkKey: Eq,
+    {
+        <Self as crate::domain_computation::primary_graph::application_query::PairOps<Schema>>::refresh_managed_derived_collection_pair_entry(self, execution, view, product, key, first, second_for, first_link, second_link, project)
+    }
+
+    pub fn reconcile_managed_derived_collection_pair_lazy<
+        MembershipQuery,
+        MembershipResult,
+        Member,
+        FirstQuery,
+        FirstResult,
+        SecondQuery,
+        SecondResult,
+        Value,
+        LinkKey,
+    >(
+        &self,
+        view: &WorthQueryManagedDerivedView<MembershipQuery, Value>,
+        product: &WorthQueryProductBranchLease,
+        membership_result: &WorthQueryApplicationOneShotResult<MembershipQuery, MembershipResult>,
+        members: impl Fn(&MembershipResult) -> Vec<(EntityId, Member)>,
+        first_for: impl FnMut(
+            &Member,
+        ) -> Result<
+            WorthQueryApplicationOneShotResult<FirstQuery, FirstResult>,
+            WorthQueryManagedDerivedViewDenial,
+        >,
+        second_for: impl FnMut(
+            &FirstResult,
+        ) -> Result<
+            WorthQueryApplicationOneShotResult<SecondQuery, SecondResult>,
+            WorthQueryManagedDerivedViewDenial,
+        >,
+        first_link: impl Fn(&FirstResult) -> LinkKey,
+        second_link: impl Fn(&SecondResult) -> LinkKey,
+        project: impl FnMut(&FirstResult, &SecondResult) -> Value,
+    ) -> Result<WorthQueryManagedDerivedViewReconciliation, WorthQueryManagedDerivedViewDenial>
+    where
+        FirstResult: WorthQueryApplicationProjection<Schema, FirstQuery>,
+        SecondResult: WorthQueryApplicationProjection<Schema, SecondQuery>,
+        Value: WorthQueryManagedDerivedValue,
+        Member: WorthQueryManagedDerivedMemberToken,
+        LinkKey: Eq,
+    {
+        <Self as crate::domain_computation::primary_graph::application_query::ReconcileOps<
+            Schema,
+        >>::reconcile_managed_derived_collection_pair_lazy(
+            self,
+            view,
+            product,
+            membership_result,
+            members,
+            first_for,
+            second_for,
+            first_link,
+            second_link,
+            project,
+        )
+    }
+
+    pub fn reconstruct_managed_derived_collection_pair_lazy<
+        MQ,
+        MR,
+        Member,
+        FQ,
+        FR,
+        SQ,
+        SR,
+        Value,
+        Link,
+    >(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        view: &WorthQueryManagedDerivedView<MQ, Value>,
+        product: &WorthQueryProductBranchLease,
+        membership_result: &WorthQueryApplicationOneShotResult<MQ, MR>,
+        members: impl Fn(&MR) -> Vec<(EntityId, Member)>,
+        first_for: impl FnMut(
+            &Member,
+        ) -> Result<
+            WorthQueryApplicationOneShotResult<FQ, FR>,
+            WorthQueryManagedDerivedViewDenial,
+        >,
+        second_for: impl FnMut(
+            &FR,
+        ) -> Result<
+            WorthQueryApplicationOneShotResult<SQ, SR>,
+            WorthQueryManagedDerivedViewDenial,
+        >,
+        first_link: impl Fn(&FR) -> Link,
+        second_link: impl Fn(&SR) -> Link,
+        project: impl FnMut(&FR, &SR) -> Value,
+    ) -> Result<Vec<WorthQueryManagedDerivedViewKey>, WorthQueryManagedDerivedViewDenial>
+    where
+        FR: WorthQueryApplicationProjection<Schema, FQ>,
+        SR: WorthQueryApplicationProjection<Schema, SQ>,
+        Member: WorthQueryManagedDerivedMemberToken,
+        Value: WorthQueryManagedDerivedValue,
+        Link: Eq,
+    {
+        <Self as crate::domain_computation::primary_graph::application_query::ReconstructLazyOps<
+            Schema,
+        >>::reconstruct_managed_derived_collection_pair_lazy(
+            self,
+            phase,
+            view,
+            product,
+            membership_result,
+            members,
+            first_for,
+            second_for,
+            first_link,
+            second_link,
+            project,
+        )
+    }
+
+    pub fn reconstruct_managed_derived_collection_pair<
+        'a,
+        MQ,
+        MR,
+        Member,
+        FQ: 'a,
+        FP: 'a,
+        FR,
+        SQ: 'a,
+        SP: 'a,
+        SR,
+        A: 'a,
+        I: 'a,
+        C: 'a,
+        Value,
+        Link,
+    >(
+        &self,
+        request: ExecutionRequest<'_, '_>,
+        view: &WorthQueryManagedDerivedView<MQ, Value>,
+        product: &WorthQueryProductBranchLease,
+        membership_result: &WorthQueryApplicationOneShotResult<MQ, MR>,
+        members: impl Fn(&MR) -> Vec<(EntityId, Member)>,
+        prepare: impl FnMut(
+            &Member,
+        ) -> Result<
+            WorthQueryDerivedPairReadPlans<'a, Schema, FQ, FP, FR, SQ, SP, SR, A, I, C>,
+            WorthQueryManagedDerivedViewDenial,
+        >,
+        first_link: impl Fn(&FR) -> Link,
+        second_link: impl Fn(&SR) -> Link,
+        project: impl FnMut(&FR, &SR) -> Value,
+    ) -> Result<Vec<WorthQueryManagedDerivedViewKey>, WorthQueryManagedDerivedViewDenial>
+    where
+        FR: WorthQueryApplicationProjection<Schema, FQ> + 'a,
+        SR: WorthQueryApplicationProjection<Schema, SQ> + 'a,
+        Member: WorthQueryManagedDerivedMemberToken,
+        Value: WorthQueryManagedDerivedValue,
+        Link: Eq,
+    {
+        <Self as crate::domain_computation::primary_graph::application_query::ReconstructParallelOps<Schema>>::reconstruct_managed_derived_collection_pair(self, request, view, product, membership_result, members, prepare, first_link, second_link, project)
+    }
+
+    pub fn refresh_managed_derived_collection_pair_entry_in_batch<
+        'a,
+        MembershipQuery,
+        FirstQuery,
+        FirstParameters,
+        FirstResult,
+        FirstPrincipal,
+        FirstPrincipalIdentity,
+        FirstScope,
+        SecondQuery,
+        SecondResult,
+        Value,
+        LinkKey,
+    >(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        view: &WorthQueryManagedDerivedView<MembershipQuery, Value>,
+        product: &WorthQueryProductBranchLease,
+        key: &WorthQueryManagedDerivedViewKey,
+        first: WorthQueryAdmittedApplicationQueryPlan<
+            'a,
+            Schema,
+            FirstQuery,
+            FirstParameters,
+            FirstResult,
+            FirstPrincipal,
+            FirstPrincipalIdentity,
+            FirstScope,
+        >,
+        batch: &WorthQueryApplicationQueryBatchAdmission,
+        second_for: impl FnOnce(
+            &FirstResult,
+            &WorthQueryApplicationQueryBatchAdmission,
+        ) -> Result<
+            WorthQueryApplicationBatchResult<SecondQuery, SecondResult>,
+            WorthQueryManagedDerivedCollectionBatchRefreshDenial,
+        >,
+        first_link: impl FnOnce(&FirstResult) -> LinkKey,
+        second_link: impl FnOnce(&SecondResult) -> LinkKey,
+        project: impl FnOnce(&FirstResult, &SecondResult) -> Value,
+    ) -> Result<std::sync::Arc<Value>, WorthQueryManagedDerivedCollectionBatchRefreshDenial>
+    where
+        FirstQuery: 'a,
+        FirstParameters: 'a,
+        FirstResult: WorthQueryApplicationProjection<Schema, FirstQuery> + 'a,
+        FirstPrincipal: 'a,
+        FirstPrincipalIdentity: 'a,
+        FirstScope: 'a,
+        SecondResult: WorthQueryApplicationProjection<Schema, SecondQuery> + 'a,
+        Value: WorthQueryManagedDerivedValue,
+        LinkKey: Eq,
+    {
+        <Self as crate::domain_computation::primary_graph::application_query::RefreshBatchOps<
+            Schema,
+        >>::refresh_managed_derived_collection_pair_entry_in_batch(
+            self,
+            execution,
+            view,
+            product,
+            key,
+            first,
+            batch,
+            second_for,
+            first_link,
+            second_link,
+            project,
+        )
+    }
+
+    pub fn refresh_managed_derived_collection_pair_entry_from_batch_result<
+        MembershipQuery,
+        FirstQuery,
+        FirstResult,
+        SecondQuery,
+        SecondResult,
+        Value,
+        LinkKey,
+    >(
+        &self,
+        view: &WorthQueryManagedDerivedView<MembershipQuery, Value>,
+        product: &WorthQueryProductBranchLease,
+        key: &WorthQueryManagedDerivedViewKey,
+        first: WorthQueryApplicationBatchResult<FirstQuery, FirstResult>,
+        batch: &WorthQueryApplicationQueryBatchAdmission,
+        second_for: impl FnOnce(
+            &FirstResult,
+            &WorthQueryApplicationQueryBatchAdmission,
+        ) -> Result<
+            WorthQueryApplicationBatchResult<SecondQuery, SecondResult>,
+            WorthQueryManagedDerivedCollectionBatchRefreshDenial,
+        >,
+        first_link: impl FnOnce(&FirstResult) -> LinkKey,
+        second_link: impl FnOnce(&SecondResult) -> LinkKey,
+        project: impl FnOnce(&FirstResult, &SecondResult) -> Value,
+    ) -> Result<std::sync::Arc<Value>, WorthQueryManagedDerivedCollectionBatchRefreshDenial>
+    where
+        FirstResult: WorthQueryApplicationProjection<Schema, FirstQuery>,
+        SecondResult: WorthQueryApplicationProjection<Schema, SecondQuery>,
+        Value: WorthQueryManagedDerivedValue,
+        LinkKey: Eq,
+    {
+        <Self as crate::domain_computation::primary_graph::application_query::RefreshBatchOps<
+            Schema,
+        >>::refresh_managed_derived_collection_pair_entry_from_batch_result(
+            self,
+            view,
+            product,
+            key,
+            first,
+            batch,
+            second_for,
+            first_link,
+            second_link,
+            project,
+        )
     }
 }

@@ -49,8 +49,8 @@ where
     }
 
     /// The host this vocabulary was installed on.
-    pub const fn runtime(&self) -> &'vocabulary dyn crate::domain_computation::primary_graph::application_installation::host::ApplicationInstallationHost<Schema>{
-        self.runtime
+    pub fn runtime(&self) -> &'vocabulary crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>{
+        self.runtime.application_runtime()
     }
 
     /// Exact installed meaning for a retained command; never falls back to another revision.

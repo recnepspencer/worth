@@ -94,7 +94,7 @@ pub fn commit<Schema: BirthSchema>(
             let bound = source.bound_source();
             let allocation = worth_execution::ExecutionAllocationPolicy::SystemAllocation;
             source
-                .consume_into(runtime, &phase, &mut admission)
+                .consume_into(runtime.runtime(), &phase, &mut admission)
                 .unwrap();
             let identities =
                 ApplicationMutationIdentities::<Schema, OrdinaryBinding<Schema>>::encode(
@@ -217,7 +217,7 @@ pub fn required_read_refuses(
                 .unwrap();
             let allocation = worth_execution::ExecutionAllocationPolicy::SystemAllocation;
             pending
-                .consume_into(runtime, &phase, &mut admission)
+                .consume_into(runtime.runtime(), &phase, &mut admission)
                 .unwrap();
             let projected = (*runtime.mutation_projection_for_test()).project_admitted_operation(
                 &phase,

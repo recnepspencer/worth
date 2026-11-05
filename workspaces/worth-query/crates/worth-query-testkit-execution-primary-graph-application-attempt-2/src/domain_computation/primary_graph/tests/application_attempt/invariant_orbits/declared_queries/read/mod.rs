@@ -1,4 +1,6 @@
 //! Installed metadata lookup followed by real principal/scope admission and execution.
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::one_shot::court_doors_for_test::OneShotDoorsOps;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::product_operation::context::court_doors_for_test::ContextDoorsOps;
 use crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::declared_queries::*;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::application_query::*;

@@ -62,7 +62,7 @@ impl WorthQueryInstalledConditionalOperation<TestSchema> for InstalledClock {
         &mut self,
         _execution: &worth_execution::ExecutionRequest<'_, '_>,
         _bridge: &BridgeSealedRuntimeAssembly,
-        _runtime: &WorthQueryPrimaryGraphApplicationRuntime<TestSchema>,
+        _runtime: &dyn worth_query_execution::court_doors_for_test::domain_computation::primary_graph::conditional_operation::host::ConditionalOperationHost<TestSchema>,
         _truth: &WorthQueryConditionalTruthBasis,
     ) -> Result<(), WorthQueryConditionalRuntimeInstallationDenial> {
         Ok(())
@@ -70,9 +70,7 @@ impl WorthQueryInstalledConditionalOperation<TestSchema> for InstalledClock {
 
     fn reconstruct(
         &mut self,
-        _runtime: &worth_query_execution::facade::domain_computation::WorthQueryPrimaryGraphApplicationRuntime<
-            TestSchema,
-        >,
+        _runtime: &dyn worth_query_execution::court_doors_for_test::domain_computation::primary_graph::conditional_operation::host::ConditionalOperationHost<TestSchema>,
     ) -> Result<(), WorthQueryConditionalRuntimeInstallationDenial> {
         Ok(())
     }
@@ -87,9 +85,7 @@ impl WorthQueryInstalledConditionalOperation<TestSchema> for InstalledClock {
     fn prepare_derived_runtime_reinstallation(
         &self,
         _execution: &worth_execution::ExecutionRequest<'_, '_>,
-        _runtime: &worth_query_execution::facade::domain_computation::WorthQueryPrimaryGraphApplicationRuntime<
-            TestSchema,
-        >,
+        _runtime: &dyn worth_query_execution::court_doors_for_test::domain_computation::primary_graph::conditional_operation::host::ConditionalOperationHost<TestSchema>,
         _bridge: &mut worth_runtime_bridge::facade::BridgePreparedConditionalReconstitution,
         _product: &worth_query_execution::facade::domain_computation::WorthQueryProductBranchLease,
     ) -> Result<
@@ -119,9 +115,7 @@ impl WorthQueryInstalledConditionalOperation<TestSchema> for InstalledClock {
         _phase: &WorthQueryAdvancementPhase<'_>,
 
         _bridge: &BridgeSealedRuntimeAssembly,
-        _runtime: &worth_query_execution::facade::domain_computation::WorthQueryPrimaryGraphApplicationRuntime<
-                TestSchema,
-            >,
+        _runtime: &dyn worth_query_execution::court_doors_for_test::domain_computation::primary_graph::conditional_operation::host::ConditionalOperationHost<TestSchema>,
         _truth: &WorthQueryConditionalTruthBasis,
     ) -> ErasedClockObservationOutcome {
         ErasedClockObservationOutcome::Stale

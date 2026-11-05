@@ -118,6 +118,6 @@ pub trait CleanupOps<Schema: worth_query_installation::facade::ApplicationSchema
 
 impl<Schema: worth_query_installation::facade::ApplicationSchema, HostRuntime: crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema> + ?Sized> CleanupOps<Schema> for HostRuntime {}
 
-mod court_doors_for_test;
+pub(crate) mod court_doors_for_test;
 pub use court_doors_for_test::CleanupCleanupDoorsOps;
 pub use court_doors_for_test::CleanupDoorsOps;

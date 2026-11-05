@@ -278,5 +278,5 @@ fn denial(
     WorthQueryApplicationQueryAdmissionDenial::new(kind, subject)
 }
 
-mod court_doors_for_test;
+pub(crate) mod court_doors_for_test;
 pub(in crate::domain_computation::primary_graph::application_query) use fresh_source::FreshSourceScopedOps;

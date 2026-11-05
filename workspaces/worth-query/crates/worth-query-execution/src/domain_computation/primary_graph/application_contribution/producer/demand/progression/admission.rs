@@ -254,7 +254,7 @@ fn admit_output_demand_with_source<Family>(
 impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> + ?Sized> AdmissionParentOps<Schema> for HostRuntime where
     Schema: ApplicationSchema + 'static, {}
 
-mod court_doors_for_test;
+pub(crate) mod court_doors_for_test;
 pub use court_doors_for_test::AdmissionDoorsOps;
 pub(in crate::domain_computation) use dependent::DependentScopedOps;
 pub use retained_observation::RetainedObservationOps;

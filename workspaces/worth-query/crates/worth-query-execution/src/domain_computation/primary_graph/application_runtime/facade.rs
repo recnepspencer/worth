@@ -13,6 +13,7 @@ mod authorization;
 mod causal_inspection;
 mod conditional_operation;
 mod operation_body;
+mod operation_input_capture;
 mod product_operation;
 mod product_publication;
 mod provider;

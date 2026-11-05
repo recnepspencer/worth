@@ -285,5 +285,5 @@ pub fn scheduling_refusal(
     Err(bridge_denial(producer_identity, error))
 }
 
-mod court_doors_for_test;
+pub(crate) mod court_doors_for_test;
 pub use court_doors_for_test::SchedulingProgressionDoorsOps;

@@ -7,7 +7,7 @@ mod candidate_selectors;
 mod cleanup;
 mod close;
 mod conditional_definition;
-mod context;
+pub(crate) mod context;
 pub(in crate::domain_computation::primary_graph) use context::SelectedQueryOrigin;
 pub(crate) mod correction_source;
 pub(crate) mod document_history;
@@ -129,3 +129,4 @@ pub use transaction::{
 };
 pub(crate) mod host;
 pub(crate) mod operation_input_capture;
+pub use operation_input_capture::OperationInputCaptureOps;

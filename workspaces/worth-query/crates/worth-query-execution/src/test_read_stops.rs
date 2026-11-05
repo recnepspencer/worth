@@ -244,12 +244,13 @@ pub fn every_advancement_consult_with_door<T: Eq + Debug, E: Eq + Debug>(
     use worth_query_admission::facade::authenticated_principal::{
         WorthQueryCancellationSource, WorthQueryRequestScope,
     };
-    use {
-        crate::domain_computation::request_execution::advancement_requests_on_this_thread_for_test,
-        crate::domain_computation::request_execution::bound_advancement_requests_on_this_thread_for_test,
-        crate::domain_computation::request_execution::place_managed_computations_on_this_thread_for_test,
-        crate::domain_computation::request_execution::WorthQueryExecutionPlacementForTest,
-        crate::facade::primary_graph::WorthQueryExecutionObservation,
+    // The facade path: this file is also mounted by worth-query-testkit-host, whose crate
+    // re-exports the execution facade but has no `domain_computation`.
+    use crate::facade::primary_graph::{
+        advancement_requests_on_this_thread_for_test,
+        bound_advancement_requests_on_this_thread_for_test,
+        place_managed_computations_on_this_thread_for_test, WorthQueryExecutionObservation,
+        WorthQueryExecutionPlacementForTest,
     };
     let run = |k: Option<usize>, ceiling: u64| {
         let _guard = WorthQueryExecutionObservation::install_on_this_thread();

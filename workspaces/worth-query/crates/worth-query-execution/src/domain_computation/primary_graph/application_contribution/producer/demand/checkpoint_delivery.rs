@@ -321,7 +321,7 @@ fn finish_output_checkpoint(
 impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> + ?Sized> CheckpointDeliveryOwnOps<Schema> for HostRuntime where
     Schema: ApplicationSchema + 'static, {}
 
-mod court_doors_for_test;
+pub(crate) mod court_doors_for_test;
 pub use court_doors_for_test::CheckpointDeliveryDoorsOps;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) use selected::SelectedScopedOps;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) use unpublished::UnpublishedScopedOps;

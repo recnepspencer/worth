@@ -231,6 +231,7 @@ pub use metadata::MetadataOps;
 pub use navigation::NavigationOps;
 pub use navigation::OutputsOps;
 pub use operation::OperationOps;
+pub use output_intent::OutputIntentOps;
 pub(in crate::domain_computation::primary_graph) use output_read::OutputReadScopedOps;
 pub use paging::PagingOps;
 pub use preview::PreviewOps;

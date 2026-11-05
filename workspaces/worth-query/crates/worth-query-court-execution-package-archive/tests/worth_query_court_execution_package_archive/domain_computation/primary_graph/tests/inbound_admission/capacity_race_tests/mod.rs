@@ -1,4 +1,6 @@
 //! An in-flight physical dispatch keeps its finite original outbox charge.
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_inbound::inbound_occurrence::transport_binding::court_doors_for_test::TransportBindingDoorsOps;
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_inbound::inbound_occurrence::transport_publication_permit::court_doors_for_test::TransportPublicationPermitDoorsOps;
 
 use crate::domain_computation::primary_graph::tests::inbound_admission::fixture::installed_world;
 use crate::domain_computation::primary_graph::tests::inbound_admission::verifier::signed_envelope;

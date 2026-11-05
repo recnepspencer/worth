@@ -3,6 +3,8 @@
 pub mod application_operation_reentry;
 #[path = "clock_observation/mod.rs"]
 pub mod clock_observation;
+#[path = "host/mod.rs"]
+pub mod host;
 #[path = "installation/mod.rs"]
 pub mod installation;
 #[path = "lifecycle/mod.rs"]

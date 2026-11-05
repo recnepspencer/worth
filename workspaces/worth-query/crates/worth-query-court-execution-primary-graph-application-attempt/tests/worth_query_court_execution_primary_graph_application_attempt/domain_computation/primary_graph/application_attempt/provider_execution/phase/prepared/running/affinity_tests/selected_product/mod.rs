@@ -1,4 +1,5 @@
 //! Provider-plan affinity to the exact installed product.
+use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::product_operation::context::court_doors_for_test::ContextDoorsOps;
 use crate::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::affinity_tests::*;
 #[test]
 fn an_exact_sibling_product_cannot_substitute_at_provider_plan_binding() {

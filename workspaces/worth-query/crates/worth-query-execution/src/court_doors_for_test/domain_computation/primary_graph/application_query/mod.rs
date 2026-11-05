@@ -1,6 +1,8 @@
 //! Doors under `domain_computation::primary_graph::application_query`.
 #[path = "admission/mod.rs"]
 pub mod admission;
+#[path = "admission_preparation/mod.rs"]
+pub mod admission_preparation;
 #[path = "authorized_read/mod.rs"]
 pub mod authorized_read;
 #[path = "basis/mod.rs"]

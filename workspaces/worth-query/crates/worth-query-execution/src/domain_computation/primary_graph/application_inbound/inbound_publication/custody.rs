@@ -9,7 +9,7 @@ use worth_query_installation::facade::ApplicationSchema;
 mod maintenance;
 mod publication_retry;
 mod recovery;
-mod resume;
+pub(crate) mod resume;
 
 use super::installed_transport::{
     InstalledTransportCompletion, InstalledTransportPublicationOutcome,
@@ -189,7 +189,7 @@ pub(in crate::domain_computation::primary_graph) trait CustodyScopedOps<Schema: 
 
 impl<Schema: ApplicationSchema, HostRuntime: crate::domain_computation::primary_graph::application_inbound::host::ApplicationInboundHost<Schema> + ?Sized> CustodyScopedOps<Schema> for HostRuntime {}
 
-mod court_doors_for_test;
+pub(crate) mod court_doors_for_test;
 pub use court_doors_for_test::CustodyCustodyDoorsOps;
 pub use court_doors_for_test::CustodyDoorsOps;
 pub(in crate::domain_computation::primary_graph) use maintenance::MaintenanceScopedOps;

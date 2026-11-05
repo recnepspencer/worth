@@ -26,7 +26,11 @@ pub fn abandoned_forks_release_their_evidence() {
     let host = host::install();
     let head = fork(&host, host.runtime().current_world());
     host::edit_on(&host, head, Value::Primary(11), "kept");
-    let kept = host.runtime().completed_evidence_retained_for_test();
+    let kept = host
+        .runtime()
+        .runtime_for_test()
+        .primary_provider_for_test()
+        .completed_evidence_retained_for_test();
     for abandoned in 1..=ABANDONED {
         let branch = fork(&host, head);
         host::edit_on(
@@ -38,7 +42,10 @@ pub fn abandoned_forks_release_their_evidence() {
         adopt(&host, branch);
         assert!(host.runtime().branches().pending_cleanup().is_empty());
         assert_eq!(
-            host.runtime().completed_evidence_retained_for_test(),
+            host.runtime()
+                .runtime_for_test()
+                .primary_provider_for_test()
+                .completed_evidence_retained_for_test(),
             kept,
             "abandoned fork {abandoned}: its evidence goes with its history"
         );
@@ -53,15 +60,27 @@ pub fn a_held_read_keeps_only_the_evidence_it_needs() {
     let host = host::install();
     let head = fork(&host, host.runtime().current_world());
     host::edit_on(&host, head, Value::Primary(11), "kept");
-    let kept = host.runtime().completed_evidence_retained_for_test();
+    let kept = host
+        .runtime()
+        .runtime_for_test()
+        .primary_provider_for_test()
+        .completed_evidence_retained_for_test();
     let branch = fork(&host, head);
     host::edit_on(&host, branch, Value::Secondary(31), "held-step");
-    let held_evidence = host.runtime().completed_evidence_retained_for_test();
+    let held_evidence = host
+        .runtime()
+        .runtime_for_test()
+        .primary_provider_for_test()
+        .completed_evidence_retained_for_test();
     let read = host
         .with_host_advancement(|phase| host.runtime().on_branch(branch).select(&phase).unwrap())
         .unwrap();
     host::edit_on(&host, branch, Value::Secondary(32), "released-step");
-    let stepped_evidence = host.runtime().completed_evidence_retained_for_test();
+    let stepped_evidence = host
+        .runtime()
+        .runtime_for_test()
+        .primary_provider_for_test()
+        .completed_evidence_retained_for_test();
     assert!(
         stepped_evidence > held_evidence,
         "the released step keeps evidence of its own: {kept} {held_evidence} {stepped_evidence}"
@@ -79,7 +98,10 @@ pub fn a_held_read_keeps_only_the_evidence_it_needs() {
         )
     ));
     assert_eq!(
-        host.runtime().completed_evidence_retained_for_test(),
+        host.runtime()
+            .runtime_for_test()
+            .primary_provider_for_test()
+            .completed_evidence_retained_for_test(),
         held_evidence,
         "the released step's evidence goes though the walk stopped at the read"
     );
@@ -88,7 +110,10 @@ pub fn a_held_read_keeps_only_the_evidence_it_needs() {
         assert!(cleanup.retry().unwrap().is_complete());
     }
     assert_eq!(
-        host.runtime().completed_evidence_retained_for_test(),
+        host.runtime()
+            .runtime_for_test()
+            .primary_provider_for_test()
+            .completed_evidence_retained_for_test(),
         kept,
         "the retry releases the held step and its evidence"
     );

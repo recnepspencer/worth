@@ -141,8 +141,8 @@ impl<'support, Schema, Program> WorthQuerySupportedProgramHandle<'support, Schem
         self.installed
     }
 
-    pub const fn runtime(&self) -> &'support dyn crate::domain_computation::primary_graph::application_installation::host::ApplicationInstallationHost<Schema>{
-        self.runtime
+    pub fn runtime(&self) -> &'support crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>{
+        self.runtime.application_runtime()
     }
 
     pub(in crate::domain_computation::primary_graph) const fn record(

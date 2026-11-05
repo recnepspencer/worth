@@ -67,5 +67,5 @@ pub(in crate::domain_computation::primary_graph) trait InstalledReadmissionScope
 
 impl<Schema: ApplicationSchema, HostRuntime: crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema> + ?Sized> InstalledReadmissionScopedOps<Schema> for HostRuntime {}
 
-mod court_doors_for_test;
+pub(crate) mod court_doors_for_test;
 pub use court_doors_for_test::InstalledReadmissionDoorsOps;

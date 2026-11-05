@@ -92,4 +92,4 @@ trait ExternalSettlementOwnOps<Schema: worth_query_installation::facade::Applica
 impl<Schema: worth_query_installation::facade::ApplicationSchema, HostRuntime: crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema> + ?Sized> ExternalSettlementOwnOps<Schema> for HostRuntime {}
 
 #[path = "external_settlement_court_doors_for_test.rs"]
-mod court_doors_for_test;
+pub(crate) mod court_doors_for_test;

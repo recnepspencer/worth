@@ -166,7 +166,7 @@ where
 {
 }
 
-mod court_doors_for_test;
+pub(crate) mod court_doors_for_test;
 pub(in crate::domain_computation::primary_graph::application_query) use access_observation::AccessObservationScopedOps;
 pub(in crate::domain_computation::primary_graph) use correction_disclosure::CorrectionDisclosureScopedOps;
 pub(in crate::domain_computation::primary_graph) use finish::OrdinaryScopedOps;

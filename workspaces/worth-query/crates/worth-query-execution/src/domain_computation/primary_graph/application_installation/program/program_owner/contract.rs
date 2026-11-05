@@ -17,8 +17,11 @@ pub trait WorthQueryProgramOwner<Schema>: sealed::WorthQueryProgramOwnership {
     /// Whether one mutation binding is an output source rather than an action.
     fn owns_output_source(&self, binding: std::any::TypeId) -> bool;
 
-    fn runtime(&self) -> &dyn crate::domain_computation::primary_graph::application_installation::host::ApplicationInstallationHost<Schema>{
-        self.owned_runtime()
+    fn runtime(
+        &self,
+    ) -> &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
+    {
+        self.owned_runtime().application_runtime()
     }
 
     fn contains_action<Binding: 'static>(&self) -> bool {

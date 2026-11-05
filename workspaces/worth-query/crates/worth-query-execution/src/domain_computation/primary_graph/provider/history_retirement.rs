@@ -85,11 +85,6 @@ pub trait HistoryRetirementOps<Schema>:
                 }),
         )
     }
-
-    #[doc(hidden)]
-    fn completed_evidence_retained_for_test(&self) -> usize {
-        self.primary_provider().completed_evidence_retained()
-    }
 }
 
 impl<
