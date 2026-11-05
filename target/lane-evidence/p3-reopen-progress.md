@@ -1,5 +1,13 @@
 FUNDING LANDED bd8d5b6af58d540deba439ebbbb82e6a297c258d; queue IN PROGRESS.
 
+2026-11-05: The three newly granted root consumer paths are Lifecycle-clean
+both committed and dirty. Independent boundary review identifies remaining
+exact private authentic-root / funded DATA assertions at excluded production
+root owners. Stopped under the coordinator's explicit production-root rule;
+no source or test changed. See bc-root-consumer-owner-handoff.md and
+bc-root-turn-end-state.md. BC9002 is not landed. D13/digests still await the
+coordinator's named integration head.
+
 Queue1: d0061f1327 records the exact same-directory direct court passing1/0/0 with RUST_MIN_STACK unset; independent APPROVE, no product fix claimed. D13 required Lifecycle construction owner:5e3baae5eb. Named-digest Foundation wire prerequisite:1f9f39b138. Both handoffs independently reviewed; source changes remain blocked.
 
 This partial queue4 commit moves one recovered-envelope custody court through actual public replay shares, intrinsic funding/refund and external Native provider. Named case1/0/0, public+Native checks, formatting,5-file caps,context andscope/name parity pass. Fresh independent partial-source APPROVE. Owner Clippy remains101 at10 allowed untouched master-changed sites. Boundary remains1 with3 BC9002 findings; no zero-findings claim.
