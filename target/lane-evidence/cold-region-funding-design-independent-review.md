@@ -7,7 +7,7 @@ explicitly granted residency files, `cell/demand.rs`, `cell_load_cache.rs`,
 allocation quotes and materialization-quote analogues. Read-only inspection;
 no builds, tests or source edits. This note is the sole reviewer write.
 
-1. **P1 — The reservation-lifetime contract is incomplete at the actual owner
+1. **P1 â€” The reservation-lifetime contract is incomplete at the actual owner
    transitions.** The design says scratch releases with HistoryFolder while
    only final backing charge transfers. But `HistoryFolder::read` returns an
    `Arc<RegionHistoryImage>`, and `region_load::load_full` retains that Arc after
@@ -33,7 +33,7 @@ no builds, tests or source edits. This note is the sole reviewer write.
    the design must settle those actual lifetimes before coding. Perf allocation
    lifecycle/peak-vs-retained laws, arch 9/16, coordinator Ruling 1.
 
-2. **P1 — The stated O(S+T) argument does not yet establish the claimed work
+2. **P1 â€” The stated O(S+T) argument does not yet establish the claimed work
    bound.** One decode per member does not imply one traversal per member.
    `fold_row` follows a prefix chain again for each row; cache hits still do
    ordered-map lookup and directory checks. `CachedHistory.directories` is a

@@ -1,49 +1,21 @@
-IN PROGRESS ? FUNDING NOT LANDED.
+IN PROGRESS — FUNDING NOT LANDED; source based at367ddc0690 plus36 dirty Rust leaves.
 
-Branch: codex/m3-p3-reopen. The accepted WIP a5fd44a313 was merged as
-0215c2872b52719c68e759aa0045eebb96a7b045, and the merged -wip branch was deleted.
-The integration safe point remains7d0e5189bc. No integration/master merge or push
-has been performed. All product work in flight remains on this branch, unstaged;
-no replacement WIP branch, stash, discard or reset was used.
+Applied the raw Head node-owner patch; wired request-funded kind reconstruction at all four loader sites and removed the obsolete aggregate Head native admission. Preserved verify_buckets signatures; the prepared consumer diff had accidentally swept those calls into its replacement and was corrected before application. The ten Lifecycle exclusions remain untouched.
 
-The 16 owner/four leaf grant is implemented as actual allocation-local native
-payload/page/map funding, complete scalar-column validation, original-request
-Head provider/dependency custody, and a charged current-state quote replacing
-late allocation_inventory traversal. The funded Full emitter remains the same
-counted-cell DATA operation. lease.rs, PartitionState and both edit owners are
-unchanged. No format, request budget, maintenance allowance, workload, cadence,
-timeout or existing test assertion changed.
+Next: format/compile, one serial sequence of focused Root/Host/Store proofs and instrumentation, full Root/Store Clippy, phase gates, fresh independent review and FUNDING LANDED. Then integration merge, repeat required proofs and FUNDING MERGED, then the ordered queue.
 
-The latest court check passes. Native3 plus corrected Full mirror memory denial,
-retry and actual-owner lifetime pass4/0/0. Earlier Head lifetime passed. Full
-proof chronology, every lane and both failures are recorded in
-funding-actual-owner-lanes.md. Logs identify dirty0215 source; no clean committed
-product qualification is claimed. The source hashes are in
-actual-owner-qualified-source.json.
+Qualification update: area-funding-owner-check PASS; area-funding-native-selection PASS12/0/0, including discarded-history growth, Native3 cold cases, selected Embedded/missing-base refusals, and Head/Full backing lifetime controls. Host16 is building; Store4 and CDC/recovery3 remain queued. All ten excluded files remain clean. No final funding claim yet.
 
-Independent review: cold-backing-request-boundary-review.md, whole-slice REJECT.
-Findings1&2 remain open: request-funded kind reconstruction is not exported/wired,
-and raw Head still has the obsolete aggregate native reservation alongside its
-new per-owner tickets. Findings3&4 are repaired at source: navigation is charged
-before the lookups, and the local layered expected-commitment preflight quotes
-actual independent owners and resolved-name work. Final Native4 is green after
-those repairs. The review does not certify unrun Host/Store or phase gates.
+Host packet completed14/2/0. The unchanged bounded-tail court passes1/0/0 in61s when selected alone (original writer timeout122s under the16-case packet; no deadline/workload/budget edits). Cold recapture has delta4 vs writer-tail3 after the court adds another Journal commit; independent source/test-cut review is pending before choosing correction. Product outside the area is untouched. Store4 and CDC/recovery3 are running serially next.
 
-Exact additional owner ruling remains pending:
-1. One private re-export line in storage/residency/kind_projection.rs.
-2. storage/overlay/partition_content/head_commitment.rs, records.rs, full.rs and
-   digest_index/append_frontier.rs, for funded raw Head commitment nodes and
-   resolved-name work. Later publication shares these nodes after the original
-   region wrapper dies; wrapper-only memory is insufficient.
-No production edit has been made to these five ungranted files. Ready proposals:
-proposed-funded-head-commitment.patch and
-proposed-funded-head-consumer-cutover.patch (the latter also contains the already
-granted loader wiring and aggregate removal). The proposal is independently
-reviewed as a sound raw Head seam, conditional on application and qualification.
+Independent cold-cut review APPROVE: expected canonical read delta must be next.covered().0 - prior covered, including the successful post-reopen commit. Journal intentionally has no retained Memory frame; no product retention change is warranted. Will apply this exact strict-equality correction after the running source-frozen proof batch, then qualify only that affected Host case.
 
-Next after ruling: apply those exact changes, compile once for that coherent
-batch, finish the complete requested proof set, full Root/Store Clippy and phase
-gates, fresh independent review until APPROVE, then commit FUNDING LANDED. Only
-then merge integration with master, resolve minimally and repeat required proof
-set for FUNDING MERGED. Continue decoder overflow, D13, named digests and BC9002
-in order. No current instrumented measurement replaces the old16.2M sample yet.
+Store4 PASS4/0/0, including the observer-drop/history/mutation-before-ACK recovery case and zero member reads at Native opening, plus selected predecessor/missing/foreign/damaged refusals. CDC/recovery/scalar3 is now building.
+
+CDC/recovery/scalar3 PASS3/0/0. Applied independent-reviewed cold-read expected cut next.covered - prior covered; strict equality and all other workload/budget/timeout assertions unchanged. TEMPORARY DIAGNOSTIC ACTIVE: area_funding_instrument.py apply modified Native checkpoint_complete/prepare.rs, Store checkpoint/preparation.rs, Host reopening.rs and added funding_probe.rs. Run python target/lane-evidence/area_funding_instrument.py restore after the single head41 diagnostic, before normal qualification. Exact original bytes/hashes are preserved in area-funding-instrumentation-originals.json. Diagnostic run session73873 is building. Then run the corrected cold case through the marker-free Host probe, full Root/Store Clippy, phase gates, fresh review and commit. No FUNDING LANDED claim yet.
+
+Diagnostic complete PASS1/0/0. Exact original hashes restored for all three instrumented owners; the diagnostic-only recipe was removed after its single required attribution run. No permanent regression test was removed. New head41/covered0 capture charge16,234,730 versus old16,240,012 (delta -5,282). Dominant exclusive phase remains Store package hash/copy3,795,818. Both samples capture entirely uncovered originals; this comparison alone makes no covered-history growth claim. The corrected cold filesystem case is rebuilding on normal marker-free source. Full phase totals are in area-funding-attribution.json, reconciled by area-funding-head41-attribution.log. Native12, Store4 and CDC/recovery3 remain green; bounded-tail alone PASS1/0/0. Whole funding review and landing remain pending.
+
+Final evidence: corrected cold PASS1/0/0; full initial selections Native12/0/0, Host14/2/0 plus each failed case's focused green correction, Store4/0/0 and CDC/recovery3/0/0. Review found one more in-area contract-walk precharge defect, now corrected. Post-correction Native existing6 pass; new wide-contract denial/refund/retry court passes1/0/0 after correcting its mistaken outer SDK wrapper assertion. Host2/0/0 and Store1/0/0 pass after the product correction. No budget/cadence/deadline/body-read bound changed.
+
+Final Root Clippy has five outside-area Native errors; Store Clippy has one outside-area close needless borrow. Final boundary has two new BC7013 entries needed for the wide-contract court plus the three queued BC9002 sites. Exact source fixes and caller registrations are prepared but unapplied under the area stop rule. Final dirty line caps PASS36; agent-context PASS. Review verdict REJECT: new caller ruling, red Clippy and missing InlineBytes/dependency/peer-history qualification remain. The earlier P1 source fixes and new contract precharge are confirmed. See area-funding-turn-end-state.md, area-funding-lanes.md and area-funding-independent-review.md. No integration merge, no push and no funding landing claim. Product work remains intact in this worktree; only the evidence record will be committed.

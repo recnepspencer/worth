@@ -23,6 +23,7 @@ reservations['worth-court-relational-certification::worth_court_relational_certi
 # Each added materialization court has one Serial caller and no joined worker.
 for name in ('head_materialization_budget_survives_edit_and_last_basis_drop', 'full_materialization_budget_survives_mirror_edits_until_runtime_drop'):
  reservations['worth-court-relational-certification::worth_court_relational_certification\nrelational::durable_publication::source_initial_inputs::checkpoint_admission::region_memory::'+name]=1
+reservations['worth-court-relational-certification::worth_court_relational_certification\nrelational::durable_publication::source_initial_inputs::checkpoint_admission::contract_work::cold_head_work_exhaustion_keeps_a_wide_contract_region_retryable']=1
 (out/'reservations.json').write_text(json.dumps(reservations))
 env.update(WORTH_REPO=str(root),WORTH_TEST_COST_RESERVATIONS=str(out/'reservations.json'),
            WORTH_TEST_COST_ACCOUNTING_DIRECTORY=str(out/'cpu'),WORTH_TEST_COST_SETUP_DIRECTORY=str(out/'setup'))

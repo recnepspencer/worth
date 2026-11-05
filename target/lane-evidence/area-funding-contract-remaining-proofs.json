@@ -1,0 +1,18 @@
+[
+  [
+    "area-funding-contract-host",
+    "python",
+    "target/lane-evidence/owned_host_funding_probe.py",
+    "area-funding-contract-host",
+    "test(selected_complete_home_reopens_and_selects_another_complete_checkpoint) | test(cold_image_plus_tail_recapture_reads_only_the_uncovered_original_frames)",
+    "2"
+  ],
+  [
+    "area-funding-contract-store",
+    "python",
+    "target/lane-evidence/owned_store_funding_probe.py",
+    "area-funding-contract-store",
+    "test(selected_checkpoint_survives_observer_drop_online_history_and_mutation_before_ack_recovery)",
+    "1"
+  ]
+]
