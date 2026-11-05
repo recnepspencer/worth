@@ -183,6 +183,20 @@ impl<S: ApplicationSchema + 'static> WorthQueryHistoryWithOutputTrees<S> {
                     &program_publication_access(),
                     index,
                     |tree_authority| {
+                        if !entry.tree.has_original_attempt(&key)? {
+                            if selecting
+                                || request
+                                    .application
+                                    .can_verify_selected_history_leaf(
+                                        phase,
+                                        &program_publication_access(),
+                                        tree_authority,
+                                    )
+                                    .map_err(Denial::GraphQualification)?
+                            {
+                                return Ok((true, None));
+                            }
+                        }
                         let step = if selecting {
                             Step::Selecting {
                                 branch,
@@ -196,11 +210,17 @@ impl<S: ApplicationSchema + 'static> WorthQueryHistoryWithOutputTrees<S> {
                                 authority: tree_authority,
                             }
                         };
-                        entry.tree.progress(phase, request, key, step)
+                        entry
+                            .tree
+                            .progress(phase, request, key, step)
+                            .map(|tree| (false, tree))
                     },
                 )
                 .map_err(Denial::Navigation)??;
-            match tree {
+            if tree.0 {
+                continue;
+            }
+            match tree.1 {
                 Some(tree) => completed.push(tree),
                 None => pending = true,
             }

@@ -22,11 +22,16 @@ fn edited(
     let request = host.request(&principal, &scope);
     upstream::settle(host, &request, "a");
     downstream::settle(host, &request, "upstream:a");
+    // A genuine producer succession makes the child stale before attachment.
+    // Both families must now run; the earlier complete child cannot be repaired
+    // by silently treating it as a previously unstarted healthy leaf.
+    advance_model_before_attachment(host, &request);
+    upstream::settle(host, &request, "a");
     let document = world::attach(host);
     let mut edit = document
         .edit(edit::Intent {
             key: "a".into(),
-            value: 2,
+            value: 3,
         })
         .idempotency_owned(&request, "dependent-model-edit".to_owned())
         .unwrap()
@@ -134,14 +139,14 @@ fn exercise(host: &world::Host, upstream_first: bool) {
     let request = host.request(&principal, &scope);
     let (document, step, selection) = edited(host);
     let before = values(host, selection.physical_endpoint().product_branch());
-    assert_eq!((before.0.value, before.1.value), (5, 500));
+    assert_eq!((before.0.value, before.1.value), (10, 500));
     let document = configured(host, document, upstream_first);
     let contacts = host.producer_contacts_on_this_thread_for_test();
     let outcome = courts::checkout(&document, &request, step, selection.clone(), 0xf057_05);
     if upstream_first {
         let selected = outcome.unwrap_or_else(|cause| panic!("ordered dependent trees: {cause:?}"));
         let after = values(host, selected.physical_endpoint().product_branch());
-        assert_eq!((after.0.value, after.1.value), (10, 1000));
+        assert_eq!((after.0.value, after.1.value), (15, 1500));
         assert_eq!(
             (after.0.native_id, after.1.native_id),
             (before.0.native_id, before.1.native_id)
@@ -181,8 +186,8 @@ fn exercise(host: &world::Host, upstream_first: bool) {
         );
         assert_eq!(
             host.producer_contacts_on_this_thread_for_test(),
-            contacts + 1,
-            "the earlier dependent was initially healthy; only the later upstream ran"
+            contacts + 2,
+            "both real fallbacks ran before final currentness refused the stale earlier child"
         );
     }
     host.with_host_advancement(|phase| document.close(&phase).unwrap())
@@ -208,4 +213,31 @@ fn worker_only_dependent_families_observe_the_preceding_fallback() {
 fn worker_only_later_fallback_cannot_adopt_an_earlier_now_stale_family() {
     let _observation = WorthQueryExecutionObservation::install_on_this_thread();
     exercise(&world::install_worker_only(), false);
+}
+
+fn advance_model_before_attachment(host: &world::Host, request: &family::Request<'_, '_, '_>) {
+    let mut operation = request
+        .mutate(edit::Intent {
+            key: "a".into(),
+            value: 2,
+        })
+        .without_source()
+        .idempotency_owned("dependent-prehistory-source-edit".to_owned())
+        .unwrap_or_else(|(_, _, cause)| panic!("{cause:?}"))
+        .retain_operation::<program::Program, program::EditAction>(host)
+        .unwrap_or_else(|(_, cause)| panic!("{cause:?}"));
+    loop {
+        operation = match operation.advance(request) {
+            WorthQuerySourceOnlyAdvance::Progress(next) => next,
+            WorthQuerySourceOnlyAdvance::Completed(done) => {
+                done.close(request)
+                    .unwrap_or_else(|(_, cause)| panic!("{cause:?}"));
+                break;
+            }
+            WorthQuerySourceOnlyAdvance::Refused { denial, .. } => panic!("{denial:?}"),
+            WorthQuerySourceOnlyAdvance::Terminal(_) => {
+                panic!("the ordinary prehistory model edit terminated")
+            }
+        };
+    }
 }

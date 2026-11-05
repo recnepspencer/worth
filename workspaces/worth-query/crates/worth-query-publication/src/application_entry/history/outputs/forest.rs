@@ -25,6 +25,7 @@ struct TreeEntry<S: ApplicationSchema> {
 /// Type erasure is confined to SDK continuation mechanics. Query still issues
 /// every per-tree frame from the immutable registered profile collection.
 trait OriginalTree<S: ApplicationSchema> {
+    fn has_original_attempt(&self, key: &[u8; 32]) -> Result<bool, WorthQueryHistoryOutputDenial>;
     fn profile(&self) -> &WorthQueryHistoryOutputProfile;
     fn runtime(
         &self,

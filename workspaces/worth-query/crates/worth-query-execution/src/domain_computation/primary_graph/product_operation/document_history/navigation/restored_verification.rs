@@ -98,6 +98,9 @@ impl<S: ApplicationSchema> NavigationProgress<'_, S> {
             // Profiles describe fallback correspondence; they establish no ownership.
             if let Some(profile) = &self.output_profile {
                 for tree in profile.tree_profiles() {
+                    // Native route membership is not a complete discovery fact.
+                    // A declared non-leaf retains its whole-set owner.
+                    if !tree.leaf { return Ok(false); }
                     let mut covered = false;
                     for route in evidence.selected_output_routes(&execution).map_err(Denial::RestoredOutputRead)? {
                         let route = route.map_err(Denial::RestoredOutputRead)?;

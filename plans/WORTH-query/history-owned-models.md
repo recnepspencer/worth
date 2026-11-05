@@ -1125,3 +1125,50 @@ upstream invalidation court must still prevent stale adoption. Then add the real
 changed-build/cold-reopen journey, owner-recorded fallback reasons, multi-tree
 recording, codec-retired selection, remaining issue courts and #56, followed by
 full root/Query comparison to clean current master.
+
+
+### Mixed leaf verification boundary and implementation
+
+The sealed installed graph shape supplies a leaf fact on each original profile.
+Only a leaf with one exact selected Native family/source route is eligible to
+skip its original tree; non-restored roots and non-leaf discovery keep their
+original owners. Query's readonly leaf question consumes the borrowed history
+frame, checks current C, reads the actual same private candidate head, and calls
+the same currentness owner. Its boolean is no settlement or completion grant.
+The SDK skips only an unstarted tree and leaves existing original continuations
+and failed cleanup in their own registries.
+
+The forest completion owner accepts an ordered subset of authentic complete
+fallback trees. The original endpoint owner derives E from those actual World
+movements. At E, every missing Native route must pass the canonical selected-route
+currentness check, every skipped registered root must still be a qualified leaf,
+and every complete original tree retains its discovery dependencies and passes
+whole-set currentness. An empty fallback collection cannot invent an original
+root or endpoint; the phase owner's all-healthy path handles that case. A failed
+or unknown skipped route leaves the verified model set incomplete, with no
+adoption. The old ScopeEntityRecord entry is unchanged.
+
+The next public mixed court starts with two real owned publications, records an
+ordinary Member source edit that makes only one stale, and requires one producer
+contact with zero healthy Model-source projections and equal original output
+IDs. Serial and worker requests use the same fixture. Existing late-invalidation
+courts must continue to reject a stale final endpoint; their exact observed
+failure path is being requalified under selective fallback. No result is yet
+claimed for this dirty continuation.
+
+
+Mixed leaf qualification passes: 148 public document-history courts, including
+28 owned-output courts, plus the newly merged master's root-retirement court,
+boundary/context and dirty caps. Three compiled mutants fail and restore the
+same SHA256 (selective-mutation-results.json): reopen a healthy sibling; skip the
+earlier actual fallback's final currentness; skip an unsettled Native family.
+The second now exposes a stale completed original child, using the genuine
+pre-attachment succession fixture. Pristine checks are in
+selective-checkpoint-results.json. The source-projection mixed court remains
+zero for the healthy sibling and counts exactly the one real stale-family run.
+
+This checkpoint covers leaf forests and conservative complete original non-leaf
+trees. Direct verification of closed non-leaf discovery dependencies, original
+multi-tree recording, real changed-build isolation/cold evidence, owner-recorded
+fallback causes, nested later sources, codec-retired selection, remaining issue
+courts and #56 are still unfinished. No issue READY is implied.

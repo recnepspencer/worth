@@ -33,6 +33,7 @@ pub struct WorthQueryHistoryOutputProfile {
     pub(super) root: std::any::TypeId,
     pub(super) recipe: std::any::TypeId,
     pub(super) registration: HistoryOutputRegistration,
+    pub(super) leaf: bool,
     pub(super) family: &'static str,
     forest: Option<Arc<forest::HistoryOutputForest>>,
     source_intent: crate::domain_computation::primary_graph::WorthQueryHistoryOutputIntent,
@@ -56,6 +57,7 @@ impl WorthQueryHistoryOutputProfile {
             && self.root == other.root
             && self.recipe == other.recipe
             && self.registration == other.registration
+            && self.leaf == other.leaf
             && self.family == other.family
     }
 
@@ -231,6 +233,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
             root: crate::equality_type_id::EqualityTypeId::of::<R>().into_external(),
             recipe: crate::equality_type_id::EqualityTypeId::of::<Recipe>().into_external(),
             registration,
+            leaf: crate::equality_type_id::EqualityTypeId::of::<R::Dependents>() == crate::equality_type_id::EqualityTypeId::of::<worth_query_declaration::facade::application_program::ApplicationOutputLeaf>(),
             family: <<Demand<S, R> as WorthQueryApplicationOutputDemand<S>>::OutputFamily as WorthQueryProducerOutputFamily<S>>::IDENTITY,
             source_intent,
             forest: None,

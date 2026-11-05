@@ -2227,8 +2227,10 @@ later fallback cannot leave an earlier family stale. Native supplies the selecte
 publication routes independently of the configured collection. Healthy restored snapshots verify every Native route through the existing
 currentness owner before opening any original root or disclosing a producer
 source. They need no fallback driver. An actual fallback still freshly admits
-its source at C. Mixed healthy/stale tree progression and multi-tree edit recording
-remain under qualification. See the
+its source at C. A healthy leaf family remains unopened while a stale sibling falls back;
+the existing currentness owner checks skipped routes again at the one derived
+endpoint. Non-leaf discovery evidence and multi-tree edit recording remain under
+qualification. See the
 [owned-model plan](../plans/WORTH-query/history-owned-models.md).
 
 To record an isolated edit, consume the attached document with

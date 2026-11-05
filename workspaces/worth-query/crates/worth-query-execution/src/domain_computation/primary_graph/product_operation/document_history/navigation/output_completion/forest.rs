@@ -96,24 +96,18 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         trees: &[Arc<WorthQueryRetainedHistoryOutputTree>],
     ) -> Result<WorthQueryCompletedHistoryOutputs, ReadDenial> {
         let profile = authority.profile();
-        if !profile.is_output_forest() || profile.tree_profiles().len() != trees.len() {
+        if !profile.is_output_forest() || profile.tree_profiles().len() < trees.len() {
             return Err(foreign());
         }
         let execution = phase
             .checked_execution_request_for(&self.runtime.product_runtime)
             .map_err(stopped)?;
-        for (registered, tree) in profile.tree_profiles().iter().zip(trees) {
-            checkpoint(&execution)?;
-            if !registered.same_custody(&tree.profile) {
-                return Err(foreign());
-            }
+        if trees.is_empty() {
+            return Err(ReadDenial::Incomplete {
+                model: profile.model.entity(),
+            });
         }
-        super::super::output_coverage::require(
-            &execution,
-            self,
-            authority,
-            trees.iter().flat_map(|tree| tree.original.settlements()),
-        )?;
+        require_fallback_subset(&execution, profile, trees)?;
         let original = qualify_output_collection(
             self,
             phase,
@@ -124,6 +118,13 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         let selected = self
             .select_application_read_observation(phase, original.original_endpoint())
             .map_err(Original::Observation)?;
+        super::super::output_coverage::require(
+            &execution,
+            &selected,
+            authority,
+            trees.iter().flat_map(|tree| tree.original.settlements()),
+        )?;
+        self.require_skipped_history_roots(&execution, authority, &selected, trees)?;
         let owner = self
             .selected_program_owner(&selected)
             .map_err(Original::Program)?;
@@ -135,24 +136,59 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                 return Err(foreign());
             }
         }
-        let bytes = trees
-            .len()
-            .checked_mul(std::mem::size_of::<Arc<WorthQueryRetainedHistoryOutputTree>>())
-            .and_then(|bytes| {
-                bytes.checked_add(std::mem::size_of::<WorthQueryCompletedHistoryOutputs>())
-            })
-            .and_then(|bytes| u64::try_from(bytes).ok())
-            .ok_or_else(|| resource(Cause::ChargedBytesOverflow))?;
-        let memory =
-            memory::reserve(&execution, execution.has_accounting(), bytes).map_err(resource)?;
+        let retained = retain_fallback_trees(&execution, trees)?;
         Ok(WorthQueryCompletedHistoryOutputs {
             profile: profile.clone(),
             original,
-            forest: Some(HistoryForestCompletion {
-                _trees: trees.to_vec(),
-                _memory: memory,
-            }),
+            forest: Some(retained),
         })
+    }
+
+    fn require_skipped_history_roots(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        authority: &WorthQueryHistoryOutputAuthority<'_, '_>,
+        selected: &crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<
+            '_,
+            S,
+        >,
+        trees: &[Arc<WorthQueryRetainedHistoryOutputTree>],
+    ) -> Result<(), ReadDenial> {
+        self.runtime
+            .primary_provider
+            .graph
+            .with_runtime(&execution, |native| {
+                let evidence = native
+                    .read_truth()
+                    .read_historical_selection(
+                        execution,
+                        authority.selected_graph().ok_or_else(foreign)?,
+                        &authority
+                            .original()
+                            .product_observation()
+                            .basis()
+                            .relational_basis()
+                            .observation(),
+                    )
+                    .map_err(ReadDenial::SelectionRead)?;
+                for registered in authority.profile().tree_profiles() {
+                    let mut original = false;
+                    for tree in trees {
+                        checkpoint(execution)?;
+                        original |= registered.same_custody(&tree.profile);
+                    }
+                    if !original
+                        && !super::super::output_verification::profile_is_current(
+                            execution, native, &evidence, &selected, registered,
+                        )?
+                    {
+                        return Err(ReadDenial::Incomplete {
+                            model: evidence.model(),
+                        });
+                    }
+                }
+                Ok(())
+            })
     }
 }
 
@@ -186,4 +222,45 @@ fn checkpoint(execution: &worth_execution::ExecutionRequest<'_, '_>) -> Result<(
         .map_err(|cause| resource(cause.into()))?
         .0
         .map_err(|cause| resource(worth_execution::WorkCeilingDenial::Stopped(cause).into()))
+}
+
+fn require_fallback_subset(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    profile: &WorthQueryHistoryOutputProfile,
+    trees: &[Arc<WorthQueryRetainedHistoryOutputTree>],
+) -> Result<(), ReadDenial> {
+    let mut registered = profile.tree_profiles().iter();
+    for tree in trees {
+        let mut matched = false;
+        for candidate in registered.by_ref() {
+            checkpoint(execution)?;
+            if candidate.same_custody(&tree.profile) {
+                matched = true;
+                break;
+            }
+        }
+        if !matched {
+            return Err(foreign());
+        }
+    }
+    Ok(())
+}
+
+fn retain_fallback_trees(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    trees: &[Arc<WorthQueryRetainedHistoryOutputTree>],
+) -> Result<HistoryForestCompletion, ReadDenial> {
+    let bytes = trees
+        .len()
+        .checked_mul(std::mem::size_of::<Arc<WorthQueryRetainedHistoryOutputTree>>())
+        .and_then(|bytes| {
+            bytes.checked_add(std::mem::size_of::<WorthQueryCompletedHistoryOutputs>())
+        })
+        .and_then(|bytes| u64::try_from(bytes).ok())
+        .ok_or_else(|| resource(Cause::ChargedBytesOverflow))?;
+    let memory = memory::reserve(execution, execution.has_accounting(), bytes).map_err(resource)?;
+    Ok(HistoryForestCompletion {
+        _trees: trees.to_vec(),
+        _memory: memory,
+    })
 }

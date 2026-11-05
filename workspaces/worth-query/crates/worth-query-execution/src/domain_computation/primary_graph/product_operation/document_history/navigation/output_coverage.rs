@@ -2,20 +2,22 @@
 use super::*;
 use crate::domain_computation::primary_graph::{
     WorthQueryHistoryOutputQualificationDenial as Denial, WorthQueryOutputDemandSettlement,
-    WorthQueryPrimaryGraphApplicationRuntime,
 };
 use worth_query_installation::facade::ApplicationSchema;
 
 pub(super) fn require<'s, S: ApplicationSchema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+    selected_output: &crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<
+        '_,
+        S,
+    >,
     authority: &WorthQueryHistoryOutputAuthority<'_, '_>,
     settlements: impl Iterator<Item = &'s WorthQueryOutputDemandSettlement> + Clone,
 ) -> Result<(), Denial> {
     let Some(selected) = authority.selected_graph() else {
         return Ok(());
     };
-    let graph = &runtime.runtime.primary_provider.graph;
+    let graph = &selected_output.application().runtime.primary_provider.graph;
     graph.with_runtime(execution, |native| {
         let evidence = native.read_truth().read_historical_selection(execution, selected,
             &authority.original().product_observation().basis().relational_basis().observation())
@@ -31,7 +33,9 @@ pub(super) fn require<'s, S: ApplicationSchema>(
                     .0.map_err(|stop| Denial::SelectionRead(worth_relational::facade::runtime::RelationalHistoricalSelectionReadDenial::Request(worth_execution::WorkCeilingDenial::Stopped(stop))))?;
                 if settlement.covers_historical_route(route) { covered = true; break; }
             }
-            if !covered { return Err(Denial::Incomplete { model: evidence.model() }); }
+            if !covered && !selected_output.selected_route_is_current(execution, native, route)
+                .map_err(|cause| Denial::Original(crate::domain_computation::primary_graph::WorthQueryOriginalReadOutputDenial::Output(cause)))?
+            { return Err(Denial::Incomplete { model: evidence.model() }); }
         }
         Ok(())
     })
@@ -63,9 +67,30 @@ impl<S: ApplicationSchema + 'static, P: worth_query_declaration::facade::applica
             }
             let execution = phase.checked_execution_request_for(&self.runtime().runtime.product_runtime)
                 .map_err(|cause| control(WorthQueryHistoryNavigationDenial::Stopped(cause)))?;
-            require(&execution, self.runtime(), authority, std::iter::once(root).chain(dependents.clone()))?;
-            self.qualify_original_history_outputs::<R>(phase, access, authority.request(), source, root, dependents, dependencies).map_err(Denial::Original)
+            let completed = self.qualify_original_history_outputs::<R>(phase, access, authority.request(), source, root, dependents.clone(), dependencies).map_err(Denial::Original)?;
+            let selected_output = self.runtime().select_application_read_observation(phase, completed.original.original_endpoint())
+                .map_err(|cause| Denial::Original(crate::domain_computation::primary_graph::WorthQueryOriginalReadOutputDenial::Observation(cause)))?;
+            require(&execution, &selected_output, authority, std::iter::once(root).chain(dependents))?;
+            Ok(completed)
         })();
         authority.confirm_read(phase, self.runtime(), authority.request(), result).map_err(control)?
     }
+}
+
+pub(super) fn charge(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    work: u64,
+) -> Result<(), Denial> {
+    use worth_relational::facade::runtime::RelationalHistoricalSelectionReadDenial as Read;
+    execution
+        .run_native_with_checkpoint(|context| {
+            crate::domain_computation::primary_graph::admitted_capture::checkpoint(context, work)
+        })
+        .map_err(|cause| Denial::SelectionRead(Read::Request(cause)))?
+        .0
+        .map_err(|cause| {
+            Denial::SelectionRead(Read::Request(worth_execution::WorkCeilingDenial::Stopped(
+                cause,
+            )))
+        })
 }

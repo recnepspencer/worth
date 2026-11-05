@@ -88,6 +88,13 @@ where
             }
             return Ok(None);
         }
+        if matches!(step, Step::Pending)
+            && self.profile.uses_owned_model_graph()
+            && self.existing_slot(&key)?.is_none()
+        {
+            // Pending navigation has no original source/tree work to retain.
+            return Ok(None);
+        }
         // Native has already admitted H READ, metadata, NAV and complete source C.
         let slot = self.slot(phase, key)?;
         let mut state = slot.try_state()?;
