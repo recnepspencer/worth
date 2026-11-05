@@ -84,10 +84,10 @@ fn stable_claim_binds_ordered_input_and_records_only_the_actual_adoption() {
     let loaded = storage.load_frozen(&reviewer, &reference).unwrap();
     let source = model.describe(&reviewer).unwrap();
     let registered: RegisteredClaim = storage.claim(&model, &reviewer, &loaded, 804).unwrap();
-    assert!(matches!(
-        registered.evidence(),
-        WorthQuerySourceCompletion::Fresh { .. }
-    ));
+    let WorthQuerySourceCompletion::Fresh { receipt, .. } = registered.evidence() else {
+        panic!("the original claim must execute freshly")
+    };
+    let original_claim_commit = receipt.commit_reference().clone();
     let claim = registered.reference().clone();
     drop(registered);
     assert_eq!(model.describe(&reviewer).unwrap(), source);
@@ -229,10 +229,16 @@ fn stable_claim_binds_ordered_input_and_records_only_the_actual_adoption() {
     let head = model.branch();
     let current = model.describe(&reviewer).unwrap();
     let retry = storage.claim(&model, &reviewer, &loaded, 804).unwrap();
-    assert!(matches!(
-        retry.evidence(),
-        WorthQuerySourceCompletion::Recovered { .. }
-    ));
+    // D9 recovers recorded meaning, never the original live capability.
+    match retry.evidence() {
+        WorthQuerySourceCompletion::Recorded { receipt, .. } => {
+            assert_eq!(receipt.commit_reference(), &original_claim_commit);
+        }
+        WorthQuerySourceCompletion::Fresh { .. } => panic!("the claim must not execute again"),
+        WorthQuerySourceCompletion::Recovered { .. } => {
+            panic!("artifact resolution must not reconstruct a live receipt")
+        }
+    }
     assert_eq!(retry.reference(), &claim);
     drop(retry);
     assert_eq!(
