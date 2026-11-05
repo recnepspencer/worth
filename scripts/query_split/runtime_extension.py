@@ -279,6 +279,9 @@ def file_uses(source, names, file_module):
         if keyword != 'use' or vis:
             continue
         item = ' '.join(text[start:end].split())
+        item = re.sub(r'^(#\[[^\]]*\]\s*)+', '', item)
+        if not item.startswith('use '):
+            continue
         body = item[len('use '):].rstrip(';')
         if body.startswith('super::') or body.startswith('self::') or body.startswith('{'):
             base = list(module)
@@ -523,8 +526,13 @@ def main(argv=None):
         for vis, path in reexports:
             segments = path.split('::')[1:]
             name, owner = segments[-1], tuple(segments[:-1])
+            scope = None
+            if vis.startswith('pub(in crate::'):
+                scope = tuple(vis[len('pub(in crate::'):-1].split('::'))
             for depth in range(len(owner) - 1, len(prefix) - 1, -1):
                 ancestor, child = owner[:depth], owner[depth]
+                if scope is not None and ancestor[:len(scope)] != scope:
+                    break  # a re-export outside the trait's own scope would widen it
                 node = model.index[ancestor]
                 if node.declaration is not None and node.declaration.body:
                     needs['hand'].append(f're-export of {name} through inline module {ancestor}')
