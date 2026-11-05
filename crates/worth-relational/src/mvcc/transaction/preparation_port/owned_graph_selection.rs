@@ -36,12 +36,12 @@ impl RelationalPreparationPort {
                 graph.entities().selected_basis(),
             )
             .map_err(Error::Source)?;
-        let count = graph.entities().entities().count()
+        let count = graph.boundary_entities().count()
             + graph.current_relations().len()
             + graph.selected_relations().len();
         let installed = execution
             .run_native_with_checkpoint(|context| {
-                context.checkpoint(count as u64)?;
+                crate::execution::request_stage::checkpoint(context, count as u64)?;
                 graph.ownership_matches_installation(&runtime, context)
             })
             .map_err(Error::Request)?
@@ -147,7 +147,7 @@ fn admit_selected_symbols(
         execution,
         &historical.with_symbol_admission(&runtime.services.symbols),
         |source| {
-            for &id in retained.graph.entities().selected_entities() {
+            for &id in retained.graph.restored_entities() {
                 source.get_current_partition(id.partition_id);
             }
             for id in retained.graph.selected_relations().keys() {

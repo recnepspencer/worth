@@ -14,10 +14,10 @@ impl RelationalRuntime {
         require_bases(self, installed, current, selected, &subject)?;
         installed.require_current_ownership_storage(current, entities.model())?;
         installed.require_current_ownership_storage(selected, entities.model())?;
-        let count = entities
+        let count = graph
             .current_entities()
             .len()
-            .saturating_add(entities.selected_entities().len());
+            .saturating_add(graph.restored_entities().len());
         let _records_funding = execution
             .reserve_retained_memory(
                 (count as u64).saturating_mul(4 * std::mem::size_of::<RecordRef>() as u64),
@@ -25,13 +25,12 @@ impl RelationalRuntime {
             .map_err(custody::execution_stop)?;
         execution
             .run_native_with_checkpoint(|context| {
-                context
-                    .checkpoint(count as u64)
+                crate::execution::request_stage::checkpoint(context, count as u64)
                     .map_err(custody::execution_stop)?;
                 let selected_records =
-                    existing_entities(execution, selected, entities.entities(), context)?;
+                    existing_entities(execution, selected, graph.boundary_entities(), context)?;
                 let current_records =
-                    existing_entities(execution, current, entities.entities(), context)?;
+                    existing_entities(execution, current, graph.boundary_entities(), context)?;
                 let selected_roster = Arc::new(crate::publication::ownership::read(
                     execution,
                     selected,
@@ -65,7 +64,8 @@ impl RelationalRuntime {
                 )?;
                 let mut selections = Vec::new();
                 for (origin, ordinal) in selected_roster.coordinates() {
-                    context.checkpoint(1).map_err(custody::execution_stop)?;
+                    crate::execution::request_stage::checkpoint(context, 1)
+                        .map_err(custody::execution_stop)?;
                     let publication = admit_publication(
                         installed,
                         selected,

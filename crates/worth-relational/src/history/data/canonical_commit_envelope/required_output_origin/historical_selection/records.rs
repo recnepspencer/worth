@@ -32,7 +32,7 @@ pub(super) fn validate(
         .iter()
         .filter(|m| m.posture != crate::mvcc::RequiredOutputRolePosture::Retire)
     {
-        context.checkpoint(1).map_err(origin_request)?;
+        crate::execution::request_stage::checkpoint(context, 1).map_err(origin_request)?;
         let old = before
             .entity_metadata(member.id)
             .ok_or_else(|| refuse(original.commit.commit_id, member.id))?;
@@ -40,9 +40,11 @@ pub(super) fn validate(
             .entity_metadata(member.id)
             .ok_or_else(|| refuse(original.commit.commit_id, member.id))?;
         let payload = before.entity_aspect_state(member.id);
-        context
-            .checkpoint(payload.map_or(0, |p| p.owned_allocation_capacity_bytes()) as u64)
-            .map_err(origin_request)?;
+        crate::execution::request_stage::checkpoint(
+            context,
+            payload.map_or(0, |p| p.owned_allocation_capacity_bytes()) as u64,
+        )
+        .map_err(origin_request)?;
         if old.kind_id != member.kind
             || now.kind_id != member.kind
             || payload != after.entity_aspect_state(member.id)
@@ -62,7 +64,7 @@ pub(super) fn validate(
         }
     }
     for edge in &original.relations {
-        context.checkpoint(1).map_err(origin_request)?;
+        crate::execution::request_stage::checkpoint(context, 1).map_err(origin_request)?;
         let refusal = || {
             TransactionCommitError::publication(PublicationError::authored_retirement(
                 Cause::HistoricalSelectionNotOwned {
@@ -74,9 +76,11 @@ pub(super) fn validate(
         let old = before.relation_metadata(edge.id).ok_or_else(refusal)?;
         let now = after.relation_metadata(edge.id).ok_or_else(refusal)?;
         let payload = before.relation_aspect_state(edge.id);
-        context
-            .checkpoint(payload.map_or(0, |p| p.owned_allocation_capacity_bytes()) as u64)
-            .map_err(origin_request)?;
+        crate::execution::request_stage::checkpoint(
+            context,
+            payload.map_or(0, |p| p.owned_allocation_capacity_bytes()) as u64,
+        )
+        .map_err(origin_request)?;
         if (old.kind_id, old.source, old.target) != (edge.kind, edge.source, edge.target)
             || (now.kind_id, now.source, now.target) != (edge.kind, edge.source, edge.target)
             || payload != after.relation_aspect_state(edge.id)

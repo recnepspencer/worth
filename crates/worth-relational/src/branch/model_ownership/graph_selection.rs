@@ -9,7 +9,8 @@ use crate::{
     runtime::RelationalRuntime,
     validation::data::StructuralRelationRecord,
 };
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
+mod transfers;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, MapKernelContext};
 
 /// The declared structural part of an owned model selection. Original bases
@@ -21,6 +22,7 @@ pub struct RelationalOwnedModelGraphSelection {
     pub(super) installed_ownership: RelationalModelOwnership,
     _meaning_memory: Option<ExecutionMemoryReservation>,
     entities: RelationalOwnedModelEntityBoundary,
+    restoration: transfers::RestorationBoundary,
     current: BTreeMap<RelationId, StructuralRelationRecord>,
     selected: BTreeMap<RelationId, StructuralRelationRecord>,
     _current_memory: Vec<ExecutionMemoryReservation>,
@@ -39,6 +41,28 @@ impl std::fmt::Debug for RelationalOwnedModelGraphSelection {
 impl RelationalOwnedModelGraphSelection {
     pub fn entities(&self) -> &RelationalOwnedModelEntityBoundary {
         &self.entities
+    }
+    /// Selected live records, including union members transferred to another owner.
+    pub fn restored_entities(&self) -> &BTreeSet<EntityId> {
+        &self.restoration.selected
+    }
+    pub fn entities_to_retire(&self) -> impl Iterator<Item = EntityId> + '_ {
+        self.restoration
+            .current
+            .difference(&self.restoration.selected)
+            .copied()
+    }
+    pub fn current_entities(&self) -> &BTreeSet<EntityId> {
+        &self.restoration.current
+    }
+    pub fn boundary_entities(&self) -> impl Iterator<Item = EntityId> + '_ {
+        self.restoration
+            .current
+            .union(&self.restoration.selected)
+            .copied()
+    }
+    pub(crate) fn transfer_participants(&self) -> &BTreeSet<EntityId> {
+        &self.restoration.participants
     }
     pub fn current_relations(&self) -> &BTreeMap<RelationId, StructuralRelationRecord> {
         &self.current
@@ -74,11 +98,13 @@ impl RelationalRuntime {
                     let bytes = ownership
                         .retention_bytes(context)?
                         .saturating_add(installed_ownership.retention_bytes(context)?);
-                    context.checkpoint(bytes).map_err(|stop| {
-                        Denial::Ownership(super::RelationalModelOwnershipDenial::Request(
-                            worth_execution::WorkCeilingDenial::Stopped(stop),
-                        ))
-                    })?;
+                    crate::execution::request_stage::checkpoint(context, bytes).map_err(
+                        |stop| {
+                            Denial::Ownership(super::RelationalModelOwnershipDenial::Request(
+                                worth_execution::WorkCeilingDenial::Stopped(stop),
+                            ))
+                        },
+                    )?;
                     let meaning_memory =
                         execution.reserve_retained_memory(bytes).map_err(|stop| {
                             Denial::Ownership(super::RelationalModelOwnershipDenial::Request(stop))
@@ -134,19 +160,25 @@ fn prepare(
 ) -> Result<RelationalOwnedModelGraphSelection, Denial> {
     let current = entities.current_basis();
     let selected = entities.selected_basis();
+    let restoration = transfers::prepare(native, execution, context, &entities, installed)?;
+    let restored = &restoration.selected;
+    let transferred = &restoration.transferred;
+    let in_domain = |id: EntityId| restoration.current.contains(&id) || restored.contains(&id);
     let (current_relations, current_memory) =
         basis::read(native, execution, current, context, |read| {
             let mut map = BTreeMap::new();
-            for entity in entities.entities() {
+            for &entity in restoration.current.union(restored) {
                 for edge in read.relations(entity, true)? {
-                    insert(read, &mut map, edge)?;
+                    if !transferred.contains_key(&entity) || declared(read, installed, edge)? {
+                        insert(read, &mut map, edge)?;
+                    }
                 }
                 for edge in read.relations(entity, false)? {
                     if declared(read, installed, edge)? {
                         insert(read, &mut map, edge)?;
-                    } else if entities.current_entities().contains(&entity)
-                        && !entities.selected_entities().contains(&entity)
-                        && !in_union(&entities, edge.source)
+                    } else if restoration.current.contains(&entity)
+                        && !restored.contains(&entity)
+                        && (!in_domain(edge.source) || transferred.contains_key(&edge.source))
                     {
                         return Err(Denial::ForeignIncomingRelation(
                             RelationalOwnedModelForeignRelation::new(current, entity, edge)?,
@@ -159,9 +191,11 @@ fn prepare(
     let (selected_relations, selected_memory) =
         basis::read(native, execution, selected, context, |read| {
             let mut map = BTreeMap::new();
-            for &entity in entities.selected_entities() {
-                for edge in read.relations(entity, true)? {
-                    insert(read, &mut map, edge)?;
+            for &entity in restored {
+                if entities.selected_entities().contains(&entity) {
+                    for edge in read.relations(entity, true)? {
+                        insert(read, &mut map, edge)?;
+                    }
                 }
                 for edge in read.relations(entity, false)? {
                     if declared(read, installed, edge)? {
@@ -174,8 +208,8 @@ fn prepare(
     let ((), validation_memory) = basis::read(native, execution, current, context, |read| {
         for edge in selected_relations.values() {
             if let Some(now) = read.relation(edge.relation_id)? {
-                if !in_union(&entities, now.source)
-                    && !(declared(read, installed, now)? && in_union(&entities, now.target))
+                if !in_domain(now.source)
+                    && !(declared(read, installed, now)? && in_domain(now.target))
                 {
                     return Err(Denial::ForeignRelationSource {
                         relation: now.relation_id,
@@ -183,10 +217,31 @@ fn prepare(
                     });
                 }
             }
+            if let Some(&owner) = transferred.get(&edge.target) {
+                if !restored.contains(&edge.source) {
+                    if read.kind(edge.source)?.is_none() {
+                        return Err(Denial::SelectedOwnerUnavailable {
+                            entity: edge.target,
+                            owner,
+                            source: edge.source,
+                            relation: edge.relation_id,
+                        });
+                    }
+                    let actual_owner = installed.owner(read, edge.source)?;
+                    if actual_owner != Some(owner) {
+                        return Err(Denial::SelectedOwnerChanged {
+                            entity: edge.target,
+                            owner,
+                            source: edge.source,
+                            actual_owner,
+                            relation: edge.relation_id,
+                        });
+                    }
+                }
+            }
             for endpoint in [edge.source, edge.target] {
-                if !entities.selected_entities().contains(&endpoint)
-                    && (entities.current_entities().contains(&endpoint)
-                        || read.kind(endpoint)?.is_none())
+                if !restored.contains(&endpoint)
+                    && (restoration.current.contains(&endpoint) || read.kind(endpoint)?.is_none())
                 {
                     return Err(Denial::SelectedEndpointUnavailable {
                         relation: edge.relation_id,
@@ -202,6 +257,7 @@ fn prepare(
         installed_ownership: installed.clone(),
         _meaning_memory: meaning_memory,
         entities,
+        restoration,
         current: current_relations,
         selected: selected_relations,
         _current_memory: current_memory,

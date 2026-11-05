@@ -101,7 +101,7 @@ fn insert(
         let bytes = (std::mem::size_of::<PublicationRoute>()
             + 2 * std::mem::size_of::<usize>()
             + meaning.family.len()) as u64;
-        context.checkpoint(bytes).map_err(request)?;
+        crate::execution::request_stage::checkpoint(context, bytes).map_err(request)?;
         let funding = reserve(lease, bytes)?;
         let route = Arc::new(PublicationRoute {
             family: meaning.family.clone(),
@@ -164,9 +164,11 @@ fn compare(
     meaning: &Meaning,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<Ordering, TransactionCommitError> {
-    context
-        .checkpoint((route.family.len() + meaning.family.len() + 64) as u64)
-        .map_err(request)?;
+    crate::execution::request_stage::checkpoint(
+        context,
+        (route.family.len() + meaning.family.len() + 64) as u64,
+    )
+    .map_err(request)?;
     Ok(route
         .family
         .cmp(&meaning.family)
@@ -186,7 +188,7 @@ fn node(
     lease: Lease<'_, '_>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<Arc<PositionNode>, TransactionCommitError> {
-    context.checkpoint(6).map_err(request)?;
+    crate::execution::request_stage::checkpoint(context, 6).map_err(request)?;
     let bytes = (std::mem::size_of::<PositionNode>() + 2 * std::mem::size_of::<usize>()) as u64;
     let funding = reserve(lease, bytes)?;
     let height = height(&left)

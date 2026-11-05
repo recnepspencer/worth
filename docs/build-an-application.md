@@ -2054,7 +2054,11 @@ registered source-scope-owned publication members participate through the same
 current-custody owner. Installation enforces one document owner, including
 custody first installed in the prospective publication. See the
 [generic owned-model example](history-owned-models.md). The explicit
-`OwnedModelGraph` navigation path remains under qualification.
+`OwnedModelGraph` navigation path remains under qualification. Its transfer
+policy restores the selected owner of a live transferred member at its original
+identity, while preserving the outside owner's other state. Missing owner
+sources, second ownership and current invariant violations refuse typed; undo
+and redo never silently retire a selected live member.
 
 To bound selectable history across all futures, declare separate
 `ApplicationHistoryWindowBinding` and `ApplicationHistoryBookmarkBinding`

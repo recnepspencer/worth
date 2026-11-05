@@ -32,16 +32,16 @@ pub(super) fn readmit(
         .ok_or_else(|| refuse(meaning.source_scope))?;
     let result = execution
         .run_native_with_checkpoint(|context| {
-            context
-                .checkpoint(
-                    (producer.len()
-                        + origin.producer.len()
-                        + meaning.family.len()
-                        + origin.meaning.family.len()
-                        + roles.len()
-                        + 96) as u64,
-                )
-                .map_err(execution_stop)?;
+            crate::execution::request_stage::checkpoint(
+                context,
+                (producer.len()
+                    + origin.producer.len()
+                    + meaning.family.len()
+                    + origin.meaning.family.len()
+                    + roles.len()
+                    + 96) as u64,
+            )
+            .map_err(execution_stop)?;
             if installed.runtime_instance_id != basis.descriptor().runtime_instance_id()
                 || !basis.is_current()
                 || roster.basis.as_ref() != Some(basis.descriptor())
@@ -66,15 +66,12 @@ pub(super) fn readmit(
                 return Err(refuse(meaning.source_scope));
             }
             for (index, role) in roles.iter().enumerate() {
-                context
-                    .checkpoint(
-                        (index
-                            + origin.members.len()
-                            + role.role.len()
-                            + role.entity_name.len()
-                            + 1) as u64,
-                    )
-                    .map_err(execution_stop)?;
+                crate::execution::request_stage::checkpoint(
+                    context,
+                    (index + origin.members.len() + role.role.len() + role.entity_name.len() + 1)
+                        as u64,
+                )
+                .map_err(execution_stop)?;
                 if roles[..index]
                     .iter()
                     .any(|prior| prior.target == role.target)

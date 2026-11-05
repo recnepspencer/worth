@@ -8,10 +8,10 @@ pub(crate) fn require_graph_coverage(
     publication: Option<&RequiredOutputPublication>,
 ) -> Result<(), TransactionCommitError> {
     let entities = graph.entities();
-    let count = entities
+    let count = graph
         .current_entities()
         .len()
-        .saturating_add(entities.selected_entities().len());
+        .saturating_add(graph.restored_entities().len());
     let _funding = execution
         .reserve_retained_memory((count as u64).saturating_mul(128))
         .map_err(custody::execution_stop)?;
@@ -23,19 +23,18 @@ pub(crate) fn require_graph_coverage(
     };
     execution
         .run_native_with_checkpoint(|context| {
-            context
-                .checkpoint(count as u64)
+            crate::execution::request_stage::checkpoint(context, count as u64)
                 .map_err(custody::execution_stop)?;
             let current_records = super::existing_entities(
                 execution,
                 entities.current_basis(),
-                entities.entities(),
+                graph.boundary_entities(),
                 context,
             )?;
             let selected_records = super::existing_entities(
                 execution,
                 entities.selected_basis(),
-                entities.entities(),
+                graph.boundary_entities(),
                 context,
             )?;
             let current = crate::publication::ownership::read(
@@ -89,8 +88,7 @@ pub(crate) fn require_graph_coverage(
                     .saturating_add(1) as u64
             };
             for original in selected.origins() {
-                context
-                    .checkpoint(charge(original))
+                crate::execution::request_stage::checkpoint(context, charge(original))
                     .map_err(custody::execution_stop)?;
                 let selection = selections
                     .iter()
@@ -115,8 +113,7 @@ pub(crate) fn require_graph_coverage(
                 }
             }
             for original in current.origins() {
-                context
-                    .checkpoint(charge(original))
+                crate::execution::request_stage::checkpoint(context, charge(original))
                     .map_err(custody::execution_stop)?;
                 let source_owned = entities
                     .current_entities()
@@ -150,9 +147,11 @@ pub(crate) fn require_graph_coverage(
                 }
             }
             for selection in selections {
-                context
-                    .checkpoint((selected.origins().len() + current.origins().len() + 1) as u64)
-                    .map_err(custody::execution_stop)?;
+                crate::execution::request_stage::checkpoint(
+                    context,
+                    (selected.origins().len() + current.origins().len() + 1) as u64,
+                )
+                .map_err(custody::execution_stop)?;
                 let reachable = if selection.select_version {
                     selected
                         .origins()

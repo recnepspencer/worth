@@ -17,6 +17,23 @@ pub enum RelationalOwnedModelSelectionDenial {
         relation: RelationId,
         endpoint: EntityId,
     },
+    TransferEvidenceUnavailable {
+        model: EntityId,
+        commit: crate::history::data::CommitId,
+    },
+    SelectedOwnerChanged {
+        entity: EntityId,
+        owner: EntityId,
+        source: EntityId,
+        actual_owner: Option<EntityId>,
+        relation: RelationId,
+    },
+    SelectedOwnerUnavailable {
+        entity: EntityId,
+        owner: EntityId,
+        source: EntityId,
+        relation: RelationId,
+    },
     RelationKindUnavailable {
         relation: RelationId,
         kind: KindId,

@@ -35,7 +35,7 @@ pub(crate) fn validate_candidate_ownership(
         return Ok(());
     };
     execution.run_native_with_checkpoint(|context| {
-            context.checkpoint(1).map_err(request)?;
+            crate::execution::request_stage::checkpoint(context, 1).map_err(request)?;
             let result = basis::read_candidate(execution, root, context, |read| {
                 // Explicit patch targets include both published members and their
                 // source. Relation moves reach the affected descendants as well.

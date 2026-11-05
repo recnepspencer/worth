@@ -110,7 +110,8 @@ impl crate::transactions::data::CommitResult {
                 let selected = execution
                     .run_native_with_checkpoint(|context| {
                         // Reaching a foreign origin still consumes traversal work.
-                        context.checkpoint(1).map_err(execution_stop)?;
+                        crate::execution::request_stage::checkpoint(context, 1)
+                            .map_err(execution_stop)?;
                         if self.snapshot.runtime_instance_id() != installed.runtime_instance_id
                             || !origin.issuer.as_ref().is_some_and(|issuer| {
                                 issuer.same_publication_owner(&installed.authority)

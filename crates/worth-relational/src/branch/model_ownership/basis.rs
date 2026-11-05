@@ -85,7 +85,7 @@ pub(super) struct BasisRead<'a, 'basis, 'context, 'kernel, 'execution, 'request>
 
 impl BasisRead<'_, '_, '_, '_, '_, '_> {
     pub(super) fn charge(&mut self, units: usize) -> Result<(), RelationalModelOwnershipDenial> {
-        self.context.checkpoint(units as u64).map_err(|stop| {
+        crate::execution::request_stage::checkpoint(self.context, units as u64).map_err(|stop| {
             RelationalModelOwnershipDenial::Request(worth_execution::WorkCeilingDenial::Stopped(
                 stop,
             ))

@@ -6,8 +6,7 @@ impl RelationalModelOwnership {
         &self,
         context: &mut MapKernelContext<'_, '_>,
     ) -> Result<u64, RelationalOwnedModelSelectionDenial> {
-        context
-            .checkpoint(self.domains.len() as u64 + 1)
+        crate::execution::request_stage::checkpoint(context, self.domains.len() as u64 + 1)
             .map_err(|stop| {
                 RelationalOwnedModelSelectionDenial::Ownership(
                     RelationalModelOwnershipDenial::Request(
@@ -32,7 +31,7 @@ impl RelationalOwnedModelGraphSelection {
         runtime: &crate::runtime::RelationalPreparationRuntime,
         context: &mut MapKernelContext<'_, '_>,
     ) -> Result<bool, worth_execution::MapKernelStop> {
-        context.checkpoint(1)?;
+        crate::execution::request_stage::checkpoint(context, 1)?;
         let Some((_, installed)) = runtime
             .schema_contract_runtime
             .custom_invariant_registries
@@ -51,7 +50,8 @@ impl RelationalOwnedModelGraphSelection {
                         .saturating_add(1)
                 })
         };
-        context.checkpoint(
+        crate::execution::request_stage::checkpoint(
+            context,
             installed.domains.len() as u64
                 + self.ownership.domains.len() as u64
                 + self.installed_ownership.domains.len() as u64
@@ -60,7 +60,10 @@ impl RelationalOwnedModelGraphSelection {
         let work = size(installed)
             .saturating_add(size(&self.installed_ownership))
             .saturating_add(size(&self.ownership));
-        context.checkpoint(work.saturating_mul(self.ownership.domains.len() as u64 + 1))?;
+        crate::execution::request_stage::checkpoint(
+            context,
+            work.saturating_mul(self.ownership.domains.len() as u64 + 1),
+        )?;
         if installed == &self.installed_ownership
             && !self.ownership.domains.is_empty()
             && self

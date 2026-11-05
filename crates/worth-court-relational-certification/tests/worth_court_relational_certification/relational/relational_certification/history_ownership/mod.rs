@@ -13,9 +13,13 @@ mod historical_absence;
 mod historical_artifact;
 mod historical_foreign;
 mod historical_publication;
+mod historical_worker;
+mod ownership_transfer;
+mod ownership_transfer_refusals;
 mod prospective_publication;
 mod publication_fixture;
 mod publication_membership;
+mod transfer_fixture;
 
 #[test]
 fn cold_model_ownership_demands_cross_partition_endpoints_and_edges() {

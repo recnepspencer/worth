@@ -47,23 +47,19 @@ pub(crate) fn apply(
             result = Some((|| {
                 let mut outcome = MutationOutcome::with_capacity(0, 0);
                 for id in graph.relations_to_retire() {
-                    context.checkpoint(1).map_err(request)?;
+                    crate::execution::request_stage::checkpoint(context, 1).map_err(request)?;
                     relations::retire(&mut workspace, id, version, &mut outcome)?;
                 }
-                for &id in graph
-                    .entities()
-                    .current_entities()
-                    .difference(graph.entities().selected_entities())
-                {
-                    context.checkpoint(1).map_err(request)?;
+                for id in graph.entities_to_retire() {
+                    crate::execution::request_stage::checkpoint(context, 1).map_err(request)?;
                     entities::retire(&mut workspace, id, version, &mut outcome)?;
                 }
-                for &id in graph.entities().selected_entities() {
-                    context.checkpoint(1).map_err(request)?;
+                for &id in graph.restored_entities() {
+                    crate::execution::request_stage::checkpoint(context, 1).map_err(request)?;
                     entities::select(&mut workspace, source, id, version, &mut outcome, context)?;
                 }
                 for &id in graph.selected_relations().keys() {
-                    context.checkpoint(1).map_err(request)?;
+                    crate::execution::request_stage::checkpoint(context, 1).map_err(request)?;
                     relations::select(&mut workspace, source, id, version, &mut outcome, context)?;
                 }
                 assemble_effect(outcome, &mut workspace)

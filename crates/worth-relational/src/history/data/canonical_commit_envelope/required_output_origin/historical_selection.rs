@@ -90,11 +90,11 @@ pub(super) fn install(
         }
         for previous in &publications {
             let previous: &Arc<CanonicalRequiredOutputOrigin> = previous;
-            context
-                .checkpoint(
-                    (original.meaning.family.len() + previous.meaning.family.len() + 65) as u64,
-                )
-                .map_err(origin_request)?;
+            crate::execution::request_stage::checkpoint(
+                context,
+                (original.meaning.family.len() + previous.meaning.family.len() + 65) as u64,
+            )
+            .map_err(origin_request)?;
             if previous.meaning.same_route(&original.meaning) {
                 return Err(refuse());
             }
@@ -113,7 +113,7 @@ pub(super) fn install(
             original.members.len(),
             original.relations.len(),
         )?;
-        context.checkpoint(bytes).map_err(origin_request)?;
+        crate::execution::request_stage::checkpoint(context, bytes).map_err(origin_request)?;
         let funding = ExecutionMemoryReservation::reserve_in_scope(lease, bytes)
             .map_err(|cause| origin_request(crate::execution::denial::lease_denial(cause)))?;
         let members = original

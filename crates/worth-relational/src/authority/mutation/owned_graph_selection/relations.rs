@@ -27,13 +27,13 @@ pub(super) fn select(
         .ok_or_else(|| stale(record.clone(), "selected endpoints unavailable"))?
         .clone();
     let payload = selected.extra().authoritative_aspect_state.clone();
-    context
-        .checkpoint(
-            payload
-                .as_ref()
-                .map_or(0, |p| p.owned_allocation_capacity_bytes()) as u64,
-        )
-        .map_err(request)?;
+    crate::execution::request_stage::checkpoint(
+        context,
+        payload
+            .as_ref()
+            .map_or(0, |p| p.owned_allocation_capacity_bytes()) as u64,
+    )
+    .map_err(request)?;
     let before = workspace.with_context(|context| {
         let partition = context.state.get_partition_mut(id.partition_id);
         let before = partition

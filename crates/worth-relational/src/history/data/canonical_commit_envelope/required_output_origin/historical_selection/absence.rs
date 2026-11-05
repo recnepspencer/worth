@@ -46,13 +46,13 @@ pub(super) fn install(
         .iter()
         .filter(|m| m.posture != crate::mvcc::RequiredOutputRolePosture::Retire)
     {
-        context.checkpoint(1).map_err(origin_request)?;
+        crate::execution::request_stage::checkpoint(context, 1).map_err(origin_request)?;
         if after.entity_metadata(member.id).is_some() {
             return Err(records::refuse(original.commit.commit_id, member.id));
         }
     }
     for edge in &original.relations {
-        context.checkpoint(1).map_err(origin_request)?;
+        crate::execution::request_stage::checkpoint(context, 1).map_err(origin_request)?;
         if after.relation_metadata(edge.id).is_some() {
             return Err(TransactionCommitError::publication(crate::publication::data::PublicationError::authored_retirement(
                 crate::publication::data::AuthoredRetirementRefusal::HistoricalSelectionNotOwned { publication: original.commit.commit_id }, RecordRef::Relation(edge.id))));
@@ -61,7 +61,7 @@ pub(super) fn install(
     let bytes = (std::mem::size_of::<CanonicalHistoricalOutputAbsence>()
         + original.meaning.family.len()
         + 32) as u64;
-    context.checkpoint(bytes).map_err(origin_request)?;
+    crate::execution::request_stage::checkpoint(context, bytes).map_err(origin_request)?;
     let funding = ExecutionMemoryReservation::reserve_in_scope(lease, bytes)
         .map_err(|stop| origin_request(crate::execution::denial::lease_denial(stop)))?;
     // The route selector's negative coordinate stops cold ancestry at this step.

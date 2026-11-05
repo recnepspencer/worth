@@ -42,11 +42,13 @@ requests refuse rather than prove absence.
 
 Recording proves scope membership at the current head. Navigation proves it at
 the selected snapshot. Checkout atomically restores the union of current and
-selected owned closures: retire current-only entities, restore selected-only
-entities, restore relations, and preserve every publication's custody. Relation
-moves are ordinary recorded edits. The cascade-custody restoration and correction
-recording remain gated on the other lane landing; their safety checks cannot be
-relaxed meanwhile.
+selected owned closures, with D1188's recorded transfer boundary: retire
+current-only entities only when the selected basis has no live selected owner.
+Restore live transferred members at their original IDs and selected incoming
+ownership edges; keep the outside owner's other state current. Restore relations
+and preserve every publication's custody. Relation moves are ordinary recorded
+edits. The cascade owners have landed; custody integration and correction
+recording remain unfinished work in this lane.
 
 ## #55 implementation plan
 
@@ -275,9 +277,10 @@ owners. Publication custody must still contribute its authoritative closure.
 Prepare current relation material from the union of current and selected entity
 closures: all outgoing relations, plus incoming ownership edges declared anywhere
 in the installed ownership registry. This includes a moved-away entity's current
-ownership edge. Desired historical relations come from the selected closure
-only; current-only entities retire rather than gaining another document's old
-payload. Historical outgoing relations whose current source moved outside the
+ownership edge. D1188 supersedes the earlier current-only retirement rule:
+desired historical relations include the selected closure and the selected
+incoming declared ownership edges of live transferred members. Only the transfer
+member's version enters restoration; the outside owner's other records do not. Historical outgoing relations whose current source moved outside the
 union refuse with that current owner. A historical outside endpoint must still
 be live at its full generation; checkout cannot restore its payload by accident.
 
@@ -556,3 +559,67 @@ Native codec-retirement owner. This is unfinished work, not a route-absence
 fallback. Whole-output derived-codec retirement invalidates the output generation
 and requires target-producer rebuild; ordinary physical rematerialization is a
 different owner. Preserve that distinction during the upcoming currentness join.
+
+D1178 public graph cutover boundary and plan: navigation currently performs real
+Native graph observation, then unconditionally refuses and later prepares only
+the model's single record. The next slice removes that split: retain a borrow of
+the immutable installed document recipe in the attempt, prepare the current and
+selected union at the actual C-derived candidate, and send it through Native's
+owned-graph receiver and existing World publication/adoption. Eligibility also
+prepares and drops the real graph candidate on C, so custody and integrity
+refusals name their actual Native subject before a private branch is created.
+The single-record branch remains byte-for-byte unchanged. No Query ownership
+reader or authored delete/create translation is introduced. Native's coverage
+gate refuses any reached publication until its immutable Query observations can
+be transported; that precise publication refusal replaces the unconditional
+model-only seam. Public generic courts will prove checkout and redo restore
+member values at original IDs; the existing foreign-incoming refusal remains.
+Run the owned-model and legacy navigation courts, Native ownership courts,
+boundary/context, formatting and scoped line caps. This slice does not claim
+publication currentness or zero-producer-contact qualification.
+
+## D1188 — selected ownership of transferred members
+
+Root resolves the transfer round-trip gap: current-only membership is not a
+retirement instruction when the selected basis records a live owner elsewhere.
+Native restores that union member at its original identity and restores only its
+selected incoming declared ownership edges. The other owner's own entity,
+other members, authored fields and publications are not restoration targets.
+Unowned or absent current-only members retain the prior retirement behavior.
+
+Boundary review: `selection.rs` owns the two actual closures; keep them truthful.
+`graph_selection` owns the separate restoration set, derived from stored selected
+full-generation facts through the installed ownership observer. A transferred
+member can belong to that set without belonging to the selected document's
+closure. Its incoming declared edges enter the selected relation set; its
+outgoing relations do not enter merely because it transferred. The candidate
+must contain a live selected edge source. Missing sources refuse with the actual
+member, selected owner and relation. Native's ordinary custom/relation invariant
+scope judges the outside owner too, and final one-owner validation remains the
+single exclusivity owner. Publication selections still use D1178's exact custody
+and both current-fact writers; incomplete publication coverage refuses typed.
+No Query ownership reader, extra identity, or historical operation replay is used.
+
+Plan: add a funded restoration boundary under `branch/model_ownership`, carry it
+through canonical descriptive targets, symbol admission and the existing slot
+selection receiver, and exclude retained transfers from retirement. Use
+`execution::request_stage::checkpoint` throughout affected graph stages so worker
+requests poll without requiring serial accounting. Add generic Native round-trip,
+three-owner chain, unavailable-owner, second-owner and outside-owner cardinality
+courts, including worker-only selection. Kill the old-retirement mutation. Then
+qualify and commit the preserved public graph cutover on this behavior. Update
+the consumer guide/index without claiming unfinished output currentness. Before
+READY, fetch/merge the pending triage batch and run complete root/Query tests
+against that exact clean master. `origin/master` is still fb0870356f at this review.
+
+D1188 inverse-recording refinement: the strict A/B/C chain court exposed loss of
+E after it left both of A's actual closures. Canonical graph navigation now
+records the transferred participant IDs. Bounded, charged navigation ancestry
+selects the latest actual graph change for this model, carrying those subjects
+through ordinary intervening commits. This is inverse-change provenance, not
+ownership evidence. Both bases' exact declared incoming relations are read
+again; an outside participant is activated only when those facts differ.
+No unrelated outside payload is enrolled, and unavailable or nonlinear transfer
+evidence refuses typed. This preserves B→C→B navigation after A→B without
+reconstructing a parallel current-ownership ledger. The actual closure getters
+continue to describe only recorded current/selected ownership.

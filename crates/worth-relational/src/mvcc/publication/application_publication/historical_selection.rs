@@ -116,7 +116,7 @@ fn funding(
 ) -> Result<Arc<Option<worth_execution::ExecutionMemoryReservation>>, TransactionCommitError> {
     let bytes = (count as u64)
         .saturating_mul(2 * std::mem::size_of::<RelationalHistoricalOutputSelection>() as u64 + 64);
-    context.checkpoint(bytes).map_err(custody::execution_stop)?;
+    crate::execution::request_stage::checkpoint(context, bytes).map_err(custody::execution_stop)?;
     execution
         .reserve_retained_memory(bytes)
         .map(Arc::new)
@@ -127,9 +127,11 @@ fn same_route(
     right: &RequiredOutputPublicationMeaning,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<bool, TransactionCommitError> {
-    context
-        .checkpoint((left.family.len() + right.family.len() + 65) as u64)
-        .map_err(custody::execution_stop)?;
+    crate::execution::request_stage::checkpoint(
+        context,
+        (left.family.len() + right.family.len() + 65) as u64,
+    )
+    .map_err(custody::execution_stop)?;
     Ok(left.same_route(right))
 }
 fn on_route(
@@ -229,7 +231,7 @@ fn existing_entities(
     );
     let mut records = Vec::new();
     for id in entities {
-        context.checkpoint(1).map_err(custody::execution_stop)?;
+        crate::execution::request_stage::checkpoint(context, 1).map_err(custody::execution_stop)?;
         basis
             .inner
             .root

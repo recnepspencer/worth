@@ -16,6 +16,8 @@ pub struct CanonicalOwnedGraphSelection {
     selected_basis: crate::branch::RelationalBranchBasisDescriptor,
     model: EntityId,
     current_entities: Vec<EntityId>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    transfer_participants: Vec<EntityId>,
     selected_entities: Vec<SelectedEntity>,
     current_relations: Vec<StructuralRelationRecord>,
     selected_relations: Vec<StructuralRelationRecord>,
@@ -26,7 +28,7 @@ impl CanonicalOwnedGraphSelection {
     ) -> Result<Self, crate::transactions::data::TransactionCommitError> {
         let entities = graph.entities();
         let mut selected_entities = Vec::new();
-        for &id in entities.selected_entities() {
+        for &id in graph.restored_entities() {
             let kind = entities.selected_basis().inner.root.get_current_partition(id.partition_id)
                 .and_then(|region| region.entity(id)).filter(|slot| slot.is_live()).and_then(|slot| slot.kind_id())
                 .ok_or_else(|| crate::transactions::data::TransactionCommitError::conflict(
@@ -45,11 +47,15 @@ impl CanonicalOwnedGraphSelection {
                     crate::mvcc::origin_denial("graph selection basis cannot enter canonical frame")
                 })?,
             model: entities.model(),
-            current_entities: entities.current_entities().iter().copied().collect(),
+            current_entities: graph.current_entities().iter().copied().collect(),
+            transfer_participants: graph.transfer_participants().iter().copied().collect(),
             selected_entities,
             current_relations: graph.current_relations().values().copied().collect(),
             selected_relations: graph.selected_relations().values().copied().collect(),
         })
+    }
+    pub(crate) fn transfer_participants(&self) -> impl Iterator<Item = EntityId> + '_ {
+        self.transfer_participants.iter().copied()
     }
     pub fn model(&self) -> EntityId {
         self.model

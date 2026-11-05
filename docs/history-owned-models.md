@@ -51,13 +51,28 @@ edge from an outside source stays with that source. If it prevents retirement,
 relation, source owner and borrowed installed deletion contracts.
 
 The [navigation court](../workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_model/navigation.rs)
-uses a recorded NAV grant and a real child-scoped edit. This checkpoint prepares
-the declared structural selection, then returns the explicit
-`RequiresCascadeCustody` refusal before creating a candidate. Atomic graph
-publication, source-scope publication restoration and the applied checkout
-courts await the Native historical-publication selection handoff described in
-the owned-model plan. The cascade batch is merged; graph navigation remains
-unavailable for adoption.
+uses a recorded NAV grant and a real child-scoped edit. Native prepares and
+publishes the complete structural selection through the existing World
+publication and adoption owners. Required publication coverage refuses with its
+actual publication/source subject until the selected observations and currentness
+handoff is complete. This batch remains under qualification.
+
+Ownership transfers are reversible. If a union member belongs to A now and B at
+the selected step, checkout restores the live member at its original identity
+and its selected incoming declared ownership edges to B. B's own fields, other
+members and other outputs remain current. B's selected edge source must still
+be live, and the candidate must satisfy both one-owner exclusivity and B's
+current invariants. A missing source refuses with the member, selected owner,
+source and relation. Ordinary foreign incoming edges remain outside the write
+boundary and retain the same integrity refusal.
+
+The navigation commit records the transfer subjects with fresh provenance so
+further inverse selections can follow A→B→C and back. Native uses those subjects
+to select the next inverse boundary; current and selected ownership still come
+from recorded facts at the two bases. An outside participant whose ownership
+edges did not change is not restored. Current-only members that have no live
+selected owner retain the ordinary retirement behavior.
+
 `ScopeEntityRecord` navigation cannot include ownership declarations, and
 entity-only context refresh still refuses them. Corrections sharing the tree
 follow #56.
