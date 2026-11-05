@@ -91,10 +91,12 @@ fn recovered_publication_refusal_preserves_source_and_partial_pin_for_fresh_requ
     assert!(matches!(refusal.cause(), Cause::ForeignRecoveryRuntime));
     let effect = refusal.into_effect();
     let mut changed = serde_json::to_value(&successor).unwrap();
-    let original = changed["descriptor"]["visibility_commitment"][0]
-        .as_u64()
-        .unwrap();
-    changed["descriptor"]["visibility_commitment"][0] = serde_json::json!(original ^ 1);
+    let digest: worth_foundational::CanonicalDigestId =
+        serde_json::from_value(changed["descriptor"]["visibility_commitment"].clone()).unwrap();
+    let mut bytes = *digest.bytes();
+    bytes[0] ^= 1;
+    changed["descriptor"]["visibility_commitment"] =
+        serde_json::to_value(worth_foundational::CanonicalDigestId::new(bytes)).unwrap();
     let changed: Recorded = serde_json::from_value(changed).unwrap();
     let refusal = authority
         .admit_recorded_publication(execution, &runtime, effect, &predecessor, &changed)
