@@ -133,9 +133,7 @@ impl WorthQueryApplicationProducerConnection {
 }
 
 pub(super) fn connect<Schema: worth_query_installation::facade::ApplicationSchema>(
-    runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
-        Schema,
-    >,
+    runtime: &dyn crate::domain_computation::primary_graph::causal_inspection::host::CausalInspectionHost<Schema>,
     execution: &ExecutionRequest<'_, '_>,
     target: &WorthQueryApplicationInspectionTarget,
     source: &WorthQueryApplicationCommitReceipt,
@@ -173,7 +171,7 @@ pub(super) fn connect<Schema: worth_query_installation::facade::ApplicationSchem
         let observed = overlap::ObservationConnection {
             original,
             diagnostic,
-            layout: &runtime.runtime.primary_provider.graph.layout,
+            layout: &runtime.provider_graph().layout,
             contracts: runtime.installed_schema().native_contracts(),
         };
         source::require_input(
@@ -207,9 +205,7 @@ pub(super) fn connect<Schema: worth_query_installation::facade::ApplicationSchem
 }
 
 pub(super) fn explain<Schema: worth_query_installation::facade::ApplicationSchema>(
-    runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
-        Schema,
-    >,
+    runtime: &dyn crate::domain_computation::primary_graph::causal_inspection::host::CausalInspectionHost<Schema>,
     execution: &ExecutionRequest<'_, '_>,
     target: &WorthQueryApplicationInspectionTarget,
     source: &WorthQueryApplicationCommitReceipt,

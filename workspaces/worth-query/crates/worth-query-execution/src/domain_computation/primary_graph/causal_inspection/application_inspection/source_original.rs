@@ -24,7 +24,7 @@ impl SourceOriginal {
     /// Only allocation-free structural affinity precedes fresh READ/metadata.
     /// No patch, field, count or parameter value is traversed here.
     pub(super) fn from_receipt<Schema, Disclosure>(
-        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::causal_inspection::host::CausalInspectionHost<Schema>,
         installed: &WorthQueryInstalledApplicationQueryBinding<Schema, Disclosure::Disclosure>,
         receipt: &WorthQueryApplicationCommitReceipt,
     ) -> Result<Self, Denial>
@@ -33,7 +33,7 @@ impl SourceOriginal {
         Disclosure: ApplicationSourceDisclosureBinding<Schema>,
     {
         let authority = receipt.authority_binding();
-        if authority.runtime_authority() != runtime.runtime.authority_identity()
+        if authority.runtime_authority() != runtime.authority_identity()
             || authority.original_mutation_binding()
                 != Some(
                     crate::equality_type_id::EqualityTypeId::of::<Disclosure::Source>()

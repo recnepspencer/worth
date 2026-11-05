@@ -26,7 +26,7 @@ type Scope<Schema, Binding> =
 
 #[allow(clippy::too_many_arguments)]
 pub fn prepare<'a, 'storage, Schema, Binding>(
-    runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &'a dyn crate::domain_computation::primary_graph::causal_inspection::host::CausalInspectionHost<Schema>,
     execution: &ExecutionRequest<'_, '_>,
     installed: &WorthQueryInstalledApplicationQueryBinding<Schema, Binding>,
     selected: &WorthQuerySelectedProductOperation<'_, Schema>,
@@ -104,7 +104,7 @@ pub(in crate::domain_computation::primary_graph::causal_inspection::application_
     Schema: ApplicationSchema,
     Scope,
 >(
-    runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &'a dyn crate::domain_computation::primary_graph::causal_inspection::host::CausalInspectionHost<Schema>,
     execution: &ExecutionRequest<'_, '_>,
     selected: &WorthQuerySelectedProductOperation<'_, Schema>,
     principal: worth_relational::facade::identity::EntityId,
@@ -121,7 +121,6 @@ pub(in crate::domain_computation::primary_graph::causal_inspection::application_
 ) -> Result<InspectionRead<'a, 'storage, Schema, Scope>, InspectionAdmissionDenial> {
     let product = selected.product().read_lease();
     let graph = runtime
-        .runtime
         .primary_graph()
         .ok_or(InspectionAdmissionDenial::MissingGraph)?;
     let plan = plan::admit(runtime, execution, target.contract(), memory)
@@ -136,7 +135,7 @@ pub(in crate::domain_computation::primary_graph::causal_inspection::application_
                     WorthQueryManagedGraphWorkSession::inspection_start_backing_bytes(
                         basis_ref,
                         &product,
-                        runtime.graph_work_provider_identity(),
+                        runtime.application_runtime().graph_work_provider_identity(),
                     )?,
                 )
             })
@@ -151,12 +150,12 @@ pub(in crate::domain_computation::primary_graph::causal_inspection::application_
                 reserved,
                 Arc::clone(&target),
                 plan,
-                runtime.runtime.authority_identity(),
+                runtime.authority_identity(),
                 principal,
                 WorthQueryGraphWorkAccessContextAffinity::entity(scope.entity_id()),
                 basis_ref,
                 product,
-                runtime.graph_work_provider_identity(),
+                runtime.application_runtime().graph_work_provider_identity(),
                 graph.product_read_session_port(),
             ),
         ))

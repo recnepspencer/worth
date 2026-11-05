@@ -50,7 +50,7 @@ type PendingInspectionPolicy<'a, Schema, Binding> = dyn FnMut(
 
 /// Borrowed original observation and fresh request; construction reads no graph.
 pub struct WorthQueryApplicationInspectionRequest<'a, 'p, 'r, 'o, Schema, Binding> {
-    runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &'a dyn crate::domain_computation::primary_graph::causal_inspection::host::CausalInspectionHost<Schema>,
     external: &'p WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request: &'r WorthQueryRequestScope,
     original: &'o WorthQueryApplicationQueryObservation,
@@ -68,9 +68,10 @@ pub struct WorthQueryReferenceOnlyInspectionRequest<'a, 'p, 'r, 'o, Schema, Bind
     WorthQueryApplicationInspectionRequest<'a, 'p, 'r, 'o, Schema, Binding>,
 );
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    /// Inspects the current occurrence of the original branch, with fresh access.
-    pub fn inspect_application_observation<'a, 'p, 'r, 'o, Binding>(
+pub trait RequestOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::causal_inspection::host::CausalInspectionHost<Schema>
+{
+    fn inspect_application_observation<'a, 'p, 'r, 'o, Binding>(
         &'a self,
         external: &'p WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &'r WorthQueryRequestScope,
@@ -80,7 +81,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Binding: ApplicationQueryBinding<Schema>,
     {
         WorthQueryApplicationInspectionRequest {
-            runtime: self,
+            runtime: self.causal_inspection_host(),
             external,
             request,
             original,
@@ -88,6 +89,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             binding: PhantomData,
         }
     }
+}
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::causal_inspection::host::CausalInspectionHost<
+                Schema,
+            > + ?Sized,
+    > RequestOps<Schema> for HostRuntime
+{
 }
 
 impl<'a, 'p, 'r, 'o, Schema, Binding>
@@ -169,3 +179,4 @@ impl<'o, Schema: ApplicationSchema, Binding: ApplicationQueryBinding<Schema>>
         funding::open(self.runtime, self.request, self.allocation_policy, body)
     }
 }
+pub use source::SourceOps;

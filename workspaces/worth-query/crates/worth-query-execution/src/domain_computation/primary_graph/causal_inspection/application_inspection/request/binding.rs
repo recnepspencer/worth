@@ -15,7 +15,7 @@ pub enum InspectionBindingDenial {
 }
 
 pub(super) fn installed<Schema: ApplicationSchema, Binding: ApplicationQueryBinding<Schema>>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::causal_inspection::host::CausalInspectionHost<Schema>,
     execution: &ExecutionRequest<'_, '_>,
     memory: &mut Option<ExecutionMemoryReservation>,
 ) -> Result<

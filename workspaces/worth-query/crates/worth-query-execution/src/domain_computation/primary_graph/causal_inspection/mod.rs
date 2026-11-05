@@ -187,6 +187,8 @@ pub mod integration {
 
 pub use super::application_contribution::WorthQueryProducerEvaluationIneligibility;
 
+pub use application_inspection::RequestOps;
+pub use application_inspection::SourceOps;
 pub use application_inspection::{
     WorthQueryApplicationEvidenceFamily, WorthQueryApplicationMaterializationPolicy,
     WorthQueryApplicationMaterializationRequest, WorthQueryApplicationRichMaterialization,
@@ -198,3 +200,4 @@ pub use application_inspection::{
     WorthQueryMaterializedSourceField, WorthQueryMaterializedSourceFieldEffect,
     WorthQueryProjectionMaterializationRefusal,
 };
+pub(crate) mod host;

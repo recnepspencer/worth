@@ -26,7 +26,7 @@ pub(in crate::domain_computation::primary_graph::causal_inspection::application_
     Binding,
     SourceBinding,
 >(
-    runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &'a dyn crate::domain_computation::primary_graph::causal_inspection::host::CausalInspectionHost<Schema>,
     execution: &ExecutionRequest<'_, '_>,
     source_binding: &WorthQueryInstalledApplicationQueryBinding<Schema, SourceBinding>,
     selected: &WorthQuerySelectedProductOperation<'_, Schema>,
@@ -121,7 +121,7 @@ pub(in crate::domain_computation::primary_graph::causal_inspection::application_
     Schema,
     Binding,
 >(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::causal_inspection::host::CausalInspectionHost<Schema>,
     execution: &ExecutionRequest<'_, '_>,
     query: &WorthQueryInstalledApplicationQueryBinding<Schema, Binding>,
     selected: &WorthQuerySelectedProductOperation<'_, Schema>,

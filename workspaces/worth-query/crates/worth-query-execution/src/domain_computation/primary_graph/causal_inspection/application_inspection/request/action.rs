@@ -216,13 +216,13 @@ impl<'o, Schema: ApplicationSchema, Binding: ApplicationQueryBinding<Schema>>
             };
             let selected = self
                 .runtime
-                .on_branch(branch)
+                .application_runtime().on_branch(branch)
                 .select_with_request(execution)
                 .map_err(InspectionCause::Selection)?;
             let storage = &mut memory;
             let (report, terminal) = self
                 .runtime
-                .with_fresh_retained_query_identities(
+                .application_runtime().with_fresh_retained_query_identities(
                     execution,
                     &installed,
                     None,

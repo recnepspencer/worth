@@ -125,9 +125,7 @@ impl WorthQueryApplicationProducerEvaluation {
 }
 
 pub(super) fn evaluate<Schema: worth_query_installation::facade::ApplicationSchema>(
-    runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
-        Schema,
-    >,
+    runtime: &dyn crate::domain_computation::primary_graph::causal_inspection::host::CausalInspectionHost<Schema>,
     execution: &ExecutionRequest<'_, '_>,
     target: &WorthQueryApplicationInspectionTarget,
     source: &WorthQueryApplicationCommitReceipt,
@@ -137,7 +135,7 @@ pub(super) fn evaluate<Schema: worth_query_installation::facade::ApplicationSche
 ) -> Result<WorthQueryApplicationProducerEvaluation, CaptureStop<ConnectionRefusal>> {
     evaluate_installed(
         InstalledEvaluationFields {
-            layout: &runtime.runtime.primary_provider.graph.layout,
+            layout: &runtime.provider_graph().layout,
             contracts: runtime.installed_schema().native_contracts(),
         },
         execution,

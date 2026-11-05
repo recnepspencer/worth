@@ -79,10 +79,10 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
             .ok_or(InspectionAdmissionDenial::ForeignIssuedAccess)?;
         let security = self
             .runtime
+            .application_runtime()
             .admit_product_security_basis(execution, product)
             .map_err(InspectionAdmissionDenial::Security)?;
         let graph = self
-            .runtime
             .runtime
             .primary_graph()
             .ok_or(InspectionAdmissionDenial::MissingGraph)?;
@@ -108,7 +108,7 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
                             execution,
                             relational,
                             snapshot,
-                            self.runtime.runtime.authorization.bridge(),
+                            self.runtime.authorization().bridge(),
                         )
                         .map_err(InspectionAdmissionDenial::CurrentAuthorization)?;
                     if let Some(source) = &self.source {
@@ -119,7 +119,7 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
                                 execution,
                                 relational,
                                 snapshot,
-                                self.runtime.runtime.authorization.bridge(),
+                                self.runtime.authorization().bridge(),
                             )
                             .map_err(InspectionAdmissionDenial::CurrentAuthorization)?;
                     }
@@ -135,7 +135,7 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
                                     execution,
                                     relational,
                                     snapshot,
-                                    self.runtime.runtime.authorization.bridge(),
+                                    self.runtime.authorization().bridge(),
                                 )
                                 .map_err(InspectionAdmissionDenial::CurrentAuthorization)?;
                         }

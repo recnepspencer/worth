@@ -66,7 +66,7 @@ pub enum InspectionAdmissionDenial {
 }
 
 pub struct InspectionRead<'a, 'storage, Schema, Scope> {
-    runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &'a dyn crate::domain_computation::primary_graph::causal_inspection::host::CausalInspectionHost<Schema>,
     scope: &'a WorthQueryApplicationEntityIdentity<Schema, Scope>,
     request: &'a WorthQueryRequestScope,
     principal: worth_relational::facade::identity::EntityId,

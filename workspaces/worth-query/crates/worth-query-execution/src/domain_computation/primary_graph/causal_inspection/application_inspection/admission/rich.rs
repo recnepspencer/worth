@@ -127,10 +127,7 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
         let body =
             capture_original_query(execution, self.memory, &self.target, &self.session, loan)?;
         if matches!(body.artifact.original, OriginalQueryDetail::Provided(_)) {
-            self.runtime
-                .runtime
-                .primary_provider
-                .inspection_materialization_prepared();
+            self.runtime.inspection_materialization_prepared();
         }
         drop(self.check(execution)?);
         let reference = self.materialize(execution)?;

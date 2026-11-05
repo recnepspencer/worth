@@ -11,7 +11,7 @@ pub(in crate::domain_computation::primary_graph::causal_inspection::application_
     Schema,
     Binding,
 >(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::causal_inspection::host::CausalInspectionHost<Schema>,
     installed: &WorthQueryInstalledApplicationQueryBinding<Schema, Binding>,
     original: &super::super::super::application_observation::WorthQueryApplicationQueryObservation,
 ) -> Result<
@@ -27,7 +27,7 @@ where
         .binding_observation()
         .and_then(|binding| binding.inspection_contract())
         .ok_or(InspectionAdmissionDenial::MissingInspection)?;
-    if original.source.runtime_authority != runtime.runtime.authority_identity().as_u64()
+    if original.source.runtime_authority != runtime.authority_identity().as_u64()
         || &original.source.schema_binding != contract.graph_obligations().binding_identity()
         || original.source.original_binding() != Some(contract.binding_observation())
     {

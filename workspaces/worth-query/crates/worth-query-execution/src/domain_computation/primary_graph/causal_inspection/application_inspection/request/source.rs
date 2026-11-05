@@ -13,7 +13,7 @@ mod rich;
 pub use rich::WorthQueryMaterializedSourceInspectionRequest;
 
 pub struct WorthQuerySourceInspectionRequest<'a, 'p, 'r, 'source, Schema, Disclosure> {
-    runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &'a dyn crate::domain_computation::primary_graph::causal_inspection::host::CausalInspectionHost<Schema>,
     external: &'p WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request: &'r WorthQueryRequestScope,
     source: &'source WorthQueryApplicationCommitReceipt,
@@ -26,8 +26,10 @@ pub struct WorthQueryPerformedSourceInspectionRequest<'a, 'p, 'r, 'source, Schem
 pub struct WorthQuerySourceReferenceOnlyInspectionRequest<'a, 'p, 'r, 'source, Schema, Disclosure>(
     WorthQuerySourceInspectionRequest<'a, 'p, 'r, 'source, Schema, Disclosure>,
 );
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub fn inspect_application_source<
+pub trait SourceOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::causal_inspection::host::CausalInspectionHost<Schema>
+{
+    fn inspect_application_source<
         'a,
         'p,
         'r,
@@ -40,7 +42,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         source: &'source WorthQueryApplicationCommitReceipt,
     ) -> WorthQuerySourceInspectionRequest<'a, 'p, 'r, 'source, Schema, Disclosure> {
         WorthQuerySourceInspectionRequest {
-            runtime: self,
+            runtime: self.causal_inspection_host(),
             external,
             request,
             source,
@@ -48,6 +50,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             disclosure: PhantomData,
         }
     }
+}
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::causal_inspection::host::CausalInspectionHost<
+                Schema,
+            > + ?Sized,
+    > SourceOps<Schema> for HostRuntime
+{
 }
 impl<'a, 'p, 'r, 'source, Schema, Disclosure>
     WorthQuerySourceInspectionRequest<'a, 'p, 'r, 'source, Schema, Disclosure>

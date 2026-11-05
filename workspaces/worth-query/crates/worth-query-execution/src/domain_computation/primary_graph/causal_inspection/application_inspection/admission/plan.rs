@@ -20,7 +20,7 @@ pub(in crate::domain_computation::primary_graph::causal_inspection::application_
 }
 
 pub(super) fn admit<Schema: ApplicationSchema>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::causal_inspection::host::CausalInspectionHost<Schema>,
     execution: &ExecutionRequest<'_, '_>,
     contract: &WorthQueryInstalledApplicationInspectionContract,
     memory: &mut Option<ExecutionMemoryReservation>,
@@ -41,10 +41,7 @@ pub(super) fn admit<Schema: ApplicationSchema>(
         };
         admit_application_inspection_graph_work(
             contract,
-            runtime
-                .runtime
-                .primary_provider
-                .application_resource_support_ref(),
+            runtime.graph_work_resource_support_ref(),
             &mut admit,
         )
         .map_err(|cause| match cause {

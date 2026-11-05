@@ -33,7 +33,7 @@ pub(in crate::domain_computation::primary_graph::causal_inspection::application_
     Schema,
     Binding,
 >(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::causal_inspection::host::CausalInspectionHost<Schema>,
     execution: &ExecutionRequest<'_, '_>,
     installed: &WorthQueryInstalledApplicationQueryBinding<Schema, Binding>,
     selected: &WorthQuerySelectedProductOperation<'_, Schema>,
@@ -75,6 +75,7 @@ where
     )
     .map_err(InspectionAdmissionDenial::Authorization)?;
     let (authorization, _) = runtime
+        .application_runtime()
         .observe_issued_query_read_authorization(execution, installed.query(), &root, reserved)
         .map_err(InspectionAdmissionDenial::Authorization)?;
     let disclosure = compile_inspection_disclosure_contract(&contract, execution, memory)
@@ -90,10 +91,10 @@ where
             .map_err(InspectionAdmissionDenial::Capability)?;
     }
     let graph = runtime
-        .runtime
         .primary_graph()
         .ok_or(InspectionAdmissionDenial::MissingGraph)?;
     let security = runtime
+        .application_runtime()
         .admit_product_security_basis(execution, &product)
         .map_err(InspectionAdmissionDenial::Security)?;
     let resolution = graph.retain_entity_resolution_context();
@@ -106,7 +107,7 @@ where
                     execution,
                     relational,
                     snapshot,
-                    runtime.runtime.authorization.bridge(),
+                    runtime.authorization().bridge(),
                 )
                 .map_err(InspectionAdmissionDenial::CurrentAuthorization)?;
             if let Some(capability) = metadata.authorization_mut() {
@@ -115,7 +116,7 @@ where
                         execution,
                         relational,
                         snapshot,
-                        runtime.runtime.authorization.bridge(),
+                        runtime.authorization().bridge(),
                     )
                     .map_err(InspectionAdmissionDenial::CurrentAuthorization)?;
             }
@@ -177,7 +178,7 @@ where
                                 execution,
                                 relational,
                                 security.snapshot_handle(),
-                                runtime.runtime.authorization.bridge(),
+                                runtime.authorization().bridge(),
                             )
                             .map_err(InspectionAdmissionDenial::CurrentAuthorization)
                     })?;

@@ -63,4 +63,6 @@ pub use stop::{
 
 pub(crate) mod target;
 
+pub use request::RequestOps;
+pub use request::SourceOps;
 pub(in crate::domain_computation) use target::WorthQueryApplicationInspectionTarget;

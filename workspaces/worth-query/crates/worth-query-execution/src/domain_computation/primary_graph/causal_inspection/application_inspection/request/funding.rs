@@ -2,16 +2,17 @@
 use super::*;
 use crate::domain_computation::request_execution::WorthQueryAdvancementDenial;
 pub(super) fn open<T, Schema: ApplicationSchema>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::causal_inspection::host::CausalInspectionHost<Schema>,
     request: &WorthQueryRequestScope,
     allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     body: impl FnOnce(&ExecutionRequest<'_, '_>) -> Result<T, InspectionCause>,
 ) -> Result<T, InspectionCause> {
     let mut completed = None;
-    let handoff =
-        runtime.with_funded_application_advancement(request, allocation_policy, |phase| {
+    let handoff = runtime
+        .application_runtime()
+        .with_funded_application_advancement(request, allocation_policy, |phase| {
             completed = Some(
-                match phase.checked_execution_request_for(&runtime.runtime.product_runtime) {
+                match phase.checked_execution_request_for(runtime.product_runtime()) {
                     Ok(execution) => body(&execution),
                     Err(cause) => Err(InspectionCause::Advancement(cause)),
                 },

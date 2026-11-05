@@ -5,6 +5,7 @@ mod application_entry;
 mod application_installation;
 mod application_resource;
 mod authorization;
+mod causal_inspection;
 mod conditional_operation;
 mod handler;
 mod identity;

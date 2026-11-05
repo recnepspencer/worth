@@ -1,0 +1,31 @@
+{
+ "module": "domain_computation::primary_graph::causal_inspection",
+ "blocks": 2,
+ "methods": 2,
+ "traits": [
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/causal_inspection/application_inspection/request.rs",
+   "trait": "RequestOps",
+   "visibility": "pub",
+   "methods": [
+    "inspect_application_observation"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/causal_inspection/application_inspection/request/source.rs",
+   "trait": "SourceOps",
+   "visibility": "pub",
+   "methods": [
+    "inspect_application_source"
+   ]
+  }
+ ],
+ "facades": 2,
+ "host": {
+  "core_fields": [],
+  "top_fields": [],
+  "core_methods": [],
+  "foreign": [],
+  "hand": []
+ }
+}

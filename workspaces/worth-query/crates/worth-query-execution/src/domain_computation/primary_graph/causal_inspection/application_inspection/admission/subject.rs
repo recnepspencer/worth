@@ -15,7 +15,7 @@ pub enum InspectionSubject<'a> {
 impl InspectionSubject<'_> {
     pub(super) fn validate<Schema: ApplicationSchema, Binding: ApplicationQueryBinding<Schema>>(
         self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::causal_inspection::host::CausalInspectionHost<Schema>,
         installed: &WorthQueryInstalledApplicationQueryBinding<Schema, Binding>,
         selected: &crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<
             '_,
@@ -38,7 +38,7 @@ impl InspectionSubject<'_> {
                     && original.source.retained_scope_selector().subject() == scope
             }
             Self::Source(original) => {
-                original.runtime == runtime.runtime.authority_identity().as_u64()
+                original.runtime == runtime.authority_identity().as_u64()
                     && original.disclosure.schema()
                         == contract.graph_obligations().binding_identity()
                     && original

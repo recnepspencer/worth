@@ -44,7 +44,7 @@ where
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn prepare_capability<Schema, Binding, Capability, Operation, Input>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::causal_inspection::host::CausalInspectionHost<Schema>,
     request: &WorthQueryRequestScope,
     execution: &ExecutionRequest<'_, '_>,
     installed: &worth_query_installation::facade::WorthQueryInstalledApplicationQueryBinding<Schema, Binding>,
