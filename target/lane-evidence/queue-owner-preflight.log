@@ -1,0 +1,17 @@
+command: python target/lane-evidence/queue_owner_preflight.py
+HEAD: d0061f1327c7e27932eb80143517c8540458798e
+git_status_short_empty: true
+start_utc: 2026-11-05T04:35:54.803433+00:00
+environment: removed stale CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER override
+D13 shared checkpoint construction owner differs on Lifecycle: exit1 workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_installation/construction.rs
+1	0	workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_installation/construction.rs
+Current CanonicalDigestId encoding leaf absent; integration leaf supplies named Serialize/Deserialize: crates/worth-foundational/src/identities/category_ids/canonical_digest_wire.rs
+Full exact-name search retained in queue3-named-digest-search.txt
+Actual envelope-demand visibility is pub(crate); public shared envelope explicitly compile-fences Weak and Arc extraction.
+No baseline, product source or observer door modified.
+
+end_utc: 2026-11-05T04:35:56.590834+00:00
+exit_code: 0
+tests_passed: 0
+tests_failed: 0
+tests_ignored: 0
