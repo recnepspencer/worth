@@ -5,6 +5,7 @@ mod actor_retention;
 mod correction_history_indexes;
 mod inspection_materialization;
 mod managed_cleanup;
+mod output_production;
 use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 #[path = "certification_controls/workflow_membership.rs"]
 mod workflow_membership;
@@ -34,31 +35,6 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema + 'static,
 {
-    /// Hands courts the output-demand registry this runtime owns; its test doors live there.
-    #[doc(hidden)]
-    pub fn output_demands_for_test(
-        &self,
-    ) -> &crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandRegistry
-{
-        self.output_production.demands()
-    }
-
-    /// Hands courts the output-production state this runtime owns; its test doors live there.
-    #[doc(hidden)]
-    pub fn output_production_for_test(
-        &self,
-    ) -> &crate::domain_computation::primary_graph::application_contribution::WorthQueryOutputProduction<Schema>{
-        &self.output_production
-    }
-
-    /// Hands courts the output-production state this runtime owns, for mutation.
-    #[doc(hidden)]
-    pub fn output_production_mut_for_test(
-        &mut self,
-    ) -> &mut crate::domain_computation::primary_graph::application_contribution::WorthQueryOutputProduction<Schema>{
-        &mut self.output_production
-    }
-
     /// Schedules failure at the real post-commit snapshot admission boundary.
     #[doc(hidden)]
     pub fn fail_next_post_commit_snapshot_for_test(&self) {
