@@ -7,6 +7,7 @@ use worth_relational::facade::{
 };
 mod currentness;
 pub(crate) mod dependencies;
+mod support;
 pub(in crate::domain_computation::primary_graph) use dependencies::StructuralWalkDependencies;
 mod commitment;
 pub(crate) mod key;
@@ -20,7 +21,7 @@ pub struct StructuralWalkObservation {
     query: StructuralWalkKey,
     native: PinnedStructuralWalk,
     commitment: [u8; 32],
-    snapshot: SnapshotHandle,
+    snapshot: super::projection_read_origin::ProjectionReadOrigin,
     _memory: Option<ExecutionMemoryReservation>,
 }
 impl StructuralWalkObservation {
@@ -75,7 +76,9 @@ impl StructuralWalkObservation {
     pub(in crate::domain_computation::primary_graph) fn commitment(&self) -> [u8; 32] {
         self.commitment
     }
-    pub(in crate::domain_computation::primary_graph) fn source(&self) -> &SnapshotHandle {
+    pub(in crate::domain_computation::primary_graph) fn source(
+        &self,
+    ) -> &super::projection_read_origin::ProjectionReadOrigin {
         &self.snapshot
     }
     pub(in crate::domain_computation::primary_graph) fn checkpoint(

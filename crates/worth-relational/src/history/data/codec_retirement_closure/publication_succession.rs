@@ -16,8 +16,9 @@ pub(super) fn validate_succession(
     envelope: &CanonicalCommitEnvelope,
     prior: &CanonicalRequiredOutputOrigin,
     context: &mut MapKernelContext<'_, '_>,
+    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
 ) -> Result<(), Stop> {
-    super::producer_retirement::validate(runtime, envelope, context)?;
+    super::producer_retirement::validate(runtime, envelope, context, schema)?;
     validate_route(runtime, envelope, prior, context)
 }
 
@@ -184,6 +185,7 @@ pub(super) fn validate_gap(
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
     validate_payload: bool,
+    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
 ) -> Result<(), Stop> {
     let mut next = current.commit.parents.first().copied();
     let bound = runtime.history.catalog_len();
@@ -229,7 +231,9 @@ pub(super) fn validate_gap(
         }
         if let Some(event) = &envelope.required_output_materialization {
             if validate_payload {
-                super::materialization::validate_semantics(runtime, &envelope, context, lease)?;
+                super::materialization::validate_semantics(
+                    runtime, &envelope, context, lease, schema,
+                )?;
             } else {
                 super::materialization::validate_header(
                     &envelope,

@@ -18,6 +18,7 @@ fn projection_authority_encoding_has_equal_work_across_varint_boundaries() {
             Arc::from("Entry"),
             authority,
             PhantomData,
+            None,
         );
         let identity =
             application_computation_partition_identity(&value, &mut |_| Ok::<(), ()>(())).unwrap();

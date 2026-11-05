@@ -10,6 +10,7 @@ pub struct RelationalAuthoredRetirement {
     pub(crate) roles: Vec<RequiredOutputRoleTarget>,
     pub(crate) anchor: EntityId,
     pub(crate) birth: crate::history::data::CommitId,
+    pub(crate) co_anchors: Vec<(EntityId, crate::history::data::CommitId)>,
     pub(crate) before: AdmittedRelationalBranchBasis,
     pub(crate) publications: Vec<RelationalRequiredOutputPublication>,
 }
@@ -35,17 +36,52 @@ impl RelationalRuntime {
         anchor: EntityId,
         roles: &[RequiredOutputRoleTarget],
     ) -> Result<Option<RelationalAuthoredRetirement>, TransactionCommitError> {
+        self.readmit_authored_source_retirement_with_co_anchors(
+            execution,
+            installed,
+            basis,
+            anchor,
+            &[],
+            roles,
+        )
+    }
+
+    /// Each explicitly declared co-anchor is an independently authenticated authored source.
+    pub fn readmit_authored_source_retirement_with_co_anchors(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        installed: &RelationalInstalledApplicationPublicationAuthority,
+        basis: &AdmittedRelationalBranchBasis,
+        anchor: EntityId,
+        co_anchors: &[EntityId],
+        roles: &[RequiredOutputRoleTarget],
+    ) -> Result<Option<RelationalAuthoredRetirement>, TransactionCommitError> {
         if installed.source_scope_ownership.is_empty() {
             return Ok(None);
         }
         if installed.runtime_instance_id != self.runtime_instance_id() {
             return Err(origin_denial("foreign installed source-retirement owner"));
         }
+        if !installed.source_scope_ownership.is_empty() {
+            installed.require_current_ownership_storage(basis, anchor)?;
+        }
         // Selection and every cold predecessor readmission share one original request scope.
         execution
             .in_scope(|_| {
-                let (birth, selected) = crate::history::data::select_authored_source_retirement(
-                    execution, self, installed, basis, anchor, roles,
+                let crate::history::data::SelectedAuthoredRetirement {
+                    birth,
+                    co_anchors,
+                    retirements: selected,
+                    ..
+                } = crate::history::data::select_authored_source_retirement(
+                    execution,
+                    self,
+                    installed,
+                    basis,
+                    anchor,
+                    co_anchors,
+                    roles,
+                    crate::history::data::AuthoredRetirementSelection::SourceScopeClosure,
                 )?;
                 if selected.is_empty() {
                     return Ok(None);
@@ -65,6 +101,7 @@ impl RelationalRuntime {
                     roles: roles.to_vec(),
                     anchor,
                     birth,
+                    co_anchors,
                     before: basis.clone(),
                     publications,
                 }))

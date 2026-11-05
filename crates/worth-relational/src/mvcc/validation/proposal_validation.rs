@@ -141,6 +141,7 @@ impl RelationalPreparationRuntime {
             mutation: proposed_mutation,
             identity: proposal_identity,
             validation_input,
+            coupled_publication,
             commit_boundary,
             mutation_sensitive,
             publication,
@@ -194,7 +195,7 @@ impl RelationalPreparationRuntime {
             crate::mvcc::RelationalInterruptionBoundary::ProposalValidation,
         )?;
         Ok(ValidatedRelationalProposal {
-            required_output_publication: None,
+            required_output_publication: coupled_publication,
             required_output_materialization: None,
             commit_work_budget: self.commit_work_budget.clone(),
             mutation_authority: transaction.mutation_authority,

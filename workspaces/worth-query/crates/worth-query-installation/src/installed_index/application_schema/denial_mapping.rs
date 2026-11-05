@@ -95,7 +95,9 @@ pub(super) fn map_compilation_denial(
             (kind, denial.subject().to_string())
         }
         ApplicationSchemaCompilationDenial::Operation(denial) => (
-            WorthQueryInstalledApplicationSchemaDenialKind::OperationInstallationDenied,
+            if denial.kind()==crate::application_operation::WorthQueryApplicationOperationInstallationDenialKind::PreImageDemandNotCoveredByAuthoredAnchors {
+                WorthQueryInstalledApplicationSchemaDenialKind::PreImageDemandNotCoveredByAuthoredAnchors
+            } else { WorthQueryInstalledApplicationSchemaDenialKind::OperationInstallationDenied },
             denial.operation().to_string(),
         ),
         ApplicationSchemaCompilationDenial::ValueBinding(denial) => {

@@ -93,39 +93,19 @@ fn cutoff_candidate_pins_the_selected_ancestor_partition() {
         "RestoredOutputBinding",
     );
 
-    lineage.record_recovered_prior_output_for_test(
-        lineage.binding_type_for_test(&(*source.output_binding_for_test())),
-        runtime_authority,
-        schema.clone(),
-        source.scope,
-        parent.lifecycle_incarnation(),
-        parent.reference_generation().get(),
-        Arc::clone(&target),
-        checkpoint_identity([0x31; 32]),
-        target_partition,
-        None,
-        [0x41; 32],
-        None,
-    );
-    lineage.record_recovered_prior_output_for_test(
-        lineage.binding_type_for_test(&(*source.output_binding_for_test())),
-        runtime_authority,
-        schema,
-        source.scope,
-        parent.lifecycle_incarnation(),
-        parent.reference_generation().get(),
-        sibling,
-        checkpoint_identity([0x32; 32]),
-        sibling_partition,
-        None,
-        [0x42; 32],
-        None,
-    );
+    lineage.record_prior_output_for_test(lineage.binding_type_for_test(source.output_binding_for_test()), runtime_authority, schema.clone(), source.scope, parent.lifecycle_incarnation(), parent.reference_generation().get(), Arc::clone(&target), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::restoration::PriorOutputOrigin::Recovered {
+            source_identity: checkpoint_identity([0x31; 32]),
+            checkpoint: None,
+        }, target_partition, None, [0x41; 32]);
+    lineage.record_prior_output_for_test(lineage.binding_type_for_test(source.output_binding_for_test()), runtime_authority, schema, source.scope, parent.lifecycle_incarnation(), parent.reference_generation().get(), sibling, worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::restoration::PriorOutputOrigin::Recovered {
+            source_identity: checkpoint_identity([0x32; 32]),
+            checkpoint: None,
+        }, sibling_partition, None, [0x42; 32]);
     lineage.register_fork_for_test(parent, &child);
     let selected_cell = &(*lineage.by_source_for_test())[&source][&parent.lifecycle_incarnation()]
         [&parent.reference_generation().get()][0];
-    let selected_identity = &(*selected_cell.get().unwrap().settlement_identity_for_test());
-    assert!(matches!(&(*(*selected_cell.get().unwrap().mutable_for_test()).lock().unwrap().computation_for_test()),
+    let selected_identity = selected_cell.get().unwrap().settlement_identity_for_test();
+    assert!(matches!((*selected_cell.get().unwrap().mutable_for_test()).lock().unwrap().computation_for_test(),
         worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::retained_computation::RecordedComputation::Absent(
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::prior_absence::PriorAbsence::Restored)));
 

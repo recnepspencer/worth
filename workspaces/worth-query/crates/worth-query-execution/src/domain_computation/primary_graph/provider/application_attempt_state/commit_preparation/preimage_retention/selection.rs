@@ -61,6 +61,61 @@ pub fn retain_from_attempt<'fact>(
     })
 }
 
+/// Co-anchor declarations select exact records; loci never guess a common entity.
+pub(super) fn retain_from_authored_anchors<'fact>(
+    demand: &InstalledPreImageDemand,
+    facts: impl Iterator<Item = &'fact WorthQueryPrimaryGraphApplicationDecisionFact>,
+    mutation: &ValidatedMutationFootprint,
+    anchors: &[(RecordRef, &str)],
+) -> Result<WorthQueryRetainedPreImageSelection, WorthQueryPreImageRetentionDenial> {
+    let candidates = facts
+        .filter_map(WorthQueryObservedPreImageCandidate::from_decision_fact)
+        .collect::<Vec<_>>();
+    let mut fields = Vec::new();
+    let mut total = 0usize;
+    for (record, entity) in anchors {
+        for locus in demand
+            .loci()
+            .iter()
+            .filter(|locus| locus.entity() == *entity)
+        {
+            let mut matched = candidates.iter().filter(|candidate| {
+                candidate.target_record() == record
+                    && candidate_matches_locus(candidate, locus)
+                    && mutation.mutates_field(record, candidate.locator())
+            });
+            let candidate = matched
+                .next()
+                .ok_or(WorthQueryPreImageRetentionDenial::MissingDemandedField)?;
+            if matched.next().is_some() {
+                return Err(WorthQueryPreImageRetentionDenial::AmbiguousDemandedField);
+            }
+            let encoded_bytes = candidate.value().semantic_byte_width();
+            total = total
+                .checked_add(encoded_bytes)
+                .ok_or(WorthQueryPreImageRetentionDenial::ExceedsByteBound)?;
+            if total > demand.maximum_encoded_bytes() {
+                return Err(WorthQueryPreImageRetentionDenial::ExceedsByteBound);
+            }
+            fields.push(WorthQueryRetainedPreImageFieldSeal {
+                locus: locus.clone(),
+                value: candidate.value().clone(),
+                encoded_bytes,
+                target_record: record.clone(),
+                entity_kind: candidate.entity_kind(),
+                locator: candidate.locator().clone(),
+            });
+        }
+    }
+    Ok(WorthQueryRetainedPreImageSelection {
+        retained: WorthQueryRetainedPreImage::from_retention_seal(WorthQueryRetainedPreImageSeal {
+            fields,
+            total_encoded_bytes: total,
+        }),
+        candidates_materialized: candidates.len(),
+    })
+}
+
 impl WorthQueryRetainedPreImageSelection {
     pub(super) fn into_parts(self) -> (WorthQueryRetainedPreImage, usize) {
         (self.retained, self.candidates_materialized)
@@ -150,7 +205,15 @@ pub fn retain_matching(
     mutates: impl Fn(&WorthQueryObservedPreImageCandidate) -> bool,
 ) -> Result<WorthQueryRetainedPreImage, WorthQueryPreImageRetentionDenial> {
     if demand.loci().is_empty() {
-        return Err(WorthQueryPreImageRetentionDenial::EmptyDemand);
+        if demand.relations().is_empty() {
+            return Err(WorthQueryPreImageRetentionDenial::EmptyDemand);
+        }
+        return Ok(WorthQueryRetainedPreImage::from_retention_seal(
+            WorthQueryRetainedPreImageSeal {
+                fields: Vec::new(),
+                total_encoded_bytes: 0,
+            },
+        ));
     }
     if mutation_is_empty {
         return Err(WorthQueryPreImageRetentionDenial::NoMutatedRecord);

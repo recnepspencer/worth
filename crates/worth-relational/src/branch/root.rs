@@ -15,6 +15,8 @@ mod allocation;
 mod authoritative_payload_tests;
 #[path = "root_axes.rs"]
 mod axes;
+#[path = "root_candidate.rs"]
+mod candidate;
 #[path = "root_capture.rs"]
 mod capture;
 #[path = "root_capture_preparation.rs"]

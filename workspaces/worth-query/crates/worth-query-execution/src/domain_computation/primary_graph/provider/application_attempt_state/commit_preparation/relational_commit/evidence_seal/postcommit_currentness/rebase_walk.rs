@@ -7,6 +7,7 @@ pub(super) fn rebase(
     prepared: FullSourceFactRebase,
     retired: &BTreeSet<EntityId>,
     producer_output: bool,
+    predecessor: Option<&worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
 ) -> RebasedSourceFacts {
     let FullSourceFactRebase {
         facts,
@@ -40,6 +41,7 @@ pub(super) fn rebase(
             fact,
             retired,
             producer_output,
+            predecessor,
             endpoints
                 .next_if(|(prepared_ordinal, _)| *prepared_ordinal == ordinal)
                 .map(|(_, payload)| payload),

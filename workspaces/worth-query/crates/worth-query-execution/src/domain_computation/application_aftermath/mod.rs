@@ -13,6 +13,11 @@ pub mod recovery_handle;
 mod recovery_posture;
 pub mod recovery_progression;
 pub mod retained_preimage;
+mod retained_relations;
+pub use retained_relations::{
+    WorthQueryRelationPreImageDenial, WorthQueryRelationPreImageFailure,
+    WorthQueryRetainedPreImageRelation,
+};
 
 pub use derivation_failure::WorthQueryAftermathDerivationFailure;
 

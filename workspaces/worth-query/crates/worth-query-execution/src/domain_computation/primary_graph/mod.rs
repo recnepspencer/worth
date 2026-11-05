@@ -14,6 +14,7 @@ pub(crate) mod application_attempt;
 pub(crate) mod application_branch;
 pub(crate) mod application_checkpoint;
 pub(crate) mod application_contribution;
+pub(crate) mod projection_read_origin;
 pub(in crate::domain_computation) use application_contribution::ComputationPrior;
 pub(in crate::domain_computation) use application_contribution::SealedComputationRetention;
 pub(crate) mod application_discovery;
@@ -171,7 +172,7 @@ pub(in crate::domain_computation) use application_attempt::WorthQueryRegisteredP
 pub(crate) use application_attempt::WorthQueryRetainedGovernedInput;
 pub(in crate::domain_computation::primary_graph) use application_attempt::WorthQueryApplicationOutputCorrespondence;
 pub(crate) use application_attempt::WorthQueryPerformedExternalRedispatchSeal;
-pub(crate) use provider::WorthQueryRetainedPreImageSeal;
+pub(crate) use provider::{WorthQueryRetainedPreImageSeal, WorthQueryRetainedRelationPreImageSeal};
 pub(crate) use provider::WorthQueryPrimaryGraphProvider;
 pub(in crate::domain_computation) use provider::ApplicationFactTable;
 pub(in crate::domain_computation) use provider::CompletedApplicationFacts;

@@ -98,6 +98,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryLiveCommitBatc
     pub(super) publication: WorthQueryCommittedProductPublication,
     pub(super) product: crate::basis::WorthQueryProductObservationLease,
     pub(super) emissions: Vec<WorthQueryApplicationEmission>,
+    pub(super) _emission_memory: Option<worth_execution::ExecutionMemoryReservation>,
     pub(super) predicate: Option<Arc<crate::domain_computation::primary_graph::application_query::derived_view::PreparedPredicateNotices>>,
 }
 

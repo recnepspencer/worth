@@ -14,6 +14,12 @@ pub(super) fn source_generated_manifest(
         .values()
         .filter_map(|kind| kind.relation_integrity.aggregate_identity.as_ref())
         .flat_map(|contract| contract.metadata_kinds())
+        .chain(
+            registry
+                .current_publication_storage
+                .iter()
+                .flat_map(|storage| storage.metadata_kinds()),
+        )
         .collect::<BTreeSet<_>>();
     let generated = generated_entities.iter().copied().collect::<BTreeSet<_>>();
     if generated.is_empty() || generated.len() != generated_entities.len() {

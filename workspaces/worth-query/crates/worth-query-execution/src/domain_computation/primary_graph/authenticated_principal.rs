@@ -71,11 +71,7 @@ impl<Schema, Principal, PrincipalIdentity> std::fmt::Debug
 ///     serde_json::from_str("{}").unwrap();
 /// ```
 pub struct WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity> {
-    external_identity: WorthQueryExternalPrincipalIdentity,
-    adapter_identity: WorthQueryAuthenticationAdapterIdentity,
-    attributes: Vec<WorthQueryPrincipalAttribute>,
-    valid_until: Instant,
-    clock: worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock,
+    external: std::sync::Arc<WorthQueryAuthenticatedExternalPrincipal<Schema>>,
     application_principal:
         WorthQueryApplicationPrincipalIdentity<Schema, Principal, PrincipalIdentity>,
     binding_identity: ApplicationSchemaBindingIdentity,
@@ -106,11 +102,7 @@ impl<Schema, Principal, PrincipalIdentity>
         evidence: WorthQueryResolvedPrincipalEvidence<PrincipalIdentity>,
     ) -> Self {
         Self {
-            external_identity: external.identity().clone(),
-            adapter_identity: external.adapter_identity().clone(),
-            attributes: external.attributes().to_vec(),
-            valid_until: external.valid_until(),
-            clock: external.clock().clone(),
+            external: std::sync::Arc::new(external.clone()),
             application_principal: WorthQueryApplicationPrincipalIdentity {
                 entity_id: evidence.principal_entity_id,
                 runtime_authority: evidence.runtime_authority,
@@ -126,6 +118,15 @@ impl<Schema, Principal, PrincipalIdentity>
         }
     }
 
+    pub(in crate::domain_computation) fn retain_authentication(
+        &self,
+    ) -> std::sync::Arc<dyn std::any::Any + Send + Sync>
+    where
+        Schema: 'static,
+    {
+        self.external.clone()
+    }
+
     pub fn application_principal(
         &self,
     ) -> &WorthQueryApplicationPrincipalIdentity<Schema, Principal, PrincipalIdentity> {
@@ -137,15 +138,15 @@ impl<Schema, Principal, PrincipalIdentity>
     }
 
     pub fn external_identity(&self) -> &WorthQueryExternalPrincipalIdentity {
-        &self.external_identity
+        self.external.identity()
     }
 
     pub fn adapter_identity(&self) -> &WorthQueryAuthenticationAdapterIdentity {
-        &self.adapter_identity
+        self.external.adapter_identity()
     }
 
     pub fn attributes(&self) -> &[WorthQueryPrincipalAttribute] {
-        &self.attributes
+        self.external.attributes()
     }
 
     pub fn binding_identity(&self) -> &ApplicationSchemaBindingIdentity {
@@ -157,17 +158,17 @@ impl<Schema, Principal, PrincipalIdentity>
     }
 
     pub fn valid_until(&self) -> Instant {
-        self.valid_until
+        self.external.valid_until()
     }
 
     pub fn clock(
         &self,
     ) -> &worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock {
-        &self.clock
+        self.external.clock()
     }
 
     pub fn is_expired(&self) -> bool {
-        self.clock.now() >= self.valid_until
+        self.external.clock().now() >= self.external.valid_until()
     }
 
     pub const fn examined_candidate_count(&self) -> usize {

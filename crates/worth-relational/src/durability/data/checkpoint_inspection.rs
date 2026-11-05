@@ -37,6 +37,7 @@ pub struct RelationalCheckpointInspection<'a> {
     pub symbol_identity_frontier: u32,
     pub frontiers: Vec<CheckpointRecordFrontier>,
     pub generations: Vec<CheckpointRecordIdentity>,
+    pub current_publication_records: BTreeSet<CheckpointRecordIdentity>,
     pub live_records: BTreeSet<CheckpointRecordIdentity>,
 }
 

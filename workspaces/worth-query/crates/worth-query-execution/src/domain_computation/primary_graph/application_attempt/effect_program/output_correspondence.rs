@@ -7,6 +7,7 @@ use worth_relational::facade::identity::EntityId;
 pub use worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture as WorthQueryApplicationOutputPosture;
 
 mod checkpoint;
+mod restoration;
 mod storage;
 use storage::CorrespondenceStorage;
 
@@ -24,7 +25,10 @@ pub(crate) mod role_use;
 pub(in crate::domain_computation::primary_graph) use role_use::OutputRoleUse;
 
 mod typed;
-pub use typed::WorthQueryApplicationTypedOutputCorrespondence;
+pub use typed::{
+    WorthQueryApplicationClosureEvidenceEntry, WorthQueryApplicationTypedClosureEvidence,
+    WorthQueryApplicationTypedOutputCorrespondence,
+};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 struct CommittedOutputBinding {

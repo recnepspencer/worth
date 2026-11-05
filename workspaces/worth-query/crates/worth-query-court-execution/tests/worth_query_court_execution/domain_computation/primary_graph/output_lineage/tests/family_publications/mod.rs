@@ -40,7 +40,7 @@ pub struct Court {
 }
 
 impl Court {
-    pub fn new() -> Self {
+    fn new() -> Self {
         let world =
             worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world(true, worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system());
         let product = world
@@ -147,7 +147,7 @@ impl Court {
         let records = (*self.lineage.by_source_mut_for_test())
             .entry(source.clone())
             .or_default()
-            .entry((*coordinate.occurrence_for_test()))
+            .entry(*coordinate.occurrence_for_test())
             .or_default()
             .entry(generation)
             .or_default();
@@ -159,7 +159,7 @@ impl Court {
                     .then(source_facts)
                     .map(|facts| computation_source.retain_facts_for_test(facts)),
                 worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::retained_computation::RecordedComputation::Absent(PriorAbsence::NotProduced),
-            )));
+            )), None);
         let cell = Arc::new(OnceLock::new());
         assert!(cell.set(recorded).is_ok());
         records.push(cell);
@@ -178,7 +178,7 @@ impl Court {
             .resolve_current_family_for_test(
                 &worth_execution::ExecutionRequest::serial(&self.request),
                 (*self.source.runtime_authority_for_test()),
-                &(*self.source.schema_for_test()),
+                self.source.schema_for_test(),
                 self.source.scope,
                 "family",
                 (*self.coordinate.occurrence_for_test()),
@@ -193,7 +193,7 @@ impl Court {
         origin_generation: u64,
     ) {
         let base_source = self.source.clone();
-        let bindings = &(*self.lineage.binding_identities_for_test());
+        let bindings = self.lineage.binding_identities_for_test();
         // The update's field value first, then its base, as the literal evaluated them.
         let source = |binding| {
             let output_binding = bindings.identity_for_test(binding).unwrap();
@@ -202,7 +202,7 @@ impl Court {
             source
         };
         let origin = (*(*self.lineage.by_source_for_test())
-            [&source(TypeId::of_for_test::<Origin>())][&(*self.coordinate.occurrence_for_test())]
+            [&source(TypeId::of_for_test::<Origin>())][self.coordinate.occurrence_for_test()]
             [&origin_generation][0]
             .get()
             .unwrap()
@@ -213,7 +213,7 @@ impl Court {
         let cell = &mut (*self.lineage.by_source_mut_for_test())
             .get_mut(&target_source)
             .unwrap()
-            .get_mut(&(*self.coordinate.occurrence_for_test()))
+            .get_mut(self.coordinate.occurrence_for_test())
             .unwrap()
             .get_mut(&generation)
             .unwrap()[0];
@@ -222,6 +222,12 @@ impl Court {
             .get_mut()
             .unwrap()
             .settlement_identity_mut_for_test()) = origin;
+    }
+}
+
+impl Default for Court {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

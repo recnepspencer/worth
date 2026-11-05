@@ -61,41 +61,15 @@ pub fn unrelated_partition_selection(population: u64) {
         "RestoredOutputBinding",
     );
 
-    lineage.record_recovered_prior_output_for_test(
-        lineage.binding_type_for_test(&(*source.output_binding_for_test())),
-        runtime_authority,
-        schema.clone(),
-        scope,
-        occurrence,
-        1,
-        Arc::clone(&target),
-        checkpoint_identity([0x31; 32]),
-        partition(0),
-        None,
-        [0x41; 32],
-        None,
-    );
+    lineage.record_prior_output_for_test(lineage.binding_type_for_test(source.output_binding_for_test()), runtime_authority, schema.clone(), scope, occurrence, 1, Arc::clone(&target), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::restoration::PriorOutputOrigin::Recovered { source_identity: checkpoint_identity([0x31; 32]), checkpoint: None }, partition(0), None, [0x41; 32]);
     for number in 1..=population {
-        lineage.record_recovered_prior_output_for_test(
-            lineage.binding_type_for_test(&(*source.output_binding_for_test())),
-            runtime_authority,
-            schema.clone(),
-            scope,
-            occurrence,
-            number + 1,
-            Arc::clone(&sibling),
-            checkpoint_identity([0x31; 32]),
-            partition(number),
-            None,
-            [0x41; 32],
-            None,
-        );
+        lineage.record_prior_output_for_test(lineage.binding_type_for_test(source.output_binding_for_test()), runtime_authority, schema.clone(), scope, occurrence, number + 1, Arc::clone(&sibling), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::restoration::PriorOutputOrigin::Recovered { source_identity: checkpoint_identity([0x31; 32]), checkpoint: None }, partition(number), None, [0x41; 32]);
     }
     let coordinate = ProductCoordinate::new_for_test(occurrence, population + 1);
 
     let selected = lineage.latest_output_in_partition_for_test(&source, coordinate, partition(0));
     assert!(Arc::ptr_eq(
-        &(*selected.unwrap().correspondence_for_test()),
+        selected.unwrap().correspondence_for_test(),
         &target
     ));
     let candidates = lineage
@@ -105,14 +79,14 @@ pub fn unrelated_partition_selection(population: u64) {
             scope,
             occurrence,
             population + 1,
-            &[lineage.binding_type_for_test(&(*source.output_binding_for_test()))],
+            &[lineage.binding_type_for_test(source.output_binding_for_test())],
             partition(0),
             execution,
         )
         .expect("unrelated partitions cannot exhaust one selection lookup");
     assert_eq!(candidates.len(), 1);
     assert!(Arc::ptr_eq(
-        &(*candidates[0].correspondence_for_test()),
+        candidates[0].correspondence_for_test(),
         &target
     ));
     let missing = lineage.latest_output_in_partition_for_test(&source, coordinate, [0xff; 32]);
@@ -153,6 +127,7 @@ pub fn unrelated_partition_selection(population: u64) {
             producer_dependency_identity,
             idempotency_key_identity,
             mutable,
+            None,
         )
     };
     let cell = Arc::new(std::sync::OnceLock::new());
@@ -173,12 +148,12 @@ pub fn unrelated_partition_selection(population: u64) {
             revised_coordinate,
             partition(0),
             execution,
-            |recorded| Arc::ptr_eq(&(*recorded.correspondence_for_test()), &target),
+            |recorded| Arc::ptr_eq(recorded.correspondence_for_test(), &target),
         )
         .expect("same-partition predecessors, not siblings, consume the budget");
     assert_eq!(work, 2);
     assert!(Arc::ptr_eq(
-        &(*prior.unwrap().correspondence_for_test()),
+        prior.unwrap().correspondence_for_test(),
         &target
     ));
 
@@ -206,12 +181,12 @@ pub fn unrelated_partition_selection(population: u64) {
             &source,
             revised_coordinate,
             execution,
-            |recorded| Arc::ptr_eq(&(*recorded.correspondence_for_test()), &target),
+            |recorded| Arc::ptr_eq(recorded.correspondence_for_test(), &target),
         )
         .expect("legacy unpartitioned correspondence remains discoverable within its budget");
     assert_eq!(work, population as usize + 2);
     assert!(Arc::ptr_eq(
-        &(*legacy.unwrap().correspondence_for_test()),
+        legacy.unwrap().correspondence_for_test(),
         &target
     ));
 }
@@ -299,7 +274,7 @@ fn fork_selection_uses_ancestor_partition_and_retirement_prunes_its_locator() {
     );
 
     lineage.record_restoration_for_test(
-        lineage.binding_type_for_test(&(*source.output_binding_for_test())),
+        lineage.binding_type_for_test(source.output_binding_for_test()),
         runtime_authority,
         schema.clone(),
         scope,
@@ -322,13 +297,13 @@ fn fork_selection_uses_ancestor_partition_and_retirement_prunes_its_locator() {
             scope,
             child.lifecycle_incarnation(),
             child.reference_generation().get(),
-            &[lineage.binding_type_for_test(&(*source.output_binding_for_test()))],
+            &[lineage.binding_type_for_test(source.output_binding_for_test())],
             partition(0),
             execution,
         )
         .expect("a fork traverses its parent coordinate");
     assert!(Arc::ptr_eq(
-        &(*candidates[0].correspondence_for_test()),
+        candidates[0].correspondence_for_test(),
         &correspondence
     ));
 

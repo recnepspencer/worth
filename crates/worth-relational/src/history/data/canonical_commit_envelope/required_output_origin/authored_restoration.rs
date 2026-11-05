@@ -17,6 +17,8 @@ pub(crate) struct CanonicalAuthoredRestoration {
     pub(crate) retirement: CommitId,
     pub(crate) original_anchor: EntityId,
     pub(crate) anchor: EntityId,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) co_anchors: Vec<(EntityId, EntityId)>,
     pub(crate) entities: Vec<(EntityId, EntityId)>,
     pub(crate) relations: Vec<(
         crate::identity::data::RelationId,
@@ -34,15 +36,14 @@ pub(super) fn install(
     created_relations: &CommitCreatedRelationBindings,
     state: &WorkingState,
     installed: RelationalInstalledApplicationPublicationAuthority,
-    admission: worth_proof::AdmittedAuthoredOutputRetirement,
-    restoration: RelationalAuthoredRestoration,
+    admission: Option<&worth_proof::AdmittedAuthoredOutputRetirement>,
+    restoration: &RelationalAuthoredRestoration,
     lease: Option<&ExecutionResourceLease<'_>>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<RequiredOutputPublicationPositions, TransactionCommitError> {
     let old = restoration
         .retirement
-        .authored_cascade_retirement
-        .as_ref()
+        .authored_source_retirement()
         .ok_or_else(|| crate::mvcc::origin_denial("restoration lost its exact retirement"))?;
     let refuse = || {
         TransactionCommitError::publication(
@@ -53,7 +54,8 @@ pub(super) fn install(
         )
     };
     if restoration.before.descriptor() != basis.descriptor()
-        || admission.publication_count() != restoration.publications.len()
+        || admission.map_or(0, |admission| admission.publication_count())
+            != restoration.publications.len()
     {
         return Err(refuse());
     }
@@ -62,7 +64,7 @@ pub(super) fn install(
         state,
         created,
         created_relations,
-        &restoration,
+        restoration,
         context,
     )?;
     let anchor = created.resolve(&restoration.anchor).ok_or_else(refuse)?;
@@ -87,40 +89,72 @@ pub(super) fn install(
             created_relations.resolve(target).ok_or_else(refuse)?,
         ));
     }
-    let after = OverlayStateView::new(basis.inner.root.as_ref(), state);
-    let source = basis
-        .inner
-        .root
-        .get_current_partition(old.anchor.partition_id)
-        .and_then(|part| part.entity_arena().get(&old.anchor))
-        .ok_or_else(refuse)?;
-    let (_, new_partition) =
-        current_entity_partition_source_for_slot(&after, anchor.partition_id, anchor.slot_index())
-            .ok_or_else(refuse)?;
-    let new_source = new_partition
-        .entity_arena()
-        .get(&anchor)
-        .filter(|row| row.is_live())
-        .ok_or_else(refuse)?;
-    context
-        .checkpoint(
-            source
-                .extra()
-                .authoritative_aspect_state
-                .as_ref()
-                .map_or(1, |state| state.owned_allocation_capacity_bytes()) as u64,
+    let mut co_anchors = Vec::with_capacity(old.co_anchors.len());
+    for &(old, _) in &old.co_anchors {
+        context
+            .checkpoint(entities.len() as u64)
+            .map_err(origin_request)?;
+        let target = entities
+            .iter()
+            .find(|(id, _)| *id == old)
+            .ok_or_else(refuse)?
+            .1;
+        co_anchors.push((old, target));
+    }
+    for (original_anchor, anchor) in
+        std::iter::once((old.anchor, anchor)).chain(co_anchors.iter().copied())
+    {
+        let refuse_source = || {
+            TransactionCommitError::publication(
+                crate::publication::data::PublicationError::authored_retirement(
+                    crate::publication::data::AuthoredRetirementRefusal::IncompleteRestoration,
+                    RecordRef::Entity(original_anchor),
+                ),
+            )
+        };
+
+        let after = OverlayStateView::new(basis.inner.root.as_ref(), state);
+        let source = basis
+            .inner
+            .root
+            .get_current_partition(original_anchor.partition_id)
+            .and_then(|part| part.entity_arena().get(&original_anchor))
+            .ok_or_else(refuse_source)?;
+        let (_, new_partition) = current_entity_partition_source_for_slot(
+            &after,
+            anchor.partition_id,
+            anchor.slot_index(),
         )
-        .map_err(origin_request)?;
-    if source.extra().authoritative_aspect_state != new_source.extra().authoritative_aspect_state {
-        return Err(refuse());
+        .ok_or_else(refuse_source)?;
+        let new_source = new_partition
+            .entity_arena()
+            .get(&anchor)
+            .filter(|row| row.is_live())
+            .ok_or_else(refuse_source)?;
+        context
+            .checkpoint(
+                source
+                    .extra()
+                    .authoritative_aspect_state
+                    .as_ref()
+                    .map_or(1, |state| state.owned_allocation_capacity_bytes())
+                    as u64,
+            )
+            .map_err(origin_request)?;
+        if source.extra().authoritative_aspect_state
+            != new_source.extra().authoritative_aspect_state
+        {
+            return Err(refuse_source());
+        }
     }
     let mut publications = Vec::with_capacity(restoration.publications.len());
     let mut positions = basis.inner.root.output_publication_positions.clone();
     for prior in &restoration.publications {
-        if !installed
-            .authority
-            .admits_authored_output_retirement(&admission, prior.authority())
-        {
+        if !admission.is_some_and(|admission| {
+            installed
+                .authority
+                .admits_authored_output_retirement(admission, prior.authority())
+        }) {
             return Err(refuse());
         }
         let origin = &prior.origin;
@@ -172,6 +206,25 @@ pub(super) fn install(
             context
                 .checkpoint((relations.len() + entities.len() * 2) as u64)
                 .map_err(origin_request)?;
+            if let Some(membership) = restoration
+                .aggregate_memberships
+                .iter()
+                .find(|membership| membership.original == edge.id)
+            {
+                let (id, source, target) =
+                    membership.resolve(state, created_relations, &entities, context)?;
+                relations.push((edge.id, id));
+                edges.push(CanonicalRequiredOutputRelation {
+                    id,
+                    kind: edge.kind,
+                    source,
+                    target,
+                    birth: envelope.commit.commit_id,
+                    before_write: None,
+                    after_write: envelope.commit.version_id,
+                });
+                continue;
+            }
             let id = relations
                 .iter()
                 .find(|(old, _)| *old == edge.id)
@@ -253,6 +306,7 @@ pub(super) fn install(
         retirement: restoration.retirement.commit.commit_id,
         original_anchor: old.anchor,
         anchor,
+        co_anchors,
         entities,
         relations,
         publications,

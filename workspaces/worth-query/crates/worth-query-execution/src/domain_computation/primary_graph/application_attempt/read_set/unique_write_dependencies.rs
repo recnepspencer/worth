@@ -13,7 +13,10 @@ use worth_relational::facade::indexes::DerivedIndexId;
 
 use super::super::effect_program::WorthQueryApplicationRealizedEffect;
 use super::super::effect_validation::denial;
-use super::super::fact::{observe_indexed_entity_selection, WorthQueryIndexedSelectionRefusal};
+use super::super::fact::{
+    observe_applied_indexed_entity_selection, observe_indexed_entity_selection,
+    WorthQueryIndexedSelectionRefusal,
+};
 use super::super::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
     WorthQueryApplicationObservedFact, WorthQueryCompleteApplicationReadSet,
@@ -59,6 +62,19 @@ impl<Schema, Operation, Input, Scope>
             |entity| self.lease.layout.entity_kind(entity),
             |index, kind, locator, value| {
                 self.lease.handle().with_runtime(execution, |runtime| {
+                    if let Some(candidate) = self.lease.applied_projection() {
+                        return observe_applied_indexed_entity_selection(
+                            execution,
+                            runtime,
+                            self.lease.snapshot(),
+                            candidate,
+                            index,
+                            kind,
+                            locator,
+                            value,
+                            UNIQUE_VALUE_CANDIDATE_LIMIT,
+                        );
+                    }
                     observe_indexed_entity_selection(
                         runtime,
                         execution,

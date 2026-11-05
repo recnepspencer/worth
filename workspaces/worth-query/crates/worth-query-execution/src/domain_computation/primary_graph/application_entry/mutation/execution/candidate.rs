@@ -44,10 +44,12 @@ where
                 .map_err(MutationHandlerExecutionDenial::Attempt)?;
             candidate
                 .finish()
-                .map(|program| {
-                    HandlerResult::Completed(WorthQueryCompletedMutationCandidate::new(
-                        program.bind_mutation_handler_input(identities),
-                        result,
+                .and_then(|program| {
+                    Ok(HandlerResult::Completed(
+                        WorthQueryCompletedMutationCandidate::new(
+                            program.bind_mutation_handler_input(identities, execution)?,
+                            result,
+                        ),
                     ))
                 })
                 .map_err(MutationHandlerExecutionDenial::Attempt)

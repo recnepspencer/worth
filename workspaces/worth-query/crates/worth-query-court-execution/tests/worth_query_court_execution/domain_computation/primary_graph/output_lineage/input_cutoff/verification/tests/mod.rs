@@ -143,7 +143,7 @@ fn a_clean_settlement_reuses_without_fact_reverification() {
             let observation = product.observation_for_test();
             let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
             let handle = graph.integration_handle_for_test();
-            let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
+            let owner = (*handle.source_owner_for_test()).invalidation_owner_for_test();
             let status_ref = AccountStatus::reference();
             let status = graph
                 .layout_for_test()
@@ -249,7 +249,7 @@ fn a_clean_settlement_reuses_without_fact_reverification() {
                         None,
                         Some(evidence.retain_facts_for_test(facts)),
                         RecordedComputation::Absent(PriorAbsence::FirstRun),
-                    )));
+                    )), None);
                 let candidate = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::input_cutoff::RetainedInputCutoffCandidate::from_exact_cell_for_test(Arc::new(
                     OnceLock::from(row),
                 ));

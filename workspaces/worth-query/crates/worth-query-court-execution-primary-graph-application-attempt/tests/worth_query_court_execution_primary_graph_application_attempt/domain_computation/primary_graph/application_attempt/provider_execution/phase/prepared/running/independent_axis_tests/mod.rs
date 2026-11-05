@@ -208,6 +208,7 @@ pub fn release(
     WorthQueryApplicationSnapshotLease,
 ){
     let (
+        _coupled_outputs,
         _admission_rest,
         lease,
         _provider_attempt_rest,

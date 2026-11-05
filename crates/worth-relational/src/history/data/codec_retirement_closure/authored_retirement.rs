@@ -82,13 +82,21 @@ fn select(
                 }
                 return Ok(Some(SelectedOutputPublication {
                     origin: Arc::clone(origin),
-                    envelope: Arc::clone(&envelope),
+                    evidence: crate::publication::ownership::PublicationEvidence::Canonical(
+                        Arc::clone(&envelope),
+                    ),
                     ordinal,
                 }));
             }
         }
         if let Some(event) = &envelope.required_output_materialization {
-            super::materialization::validate_semantics(runtime, &envelope, context, lease)?;
+            super::materialization::validate_semantics(
+                runtime,
+                &envelope,
+                context,
+                lease,
+                basis.inner.root.schema_authority(),
+            )?;
             next = Some(event.source_commit);
         } else {
             next = envelope.commit.parents.first().copied();

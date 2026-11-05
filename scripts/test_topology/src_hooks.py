@@ -351,4 +351,3 @@ def family_target(model, reference):
         if reference.module[:len(family)] == family:
             return family
     return None
-

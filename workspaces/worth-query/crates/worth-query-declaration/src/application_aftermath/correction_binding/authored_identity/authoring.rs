@@ -12,6 +12,7 @@ use std::marker::PhantomData;
 pub struct ApplicationAuthoredCorrection<Schema> {
     declaration: DeclaredAuthoredCorrection,
     recipe: ApplicationFieldBindingRecipe,
+    co_recipes: Vec<ApplicationFieldBindingRecipe>,
     marker: PhantomData<fn() -> Schema>,
 }
 
@@ -76,6 +77,82 @@ impl<Schema: ApplicationSchema> ApplicationAuthoredCorrection<Schema> {
         )
     }
 
+    /// Declare an additional independently authored Create/Retire correspondence.
+    pub fn co_retire_created<C, Family, Source, Inverse>(mut self) -> Self
+    where
+        C: ApplicationCorrectionBinding<Schema>,
+        Family: ApplicationAuthoredCorrectionFamily<Schema>,
+        Source: WorthQueryApplicationOutputRole<
+            Schema = Schema,
+            Entity = Family::Entity,
+            Contract = <C::Source as ApplicationMutationBinding<Schema>>::Output,
+            Action = WorthQueryCreateOutput,
+        >,
+        Inverse: WorthQueryApplicationOutputRole<
+            Schema = Schema,
+            Entity = Family::Entity,
+            Contract = <ApplicationInverseBinding<Schema, C> as ApplicationMutationBinding<
+                Schema,
+            >>::Output,
+            Action = WorthQueryRetireOutput,
+            Cardinality = Source::Cardinality,
+        >,
+    {
+        const { <Source as WorthQueryApplicationDeclaredOutputRole>::DECLARED };
+        const { <Inverse as WorthQueryApplicationDeclaredOutputRole>::DECLARED };
+        let anchor = Self::from_family::<Family>(
+            Source::NAME,
+            Inverse::NAME,
+            ApplicationMutationOutputPosture::Create,
+        );
+        let optional = <Source as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR
+            .cardinality()
+            == crate::application_operation::ApplicationMutationOutputRoleCardinality::AtMostOne;
+        self.co_recipes.push(anchor.recipe);
+        self.declaration = self
+            .declaration
+            .with_co_anchor(anchor.declaration, optional);
+        self
+    }
+
+    /// Restore a declared co-retired source through its own inverse Create.
+    pub fn co_restore_retired<C, Family, Source, Inverse>(mut self) -> Self
+    where
+        C: ApplicationCorrectionBinding<Schema>,
+        Family: ApplicationAuthoredCorrectionFamily<Schema>,
+        Source: WorthQueryApplicationOutputRole<
+            Schema = Schema,
+            Entity = Family::Entity,
+            Contract = <C::Source as ApplicationMutationBinding<Schema>>::Output,
+            Action = WorthQueryRetireOutput,
+        >,
+        Inverse: WorthQueryApplicationOutputRole<
+            Schema = Schema,
+            Entity = Family::Entity,
+            Contract = <ApplicationInverseBinding<Schema, C> as ApplicationMutationBinding<
+                Schema,
+            >>::Output,
+            Action = WorthQueryCreateOutput,
+            Cardinality = Source::Cardinality,
+        >,
+    {
+        const { <Source as WorthQueryApplicationDeclaredOutputRole>::DECLARED };
+        const { <Inverse as WorthQueryApplicationDeclaredOutputRole>::DECLARED };
+        let anchor = Self::from_family::<Family>(
+            Source::NAME,
+            Inverse::NAME,
+            ApplicationMutationOutputPosture::Retire,
+        );
+        let optional = <Source as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR
+            .cardinality()
+            == crate::application_operation::ApplicationMutationOutputRoleCardinality::AtMostOne;
+        self.co_recipes.push(anchor.recipe);
+        self.declaration = self
+            .declaration
+            .with_co_anchor(anchor.declaration, optional);
+        self
+    }
+
     fn from_family<Family: ApplicationAuthoredCorrectionFamily<Schema>>(
         source: &str,
         inverse: &str,
@@ -94,11 +171,15 @@ impl<Schema: ApplicationSchema> ApplicationAuthoredCorrection<Schema> {
                 },
             ),
             recipe: key.recipe,
+            co_recipes: Vec::new(),
             marker: PhantomData,
         }
     }
     pub fn declaration(&self) -> &DeclaredAuthoredCorrection {
         &self.declaration
+    }
+    pub fn binding_recipes(&self) -> impl Iterator<Item = &ApplicationFieldBindingRecipe> {
+        std::iter::once(&self.recipe).chain(&self.co_recipes)
     }
     pub fn binding_recipe(&self) -> &ApplicationFieldBindingRecipe {
         &self.recipe

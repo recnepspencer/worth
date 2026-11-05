@@ -163,6 +163,7 @@ fn sparse_relation_overlay_partitions_for_plan(
 }
 
 pub(crate) fn prepare_working_state_scope(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalPreparationRuntime,
     transaction: &mut crate::mvcc::BranchBoundRelationalTransaction,
     selected: SelectedRelationalBranchRead<'_>,
@@ -173,6 +174,12 @@ pub(crate) fn prepare_working_state_scope(
     let intents = transaction
         .normalized_intents_for_merge(runtime, allocation_policy)
         .map_err(TransactionCommitError::conflict)?;
+    crate::aggregate_identity::guard::current_relation_creations(
+        execution,
+        runtime.commit_work_budget.as_ref(),
+        transaction.schema_authority.registry(),
+        &intents,
+    )?;
     phase_timing.draft_intent_normalization_micros =
         normalization_started.elapsed().as_micros() as u64;
     let merge_plan_started = Instant::now();

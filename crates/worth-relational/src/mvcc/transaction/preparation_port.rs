@@ -12,7 +12,7 @@ mod selection_preparation;
 /// settlement remains exclusively owned by [`crate::mvcc::RelationalPublicationPort`].
 #[derive(Debug, Clone)]
 pub struct RelationalPreparationPort {
-    binding: RelationalPreparationOwnerBinding,
+    pub(in crate::mvcc) binding: RelationalPreparationOwnerBinding,
 }
 
 impl RelationalPreparationPort {

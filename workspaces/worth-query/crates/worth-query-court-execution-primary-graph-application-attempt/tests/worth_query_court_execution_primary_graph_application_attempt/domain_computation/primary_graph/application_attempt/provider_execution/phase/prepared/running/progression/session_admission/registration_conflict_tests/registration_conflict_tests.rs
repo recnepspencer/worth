@@ -82,7 +82,20 @@ pub fn reject_occupied_registration(
 ) -> WorthQueryApplicationCommitOutcome {
     let execution = phase;
 
-    let (admission, lease, provider_attempt, outcome_identity, _workflow_settlement_publication, mut authorization, idempotency, mut running, unbound_run, attempt_basis, aftermath_causality,) = victim.into_parts_for_test();
+    let (
+        coupled_outputs,
+        admission,
+        lease,
+        provider_attempt,
+        outcome_identity,
+        _workflow_settlement_publication,
+        mut authorization,
+        idempotency,
+        mut running,
+        unbound_run,
+        attempt_basis,
+        aftermath_causality,
+    ) = victim.into_parts_for_test();
     let reservation_basis = WorthQueryApplicationAttemptBasis::capture(
         &world.application,
         &admission,
@@ -98,21 +111,14 @@ pub fn reject_occupied_registration(
         unbound_run,
     )
     .unwrap_or_else(|_| panic!("the real victim session must reach provider registration"));
-    let reserved_affinity = (*admitted_session
-        .staged_for_test())
+    let reserved_affinity = (*admitted_session.staged_for_test())
         .bind_application_attempt_for_test(reservation_basis)
         .expect("the real terminal session must bind its captured attempt basis");
-    let reservation = (*(*world
-        .application
-        .runtime_for_test())
-        .primary_provider_for_test())
+    let reservation = (*(*world.application.runtime_for_test()).primary_provider_for_test())
         .reserve_application_attempt_for_test(&reserved_affinity)
         .expect("the rightful reservation must occupy the actual attempt store");
     assert_eq!(
-        (*(*world
-            .application
-            .runtime_for_test())
-            .primary_provider_for_test())
+        (*(*world.application.runtime_for_test()).primary_provider_for_test())
             .application_attempt_resource_count_for_test(),
         2,
         "the peer registration and victim reservation must coexist before cleanup"
@@ -123,7 +129,7 @@ pub fn reject_occupied_registration(
         provider_attempt,
         attempt_basis,
         WorthQueryProviderAttemptRegistrationContext::new_for_test(
-            &(*(*world.application.runtime_for_test()).primary_provider_for_test()),
+            (*world.application.runtime_for_test()).primary_provider_for_test(),
             &admission,
             idempotency,
             outcome_identity,
@@ -134,7 +140,7 @@ pub fn reject_occupied_registration(
         Ok(_) => panic!("the actual occupied store must reject duplicate registration"),
         Err(failure) => failure,
     };
-    let (outcome, cleanup,) = failure.into_completion_for_test().into_parts_for_test();
+    let (outcome, cleanup) = failure.into_completion_for_test().into_parts_for_test();
     assert!(matches!(
         outcome,
         worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::outcome::WorthQueryProviderProgressionOutcome::Denied(
@@ -142,10 +148,7 @@ pub fn reject_occupied_registration(
         ) if denial.stage() == WorthQueryApplicationCommitDenialStage::ProviderPlan
     ));
     assert_eq!(
-        (*(*world
-            .application
-            .runtime_for_test())
-            .primary_provider_for_test())
+        (*(*world.application.runtime_for_test()).primary_provider_for_test())
             .application_attempt_resource_count_for_test(),
         1,
         "duplicate-registration cleanup must release only its exact stale reservation"
@@ -156,7 +159,14 @@ pub fn reject_occupied_registration(
         &phase.borrowed_request_for_test(),
         phase,
         &world.application,
-        WorthQueryProgressedApplicationCommit::new_for_test(None, outcome, lease, running, cleanup, admission.publication_request_for_test().clone()),
+        WorthQueryProgressedApplicationCommit::new_for_test(
+            None,
+            outcome,
+            lease,
+            running,
+            cleanup,
+            admission.publication_request_for_test().clone(),
+        ),
     )
 }
 
@@ -169,7 +179,20 @@ pub fn while_peer_is_registered(
 ) -> WorthQueryApplicationCommitOutcome {
     let execution = phase;
 
-    let (admission, lease, provider_attempt, outcome_identity, _workflow_settlement_publication, mut authorization, idempotency, mut running, mutation_run, attempt_basis, aftermath_causality,) = peer.into_parts_for_test();
+    let (
+        coupled_outputs,
+        admission,
+        lease,
+        provider_attempt,
+        outcome_identity,
+        _workflow_settlement_publication,
+        mut authorization,
+        idempotency,
+        mut running,
+        mutation_run,
+        attempt_basis,
+        aftermath_causality,
+    ) = peer.into_parts_for_test();
     let product = attempt_basis.retained_product();
     let admitted = admit_provider_session(
         execution,
@@ -185,7 +208,7 @@ pub fn while_peer_is_registered(
             provider_attempt,
             attempt_basis,
             WorthQueryProviderAttemptRegistrationContext::new_for_test(
-                &(*(*world.application.runtime_for_test()).primary_provider_for_test()),
+                (*world.application.runtime_for_test()).primary_provider_for_test(),
                 &admission,
                 idempotency,
                 outcome_identity,
@@ -198,10 +221,7 @@ pub fn while_peer_is_registered(
         .finish_registration()
         .expect("the peer registration must preserve its authorization facts");
     assert_eq!(
-        (*(*world
-            .application
-            .runtime_for_test())
-            .primary_provider_for_test())
+        (*(*world.application.runtime_for_test()).primary_provider_for_test())
             .application_attempt_resource_count_for_test(),
         1,
         "the peer must occupy the actual application-attempt store"
@@ -209,22 +229,27 @@ pub fn while_peer_is_registered(
 
     let victim = while_registered();
     assert_eq!(
-        (*(*world
-            .application
-            .runtime_for_test())
-            .primary_provider_for_test())
+        (*(*world.application.runtime_for_test()).primary_provider_for_test())
             .application_attempt_resource_count_for_test(),
         1,
         "victim cleanup must preserve the exact registered peer"
     );
 
-    let commit_lane = (*(*world
-        .application
-        .runtime_for_test())
-        .primary_provider_for_test())
+    let commit_lane = (*(*world.application.runtime_for_test()).primary_provider_for_test())
         .application_branch_commit_lane_for_test(product.observation_for_test());
     let coordination = commit_lane.enter_for_test();
-    let authority = WorthQueryApplicationCommitProgressionAuthority::new_for_test(&world.application, &(*(*world.application.runtime_for_test()).primary_provider_for_test()), &admission, authorization, idempotency, &coordination, &product, aftermath_causality, None);
+    let authority = WorthQueryApplicationCommitProgressionAuthority::new_for_test(
+        &world.application,
+        (*world.application.runtime_for_test()).primary_provider_for_test(),
+        &admission,
+        authorization,
+        idempotency,
+        &coordination,
+        &product,
+        aftermath_causality,
+        None,
+        &coupled_outputs,
+    );
     let peer = finish_application_commit(
         &phase.borrowed_request_for_test(),
         phase,
@@ -232,6 +257,7 @@ pub fn while_peer_is_registered(
         registered
             .progress_for_test(
                 &phase.borrowed_request_for_test(),
+                phase,
                 &authority,
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )
@@ -286,8 +312,17 @@ pub fn equivalent_programs(
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     replacement: &str,
 ) -> (RetainedProgram, RetainedProgram) {
-    let principal = authenticated_principal(&(phase_custody).test_host_request_for_test(), world, request);
-    let account = resolved_account(&(phase_custody).test_host_request_for_test(), world, "open", request);
+    let principal = authenticated_principal(
+        &(phase_custody).test_host_request_for_test(),
+        world,
+        request,
+    );
+    let account = resolved_account(
+        &(phase_custody).test_host_request_for_test(),
+        world,
+        "open",
+        request,
+    );
     (
         retained_status_program(
             &(phase_custody).test_host_request_for_test(),

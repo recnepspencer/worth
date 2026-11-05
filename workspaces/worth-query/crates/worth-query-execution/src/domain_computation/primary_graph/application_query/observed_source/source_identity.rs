@@ -5,6 +5,7 @@ use super::super::resource_lifecycle::WorthQueryApplicationBasisSelectionIdentit
 use super::WorthQueryObservedSourceFootprint;
 use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
 
+mod applied;
 mod checkpoint_commitment;
 #[path = "source_identity/tests/epoch_construction.rs"]
 mod epoch_construction;
@@ -105,6 +106,7 @@ pub struct WorthQueryObservedSourceMeaningRegistryState {
         BTreeMap<WorthQueryObservedSourceCoordinate, material_storage::CoordinateMeanings>,
 }
 
+#[derive(Clone)]
 pub struct WorthQueryObservedSourceMeaningRegistry {
     runtime_authority: WorthQueryRuntimeAuthorityIdentity,
     state: Arc<Mutex<WorthQueryObservedSourceMeaningRegistryState>>,

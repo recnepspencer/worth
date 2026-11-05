@@ -353,4 +353,3 @@ class Rewriter:
         named = local if local not in ('self',) else None
         suffix = f' as {named}' if named and named != tail and not glob else ''
         return [prefix + 'use ' + path + ('::*' if glob else '') + suffix + ';']
-

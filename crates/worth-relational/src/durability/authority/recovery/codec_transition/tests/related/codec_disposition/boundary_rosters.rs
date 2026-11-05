@@ -17,10 +17,8 @@ pub(super) fn refuse_missing_and_foreign() {
     );
     let foreign = sibling
         .custody
-        .envelope
-        .required_output_origin
+        .origin
         .as_ref()
-        .unwrap()
         .relations
         .iter()
         .find(|entry| entry.id == sibling_edge)
@@ -37,7 +35,7 @@ pub(super) fn refuse_missing_and_foreign() {
         let mut changed = decoded.clone();
         edit_publication(
             &mut changed,
-            publication.envelope.commit.commit_id,
+            publication.origin.commit.commit_id,
             |envelope| {
                 // Hostile claims are changed only inside an actual native checkpoint input.
                 let mut origin: crate::history::data::CanonicalRequiredOutputOrigin =

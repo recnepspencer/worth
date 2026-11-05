@@ -54,7 +54,7 @@ fn a_canceled_prepared_publication_cannot_take_its_priors_custody() {
         None,
     );
 
-    let output_binding_type = lineage.binding_type_for_test(&(*source.output_binding_for_test()));
+    let output_binding_type = lineage.binding_type_for_test(source.output_binding_for_test());
     let owner = Arc::new(Mutex::new(lineage));
     let mut prepared = PreparedOutputLineageSlot::new_for_test(
         Arc::clone(&owner),
@@ -77,6 +77,7 @@ fn a_canceled_prepared_publication_cannot_take_its_priors_custody() {
         None,
         false,
         PreparedComputationCustody::Unassigned,
+        None,
     );
     prepared.retain_computation_for_test(
         SealedComputationRetention::Produced(sealed),

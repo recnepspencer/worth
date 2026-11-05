@@ -24,14 +24,14 @@ pub(super) struct CompletedAggregateScan {
 
 pub(super) fn complete(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
+    native: &super::super::read_basis::NativeProjectionRead<'_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     miss: UncachedAggregatePlan,
     accounting: &mut AggregateWorkAccounting<'_>,
 ) -> Result<CompletedAggregateScan, WorthQueryInvariantAggregateDenial> {
     let plan = miss.into_plan();
     let accumulator = AggregateScanReader {
-        runtime,
+        native,
         snapshot,
         plan: &plan,
         accounting,
@@ -45,7 +45,7 @@ pub(super) fn complete(
 }
 
 struct AggregateScanReader<'scan, 'work> {
-    runtime: &'scan mut worth_relational::facade::runtime::RelationalRuntime,
+    native: &'scan super::super::read_basis::NativeProjectionRead<'scan>,
     snapshot: &'scan worth_relational::facade::snapshots::SnapshotHandle,
     plan: &'scan ValidatedAggregatePlan,
     accounting: &'scan mut AggregateWorkAccounting<'work>,
@@ -129,13 +129,13 @@ impl AggregateScanReader<'_, '_> {
         }
         self.accounting
             .admit_source_field(self.plan.field_member())?;
-        let value = crate::domain_computation::primary_graph::application_attempt::observe_field(
-            self.runtime,
+        let value = self.native.observe_field(
             execution,
             self.snapshot,
             record.source,
             self.plan.source_kind(),
             &self.plan.key().field,
+            |raw| crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationFieldObservation::from(raw),
         )
         .map_err(|cause| {
             denial(
@@ -160,15 +160,12 @@ impl AggregateScanReader<'_, '_> {
         worth_relational::facade::runtime::VisibilityProjectionView,
         WorthQueryInvariantAggregateDenial,
     > {
-        self.runtime
-            .read_truth()
-            .project_snapshot(self.snapshot)
-            .ok_or_else(|| {
-                denial(
-                    WorthQueryInvariantAggregateDenialKind::InvalidScalar,
-                    self.plan.field_member(),
-                )
-            })
+        self.native.projection(self.snapshot).ok_or_else(|| {
+            denial(
+                WorthQueryInvariantAggregateDenialKind::InvalidScalar,
+                self.plan.field_member(),
+            )
+        })
     }
 }
 

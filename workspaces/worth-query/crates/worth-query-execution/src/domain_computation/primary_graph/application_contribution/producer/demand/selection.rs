@@ -19,6 +19,7 @@ enum SelectionPurpose {
     OutputDelivery,
 }
 
+mod native_restoration;
 mod native_selection;
 mod recovered_candidates;
 pub(crate) mod retained_liveness;

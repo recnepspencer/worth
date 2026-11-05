@@ -2,6 +2,7 @@
 
 #[derive(Debug)]
 pub(super) enum DenialCause {
+    CoupledProducer(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial),
     DomainValue(worth_query_installation::facade::ApplicationValueDecodeDenial),
     DomainValueAdmission(crate::domain_computation::primary_graph::WorthQueryValueDecodeDenial),
     UnobservedWrite(crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationUnobservedWrite),

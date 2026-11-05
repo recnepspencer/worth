@@ -95,7 +95,9 @@ fn scoped_indexed_comparison_preserves_pinned_absence_limits_and_foreign_affinit
                             .remains_equal_in_for_test(runtime, execution, snapshot)
                             .unwrap());
                         assert!(selectors
-                            .remains_equal_for_test(execution, fact, runtime, snapshot, control)
+                            .remains_equal_for_test(
+                                execution, fact, runtime, snapshot, None, control
+                            )
                             .unwrap());
                     });
             }
@@ -108,7 +110,7 @@ fn scoped_indexed_comparison_preserves_pinned_absence_limits_and_foreign_affinit
                 .graph_for_test())
             .with_runtime(&borrowed_execution, |runtime| {
                 assert!(!selectors
-                    .remains_equal_for_test(execution, &present, runtime, snapshot, control)
+                    .remains_equal_for_test(execution, &present, runtime, snapshot, None, control)
                     .unwrap());
             });
             publish_relational_mutation_on_application(
@@ -129,7 +131,9 @@ fn scoped_indexed_comparison_preserves_pinned_absence_limits_and_foreign_affinit
                 .integration_handle_for_test()
                 .with_runtime(&borrowed_execution, |runtime| {
                     assert!(selectors
-                        .remains_equal_for_test(execution, &present, runtime, snapshot, control)
+                        .remains_equal_for_test(
+                            execution, &present, runtime, snapshot, None, control
+                        )
                         .unwrap())
                 });
             let current = world.selected_product(
@@ -147,6 +151,7 @@ fn scoped_indexed_comparison_preserves_pinned_absence_limits_and_foreign_affinit
                             &present,
                             runtime,
                             current_snapshot,
+                            None,
                             control
                         )
                         .unwrap());
@@ -171,6 +176,7 @@ fn scoped_indexed_comparison_preserves_pinned_absence_limits_and_foreign_affinit
                             &complete,
                             runtime,
                             current_snapshot,
+                            None,
                             control
                         )
                         .unwrap());
@@ -190,6 +196,7 @@ fn scoped_indexed_comparison_preserves_pinned_absence_limits_and_foreign_affinit
                                     &narrowed,
                                     runtime,
                                     current_snapshot,
+                                    None,
                                     control
                                 )
                                 .unwrap(),
@@ -232,7 +239,7 @@ fn prepared_indexed_comparison_keeps_a_native_cancellation() {
                 StringApplicationValueBinding::encode(&"open".to_owned()).unwrap(), 2).unwrap();
             let mut prepared = PreparedSelections::new_for_test();
             let control = StorageControl::new_for_test(ExecutionAllocationPolicy::SystemAllocation, None);
-            assert!(prepared.remains_equal_for_test(&execution, &fact, runtime, snapshot, control).unwrap());
+            assert!(prepared.remains_equal_for_test(&execution, &fact, runtime, snapshot, None, control).unwrap());
             let seen = Rc::new(Cell::new(0));
             let contacts = Rc::clone(&seen);
             // Query entry + Native admission precede the Native collector.
@@ -242,7 +249,7 @@ fn prepared_indexed_comparison_keeps_a_native_cancellation() {
                 contacts.set(contacts.get() + 1);
                 if contacts.get() == NATIVE_COLLECTION_CONSULT { source.cancel(); }
             });
-            let answer = prepared.remains_equal_for_test(&execution, &fact, runtime, snapshot, control);
+            let answer = prepared.remains_equal_for_test(&execution, &fact, runtime, snapshot, None, control);
             (answer, seen.get())
         });
         assert_eq!(seen, 3);

@@ -64,6 +64,16 @@ fn deep_nesting_round_trips_through_json_and_the_portable_wire() {
 }
 
 #[test]
+fn arbitrary_precision_number_tokens_decode_as_finite_numbers() {
+    let token = |digits: &str| serde_json::json!({ "$serde_json::private::Number": digits });
+    assert_eq!(
+        serde_json::from_value::<SignalValue>(token("1.5e300")).expect("a precise number"),
+        SignalValue::Number(1.5e300)
+    );
+    assert!(serde_json::from_value::<SignalValue>(token("1e999")).is_err());
+}
+
+#[test]
 fn object_keys_must_be_strings() {
     let error = rmp_serde::from_slice::<SignalValue>(
         &rmp_serde::to_vec(&std::collections::BTreeMap::from([(1_u8, 2_u8)]))

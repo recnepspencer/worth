@@ -14,3 +14,15 @@ impl WorthQueryApplicationEmission {
         Self::payload::<Payload>(self)
     }
 }
+
+impl WorthQueryAdmittedApplicationEmissionBatch {
+    #[doc(hidden)]
+    pub fn into_live_emissions_for_test(
+        self,
+    ) -> (
+        Vec<WorthQueryApplicationEmission>,
+        Option<worth_execution::ExecutionMemoryReservation>,
+    ) {
+        Self::into_live_emissions(self)
+    }
+}

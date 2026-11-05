@@ -29,6 +29,7 @@ pub(crate) fn derive_relation_integrity_plan_revision(
     partition_isolation_contracts: &[PartitionIsolationContractDeclaration],
     connectivity_minimum_contracts: &[ConnectivityMinimumContractDeclaration],
     aggregate_identity: Option<&super::AggregateIdentityContractDeclaration>,
+    current_publication_storage: Option<&crate::schema::data::CurrentPublicationStorage>,
 ) -> RelationIntegrityPlanRevision {
     let mut digest = RelationIntegrityRevisionDigest::new();
     digest.mix_endpoint_kind_contracts(endpoint_kind_contracts);
@@ -42,6 +43,9 @@ pub(crate) fn derive_relation_integrity_plan_revision(
     if let Some(aggregate) = aggregate_identity {
         digest.mix_bytes(b"aggregate_identity_v1");
         digest.mix_bytes(&aggregate.canonical_bytes());
+    }
+    if let Some(storage) = current_publication_storage {
+        digest.mix_bytes(&storage.canonical_bytes());
     }
     RelationIntegrityPlanRevision(digest.finish())
 }

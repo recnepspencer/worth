@@ -65,7 +65,15 @@ pub(super) fn validate(
         .schema_authority()
         .relation_aspect_plan(entry.kind)
         .ok_or("relation physical contract plan absent")?;
-    let state = reconstruct(runtime, selected, id, plan, context, lease)?;
+    let state = reconstruct(
+        runtime,
+        selected,
+        id,
+        plan,
+        context,
+        lease,
+        root.schema_authority(),
+    )?;
     let payload = row.extra().authoritative_aspect_state.as_ref();
     charge(
         context,
@@ -84,6 +92,7 @@ pub(super) fn reconstruct(
     plan: &crate::schema::data::LoweredAspectContractPlan,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
+    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
 ) -> Result<Option<super::payload_reconstruction::ReconstructedPayload>, Stop> {
     let bound = runtime.history.catalog_len();
     let _memory = reserve(
@@ -121,6 +130,7 @@ pub(super) fn reconstruct(
                     plan,
                     context,
                     lease,
+                    schema,
                 )?;
             }
             if relation.birth != current.commit.commit_id {

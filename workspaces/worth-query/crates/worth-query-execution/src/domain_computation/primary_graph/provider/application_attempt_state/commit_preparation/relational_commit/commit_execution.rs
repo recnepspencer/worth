@@ -1,6 +1,9 @@
 //! The single authoritative Relational commit transition.
 
 mod availability;
+mod committed_session;
+mod correspondence;
+mod coupled;
 
 mod consumed_output;
 mod managed_source;
@@ -32,6 +35,12 @@ use crate::domain_computation::WorthQueryProviderSessionProtocolStage;
 
 pub(in crate::domain_computation::primary_graph::provider) struct WorthQueryCommittedApplicationSession {
     attempt: WorthQueryPrimaryGraphApplicationAttempt,
+    members: Vec<crate::domain_computation::primary_graph::provider::CoupledApplicationMember>,
+    group_emissions: Option<crate::domain_computation::primary_graph::application_attempt::WorthQueryAdmittedApplicationEmissionBatch>,
+    group_evidence: Option<coupled::CoupledEvidenceSlots>,
+    own_publication: Option<worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
+    own_records: Option<worth_execution::ExecutionArray<worth_relational::facade::transactions::RecordRef>>,
+    prepared_group_publications: Option<worth_relational::facade::mvcc::RelationalPreparedOutputPublications>,
     work: WorthQueryPrimaryMutationWorkCounters,
     predicate: Option<crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationOwner>,
     index_maintenance_work: worth_relational::facade::indexes::DerivedIndexMaintenanceWork,
@@ -73,6 +82,7 @@ pub(super) fn commit(
 > {
     let WorthQueryPreparedApplicationCommit {
         mut attempt,
+        mut members,
         candidate,
         predicate,
         work,
@@ -82,6 +92,8 @@ pub(super) fn commit(
         _completion,
     } = prepared;
     let _ = mint;
+    let group_evidence = coupled::prepare_evidence_slots(&execution, members.len())?;
+    let group_emissions = coupled::prepare_emissions(&execution, &attempt, &members)?;
     let product = attempt.affinity().product_publication().clone();
     let before = precommit_snapshot::WorthQueryPrecommitSnapshot::acquire(
         &execution,
@@ -115,6 +127,19 @@ pub(super) fn commit(
         &attempt,
         required_prerequisites.as_ref(),
     )?;
+    let predecessor = match (
+        required_prerequisites.as_ref(),
+        attempt.idempotency().producer_dependency_identity(),
+    ) {
+        (Some(required), Some(dependency)) => {
+            let (producer, _) = required.native_prior_checkpoint_input();
+            candidate
+                .output_observation_predecessor(&execution, producer, &dependency)
+                .map_err(transaction_commit_stop)?
+        }
+        _ => None,
+    };
+    let source_fact_rebase = source_fact_rebase.with_predecessor(predecessor);
     provider.fault_port.candidate_ready_for_native_preparation();
     let mut candidate = provider
         .graph
@@ -133,6 +158,39 @@ pub(super) fn commit(
         before.as_snapshot(),
         &attempt,
         &mut candidate,
+    )?;
+    coupled::prepare_members(
+        &execution,
+        provider,
+        &mut members,
+        &mut candidate,
+        before.as_snapshot(),
+        allocation_policy,
+    )?;
+    let prepared_group_publications = if members.is_empty() {
+        None
+    } else {
+        Some(
+            candidate
+                .prepare_required_output_publications(
+                    &execution,
+                    &provider
+                        .graph
+                        .application_publication
+                        .as_ref()
+                        .expect("Native admitted the installed group issuer")
+                        .native,
+                )
+                .map_err(transaction_commit_stop)?,
+        )
+    };
+    correspondence::admit(
+        &execution,
+        provider,
+        &mut attempt,
+        &mut members,
+        &candidate,
+        prepared_group_publications.as_ref(),
     )?;
     let prepared_touched_records =
         touched_records::PreparedTouchedRecords::prepare(&candidate, allocation_policy)?;
@@ -175,6 +233,7 @@ pub(super) fn commit(
         &mut attempt,
         candidate,
         &mut required_prerequisites,
+        &mut members,
         history,
     )?;
     let performed = match performed {
@@ -194,6 +253,10 @@ pub(super) fn commit(
                     managed_unpublished::ManagedUnpublishedPublicationMode::Ordinary
                 },
                 attempt,
+                members,
+                prepared_group_publications,
+                group_evidence,
+                group_emissions,
                 work,
                 index_maintenance_work,
                 retained_preimage,
@@ -233,6 +296,12 @@ pub(super) fn commit(
         .expect("World performed a prepared Relational application candidate");
     Ok(WorthQueryCommittedApplicationSession {
         attempt,
+        members,
+        prepared_group_publications,
+        group_evidence,
+        group_emissions,
+        own_publication: None,
+        own_records: None,
         work,
         index_maintenance_work,
         retained_preimage,
@@ -300,71 +369,6 @@ fn world_no_effect(
         | NoEffectCause::OwnerUnavailable
         | NoEffectCause::RelationalDeferred(_)
         | NoEffectCause::PreEffectFailure => Stop::NoEffect(no_effect),
-    }
-}
-impl WorthQueryCommittedApplicationSession {
-    pub(super) fn take_predicate_preparation(&mut self) -> Option<crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationOwner>{
-        self.predicate.take()
-    }
-    pub(in crate::domain_computation::primary_graph::provider) fn take_recovered_output_source(
-        &self,
-    ) -> crate::domain_computation::primary_graph::application_installation::WorthQueryRecoveredProgramOutputSource{
-        crate::domain_computation::primary_graph::application_installation::WorthQueryRecoveredProgramOutputSource::take_original(&self.product_publication)
-    }
-    pub(super) fn take_prepared_touched_records(&mut self) -> PreparedTouchedRecords {
-        self.prepared_touched_records
-            .take()
-            .expect("pre-effect native touched-record receipt storage follows publication")
-    }
-    pub(super) fn take_source_fact_rebase(&mut self) -> super::PreparedSourceFactRebase {
-        self.source_fact_rebase
-            .take()
-            .expect("pre-effect source-fact rebase capacity follows the committed candidate")
-    }
-    pub(super) const fn attempt(&self) -> &WorthQueryPrimaryGraphApplicationAttempt {
-        &self.attempt
-    }
-
-    pub(super) const fn work(&self) -> WorthQueryPrimaryMutationWorkCounters {
-        self.work
-    }
-
-    pub(super) const fn index_maintenance_work(
-        &self,
-    ) -> worth_relational::facade::indexes::DerivedIndexMaintenanceWork {
-        self.index_maintenance_work
-    }
-
-    pub(super) const fn retained_preimage(
-        &self,
-    ) -> Option<&crate::domain_computation::application_aftermath::WorthQueryRetainedPreImage> {
-        self.retained_preimage.as_ref()
-    }
-
-    pub(super) const fn preimage_retention_work(&self) -> WorthQueryPreImageRetentionWork {
-        self.preimage_retention_work
-    }
-
-    pub(super) fn committed(&self) -> &worth_relational::facade::transactions::CommitResult {
-        self.committed.as_ref()
-    }
-
-    pub(super) fn publish_and_encode(
-        self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        provider: &WorthQueryPrimaryGraphProvider,
-        runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
-        evidence: super::WorthQueryPrimaryGraphCommitEvidence,
-        predicate: &mut Option<crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationOwner>,
-        retired: &mut crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationRetirement,
-    ) -> Result<
-        crate::domain_computation::WorthQueryProviderTerminalDescription,
-        WorthQueryProviderSessionFailure,
-    > {
-        let published = publication::publish(
-            execution, provider, runtime, self, evidence, predicate, retired,
-        )?;
-        publication::encode(provider, published)
     }
 }
 

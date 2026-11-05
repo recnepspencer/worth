@@ -20,6 +20,7 @@ pub(super) fn validate(
     envelope: &Arc<CanonicalCommitEnvelope>,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
+    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
 ) -> Result<(), Stop> {
     charge(
         context,
@@ -42,7 +43,9 @@ pub(super) fn validate(
     let mut groups = Vec::with_capacity(envelope.required_output_codec_retirements.len());
     // Serialized sibling headers contribute no aggregate effect authority.
     for event in &envelope.required_output_codec_retirements {
-        groups.push(validate_group(runtime, envelope, event, context, lease)?);
+        groups.push(validate_group(
+            runtime, envelope, event, context, lease, schema,
+        )?);
     }
     effect_coverage::validate(envelope, &groups, context)
 }
@@ -53,6 +56,7 @@ fn validate_group(
     event: &CanonicalRequiredOutputCodecRetirement,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
+    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
 ) -> Result<Arc<CanonicalRequiredOutputOrigin>, Stop> {
     let transition = envelope
         .schema_transition
@@ -113,6 +117,7 @@ fn validate_group(
         context,
         lease,
         true,
+        schema,
     )?;
     let _metadata = metadata::reserve(&event.kinds, context, lease)?;
     let (before, after) =
@@ -151,8 +156,9 @@ fn validate_group(
             .entity_plans
             .get(&member.kind)
             .ok_or("codec disposition omits a complete member kind")?;
-        let payload =
-            super::membership::reconstruct(runtime, &original, member.id, plan, context, lease)?;
+        let payload = super::membership::reconstruct(
+            runtime, &original, member.id, plan, context, lease, schema,
+        )?;
         if member.posture == crate::mvcc::RequiredOutputRolePosture::Retire {
             continue;
         }
@@ -212,6 +218,7 @@ fn validate_group(
             plan,
             context,
             lease,
+            schema,
         )?;
         deletion_grammar::relation(
             runtime,
@@ -235,6 +242,7 @@ pub(super) fn validate_birth(
     birth: &Arc<CanonicalCommitEnvelope>,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
+    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
 ) -> Result<(), Stop> {
     let origin = birth.validate_output_membership_header()?;
     let prior = super::route_selection::select_at(
@@ -243,6 +251,7 @@ pub(super) fn validate_birth(
         &origin.meaning,
         context,
         lease,
+        schema,
     )?;
     match (&origin.publication, prior) {
         (CanonicalOutputPublication::Birth, None) => Ok(()),

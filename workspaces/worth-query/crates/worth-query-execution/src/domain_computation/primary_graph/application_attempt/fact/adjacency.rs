@@ -2,28 +2,6 @@ use worth_relational::facade::identity::{EntityId, KindId};
 
 use super::{WorthQueryApplicationAdjacencyDirection, WorthQueryApplicationObservedRelation};
 
-pub fn remains_equal(
-    runtime: &worth_relational::facade::runtime::RelationalRuntime,
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    relation_kind: KindId,
-    anchor: EntityId,
-    direction: WorthQueryApplicationAdjacencyDirection,
-    maximum_work_units: usize,
-    expected: &[WorthQueryApplicationObservedRelation],
-) -> Result<bool, super::super::WorthQueryApplicationAttemptDenial> {
-    Ok(observe_adjacency(
-        runtime,
-        execution,
-        snapshot,
-        relation_kind,
-        anchor,
-        direction,
-        maximum_work_units,
-    )?
-    .is_some_and(|current| current == expected))
-}
-
 pub fn observe_adjacency(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -191,6 +169,26 @@ fn observe_with_posture(
             worth_relational::facade::runtime::RelationalPinnedReadAdmissionDenial::SnapshotUnavailable
             | worth_relational::facade::runtime::RelationalPinnedReadAdmissionDenial::IndexNotInstalled(_) => AdjacencyObservationDenial::SnapshotUnavailable,
         })?;
+    observe_in_pin(
+        &pin,
+        execution,
+        relation_kind,
+        anchor,
+        direction,
+        maximum_work_units,
+        posture,
+    )
+}
+
+fn observe_in_pin<Phase>(
+    pin: &worth_relational::facade::runtime::RelationalPinnedRead<Phase>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    relation_kind: KindId,
+    anchor: EntityId,
+    direction: WorthQueryApplicationAdjacencyDirection,
+    maximum_work_units: Option<usize>,
+    posture: RelationPosture,
+) -> Result<(Vec<WorthQueryApplicationObservedRelation>, usize), AdjacencyObservationDenial> {
     let frontier = std::collections::BTreeSet::from([anchor]);
     let work = maximum_work_units
         .map(|maximum| {
@@ -236,4 +234,29 @@ fn observe_with_posture(
         })
         .collect();
     Ok((relations, work_units))
+}
+
+pub(in crate::domain_computation::primary_graph) fn observe_adjacency_in_pin<Phase>(
+    pin: &worth_relational::facade::runtime::RelationalPinnedRead<Phase>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    relation_kind: KindId,
+    anchor: EntityId,
+    direction: WorthQueryApplicationAdjacencyDirection,
+    maximum_work_units: Option<usize>,
+) -> Result<
+    Option<Vec<WorthQueryApplicationObservedRelation>>,
+    super::super::WorthQueryApplicationAttemptDenial,
+> {
+    resolve_observation(
+        observe_in_pin(
+            pin,
+            execution,
+            relation_kind,
+            anchor,
+            direction,
+            maximum_work_units,
+            RelationPosture::Live,
+        )
+        .map(|(relations, _)| relations),
+    )
 }

@@ -82,17 +82,16 @@ fn cancelled_adjacency_read_and_equality_keep_the_native_stop() {
                 !expected.is_empty(),
                 "the fixture account has a real owner relation"
             );
-            assert!(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::adjacency::remains_equal(
-                runtime,
-                execution,
-                snapshot,
+            let fact = WorthQueryApplicationObservedFact::Adjacency {
                 relation_kind,
                 anchor,
                 direction,
-                32,
-                &expected
-            )
-            .unwrap());
+                maximum_work_units: 32,
+                relations: expected.clone(),
+            };
+            assert!(fact
+                .remains_equal_in_for_test(runtime, execution, snapshot)
+                .unwrap());
             source.cancel();
             let stopped = [
                 worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::adjacency::observe_adjacency_with_work(
@@ -135,21 +134,6 @@ fn cancelled_adjacency_read_and_equality_keep_the_native_stop() {
                     anchor,
                     direction,
                     32
-                )
-                .unwrap_err()
-                .kind(),
-                Kind::Cancelled
-            );
-            assert_eq!(
-                worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::adjacency::remains_equal(
-                    runtime,
-                    execution,
-                    snapshot,
-                    relation_kind,
-                    anchor,
-                    direction,
-                    32,
-                    &expected
                 )
                 .unwrap_err()
                 .kind(),

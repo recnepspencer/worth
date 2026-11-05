@@ -163,7 +163,7 @@ where
         preconditions,
         admission_identity,
         resource_binding_identity,
-        graph_work,
+        graph_work: graph_work.with_actor_authentication(principal.retain_authentication()),
     })
 }
 
@@ -229,7 +229,14 @@ where
     })
 }
 
-fn construct_admitted_operation<Schema, Principal, PrincipalIdentity, Operation, Input, Scope>(
+fn construct_admitted_operation<
+    Schema: 'static,
+    Principal,
+    PrincipalIdentity,
+    Operation,
+    Input,
+    Scope,
+>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     observed: ObservedConventionalAdmission<
         '_,

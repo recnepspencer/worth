@@ -73,6 +73,12 @@ pub(super) fn readmit_selected_images(
                 crate::branch::RelationalBranchRootCaptureDenial::Content(cause) => {
                     crate::durability::data::RelationalRecoveryStop::from(cause)
                 }
+                crate::branch::RelationalBranchRootCaptureDenial::StorageUnavailable(cause) => {
+                    crate::durability::data::RelationalRecoveryStop::from(cause)
+                }
+                crate::branch::RelationalBranchRootCaptureDenial::Execution(cause) => {
+                    crate::durability::data::RelationalRecoveryStop::from(cause)
+                }
                 other => DurabilityError::new(
                     crate::durability::data::RecoveryFailureClass::CorruptCheckpoint,
                     format!("root readmission: {other:?}"),

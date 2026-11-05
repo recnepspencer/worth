@@ -23,6 +23,7 @@ fn an_exact_sibling_product_cannot_substitute_at_provider_plan_binding() {
                 idempotency(193, 194),
             );
             let (
+                _coupled_outputs,
                 _admission,
                 lease,
                 _provider_attempt,
@@ -78,6 +79,7 @@ fn the_exact_selected_product_binds_at_provider_plan_boundary() {
                 idempotency(195, 196),
             );
             let (
+                _coupled_outputs,
                 _admission,
                 lease,
                 _provider_attempt,
@@ -188,6 +190,7 @@ fn foreign_installed_phase_refuses_provider_readmission_before_read_or_charge() 
             })
             .unwrap();
         let (
+            _coupled_outputs,
             _a_admission,
             a_lease,
             _a_attempt,
@@ -202,6 +205,7 @@ fn foreign_installed_phase_refuses_provider_readmission_before_read_or_charge() 
         ) = arun.into_parts_for_test();
         finish_uncommitted(a_mutation_run, a_running, a_lease);
         let (
+            _coupled_outputs,
             _b_admission,
             b_lease,
             _b_attempt,

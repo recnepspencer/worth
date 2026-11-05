@@ -43,7 +43,20 @@ fn cancellation_at_registration_binding_is_cancelled_not_denied() {
                 &request,
                 "interrupted-registration",
             );
-            let (admission, lease, provider_attempt, outcome_identity, _, mut authorization, idempotency, mut running, mutation_run, attempt_basis, aftermath_causality,) = start(phase, &world, program, idempotency(185, 186)).into_parts_for_test();
+            let (
+                _coupled_outputs,
+                admission,
+                lease,
+                provider_attempt,
+                outcome_identity,
+                _,
+                mut authorization,
+                idempotency,
+                mut running,
+                mutation_run,
+                attempt_basis,
+                aftermath_causality,
+            ) = start(phase, &world, program, idempotency(185, 186)).into_parts_for_test();
             let admitted = admit_provider_session(
                 phase,
                 &mut running,
@@ -60,7 +73,7 @@ fn cancellation_at_registration_binding_is_cancelled_not_denied() {
                 provider_attempt,
                 attempt_basis,
                 WorthQueryProviderAttemptRegistrationContext::new_for_test(
-                    &(*(*world.application.runtime_for_test()).primary_provider_for_test()),
+                    (*world.application.runtime_for_test()).primary_provider_for_test(),
                     &admission,
                     idempotency,
                     outcome_identity,
@@ -70,8 +83,7 @@ fn cancellation_at_registration_binding_is_cancelled_not_denied() {
             ) else {
                 panic!("a cancelled request must not register its provider attempt")
             };
-            let (outcome, cleanup,) =
-                failure.into_completion_for_test().into_parts_for_test();
+            let (outcome, cleanup) = failure.into_completion_for_test().into_parts_for_test();
             assert!(
                 matches!(outcome, WorthQueryProviderProgressionOutcome::Cancelled),
                 "the binding's request stop is a control outcome, never a denial"
@@ -80,17 +92,21 @@ fn cancellation_at_registration_binding_is_cancelled_not_denied() {
                 &phase.borrowed_request_for_test(),
                 phase,
                 &world.application,
-                WorthQueryProgressedApplicationCommit::new_for_test(None, outcome, lease, running, cleanup, admission.publication_request_for_test().clone()),
+                WorthQueryProgressedApplicationCommit::new_for_test(
+                    None,
+                    outcome,
+                    lease,
+                    running,
+                    cleanup,
+                    admission.publication_request_for_test().clone(),
+                ),
             );
             assert!(matches!(
                 finished,
                 WorthQueryApplicationCommitOutcome::Cancelled
             ));
             assert_eq!(
-                (*(*world
-                    .application
-                    .runtime_for_test())
-                    .primary_provider_for_test())
+                (*(*world.application.runtime_for_test()).primary_provider_for_test())
                     .application_attempt_resource_count_for_test(),
                 0
             );

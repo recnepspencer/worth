@@ -5,9 +5,9 @@ impl<Schema, Relation, Entity> WorthQueryInvariantProjectionWalk<Schema, Relatio
     #[doc(hidden)]
     pub fn issued_at_for_test(
         &self,
-        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+        origin: &crate::domain_computation::primary_graph::projection_read_origin::ProjectionReadOriginRef<'_>,
         cookie: u64,
     ) -> bool {
-        Self::issued_at(self, snapshot, cookie)
+        Self::issued_at(self, origin, cookie)
     }
 }

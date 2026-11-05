@@ -78,18 +78,6 @@ where
         )
     }
 
-    /// A moved head makes the old selected basis ineligible for a Clean result.
-    /// The caller may continue only through fresh disclosure/reselection.
-    pub(in crate::domain_computation::primary_graph) fn seal_current_ready<'basis>(
-        &'basis self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<
-        Option<SealedCurrentReadyQueryPermission<'basis>>,
-        WorthQueryApplicationQueryAdmissionDenial,
-    > {
-        self.seal_current_ready_with_control(execution, None)
-    }
-
     /// Each exact C/D input keeps its own genuine Query basis. The security
     /// snapshot cannot stand in for the output's current truth snapshot.
     pub(in crate::domain_computation::primary_graph) fn seal_current_ready_with_control<'basis>(

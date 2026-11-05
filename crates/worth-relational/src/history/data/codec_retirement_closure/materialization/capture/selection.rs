@@ -36,6 +36,7 @@ pub(super) fn at_source(
                 &origin.meaning,
                 context,
                 lease,
+                basis.inner.root.schema_authority(),
             ))?
             .flatten()
         }

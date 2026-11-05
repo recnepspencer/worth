@@ -1,12 +1,14 @@
 //! Ordinary mutation retirement and current canonical retirement-successor custody.
 use super::*;
 use crate::authority::commit::pipeline::{consult_stage, CommitStage};
+use crate::execution::request_stage::checkpoint;
 use crate::{
     branch::AdmittedRelationalBranchBasis, history::data::RequiredOutputRoutePosition,
     runtime::RelationalRuntime, transactions::data::EntityReference,
 };
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
+mod current_retirement;
 
 impl RelationalRuntime {
     /// Reconstruct the selected complete publication behind real ordinary Retire
@@ -24,6 +26,8 @@ impl RelationalRuntime {
                 "foreign installed author for output retirement",
             ));
         }
+        let current = self.current_retirement_custody(execution, installed, basis, roles)?;
+        self.refuse_live_owned_retirement(execution, roles, current.as_deref())?;
         let selected =
             crate::history::data::select_authored_retirement(execution, self, basis, roles, false)
                 .map_err(custody::cold_stop)?;
@@ -38,7 +42,7 @@ impl RelationalRuntime {
                     }, origin.outputs[0], origin.meaning.source_scope,
                 )));
         }
-        self.refuse_retired_scope_owners(execution, installed, basis, roles)?;
+        self.refuse_retired_scope_owners(execution, roles, current.as_deref())?;
         let Some(envelope) = selected else {
             return Ok(None);
         };
@@ -63,6 +67,8 @@ impl RelationalRuntime {
         if installed.source_scope_ownership.is_empty() {
             return Ok(());
         }
+        let current = self.current_retirement_custody(execution, installed, basis, roles)?;
+        self.refuse_live_owned_retirement(execution, roles, current.as_deref())?;
         if let Some(selected) =
             crate::history::data::select_authored_retirement(execution, self, basis, roles, true)
                 .map_err(custody::cold_stop)?
@@ -75,45 +81,39 @@ impl RelationalRuntime {
                     }, origin.outputs[0], origin.meaning.source_scope,
                 )));
         }
-        self.refuse_retired_scope_owners(execution, installed, basis, roles)
+        self.refuse_retired_scope_owners(execution, roles, current.as_deref())
     }
 
     fn refuse_retired_scope_owners(
         &self,
         execution: &ExecutionRequest<'_, '_>,
-        installed: &RelationalInstalledApplicationPublicationAuthority,
-        basis: &AdmittedRelationalBranchBasis,
         roles: &[RequiredOutputRoleTarget],
+        current: Option<&crate::publication::ownership::CurrentPublicationRoster>,
     ) -> Result<(), TransactionCommitError> {
-        if installed.source_scope_ownership.is_empty() {
+        let Some(current) = current else {
             return Ok(());
-        }
+        };
         let selected = execution
-            .in_scope(|lease| {
-                worth_execution::ExecutionWorkCeiling::new(execution.work_ceiling())
-                    .run_with_checkpoint(lease, None, |context| {
-                        context.checkpoint(roles.len() as u64).map_err(|stop| {
-                            crate::history::data::CodecRetirementClosureStop::Request(stop.into())
-                        })?;
-                        let removed = roles
-                            .iter()
-                            .map(|role| match role.target {
-                                EntityReference::Existing(id) => Ok(id),
-                                _ => Err(crate::history::data::CodecRetirementClosureStop::from(
-                                    "retirement source must be an existing native generation",
-                                )),
-                            })
-                            .collect::<Result<Vec<_>, _>>()?;
-                        crate::history::data::select_owned_scope_dependent(
-                            &removed,
-                            basis.inner.root.commit_id(),
-                            self.history.catalog_len(),
-                            |commit| self.history.canonical_envelope(commit),
-                            context,
-                        )
+            .run_native_with_checkpoint(|context| {
+                checkpoint(context, roles.len() as u64).map_err(|stop| {
+                    crate::history::data::CodecRetirementClosureStop::Request(stop.into())
+                })?;
+                let removed = roles
+                    .iter()
+                    .map(|role| match role.target {
+                        EntityReference::Existing(id) => Ok(id),
+                        _ => Err(crate::history::data::CodecRetirementClosureStop::from(
+                            "retirement source must be an existing native generation",
+                        )),
                     })
+                    .collect::<Result<Vec<_>, _>>()?;
+                crate::history::data::select_owned_scope_dependent(
+                    crate::history::data::OwnedScopeDependentSelection::RemovedSources(&removed),
+                    current,
+                    context,
+                )
+                .map_err(|failure| failure.stop)
             })
-            .map_err(custody::execution_stop)?
             .map_err(custody::execution_stop)?
             .0
             .map_err(custody::cold_stop)?;
@@ -127,7 +127,7 @@ impl RelationalRuntime {
         Ok(())
     }
 
-    /// Reissue succeeds this selected authored retirement, never a fresh Birth.
+    /// Reissue succeeds the selected authored retirement or its Native restoration, never a fresh Birth.
     /// The current route and complete retired membership come from Native's
     /// canonical history, not an old producer head or caller description.
     pub fn readmit_authored_output_retirement_successor(
@@ -172,8 +172,29 @@ impl RelationalRuntime {
                 .unresolved_prefix()
                 .is_some()
         {
-            crate::history::data::readmit_required_output_route(execution, self, basis, meaning)
-                .map_err(custody::cold_stop)?
+            let current = if installed.source_scope_ownership.is_empty() {
+                None
+            } else {
+                crate::history::data::current_route_presence::read_current(
+                    execution, basis, meaning,
+                )?
+            };
+            match current {
+                Some(position) => Some(position),
+                None => {
+                    let historical = crate::history::data::readmit_required_output_route(
+                        execution, self, basis, meaning,
+                    )
+                    .map_err(custody::cold_stop)?;
+                    if installed.source_scope_ownership.is_empty() {
+                        historical
+                    } else {
+                        crate::history::data::current_route_presence::require_current_owned_route(
+                            execution, self, basis, meaning, historical,
+                        )?
+                    }
+                }
+            }
         } else {
             selected
         };
@@ -200,6 +221,7 @@ impl RelationalRuntime {
         if !matches!(
             origin.publication,
             crate::history::data::CanonicalOutputPublication::AuthoredRetirement { .. }
+                | crate::history::data::CanonicalOutputPublication::AuthoredRestoration { .. }
         ) {
             return Ok(None);
         }
@@ -207,13 +229,43 @@ impl RelationalRuntime {
             .map(Some)
     }
 
-    pub(super) fn readmit_canonical_publication(
+    pub(crate) fn readmit_canonical_publication(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         installed: &RelationalInstalledApplicationPublicationAuthority,
         basis: &AdmittedRelationalBranchBasis,
         origin: &Arc<crate::history::data::CanonicalRequiredOutputOrigin>,
     ) -> Result<RelationalRequiredOutputPublication, TransactionCommitError> {
+        if origin.source_scope_owned {
+            installed.require_current_ownership_storage(basis, origin.meaning.source_scope)?;
+        }
+        if origin.source_scope_owned
+            && origin
+                .members
+                .iter()
+                .any(|member| member.posture != RequiredOutputRolePosture::Retire)
+        {
+            let roles = origin
+                .members
+                .iter()
+                .map(|member| RequiredOutputRoleTarget {
+                    role: member.role.clone(),
+                    entity_name: member.entity_name.clone(),
+                    kind: member.kind,
+                    posture: member.posture,
+                    target: EntityReference::Existing(member.id),
+                })
+                .collect::<Vec<_>>();
+            return self.readmit_required_output_publication(
+                execution,
+                installed,
+                basis,
+                &origin.producer,
+                &origin.dependency_identity,
+                &origin.meaning,
+                &roles,
+            );
+        }
         // Full current payload admission below must enter the ordinary request's
         // storage regions before the historical association court accesses them.
         use crate::storage::overlay::{CurrentPartitionAccess, PartitionAccess};

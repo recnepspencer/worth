@@ -979,7 +979,6 @@ workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-applic
 workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-attempt/ workspaces/worth-query/crates/worth-query-court-execution/tests/worth_query_court_execution/domain_computation/primary_graph/output_lineage/tests/republication/rules/mod.rs
 workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-attempt/ workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-contribution/src/domain_computation/primary_graph/output_lineage/own_write_fixture/mod.rs
 workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-attempt-2/ workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-output-demand/tests/worth_query_court_execution_primary_graph_application_output_demand/domain_computation/primary_graph/application_output_demand/registry/lifecycle/closed_retirement/walk_bounds/mod.rs
-# Moved worth-query-execution courts and testkits reach the library only through its sealed doors, and testkit or root-crate controls only as listed.
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-attempt/tests/worth_query_court_execution_primary_graph_application_attempt/domain_computation/primary_graph/application_attempt/workflow_instance_program/migration/lineage/request_stops/mod.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-execution-package-archive/tests/worth_query_court_decl_execution_package_archive/domain_computation/primary_graph/causal_inspection/materialization/contract/tests/mod.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-execution-package-archive/tests/worth_query_court_decl_execution_package_archive/domain_computation/primary_graph/output_lineage/ownership_oracle/admission/mod.rs
@@ -1643,10 +1642,8 @@ workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-applic
 workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-attempt/ workspaces/worth-query/crates/worth-query-court-execution-package-archive/tests/worth_query_court_execution_package_archive/domain_computation/primary_graph/tests/application_attempt/terminal_failures/aftermath_sealing_interruption/mod.rs
 workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-attempt/ workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_query/freshness_stops/mod.rs
 workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-attempt/ workspaces/worth-query/crates/worth-query-court-execution-primary-graph/tests/worth_query_court_execution_primary_graph/domain_computation/primary_graph/tests/application_attempt/freshness_stops/mod.rs
-# Moved worth-query-execution courts and testkits reach the library only through its sealed doors, and testkit or root-crate controls only as listed.
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/application_query/read_execution/interruption/tests/closure/mod.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/application_query/read_execution/interruption/tests/declared_orbit/mod.rs
-# Moved worth-query-execution courts and testkits reach the library only through its sealed doors, and testkit or root-crate controls only as listed.
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-execution-convergence-epoch-fixture/tests/worth_query_court_execution_convergence_epoch_fixture/domain_computation/primary_graph/product_operation/generated_materialization/restoration/republication/own_write/suspend_restore/mod.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-attempt/tests/worth_query_court_execution_primary_graph_application_attempt/domain_computation/primary_graph/application_attempt/effect_program/output_correspondence/tests/created_roles/mod.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-output-demand/tests/worth_query_court_execution_primary_graph_application_output_demand/domain_computation/managed_run/tests/workflow_step_evidence/artifact_retention/mod.rs
@@ -1664,7 +1661,21 @@ crates/worth-relational/ crates/worth-court-relational-certification/tests/worth
 
 # Checkpoint stage courts observe setup counts and the original request's charge and refusal events.
 crates/worth-execution/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/cost/relational/checkpoint_stage.rs
-# Moved worth-query-execution courts and testkits reach the library only through its sealed doors, and testkit or root-crate controls only as listed.
+
+# Current ownership corruption re-records Native facts; Query checksum/framing remain real.
+crates/worth-relational/ workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/current_roster.rs
+
+# Native-only endpoint verb is selected from real Query-produced current ownership.
+crates/worth-relational/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_runtime/certification_controls/owned_publication.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/endpoint_fence.rs
+
+# A real Query writer reaches Native's stale/Birth participant defenses through receiver corruption.
+crates/worth-relational/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/coupled_assembly.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/coupled/foreign_participant.rs
+
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/coupled/private_membership.rs
+
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/merged_generation.rs
 crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-contribution/src/domain_computation/primary_graph/tests/application_attempt/unwind_custody/mod.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-execution-package-archive/tests/worth_query_court_decl_execution_package_archive/domain_computation/primary_graph/output_lineage/ownership_oracle/optional_aspects/source_admission/mod.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-execution-package-archive/tests/worth_query_court_execution_package_archive/domain_computation/primary_graph/tests/application_attempt/erased_core_forgery/commit_entries/mod.rs
@@ -1683,7 +1694,33 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-contribution/src/domain_computation/primary_graph/product_operation/document_history/constraint/ownership_tests/mod.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-contribution/src/domain_computation/primary_graph/tests/application_attempt/recovery_custody/mod.rs
 workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-contribution/ workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-contribution/tests/worth_query_court_execution_primary_graph_application_contribution/publication_boundary/mod.rs
-# Moved worth-query-execution courts and testkits reach the library only through its sealed doors, and testkit or root-crate controls only as listed.
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_attempt/mutation_work_scale/unrelated_population/mod.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-query/tests/worth_query_court_execution_primary_graph_application_query/domain_computation/primary_graph/tests/application_query/root_selection/declared_root_paths_retain_per_row_native_witnesses/party/mod.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-execution-primary-graph/tests/worth_query_court_execution_primary_graph/domain_computation/primary_graph/tests/application_attempt/retry_outbox_rebind/managed_path_evidence/mod.rs
+crates/worth-relational/ workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/coherent_roster.rs
+crates/worth-relational/ workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/cold_pairing.rs
+crates/worth-relational/ workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/coupled/private_membership.rs
+crates/worth-relational/ workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/locality.rs
+crates/worth-relational/ workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/metadata_guard.rs
+crates/worth-relational/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/producer_succession/courts.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/coherent_roster.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/cold_pairing.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/coupled/append.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/locality.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/metadata_guard.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/relation_splice/courts.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/producer_succession/courts.rs
+# Exact sealed-door callers generated by src_door_callers.py.
+crates/worth-relational/ workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/current_history.rs
+crates/worth-relational/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/producer_succession/locality.rs
+crates/worth-relational/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/producer_succession/route_degree/courts.rs
+crates/worth-relational/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_runtime/certification_controls/owned_publication/inspection.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/current_history.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/parameter_inverse/adjacency_gap.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-owned-codec-transition/tests/owned_codec_transition.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/producer_succession/locality.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/producer_succession/route_degree/courts.rs
+crates/worth-relational/ workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/endpoint_fence.rs
+
+# D1190 passive retained aggregate evidence from a real Query-installed producer.
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-authored-ownership/tests/authored_ownership/foreign_aggregate/retained.rs

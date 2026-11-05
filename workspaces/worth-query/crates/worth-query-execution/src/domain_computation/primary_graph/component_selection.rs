@@ -16,6 +16,7 @@ pub(in crate::domain_computation::primary_graph) use aggregates::ComponentAggreg
 mod currentness;
 mod key;
 mod origin;
+use super::projection_read_origin::ProjectionReadOrigin;
 pub(in crate::domain_computation::primary_graph) use key::{
     ComponentSelectionKey, ComponentSelectionSubject,
 };
@@ -26,7 +27,7 @@ pub struct ComponentSelection {
     key: ComponentSelectionKey,
     origin: ComponentSelectionOrigin,
     layout: ComponentSetLayout,
-    source: SnapshotHandle,
+    source: ProjectionReadOrigin,
     aggregates: ComponentAggregateBodies,
     facts: Vec<SourceFacts>,
     allocation: Arc<super::source_facts::SourceFactsAllocation>,
@@ -38,7 +39,7 @@ impl ComponentSelection {
         layout: ComponentSetLayout,
         root: EntityId,
         subject: ComponentSelectionSubject,
-        source: SnapshotHandle,
+        source: impl Into<ProjectionReadOrigin>,
         aggregates: Vec<Arc<AggregateObservation>>,
         facts: Vec<SourceFacts>,
         allocation: Arc<super::source_facts::SourceFactsAllocation>,
@@ -54,7 +55,7 @@ impl ComponentSelection {
             ComponentSelectionOrigin::Operation(scope),
             key,
             layout,
-            source,
+            source.into(),
             aggregates,
             facts,
             allocation,
@@ -65,7 +66,7 @@ impl ComponentSelection {
         origin: ComponentSelectionOrigin,
         key: ComponentSelectionKey,
         layout: ComponentSetLayout,
-        source: SnapshotHandle,
+        source: ProjectionReadOrigin,
         aggregates: Vec<Arc<AggregateObservation>>,
         facts: Vec<SourceFacts>,
         allocation: Arc<super::source_facts::SourceFactsAllocation>,
@@ -99,7 +100,7 @@ impl ComponentSelection {
     pub(in crate::domain_computation::primary_graph) fn key(&self) -> &ComponentSelectionKey {
         &self.key
     }
-    pub(in crate::domain_computation::primary_graph) fn source(&self) -> &SnapshotHandle {
+    pub(in crate::domain_computation::primary_graph) fn source(&self) -> &ProjectionReadOrigin {
         &self.source
     }
     pub fn operation_scope(&self) -> Option<&WorthQueryOperationComponentReadScope> {

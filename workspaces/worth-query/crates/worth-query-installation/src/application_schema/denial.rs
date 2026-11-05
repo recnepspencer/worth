@@ -22,6 +22,7 @@ pub enum WorthQueryInstalledApplicationSchemaDenialKind {
     HistoryInstallationDenied,
 
     OperationInstallationDenied,
+    PreImageDemandNotCoveredByAuthoredAnchors,
     DerivedSourceUnavailable,
     ContentBindingMissing,
     ContentFormatDuplicate,

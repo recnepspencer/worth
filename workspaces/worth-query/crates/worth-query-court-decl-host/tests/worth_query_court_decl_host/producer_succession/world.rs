@@ -48,8 +48,65 @@ fn try_install_source(
     child_width: u64,
     checkpoint: Option<installation::WorthQueryApplicationCheckpoint>,
 ) -> Result<App, installation::WorthQueryInMemoryApplicationDenial> {
+    try_install_program::<Program>(width, selections, fault, child_width, false, checkpoint)
+}
+pub(super) fn try_install_program<
+    P: ApplicationProgramDefinition<Schema, Contributions = (Contribution,)>,
+>(
+    width: u64,
+    selections: Selections,
+    fault: Fault,
+    child_width: u64,
+    read_predecessor_orbits: bool,
+    checkpoint: Option<installation::WorthQueryApplicationCheckpoint>,
+) -> Result<
+    installation::WorthQueryProgramApplicationRuntime<Schema, P>,
+    installation::WorthQueryInMemoryApplicationDenial,
+>
+where
+    P::Outputs: installation::WorthQueryApplicationProgramRoots<Schema>,
+{
+    try_install_program_with_sources::<P>(
+        width,
+        selections,
+        fault,
+        child_width,
+        read_predecessor_orbits,
+        checkpoint,
+        &[],
+    )
+}
+pub fn install_degree() -> App {
+    try_install_program_with_sources::<Program>(
+        0,
+        Arc::default(),
+        Fault::None,
+        0,
+        false,
+        None,
+        &["outside"],
+    )
+    .unwrap()
+}
+fn try_install_program_with_sources<
+    P: ApplicationProgramDefinition<Schema, Contributions = (Contribution,)>,
+>(
+    width: u64,
+    selections: Selections,
+    fault: Fault,
+    child_width: u64,
+    read_predecessor_orbits: bool,
+    checkpoint: Option<installation::WorthQueryApplicationCheckpoint>,
+    others: &[&str],
+) -> Result<
+    installation::WorthQueryProgramApplicationRuntime<Schema, P>,
+    installation::WorthQueryInMemoryApplicationDenial,
+>
+where
+    P::Outputs: installation::WorthQueryApplicationProgramRoots<Schema>,
+{
     let schema = Schema::declaration().unwrap();
-    let program = ApplicationProgramAuthoring::<Schema, Program>::begin()
+    let program = ApplicationProgramAuthoring::<Schema, P>::begin()
         .with_schema(&schema)
         .validated_program()
         .unwrap();
@@ -73,6 +130,7 @@ fn try_install_source(
                 selections,
                 fault,
                 child_width,
+                read_predecessor_orbits,
             },),
             installation::ApplicationBuildIdentity::parse("11111111-1111-4111-8111-111111111111")
                 .unwrap(),
@@ -87,6 +145,7 @@ fn try_install_source(
             selections,
             fault,
             child_width,
+            read_predecessor_orbits,
         },),
         installation::ApplicationBuildIdentity::parse("11111111-1111-4111-8111-111111111111")
             .unwrap(),
@@ -112,6 +171,32 @@ fn try_install_source(
                 .field(Width::reference(), width)
                 .field(Produced::reference(), 0),
             )?;
+            for key in others {
+                graph.bind_entity(
+                    WorthQueryApplicationEntitySeed::new(
+                        Node::reference(),
+                        WorthQueryApplicationEntityKey::new(*key).unwrap(),
+                    )
+                    .field(Key::reference(), (*key).to_owned())
+                    .field(ParentName::reference(), String::new())
+                    .field(Value::reference(), 1)
+                    .field(Width::reference(), 0)
+                    .field(Produced::reference(), 0),
+                )?;
+            }
+            if super::PRIVATE_AGGREGATES {
+                graph.bind_entity(
+                    WorthQueryApplicationEntitySeed::new(
+                        Node::reference(),
+                        WorthQueryApplicationEntityKey::new("observer").unwrap(),
+                    )
+                    .field(Key::reference(), "observer".to_owned())
+                    .field(ParentName::reference(), String::new())
+                    .field(Value::reference(), 8)
+                    .field(Width::reference(), 0)
+                    .field(Produced::reference(), 0),
+                )?;
+            }
             if matches!(fault, Fault::Extra | Fault::HiddenDeletion) {
                 graph.bind_entity(
                     WorthQueryApplicationEntitySeed::new(
@@ -158,8 +243,8 @@ impl auth::WorthQueryAuthenticationAdapter for Local {
         })
     }
 }
-pub fn authenticate(
-    app: &App,
+pub fn authenticate<P: ApplicationProgramDefinition<Schema>>(
+    app: &installation::WorthQueryProgramApplicationRuntime<Schema, P>,
 ) -> (
     auth::WorthQueryRequestScope,
     auth::WorthQueryAuthenticatedExternalPrincipal<Schema>,
@@ -167,8 +252,8 @@ pub fn authenticate(
     let (scope, principal, _) = authenticate_cancellable(app);
     (scope, principal)
 }
-pub fn authenticate_cancellable(
-    app: &App,
+pub fn authenticate_cancellable<P: ApplicationProgramDefinition<Schema>>(
+    app: &installation::WorthQueryProgramApplicationRuntime<Schema, P>,
 ) -> (
     auth::WorthQueryRequestScope,
     auth::WorthQueryAuthenticatedExternalPrincipal<Schema>,

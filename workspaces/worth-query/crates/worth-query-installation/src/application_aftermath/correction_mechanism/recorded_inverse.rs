@@ -35,6 +35,7 @@ impl InstalledLoweringCorrespondenceRef {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct InstalledPreImageDemand {
     loci: Vec<InstalledPreImageLocus>,
+    relations: Vec<super::InstalledPreImageRelationLocus>,
     maximum_encoded_bytes: usize,
 }
 
@@ -46,8 +47,17 @@ impl InstalledPreImageDemand {
                 .iter()
                 .map(InstalledPreImageLocus::from_portable)
                 .collect(),
+            relations: portable
+                .relations()
+                .iter()
+                .map(super::InstalledPreImageRelationLocus::from_portable)
+                .collect(),
             maximum_encoded_bytes: portable.maximum_encoded_bytes(),
         }
+    }
+
+    pub fn relations(&self) -> &[super::InstalledPreImageRelationLocus] {
+        &self.relations
     }
 
     pub fn loci(&self) -> &[InstalledPreImageLocus] {

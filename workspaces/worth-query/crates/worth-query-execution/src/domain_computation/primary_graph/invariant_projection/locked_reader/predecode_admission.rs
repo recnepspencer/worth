@@ -1,8 +1,7 @@
 //! Borrow one exact snapshot scalar without the ordinary observation's clone.
 use super::WorthQueryApplicationInvariantProjectionReader;
 use crate::domain_computation::primary_graph::{
-    application_attempt::observe_field_value_borrowed_admitted, HandlerExecutionDenial,
-    HandlerInterruption, WorthQueryInvariantEntityIdentity,
+    HandlerExecutionDenial, HandlerInterruption, WorthQueryInvariantEntityIdentity,
 };
 use worth_foundational::facade::AspectValue as ApplicationValue;
 use worth_query_installation::facade::{
@@ -61,8 +60,7 @@ where
         };
         let reads = &mut self.work;
         let decoder = self.value_decode;
-        let observed = observe_field_value_borrowed_admitted(
-            self.runtime,
+        let observed = self.native.observe_field(
             self.execution,
             self.snapshot,
             identity.entity_id,
@@ -70,7 +68,9 @@ where
             &locator,
             |raw| {
                 reads.record_fields(1);
-                let Some(raw) = raw else { return Ok(Ok(None)) };
+                let Some(raw) = raw.value() else {
+                    return Ok(Ok(None));
+                };
                 decoding::decode_admitted(raw, admit, checkpoint, |raw| {
                     decoder.decode::<Field::Binding>(
                         field.entity(),

@@ -124,6 +124,7 @@ impl<Schema: ApplicationSchema, Operation: ApplicationOperationMarkerIdentity<Sc
                         kind: root.kind,
                         entity: Arc::clone(&root.entity),
                         authority_identity: root.authority_identity,
+                        phase: root.phase,
                         _marker: PhantomData,
                     },
                     to: WorthQueryInvariantEntityIdentity {
@@ -131,6 +132,7 @@ impl<Schema: ApplicationSchema, Operation: ApplicationOperationMarkerIdentity<Sc
                         kind: target_kind,
                         entity: Arc::from(relation.to()),
                         authority_identity: self.reader.authority_identity,
+                        phase: self.reader.native.candidate_identity().map(|id| id.qualification()),
                         _marker: PhantomData,
                     },
                     marker: PhantomData,

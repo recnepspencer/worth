@@ -14,6 +14,7 @@ use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 
 mod authorized;
 mod commit_resolution;
+pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) mod coupled;
 mod fresh;
 mod invariant;
 pub(crate) mod mutation_cleanup;
@@ -39,6 +40,7 @@ pub struct WorthQueryProgressedApplicationCommit {
 }
 
 struct WorthQueryProviderProgression<'a, Schema, Operation, Input, Scope> {
+    coupled_outputs: crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemands,
     application:
         &'a crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
             Schema,
@@ -94,6 +96,7 @@ pub struct WorthQueryApplicationCommitProgressionAuthority<
     Input,
     Scope,
 > {
+    coupled_outputs: &'a crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemands,
     application:
         &'a crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
             Schema,
@@ -177,6 +180,7 @@ where
     Input: Clone + Send + Sync + 'static,
 {
     let WorthQueryRunningApplicationCommit {
+        coupled_outputs,
         admission,
         lease,
         provider_attempt,
@@ -193,6 +197,7 @@ where
         execution,
         phase,
         WorthQueryProviderProgression {
+            coupled_outputs,
             application,
             running: &mut running,
             graph: application.runtime.primary_graph_authority(),
@@ -230,6 +235,7 @@ where
     Input: Clone + Send + Sync + 'static,
 {
     let WorthQueryProviderProgression {
+        coupled_outputs,
         application,
         running,
         graph,
@@ -289,6 +295,7 @@ where
 
     let coordination = commit_lane.enter();
     let authority = WorthQueryApplicationCommitProgressionAuthority {
+        coupled_outputs: &coupled_outputs,
         application,
         provider,
         admission,
@@ -299,7 +306,7 @@ where
         history,
         aftermath_causality,
     };
-    registered_session.progress(execution, &authority, allocation_policy)
+    registered_session.progress(execution, phase, &authority, allocation_policy)
 }
 
 mod court_doors_for_test;

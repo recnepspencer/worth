@@ -41,7 +41,7 @@ fn world_recovery_metadata_carries_the_original_computation_and_absence() {
     let owner = Arc::new(Mutex::new(WorthQueryApplicationOutputLineage::default()));
     // These are private vacant addresses, never publication authority.
     // Reserve their ledger custody before constructing their test slots.
-    let generation = std::cell::Cell::new((*coordinate.generation_for_test()));
+    let generation = std::cell::Cell::new(*coordinate.generation_for_test());
 
     let slot = || {
         let coordinate = {
@@ -57,7 +57,7 @@ fn world_recovery_metadata_carries_the_original_computation_and_absence() {
         (*lineage.by_source_mut_for_test())
             .entry(source.clone())
             .or_default()
-            .entry((*coordinate.occurrence_for_test()))
+            .entry(*coordinate.occurrence_for_test())
             .or_default()
             .insert(
                 (*coordinate.generation_for_test()),
@@ -68,7 +68,7 @@ fn world_recovery_metadata_carries_the_original_computation_and_absence() {
             coordinate,
             None,
         );
-        PreparedOutputLineageSlot::new_for_test(Arc::clone(&owner), TypeId::of_for_test::<()>(), source.clone(), coordinate, None, Arc::clone(&identity), record_cell, partition_cell, Some(Box::new(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::prepared_slot::CancelledLineageSlot::new_for_test(identity, None, None))), None, None, None, None, None, None, None, false, PreparedComputationCustody::Unassigned)
+        PreparedOutputLineageSlot::new_for_test(Arc::clone(&owner), TypeId::of_for_test::<()>(), source.clone(), coordinate, None, Arc::clone(&identity), record_cell, partition_cell, Some(Box::new(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::prepared_slot::CancelledLineageSlot::new_for_test(identity, None, None))), None, None, None, None, None, None, None, false, PreparedComputationCustody::Unassigned, None)
     };
     for computation in [
         SealedComputationRetention::Produced(sealed_run_for_lineage_test()),
@@ -82,7 +82,7 @@ fn world_recovery_metadata_carries_the_original_computation_and_absence() {
         replacement.retain_recovery_metadata_for_test(metadata);
         assert_eq!(
             matches!(
-                &(*replacement.computation_for_test()),
+                replacement.computation_for_test(),
                 PreparedComputationCustody::Assigned(SealedComputationRetention::Produced(_))
             ),
             produced

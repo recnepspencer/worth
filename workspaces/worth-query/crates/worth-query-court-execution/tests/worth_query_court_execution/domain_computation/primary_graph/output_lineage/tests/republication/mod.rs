@@ -121,7 +121,7 @@ pub fn staged(
     let observation = product.observation_for_test();
     assert!(observation.reference_generation().get() >= 2);
     let handle = graph.integration_handle_for_test();
-    let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
+    let owner = (*handle.source_owner_for_test()).invalidation_owner_for_test();
     let correspondence = Arc::new(
         WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles_for_test(
 TypeId::of_for_test::<()>(),
@@ -237,6 +237,7 @@ impl Stage<'_> {
                 producer_dependency_identity,
                 idempotency_key_identity,
                 mutable,
+                None,
             )
         });
         assert!(cell.set(recorded).is_ok());
@@ -260,9 +261,9 @@ impl Stage<'_> {
         facts: &Arc<[Fact]>,
         witness: &Witness,
     ) -> Option<Option<Continued>> {
-        let republished = self.lineage.prepare_republication_for_test(self.lineage.binding_type_for_test(&(*self.source.output_binding_for_test())), (*self.source.runtime_authority_for_test()), &(*self.source.schema_for_test()), self.source.scope, self.observation.lifecycle_incarnation(), suspended_generation, PARTITION, &self.correspondence, &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts::for_test_for_test(false, Arc::clone(facts)), Arc::clone(witness), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new_for_test(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None))?;
+        let republished = self.lineage.prepare_republication_for_test(self.lineage.binding_type_for_test(self.source.output_binding_for_test()), (*self.source.runtime_authority_for_test()), self.source.schema_for_test(), self.source.scope, self.observation.lifecycle_incarnation(), suspended_generation, PARTITION, &self.correspondence, &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::source_facts::RetainedSourceFacts::for_test_for_test(false, Arc::clone(facts)), Arc::clone(witness), worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::retained_decision_facts::control::StorageControl::new_for_test(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None))?;
         let record = self.lineage.record_republished_restoration_for_test(
-            self.lineage.binding_type_for_test(&(*self.source.output_binding_for_test())),
+            self.lineage.binding_type_for_test(self.source.output_binding_for_test()),
             (*self.source.runtime_authority_for_test()),
             (*self.source.schema_for_test()).clone(),
             self.source.scope,

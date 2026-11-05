@@ -45,10 +45,45 @@ pub(super) fn validate<'a>(
             "predecessor is not the publication selected at the native before image",
         ));
     }
+    if origin.source_scope_owned
+        && origin
+            .members
+            .iter()
+            .any(|member| member.posture != crate::mvcc::RequiredOutputRolePosture::Retire)
+    {
+        let current = runtime.current_ownership.as_ref().ok_or_else(|| {
+            crate::mvcc::origin_denial("live owned predecessor requires current Native custody")
+        })?;
+        let canonical = current
+            .origins()
+            .find(|other| other.meaning.same_route(&origin.meaning))
+            .ok_or_else(|| {
+                crate::mvcc::origin_denial(
+                    "live owned predecessor is absent from current Native custody",
+                )
+            })?;
+        compare_retained_origin(origin, canonical, context)?;
+        if let crate::publication::ownership::PublicationEvidence::Current(retained) =
+            &predecessor.evidence
+            && retained.basis != *basis.descriptor()
+        {
+            return Err(crate::mvcc::origin_denial(
+                "current publication custody has a different Native basis",
+            ));
+        }
+        return Ok(origin.as_ref());
+    }
     // The carried holder is checked against its exact performed native coordinate,
     // not an ancestry search or a caller-supplied description.
     context.checkpoint(1).map_err(origin_request)?;
-    if predecessor.envelope.commit != origin.commit {
+    let crate::publication::ownership::PublicationEvidence::Canonical(envelope) =
+        &predecessor.evidence
+    else {
+        return Err(crate::mvcc::origin_denial(
+            "historical predecessor requires its canonical envelope",
+        ));
+    };
+    if envelope.commit != origin.commit {
         return Err(crate::mvcc::origin_denial(
             "carried origin differs from its canonical envelope",
         ));

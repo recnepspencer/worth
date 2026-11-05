@@ -12,6 +12,7 @@ use crate::domain_computation::primary_graph::fact_verification_observation;
 mod diagnostic;
 pub use diagnostic::RebaseVerificationReason;
 pub(crate) mod adjacency;
+mod predecessor_output;
 mod resolution;
 pub(crate) mod retirement;
 
@@ -100,6 +101,7 @@ pub struct PreparedSourceFactRebase {
     preparation: Preparation,
     performed_input_facts: Option<FactPayload>,
     retain_output_field_evidence: bool,
+    predecessor: Option<worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
 }
 
 impl OwnEffectOnReads {
@@ -210,6 +212,7 @@ pub fn rebase_output(
     prepared: PreparedSourceFactRebase,
     correspondence: &crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
     changed_records: &[worth_relational::facade::transactions::RecordRef],
+    coupled_commit: Option<&worth_relational::facade::transactions::CommitResult>,
     producer_output: bool,
 
     control: crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl<'_, '_>,
@@ -221,10 +224,32 @@ pub fn rebase_output(
             _ => None,
         })
         .collect::<BTreeSet<_>>();
-    let retired = correspondence
+    let mut retired: BTreeSet<_> = correspondence
         .retired_entity_ids()
         .filter(|entity| changed_entities.contains(entity))
         .collect();
+    if let Some(commit) = coupled_commit {
+        // Every participant settled this same admitted atomic commit. Business
+        // correspondence remains writer-local; receipt dependencies also retain
+        // the genuine retirements performed by its other writers.
+        for patch in commit.patch() {
+            if let Err(stop) = execution.consult() {
+                return RebasedSourceFacts::VerificationRequired {
+                    reason: RebaseVerificationFailure::admission_denied(
+                        CompanionPreflightStop::Execution(stop.into()),
+                    ),
+                    own_effect: OwnEffectOnReads(OwnEffect::Moved),
+                };
+            }
+            if patch.structural_change
+                == worth_relational::facade::publication::RecordStructuralChange::Deleted
+                && let worth_relational::facade::transactions::RecordRef::Entity(entity) =
+                    patch.target
+            {
+                retired.insert(entity);
+            }
+        }
+    }
     preparation::rebase(
         execution,
         runtime,

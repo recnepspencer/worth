@@ -32,6 +32,14 @@ use super::demand::WorthQueryOutputDemandDenial;
 use super::demand::WorthQueryOutputDemandDenialKind;
 
 mod admitted;
+mod coupled_adoption;
+mod coupled_preparation;
+pub(super) use coupled_preparation::preparation_denial as coupled_preparation_denial;
+mod coupled;
+mod coupled_source;
+use coupled::InstalledCoupledProducerExecutor;
+pub(super) use coupled::PreparedCoupledWriter;
+pub(super) use coupled_source::{CoupledSourceReadStop, ErasedAppliedProducerSource};
 pub(crate) mod denial;
 mod input_cutoff;
 mod input_reuse;
@@ -79,7 +87,7 @@ type Operation<Schema, Binding> =
     <Binding as WorthQueryApplicationProducerBinding<Schema>>::Operation;
 
 pub(super) trait InstalledProducerExecutor<Schema>:
-    InstalledSelectedProducerExecutor<Schema> + Send + Sync
+    InstalledSelectedProducerExecutor<Schema> + InstalledCoupledProducerExecutor<Schema> + Send + Sync
 {
     fn supports_history_group(&self) -> bool;
 

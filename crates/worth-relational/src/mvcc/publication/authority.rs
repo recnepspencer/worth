@@ -40,6 +40,9 @@ pub(crate) struct PreparedIndexRefreshBasis {
 }
 
 impl PreparedRelationalPublication {
+    pub(crate) fn canonical_envelope(&self) -> &Arc<CanonicalCommitEnvelope> {
+        &self.publication.envelope
+    }
     pub(crate) fn envelope_residency(
         &self,
     ) -> Arc<crate::history::RelationalCommitEnvelopeResidency> {

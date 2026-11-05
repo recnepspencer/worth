@@ -28,7 +28,7 @@ use ordered::attach_ordered_relation;
 #[allow(clippy::too_many_arguments)]
 pub(super) fn attach_relation(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &worth_relational::facade::runtime::RelationalPinnedRead,
+    read: &crate::domain_computation::primary_graph::application_query::read_execution::tree_materialization::read_basis::ResultTreeRead<'_>,
     projection: &worth_relational::facade::runtime::VisibilityProjectionView,
     graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
     contract: &WorthQueryInstalledGraphReadContract,
@@ -63,7 +63,7 @@ pub(super) fn attach_relation(
                 .is_some_and(|request| request.collection_path == relation.result_path()) =>
         {
             return attach_ordered_relation(
-                execution, runtime, projection, graph, contract, governance, parameters, relation,
+                execution, read, projection, graph, contract, governance, parameters, relation,
                 parents, work, window,
             );
         }
@@ -71,7 +71,7 @@ pub(super) fn attach_relation(
             if target.collection_path == relation.result_path() =>
         {
             return attach_targeted_relation(
-                execution, runtime, projection, graph, contract, governance, parameters, relation,
+                execution, read, projection, graph, contract, governance, parameters, relation,
                 parents, work, target,
             );
         }
@@ -80,7 +80,7 @@ pub(super) fn attach_relation(
         | ActiveResultTreeCollectionSelection::Targeted(_) => {}
     }
     work.checkpoint(relation.result_path())?;
-    let read = match relation.direction() {
+    let adjacency = match relation.direction() {
         ApplicationQueryResultTraversalDirection::Forward => projection
             .bounded_outgoing_relations_for_frontier(
                 execution,
@@ -98,13 +98,13 @@ pub(super) fn attach_relation(
     }
     .map_err(|_| work_limit_denial(relation.result_path()))?;
     work.charge_adjacency(
-        read.adjacency_lists_read(),
-        read.relation_records_examined(),
-        read.endpoint_records_reserved(),
+        adjacency.adjacency_lists_read(),
+        adjacency.relation_records_examined(),
+        adjacency.endpoint_records_reserved(),
         relation.result_path(),
     )?;
     let mut targets = BTreeMap::<EntityId, Vec<RelationProjectionTarget>>::new();
-    for record in read.into_records() {
+    for record in adjacency.into_records() {
         work.checkpoint(relation.result_path())?;
         let (parent, child) = match relation.direction() {
             ApplicationQueryResultTraversalDirection::Forward => (record.source, record.target),
@@ -211,7 +211,7 @@ pub(super) fn attach_relation(
     )?;
     let mut children = project_nodes(
         execution,
-        runtime,
+        read,
         projection,
         graph,
         contract,
@@ -247,7 +247,7 @@ pub(super) fn attach_relation(
 #[allow(clippy::too_many_arguments)]
 fn attach_targeted_relation(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &worth_relational::facade::runtime::RelationalPinnedRead,
+    read: &crate::domain_computation::primary_graph::application_query::read_execution::tree_materialization::read_basis::ResultTreeRead<'_>,
     projection: &worth_relational::facade::runtime::VisibilityProjectionView,
     graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
     contract: &WorthQueryInstalledGraphReadContract,
@@ -266,7 +266,7 @@ fn attach_targeted_relation(
         .ok_or_else(|| traversal_denial(relation.result_path()))?;
     let frontier = BTreeSet::from([target.child_entity_id]);
     work.checkpoint(relation.result_path())?;
-    let read = match relation.direction() {
+    let adjacency = match relation.direction() {
         ApplicationQueryResultTraversalDirection::Forward => projection
             .bounded_incoming_relations_for_frontier(
                 execution,
@@ -284,12 +284,12 @@ fn attach_targeted_relation(
     }
     .map_err(|_| work_limit_denial(relation.result_path()))?;
     work.charge_adjacency(
-        read.adjacency_lists_read(),
-        read.relation_records_examined(),
-        read.endpoint_records_reserved(),
+        adjacency.adjacency_lists_read(),
+        adjacency.relation_records_examined(),
+        adjacency.endpoint_records_reserved(),
         relation.result_path(),
     )?;
-    let matching_memberships = read
+    let matching_memberships = adjacency
         .into_records()
         .into_iter()
         .filter(|record| match relation.direction() {
@@ -322,7 +322,7 @@ fn attach_targeted_relation(
     let mut nested_selection = ActiveResultTreeCollectionSelection::Complete;
     let children = project_nodes(
         execution,
-        runtime,
+        read,
         projection,
         graph,
         contract,

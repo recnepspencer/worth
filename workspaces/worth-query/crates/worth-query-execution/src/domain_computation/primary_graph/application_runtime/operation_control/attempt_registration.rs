@@ -23,6 +23,7 @@ pub use source_publication::{
 pub struct WorthQueryApplicationAttemptOperationControl {
     pub(in crate::domain_computation::primary_graph) caller_pass:
         Arc<caller_pass::CallerPassControl>,
+    pub(super) coupled_participant_fault: Arc<std::sync::atomic::AtomicU8>,
     pending_registration: Arc<PendingAttemptPause>,
     pending_candidate: Arc<PendingAttemptPause>,
     pending_source_validation: Arc<PendingAttemptPause>,

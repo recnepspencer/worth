@@ -63,11 +63,17 @@ struct RootPathSelectionBuilder {
     pub(in crate::domain_computation::primary_graph) set_source: Option<SourceFactsBuilder>,
     pub(in crate::domain_computation::primary_graph) allocation: Option<Arc<SourceFactsAllocation>>,
 }
-pub(in crate::domain_computation::primary_graph) struct RootPathReadBasis<'a, 'execution, 'request>
-{
+pub(in crate::domain_computation::primary_graph) struct RootPathReadBasis<
+    'a,
+    'execution,
+    'request,
+    Phase = worth_relational::facade::snapshots::SnapshotHandle,
+> {
     pub(in crate::domain_computation::primary_graph) execution:
         &'a ExecutionRequest<'execution, 'request>,
-    pub(in crate::domain_computation::primary_graph) runtime: &'a RelationalPinnedRead,
+    pub(in crate::domain_computation::primary_graph) runtime: &'a RelationalPinnedRead<Phase>,
+    pub(in crate::domain_computation::primary_graph) origin:
+        super::projection_read_origin::ProjectionReadOriginRef<'a>,
     pub(in crate::domain_computation::primary_graph) graph: &'a WorthQueryPrimaryGraphLayout,
     pub(in crate::domain_computation::primary_graph) projection: VisibilityProjectionView,
 }
@@ -97,8 +103,8 @@ impl<'a> PathStep<'a> {
 
 /// Forward visits the complete pre-window union. Reverse returns a full accepted
 /// witness to the exact required root, or the negative evidence of every path.
-pub(in crate::domain_computation::primary_graph) fn select<E>(
-    basis: &RootPathReadBasis<'_, '_, '_>,
+pub(in crate::domain_computation::primary_graph) fn select<E, Phase>(
+    basis: &RootPathReadBasis<'_, '_, '_, Phase>,
     request: RootPathSelectionRequest<'_>,
     ports: &mut RootPathReadPorts<'_, E>,
 ) -> Result<RootPathSelection, RootPathReadDenial<E>> {
@@ -161,8 +167,8 @@ pub(in crate::domain_computation::primary_graph) fn select<E>(
         .finish(basis.execution)
         .map_err(|cause| RootPathReadDenial::native(request.subject, cause))
 }
-fn traverse_path<E>(
-    basis: &RootPathReadBasis<'_, '_, '_>,
+fn traverse_path<E, Phase>(
+    basis: &RootPathReadBasis<'_, '_, '_, Phase>,
     request: &RootPathSelectionRequest<'_>,
     path: &WorthQueryInstalledRootPath,
     path_index: usize,

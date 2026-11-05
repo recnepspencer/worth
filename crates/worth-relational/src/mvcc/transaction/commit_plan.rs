@@ -61,11 +61,21 @@ impl crate::mvcc::BranchBoundRelationalTransaction {
         let sort_micros = sort_started.elapsed().as_micros() as u64;
         let conflict_started = Instant::now();
         detect_conflicting_updates(&intents)?;
+        let plan = MergedCommitPlan {
+            transaction_id: self.transaction_id,
+            merged_intents: intents,
+        };
+        if self.authored_coupling.is_some() {
+            let mut prepared = self
+                .prepared_coupled_commands
+                .lock()
+                .unwrap_or_else(|error| error.into_inner());
+            if prepared.is_none() {
+                *prepared = Some(plan.clone());
+            }
+        }
         Ok((
-            MergedCommitPlan {
-                transaction_id: self.transaction_id,
-                merged_intents: intents,
-            },
+            plan,
             MergedPlanPreparationTiming {
                 validation_micros,
                 sort_micros,

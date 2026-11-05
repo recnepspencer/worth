@@ -4023,6 +4023,21 @@ principal scopes refuse with `ProducerOwnershipRequiresEntitySourceScope`, namin
 the producer. Initial and Preserve producers in one family must agree on ownership.
 The ownership rule participates in installed producer identity.
 
+Native retains each live owned publication's members, edges, route and generation
+as private current records. Current custody checks use those facts through cold
+reopen and ordinary source edits; they do not require historical envelopes.
+Only the publication commit path maintains the records. Document checkout must
+restore them together with the producer outputs; their ordinary owned relations
+let the same closure selection include them. Direct metadata writes refuse
+`OrdinaryMetadataWrite`. Older stores without the current roster require the
+new format and refuse readmission; no migration is supplied.
+
+Deleting a member, unlinking an owned edge or changing its endpoints requires
+that exact route's current succession or an admitted cascade covering it.
+Another route's Preserve grants no custody, even when both publications share
+one commit ID. The refusal retains the current publication and actual record
+and owner subjects.
+
 An authored `retire_created` or `restore_retired` binding supplies the exact source
 identity. Native admits an ordinary authored Create as the distinguished anchor
 and independently computes every live opted-in publication scoped by that source,
@@ -4035,6 +4050,97 @@ its original `authored_retirement_refusal()` and `context.affected_records`.
 publication in one transaction, preserving each producer's provenance and route
 while allocating fresh native generations and remapping owned relation endpoints.
 A restoration supplies historical output association, not producer readiness.
+
+A correction may explicitly carry co-anchors with
+`retire_created::<C, Family, Source, Inverse>()`
+`.co_retire_created::<C, CoFamily, CoSource, CoInverse>()`. For a Retire-to-Create
+inverse, use `restore_retired` followed by `co_restore_retired` instead. Each
+co-role declares its own family and Create/Retire correspondence, with matching
+exactly-one or zero-or-one cardinality. An absent optional role remains absent.
+Every present co-anchor must be genuinely authored and belong to no live
+publication. Native selects one closure from all anchors together; an undeclared
+extra Retire role is still an extra. Each restored anchor comes from its own
+inverse Create, retaining its logical key and receiving a fresh native ID.
+Declare and observe the demanded pre-image fields for each present anchor and
+set the pre-image byte bound for their total payload.
+The demand may include different entity kinds, such as a Feature and its
+co-born Body, when every kind is a declared authored anchor of that operation.
+Installation refuses an unrelated entity kind with that kind as its subject.
+Read a particular co-anchor with
+`preimage.field_for_output(&CoRole::DESCRIPTOR, &locus)`; equal field loci on
+different anchors retain their own original values.
+
+If a retired authored source is still linked by a surviving source-owned
+publication, declare that owner's root through the program's existing output
+connection. The mutation binding implements
+`WorthQueryApplicationRequiredOutputSource<Schema, BodyRoot>` and lists the
+connection in its mutation declaration. Coupled demands implement `Send` so the
+mutation request can move between execution workers:
+
+```rust,ignore
+coupled_outputs |visitor| {
+    visitor.required::<BodyRoot>();
+},
+```
+
+`demand_from_source` derives the typed demand from the original input;
+`demand_from_preimage` can also use the retained correction material. For example,
+a stage retirement can derive its body demand from that stage's body key.
+`ApplicationCorrectionBinding::visit_coupled_outputs` declares the correction's
+roots and defaults to the source binding's declaration. Install those same roots
+and connections in the program output graph.
+
+Query runs the declared owners' Preserve producers against the unpublished
+candidate. Each producer removes and replaces its own records and edges. Native
+independently determines the required owner set; missing, repeated, extra or
+foreign participants refuse with typed causes and affected records. The authored
+retirement and every admitted Preserve publish in one atomic commit. A required
+coupling with no declaration refuses before any effect. Declarations remain
+inert when no surviving owner is required; a closed owner already covered by the
+retirement closure does not run a producer.
+
+Correction derives the same declared coupling with fresh source IDs. Native
+restores closed publications, while surviving owners run their own Preserves.
+A subsequent demand for a recreated owner follows ordinary Preserve and reuse
+rules using the actual producer antecedent, including after repeated Native-only
+restore/retire cycles. Restoration grants no producer readiness or replayable
+producer-input contract.
+
+For an authored splice that changes relations, add typed relation loci to the
+recorded inverse's pre-image demand:
+
+```rust,ignore
+let demand = DeclaredPreImageDemand::new(field_loci, maximum_encoded_bytes)?
+    .with_relations([
+        DeclaredPreImageRelationLocus::from_relation(PreviousStage::reference()),
+    ])?;
+```
+
+Use `relations_only` when the inverse needs no field material. The original
+operation must declare and perform the relation reads, including absence at a
+new endpoint pair. Correction material distinguishes an authenticated empty
+locus from unavailable material with `relation_count`; `relation_at` supplies
+each original/performed endpoint pair. `output_entity` supplies the original
+role coordinate. These coordinates describe history and grant no current write
+access: reacquire a surviving endpoint with `reader.resolve_historical_entity`,
+and use each inverse Create for a restored authored anchor. Remove the original
+replacement links and recreate exactly the prior endpoint pairs. A changed,
+missing, extra or foreign inverse refuses before effect with
+`relation_preimage_failure()` and its actual `affected_records`. Audit-retained
+relation deletion currently refuses `UnsupportedVisibility` before the source
+edit because the existing correction support rules cannot reverse that visibility.
+Explicit Unlink supports a true deletion and exact restoration.
+
+A tracked orbit whose aggregate and complete walk are wholly within the actual
+admitted producer's own predecessor publication supplies output reads. On succession Query retains the
+actual committed postcondition, so replacing an owned edge does not cause a
+second publication. A real upstream change still re-runs the producer, and a
+read of another publication remains a source observation. The original raw reads
+still participate in candidate admission and complete-candidate support checks.
+
+Native derives private aggregate membership deletion and recreation through its
+existing aggregate consequence owner. Applications supply the exact changes for
+application-visible owned edges; they never supply private membership records.
 
 An owned publication cannot use the independent single-publication retirement
 path, including a warm publication capsule. It refuses with
@@ -4062,8 +4168,13 @@ old derived generations. Whole-source authored restoration retains its existing
 in for a producer-created source to join the authored root's cascade.
 An owned publication cannot be
 restored or republished without its live source (`PublicationOwnerUnavailable`).
-These checks govern required-output publication custody; an unbound Native
-transaction remains governed by its ordinary schema and cascade-delete policy.
+Commit admission also fences ordinary Delete and Unlink operations against
+current opted-in publication membership and owned edges, including calls with
+no output roles. Only that publication's authentic succession or an admitted
+cascade covering it can discharge custody. A refusal names the exact entity or
+relation and its owner, before any effect. Deleting an external endpoint also
+requires its live owning publications to participate; it does not adopt the
+endpoint as an owned member.
 
 An input dependency or a reference never implies ownership. Two independent
 producers may read the same source without entering its cascade. Opting in does
@@ -7403,3 +7514,9 @@ an equal-head retained basis. The managed Parent preserves the original result
 limit and cancellation controls. Pending-payments, activity ranking and cursor
 receivers keep their existing contracts; their behavior is covered by their
 ordinary Bank courts and is not supplied by this all-accounts index.
+
+### Published roles and cascade closure evidence
+
+A settled producer's `outputs_of::<Contract>()` reports the roles in that route's canonical Native publication. A shrink may also require Retire witnesses for publications owned by the deleted children. Those witnesses are admission evidence, and are exposed separately through `root_settlement().closure_evidence_of::<Contract>()` and its typed `family_entries::<Family>()`. A closure entry describes a retired identity; it is not an output-role entity and grants no current identity or producer custody. Only the canonical roles participate in producer correspondence and cold readmission. The closure evidence describes this host's performed admission and adds no durable replay obligation. A program may refresh a producer again before it delivers its final root settlement. Each publication has its own correspondence and evidence; the final settlement does not accumulate witnesses from earlier publications in that wave.
+
+Source-scope-owned output cannot be physically suspended independently. The ordinary suspension door refuses `OwnedPublicationRequiresCascade` before publication; the output remains readable and its producer remains settled. Independent output retains the ordinary suspension and exact rematerialization path.

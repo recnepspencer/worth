@@ -63,7 +63,12 @@ where
                 candidate.verification_requirement,
                 witness,
                 &self.reader.invalidation_owner,
-                self.reader.runtime,
+                self.reader.native.committed_runtime().ok_or_else(|| {
+                    WorthQueryCurrentOutputDenial::new(
+                        WorthQueryCurrentOutputDenialKind::OutputUnavailable,
+                        subject,
+                    )
+                })?,
                 self.reader.snapshot,
                 selected,
             )
@@ -81,7 +86,12 @@ where
                 &candidate.correspondence,
                 &facts,
                 self.reader.layout,
-                self.reader.runtime,
+                self.reader.native.committed_runtime().ok_or_else(|| {
+                    WorthQueryCurrentOutputDenial::new(
+                        WorthQueryCurrentOutputDenialKind::OutputUnavailable,
+                        subject,
+                    )
+                })?,
                 self.reader.snapshot,
             )
             .map(|witness| {

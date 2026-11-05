@@ -1,5 +1,6 @@
 mod aspect_versions;
 mod canonical_deltas;
+pub(crate) mod current_records;
 mod deletion_publication;
 mod delta_symbols;
 mod effect;
@@ -22,7 +23,9 @@ pub(crate) use canonical_deltas::{
     CanonicalRecordAspectDelta, EvaluatedAspectBinding, FoundationalPatchFragment,
 };
 pub(crate) use effect::{AdjacencyDelta, AdjacencyDeltaKind, MutationEffect};
-pub(crate) use execution::{apply_plan_to_working_state, MutationApplyOutcome};
+pub(crate) use execution::{
+    apply_plan_to_working_state, apply_plan_with_publication_edges, MutationApplyOutcome,
+};
 pub(crate) use field_versions::visit_changed_fields;
 pub(crate) use record_changes::apply_adjacency_deltas;
 pub(crate) use round_denial::MutationApplyDenial;

@@ -74,7 +74,7 @@ impl<Schema, Operation, Input, Scope>
     WorthQueryRunningApplicationCommit<Schema, Operation, Input, Scope>
 {
     #[doc(hidden)]
-    pub fn into_parts_for_test(self) -> (crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<
+    pub fn into_parts_for_test(self) -> (crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemands, crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<
         Schema,
         Operation,
         Input,
@@ -83,6 +83,7 @@ impl<Schema, Operation, Input, Scope>
         crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
     >,){
         (
+            self.coupled_outputs,
             self.admission,
             self.lease,
             self.provider_attempt,

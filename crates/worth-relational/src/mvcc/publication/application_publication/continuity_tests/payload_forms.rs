@@ -21,13 +21,7 @@ fn succession(
             previous.authority(),
         )
         .unwrap();
-    let meaning = previous
-        .envelope
-        .required_output_origin
-        .as_ref()
-        .unwrap()
-        .meaning
-        .clone();
+    let meaning = previous.origin.as_ref().meaning.clone();
     RequiredOutputPublication::Preserve {
         admission,
         predecessor: previous,
@@ -154,16 +148,7 @@ fn query_shaped_struct_birth_optional_clear_and_fieldless_incidence_keep_warm_an
         );
     }
     let previous = birth.required_output_publication(&installed).unwrap();
-    assert_eq!(
-        previous
-            .envelope
-            .required_output_origin
-            .as_ref()
-            .unwrap()
-            .relations
-            .len(),
-        2
-    );
+    assert_eq!(previous.origin.as_ref().relations.len(), 2);
     release_test_commit_snapshot(&runtime, &birth);
     let no_data = publish(
         &runtime,
@@ -176,7 +161,7 @@ fn query_shaped_struct_birth_optional_clear_and_fieldless_incidence_keep_warm_an
     assert!(no_data.changed_records.is_empty());
     assert_ne!(no_data.commit.commit_id, born_at);
     let previous = no_data.required_output_publication(&installed).unwrap();
-    let origin = previous.envelope.required_output_origin.as_ref().unwrap();
+    let origin = previous.origin.as_ref();
     assert_eq!(origin.birth, born_at);
     assert_eq!(origin.members.len(), 6);
     assert_eq!(origin.relations.len(), 2);
@@ -274,8 +259,8 @@ fn query_shaped_struct_birth_optional_clear_and_fieldless_incidence_keep_warm_an
             &crate::mvcc::native_roles_fixture(&members, RequiredOutputRolePosture::Preserve),
         )
         .unwrap();
-    assert_eq!(readmitted.envelope.commit.commit_id, completed_at);
-    let origin = readmitted.envelope.required_output_origin.as_ref().unwrap();
+    assert_eq!(readmitted.origin.commit.commit_id, completed_at);
+    let origin = readmitted.origin.as_ref();
     assert_eq!(origin.birth, born_at);
     assert_eq!(origin.members.len(), 6);
     assert_eq!(origin.outputs, {

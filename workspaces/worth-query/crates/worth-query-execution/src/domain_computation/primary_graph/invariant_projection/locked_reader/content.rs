@@ -1,9 +1,7 @@
 //! Content references retain field absence evidence instead of collapsing it into Option.
+use super::super::read_basis::NativeProjectionRead;
 use super::WorthQueryApplicationInvariantProjectionReader as Reader;
-use crate::domain_computation::primary_graph::{
-    application_attempt::observe_field_observation_borrowed_admitted,
-    WorthQueryValueDecodeDenial as Stop,
-};
+use crate::domain_computation::primary_graph::WorthQueryValueDecodeDenial as Stop;
 use worth_foundational::facade::{AspectFieldLocator, ContentRefId};
 use worth_query_declaration::facade::application_schema::ContentRefApplicationValueBinding;
 use worth_query_installation::facade::ApplicationSchema;
@@ -20,7 +18,7 @@ impl<S: ApplicationSchema> Reader<'_, S> {
         locator: &AspectFieldLocator,
     ) -> Result<Option<ContentRefId>, Stop> {
         ContentRead {
-            runtime: self.runtime,
+            native: &self.native,
             execution: self.execution,
             snapshot: self.snapshot,
             decode: self.value_decode,
@@ -39,8 +37,8 @@ impl<S: ApplicationSchema> Reader<'_, S> {
         })
     }
 }
-struct ContentRead<'borrow, 'run, 'host> {
-    runtime: &'borrow worth_relational::facade::runtime::RelationalRuntime,
+struct ContentRead<'borrow, 'runtime, 'run, 'host> {
+    native: &'borrow NativeProjectionRead<'runtime>,
     execution: &'borrow worth_execution::ExecutionRequest<'run, 'host>,
     snapshot: &'borrow worth_relational::facade::snapshots::SnapshotHandle,
     decode: &'borrow crate::domain_computation::primary_graph::value_decode::ValueDecodeSession<
@@ -52,7 +50,7 @@ struct ContentRead<'borrow, 'run, 'host> {
     native_stop:
         &'borrow mut Option<worth_relational::facade::transactions::RelationalExecutionDenialCause>,
 }
-impl ContentRead<'_, '_, '_> {
+impl ContentRead<'_, '_, '_, '_> {
     fn run(self, field: ContentFieldRead<'_>) -> Result<Option<ContentRefId>, Stop> {
         let decode = self.decode;
         let result = self.read(field);
@@ -77,7 +75,7 @@ impl ContentRead<'_, '_, '_> {
         }
         self.scope.record(field.entity);
         read_reference(
-            self.runtime,
+            self.native,
             self.execution,
             self.snapshot,
             self.decode,
@@ -105,7 +103,7 @@ struct ContentFieldRead<'a> {
 }
 // One concrete observation engine is shared by every application's typed wrapper.
 fn read_reference(
-    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    native: &NativeProjectionRead<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     decode: &crate::domain_computation::primary_graph::value_decode::ValueDecodeSession<'_>,
@@ -113,8 +111,7 @@ fn read_reference(
     field: ContentFieldRead<'_>,
 ) -> Result<Option<ContentRefId>, Stop> {
     let (name, aspect, key) = field.locus;
-    let observed = observe_field_observation_borrowed_admitted(
-        runtime,
+    let observed = native.observe_field(
         execution,
         snapshot,
         field.entity,

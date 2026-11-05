@@ -7,8 +7,33 @@ use std::{collections::BTreeMap, sync::Arc};
 pub(crate) struct InstalledSourceScopeOwnership(Arc<BTreeMap<String, KindId>>);
 
 impl RelationalInstalledApplicationPublicationAuthority {
+    pub(crate) fn require_current_ownership_storage(
+        &self,
+        basis: &crate::branch::AdmittedRelationalBranchBasis,
+        source: crate::identity::data::EntityId,
+    ) -> Result<(), crate::transactions::data::TransactionCommitError> {
+        if basis
+            .inner
+            .root
+            .schema_authority()
+            .registry()
+            .current_publication_storage
+            .is_none()
+        {
+            return Err(crate::transactions::data::TransactionCommitError::publication(
+                crate::publication::data::PublicationError::authored_retirement(
+                    crate::publication::data::AuthoredRetirementRefusal::CurrentOwnershipStorageMissing,
+                    crate::transactions::data::RecordRef::Entity(source),
+                ),
+            ));
+        }
+        Ok(())
+    }
+
     /// Compiler installation supplies only producers whose declared source query
     /// is exactly its entity scope. This is not an ordinary publication control.
+    /// The installed schema must also use `register_current_publication_storage`;
+    /// declaration alone cannot admit an owned publication without that substrate.
     pub fn with_source_scope_owned_producers(
         mut self,
         producers: impl IntoIterator<Item = (String, KindId)>,

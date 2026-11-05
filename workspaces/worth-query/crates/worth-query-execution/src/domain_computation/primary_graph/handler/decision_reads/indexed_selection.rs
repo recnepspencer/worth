@@ -15,6 +15,23 @@ use crate::domain_computation::primary_graph::{
 impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
     DecisionReader<'_, '_, '_, Schema, Binding>
 {
+    /// Reacquire one historical endpoint through ordinary current entity admission.
+    pub fn resolve_historical_entity<Entity>(
+        &mut self,
+        entity: worth_query_installation::facade::ApplicationEntityRef<Schema, Entity>,
+        id: worth_foundational::facade::EntityId,
+    ) -> Result<WorthQueryInvariantEntityIdentity<Schema, Entity>, HandlerExecutionDenial>
+    where
+        Entity:
+            worth_query_declaration::facade::application_schema::ApplicationEntityMarkerIdentity<
+                    Schema,
+                > + OperationReads<Binding::Operation>,
+    {
+        self.reader
+            .resolve_historical_entity(entity, id)
+            .map_err(HandlerExecutionDenial::new)
+    }
+
     /// Read the complete equality result under a finite candidate budget.
     /// Presence and absence are retained for publication-time comparison.
     /// An overflowing result denies; it never masquerades as a complete set.

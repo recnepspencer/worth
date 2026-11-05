@@ -11,6 +11,7 @@ use crate::domain_computation::primary_graph::{
 };
 
 pub struct RecordedOutput {
+    pub(super) coupled_completion: Option<super::CoupledOutputCompletion>,
     pub(super) producing_implementation:
         Option<worth_relational::facade::mvcc::RequiredOutputProducingImplementation>,
     pub(super) required_publication:

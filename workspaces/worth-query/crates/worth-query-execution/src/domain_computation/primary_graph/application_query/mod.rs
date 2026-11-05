@@ -196,4 +196,7 @@ pub use projection::retained_projection::{
     WorthQueryMaterializedQueryRow, WorthQueryProjectionMaterializationRefusal,
 };
 
+pub(in crate::domain_computation::primary_graph) use observed_source::{
+    AppliedQuerySource, AppliedSourcePublication,
+};
 pub(in crate::domain_computation::primary_graph) use projection::ProjectionContentComparisonFault;

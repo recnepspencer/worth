@@ -47,6 +47,7 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
                 idempotency(187, 188),
             );
             let (
+                _coupled_outputs,
                 admission,
                 lease,
                 _provider_attempt,
@@ -80,11 +81,11 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
             let substitute_lease = WorthQueryApplicationSnapshotLease::acquire_for_test(
                 &phase
                     .execution_request_for_for_test(
-                        &(*(*world.application.runtime_for_test()).product_runtime_for_test()),
+                        (*world.application.runtime_for_test()).product_runtime_for_test(),
                     )
                     .expect("fixture issuer"),
                 lease.handle_for_test().clone(),
-                std::sync::Arc::clone(&(*lease.layout_for_test())),
+                std::sync::Arc::clone(lease.layout_for_test()),
                 lease.product().retained_clone_for_test(),
             )
             .expect("the real branch must issue a second exact snapshot handle");
@@ -107,7 +108,7 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
             let foreign_branch_snapshot = lease.handle_for_test().with_runtime_mut_for_test(
                 &phase
                     .execution_request_for_for_test(
-                        &(*(*world.application.runtime_for_test()).product_runtime_for_test()),
+                        (*world.application.runtime_for_test()).product_runtime_for_test(),
                     )
                     .expect("fixture issuer"),
                 |runtime| {
@@ -121,8 +122,8 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
                         .fork_branch(
                             &phase
                                 .execution_request_for_for_test(
-                                    &(*(*world.application.runtime_for_test())
-                                        .product_runtime_for_test()),
+                                    (*world.application.runtime_for_test())
+                                        .product_runtime_for_test(),
                                 )
                                 .expect("fixture issuer"),
                             foreign.clone(),
@@ -147,7 +148,7 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
             assert!(lease.handle_for_test().with_runtime_mut_for_test(
                 &phase
                     .execution_request_for_for_test(
-                        &(*(*world.application.runtime_for_test()).product_runtime_for_test())
+                        (*world.application.runtime_for_test()).product_runtime_for_test()
                     )
                     .expect("fixture issuer"),
                 |runtime| {
@@ -186,6 +187,7 @@ fn a_real_peer_plan_and_session_cannot_substitute_for_the_captured_attempt() {
                 idempotency(191, 192),
             );
             let (
+                _coupled_outputs,
                 _first_admission,
                 first_lease,
                 _first_provider_attempt,
@@ -199,6 +201,7 @@ fn a_real_peer_plan_and_session_cannot_substitute_for_the_captured_attempt() {
                 _first_aftermath,
             ) = first.into_parts_for_test();
             let (
+                _coupled_outputs,
                 _second_admission,
                 second_lease,
                 _second_provider_attempt,

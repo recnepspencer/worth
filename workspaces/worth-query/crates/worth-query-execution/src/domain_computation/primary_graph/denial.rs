@@ -230,12 +230,30 @@ pub struct WorthQueryPrimaryGraphInstallationDenial {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 enum InstallationDenialCause {
+    NativeRecovery(worth_relational::facade::durability::RelationalRecoveryStop),
     Content(worth_relational::facade::content::RelationalContentDenial),
     Readiness(super::application_contribution::WorthQueryOutputReadinessContractDenial),
     NativeValidation(crate::domain_computation::WorthQueryInvariantExecutionFailure),
 }
 
 impl WorthQueryPrimaryGraphInstallationDenial {
+    /// Original Native current-ownership rejection, without parsing display text.
+    pub fn native_recovery_cause(
+        &self,
+    ) -> Option<&worth_relational::facade::durability::RelationalRecoveryStop> {
+        if let Some(InstallationDenialCause::NativeRecovery(cause)) = self.cause.as_deref() {
+            Some(cause)
+        } else {
+            None
+        }
+    }
+    pub(in crate::domain_computation::primary_graph) fn with_native_recovery_cause(
+        mut self,
+        cause: worth_relational::facade::durability::RelationalRecoveryStop,
+    ) -> Self {
+        self.cause = Some(Box::new(InstallationDenialCause::NativeRecovery(cause)));
+        self
+    }
     pub fn content_cause(
         &self,
     ) -> Option<&worth_relational::facade::content::RelationalContentDenial> {

@@ -3,6 +3,7 @@
 use super::WorthQueryPrimaryGraphApplicationRuntime;
 
 pub(crate) mod attempt_registration;
+mod coupled_participant;
 pub(in crate::domain_computation::primary_graph) use attempt_registration::WorthQueryApplicationAttemptOperationControl;
 pub use attempt_registration::WorthQueryApplicationAttemptRegistrationPauseForTest;
 pub use attempt_registration::WorthQueryApplicationCandidatePreparationPauseForTest;

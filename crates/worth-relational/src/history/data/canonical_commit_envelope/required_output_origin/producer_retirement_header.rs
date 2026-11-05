@@ -10,8 +10,21 @@ impl CanonicalCommitEnvelope {
         &self,
         context: &mut MapKernelContext<'_, '_>,
     ) -> Result<(), Stop> {
-        let Some(event) = &self.producer_cascade_retirement else {
-            if self.required_output_origin.as_ref().is_some_and(|origin| {
+        self.validate_producer_retirement_components(
+            self.required_output_origin.as_deref(),
+            self.producer_cascade_retirement.as_deref(),
+            context,
+        )
+    }
+
+    pub(super) fn validate_producer_retirement_components(
+        &self,
+        root: Option<&CanonicalRequiredOutputOrigin>,
+        event: Option<&CanonicalProducerRetirement>,
+        context: &mut MapKernelContext<'_, '_>,
+    ) -> Result<(), Stop> {
+        let Some(event) = event else {
+            if root.is_some_and(|origin| {
                 matches!(
                     origin.publication,
                     CanonicalOutputPublication::ProducerRetirement { .. }
@@ -22,10 +35,7 @@ impl CanonicalCommitEnvelope {
             return Ok(());
         };
         let charge = super::super::super::codec_retirement_closure::charge;
-        let root = self
-            .required_output_origin
-            .as_ref()
-            .ok_or("producer cascade lost generator publication")?;
+        let root = root.ok_or("producer cascade lost generator publication")?;
         self.validate_output_origin_header(root)?;
         if self.authored_cascade_retirement.is_some()
             || self.authored_cascade_restoration.is_some()

@@ -1,5 +1,9 @@
+mod applied_entity_field_lookup;
 mod bounded_entity_field_lookup;
 mod field_candidate_comparison;
+pub use applied_entity_field_lookup::{
+    AppliedEntityFieldLookupDenial, AppliedEntityFieldLookupOutcome, AppliedEntityFieldMatch,
+};
 mod pinned_entity_field_lookup;
 pub use bounded_entity_field_lookup::BoundedEntityFieldLookupRead;
 mod selected_entity_field_lookup;

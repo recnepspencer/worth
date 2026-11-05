@@ -44,7 +44,7 @@ impl WorkerIntentBatch {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 /// A typed physical record identity. Its domain stays distinct; the value
 /// alone confers no read, allocation or mutation authority.
 pub enum RecordRef {

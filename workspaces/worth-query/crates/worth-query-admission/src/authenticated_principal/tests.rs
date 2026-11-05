@@ -329,6 +329,7 @@ fn owned_monotonic_clock_holds_and_advances_authentication_and_deadlines() {
     )
     .unwrap();
     let proof = block_on(adapter.authenticate(TestCredential::Valid, &scope)).unwrap();
+    let copied = proof.clone();
     assert_eq!(clock.now(), held);
     assert_eq!(time.hold(), held);
     assert!(!proof.is_expired());
@@ -341,6 +342,10 @@ fn owned_monotonic_clock_holds_and_advances_authentication_and_deadlines() {
         held + Duration::from_secs(61)
     );
     assert!(proof.is_expired());
+    assert!(
+        copied.is_expired(),
+        "a copied proof retains its original clock"
+    );
     assert_eq!(scope.interruption(), None);
     time.advance(Duration::from_secs(59)).unwrap();
     assert_eq!(

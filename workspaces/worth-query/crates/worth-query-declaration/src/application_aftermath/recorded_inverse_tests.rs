@@ -32,13 +32,11 @@ fn duplicate_exact_locus_is_denied() {
 }
 
 #[test]
-fn multiple_entity_roles_are_denied_before_installation() {
+fn heterogeneous_loci_defer_authored_anchor_admission_to_installation() {
     let first = locus::<FirstEntity, FirstField>("FirstEntity", "Aspect", "FirstField");
     let second = locus::<SecondEntity, SecondField>("SecondEntity", "Aspect", "SecondField");
-    assert_eq!(
-        DeclaredPreImageDemand::new([first, second], 64),
-        Err(DeclaredPreImageDemandDenial::MultipleEntityRoles)
-    );
+    let demand = DeclaredPreImageDemand::new([first, second], 64).unwrap();
+    assert_eq!(demand.loci().len(), 2);
 }
 
 #[test]

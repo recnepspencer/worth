@@ -35,15 +35,6 @@ impl<'runtime, Schema> WorthQueryApplicationInvariantProjectionReader<'runtime, 
     }
 }
 
-impl<'runtime, Schema> WorthQueryApplicationInvariantProjectionReader<'runtime, Schema> {
-    #[doc(hidden)]
-    pub fn runtime_for_test(
-        &self,
-    ) -> &&'runtime mut worth_relational::facade::runtime::RelationalRuntime {
-        &self.runtime
-    }
-}
-
 impl<Schema> WorthQueryApplicationInvariantProjectionAuthority<Schema>
 where
     Schema: ApplicationSchema,
@@ -81,5 +72,12 @@ impl<'runtime, Schema> WorthQueryApplicationInvariantProjectionReader<'runtime, 
     #[doc(hidden)]
     pub fn work_for_test(&self) -> &WorthQueryInvariantProjectionWork {
         &self.work
+    }
+}
+
+impl<'runtime, Schema> WorthQueryApplicationInvariantProjectionReader<'runtime, Schema> {
+    #[doc(hidden)]
+    pub fn native_for_test(&self) -> &NativeProjectionRead<'runtime> {
+        &self.native
     }
 }

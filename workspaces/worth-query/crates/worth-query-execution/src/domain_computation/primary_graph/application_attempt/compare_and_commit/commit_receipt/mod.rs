@@ -1,4 +1,5 @@
 //! Closed application commit receipt.
+pub(in crate::domain_computation::primary_graph) mod recording;
 
 mod committed_changes;
 mod construction;

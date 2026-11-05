@@ -1,3 +1,6 @@
+mod authority_projection;
+mod current_publication_storage;
+pub use current_publication_storage::CurrentPublicationStorage;
 mod aspect_contracts;
 mod aspect_traces;
 mod authority_snapshot;
@@ -100,9 +103,10 @@ pub struct RelationalSchemaRegistry {
     pub(crate) content_formats: crate::content::RelationalContentFormatRegistry,
     pub(crate) entity_kinds: BTreeMap<KindId, EntityKindRegistration>,
     pub(crate) relation_kinds: BTreeMap<KindId, RelationKindRegistration>,
-    /// Compiled only from accepted aggregate contracts; absent from all wire
-    /// and authority encodings because the contracts already own its meaning.
-    pub(crate) aggregate_private_kinds: std::collections::BTreeSet<KindId>,
+    /// Compiled from accepted Native metadata contracts. The declarations in
+    /// the schema snapshot, not this derived index, own the durable meaning.
+    pub(crate) native_private_kinds: std::collections::BTreeSet<KindId>,
+    pub(crate) current_publication_storage: Option<CurrentPublicationStorage>,
     pub(crate) derived_relations: BTreeMap<
         crate::derived_relation::DerivedRelationIdentity,
         std::sync::Arc<crate::derived_relation::definition::RegisteredDerivedRelation>,
@@ -171,8 +175,13 @@ impl RelationalSchemaRegistry {
         }
         let registration = crate::schema::canonicalize_relation_registration(registration)?;
         crate::schema::aggregate_identity::validate_binding(&self, &registration)?;
+        crate::schema::current_publication_ownership::validate_binding(&self, &registration)?;
+        if let Some(storage) = &registration.relation_integrity.current_publication_storage {
+            self.native_private_kinds.extend(storage.metadata_kinds());
+            self.current_publication_storage = Some(storage.clone());
+        }
         if let Some(contract) = &registration.relation_integrity.aggregate_identity {
-            self.aggregate_private_kinds.extend([
+            self.native_private_kinds.extend([
                 contract.storage.aggregate_kind,
                 contract.storage.lineage_kind,
                 contract.membership_kind,
@@ -327,70 +336,5 @@ impl RelationalSchemaRegistry {
             }
         }
         Ok(Some((schema_id.clone(), schema_version_id)))
-    }
-
-    pub fn authority_snapshot(&self) -> SchemaAuthoritySnapshot {
-        let (primary_schema_id, primary_schema_version_id) = self
-            .authoritative_schema_basis()
-            .ok()
-            .flatten()
-            .map(|(schema_id, schema_version_id)| (Some(schema_id), Some(schema_version_id)))
-            .unwrap_or((None, None));
-
-        let entity_kinds = self
-            .entity_kinds
-            .iter()
-            .map(|(kind_id, registration)| SchemaAuthorityKindSnapshot {
-                kind_id: *kind_id,
-                kind_name: registration.kind_name.clone(),
-                schema_id: registration.schema_id.clone(),
-                schema_version_id: registration.schema_version_id,
-                aspect_plan_revision: registration.aspect_contract_declarations.plan_revision,
-            })
-            .collect();
-        let relation_kinds = self
-            .relation_kinds
-            .iter()
-            .map(|(kind_id, registration)| SchemaAuthorityRelationSnapshot {
-                kind_id: *kind_id,
-                kind_name: registration.kind_name.clone(),
-                schema_id: registration.schema_id.clone(),
-                schema_version_id: registration.schema_version_id,
-                aspect_plan_revision: registration.aspect_contract_declarations.plan_revision,
-                relation_integrity_plan_revision: derive_relation_integrity_plan_revision(
-                    &registration.relation_integrity.endpoint_kind_contracts,
-                    &registration.relation_integrity.cardinality_contracts,
-                    &registration.relation_integrity.uniqueness_contracts,
-                    &registration.relation_integrity.symmetry_contracts,
-                    &registration
-                        .relation_integrity
-                        .endpoint_deletion_integrity_contracts,
-                    &registration.relation_integrity.acyclicity_contracts,
-                    &registration
-                        .relation_integrity
-                        .partition_isolation_contracts,
-                    &registration
-                        .relation_integrity
-                        .connectivity_minimum_contracts,
-                    registration.relation_integrity.aggregate_identity.as_ref(),
-                ),
-                cross_context_policy: registration.cross_context_policy,
-                cascade_delete_policy: registration.cascade_delete_policy,
-            })
-            .collect();
-
-        SchemaAuthoritySnapshot {
-            content_formats: self.content_formats.snapshot(),
-            primary_schema_id,
-            primary_schema_version_id,
-            entity_kinds,
-            relation_kinds,
-            derived_relations: self.derived_parts(),
-            projected_member_domains: self.projected_domain_parts(),
-        }
-    }
-
-    pub fn authority_digest_bytes(&self) -> [u8; 32] {
-        schema_authority_snapshot_digest_bytes(&self.authority_snapshot())
     }
 }

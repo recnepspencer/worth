@@ -61,6 +61,7 @@ impl PreparedOutputLineageSlot {
         prior_computation: Option<super::super::PriorComputationRecord>,
         filled: bool,
         computation: PreparedComputationCustody,
+        coupled_completion: Option<super::super::CoupledOutputCompletion>,
     ) -> Self {
         Self {
             owner,
@@ -81,6 +82,7 @@ impl PreparedOutputLineageSlot {
             prior_computation,
             filled,
             computation,
+            coupled_completion,
         }
     }
 }

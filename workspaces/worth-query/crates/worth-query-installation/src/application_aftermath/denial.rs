@@ -8,6 +8,7 @@ pub enum WorthQueryAftermathInstallationDenialKind {
     ReconciliationForbidden,
     ExternalEffectRejectsReversible,
     PreImageDemandNotCoveredByDeclaredReads,
+    PreImageDemandNotCoveredByAuthoredAnchors,
     PreImageDemandExceedsBound,
     CanonicalEntryLimitExceeded,
     CanonicalByteLimitExceeded,

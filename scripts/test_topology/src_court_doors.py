@@ -145,6 +145,7 @@ def write_report(report, name, data):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('step', choices=('items', 'interface', 'members', 'normalize', 'bodies', 'callers', 'inventory', 'uses', 'parts', 'certification-callers', 'denial-exclusions', 'doc-links'))
+    parser.add_argument('--caller', type=Path, action='append', default=[], help='callers: include these exact additional court or testkit source files')
     parser.add_argument('--base', default='038ff2869d')
     parser.add_argument('--dry-run', action='store_true', help='members, parts: write nothing, report and validate')
     parser.add_argument('--types', nargs='*', default=[], help='parts: the structs given destructuring doors')
@@ -187,7 +188,7 @@ def main(argv=None):
         print(f'{relocate_doc_links(root)} doc links relocated')
     elif args.step == 'callers':
         from src_door_callers import update_callers
-        print(f'{update_callers(root)} control-callers lines added')
+        print(f'{update_callers(root, [root / path for path in args.caller])} control-callers lines added')
     elif args.step == 'bodies':
         from src_door_bodies import body_check
         result = body_check(root, args.base)

@@ -11,6 +11,7 @@ pub(super) fn validate(
     runtime: &RelationalRuntime,
     envelope: &CanonicalCommitEnvelope,
     context: &mut MapKernelContext<'_, '_>,
+    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
 ) -> Result<(), Stop> {
     let Some(event) = &envelope.producer_cascade_retirement else {
         return Ok(());
@@ -51,14 +52,14 @@ pub(super) fn validate(
             "producer retirement anchors differ from canonical predecessor deletions".into(),
         );
     }
-    let latest = source_scope_closure::current(
+    let latest = source_scope_closure::historical_positions(
         envelope.commit.parents.first().copied(),
         runtime.history.catalog_len(),
         None,
         &mut |commit| runtime.history.canonical_envelope(commit),
         &mut |event, context| {
             if event.required_output_materialization.is_some() {
-                super::materialization::validate_semantics(runtime, event, context, None)?;
+                super::materialization::validate_semantics(runtime, event, context, None, schema)?;
             }
             Ok(())
         },

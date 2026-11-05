@@ -66,7 +66,10 @@ impl<Schema: ApplicationSchema, Operation>
             self.admit_decision_target(&relation_target(&relation))
                 .map_err(|denial| decision_traversal_denial(&denial))?;
             let walk = self.reader.closure(relation, direction, roots)?;
-            if !walk.issued_at(self.reader.snapshot, self.reader.authority_identity) {
+            if !walk.issued_at(
+                &self.reader.native.origin(self.reader.snapshot),
+                self.reader.authority_identity,
+            ) {
                 return Err(WorthQueryInvariantProjectionTraversalDenial::new(
                     Kind::ForeignIdentity,
                     relation.name(),

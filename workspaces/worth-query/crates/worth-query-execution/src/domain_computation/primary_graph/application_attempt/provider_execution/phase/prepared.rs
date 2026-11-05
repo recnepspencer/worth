@@ -40,7 +40,13 @@ use currentness::{
 pub(crate) mod running;
 pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) use local_workflow_settlement::LocalWorkflowSettlementPublication;
 
-pub struct WorthQueryPreparedApplicationCommit<Schema, Operation, Input, Scope> {
+pub struct WorthQueryPreparedApplicationCommit<
+    Schema,
+    Operation,
+    Input,
+    Scope,
+> {
+    coupled_outputs: crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemands,
     admission: crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<
         Schema,
         Operation,
@@ -86,6 +92,7 @@ pub struct WorthQueryApplicationCommitPreparationRequest<
     Input,
     Scope,
 > {
+    coordination: Option<&'a crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination<'a>>,
     entry: CurrentCommitProgram<
         'a,
         'phase,
@@ -109,6 +116,14 @@ impl<'a, 'phase, 'request, Schema, Operation, Input, Scope>
         Scope,
     >
 {
+    pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) fn under_coordination(
+        mut self,
+        coordination: &'a crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination<'a>,
+    ) -> Self {
+        self.coordination = Some(coordination);
+        self
+    }
+
     pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) fn new(
         entry: CurrentCommitProgram<
             'a,
@@ -122,6 +137,7 @@ impl<'a, 'phase, 'request, Schema, Operation, Input, Scope>
         aftermath_causality: Option<WorthQueryPendingAftermathCausality>,
     ) -> Self {
         Self {
+            coordination: None,
             entry,
             idempotency,
             elevation_currentness,
@@ -161,6 +177,7 @@ struct WorthQueryProviderAttemptPreparation {
 }
 
 struct WorthQueryCurrentApplicationCommit<Schema, Operation, Input, Scope> {
+    coupled_outputs: crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemands,
     admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     lease: WorthQueryApplicationSnapshotLease,
     provider: WorthQueryProviderAttemptPreparation,
@@ -180,6 +197,7 @@ where
     Schema: ApplicationSchema,
 {
     let WorthQueryCurrentApplicationCommit {
+        coupled_outputs,
         mut admission,
         lease,
         provider,
@@ -230,6 +248,7 @@ where
             }
         };
     WorthQueryApplicationCommitPreparation::Ready(WorthQueryPreparedApplicationCommit {
+        coupled_outputs,
         admission,
         lease,
         provider_attempt,
@@ -279,5 +298,10 @@ const fn terminal<Schema, Operation, Input, Scope>(
 ) -> WorthQueryApplicationCommitPreparation<Schema, Operation, Input, Scope> {
     WorthQueryApplicationCommitPreparation::Terminal(outcome)
 }
+
+pub(in crate::domain_computation::primary_graph) use running::progression::coupled::{
+    inspect_coupled_application, prepare_coupled_application, register_coupled_application,
+    ApprovedCoupledWriter, CommitPreparedCoupledWriter, InspectedCoupledWriter,
+};
 
 mod court_doors_for_test;

@@ -16,6 +16,7 @@ use worth_foundational::facade::{AspectValue, InternedString};
 
 use super::WorthQueryPrimaryGraphApplicationRuntime;
 mod native_field_write;
+mod owned_publication;
 mod publication;
 mod signal_publication;
 mod workflow_approval;
