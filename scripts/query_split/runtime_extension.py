@@ -320,6 +320,8 @@ def rewrite_holders(text, host_path, core_fields, top_fields, needs):
         b = m.end() - 1
         edits.append((a, b, f" &{m.group(3) or ''}dyn {host_path}<{m.group(4)}>"))
     for m in re.finditer(r"fn\s+(\w+)\s*(<[^(]*>)?\s*\(\s*&\s*self\s*\)\s*->\s*" + RUNTIME_TYPE.pattern, text):
+        if re.search(r'(?<![\w(])pub\s+(const\s+)?$', text[max(0, m.start() - 20):m.start()]):
+            continue  # a public accessor keeps handing out the runtime (consumer API)
         holders.add(m.group(1))
         start = m.start(0) + m.group(0).index('->') + 2
         edits.append((start, m.end(0), f" &{m.group(3) or ''}dyn {host_path}<{m.group(4)}>"))
