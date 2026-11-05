@@ -23,6 +23,7 @@ pub(in crate::domain_computation::primary_graph) enum HistoryOutputLookup {
         branch: crate::basis::WorthQueryProductBranch,
         source: Arc<crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation>,
         profile: WorthQueryHistoryOutputProfile,
+        selected_graph: Option<worth_relational::facade::mvcc::RelationalBranchObservation>,
     },
     Selected {
         key: [u8; 32],
@@ -81,6 +82,17 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
                 source.product_observation().lifecycle_incarnation(),
             ),
             source,
+            selected_graph: progress.ownership.map(|_| {
+                progress
+                    .source
+                    .as_ref()
+                    .expect("an output attempt retains its selected preview")
+                    .source
+                    .product_observation()
+                    .basis()
+                    .relational_basis()
+                    .observation()
+            }),
             profile: progress
                 .output_profile
                 .as_ref()

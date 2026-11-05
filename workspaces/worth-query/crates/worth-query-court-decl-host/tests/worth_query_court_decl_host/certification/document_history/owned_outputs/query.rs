@@ -9,10 +9,10 @@ pub struct Row {
 worth_query_structured_value_binding!(pub RowBinding for Row { identity: "owned-outputs.row.v1" });
 pub struct Parameters;
 worth_query_structured_value_binding!(pub ParametersBinding for Parameters { identity: "owned-outputs.parameters.v1" });
-macro_rules! scalar_read { ($module:ident, $entity:ident, $facts:ident, $key:ident, $value:ident, $semantic:literal, $query:literal, $binding:literal, $input:literal) => { pub mod $module {
+macro_rules! scalar_read { ($module:ident, $entity:ident, $facts:ident, $key:ident, $value:ident, $semantic:literal, $query:literal, $binding:literal, $input:literal, $name:literal, $authorization:ident $(, $ability:expr)?) => { pub mod $module {
 use super::*;
 use super::super::schema::{$entity as Entity, $facts as Facts, $key as Key, $value as Value};
-worth_query_application_query!(pub Query for Schema, identity $query, parameters ParametersBinding, result RowBinding, scope Entity => $semantic, name $semantic);
+worth_query_application_query!(pub Query for Schema, identity $query, parameters ParametersBinding, result RowBinding, scope Entity => $semantic, name $name);
 pub struct KeySlot;
 pub struct ValueSlot;
 worth_query_portable_type!(KeySlot => "owned-outputs.key-slot.v1");
@@ -36,7 +36,7 @@ pub fn declare(schema: ApplicationSchemaDeclarationBuilder<Schema>) -> Applicati
         .disclosure(ApplicationQueryDisclosureContract::public())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
-        .public()
+        .$authorization($($ability)?)
         .build()
         .unwrap();
     schema
@@ -97,7 +97,9 @@ scalar_read!(
     "Model",
     "owned-outputs.model-read.v1",
     "owned-outputs.model-binding.v1",
-    "owned-outputs.model-input.v1"
+    "owned-outputs.model-input.v1",
+    "Model",
+    public
 );
 scalar_read!(
     member,
@@ -108,7 +110,10 @@ scalar_read!(
     "Member",
     "owned-outputs.member-read.v1",
     "owned-outputs.member-binding.v1",
-    "owned-outputs.member-input.v1"
+    "owned-outputs.member-input.v1",
+    "Member",
+    requires_ability,
+    permission::ReadMember::reference()
 );
 scalar_read!(
     first_output,
@@ -119,7 +124,9 @@ scalar_read!(
     "FirstOutput",
     "owned-outputs.first-read.v1",
     "owned-outputs.first-binding.v1",
-    "owned-outputs.first-input.v1"
+    "owned-outputs.first-input.v1",
+    "FirstOutput",
+    public
 );
 scalar_read!(
     second_output,
@@ -130,12 +137,43 @@ scalar_read!(
     "SecondOutput",
     "owned-outputs.second-read.v1",
     "owned-outputs.second-binding.v1",
-    "owned-outputs.second-input.v1"
+    "owned-outputs.second-input.v1",
+    "SecondOutput",
+    public
+);
+scalar_read!(
+    member_public,
+    Member,
+    MemberFacts,
+    MemberKey,
+    MemberValue,
+    "Member",
+    "owned-outputs.member-public-query.v1",
+    "owned-outputs.member-public-binding.v1",
+    "owned-outputs.member-public-input.v1",
+    "MemberPublicRead",
+    public
+);
+scalar_read!(
+    child_output,
+    ChildOutput,
+    ChildFacts,
+    ChildKey,
+    ChildValue,
+    "ChildOutput",
+    "owned-outputs.child-read.v1",
+    "owned-outputs.child-binding.v1",
+    "owned-outputs.child-input.v1",
+    "ChildOutput",
+    public
 );
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-    second_output::declare(first_output::declare(member::declare(model::declare(
-        schema,
-    ))))
+    let schema = model::declare(schema);
+    let schema = member::declare(schema);
+    let schema = first_output::declare(schema);
+    let schema = second_output::declare(schema);
+    let schema = child_output::declare(schema);
+    member_public::declare(schema)
 }

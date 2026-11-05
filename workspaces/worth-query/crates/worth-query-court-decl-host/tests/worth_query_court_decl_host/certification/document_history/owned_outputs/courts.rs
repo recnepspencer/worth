@@ -118,8 +118,8 @@ fn two_families_settle_after_a_recorded_model_edit() {
 }
 
 /// Prepare and advance a checkout of one recorded step until it ends.
-pub(super) fn checkout(
-    document: &world::Document<'_>,
+pub(super) fn checkout<O: WorthQueryHistoryOutputsMode<Schema, History>>(
+    document: &WorthQueryApplicationHistoryDocument<'_, Schema, History, OrdinaryHistoryPayload, O>,
     request: &Request<'_, '_, '_>,
     target: WorthQueryHistoryNodeId,
     expected: WorthQueryHistorySelection,

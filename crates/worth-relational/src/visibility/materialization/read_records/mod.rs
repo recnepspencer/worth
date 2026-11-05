@@ -22,8 +22,8 @@ pub use projection::{
     RelationalAspectPresenceSupportDenial, RelationalBorrowedRecordReadDenial,
     RelationalEntityMetadata, RelationalEntityRetirement, RelationalFieldSupportComparisonDenial,
     RelationalHistoricalSelectionRead, RelationalHistoricalSelectionReadDenial,
-    RelationalProjectedFieldObservation, RelationalProjectionContractDenial,
-    RelationalRelationMetadata, VisibilityProjectionView,
+    RelationalHistoricalSourcePresence, RelationalProjectedFieldObservation,
+    RelationalProjectionContractDenial, RelationalRelationMetadata, VisibilityProjectionView,
 };
 pub use reader::{
     AdjacencyTruthReadLimitExceeded, BoundedAdjacencyTruthRead, BoundedEntityKindTruthRead,

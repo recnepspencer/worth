@@ -62,6 +62,7 @@ where
             runtime,
             &shared,
             Some(&control),
+            commit_authority.history_control(),
             external_principal,
             request_scope,
             &input,

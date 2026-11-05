@@ -90,14 +90,34 @@ where
             }
             let root_demand = self.demand.clone();
             let tree_demand = self.demand.clone();
-            let (admitted, source) = request.query(self.demand.source_intent()).with_admitted_query(phase,
+            let (admitted, source) = if self.profile.uses_owned_model_graph() {
+                let read = request
+                    .application
+                    .execute_owned_history_root_output_query::<Source<S, R>>(
+                        phase,
+                        authority,
+                        request.principal,
+                    )
+                    .map_err(Denial::Source)?;
+                self.application
+                    .admit_history_program_root_output::<R>(
+                        phase,
+                        &program_publication_access(),
+                        read,
+                        self.controls
+                            .resolve(self.application.runtime().output_demand_resource_profile()),
+                    )
+                    .map_err(Denial::Root)?
+            } else {
+                request.query(self.demand.source_intent()).with_admitted_query(phase,
                 |runtime, binding, external, plan| {
                     let read = runtime.execute_history_root_output_query(phase, authority, binding, external, plan)
                         .map_err(crate::application_entry::WorthQueryApplicationRequestQueryDenial::HistoryOutput)?;
                     Ok(self.application.admit_history_program_root_output::<R>(
                         phase, &program_publication_access(), read,
                         self.controls.resolve(self.application.runtime().output_demand_resource_profile())))
-                }).map_err(Denial::Query)?.map_err(Denial::Root)?;
+                }).map_err(Denial::Query)?.map_err(Denial::Root)?
+            };
             let root = WorthQueryApplicationProgramDemandHandle::new_history(
                 admitted,
                 root_demand,

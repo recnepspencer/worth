@@ -115,20 +115,26 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
         if profile.model != *model || profile.program != *current_program.revision() {
             return Err(correction(Eligibility::ProgramChanged));
         }
-        Some(
-            supported
-                .installed
-                .action_inventory()
-                .declarations()
-                .get(profile.delivery_index)
-                .and_then(|action| action.delivery())
-                .and_then(|delivery| delivery.output())
-                .filter(|output| {
-                    output.root_type() == profile.root
-                        && output.read().is_none_or(|read| read == &access)
-                })
-                .ok_or_else(|| correction(Eligibility::RequiredOutputs))?,
-        )
+        if let super::output_profile::HistoryOutputRegistration::ActionDelivery(delivery_index) =
+            profile.registration
+        {
+            Some(
+                supported
+                    .installed
+                    .action_inventory()
+                    .declarations()
+                    .get(delivery_index)
+                    .and_then(|action| action.delivery())
+                    .and_then(|delivery| delivery.output())
+                    .filter(|output| {
+                        output.root_type() == profile.root
+                            && output.read().is_none_or(|read| read == &access)
+                    })
+                    .ok_or_else(|| correction(Eligibility::RequiredOutputs))?,
+            )
+        } else {
+            None
+        }
     } else {
         None
     };
@@ -143,7 +149,14 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
             });
         if relevant
             && (action.required_output_source() || output.is_some())
-            && (expected_output.is_none() || output != expected_output)
+            && if let Some(profile) = outputs.filter(|profile| profile.uses_owned_model_graph()) {
+                output.is_some_and(|output| {
+                    output.root_type() != profile.root
+                        || output.read().is_some_and(|read| read != &access)
+                })
+            } else {
+                expected_output.is_none() || output != expected_output
+            }
         {
             return Err(correction(Eligibility::RequiredOutputs));
         }

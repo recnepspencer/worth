@@ -247,6 +247,21 @@ fn bounded_requests_refuse_and_worker_only_requests_poll_without_accounting() {
     let worker = &ExecutionRequest::leased(&lease);
     assert!(!worker.has_accounting());
     let evidence = world.evidence(worker).unwrap();
+    assert_eq!(
+        evidence
+            .source_presence(worker, world.model, KindId(1))
+            .unwrap(),
+        worth_relational::facade::runtime::RelationalHistoricalSourcePresence::LiveInDomain
+    );
+    let source_bounded = SerialRequest::from_policy(&policy, CancellationToken::new(), None);
+    assert!(matches!(
+        evidence.source_presence(
+            &ExecutionRequest::serial(&source_bounded),
+            world.model,
+            KindId(1)
+        ),
+        Err(ReadDenial::Request(_))
+    ));
     assert!(evidence
         .matches_field_revision(worker, &world.current(), world.model, &note(), expected)
         .unwrap());

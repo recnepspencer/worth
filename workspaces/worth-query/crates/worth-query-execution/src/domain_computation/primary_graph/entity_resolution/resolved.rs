@@ -72,6 +72,7 @@ pub struct WorthQueryApplicationEntityIdentity<Schema, Entity> {
     _marker: PhantomData<fn() -> (Schema, Entity)>,
 }
 
+#[derive(Clone)]
 pub struct WorthQueryResolvedEntity {
     entity_id: EntityId,
     entity_kind: KindId,
@@ -87,6 +88,27 @@ pub struct WorthQueryResolvedEntity {
 }
 
 impl WorthQueryResolvedEntity {
+    pub(super) fn matches_source<Q>(
+        &self,
+        source: &super::super::WorthQueryObservedSource<Q>,
+    ) -> bool {
+        self.entity_id == source.model_root
+            && self.runtime_authority.as_u64() == source.runtime_authority
+            && self.binding_identity == source.schema_binding
+    }
+    pub(super) fn retained_capacity_bytes(&self) -> Option<usize> {
+        self.entity_name
+            .capacity()
+            .checked_add(self.identity_locator.owned_allocation_capacity_bytes())?
+            .checked_add(self.identity_value.owned_allocation_capacity_bytes())
+    }
+    pub(super) fn locator(&self) -> &AspectFieldLocator {
+        &self.identity_locator
+    }
+    pub(super) fn value(&self) -> &AspectValue {
+        &self.identity_value
+    }
+
     pub(super) fn from_lookup(
         installed: &super::WorthQueryInstalledEntityResolutionContext,
         layout: &super::super::schema_layout::WorthQueryPrimaryFieldLayout,
@@ -139,6 +161,24 @@ impl WorthQueryResolvedEntity {
 }
 
 impl<Schema, Entity> WorthQueryApplicationEntityIdentity<Schema, Entity> {
+    /// Retain the actual resolver's description, including its full generation.
+    /// This copies no permission and makes no claim about a later basis.
+    pub(super) fn retain_description(&self) -> WorthQueryResolvedEntity {
+        WorthQueryResolvedEntity {
+            entity_id: self.entity_id,
+            entity_kind: self.entity_kind,
+            entity_name: self.entity_name.clone(),
+            binding_identity: self.binding_identity.clone(),
+            runtime_authority: self.runtime_authority,
+            identity_index_id: self.identity_index_id,
+            identity_index_generation: self.identity_index_generation,
+            identity_locator: self.identity_locator.clone(),
+            identity_value: self.identity_value.clone(),
+            examined_candidate_count: self.examined_candidate_count,
+            resolution_mode: self.resolution_mode,
+        }
+    }
+
     pub fn binding_identity(&self) -> &ApplicationSchemaBindingIdentity {
         &self.binding_identity
     }

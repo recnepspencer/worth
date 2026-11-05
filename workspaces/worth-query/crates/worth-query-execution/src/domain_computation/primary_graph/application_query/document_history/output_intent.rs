@@ -1,4 +1,6 @@
 //! Complete source intent captured from a real plan, without its grant or session.
+mod owned_scope;
+mod source_read;
 use super::output_read::{control_denial, HistoryOutputControlPlan};
 use super::*;
 use crate::domain_computation::primary_graph::{
@@ -67,7 +69,9 @@ fn fund_comparison(
         execution.has_accounting(),
         bytes,
     )?;
-    match execution.run_native_with_checkpoint(|context| context.checkpoint(work)) {
+    match execution.run_native_with_checkpoint(|context| {
+        crate::domain_computation::primary_graph::admitted_capture::checkpoint(context, work)
+    }) {
         Ok((result, _)) => result?,
         Err(stop) => return Err(stop.into()),
     }
@@ -75,6 +79,22 @@ fn fund_comparison(
 }
 
 impl WorthQueryHistoryOutputIntent {
+    pub(in crate::domain_computation::primary_graph) fn source_subject(
+        &self,
+    ) -> worth_relational::facade::identity::EntityId {
+        self.backing.scope.subject()
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn matches_output_source<Q>(
+        &self,
+        source: &crate::domain_computation::primary_graph::WorthQueryObservedSource<Q>,
+        observation: &crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
+    ) -> bool {
+        self.backing.scope.matches_source(source)
+            && matches!(&source.selection,
+            crate::domain_computation::primary_graph::WorthQueryApplicationBasisSelectionIdentity::Product(product)
+                if product.matches_observation(observation.product_observation()))
+    }
     /// This identifies original immutable custody, not semantic equivalence.
     pub(in crate::domain_computation::primary_graph) fn same_custody(&self, other: &Self) -> bool {
         Arc::ptr_eq(&self.backing, &other.backing)
@@ -145,18 +165,16 @@ impl WorthQueryHistoryOutputIntent {
         )
         .map_err(ReadDenial::Preparation)?;
         let compared = execution.run_native_with_checkpoint(|_context| {
-            Ok(
-                self.matches_binding(&HistoryModelIdentity::from_resolved(control.scope), binding)
-                    && control.query.identity() == binding.query().identity()
-                    && self.backing.scope.subject() == control.scope.entity_id()
-                    && self.backing.scope.locator() == control.scope.identity_locator()
-                    && self.backing.scope.value() == control.scope.identity_value()
-                    && self
-                        .backing
-                        .parameters
-                        .canonical_basis()
-                        .is_equivalent_to(control.parameters.canonical_basis()),
-            )
+            Ok(self.matches_binding(&self.backing.model, binding)
+                && control.query.identity() == binding.query().identity()
+                && self.backing.scope.subject() == control.scope.entity_id()
+                && self.backing.scope.locator() == control.scope.identity_locator()
+                && self.backing.scope.value() == control.scope.identity_value()
+                && self
+                    .backing
+                    .parameters
+                    .canonical_basis()
+                    .is_equivalent_to(control.parameters.canonical_basis()))
         });
         let matches = match compared {
             Ok((result, _)) => result.map_err(ReadDenial::Preparation)?,
@@ -189,7 +207,6 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             .map_err(control_denial)?;
         if !std::ptr::eq(self, document.application())
             || control.query.identity() != binding.query().identity()
-            || HistoryModelIdentity::from_resolved(control.scope) != document.model
             || !control.controls.is_current_product_one_shot()
             || control.basis.selected_product().observation()
                 != control.security_product.observation()
@@ -203,6 +220,12 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             .map_err(|cause| {
                 ReadDenial::Authority(WorthQueryHistoryNavigationDenial::Stopped(cause))
             })?;
+        self.require_history_output_scope(
+            &execution,
+            document,
+            control.scope,
+            control.basis.selected_product(),
+        )?;
         let (layout, _) = std::alloc::Layout::new::<[usize; 2]>()
             .extend(std::alloc::Layout::new::<IntentBacking>())
             .map_err(|_| ReadDenial::Preparation(Cause::ChargedBytesOverflow))?;

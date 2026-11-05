@@ -248,6 +248,7 @@ where
             control.as_ref().unwrap_or(&shared).selected(),
             control.as_ref().map(|_| shared.selected()),
             controls,
+            history,
             |permission| {
                 if let Some(history) = history {
                     permission

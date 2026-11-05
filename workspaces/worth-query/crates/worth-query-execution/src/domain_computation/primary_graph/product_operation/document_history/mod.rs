@@ -32,7 +32,6 @@ pub(crate) mod navigation;
 pub use navigation::WorthQueryHistoryNavigationPauseForTest;
 pub(in crate::domain_computation::primary_graph) use navigation::{
     HistoryBorrowedReadStop, HistoryDependentSource, HistoryProducerCutover,
-    HistoryProducerInvocation,
 };
 pub(in crate::domain_computation::primary_graph) use navigation::{
     HistoryOutputLookup, HistoryOutputLookupPhase,
@@ -150,3 +149,5 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>> std::fmt::Debug
             .finish_non_exhaustive()
     }
 }
+
+pub(in crate::domain_computation) use navigation::HistoryProducerInvocation;

@@ -80,21 +80,47 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         let shared = selected
             .prepare_shared_query_basis()
             .map_err(|(_, cause)| Stop::Resource(cause))?;
-        let (product, basis) =
-            self.retain_selected_query_basis_admitted(&shared)
-                .map_err(|cause| match cause {
-                    SelectedQueryBasisRetentionStop::Basis => {
-                        Stop::Current(WorthQueryHistoryNavigationDenial::HeadChanged)
-                    }
-                    SelectedQueryBasisRetentionStop::Admission(cause) => Stop::Resource(cause),
-                })?;
-        let controls = WorthQueryApplicationQueryControls::selected_read_one_shot(
-            product,
-            basis,
-            limits.maximum_results(),
-            request,
-        )
-        .map_err(Stop::Resource)?;
+        let historical = history
+            .historical_branch()
+            .map(|branch| {
+                self.on_branch(branch)
+                    .select_with_request(execution)
+                    .map_err(|cause| {
+                        Stop::Current(WorthQueryHistoryNavigationDenial::ProductAdmission(cause))
+                    })?
+                    .prepare_shared_query_basis()
+                    .map_err(|(_, cause)| Stop::Resource(cause))
+            })
+            .transpose()?;
+        let (product, basis) = self
+            .retain_selected_query_basis_admitted(historical.as_ref().unwrap_or(&shared))
+            .map_err(|cause| match cause {
+                SelectedQueryBasisRetentionStop::Basis => {
+                    Stop::Current(WorthQueryHistoryNavigationDenial::HeadChanged)
+                }
+                SelectedQueryBasisRetentionStop::Admission(cause) => Stop::Resource(cause),
+            })?;
+        let controls = if historical.is_some() {
+            WorthQueryApplicationQueryControls::selected_read_one_shot_with_control(
+                shared
+                    .selected()
+                    .product()
+                    .read_lease_ref()
+                    .retained_clone(),
+                product,
+                basis,
+                limits.maximum_results(),
+                request,
+            )
+        } else {
+            WorthQueryApplicationQueryControls::selected_read_one_shot(
+                product,
+                basis,
+                limits.maximum_results(),
+                request,
+            )
+            .map_err(Stop::Resource)?
+        };
         self.with_fresh_retained_query_permission(
             execution,
             &installed,
@@ -102,8 +128,9 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             external,
             observed,
             shared.selected(),
-            None,
+            historical.as_ref().map(|truth| truth.selected()),
             controls,
+            historical.as_ref().map(|_| history),
             |permission| {
                 permission
                     .require_history_principal(history)

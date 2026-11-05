@@ -16,12 +16,15 @@ mod courts;
 mod custody;
 mod edit;
 mod family;
+mod historical_source;
+mod member_delete;
 mod member_edit;
 mod navigation;
+mod permission;
 mod program;
 mod query;
 mod world;
-use family::{first, second};
+use family::{child, first, restricted, second};
 
 pub struct History;
 worth_query_portable_type!(History => "worth.owned-outputs.history.v1");

@@ -95,6 +95,7 @@ where
             runtime,
             shared,
             control.as_ref(),
+            commit_authority.history_control(),
             principal,
             request_scope,
             &input,

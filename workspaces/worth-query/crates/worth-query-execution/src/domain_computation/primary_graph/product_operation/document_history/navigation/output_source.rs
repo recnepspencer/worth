@@ -128,9 +128,11 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
             && profile.program == *self.installed_program().revision()
             && original
                 .belongs_to_selected_occurrence(self.runtime(), original.product_observation())
-            && source
-                .result_set_observation()
-                .is_some_and(|set| profile.model.matches_output_source(set.source(), original));
+            && source.result_set_observation().is_some_and(|set| {
+                profile
+                    .source_intent()
+                    .matches_output_source(set.source(), original)
+            });
         if !matches {
             return Err(Denial::Demand(WorthQueryOutputDemandDenial::new(
                 WorthQueryOutputDemandDenialKind::ForeignDemand,

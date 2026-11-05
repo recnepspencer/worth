@@ -4,6 +4,7 @@ use std::time::Instant;
 use worth_runtime_world::facade::{PreparedWorldRelationalCutover, ProductBranchObservation};
 mod borrowed_read;
 mod read_confirmation;
+mod source_presence;
 
 pub(in crate::domain_computation::primary_graph) enum HistoryBorrowedReadStop {
     Busy,
@@ -17,6 +18,9 @@ pub struct HistoryProducerInvocation<'invocation> {
     principal: &'invocation crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
     selection: &'invocation HistoryAuthorityLifetime,
     callback: &'invocation HistoryAuthorityLifetime,
+    selected_graph: Option<&'invocation worth_relational::facade::mvcc::RelationalBranchObservation>,
+    restored: &'invocation ProductBranchObservation,
+    family: &'static str,
 }
 
 /// A single physical publication borrows both original admitted requests.
@@ -27,9 +31,7 @@ pub(in crate::domain_computation::primary_graph) struct HistoryProducerCutover<'
 }
 
 impl HistoryProducerCutover<'_> {
-    pub(in crate::domain_computation::primary_graph) fn current(
-        &self,
-    ) -> &ProductBranchObservation {
+    pub(in crate::domain_computation) fn current(&self) -> &ProductBranchObservation {
         self.invocation.current.observation()
     }
 
@@ -63,6 +65,11 @@ impl<'invocation> HistoryProducerInvocation<'invocation> {
         principal: &'invocation crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
         selection: &'invocation HistoryAuthorityLifetime,
         callback: &'invocation HistoryAuthorityLifetime,
+        selected_graph: Option<
+            &'invocation worth_relational::facade::mvcc::RelationalBranchObservation,
+        >,
+        restored: &'invocation ProductBranchObservation,
+        family: &'static str,
     ) -> Self {
         Self {
             current,
@@ -70,12 +77,13 @@ impl<'invocation> HistoryProducerInvocation<'invocation> {
             principal,
             selection,
             callback,
+            selected_graph,
+            restored,
+            family,
         }
     }
 
-    pub(in crate::domain_computation::primary_graph) fn current(
-        &self,
-    ) -> &WorthQueryProductObservationLease {
+    pub(in crate::domain_computation) fn current(&self) -> &WorthQueryProductObservationLease {
         self.current
     }
 
@@ -85,14 +93,14 @@ impl<'invocation> HistoryProducerInvocation<'invocation> {
         self.request.lapse()
     }
 
-    pub(in crate::domain_computation::primary_graph) fn admits_principal(
+    pub(in crate::domain_computation) fn admits_principal(
         &self,
         principal: &crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
     ) -> bool {
         self.principal == principal
     }
 
-    pub(in crate::domain_computation::primary_graph) fn admits_request(
+    pub(in crate::domain_computation) fn admits_request(
         &self,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     ) -> bool {

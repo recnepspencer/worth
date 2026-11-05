@@ -132,3 +132,33 @@ fn suspended_selectors_use_only_restored_candidate_metadata() {
         );
     }
 }
+
+#[test]
+fn retired_and_audit_retained_relations_route_only_through_the_restored_candidate() {
+    use crate::{identity::data::VersionId, storage::data::RecordLifecycleState as Lifecycle};
+    let (healthy, entity, relation_id) = image();
+    for lifecycle in [
+        Lifecycle::DeletedRetained,
+        Lifecycle::RetainedDanglingForAudit,
+    ] {
+        let mut retired = healthy.clone();
+        let arena = &mut retired
+            .get_mut(&entity.partition_id)
+            .unwrap()
+            .relation_arena;
+        arena
+            .retire(relation_id.slot_index(), VersionId(2))
+            .unwrap();
+        arena.set_lifecycle_for_slot(relation_id.slot_index(), lifecycle);
+        let before = InvariantStateView::new(&retired, VersionId(2));
+        let after = InvariantStateView::new(&healthy, VersionId(3));
+        assert!(before.relation_metadata(relation_id).is_none());
+        let restored = relation(&before, Some(&after), relation_id).unwrap();
+        assert_eq!(
+            (restored.relation_id, restored.source, restored.target),
+            (relation_id, entity, entity)
+        );
+        // Retained slots alone never supply a current edge or a history fallback.
+        assert!(relation(&before, None, relation_id).is_err());
+    }
+}

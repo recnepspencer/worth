@@ -98,6 +98,27 @@ where
             scope: request.scope,
             branch: document.branch(),
         };
+        if self.profile.uses_owned_model_graph() {
+            let binding = request.application.installed_schema().installed_query_binding::<Source<S, R>>()
+                .map_err(|cause| WorthQueryHistoryNavigationAdvanceDenial::Outputs(Denial::Query(crate::application_entry::WorthQueryApplicationRequestQueryDenial::BindingInstallation(cause))))?;
+            return request
+                .application
+                .prepare_document_history_navigation_with_outputs::<H, N, _>(
+                    phase,
+                    &program_publication_access(),
+                    document,
+                    history_access,
+                    read,
+                    expected,
+                    intent,
+                    key,
+                    self.profile.clone(),
+                    &binding,
+                    None,
+                )
+                .map_err(Denial::from)
+                .map_err(WorthQueryHistoryNavigationAdvanceDenial::Outputs);
+        }
         current
             .query(self.demand.source_intent())
             .with_admitted_query(phase, |runtime, binding, _, plan| {
@@ -113,7 +134,7 @@ where
                         key,
                         self.profile.clone(),
                         binding,
-                        plan,
+                        Some(plan),
                     )
                     .map_err(Denial::from))
             })
@@ -146,32 +167,28 @@ where
             branch: document.branch(),
         };
         let mut original_slot = None;
-        let result = current
-            .query(self.demand.source_intent())
-            .with_admitted_query(phase, |runtime, binding, _, plan| {
-                Ok(runtime
-                    .advance_document_history_navigation_with_outputs::<H, N, _, Denial>(
-                        phase,
-                        &program_publication_access(),
-                        document,
-                        history_access,
-                        read,
-                        navigation,
-                        key,
-                        &self.profile,
-                        binding,
-                        plan,
-                        |registered, step| {
-                            original_slot = Some(registered);
-                            self.progress(phase, &current, registered, step)
-                        },
-                    )
-                    .map_err(Denial::from)
-                    .and_then(|result| result))
-            })
-            .map_err(Denial::Query)
-            .and_then(|result| result)
-            .map_err(WorthQueryHistoryNavigationAdvanceDenial::Outputs);
+        let result = if self.profile.uses_owned_model_graph() {
+            match request.application.installed_schema().installed_query_binding::<Source<S, R>>() {
+                Ok(binding) => request.application.advance_document_history_navigation_with_outputs::<H, N, _, Denial>(
+                    phase, &program_publication_access(), document, history_access, read, navigation, key,
+                    &self.profile, &binding, None, |registered, step| {
+                        original_slot = Some(registered);
+                        self.progress(phase, &current, registered, step)
+                    },
+                ).map_err(Denial::from).and_then(|result| result),
+                Err(cause) => Err(Denial::Query(crate::application_entry::WorthQueryApplicationRequestQueryDenial::BindingInstallation(cause))),
+            }
+        } else {
+            current.query(self.demand.source_intent()).with_admitted_query(phase, |runtime, binding, _, plan| {
+                Ok(runtime.advance_document_history_navigation_with_outputs::<H, N, _, Denial>(
+                    phase, &program_publication_access(), document, history_access, read, navigation, key,
+                    &self.profile, binding, Some(plan), |registered, step| {
+                        original_slot = Some(registered);
+                        self.progress(phase, &current, registered, step)
+                    },
+                ).map_err(Denial::from).and_then(|result| result))
+            }).map_err(Denial::Query).and_then(|result| result)
+        }.map_err(WorthQueryHistoryNavigationAdvanceDenial::Outputs);
         if navigation.posture() == WorthQueryHistoryNavigationPosture::Selected
             && let Some(key) = original_slot
             && let Ok(Some(slot)) = self.existing_slot(&key)

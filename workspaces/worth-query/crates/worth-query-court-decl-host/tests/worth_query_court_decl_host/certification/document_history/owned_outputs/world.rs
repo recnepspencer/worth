@@ -9,7 +9,9 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         contracts: &mut WorthQueryApplicationContributionContracts<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         first::contracts(contracts)?;
-        second::contracts(contracts)
+        second::contracts(contracts)?;
+        child::contracts(contracts)?;
+        restricted::contracts(contracts)
     }
     fn configure(
         _: (),
@@ -17,8 +19,11 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         setup.handler::<edit::Binding, _>(edit::Handler)?;
         setup.handler::<member_edit::Binding, _>(member_edit::Handler)?;
+        setup.handler::<member_delete::Binding, _>(member_delete::Handler)?;
         first::install(setup)?;
-        second::install(setup)
+        second::install(setup)?;
+        child::install(setup)?;
+        restricted::install(setup)
     }
 }
 pub fn install() -> Host {

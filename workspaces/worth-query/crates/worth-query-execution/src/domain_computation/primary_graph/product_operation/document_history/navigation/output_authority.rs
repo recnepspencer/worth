@@ -20,7 +20,7 @@ use worth_query_installation::facade::{
 
 pub(crate) mod producer_invocation;
 pub(in crate::domain_computation::primary_graph) use producer_invocation::{
-    HistoryBorrowedReadStop, HistoryProducerCutover, HistoryProducerInvocation,
+    HistoryBorrowedReadStop, HistoryProducerCutover,
 };
 
 /// This is a dependency on current C, not authority from historical D. It is
@@ -33,6 +33,7 @@ pub struct WorthQueryHistoryOutputAuthority<'phase, 'scope> {
     profile: WorthQueryHistoryOutputProfile,
     current: WorthQueryProductObservationLease,
     original: Arc<WorthQueryApplicationReadObservation>,
+    selected_graph: Option<worth_relational::facade::mvcc::RelationalBranchObservation>,
     request: AdmittedRequestCurrentness,
     principal: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
     selection: HistoryAuthorityLifetime,
@@ -49,6 +50,9 @@ impl WorthQueryHistoryOutputAuthority<'_, '_> {
             &self.principal,
             &self.selection,
             &self.callback,
+            self.selected_graph.as_ref(),
+            self.original.product_observation(),
+            self.profile.family,
         )
     }
 
@@ -112,7 +116,7 @@ impl WorthQueryHistoryOutputAuthority<'_, '_> {
             E,
         >,
     ) -> bool {
-        self.profile.model == super::super::HistoryModelIdentity::from_resolved(access.scope())
+        self.profile.source_intent().source_subject() == access.scope().entity_id()
             && self.matches_read_principal(access)
     }
 
@@ -167,6 +171,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         >,
         profile: &WorthQueryHistoryOutputProfile,
         original: &Arc<WorthQueryApplicationReadObservation>,
+        selected_graph: Option<worth_relational::facade::mvcc::RelationalBranchObservation>,
         callback: impl FnOnce(&WorthQueryHistoryOutputAuthority<'_, 'scope>) -> Output,
     ) -> Result<Output, WorthQueryHistoryNavigationDenial> {
         use WorthQueryHistoryNavigationDenial as Denial;
@@ -206,6 +211,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             profile: profile.clone(),
             current: read.current_product().retained_clone(),
             original: Arc::clone(original),
+            selected_graph,
             request: admission.retain_admitted_request(),
             principal: read.principal(),
             selection,
@@ -217,3 +223,5 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         Ok(output)
     }
 }
+
+pub(in crate::domain_computation) use producer_invocation::HistoryProducerInvocation;

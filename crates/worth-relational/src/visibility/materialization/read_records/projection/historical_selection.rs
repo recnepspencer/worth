@@ -11,6 +11,8 @@ use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 mod antecedent;
 mod chain;
 mod revisions;
+mod source_presence;
+pub use source_presence::RelationalHistoricalSourcePresence;
 
 #[derive(Debug)]
 pub enum RelationalHistoricalSelectionReadDenial {

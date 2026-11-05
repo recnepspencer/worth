@@ -2060,6 +2060,14 @@ identity, while preserving the outside owner's other state. Missing owner
 sources, second ownership and current invariant violations refuse typed; undo
 and redo never silently retire a selected live member.
 
+A configured producer source may exist only in the private restored candidate.
+In that case navigation uses its retained original description to check current
+principal, permission, capability and request facts at the current head first.
+It then validates the source's full generation, liveness and owned-domain
+membership at that exact candidate. Restored grants never authorize the call;
+a refusal preserves the source and family subject and leaves selection unchanged.
+This source-admission path is under qualification alongside all-tree navigation.
+
 To bound selectable history across all futures, declare separate
 `ApplicationHistoryWindowBinding` and `ApplicationHistoryBookmarkBinding`
 recipes and install them with `.window_policy::<Window>()` and

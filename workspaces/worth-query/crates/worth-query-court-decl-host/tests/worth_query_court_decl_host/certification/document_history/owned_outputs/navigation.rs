@@ -2,7 +2,7 @@
 use super::*;
 use worth_query_decl::facade::application_capability::*;
 #[path = "../owned_model/navigation/grant.rs"]
-mod grant;
+pub(super) mod grant;
 worth_query_capability!(pub Navigate in Schema);
 worth_query_capability_context!(pub Context in Schema);
 worth_query_capability_provenance!(pub Provenance in Schema);

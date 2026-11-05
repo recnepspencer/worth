@@ -9,7 +9,13 @@ pub struct Derived;
 impl ApplicationFeature<Schema> for Derived {
     type Inputs = ApplicationFeatureInputList<
         FirstInput,
-        ApplicationFeatureInputList<SecondInput, ApplicationFeatureInputLeaf>,
+        ApplicationFeatureInputList<
+            SecondInput,
+            ApplicationFeatureInputList<
+                ChildInput,
+                ApplicationFeatureInputList<RestrictedInput, ApplicationFeatureInputLeaf>,
+            >,
+        >,
     >;
     const IDENTITY: &'static str = "owned-outputs.derived.v1";
 }
@@ -64,10 +70,29 @@ root!(
     second,
     "owned-outputs.start-second"
 );
+root!(
+    ChildInput,
+    "child-input",
+    StartChild,
+    ChildConnection,
+    ChildTree,
+    child,
+    "owned-outputs.start-child"
+);
+root!(
+    RestrictedInput,
+    "restricted-input",
+    StartRestricted,
+    RestrictedConnection,
+    RestrictedTree,
+    restricted,
+    "owned-outputs.start-restricted"
+);
 pub struct Program;
 impl ApplicationProgramDefinition<Schema> for Program {
     type Contributions = (Contribution,);
-    type Outputs = ApplicationProgramOutputs<(FirstTree, SecondTree)>;
+    type Outputs =
+        ApplicationProgramOutputs<(FirstTree, (SecondTree, (ChildTree, RestrictedTree)))>;
     type Rules = ApplicationRuleLeaf;
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("owned-outputs.program.v1");
@@ -79,12 +104,18 @@ impl ApplicationProgramDefinition<Schema> for Program {
                 .finish_action()
                 .action::<member_edit::Binding, Completion>()
                 .finish_action()
+                .action::<member_delete::Binding, Completion>()
+                .finish_action()
                 .finish(),
             ApplicationFeatureSpec::root::<Schema, Derived>()
                 .conditional_operation::<first::initial::Operation>()
                 .conditional_operation::<first::preserve::Operation>()
                 .conditional_operation::<second::initial::Operation>()
                 .conditional_operation::<second::preserve::Operation>()
+                .conditional_operation::<child::initial::Operation>()
+                .conditional_operation::<child::preserve::Operation>()
+                .conditional_operation::<restricted::initial::Operation>()
+                .conditional_operation::<restricted::preserve::Operation>()
                 .finish(),
         ]
     }
@@ -104,5 +135,13 @@ pub type MemberEditAction = ApplicationActionReference<
     ApplicationRootComposition,
     Entry,
     member_edit::Binding,
+    Completion,
+>;
+
+pub type DeleteMemberAction = ApplicationActionReference<
+    Schema,
+    ApplicationRootComposition,
+    Entry,
+    member_delete::Binding,
     Completion,
 >;

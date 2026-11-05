@@ -124,3 +124,33 @@ impl<S: ApplicationSchema>
         Ok(WorthQueryHistoryRootOutputRead { authority, result })
     }
 }
+
+impl<S: ApplicationSchema>
+    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<S>
+{
+    /// A graph navigation admits its original source without first requiring
+    /// that the historical source still exist at the live current head.
+    pub fn execute_owned_history_root_output_query<'authority, 'phase, 'scope, B>(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        authority: &'authority WorthQueryHistoryOutputAuthority<'phase, 'scope>,
+        external: &WorthQueryAuthenticatedExternalPrincipal<S>,
+    ) -> Result<
+        WorthQueryHistoryRootOutputRead<'authority, 'phase, 'scope, B::Query, Rows<S, B>>,
+        WorthQueryHistoryOutputReadDenial,
+    >
+    where
+        B: ApplicationQueryBinding<S>,
+        Rows<S, B>: WorthQueryApplicationProjection<S, B::Query>,
+    {
+        let installed = self.installed_schema().installed_query_binding::<B>()
+            .map_err(|cause| WorthQueryHistoryOutputReadDenial::Admission(WorthQueryApplicationQueryAdmissionDenial::new(
+                crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::InstalledQuery(cause.kind()), "history graph source",
+            )))?;
+        let result = authority
+            .profile()
+            .source_intent()
+            .execute_graph_source(self, phase, authority, &installed, external)?;
+        Ok(WorthQueryHistoryRootOutputRead { authority, result })
+    }
+}

@@ -31,18 +31,30 @@ pub struct WorthQueryHistoryOutputProfile {
     pub(super) program_type: std::any::TypeId,
     pub(super) root: std::any::TypeId,
     pub(super) recipe: std::any::TypeId,
-    pub(super) delivery_index: usize,
+    pub(super) registration: HistoryOutputRegistration,
+    pub(super) family: &'static str,
     source_intent: crate::domain_computation::primary_graph::WorthQueryHistoryOutputIntent,
 }
 
+#[derive(Clone, Copy, Eq, PartialEq)]
+pub(super) enum HistoryOutputRegistration {
+    ActionDelivery(usize),
+    OwnedProgramRoot,
+}
+
 impl WorthQueryHistoryOutputProfile {
+    pub fn uses_owned_model_graph(&self) -> bool {
+        self.registration == HistoryOutputRegistration::OwnedProgramRoot
+    }
+
     fn same_header(&self, other: &Self) -> bool {
         self.model == other.model
             && self.program == other.program
             && self.program_type == other.program_type
             && self.root == other.root
             && self.recipe == other.recipe
-            && self.delivery_index == other.delivery_index
+            && self.registration == other.registration
+            && self.family == other.family
     }
 
     /// Guarded consumers require the original immutable registered custody.
@@ -125,7 +137,12 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         phase
             .check_live_for(&application.runtime.product_runtime)
             .map_err(Denial::Stopped)?;
-        if crate::equality_type_id::EqualityTypeId::of::<<<Source<S,R> as ApplicationQueryBinding<S>>::ScopeBinding as ApplicationQueryScopeBinding<S>>::Scope>().into_external()
+        let history = application
+            .installed_schema()
+            .installed_history::<H>()
+            .map_err(|_| Denial::RequiresSemanticCorrection(Eligibility::RequiredOutputs))?;
+        let owned_graph = history.definition().parts().model_domain == worth_query_declaration::facade::application_history::ApplicationHistoryModelDomain::OwnedModelGraph;
+        if !owned_graph && crate::equality_type_id::EqualityTypeId::of::<<<Source<S,R> as ApplicationQueryBinding<S>>::ScopeBinding as ApplicationQueryScopeBinding<S>>::Scope>().into_external()
             != crate::equality_type_id::EqualityTypeId::of::<ApplicationHistoryModel<S,H>>().into_external()
         {
             return Err(Denial::Document(super::super::WorthQueryDocumentHistoryDenial::ForeignModel));
@@ -162,40 +179,52 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
             .map_err(|_| Denial::RequiresSemanticCorrection(Eligibility::RequiredOutputs))?;
         let connection = R::RootConnection::declaration();
         let connections = R::connections();
-        let delivery_index = installed
-            .installed
-            .action_inventory()
-            .declarations()
-            .iter()
-            .position(|action| {
-                action.mutation_binding_type().is_some_and(|binding| {
-                    history
-                        .operation_descriptors()
-                        .iter()
-                        .any(|operation| operation.binding_type() == binding)
-                }) && action
-                    .delivery()
-                    .and_then(|delivery| delivery.output())
-                    .is_some_and(|output| {
-                        !output.is_discovered()
-                            && output.root_type()
-                                == crate::equality_type_id::EqualityTypeId::of::<R>()
-                                    .into_external()
-                            && output.read().is_none_or(|read| read == &access)
-                            && output.root_connection() == &connection
-                            && output.root_connections() == connections
+        let registration = if owned_graph {
+            if !owner.owns_output_root(crate::equality_type_id::EqualityTypeId::of::<R>()) {
+                return Err(Denial::RequiresSemanticCorrection(
+                    Eligibility::RequiredOutputs,
+                ));
+            }
+            HistoryOutputRegistration::OwnedProgramRoot
+        } else {
+            HistoryOutputRegistration::ActionDelivery(
+                installed
+                    .installed
+                    .action_inventory()
+                    .declarations()
+                    .iter()
+                    .position(|action| {
+                        action.mutation_binding_type().is_some_and(|binding| {
+                            history
+                                .operation_descriptors()
+                                .iter()
+                                .any(|operation| operation.binding_type() == binding)
+                        }) && action
+                            .delivery()
+                            .and_then(|delivery| delivery.output())
+                            .is_some_and(|output| {
+                                !output.is_discovered()
+                                    && output.root_type()
+                                        == crate::equality_type_id::EqualityTypeId::of::<R>()
+                                            .into_external()
+                                    && output.read().is_none_or(|read| read == &access)
+                                    && output.root_connection() == &connection
+                                    && output.root_connections() == connections
+                            })
                     })
-            })
-            .ok_or(Denial::RequiresSemanticCorrection(
-                Eligibility::RequiredOutputs,
-            ))?;
+                    .ok_or(Denial::RequiresSemanticCorrection(
+                        Eligibility::RequiredOutputs,
+                    ))?,
+            )
+        };
         Ok(WorthQueryHistoryOutputProfile {
             model: document.model.clone(),
             program: *owner.owned_revision(),
             program_type: crate::equality_type_id::EqualityTypeId::of::<P>().into_external(),
             root: crate::equality_type_id::EqualityTypeId::of::<R>().into_external(),
             recipe: crate::equality_type_id::EqualityTypeId::of::<Recipe>().into_external(),
-            delivery_index,
+            registration,
+            family: <<Demand<S, R> as WorthQueryApplicationOutputDemand<S>>::OutputFamily as WorthQueryProducerOutputFamily<S>>::IDENTITY,
             source_intent,
         })
     }

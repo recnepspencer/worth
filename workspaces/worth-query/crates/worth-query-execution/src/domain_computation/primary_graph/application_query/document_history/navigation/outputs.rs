@@ -58,7 +58,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         key: u128,
         profile: WorthQueryHistoryOutputProfile,
         source_binding: &WorthQueryInstalledApplicationQueryBinding<S, B>,
-        source: HistoryOutputControlPlan<'_, S, B>,
+        source: Option<HistoryOutputControlPlan<'_, S, B>>,
     ) -> Result<WorthQueryDocumentHistoryNavigation<'runtime, S>, Denial>
     where
         H: ApplicationHistoryBinding<S>,
@@ -70,16 +70,24 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         let (read, admission) = read
             .admit_navigation::<N>(self, phase, access, document, N::input(history_access))
             .map_err(Denial::Navigation)?;
-        self.validate_navigation_source::<H, N, B>(
-            phase,
-            document,
-            &read,
-            &admission,
-            &profile,
-            source_binding,
-            &source,
-        )
-        .map_err(Denial::Source)?;
+        if let Some(source) = &source {
+            self.validate_navigation_source::<H, N, B>(
+                phase,
+                document,
+                &read,
+                &admission,
+                &profile,
+                source_binding,
+                source,
+            )
+            .map_err(Denial::Source)?;
+        } else if !profile.uses_owned_model_graph()
+            || !profile
+                .source_intent()
+                .matches_binding(&document.model, source_binding)
+        {
+            return Err(Denial::Navigation(NavigationDenial::IntentDrift));
+        }
         document
             .prepare_navigation::<N>(
                 phase,
@@ -107,7 +115,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         key: u128,
         profile: &WorthQueryHistoryOutputProfile,
         source_binding: &WorthQueryInstalledApplicationQueryBinding<S, B>,
-        source: HistoryOutputControlPlan<'_, S, B>,
+        source: Option<HistoryOutputControlPlan<'_, S, B>>,
         callback: impl for<'authority> FnOnce(
             [u8; 32],
             Step<'authority, 'scope>,
@@ -124,16 +132,24 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         let (read, admission) = read
             .admit_navigation::<N>(self, phase, access, document, N::input(history_access))
             .map_err(Denial::Navigation)?;
-        self.validate_navigation_source::<H, N, B>(
-            phase,
-            document,
-            &read,
-            &admission,
-            profile,
-            source_binding,
-            &source,
-        )
-        .map_err(Denial::Source)?;
+        if let Some(source) = &source {
+            self.validate_navigation_source::<H, N, B>(
+                phase,
+                document,
+                &read,
+                &admission,
+                profile,
+                source_binding,
+                source,
+            )
+            .map_err(Denial::Source)?;
+        } else if !profile.uses_owned_model_graph()
+            || !profile
+                .source_intent()
+                .matches_binding(&document.model, source_binding)
+        {
+            return Err(Denial::Navigation(NavigationDenial::IntentDrift));
+        }
         let lookup = document
             .inspect_output_navigation::<N>(
                 phase, &read, installed, &admission, navigation, key, profile,
@@ -150,6 +166,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                 branch,
                 source,
                 profile,
+                selected_graph,
             } => {
                 let original = std::sync::Arc::clone(&source);
                 document
@@ -160,6 +177,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                         &admission,
                         &profile,
                         &original,
+                        selected_graph,
                         |authority| {
                             callback(
                                 key,
@@ -187,8 +205,11 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         };
         // A stopped callback leaves its SDK owners in the document registry.
         // The actual Native transition remains authoritative if its delivery lapses.
-        validate_execution_lifetimes(self, &source.controls, source.principal)
-            .map_err(|cause| Denial::Source(super::super::output_read::control_denial(cause)))?;
+        if let Some(source) = &source {
+            validate_execution_lifetimes(self, &source.controls, source.principal).map_err(
+                |cause| Denial::Source(super::super::output_read::control_denial(cause)),
+            )?;
+        }
         read.confirm(document, ())
             .map_err(|cause| Denial::Navigation(NavigationDenial::Document(cause)))?;
         document

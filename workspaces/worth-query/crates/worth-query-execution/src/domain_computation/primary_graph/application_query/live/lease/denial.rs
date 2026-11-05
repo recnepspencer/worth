@@ -89,6 +89,9 @@ where
                 self.acknowledge_and_terminate(WorthQueryApplicationLiveOutcome::StalePrincipal)
             }
             WorthQueryApplicationQueryAdmissionDenialKind::StaleScope
+            | WorthQueryApplicationQueryAdmissionDenialKind::HistoricalSourceNotLive { .. }
+            | WorthQueryApplicationQueryAdmissionDenialKind::HistoricalSourceKindMismatch { .. }
+            | WorthQueryApplicationQueryAdmissionDenialKind::HistoricalSourceOutsideDomain { .. }
             | WorthQueryApplicationQueryAdmissionDenialKind::ForeignScope
             | WorthQueryApplicationQueryAdmissionDenialKind::ScopeTypeMismatch => {
                 self.acknowledge_and_terminate(WorthQueryApplicationLiveOutcome::StaleScope)

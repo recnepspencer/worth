@@ -30,7 +30,7 @@ use custody::{NavigationAttempt, NavigationPhase, NavigationProgress};
 pub(super) use disposal::NavigationDisposal;
 pub use output_authority::WorthQueryHistoryOutputAuthority;
 pub(in crate::domain_computation::primary_graph) use output_authority::{
-    HistoryBorrowedReadStop, HistoryProducerCutover, HistoryProducerInvocation,
+    HistoryBorrowedReadStop, HistoryProducerCutover,
 };
 pub use output_completion::WorthQueryCompletedHistoryOutputs;
 pub use output_profile::{
@@ -139,3 +139,5 @@ impl<S> std::fmt::Debug for WorthQueryDocumentHistoryNavigation<'_, S> {
             .finish_non_exhaustive()
     }
 }
+
+pub(in crate::domain_computation) use output_authority::HistoryProducerInvocation;

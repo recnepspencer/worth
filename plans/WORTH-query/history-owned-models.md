@@ -926,3 +926,68 @@ Ruling requested before the child-source/forest cutover:
 Option 1 is recommended for invertible deletion/build-change navigation. This
 is a source-admission authority choice, beyond merely collecting more trees.
 The lane stops pending that choice, under the task's explicit design-stop rule.
+
+### D1207 historical-source control implementation
+
+Root selects option 1. Master b5d39e00eb is merged (plan-only). The boundary is
+current authorization C versus source presence on the exact private navigation
+candidate D. Ordinary source presence at C keeps its existing path. No D grant
+may authorize a read or producer. Source permission refusal precedes any new D
+identity/presence refusal; the subject/family come from retained original
+correspondence, not a probe of D.
+
+Verified handoffs: SDK history output ingress currently resolves C scope before
+calling Native; root query admission checks freshness at the C security snapshot;
+retained producer permission, in-handler source queries and operation admission
+also require current issued scope. Updating only the first read would fail later.
+The existing prepared Query permission and history invocation owners already
+separate current security from candidate truth; extend them, never create another
+producer engine. Ordinary and ScopeEntityRecord entrances remain unchanged.
+
+Implementation order:
+1. Native's authentic historical-selection read reports exact restored-source
+   liveness/kind/domain membership. Its result is readonly fact, not permission.
+   Keep all reads at the capsule's own D; no caller-supplied substitute basis.
+2. Extend the canonical retained scope selector to retain the original sealed
+   entity description needed for C authorization before resolving D. Do not
+   synthesize a typed identity from caller coordinates or rediscover a scope by
+   name on another generation.
+3. Add the explicit historical-source posture to prepared Query permission and
+   its root/retained/handler-source consumers, using fresh C principal, policy,
+   capabilities and request checks before D presence/domain checks. Bind it to
+   the actual navigation invocation/candidate and retain existing denial causes
+   with E/family attribution. Source presence at C uses the old path.
+4. Join child-scoped output profiles and SDK tree ingress to that posture, keeping
+   original root, source, qualification and disposal custody. Extend the generic
+   multi-entity producer fixture to exercise a source absent at C, actual fallback
+   at D, denied C permission despite D permission, retired D source, and workers.
+5. Kill the C-identity/D-grant/skipped-D-liveness mutants with byte-exact SHA256
+   restoration. Run Native/source owner/public history courts, boundaries,
+   context, format and dirty caps; then proceed to the complete #57 forest and
+   remaining issue work. Final root/Query versus clean master remains required.
+
+The placement of source presence is Native (it retains actual runtime roots).
+The Query posture composes the existing concrete history invocation and native
+fact evidence; it grants no independently constructible permission. No format
+change or fallback to history storage is introduced.
+
+D1207 execution evidence: the serial and worker-only public courts restore a
+declared Member source missing at C, use its changed selected value at D, and
+contact the producer exactly once. A separate restricted family refuses through
+the original C authorization owner despite a granting selected model; its source
+and family attribution and unchanged selection are asserted. These admission
+courts use independent singleton outputs without a publication relation. They do
+not substitute for the two original opted-in publication-custody families.
+
+The public deletion/restoration leg exposed an actual Native selector omission:
+incident relations retained for audit after entity deletion must route through
+the authenticated restored after-image, just like DeletedRetained relations. The
+selector now permits that exact lifecycle while continuing to require matching
+live after metadata; missing-live corruption and suspended-slot checks remain.
+A worker-only failure was the SDK output-registry accounting-only checkpoint,
+not the current identity lookup. It now follows that owner's existing charge-or-
+poll dispatch. New Native work uses request_stage::checkpoint.
+
+The remaining cutover includes nested handler queries, later dependent sources,
+multiple trees, all-route verification and recording at one endpoint. These are
+not implied by the root-source admission courts. No issue-completion claim.
