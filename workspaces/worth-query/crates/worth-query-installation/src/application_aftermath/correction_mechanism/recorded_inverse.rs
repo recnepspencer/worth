@@ -60,6 +60,14 @@ impl InstalledPreImageDemand {
         &self.relations
     }
 
+    /// True when the inverse demands no prior truth at all: neither a field
+    /// locus nor a relation locus. Only the created-entity inverse is empty;
+    /// it derives from the original's outputs instead of a retained pre-image.
+    /// A relation-only demand is not empty.
+    pub fn is_empty(&self) -> bool {
+        self.loci.is_empty() && self.relations.is_empty()
+    }
+
     pub fn loci(&self) -> &[InstalledPreImageLocus] {
         &self.loci
     }

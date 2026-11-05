@@ -163,8 +163,14 @@ pub(super) fn retain(
                         .before()
                         .or_else(|| mutation.after())
                         .expect("actual lifecycle transition");
-                    let mut observed = false;
+                    // A link born with an endpoint this actor allocated needs no
+                    // read: its prior absence is structural, and none could exist.
+                    let mut observed =
+                        mutation.before().is_none() && mutation.has_allocated_endpoint();
                     for fact in facts {
+                        if observed {
+                            break;
+                        }
                         checkpoint(context, observation_work(fact, locus)).map_err(|cause| {
                             request_stop(worth_execution::WorkCeilingDenial::Stopped(cause))
                         })?;

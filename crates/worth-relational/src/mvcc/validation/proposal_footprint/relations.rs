@@ -15,6 +15,7 @@ pub struct ValidatedRelationMutation {
     audit_retained: bool,
     before: Option<(EntityId, EntityId)>,
     after: Option<(EntityId, EntityId)>,
+    allocated_endpoint: bool,
 }
 impl ValidatedRelationMutation {
     pub const fn relation(&self) -> RelationId {
@@ -31,6 +32,12 @@ impl ValidatedRelationMutation {
     }
     pub const fn after(&self) -> Option<(EntityId, EntityId)> {
         self.after
+    }
+    /// A born relation with an endpoint this same draft allocated. Its prior
+    /// absence is structural: no earlier relation can name an entity that did
+    /// not exist, so no read is needed to know it had no prior endpoints.
+    pub const fn has_allocated_endpoint(&self) -> bool {
+        self.allocated_endpoint
     }
 }
 /// Privately constructed from one invariant-approved draft; selectors grant no effects.
@@ -140,7 +147,15 @@ impl ValidatedRelationalProposal {
                 // Several fragments can describe one record. Retain its original and final truth once.
                 checkpoint(context, relations.len() as u64).map_err(stop)?;
                 if !relations.iter().any(|old: &ValidatedRelationMutation| old.relation == relation) {
-                    relations.push(ValidatedRelationMutation { relation, kind, audit_retained: matches!(fragment.structural_change, crate::publication::patch::data::RecordStructuralChange::RetainedForAudit), before, after });
+                    let allocated_endpoint = match (before, after) {
+                        (None, Some((source, target))) => {
+                            let created = &self.proposed_mutation.outcome.created_entities;
+                            created.creation_reference(source, || checkpoint(context, 1).map_err(stop))?.is_some()
+                                || created.creation_reference(target, || checkpoint(context, 1).map_err(stop))?.is_some()
+                        }
+                        _ => false,
+                    };
+                    relations.push(ValidatedRelationMutation { relation, kind, audit_retained: matches!(fragment.structural_change, crate::publication::patch::data::RecordStructuralChange::RetainedForAudit), before, after, allocated_endpoint });
                 }
             }
             Ok::<(), TransactionCommitError>(())

@@ -25,6 +25,9 @@ mod effect_order;
 #[path = "worth_query_court_decl_host/content_door/mod.rs"]
 mod content_door;
 
+#[path = "worth_query_court_decl_host/relation_only_inverse/mod.rs"]
+mod relation_only_inverse;
+
 #[test]
 fn inspection_refusal_types_are_nameable_and_comparable_through_host() {
     use worth_query_host::facade::causal_inspection::*;
