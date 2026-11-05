@@ -1,0 +1,14 @@
+{
+  "name": "recovered_nonhead_envelope_custody_ends_with_the_last_inflight_read",
+  "before": "crates/worth-relational/src/tests/durability/medium/cold_envelope_lifetime.rs",
+  "after": "crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/cold_envelope_custody.rs",
+  "count_before": 1,
+  "count_after": 1,
+  "owner_eligibility": {
+    "crates/worth-testkit-relational/src/lib.rs": 0,
+    "crates/worth-testkit-relational/src/cold_recovery.rs": 0,
+    "crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/mod.rs": 0,
+    "crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/cold_envelope_custody.rs": 0,
+    "crates/worth-relational/src/tests/durability/medium/cold_envelope_lifetime.rs": 0
+  }
+}

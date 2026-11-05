@@ -1,4 +1,5 @@
 pub mod aspect_storage;
+pub mod cold_recovery;
 pub mod durable_medium;
 pub mod durable_publication;
 pub mod initial_input_source;
