@@ -49,7 +49,9 @@ mod serial {
             WorthQueryApplicationOutputDemandProgress::Pending
         ));
         assert_eq!(
-            application.undelivered_publication_counts_for_test(),
+            application
+                .output_demands_for_test()
+                .undelivered_publication_counts_for_test(),
             (1, 1)
         );
         let published = request
@@ -71,7 +73,9 @@ mod serial {
             })
             .expect("checkpoint capture owns its host request");
         assert_eq!(
-            application.undelivered_publication_counts_for_test(),
+            application
+                .output_demands_for_test()
+                .undelivered_publication_counts_for_test(),
             (1, 1),
             "capture neither delivers nor abandons the owner's publication"
         );
@@ -84,7 +88,12 @@ mod serial {
             4096,
             source_world::seed,
         );
-        assert_eq!(restored.undelivered_publication_counts_for_test(), (0, 0));
+        assert_eq!(
+            restored
+                .output_demands_for_test()
+                .undelivered_publication_counts_for_test(),
+            (0, 0)
+        );
         let (scope, principal) = authenticate(&restored);
         let request = restored.request(&principal, &scope);
         let published = request
@@ -95,6 +104,11 @@ mod serial {
             .unwrap();
         assert_eq!(published.rows().len(), 1);
         assert_eq!(published.rows()[0].value, last_published_truth);
-        assert_eq!(restored.undelivered_publication_counts_for_test(), (0, 0));
+        assert_eq!(
+            restored
+                .output_demands_for_test()
+                .undelivered_publication_counts_for_test(),
+            (0, 0)
+        );
     }
 }

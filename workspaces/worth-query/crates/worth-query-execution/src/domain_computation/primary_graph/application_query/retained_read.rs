@@ -96,13 +96,13 @@ impl WorthQueryApplicationReadObservation {
     pub(in crate::domain_computation::primary_graph) fn from_settled_product<
         Schema: ApplicationSchema,
     >(
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_output_demand::host::OutputDemandHost<Schema>,
         producer: Arc<super::super::application_output_demand::OriginalSettledProducerObservation>,
         product: WorthQueryProductObservationLease,
     ) -> Arc<Self> {
         Arc::new(Self {
-            runtime_authority: runtime.runtime.authority_identity().as_u64(),
-            schema_binding: runtime.installed_schema.binding_identity(),
+            runtime_authority: runtime.authority_identity().as_u64(),
+            schema_binding: runtime.installed_schema().binding_identity(),
             producer: producer
                 .matches(runtime, product.observation())
                 .then_some(producer),

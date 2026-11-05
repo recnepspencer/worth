@@ -47,6 +47,7 @@ mod serial {
         });
         assert!(
             !application
+                .output_demands_for_test()
                 .queued_required_rows_for_root_for_test(roots[0])
                 .is_empty(),
             "the original Current root really has a queued cause before the caller pass"
@@ -68,6 +69,7 @@ mod serial {
         );
         assert!(
             application
+                .output_demands_for_test()
                 .queued_required_rows_for_root_for_test(roots[0])
                 .is_empty(),
             "the original Current root has no remaining queued cause"

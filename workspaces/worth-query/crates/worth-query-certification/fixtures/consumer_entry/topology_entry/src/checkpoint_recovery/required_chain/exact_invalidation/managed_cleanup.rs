@@ -27,7 +27,12 @@ mod serial {
         settled!(court, b, "initial B");
         court.write_y(&dirty.key("a"), 5, "real source mutation queues A");
         court.write_y(&later.key("a"), 9, "real source mutation queues later root");
-        assert!(application.queued_required_work_for_test() > 0);
+        assert!(
+            application
+                .output_demands_for_test()
+                .queued_required_work_for_test()
+                > 0
+        );
         assert_eq!(court.length(&dirty.key("a")), 2);
         assert_eq!(court.length(&independent.key("a")), 2);
         let guard = application

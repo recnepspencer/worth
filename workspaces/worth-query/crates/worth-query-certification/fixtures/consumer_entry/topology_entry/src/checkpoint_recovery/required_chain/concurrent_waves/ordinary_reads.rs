@@ -150,6 +150,7 @@ fn run(workers: usize, defer: bool) -> History {
                 .0;
             assert!(
                 !application
+                    .output_demands_for_test()
                     .queued_required_rows_for_root_for_test(m)
                     .is_empty(),
                 "M's own issued row remains queued after the frozen advance"
@@ -167,11 +168,15 @@ fn run(workers: usize, defer: bool) -> History {
                 "only the deferring owner delivers and lets stale M recheck"
             );
             assert_eq!(
-                application.undelivered_publication_counts_for_test(),
+                application
+                    .output_demands_for_test()
+                    .undelivered_publication_counts_for_test(),
                 (0, 0)
             );
             assert_eq!(
-                application.entered_required_selection_is_frozen_for_test(),
+                application
+                    .output_demands_for_test()
+                    .entered_required_selection_is_frozen_for_test(),
                 Some(false)
             );
         }

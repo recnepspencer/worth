@@ -40,7 +40,9 @@ fn case(cancel: bool, check_entry: bool) {
         owner.advance(&request).unwrap(),
         WorthQueryApplicationOutputDemandProgress::Pending
     ));
-    let published = application.published_required_rows_for_test();
+    let published = application
+        .output_demands_for_test()
+        .published_required_rows_for_test();
     assert_eq!(
         published.len(),
         1,
@@ -48,16 +50,19 @@ fn case(cancel: bool, check_entry: bool) {
     );
     let issued = published[0].0.clone();
     assert!(application
+        .output_demands_for_test()
         .queued_required_rows_for_root_for_test(root)
         .contains(&issued));
     if check_entry {
         assert_eq!(
-            application.undelivered_publication_counts_for_test(),
+            application
+                .output_demands_for_test()
+                .undelivered_publication_counts_for_test(),
             (1, 1)
         );
         let entered = other.advance(&request).unwrap();
         assert_eq!(
-            application.entered_required_selection_is_frozen_for_test(),
+            application.output_demands_for_test().entered_required_selection_is_frozen_for_test(),
             Some(true),
             "the Ready caller enters with the registry-issued Frozen selection; result is Settled={}",
             matches!(entered, WorthQueryApplicationOutputDemandProgress::Settled(_))
@@ -97,7 +102,10 @@ fn case(cancel: bool, check_entry: bool) {
     // that handle abandons its last interest rather than retrying delivery.
     drop(owner);
     assert!(
-        application.published_required_rows_for_test().is_empty(),
+        application
+            .output_demands_for_test()
+            .published_required_rows_for_test()
+            .is_empty(),
         "last-interest release retires the authentic Published row: {published:?}"
     );
 
@@ -107,6 +115,7 @@ fn case(cancel: bool, check_entry: bool) {
     ));
     assert!(
         !application
+            .output_demands_for_test()
             .queued_required_rows_for_root_for_test(root)
             .contains(&issued),
         "the next advance resolves this exact retired issued row through the stale-row path"

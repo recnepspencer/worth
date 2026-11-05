@@ -40,17 +40,13 @@ pub struct PreparedReadyBacking {
 #[derive(Clone)]
 pub struct ReadyCompletion(Arc<ReadyCell>);
 
-impl<Schema>
-    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
-{
+impl crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandRegistry {
     #[doc(hidden)]
     pub fn has_required_row_for_test(
         &self,
         root: worth_relational::facade::identity::EntityId,
     ) -> bool {
         let state = self
-            .runtime
-            .output_demands
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);

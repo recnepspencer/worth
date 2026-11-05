@@ -53,7 +53,7 @@ impl std::fmt::Debug for OriginalSettledProducerObservation {
 impl OriginalSettledProducerObservation {
     pub(super) fn ready<Schema: worth_query_installation::facade::ApplicationSchema>(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_output_demand::host::OutputDemandHost<Schema>,
         completion: &ReadyCompletion,
         product: &WorthQueryProductObservationLease,
     ) -> Result<Arc<Self>, WorthQueryOutputDemandDenial> {
@@ -93,7 +93,7 @@ impl OriginalSettledProducerObservation {
 
     pub(super) fn stable<Schema: worth_query_installation::facade::ApplicationSchema>(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_output_demand::host::OutputDemandHost<Schema>,
         stable: &super::super::super::output_lineage::PublishedStableLineage,
         product: &WorthQueryProductObservationLease,
     ) -> Result<Arc<Self>, WorthQueryOutputDemandDenial> {
@@ -110,7 +110,7 @@ impl OriginalSettledProducerObservation {
 
     pub(super) fn restored<Schema: worth_query_installation::facade::ApplicationSchema>(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_output_demand::host::OutputDemandHost<Schema>,
         restored: &super::super::WorthQueryRestoredAcceptedOutput,
         product: &WorthQueryProductObservationLease,
     ) -> Result<Arc<Self>, WorthQueryOutputDemandDenial> {
@@ -127,7 +127,7 @@ impl OriginalSettledProducerObservation {
 
     fn capture<Schema: worth_query_installation::facade::ApplicationSchema>(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_output_demand::host::OutputDemandHost<Schema>,
         product: &WorthQueryProductObservationLease,
         source: OriginalSettledProducerSource,
         correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
@@ -146,8 +146,8 @@ impl OriginalSettledProducerObservation {
             )
         })?;
         Ok(Arc::new(Self {
-            runtime_authority: runtime.runtime.authority_identity().as_u64(),
-            schema: runtime.installed_schema.binding_identity(),
+            runtime_authority: runtime.authority_identity().as_u64(),
+            schema: runtime.installed_schema().binding_identity(),
             read: WorthQueryProductBranchReadIdentity::from_observation(product.observation()),
             source,
             correspondence,
@@ -159,11 +159,11 @@ impl OriginalSettledProducerObservation {
         Schema: worth_query_installation::facade::ApplicationSchema,
     >(
         &self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_output_demand::host::OutputDemandHost<Schema>,
         product: &worth_runtime_world::facade::ProductBranchObservation,
     ) -> bool {
-        self.runtime_authority == runtime.runtime.authority_identity().as_u64()
-            && self.schema == runtime.installed_schema.binding_identity()
+        self.runtime_authority == runtime.authority_identity().as_u64()
+            && self.schema == runtime.installed_schema().binding_identity()
             && self.read.matches_observation(product)
     }
 

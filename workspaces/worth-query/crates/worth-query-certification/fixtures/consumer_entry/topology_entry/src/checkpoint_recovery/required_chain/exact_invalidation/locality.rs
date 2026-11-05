@@ -40,6 +40,7 @@ macro_rules! observed_advance {
         fact_verification();
         let before = $court
             .application
+            .output_demands_for_test()
             .whole_registry_rows_visited_for_test()
             .expect("bounded registry observation");
         let (settlement, cost) = $demand.reading.measure(|| {
@@ -53,6 +54,7 @@ macro_rules! observed_advance {
         });
         let visits = $court
             .application
+            .output_demands_for_test()
             .whole_registry_rows_visited_for_test()
             .expect("bounded registry observation")
             - before;

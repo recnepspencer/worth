@@ -1,0 +1,49 @@
+{
+ "module": "domain_computation::primary_graph::application_output_demand",
+ "blocks": 3,
+ "methods": 3,
+ "traits": [
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_output_demand/registry/required_work/queue.rs",
+   "trait": "QueueOps",
+   "visibility": "pub",
+   "methods": [
+    "leave_one_readiness_attempt_for_test"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_output_demand/settlement.rs",
+   "trait": "SettlementOps",
+   "visibility": "pub",
+   "methods": [
+    "select_output_demand_settlement"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_output_demand/settlement.rs",
+   "trait": "SettlementScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph)",
+   "methods": [
+    "current_output_source_facts"
+   ]
+  }
+ ],
+ "facades": 0,
+ "host": {
+  "core_fields": [
+   "next_output_producer_attempt",
+   "primary_provider"
+  ],
+  "top_fields": [
+   "installed_schema"
+  ],
+  "core_methods": [
+   "authority_identity"
+  ],
+  "foreign": [
+   "on_branch",
+   "select_application_read_observation_with_request"
+  ],
+  "hand": []
+ }
+}

@@ -1,4 +1,5 @@
 use super::*;
+use crate::domain_computation::primary_graph::application_output_demand::host::OutputDemandHost;
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     pub(in crate::domain_computation::primary_graph) fn require_current_settlements_in<'s>(
         &self,
@@ -49,7 +50,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             let read = lineage_read(|| {
                 if let Some(receipt) = settlement.application_commit_receipt() {
                     lineage.source_facts_for_receipt(
-                        runtime.runtime.authority_identity().as_u64(),
+                        runtime.authority_identity().as_u64(),
                         &runtime.installed_schema.binding_identity(),
                         self.product().observation(),
                         receipt,
@@ -57,7 +58,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                     )
                 } else if let Some(stable) = settlement.stable.as_ref() {
                     lineage.source_facts_for_stable_output(
-                        runtime.runtime.authority_identity().as_u64(),
+                        runtime.authority_identity().as_u64(),
                         &runtime.installed_schema.binding_identity(),
                         self.product().observation(),
                         stable,
@@ -65,7 +66,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                     )
                 } else {
                     lineage.source_facts_for_restored_output(
-                        runtime.runtime.authority_identity().as_u64(),
+                        runtime.authority_identity().as_u64(),
                         &runtime.installed_schema.binding_identity(),
                         self.product().observation(),
                         settlement,

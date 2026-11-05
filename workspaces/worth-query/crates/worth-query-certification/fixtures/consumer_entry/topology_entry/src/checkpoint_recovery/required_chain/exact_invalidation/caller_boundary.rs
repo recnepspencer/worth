@@ -37,7 +37,12 @@ mod serial {
         rings[0].a_y = 3;
         court.write_y(&rings[0].key("a"), 3, at);
         passes();
-        assert!(application.queued_required_work_for_test() >= 2);
+        assert!(
+            application
+                .output_demands_for_test()
+                .queued_required_work_for_test()
+                >= 2
+        );
         let cost = settled!(court, b, at);
         assert_eq!(
             passes().len(),
@@ -49,7 +54,10 @@ mod serial {
             "B and the independent root are inspected; C cannot disclose its source behind B"
         );
         assert!(
-            application.queued_required_work_for_test() >= 1,
+            application
+                .output_demands_for_test()
+                .queued_required_work_for_test()
+                >= 1,
             "C's unacknowledged mark remains for a later advance"
         );
         assert_eq!(
@@ -97,7 +105,12 @@ mod serial {
             "B refreshes A and itself, holding C"
         );
         assert_eq!(judge_decisions(&mut rings, at), 1);
-        assert!(application.queued_required_work_for_test() > 0);
+        assert!(
+            application
+                .output_demands_for_test()
+                .queued_required_work_for_test()
+                > 0
+        );
         passes();
         let a_cost = settled!(court, a, at);
         assert_eq!(passes().len(), 1, "A's caller pass is decided only once");

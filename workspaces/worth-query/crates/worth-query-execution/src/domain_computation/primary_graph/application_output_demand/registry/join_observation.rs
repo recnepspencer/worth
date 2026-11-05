@@ -129,9 +129,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_retained_source_sele
     }
     READS.with(|reads| reads.borrow_mut().push((root, recorded, selected)));
 }
-impl<Schema>
-    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
-{
+impl crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandRegistry {
     #[doc(hidden)]
     pub fn joined_stable_roots_for_test(&self) -> Vec<Root> {
         JOINED.with(|rows| std::mem::take(&mut *rows.borrow_mut()))
@@ -142,12 +140,11 @@ impl<Schema>
     }
     #[doc(hidden)]
     pub fn pause_stable_join_for_test(&self, root: Root) -> StableJoinPauseForTest {
-        self.runtime.output_demands.arm_join_pause(root)
+        self.arm_join_pause(root)
     }
     #[doc(hidden)]
     pub fn registry_row_keys_for_test(&self) -> Vec<(String, Root, u64, [u8; 32])> {
-        self.runtime
-            .output_demands
+        self
             .state
             .lock()
             .unwrap()
@@ -165,8 +162,7 @@ impl<Schema>
     }
     #[doc(hidden)]
     pub fn registry_successor_claims_for_test(&self) -> usize {
-        self.runtime
-            .output_demands
+        self
             .state
             .lock()
             .unwrap()
@@ -177,13 +173,10 @@ impl<Schema>
     }
 }
 
-impl<Schema>
-    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
-{
+impl crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandRegistry {
     #[doc(hidden)]
     pub fn stable_ready_sources_for_test(&self) -> Vec<(Root, Commit, [u8; 32])> {
-        self.runtime
-            .output_demands
+        self
             .state
             .lock()
             .unwrap()
@@ -221,9 +214,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_required_refresh_sto
     }
     REFRESH_STOPS.with(|stops| stops.borrow_mut().push((root, kind)));
 }
-impl<Schema>
-    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
-{
+impl crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandRegistry {
     #[doc(hidden)]
     pub fn required_refresh_stops_for_test(
         &self,

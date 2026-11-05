@@ -213,13 +213,10 @@ impl From<Map> for DemandRecords {
 
 mod observation {
     use super::*;
-    impl<Schema>
-        crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
-    {
+    impl crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandRegistry {
         #[doc(hidden)]
         pub fn registry_row_count_for_test(&self) -> usize {
-            self.runtime
-                .output_demands
+            self
                 .state
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner)

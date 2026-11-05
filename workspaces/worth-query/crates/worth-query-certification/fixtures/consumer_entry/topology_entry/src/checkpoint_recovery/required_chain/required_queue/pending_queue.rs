@@ -22,7 +22,9 @@ mod serial {
             .unwrap()
             .observed_sources()[0]
             .root_entity_for_test();
-        let queued = application.queued_required_rows_for_root_for_test(root);
+        let queued = application
+            .output_demands_for_test()
+            .queued_required_rows_for_root_for_test(root);
         assert!(
             !queued.is_empty(),
             "the source edit queues d's own issued row"
@@ -39,7 +41,9 @@ mod serial {
             "the deferred checkpoint does not reselect the queue on the moved head"
         );
         assert_eq!(
-            application.queued_required_rows_for_root_for_test(root),
+            application
+                .output_demands_for_test()
+                .queued_required_rows_for_root_for_test(root),
             queued,
             "d's exact issued row remains queued after the frozen advance"
         );

@@ -81,7 +81,9 @@ mod serial {
             WorthQueryApplicationOutputDemandProgress::Pending
         ));
         assert_eq!(
-            application.undelivered_publication_counts_for_test(),
+            application
+                .output_demands_for_test()
+                .undelivered_publication_counts_for_test(),
             (2, 2)
         );
         let before = primary_graph::query_read_kernel_entries_by_root_on_this_thread_for_test();
@@ -90,7 +92,9 @@ mod serial {
             WorthQueryApplicationOutputDemandProgress::Settled(_)
         ));
         assert_eq!(
-            application.entered_required_selection_is_frozen_for_test(),
+            application
+                .output_demands_for_test()
+                .entered_required_selection_is_frozen_for_test(),
             Some(true)
         );
         assert_eq!(
@@ -102,7 +106,9 @@ mod serial {
             WorthQueryApplicationOutputDemandProgress::Settled(_)
         ));
         assert_eq!(
-            application.undelivered_publication_counts_for_test(),
+            application
+                .output_demands_for_test()
+                .undelivered_publication_counts_for_test(),
             (1, 1),
             "the first owner's delivery cannot take the other owner's successor"
         );
@@ -112,7 +118,9 @@ mod serial {
             WorthQueryApplicationOutputDemandProgress::Settled(_)
         ));
         assert_eq!(
-            application.entered_required_selection_is_frozen_for_test(),
+            application
+                .output_demands_for_test()
+                .entered_required_selection_is_frozen_for_test(),
             Some(true)
         );
         assert_eq!(
@@ -124,7 +132,9 @@ mod serial {
             WorthQueryApplicationOutputDemandProgress::Settled(_)
         ));
         assert_eq!(
-            application.undelivered_publication_counts_for_test(),
+            application
+                .output_demands_for_test()
+                .undelivered_publication_counts_for_test(),
             (0, 0)
         );
         assert!(matches!(
@@ -132,7 +142,9 @@ mod serial {
             WorthQueryApplicationOutputDemandProgress::Settled(_)
         ));
         assert_eq!(
-            application.entered_required_selection_is_frozen_for_test(),
+            application
+                .output_demands_for_test()
+                .entered_required_selection_is_frozen_for_test(),
             Some(false)
         );
     }

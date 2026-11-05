@@ -3,7 +3,7 @@ use super::*;
 impl WorthQueryOutputDemandSettlement {
     pub(in crate::domain_computation::primary_graph) fn from_current_accepted<Schema>(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_output_demand::host::OutputDemandHost<Schema>,
         bound: BoundCurrentAcceptedOutput<'_>,
         producer_identity: &str,
         output_family_identity: &str,
@@ -45,8 +45,8 @@ impl WorthQueryOutputDemandSettlement {
             .then(|| completion.readiness.clone());
         Ok(Arc::new(Self {
             posture,
-            runtime_authority: runtime.runtime.authority_identity().as_u64(),
-            schema_binding: runtime.installed_schema.binding_identity(),
+            runtime_authority: runtime.authority_identity().as_u64(),
+            schema_binding: runtime.installed_schema().binding_identity(),
             producer_identity: producer_identity.to_owned().into(),
             output_family_identity: output_family_identity.to_owned(),
             receipt,

@@ -4,7 +4,7 @@ use super::*;
 impl WorthQueryOutputDemandSettlement {
     pub(in crate::domain_computation::primary_graph) fn from_restoration<Schema>(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_output_demand::host::OutputDemandHost<Schema>,
         restored: &super::super::WorthQueryRestoredAcceptedOutput,
         output_family_identity: &str,
         producer_contacts_in_this_demand: usize,
@@ -13,8 +13,7 @@ impl WorthQueryOutputDemandSettlement {
         Schema: worth_query_installation::facade::ApplicationSchema,
     {
         let authority = runtime
-            .runtime
-            .product_runtime
+            .product_runtime()
             .recovered_root_authority
             .as_ref()
             .filter(|authority| authority.product_branch() == &restored.observation)
@@ -25,8 +24,7 @@ impl WorthQueryOutputDemandSettlement {
                 )
             })?;
         let product = runtime
-            .runtime
-            .product_runtime
+            .product_runtime()
             .lease_from_observation(authority.product_branch().clone())
             .map_err(|error| {
                 WorthQueryOutputDemandDenial::product_selection(
@@ -36,8 +34,8 @@ impl WorthQueryOutputDemandSettlement {
             })?;
         Ok(Arc::new(Self {
             posture: restored.settlement_posture(),
-            runtime_authority: runtime.runtime.authority_identity().as_u64(),
-            schema_binding: runtime.installed_schema.binding_identity(),
+            runtime_authority: runtime.authority_identity().as_u64(),
+            schema_binding: runtime.installed_schema().binding_identity(),
             producer_identity: SettlementProducerIdentity::from_checkpoint(&restored.checkpoint),
             output_family_identity: output_family_identity.to_owned(),
             receipt: None,
@@ -61,7 +59,7 @@ impl WorthQueryOutputDemandSettlement {
 
     pub(in crate::domain_computation::primary_graph) fn from_stable<Schema>(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_output_demand::host::OutputDemandHost<Schema>,
         stable: &super::super::super::output_lineage::PublishedStableLineage,
         selected: &WorthQuerySelectedProductOperation<'_, Schema>,
         producer_identity: &str,
@@ -73,8 +71,8 @@ impl WorthQueryOutputDemandSettlement {
     {
         Ok(Arc::new(Self {
             posture: WorthQueryOutputSettlementPosture::StableReused,
-            runtime_authority: runtime.runtime.authority_identity().as_u64(),
-            schema_binding: runtime.installed_schema.binding_identity(),
+            runtime_authority: runtime.authority_identity().as_u64(),
+            schema_binding: runtime.installed_schema().binding_identity(),
             producer_identity: producer_identity.to_owned().into(),
             output_family_identity: output_family_identity.to_owned(),
             receipt: None,

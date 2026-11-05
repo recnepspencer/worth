@@ -77,10 +77,14 @@ fn case(cancel: bool, owner_name: &str, dirty_name: &str) {
         WorthQueryApplicationOutputDemandProgress::Pending
     ));
     assert_eq!(
-        application.undelivered_publication_counts_for_test(),
+        application
+            .output_demands_for_test()
+            .undelivered_publication_counts_for_test(),
         (1, 1)
     );
-    let rows = application.queued_required_rows_for_root_for_test(dirty_root);
+    let rows = application
+        .output_demands_for_test()
+        .queued_required_rows_for_root_for_test(dirty_root);
     assert!(!rows.is_empty());
     let before = primary_graph::query_read_kernel_entries_by_root_on_this_thread_for_test();
     assert!(matches!(
@@ -88,11 +92,15 @@ fn case(cancel: bool, owner_name: &str, dirty_name: &str) {
         WorthQueryApplicationOutputDemandProgress::Settled(_)
     ));
     assert_eq!(
-        application.entered_required_selection_is_frozen_for_test(),
+        application
+            .output_demands_for_test()
+            .entered_required_selection_is_frozen_for_test(),
         Some(true)
     );
     assert_eq!(
-        application.queued_required_rows_for_root_for_test(dirty_root),
+        application
+            .output_demands_for_test()
+            .queued_required_rows_for_root_for_test(dirty_root),
         rows
     );
     assert_eq!(
@@ -125,7 +133,9 @@ fn case(cancel: bool, owner_name: &str, dirty_name: &str) {
     // The request is borrowed; abandonment closes its reusable demand interest.
     drop(owner);
     assert_eq!(
-        application.undelivered_publication_counts_for_test(),
+        application
+            .output_demands_for_test()
+            .undelivered_publication_counts_for_test(),
         (0, 0)
     );
     assert!(matches!(
@@ -133,7 +143,9 @@ fn case(cancel: bool, owner_name: &str, dirty_name: &str) {
         WorthQueryApplicationOutputDemandProgress::Settled(_)
     ));
     assert_eq!(
-        application.entered_required_selection_is_frozen_for_test(),
+        application
+            .output_demands_for_test()
+            .entered_required_selection_is_frozen_for_test(),
         Some(false)
     );
     let after = primary_graph::query_read_kernel_entries_by_root_on_this_thread_for_test();
@@ -149,6 +161,7 @@ fn case(cancel: bool, owner_name: &str, dirty_name: &str) {
     let final_reads = primary_graph::query_read_kernel_entries_by_root_on_this_thread_for_test();
     assert_eq!(final_reads.get(&dirty_root), after.get(&dirty_root));
     assert!(application
+        .output_demands_for_test()
         .queued_required_rows_for_root_for_test(dirty_root)
         .is_empty());
 }
@@ -220,7 +233,9 @@ mod serial {
             WorthQueryApplicationOutputDemandProgress::Pending
         ));
         assert_eq!(
-            application.undelivered_publication_counts_for_test(),
+            application
+                .output_demands_for_test()
+                .undelivered_publication_counts_for_test(),
             (1, 1)
         );
         let published = request
@@ -247,7 +262,9 @@ mod serial {
             .unwrap()
             .unwrap();
         assert_eq!(
-            application.undelivered_publication_counts_for_test(),
+            application
+                .output_demands_for_test()
+                .undelivered_publication_counts_for_test(),
             (1, 1),
             "capture neither delivers nor abandons the owner's publication"
         );
@@ -270,7 +287,12 @@ mod serial {
             owner.advance(&request).unwrap(),
             WorthQueryApplicationOutputDemandProgress::Settled(_)
         ));
-        assert_eq!(restored.undelivered_publication_counts_for_test(), (0, 0));
+        assert_eq!(
+            restored
+                .output_demands_for_test()
+                .undelivered_publication_counts_for_test(),
+            (0, 0)
+        );
         let published = request
             .query(PlanarOutputRead {
                 body_key: "anchor-a".into(),
@@ -279,6 +301,11 @@ mod serial {
             .unwrap();
         assert_eq!(published.rows().len(), 1);
         assert_eq!(published.rows()[0].value, last_published_truth);
-        assert_eq!(restored.undelivered_publication_counts_for_test(), (0, 0));
+        assert_eq!(
+            restored
+                .output_demands_for_test()
+                .undelivered_publication_counts_for_test(),
+            (0, 0)
+        );
     }
 }

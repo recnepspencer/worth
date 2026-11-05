@@ -27,6 +27,7 @@ mod conditional_cleanup;
 mod execution_memory;
 pub(crate) mod external_dispatch_attempt;
 mod mutation_partition;
+mod output_demand_host;
 mod teardown;
 pub use execution_memory::WorthQueryExecutionLeaseDenial;
 pub(crate) mod inbound_occurrence;

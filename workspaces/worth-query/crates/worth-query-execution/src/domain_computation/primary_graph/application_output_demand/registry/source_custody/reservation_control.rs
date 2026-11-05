@@ -59,9 +59,7 @@ impl Drop for WorthQueryDiscoveredRetentionReservationForTest {
         }
     }
 }
-impl<S: worth_query_installation::facade::ApplicationSchema>
-    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<S>
-{
+impl crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandRegistry {
     /// Controls one real discovered abandoned-source Vec reservation on this registry.
     /// Ordinary reservations remain exactly one; no native error is fabricated.
     pub fn refuse_next_discovered_retention_reservation_for_test(
@@ -70,7 +68,7 @@ impl<S: worth_query_installation::facade::ApplicationSchema>
         WorthQueryDiscoveredRetentionReservationForTest,
         WorthQueryDiscoveredRetentionControlDenial,
     > {
-        self.runtime.output_demands.arm_retention_reservation()
+        self.arm_retention_reservation()
     }
 }
 #[cfg(test)]

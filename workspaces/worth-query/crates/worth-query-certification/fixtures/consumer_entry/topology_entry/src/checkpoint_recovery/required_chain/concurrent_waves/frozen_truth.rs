@@ -74,7 +74,9 @@ fn case(transitive: bool, changed_own_source: bool) {
         WorthQueryApplicationOutputDemandProgress::Pending
     ));
     assert_eq!(
-        application.undelivered_publication_counts_for_test(),
+        application
+            .output_demands_for_test()
+            .undelivered_publication_counts_for_test(),
         (1, 1)
     );
     let reads = primary_graph::query_read_kernel_entries_by_root_on_this_thread_for_test();
@@ -96,7 +98,9 @@ fn case(transitive: bool, changed_own_source: bool) {
         )
     };
     assert_eq!(
-        application.entered_required_selection_is_frozen_for_test(),
+        application
+            .output_demands_for_test()
+            .entered_required_selection_is_frozen_for_test(),
         Some(true)
     );
     assert!(
@@ -114,12 +118,16 @@ fn case(transitive: bool, changed_own_source: bool) {
         own_contacts
     );
     assert_eq!(
-        application.undelivered_publication_counts_for_test(),
+        application
+            .output_demands_for_test()
+            .undelivered_publication_counts_for_test(),
         (1, 1),
         "a foreign advance leaves the frozen publication unchanged"
     );
     if changed_own_source {
-        let issued = application.queued_required_rows_for_root_for_test(roots[1]);
+        let issued = application
+            .output_demands_for_test()
+            .queued_required_rows_for_root_for_test(roots[1]);
         assert!(
             !issued.is_empty(),
             "the changed caller's own issued row stays queued"
@@ -129,7 +137,9 @@ fn case(transitive: bool, changed_own_source: bool) {
             WorthQueryApplicationOutputDemandProgress::Settled(_)
         ));
         assert_eq!(
-            application.undelivered_publication_counts_for_test(),
+            application
+                .output_demands_for_test()
+                .undelivered_publication_counts_for_test(),
             (0, 0)
         );
         assert!(matches!(
@@ -137,7 +147,9 @@ fn case(transitive: bool, changed_own_source: bool) {
             WorthQueryApplicationOutputDemandProgress::Settled(_)
         ));
         assert_eq!(
-            application.entered_required_selection_is_frozen_for_test(),
+            application
+                .output_demands_for_test()
+                .entered_required_selection_is_frozen_for_test(),
             Some(false)
         );
         assert_eq!(
@@ -146,6 +158,7 @@ fn case(transitive: bool, changed_own_source: bool) {
             "the changed row executes exactly once after delivery thaws the head"
         );
         assert!(application
+            .output_demands_for_test()
             .queued_required_rows_for_root_for_test(roots[1])
             .is_empty());
     }

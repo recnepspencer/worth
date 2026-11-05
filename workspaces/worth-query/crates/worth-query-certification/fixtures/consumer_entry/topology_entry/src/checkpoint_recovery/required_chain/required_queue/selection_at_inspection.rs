@@ -12,7 +12,12 @@ mod serial {
         let request = application.request(&principal, &scope);
         let (mut a, mut b, mut c, mut d) = chain_with_unrelated!(application, request);
         change_root_input!(request, application, 2, 0x9176_7f01_u64);
-        assert!(application.queued_required_work_for_test() >= 3);
+        assert!(
+            application
+                .output_demands_for_test()
+                .queued_required_work_for_test()
+                >= 3
+        );
         let before = query_entries();
         settled_in_one_advance!(d, request, "the unrelated caller");
         assert_eq!(
@@ -21,7 +26,9 @@ mod serial {
             "each claimed row is selected after the preceding publication moves its membership"
         );
         assert_eq!(
-            application.queued_required_work_for_test(),
+            application
+                .output_demands_for_test()
+                .queued_required_work_for_test(),
             1,
             "only the unselected newer publication hint remains queued"
         );

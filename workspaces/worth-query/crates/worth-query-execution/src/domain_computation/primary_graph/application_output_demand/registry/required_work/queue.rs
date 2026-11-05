@@ -120,18 +120,19 @@ impl Drop for RequiredWorkQueue {
     }
 }
 
-impl<Schema>
-    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub trait QueueOps<Schema>:
+    crate::domain_computation::primary_graph::application_output_demand::host::OutputDemandHost<Schema>
 {
-    /// Leave one checked attempt for the real producer scheduling, so its
-    /// subsequent readiness evaluation refuses the exhausted runtime counter.
     #[doc(hidden)]
-    pub fn leave_one_readiness_attempt_for_test(&self) {
-        self.runtime
-            .next_output_producer_attempt
+    fn leave_one_readiness_attempt_for_test(&self) {
+        self.next_output_producer_attempt()
             .store(u64::MAX - 1, std::sync::atomic::Ordering::Relaxed);
     }
+}
 
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_output_demand::host::OutputDemandHost<Schema> + ?Sized> QueueOps<Schema> for HostRuntime {}
+
+impl crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandRegistry {
     /// Read the exact issued rows and their recorded intrinsic stop values.
     #[doc(hidden)]
     pub fn required_row_stops_for_root_for_test(
@@ -142,8 +143,6 @@ impl<Schema>
         Option<crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind>,
     )>{
         let state = self
-            .runtime
-            .output_demands
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
@@ -158,8 +157,6 @@ impl<Schema>
     #[doc(hidden)]
     pub fn queued_required_work_for_test(&self) -> usize {
         let queue = self
-            .runtime
-            .output_demands
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
@@ -172,8 +169,6 @@ impl<Schema>
     #[doc(hidden)]
     pub fn published_required_rows_for_test(&self) -> Vec<(String, usize, bool, String)> {
         let state = self
-            .runtime
-            .output_demands
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
@@ -214,8 +209,6 @@ impl<Schema>
         root: worth_relational::facade::identity::EntityId,
     ) -> Vec<String> {
         let queue = self
-            .runtime
-            .output_demands
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
@@ -247,8 +240,7 @@ impl<Schema>
     }
     #[doc(hidden)]
     pub fn entered_required_selection_is_frozen_for_test(&self) -> Option<bool> {
-        self.runtime
-            .output_demands
+        self
             .state
             .lock()
             .unwrap()
@@ -256,7 +248,7 @@ impl<Schema>
     }
     #[doc(hidden)]
     pub fn undelivered_publication_counts_for_test(&self) -> (usize, usize) {
-        let state = self.runtime.output_demands.state.lock().unwrap();
+        let state = self.state.lock().unwrap();
         (state.records.publication_count_for_test(), state.records.values().filter(|record|
             matches!(&record.state, super::super::DemandState::Output(output) if !matches!(output.advancement(), super::super::WorthQueryOutputAdvancement::Stopped { .. }) && matches!(output.checkpoint, Some(super::super::WorthQueryOutputCheckpoint::Published { .. })))).count())
     }

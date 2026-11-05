@@ -34,6 +34,15 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema + 'static,
 {
+    /// Hands courts the output-demand registry this runtime owns; its test doors live there.
+    #[doc(hidden)]
+    pub fn output_demands_for_test(
+        &self,
+    ) -> &crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandRegistry
+{
+        &self.runtime.output_demands
+    }
+
     /// Schedules failure at the real post-commit snapshot admission boundary.
     #[doc(hidden)]
     pub fn fail_next_post_commit_snapshot_for_test(&self) {

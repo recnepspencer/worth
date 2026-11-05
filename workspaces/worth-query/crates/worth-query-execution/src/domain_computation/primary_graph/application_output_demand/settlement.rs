@@ -25,7 +25,6 @@ use crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorresp
 use crate::domain_computation::primary_graph::WorthQueryApplicationOutputProjectionDenial;
 use crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation;
 use crate::domain_computation::primary_graph::WorthQueryApplicationTypedOutputCorrespondence;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
 
 use super::WorthQueryOutputReadinessDeliveryEvidence;
@@ -63,18 +62,18 @@ pub enum WorthQueryOutputSettlementPosture {
 impl WorthQueryOutputDemandSettlement {
     pub(in crate::domain_computation::primary_graph) fn belongs_to<Schema>(
         &self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_output_demand::host::OutputDemandHost<Schema>,
     ) -> bool
     where
         Schema: worth_query_installation::facade::ApplicationSchema,
     {
-        self.runtime_authority == runtime.runtime.authority_identity().as_u64()
-            && self.schema_binding == runtime.installed_schema.binding_identity()
+        self.runtime_authority == runtime.authority_identity().as_u64()
+            && self.schema_binding == runtime.installed_schema().binding_identity()
     }
 
     pub(in crate::domain_computation::primary_graph) fn from_committed_ready<Schema>(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_output_demand::host::OutputDemandHost<Schema>,
         completion: &ReadyCompletion,
         producer_identity: &str,
         output_family_identity: &str,
@@ -90,11 +89,7 @@ impl WorthQueryOutputDemandSettlement {
             ));
         };
         let readiness_delivery = &completion.readiness;
-        let _held_world_observations = if runtime
-            .runtime
-            .primary_provider
-            .take_ready_read_snapshot_pressure()
-        {
+        let _held_world_observations = if runtime.take_ready_read_snapshot_pressure() {
             Some(runtime.hold_world_snapshot_pressure_for_test(receipt.product_branch()))
         } else {
             None
@@ -108,8 +103,8 @@ impl WorthQueryOutputDemandSettlement {
             })?;
         Ok(Arc::new(Self {
             posture: WorthQueryOutputSettlementPosture::Performed,
-            runtime_authority: runtime.runtime.authority_identity().as_u64(),
-            schema_binding: runtime.installed_schema.binding_identity(),
+            runtime_authority: runtime.authority_identity().as_u64(),
+            schema_binding: runtime.installed_schema().binding_identity(),
             producer_identity: producer_identity.to_owned().into(),
             output_family_identity: output_family_identity.to_owned(),
             receipt: Some(SettlementReceiptCustody::Owned(receipt.clone())),
@@ -185,17 +180,18 @@ impl WorthQueryOutputDemandSettlement {
     }
 }
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub trait SettlementOps<Schema>:
+    crate::domain_computation::primary_graph::application_output_demand::host::OutputDemandHost<Schema>
 where
     Schema: worth_query_installation::facade::ApplicationSchema,
 {
-    pub fn select_output_demand_settlement(
+    fn select_output_demand_settlement(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         settlement: &WorthQueryOutputDemandSettlement,
     ) -> Result<WorthQuerySelectedProductOperation<'_, Schema>, WorthQueryOutputDemandDenial> {
-        if settlement.runtime_authority != self.runtime.authority_identity().as_u64()
-            || settlement.schema_binding != self.installed_schema.binding_identity()
+        if settlement.runtime_authority != self.authority_identity().as_u64()
+            || settlement.schema_binding != self.installed_schema().binding_identity()
         {
             return Err(WorthQueryOutputDemandDenial::new(
                 WorthQueryOutputDemandDenialKind::ForeignSettlement,
@@ -218,8 +214,17 @@ where
                 }
             })
     }
+}
 
-    pub(in crate::domain_computation::primary_graph) fn current_output_source_facts(
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_output_demand::host::OutputDemandHost<Schema> + ?Sized> SettlementOps<Schema> for HostRuntime where
+    Schema: worth_query_installation::facade::ApplicationSchema, {}
+
+pub(in crate::domain_computation::primary_graph) trait SettlementScopedOps<Schema>:
+    crate::domain_computation::primary_graph::application_output_demand::host::OutputDemandHost<Schema>
+where
+    Schema: worth_query_installation::facade::ApplicationSchema,
+{
+    fn current_output_source_facts(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         settlement: &WorthQueryOutputDemandSettlement,
@@ -227,7 +232,7 @@ where
         crate::domain_computation::primary_graph::output_lineage::ComparableSourceFacts,
         WorthQueryOutputDemandDenial,
     > {
-        if !settlement.belongs_to(self) {
+        if !settlement.belongs_to(self.output_demand_host()) {
             return Err(WorthQueryOutputDemandDenial::new(
                 WorthQueryOutputDemandDenialKind::ForeignSettlement,
                 "output settlement belongs to another application runtime",
@@ -252,32 +257,30 @@ where
             None => self.select_output_demand_settlement(execution, settlement)?,
         };
         let lineage = self
-            .runtime
-            .primary_provider
-            .graph
+            .provider_graph()
             .output_lineage
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
 
         let facts = match settlement.application_commit_receipt() {
             Some(receipt) => lineage.source_facts_for_receipt(
-                self.runtime.authority_identity().as_u64(),
-                &self.installed_schema.binding_identity(),
+                self.authority_identity().as_u64(),
+                &self.installed_schema().binding_identity(),
                 selected.product().observation(),
                 receipt,
                 execution,
             ),
             None => match settlement.stable.as_ref() {
                 Some(stable) => lineage.source_facts_for_stable_output(
-                    self.runtime.authority_identity().as_u64(),
-                    &self.installed_schema.binding_identity(),
+                    self.authority_identity().as_u64(),
+                    &self.installed_schema().binding_identity(),
                     selected.product().observation(),
                     stable,
                     execution,
                 ),
                 None => lineage.source_facts_for_restored_output(
-                    self.runtime.authority_identity().as_u64(),
-                    &self.installed_schema.binding_identity(),
+                    self.authority_identity().as_u64(),
+                    &self.installed_schema().binding_identity(),
                     selected.product().observation(),
                     settlement,
                     execution,
@@ -301,5 +304,8 @@ where
             })
     }
 }
+
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_output_demand::host::OutputDemandHost<Schema> + ?Sized> SettlementScopedOps<Schema> for HostRuntime where
+    Schema: worth_query_installation::facade::ApplicationSchema, {}
 
 mod court_doors_for_test;

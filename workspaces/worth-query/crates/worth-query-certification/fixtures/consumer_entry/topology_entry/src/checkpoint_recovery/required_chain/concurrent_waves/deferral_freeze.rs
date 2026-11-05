@@ -58,7 +58,9 @@ where
         panic!("unrelated caller is Current before deferral")
     };
     assert_eq!(
-        application.undelivered_publication_counts_for_test(),
+        application
+            .output_demands_for_test()
+            .undelivered_publication_counts_for_test(),
         (0, 0)
     );
     let mut caller = request
@@ -139,7 +141,9 @@ where
         panic!("the Live control certifies its unchanged caller as Current");
     };
     assert_eq!(
-        application.entered_required_selection_is_frozen_for_test(),
+        application
+            .output_demands_for_test()
+            .entered_required_selection_is_frozen_for_test(),
         Some(false)
     );
     let live_contacts = application.producer_contacts_at_root_on_this_thread_for_test(own_root)
@@ -186,7 +190,9 @@ where
             fault_owner.delay_next_output_readiness_delivery_for_test();
         }
     }));
-    let queued = application.queued_required_rows_for_root_for_test(d_root);
+    let queued = application
+        .output_demands_for_test()
+        .queued_required_rows_for_root_for_test(d_root);
     assert!(!queued.is_empty(), "the seeded edit queues d's issued row");
     computation::arm(Some(Arc::clone(&schedule)));
     let before = primary_graph::query_read_kernel_entries_by_root_on_this_thread_for_test();
@@ -219,20 +225,26 @@ where
         "deferral rank {deferred_rank}: no unrelated root is inspected on the moved head"
     );
     assert_eq!(
-        application.queued_required_rows_for_root_for_test(d_root),
+        application
+            .output_demands_for_test()
+            .queued_required_rows_for_root_for_test(d_root),
         queued,
         "d's exact issued rows remain queued, not merely some row"
     );
     computation::arm(None);
     assert_eq!(
-        application.undelivered_publication_counts_for_test(),
+        application
+            .output_demands_for_test()
+            .undelivered_publication_counts_for_test(),
         (1, 1)
     );
     let frozen_reads = primary_graph::query_read_kernel_entries_by_root_on_this_thread_for_test();
     let own_contacts = application.producer_contacts_at_root_on_this_thread_for_test(own_root);
     let frozen = unrelated.advance(&request).unwrap();
     assert_eq!(
-        application.entered_required_selection_is_frozen_for_test(),
+        application
+            .output_demands_for_test()
+            .entered_required_selection_is_frozen_for_test(),
         Some(true)
     );
     let WorthQueryApplicationOutputDemandProgress::Settled(frozen) = frozen else {
@@ -266,11 +278,15 @@ where
         "a frozen entry reads no source, on the caller or any other row"
     );
     assert_eq!(
-        application.queued_required_rows_for_root_for_test(d_root),
+        application
+            .output_demands_for_test()
+            .queued_required_rows_for_root_for_test(d_root),
         queued
     );
     assert_eq!(
-        application.undelivered_publication_counts_for_test(),
+        application
+            .output_demands_for_test()
+            .undelivered_publication_counts_for_test(),
         (1, 1)
     );
     // This consumer actually requires the deferred upstream. Its successor
@@ -280,11 +296,15 @@ where
         WorthQueryApplicationOutputDemandProgress::Settled(_)
     ));
     assert_eq!(
-        application.entered_required_selection_is_frozen_for_test(),
+        application
+            .output_demands_for_test()
+            .entered_required_selection_is_frozen_for_test(),
         Some(true)
     );
     assert_eq!(
-        application.undelivered_publication_counts_for_test(),
+        application
+            .output_demands_for_test()
+            .undelivered_publication_counts_for_test(),
         (0, 0)
     );
     let later = primary_graph::query_read_kernel_entries_by_root_on_this_thread_for_test();
@@ -303,6 +323,7 @@ where
         "the next different caller does not read d again"
     );
     assert!(application
+        .output_demands_for_test()
         .queued_required_rows_for_root_for_test(d_root)
         .is_empty());
 }

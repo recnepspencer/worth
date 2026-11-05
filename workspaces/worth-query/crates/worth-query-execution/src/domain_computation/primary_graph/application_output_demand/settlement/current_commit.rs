@@ -3,7 +3,7 @@ use super::*;
 
 pub(super) fn reacquire_current_committed_output<Schema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_output_demand::host::OutputDemandHost<Schema>,
     receipt: &WorthQueryApplicationCommitReceipt,
 ) -> Result<Option<WorthQueryProductObservationLease>, WorthQueryOutputDemandDenial>
 where
@@ -23,15 +23,13 @@ where
     let original_publication_is_current = committed.is_selected_at(observation);
 
     let retained_output_is_current = runtime
-        .runtime
-        .primary_provider
-        .graph
+        .provider_graph()
         .output_lineage
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
         .current_output_matches_receipt(
-            runtime.runtime.authority_identity().as_u64(),
-            &runtime.installed_schema.binding_identity(),
+            runtime.authority_identity().as_u64(),
+            &runtime.installed_schema().binding_identity(),
             observation,
             receipt,
             execution,

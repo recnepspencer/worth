@@ -70,10 +70,12 @@ fn discovered_committed_retention_refuses_twice_then_promotes_original_carrier()
         .clone();
     let guard = world
         .application
+        .output_demands_for_test()
         .refuse_next_discovered_retention_reservation_for_test()
         .unwrap();
     assert!(world
         .application
+        .output_demands_for_test()
         .refuse_next_discovered_retention_reservation_for_test()
         .is_err());
     let outcome = request
@@ -138,6 +140,7 @@ fn discovered_committed_retention_refuses_twice_then_promotes_original_carrier()
     drop(prior_registered);
     let guard = world
         .application
+        .output_demands_for_test()
         .refuse_next_discovered_retention_reservation_for_test()
         .unwrap();
     // These pre-entry denials must leave this live arm for the next actual reservation.

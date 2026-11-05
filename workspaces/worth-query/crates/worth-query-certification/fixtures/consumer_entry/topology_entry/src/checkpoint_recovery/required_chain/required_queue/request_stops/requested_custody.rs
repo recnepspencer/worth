@@ -43,9 +43,9 @@ mod serial {
         assert!(
         settled.is_some(),
         "the initial consumer resumes its requested middle without another caller; frozen entry={:?}, counters={:?}, published={:?}",
-        application.entered_required_selection_is_frozen_for_test(),
-        application.undelivered_publication_counts_for_test(),
-        application.published_required_rows_for_test()
+        application.output_demands_for_test().entered_required_selection_is_frozen_for_test(),
+        application.output_demands_for_test().undelivered_publication_counts_for_test(),
+        application.output_demands_for_test().published_required_rows_for_test()
     );
         assert_eq!(
             take_all_decisions()

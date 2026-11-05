@@ -11,7 +11,9 @@ pub(super) struct Retained {
 pub(super) fn retained(runtime: &Runtime) -> Retained {
     let runtime = runtime.runtime();
     Retained {
-        rows: runtime.registry_row_count_for_test(),
+        rows: runtime
+            .output_demands_for_test()
+            .registry_row_count_for_test(),
     }
 }
 pub(super) struct Measure {
@@ -35,6 +37,7 @@ impl Measure {
             _observation: observation,
             whole_rows: runtime
                 .runtime()
+                .output_demands_for_test()
                 .whole_registry_rows_visited_for_test()
                 .expect("bounded registry observation"),
         }
@@ -43,6 +46,7 @@ impl Measure {
         // Capture before inspecting the receiver's registry population.
         let whole_rows = runtime
             .runtime()
+            .output_demands_for_test()
             .whole_registry_rows_visited_for_test()
             .expect("bounded registry observation")
             - self.whole_rows;

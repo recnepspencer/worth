@@ -19,7 +19,9 @@ mod serial {
             .execute()
             .unwrap();
         let root = selected.observed_sources()[0].root_entity_for_test();
-        let before = application.required_row_stops_for_root_for_test(root);
+        let before = application
+            .output_demands_for_test()
+            .required_row_stops_for_root_for_test(root);
         assert_eq!(
             before.len(),
             1,
@@ -30,7 +32,9 @@ mod serial {
         application.leave_one_readiness_attempt_for_test();
         let settled = settled_in_one_advance!(d, request, "the unchanged independent caller");
         assert_eq!(settled.producer_contacts_in_this_demand(), 1);
-        let after = application.required_row_stops_for_root_for_test(root);
+        let after = application
+            .output_demands_for_test()
+            .required_row_stops_for_root_for_test(root);
         assert_eq!(
             after
                 .iter()

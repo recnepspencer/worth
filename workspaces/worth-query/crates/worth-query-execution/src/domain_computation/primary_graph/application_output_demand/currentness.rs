@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_output_demand::host::OutputDemandHost;
 mod consumed;
 mod facts;
 mod settlements;
@@ -67,7 +68,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             .graph
             .with_runtime(&execution, |relational| {
                 for receipt in receipts {
-                    if receipt.runtime_authority() != runtime.runtime.authority_identity()
+                    if receipt.runtime_authority() != runtime.authority_identity()
                         || receipt.principal_scope().binding_identity()
                             != &runtime.installed_schema.binding_identity()
                     {
@@ -82,7 +83,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                         .unwrap_or_else(std::sync::PoisonError::into_inner);
                     let read = lineage_read(|| {
                         lineage.source_facts_for_receipt(
-                            runtime.runtime.authority_identity().as_u64(),
+                            runtime.authority_identity().as_u64(),
                             &runtime.installed_schema.binding_identity(),
                             self.product().observation(),
                             receipt,

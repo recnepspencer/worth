@@ -106,6 +106,7 @@ fn discovered_owning_committed_retention_retry_preserves_fresh_result_and_source
     };
     let guard = world
         .application
+        .output_demands_for_test()
         .refuse_next_discovered_retention_reservation_for_test()
         .unwrap();
     let operation = match operation.advance(&request) {
