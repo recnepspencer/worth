@@ -1,0 +1,5094 @@
+{
+ "after": {
+  "against_fresh_layering": 1105,
+  "against_host_order": 1622,
+  "largest_component": 57
+ },
+ "before": {
+  "against_fresh_layering": 1105,
+  "against_host_order": 3000,
+  "largest_component": 57
+ },
+ "largest_component_after": [
+  "access_strategy",
+  "aggregate_observation",
+  "aggregate_projection",
+  "application_attempt",
+  "application_checkpoint",
+  "application_contribution",
+  "application_discovery",
+  "application_entry",
+  "application_inbound",
+  "application_installation",
+  "application_invariant",
+  "application_output_demand",
+  "application_program",
+  "application_query",
+  "application_resource",
+  "application_runtime",
+  "authenticated_principal",
+  "bootstrap",
+  "bootstrap_publication",
+  "causal_inspection",
+  "component_selection",
+  "conditional_operation",
+  "content",
+  "denial",
+  "entity_resolution",
+  "expression",
+  "fact_verification_observation",
+  "freshness",
+  "granular_invalidation",
+  "handler",
+  "index_currency",
+  "initial_schema_denial",
+  "invariant_installation",
+  "invariant_projection",
+  "live_delivery",
+  "managed_bridge",
+  "observations",
+  "operation_body",
+  "output_lineage",
+  "output_reuse",
+  "principal_currentness_capture",
+  "product_activation",
+  "product_operation",
+  "program_occurrence",
+  "provider",
+  "record_reservations",
+  "resolution",
+  "resolution_denial",
+  "root",
+  "root_path_selection",
+  "runtime_host",
+  "schema_layout",
+  "source_disclosure",
+  "source_facts",
+  "source_read_equivalence",
+  "source_read_verification",
+  "typed_bootstrap"
+ ],
+ "modules": {
+  "vocabulary:vocabulary": {
+   "items": 174,
+   "kinds": {
+    "const": 5,
+    "enum": 62,
+    "fn": 28,
+    "static": 1,
+    "struct": 76,
+    "type": 2
+   },
+   "lines": 4079,
+   "top_source_modules": {
+    "vocabulary::application_attempt::condition": 7,
+    "vocabulary::application_attempt::fact_custody": 3,
+    "vocabulary::application_attempt::predecode_admission": 4,
+    "vocabulary::application_contribution::denial_value": 4,
+    "vocabulary::application_contribution::nested_failure": 3,
+    "vocabulary::application_contribution::producer": 5,
+    "vocabulary::application_contribution::wave_dispatch": 4,
+    "vocabulary::application_query::invariant_read": 3,
+    "vocabulary::application_query::one_shot_denial": 5,
+    "vocabulary::application_runtime::storage_retention": 3,
+    "vocabulary::operation_body::operation_body_value": 3,
+    "vocabulary::product_operation::invariant_admission": 6
+   }
+  }
+ },
+ "moved": 174,
+ "moves": [
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_attempt::approval::WorkflowApprovalDecision",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_attempt::aspect_presence::observe_aspect_presence",
+   "kind": "fn",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_attempt::commit_outcome::WorthQueryApplicationStaleAttempt",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_attempt::computation_routing::ComputationRead",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_attempt::condition::CompiledWorkflowCondition",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_attempt::condition::CompiledWorkflowConditionExpression",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_attempt::condition::OPERAND_FIELDS",
+   "kind": "const",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_attempt::condition::WorkflowConditionOperand",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_attempt::condition::decode_draft",
+   "kind": "fn",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_attempt::condition::decode_operands",
+   "kind": "fn",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_attempt::condition::encode_draft",
+   "kind": "fn",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_attempt::counters::WorthQueryWorkflowCompilationReuseCounters",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_attempt::denial::WorthQueryApplicationCommitDenialKind",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_attempt::expected_steps::WorthQueryExpectedEffectStepPreparationWork",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_attempt::fact::WorthQueryApplicationAdjacencyDirection",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_attempt::fact_custody::RULE_ID",
+   "kind": "const",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_attempt::fact_custody::RULE_VERSION",
+   "kind": "const",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_attempt::fact_custody::fact_custody_receipt_contract",
+   "kind": "fn",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_attempt::idempotency_resolution_denial::WorthQueryApplicationIdempotencyResolutionDenialKind",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_attempt::indexed_entity_selection::IndexedSelectionReobserveDenial",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_attempt::managed_source_read::ManagedInfluenceOrigin",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_attempt::managed_source_read::ManagedSourceReadKey",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_attempt::model::WorthQueryApplicationCreatedRelation",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_attempt::model::WorthQueryApplicationEffectEntity",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_attempt::movement::Movement",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_attempt::observation::WorthQueryApplicationFieldObservation",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_attempt::predecode_admission::observe_aspect_absence",
+   "kind": "fn",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_attempt::predecode_admission::observe_field_observation_borrowed_admitted",
+   "kind": "fn",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_attempt::predecode_admission::observe_field_value_borrowed",
+   "kind": "fn",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_attempt::predecode_admission::observe_field_value_borrowed_admitted",
+   "kind": "fn",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_attempt::projection::WorthQueryApplicationOutputProjectionDenial",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_attempt::publication::PublishedWorkflowDefinitionRef",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_attempt::recorded_intent::WorthQueryRecordedIntentMatch",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_attempt::reference::ProposalText",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_attempt::reference::PublishedWorkflowProposalRef",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_attempt::retention::SHARD_COUNT",
+   "kind": "const",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_attempt::retention::WorkflowInstanceProgressKey",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_attempt::retention_counters::WorthQueryWorkflowInstanceProgressCounters",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_attempt::scope_bindings::CompletedReadScopes",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_attempt::scope_bindings::InstalledScopePosition",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_attempt::selection::SelectedWorkflowCondition",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_attempt::source_currentness::WorthQuerySourceCurrentnessFailure",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_attempt::source_read_authorization::SourceReadAuthorizationKey",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_attempt::unobserved_write::WorthQueryApplicationUnobservedWrite",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_attempt::version::WORKFLOW_FACT_PROTOCOL_VERSION",
+   "kind": "const",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_attempt::workflow_instance_program_publication::PublishedWorkflowInstanceRef",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_attempt::workflow_transition_program_publication::RequiredWorkflowCondition",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_contribution::checkpoint::WorthQueryManagedComputationCheckpoint",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_contribution::checkpoint::WorthQueryManagedComputationExecution",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_contribution::current_basis::CurrentBasis",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_contribution::denial_value::WorthQueryProducerDenialDecodeDenial",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_contribution::denial_value::WorthQueryProducerDenialEncodingRefusal",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_contribution::denial_value::WorthQueryProducerDenialValue",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_contribution::denial_value::mismatch_or",
+   "kind": "fn",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_contribution::nested_failure::MemberComputeFailure",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_contribution::nested_failure::NestedFailureTransport",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_contribution::nested_failure::TakenNestedFailure",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_contribution::prepared_request::ComputedSlot",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_contribution::producer::WorthQueryProducerApplicability",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_contribution::producer::WorthQueryProducerCommitAuthority",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_contribution::producer::WorthQueryProducerInvariantRequirement",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_contribution::producer::WorthQueryProducerLifecyclePosture",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_contribution::producer::WorthQueryWorkflowAssessmentPosture",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_contribution::publication::publication_execution_kind",
+   "kind": "fn",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_contribution::scope::scope_stop_kind",
+   "kind": "fn",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_contribution::seeded_dispatch_orders::ORDERS",
+   "kind": "static",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_contribution::seeded_dispatch_orders::record",
+   "kind": "fn",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_contribution::wave_dispatch::ComputedMember",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_contribution::wave_dispatch::NoMemberFailure",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_contribution::wave_dispatch::from_checkpoint",
+   "kind": "fn",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_contribution::wave_dispatch::settle_outcome",
+   "kind": "fn",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_inbound::transport_binding::WorthQueryInstalledTransportCompletionBinding",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_installation::program_admission::WorthQueryAdmittedProgramSupport",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_installation::program_owner::WorthQuerySelectedProgramOwnerDenial",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_invariant::refusal::canonical_wire_maximum",
+   "kind": "fn",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_invariant::refusal::maximum",
+   "kind": "fn",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_output_demand::accepted_checkpoint_identity::CheckpointOutputSlot",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_output_demand::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_output_demand::native_hints::NativeBranch",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_output_demand::native_hints::NativeHint",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_query::admission::MetadataValidationDenial",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_query::authorized_read::WorthQueryAuthorizedApplicationReadDenial",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_query::basis_registry::WorthQueryApplicationBasisRegistrationDenial",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_query::batch::WorthQueryApplicationQueryBatchResourceDenial",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_query::change_summary::changes_from_summary",
+   "kind": "fn",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_query::content_comparison::ProjectionContentComparisonFault",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_query::content_storage::ContentScratch",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenial",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_query::denial::WorthQueryApplicationQueryAdmissionDenialKind",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_query::history_denial::WorthQueryApplicationHistoryDenial",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_query::identity_kind::WorthQueryRuntimeSourceIdentity",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_query::invariant_read::ManagedSourceValue",
+   "kind": "type",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_query::invariant_read::ReadPosture",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_query::invariant_read::WorthQueryManagedIndexInvariantDenial",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_query::observed_source_denial::WorthQuerySourceExpectationDenialKind",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_query::one_shot::WorthQueryAdmittedOneShotStop",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_query::one_shot::map_authorized_read_denial",
+   "kind": "fn",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_query::one_shot_denial::OneShotDenialPayload",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenial",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_query::one_shot_denial::WorthQueryApplicationOneShotDenialKind",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_query::one_shot_denial::authorization_denial",
+   "kind": "fn",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_query::one_shot_denial::denial",
+   "kind": "fn",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_query::provider::WorthQueryManagedIndexProbeValue",
+   "kind": "type",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_query::publication::ViewChange",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_query::publication::ViewPublicationBasis",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenial",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_query::read_execution_denial::WorthQueryApplicationReadExecutionDenialKind",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_query::round::PredicateNoticeDisposition",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_query::source_identity::WorthQueryObservedSourceCoordinate",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_query::source_identity::WorthQueryObservedSourceOccurrence",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_query::source_rows::WorthQueryManagedIndexSourceSlot",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_query::tree::WatchSlot",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_runtime::WorthQueryApplicationLiveDeliveryCloseReceipt",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_runtime::certification_cost::WorthQueryCertificationWorldHistory",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_runtime::certification_cost::WorthQueryCertificationWorldRetention",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_runtime::execution_memory::WorthQueryExecutionLeaseDenial",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_runtime::receipt::WorthQuerySourcePublicationHeadForTest",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_runtime::receipt::WorthQuerySourcePublicationImageForTest",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_runtime::storage_retention::WorthQueryStorageRetentionDenial",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_runtime::storage_retention::WorthQueryStorageRetentionProgress",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::application_runtime::storage_retention::WorthQueryStorageRetentionStop",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::bootstrap::WorthQueryPrincipalBootstrapRow",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::bootstrap::publication::WorthQueryPrimaryGraphPublication",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::conditional_operation::classification::WorthQueryConditionalSignalDecision",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::conditional_operation::clock_handle::ConditionalClockLease",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::conditional_operation::clock_handle::WorthQueryConditionalClockHandle",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::conditional_operation::predicate_observation::QueryTemporalPredicateProvider",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::conditional_operation::predicate_observation::QueryTemporalPredicateSemanticContract",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::conditional_operation::providers::QueryConditionalComputeContext",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::entity_resolution_denial::WorthQueryEntityResolutionDenial",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::exact_basis_access::WorthQueryExactBasisSnapshotDenial",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::handler::invariant::HandlerInterruption",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::index_currency::WorthQueryPrimaryIndexCurrencyDenial",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::invariant_projection::WorthQueryInvariantMutationTarget",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::invariant_projection::output_availability_candidate::ObservedOutputPosture",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::invariant_projection::verification::ConsumedOutputVerification",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::invariant_projection::verification::ConsumedOutputVerificationStop",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::invariant_projection::work_budget::map_admission_stop",
+   "kind": "fn",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::invariant_projection::work_budget::reserve_pending",
+   "kind": "fn",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::managed_bridge::WorthQueryInstalledApplicationBridge",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::operation_body::WorthQueryOperationBodyDenial",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::operation_body::assessment::WorthQueryCurrentBodyRequirementAssessment",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::operation_body::children::PreparedBodyChildren",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::operation_body::field_expectation::BodyFieldExpectation",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::operation_body::input::PreparedBodyInputs",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::operation_body::operation_body_value::InstalledBodyValue",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::operation_body::operation_body_value::PreparedBodyValues",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::operation_body::operation_body_value::RetainedValues",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::operation_body::path_links::PreparedBodyPathLinks",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::operation_body::path_value::PreparedBodyPathWrites",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::operation_body::reference_input::PreparedBodyReference",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::operation_body::reference_input::PreparedBodyReferences",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::operation_body::requirement::WorthQueryOperationBodyRequirementFinding",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::operation_body::requirement::WorthQueryOperationBodyRequirementStatus",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::operation_body::requirement::WorthQueryOperationBodyRequirementTarget",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::operation_body::retirement::PreparedBodyRetirements",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::operation_body::retirement::PreparedRetirementBatch",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::operation_body::reuse::CreationDisposition",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::operation_body::source::PreparedBodySource",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::operation_body::value::PreparedRequirementOperand",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::output_lineage::commit_touches::CommitTouchEntities",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::output_lineage::commit_touches::CommitTouchInterest",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::product_activation::inspection::WorthQuerySelectedProgramInspectionDenial",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::product_operation::conditional_definition::WorthQueryApplicationConditionalDefinitionAdmissionDenial",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::product_operation::invariant_admission::ReceiptFact",
+   "kind": "struct",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::product_operation::invariant_admission::RequirementSatisfaction",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::product_operation::invariant_admission::admit_required_invariants",
+   "kind": "fn",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::product_operation::invariant_admission::admit_requirement",
+   "kind": "fn",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::product_operation::invariant_admission::admit_requirement_facts",
+   "kind": "fn",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::product_operation::invariant_admission::lower_execution_point",
+   "kind": "fn",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::product_operation::shared_query_basis::SelectedQueryBasisRetentionStop",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::provider::diagnostic::RebaseVerificationReason",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::provider::preflight::PreflightReadRefusal",
+   "kind": "enum",
+   "to": "vocabulary:vocabulary"
+  },
+  {
+   "from": "vocabulary",
+   "item": "vocabulary::provider::preflight::preflight_execution_cause",
+   "kind": "fn",
+   "to": "vocabulary:vocabulary"
+  }
+ ],
+ "parent": "domain_computation::primary_graph",
+ "rounds": [
+  174
+ ],
+ "seams": [
+  {
+   "against": 118,
+   "items": 23,
+   "pair": [
+    "provider",
+    "application_attempt"
+   ],
+   "references": {
+    "application_attempt -> provider": 57,
+    "provider -> application_attempt": 118
+   },
+   "top_items": [
+    {
+     "item": "application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding",
+     "references": 21
+    },
+    {
+     "item": "application_attempt::fact::WorthQueryApplicationObservedFact",
+     "references": 16
+    },
+    {
+     "item": "application_attempt::provider_binding::registration::provider_registration::WorthQueryPrimaryGraphApplicationAttempt",
+     "references": 16
+    },
+    {
+     "item": "application_attempt::retained_decision_facts::control::StorageControl",
+     "references": 14
+    },
+    {
+     "item": "application_attempt::retained_decision_facts::StoreDenial",
+     "references": 9
+    },
+    {
+     "item": "application_attempt::compare_and_commit::committed_publication::WorthQueryCommittedProductPublication",
+     "references": 7
+    },
+    {
+     "item": "application_attempt::read_set::original_read::CompletedOriginalRead",
+     "references": 4
+    },
+    {
+     "item": "application_attempt::retained_decision_facts::endpoints::AdmittedAdjacencyEndpoints",
+     "references": 4
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_attempt::denial::WorthQueryApplicationAttemptDenial",
+     "in": "impl StoreDenial",
+     "item": "application_attempt::retained_decision_facts::StoreDenial"
+    },
+    {
+     "blocked_by": "application_attempt::fact::WorthQueryApplicationObservedFact",
+     "in": "not vocabulary: enum",
+     "item": "application_attempt::fact::WorthQueryApplicationObservedFact"
+    },
+    {
+     "blocked_by": "application_attempt::fact::WorthQueryApplicationObservedFact",
+     "in": "impl CompletedFactProjection",
+     "item": "application_attempt::read_set::application_projection::CompletedFactProjection"
+    },
+    {
+     "blocked_by": "application_attempt::retained_decision_facts::StoreDenial",
+     "in": "impl CompletedFactProjection",
+     "item": "application_attempt::read_set::application_projection::CompletedFactProjection"
+    },
+    {
+     "blocked_by": "application_attempt::compare_and_commit::commit_outcome::denial::WorthQueryApplicationCommitDenialStage",
+     "in": "not vocabulary: enum",
+     "item": "application_attempt::compare_and_commit::commit_outcome::denial::WorthQueryApplicationCommitDenialStage"
+    },
+    {
+     "blocked_by": "application_attempt::read_set::application_projection::CompletedFactProjection",
+     "in": "declaration",
+     "item": "application_attempt::read_set::original_read::CompletedOriginalRead"
+    }
+   ]
+  },
+  {
+   "against": 76,
+   "items": 27,
+   "pair": [
+    "product_operation",
+    "application_query"
+   ],
+   "references": {
+    "application_query -> product_operation": 128,
+    "product_operation -> application_query": 76
+   },
+   "top_items": [
+    {
+     "item": "application_query::retained_read::WorthQueryApplicationReadObservation",
+     "references": 18
+    },
+    {
+     "item": "application_query::access_context::WorthQueryApplicationQueryAccessContext",
+     "references": 7
+    },
+    {
+     "item": "application_query::admission::AdmissionScopedOps",
+     "references": 6
+    },
+    {
+     "item": "application_query::controls::WorthQueryApplicationQueryControls",
+     "references": 6
+    },
+    {
+     "item": "application_query::resource_lifecycle::basis_registry::lease::WorthQueryApplicationBasisLease",
+     "references": 6
+    },
+    {
+     "item": "application_query::graph_read_plan_binding::WorthQueryAdmittedApplicationQueryPlan",
+     "references": 4
+    },
+    {
+     "item": "application_query::document_history::metadata::CompletedMetadataRead",
+     "references": 4
+    },
+    {
+     "item": "application_query::basis::execution_custody::WorthQueryApplicationQueryBasisCustody",
+     "references": 2
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_query::access_context::WorthQueryApplicationQueryAccessContext",
+     "in": "not vocabulary: struct",
+     "item": "application_query::access_context::WorthQueryApplicationQueryAccessContext"
+    },
+    {
+     "blocked_by": "application_query::admission::AdmissionScopedOps",
+     "in": "not vocabulary: trait",
+     "item": "application_query::admission::AdmissionScopedOps"
+    },
+    {
+     "blocked_by": "application_query::admission::permission::selected_access::SelectedIssuedAccessRoot",
+     "in": "declaration",
+     "item": "application_query::graph_read_plan_binding::WorthQueryAdmittedApplicationQueryPlan"
+    },
+    {
+     "blocked_by": "application_query::basis::execution_custody::WorthQueryApplicationQueryBasisCustody",
+     "in": "declaration",
+     "item": "application_query::graph_read_plan_binding::WorthQueryAdmittedApplicationQueryPlan"
+    },
+    {
+     "blocked_by": "application_query::retained_read::WorthQueryApplicationReadObservation",
+     "in": "not vocabulary: struct",
+     "item": "application_query::retained_read::WorthQueryApplicationReadObservation"
+    },
+    {
+     "blocked_by": "application_output_demand::settlement::observation::OriginalSettledProducerObservation",
+     "in": "declaration",
+     "item": "application_query::controls::WorthQueryApplicationQueryControls"
+    }
+   ]
+  },
+  {
+   "against": 75,
+   "items": 19,
+   "pair": [
+    "invariant_projection",
+    "application_attempt"
+   ],
+   "references": {
+    "application_attempt -> invariant_projection": 29,
+    "invariant_projection -> application_attempt": 75
+   },
+   "top_items": [
+    {
+     "item": "application_attempt::fact::WorthQueryApplicationFactKey",
+     "references": 17
+    },
+    {
+     "item": "application_attempt::denial::WorthQueryApplicationAttemptDenial",
+     "references": 11
+    },
+    {
+     "item": "application_attempt::fact::WorthQueryApplicationObservedFact",
+     "references": 8
+    },
+    {
+     "item": "application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence",
+     "references": 6
+    },
+    {
+     "item": "application_attempt::retained_decision_facts::fact_store::RetainedSourceFacts",
+     "references": 5
+    },
+    {
+     "item": "application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLease",
+     "references": 5
+    },
+    {
+     "item": "application_attempt::read_set::computation_routing::ComputationFactAttribution",
+     "references": 4
+    },
+    {
+     "item": "application_attempt::retained_decision_facts::control::StorageControl",
+     "references": 3
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_attempt::denial::WorthQueryApplicationAttemptDenial",
+     "in": "impl StoreDenial",
+     "item": "application_attempt::retained_decision_facts::StoreDenial"
+    },
+    {
+     "blocked_by": "application_attempt::fact::source_publication_read::SourcePublicationRead",
+     "in": "declaration",
+     "item": "application_attempt::fact::WorthQueryApplicationFactKey"
+    },
+    {
+     "blocked_by": "application_attempt::read_set::computation_routing::ComputationFactAttribution",
+     "in": "not vocabulary: struct",
+     "item": "application_attempt::read_set::computation_routing::ComputationFactAttribution"
+    },
+    {
+     "blocked_by": "application_attempt::fact::WorthQueryApplicationObservedFact",
+     "in": "declaration",
+     "item": "application_attempt::retained_decision_facts::fact_store::AuthoringSourceFacts"
+    },
+    {
+     "blocked_by": "application_attempt::retained_decision_facts::StoreDenial",
+     "in": "declaration",
+     "item": "application_attempt::retained_decision_facts::fact_store::AuthoringSourceFacts"
+    },
+    {
+     "blocked_by": "application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence",
+     "in": "not vocabulary: struct",
+     "item": "application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence"
+    }
+   ]
+  },
+  {
+   "against": 57,
+   "items": 6,
+   "pair": [
+    "output_lineage",
+    "application_attempt"
+   ],
+   "references": {
+    "application_attempt -> output_lineage": 11,
+    "output_lineage -> application_attempt": 57
+   },
+   "top_items": [
+    {
+     "item": "application_attempt::fact::WorthQueryApplicationObservedFact",
+     "references": 19
+    },
+    {
+     "item": "application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence",
+     "references": 15
+    },
+    {
+     "item": "application_attempt::retained_decision_facts::control::StorageControl",
+     "references": 10
+    },
+    {
+     "item": "application_attempt::retained_decision_facts::StoreDenial",
+     "references": 7
+    },
+    {
+     "item": "application_attempt::compare_and_commit::commit_receipt::WorthQueryApplicationCommitReceipt",
+     "references": 4
+    },
+    {
+     "item": "application_attempt::provider_binding::registration::provider_registration::WorthQueryPrimaryGraphApplicationAttempt",
+     "references": 2
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_attempt::denial::WorthQueryApplicationAttemptDenial",
+     "in": "impl StoreDenial",
+     "item": "application_attempt::retained_decision_facts::StoreDenial"
+    },
+    {
+     "blocked_by": "application_attempt::retained_decision_facts::control::StorageControl",
+     "in": "not vocabulary: struct",
+     "item": "application_attempt::retained_decision_facts::control::StorageControl"
+    },
+    {
+     "blocked_by": "application_attempt::fact::WorthQueryApplicationObservedFact",
+     "in": "not vocabulary: enum",
+     "item": "application_attempt::fact::WorthQueryApplicationObservedFact"
+    },
+    {
+     "blocked_by": "application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence",
+     "in": "not vocabulary: struct",
+     "item": "application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence"
+    },
+    {
+     "blocked_by": "application_attempt::compare_and_commit::commit_receipt::WorthQueryApplicationCommitReceipt",
+     "in": "not vocabulary: struct",
+     "item": "application_attempt::compare_and_commit::commit_receipt::WorthQueryApplicationCommitReceipt"
+    },
+    {
+     "blocked_by": "application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding",
+     "in": "declaration",
+     "item": "application_attempt::provider_binding::registration::provider_registration::WorthQueryPrimaryGraphApplicationAttempt"
+    }
+   ]
+  },
+  {
+   "against": 46,
+   "items": 10,
+   "pair": [
+    "application_output_demand",
+    "application_attempt"
+   ],
+   "references": {
+    "application_attempt -> application_output_demand": 15,
+    "application_output_demand -> application_attempt": 46
+   },
+   "top_items": [
+    {
+     "item": "application_attempt::compare_and_commit::commit_receipt::WorthQueryApplicationCommitReceipt",
+     "references": 20
+    },
+    {
+     "item": "application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence",
+     "references": 11
+    },
+    {
+     "item": "application_attempt::compare_and_commit::commit_outcome::WorthQueryApplicationUncommitted",
+     "references": 3
+    },
+    {
+     "item": "application_attempt::compare_and_commit::commit_receipt::committed_changes::WorthQueryApplicationCommittedChanges",
+     "references": 3
+    },
+    {
+     "item": "application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding",
+     "references": 2
+    },
+    {
+     "item": "application_attempt::compare_and_commit::commit_outcome::denial::WorthQueryApplicationCommitDenialStage",
+     "references": 2
+    },
+    {
+     "item": "application_attempt::compare_and_commit::cleanup_required::WorthQueryApplicationCleanupRequired",
+     "references": 2
+    },
+    {
+     "item": "application_attempt::compare_and_commit::committed_publication::WorthQueryCommittedProductPublication",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_attempt::compare_and_commit::commit_receipt::WorthQueryApplicationCommitReceipt",
+     "in": "not vocabulary: struct",
+     "item": "application_attempt::compare_and_commit::commit_receipt::WorthQueryApplicationCommitReceipt"
+    },
+    {
+     "blocked_by": "application_attempt::compare_and_commit::commit_deferred::WorthQueryApplicationCommitDeferred",
+     "in": "declaration",
+     "item": "application_attempt::compare_and_commit::commit_outcome::WorthQueryApplicationUncommitted"
+    },
+    {
+     "blocked_by": "application_attempt::compare_and_commit::commit_outcome::denial::WorthQueryApplicationCommitDenial",
+     "in": "declaration",
+     "item": "application_attempt::compare_and_commit::commit_outcome::WorthQueryApplicationUncommitted"
+    },
+    {
+     "blocked_by": "application_attempt::denial::WorthQueryApplicationAttemptDenial",
+     "in": "impl WorthQueryApplicationCommittedChanges",
+     "item": "application_attempt::compare_and_commit::commit_receipt::committed_changes::WorthQueryApplicationCommittedChanges"
+    },
+    {
+     "blocked_by": "application_attempt::workflow::actor::record::WorkflowActorFields",
+     "in": "impl WorthQueryApplicationCommittedChanges",
+     "item": "application_attempt::compare_and_commit::commit_receipt::committed_changes::WorthQueryApplicationCommittedChanges"
+    },
+    {
+     "blocked_by": "application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding",
+     "in": "not vocabulary: struct",
+     "item": "application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding"
+    }
+   ]
+  },
+  {
+   "against": 45,
+   "items": 7,
+   "pair": [
+    "output_lineage",
+    "application_output_demand"
+   ],
+   "references": {
+    "application_output_demand -> output_lineage": 34,
+    "output_lineage -> application_output_demand": 45
+   },
+   "top_items": [
+    {
+     "item": "application_output_demand::denial::WorthQueryOutputDemandDenial",
+     "references": 14
+    },
+    {
+     "item": "application_output_demand::denial::kind::WorthQueryOutputDemandDenialKind",
+     "references": 11
+    },
+    {
+     "item": "application_output_demand::registry::required_work::RequiredWorkMembership",
+     "references": 9
+    },
+    {
+     "item": "application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointIdentity",
+     "references": 6
+    },
+    {
+     "item": "application_output_demand::registry::ready_backing::ReadyCompletion",
+     "references": 3
+    },
+    {
+     "item": "application_output_demand::registry::WorthQueryAcceptedOutputAuthority",
+     "references": 1
+    },
+    {
+     "item": "application_output_demand::settlement::WorthQueryOutputDemandSettlement",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_output_demand::denial::WorthQueryOutputDemandDenial",
+     "in": "not vocabulary: struct",
+     "item": "application_output_demand::denial::WorthQueryOutputDemandDenial"
+    },
+    {
+     "blocked_by": "application_checkpoint::metadata_funding::CheckpointMetadataFunding",
+     "in": "declaration",
+     "item": "application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointIdentity"
+    },
+    {
+     "blocked_by": "vocabulary::application_attempt::output_correspondence::WorthQueryCheckpointOutputRole",
+     "in": "declaration",
+     "item": "application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointIdentity"
+    },
+    {
+     "blocked_by": "application_output_demand::denial::kind::WorthQueryOutputDemandDenialKind",
+     "in": "not vocabulary: enum",
+     "item": "application_output_demand::denial::kind::WorthQueryOutputDemandDenialKind"
+    },
+    {
+     "blocked_by": "application_output_demand::registry::required_work::RequiredWorkMembership",
+     "in": "not vocabulary: struct",
+     "item": "application_output_demand::registry::required_work::RequiredWorkMembership"
+    },
+    {
+     "blocked_by": "application_output_demand::registry::ready_backing::ReadyCell",
+     "in": "declaration",
+     "item": "application_output_demand::registry::ready_backing::ReadyCompletion"
+    }
+   ]
+  },
+  {
+   "against": 43,
+   "items": 4,
+   "pair": [
+    "application_checkpoint",
+    "application_attempt"
+   ],
+   "references": {
+    "application_attempt -> application_checkpoint": 53,
+    "application_checkpoint -> application_attempt": 43
+   },
+   "top_items": [
+    {
+     "item": "application_attempt::fact::WorthQueryApplicationObservedFact",
+     "references": 14
+    },
+    {
+     "item": "application_attempt::retained_decision_facts::control::StorageControl",
+     "references": 14
+    },
+    {
+     "item": "application_attempt::retained_decision_facts::StoreDenial",
+     "references": 14
+    },
+    {
+     "item": "application_attempt::retained_decision_facts::endpoints::AdmittedAdjacencyEndpoints",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_attempt::denial::WorthQueryApplicationAttemptDenial",
+     "in": "impl StoreDenial",
+     "item": "application_attempt::retained_decision_facts::StoreDenial"
+    },
+    {
+     "blocked_by": "application_attempt::fact::WorthQueryApplicationObservedFact",
+     "in": "not vocabulary: enum",
+     "item": "application_attempt::fact::WorthQueryApplicationObservedFact"
+    },
+    {
+     "blocked_by": "application_attempt::denial::WorthQueryApplicationAttemptDenial",
+     "in": "impl AdmittedAdjacencyEndpoints",
+     "item": "application_attempt::retained_decision_facts::endpoints::AdmittedAdjacencyEndpoints"
+    },
+    {
+     "blocked_by": "application_attempt::retained_decision_facts::StoreDenial",
+     "in": "impl AdmittedAdjacencyEndpoints",
+     "item": "application_attempt::retained_decision_facts::endpoints::AdmittedAdjacencyEndpoints"
+    },
+    {
+     "blocked_by": "application_attempt::retained_decision_facts::control::StorageControl",
+     "in": "not vocabulary: struct",
+     "item": "application_attempt::retained_decision_facts::control::StorageControl"
+    }
+   ]
+  },
+  {
+   "against": 39,
+   "items": 8,
+   "pair": [
+    "application_attempt",
+    "product_operation"
+   ],
+   "references": {
+    "application_attempt -> product_operation": 39,
+    "product_operation -> application_attempt": 68
+   },
+   "top_items": [
+    {
+     "item": "product_operation::context::WorthQuerySelectedProductOperation",
+     "references": 18
+    },
+    {
+     "item": "product_operation::document_history::navigation::output_authority::producer_invocation::HistoryProducerInvocation",
+     "references": 9
+    },
+    {
+     "item": "product_operation::conditional_definition::application_change::WorthQueryAdmittedApplicationConditionalDefinition",
+     "references": 7
+    },
+    {
+     "item": "product_operation::correction_source::authored_identity::candidate::AuthoredCorrectionCandidateDenial",
+     "references": 1
+    },
+    {
+     "item": "product_operation::shared_query_basis::SharedSelectedProductOperation",
+     "references": 1
+    },
+    {
+     "item": "product_operation::program_adoption::preparation::migration::WorthQueryProgramMigrationPreparationDenial",
+     "references": 1
+    },
+    {
+     "item": "product_operation::context::SelectedQueryOrigin",
+     "references": 1
+    },
+    {
+     "item": "product_operation::observation_room::ObservationRoomScopedOps",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "product_operation::context::WorthQuerySelectedProductOperation",
+     "in": "not vocabulary: struct",
+     "item": "product_operation::context::WorthQuerySelectedProductOperation"
+    },
+    {
+     "blocked_by": "product_operation::correction_source::authored_identity::candidate::AuthoredCorrectionCandidateDenial",
+     "in": "not vocabulary: enum",
+     "item": "product_operation::correction_source::authored_identity::candidate::AuthoredCorrectionCandidateDenial"
+    },
+    {
+     "blocked_by": "product_operation::conditional_definition::application_change::WorthQueryAdmittedApplicationConditionalDefinition",
+     "in": "not vocabulary: struct",
+     "item": "product_operation::conditional_definition::application_change::WorthQueryAdmittedApplicationConditionalDefinition"
+    },
+    {
+     "blocked_by": "product_operation::shared_query_basis::SharedSelectedProductOperation",
+     "in": "not vocabulary: struct",
+     "item": "product_operation::shared_query_basis::SharedSelectedProductOperation"
+    },
+    {
+     "blocked_by": "product_operation::document_history::navigation::output_authority::producer_invocation::HistoryProducerInvocation",
+     "in": "not vocabulary: struct",
+     "item": "product_operation::document_history::navigation::output_authority::producer_invocation::HistoryProducerInvocation"
+    },
+    {
+     "blocked_by": "product_operation::program_adoption::preparation::migration::WorthQueryProgramMigrationPreparationDenial",
+     "in": "not vocabulary: enum",
+     "item": "product_operation::program_adoption::preparation::migration::WorthQueryProgramMigrationPreparationDenial"
+    }
+   ]
+  },
+  {
+   "against": 30,
+   "items": 4,
+   "pair": [
+    "handler",
+    "application_entry"
+   ],
+   "references": {
+    "application_entry -> handler": 6,
+    "handler -> application_entry": 30
+   },
+   "top_items": [
+    {
+     "item": "application_entry::mutation::HandlerExecutionDenial",
+     "references": 21
+    },
+    {
+     "item": "application_entry::mutation::OperationHandler",
+     "references": 4
+    },
+    {
+     "item": "application_entry::mutation::HandlerResult",
+     "references": 3
+    },
+    {
+     "item": "application_entry::mutation::execution::MutationHandlerExecutionDenial",
+     "references": 2
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_entry::mutation::HandlerExecutionDenial",
+     "in": "not vocabulary: struct",
+     "item": "application_entry::mutation::HandlerExecutionDenial"
+    },
+    {
+     "blocked_by": "application_entry::mutation::OperationHandler",
+     "in": "not vocabulary: trait",
+     "item": "application_entry::mutation::OperationHandler"
+    },
+    {
+     "blocked_by": "application_entry::mutation::HandlerResult",
+     "in": "not vocabulary: enum",
+     "item": "application_entry::mutation::HandlerResult"
+    },
+    {
+     "blocked_by": "application_attempt::denial::WorthQueryApplicationAttemptDenial",
+     "in": "declaration",
+     "item": "application_entry::mutation::execution::MutationHandlerExecutionDenial"
+    },
+    {
+     "blocked_by": "application_entry::mutation::HandlerExecutionDenial",
+     "in": "declaration",
+     "item": "application_entry::mutation::execution::MutationHandlerExecutionDenial"
+    }
+   ]
+  },
+  {
+   "against": 30,
+   "items": 7,
+   "pair": [
+    "application_output_demand",
+    "application_query"
+   ],
+   "references": {
+    "application_output_demand -> application_query": 30,
+    "application_query -> application_output_demand": 20
+   },
+   "top_items": [
+    {
+     "item": "application_query::retained_read::WorthQueryApplicationReadObservation",
+     "references": 15
+    },
+    {
+     "item": "application_query::observed_source::retained_dependencies::WorthQueryRetainedQueryDependencies",
+     "references": 4
+    },
+    {
+     "item": "application_query::observed_source::retained_dependencies::WorthQueryRequiredSetCurrentnessDenial",
+     "references": 4
+    },
+    {
+     "item": "application_query::observed_source::source_identity::WorthQueryObservedSourceEpoch",
+     "references": 3
+    },
+    {
+     "item": "application_query::managed_index::denial::WorthQueryManagedIndexDenial",
+     "references": 2
+    },
+    {
+     "item": "application_query::observed_source::WorthQueryObservedSource",
+     "references": 1
+    },
+    {
+     "item": "application_query::managed_index::denial::causes::WorthQueryManagedIndexDenialCause",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_query::managed_index::denial::WorthQueryManagedIndexDenial",
+     "in": "not vocabulary: struct",
+     "item": "application_query::managed_index::denial::WorthQueryManagedIndexDenial"
+    },
+    {
+     "blocked_by": "application_query::observed_source::source_identity::WorthQueryObservedSourceEpoch",
+     "in": "not vocabulary: struct",
+     "item": "application_query::observed_source::source_identity::WorthQueryObservedSourceEpoch"
+    },
+    {
+     "blocked_by": "application_query::retained_read::WorthQueryApplicationReadObservation",
+     "in": "not vocabulary: struct",
+     "item": "application_query::retained_read::WorthQueryApplicationReadObservation"
+    },
+    {
+     "blocked_by": "application_query::observed_source::retained_dependencies::WorthQueryRetainedQueryDependencies",
+     "in": "not vocabulary: struct",
+     "item": "application_query::observed_source::retained_dependencies::WorthQueryRetainedQueryDependencies"
+    },
+    {
+     "blocked_by": "application_output_demand::denial::WorthQueryOutputDemandDenial",
+     "in": "declaration",
+     "item": "application_query::observed_source::retained_dependencies::WorthQueryRequiredSetCurrentnessDenial"
+    },
+    {
+     "blocked_by": "application_query::observed_source::denial::WorthQuerySourceExpectationDenial",
+     "in": "declaration",
+     "item": "application_query::observed_source::retained_dependencies::WorthQueryRequiredSetCurrentnessDenial"
+    }
+   ]
+  },
+  {
+   "against": 28,
+   "items": 4,
+   "pair": [
+    "output_lineage",
+    "invariant_projection"
+   ],
+   "references": {
+    "invariant_projection -> output_lineage": 64,
+    "output_lineage -> invariant_projection": 28
+   },
+   "top_items": [
+    {
+     "item": "invariant_projection::consumed_output::ConsumedOutputEvidence",
+     "references": 21
+    },
+    {
+     "item": "invariant_projection::consumed_output::verification::EvidenceView",
+     "references": 4
+    },
+    {
+     "item": "invariant_projection::output_availability_candidate::ObservedOutputCandidate",
+     "references": 2
+    },
+    {
+     "item": "invariant_projection::consumed_output::pending_dependency::SelectedPendingConsumedOutput",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "invariant_projection::consumed_output::ConsumedOutputEvidence",
+     "in": "not vocabulary: struct",
+     "item": "invariant_projection::consumed_output::ConsumedOutputEvidence"
+    },
+    {
+     "blocked_by": "invariant_projection::consumed_output::ConsumedOutputEvidence",
+     "in": "declaration",
+     "item": "invariant_projection::consumed_output::verification::EvidenceView"
+    },
+    {
+     "blocked_by": "output_lineage::native_output_witness::SealedNativeOutputWitness",
+     "in": "declaration",
+     "item": "invariant_projection::consumed_output::verification::EvidenceView"
+    },
+    {
+     "blocked_by": "invariant_projection::output_availability_candidate::CandidateEvidence",
+     "in": "declaration",
+     "item": "invariant_projection::output_availability_candidate::ObservedOutputCandidate"
+    },
+    {
+     "blocked_by": "invariant_projection::output_availability_candidate::dependencies::PostingDependencies",
+     "in": "declaration",
+     "item": "invariant_projection::output_availability_candidate::ObservedOutputCandidate"
+    },
+    {
+     "blocked_by": "invariant_projection::consumed_output::ConsumedOutputEvidence",
+     "in": "declaration",
+     "item": "invariant_projection::consumed_output::pending_dependency::SelectedPendingConsumedOutput"
+    }
+   ]
+  },
+  {
+   "against": 23,
+   "items": 9,
+   "pair": [
+    "output_lineage",
+    "application_contribution"
+   ],
+   "references": {
+    "application_contribution -> output_lineage": 41,
+    "output_lineage -> application_contribution": 23
+   },
+   "top_items": [
+    {
+     "item": "application_contribution::partitioned_computation::incremental::prior_absence::PriorAbsence",
+     "references": 5
+    },
+    {
+     "item": "application_contribution::partitioned_computation::incremental::prior_absence::SealedComputationRetention",
+     "references": 4
+    },
+    {
+     "item": "application_contribution::producer::demand::progression::required_wave::resolved::matched_predecessors::MatchedRequiredPredecessors",
+     "references": 4
+    },
+    {
+     "item": "application_contribution::producer::registry::semantic_edition::InstalledProducerEdition",
+     "references": 3
+    },
+    {
+     "item": "application_contribution::partitioned_computation::incremental::retained::SealedComputationRun",
+     "references": 2
+    },
+    {
+     "item": "application_contribution::partitioned_computation::incremental::retained::RetainedComputation",
+     "references": 2
+    },
+    {
+     "item": "application_contribution::partitioned_computation::incremental::carriage::ComputationPrior",
+     "references": 1
+    },
+    {
+     "item": "application_contribution::partitioned_computation::incremental::published_state::observe_published",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_contribution::partitioned_computation::incremental::retained::SealedComputationRun",
+     "in": "not vocabulary: struct",
+     "item": "application_contribution::partitioned_computation::incremental::retained::SealedComputationRun"
+    },
+    {
+     "blocked_by": "application_contribution::partitioned_computation::incremental::retained::RetainedComputation",
+     "in": "not vocabulary: struct",
+     "item": "application_contribution::partitioned_computation::incremental::retained::RetainedComputation"
+    },
+    {
+     "blocked_by": "application_contribution::partitioned_computation::incremental::carriage::ComputationPrior",
+     "in": "not vocabulary: struct",
+     "item": "application_contribution::partitioned_computation::incremental::carriage::ComputationPrior"
+    },
+    {
+     "blocked_by": "application_contribution::partitioned_computation::incremental::published_state::WorthQueryPublishedComputationStateForTest",
+     "in": "body",
+     "item": "application_contribution::partitioned_computation::incremental::published_state::observe_published"
+    },
+    {
+     "blocked_by": "application_contribution::partitioned_computation::incremental::retained::RetainedComputation",
+     "in": "body",
+     "item": "application_contribution::partitioned_computation::incremental::published_state::observe_published"
+    },
+    {
+     "blocked_by": "application_contribution::partitioned_computation::incremental::prior_absence::SealedComputationRetention",
+     "in": "not vocabulary: enum",
+     "item": "application_contribution::partitioned_computation::incremental::prior_absence::SealedComputationRetention"
+    }
+   ]
+  },
+  {
+   "against": 22,
+   "items": 5,
+   "pair": [
+    "product_operation",
+    "application_contribution"
+   ],
+   "references": {
+    "application_contribution -> product_operation": 36,
+    "product_operation -> application_contribution": 22
+   },
+   "top_items": [
+    {
+     "item": "application_contribution::producer::WorthQueryApplicationProducerBinding",
+     "references": 12
+    },
+    {
+     "item": "application_contribution::producer::WorthQueryProducerOutputFamily",
+     "references": 3
+    },
+    {
+     "item": "application_contribution::producer::WorthQueryApplicationProducerProvider",
+     "references": 3
+    },
+    {
+     "item": "application_contribution::producer::WorthQueryApplicationOutputDemand",
+     "references": 3
+    },
+    {
+     "item": "application_contribution::producer::registry::WorthQueryInstalledApplicationProducerRegistry",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_contribution::producer::registry::WorthQueryInstalledApplicationProducerRegistry",
+     "in": "not vocabulary: struct",
+     "item": "application_contribution::producer::registry::WorthQueryInstalledApplicationProducerRegistry"
+    },
+    {
+     "blocked_by": "application_contribution::producer::WorthQueryApplicationProducerBinding",
+     "in": "not vocabulary: trait",
+     "item": "application_contribution::producer::WorthQueryApplicationProducerBinding"
+    },
+    {
+     "blocked_by": "application_contribution::producer::WorthQueryProducerOutputFamily",
+     "in": "not vocabulary: trait",
+     "item": "application_contribution::producer::WorthQueryProducerOutputFamily"
+    },
+    {
+     "blocked_by": "application_contribution::producer::WorthQueryApplicationProducerProvider",
+     "in": "not vocabulary: trait",
+     "item": "application_contribution::producer::WorthQueryApplicationProducerProvider"
+    },
+    {
+     "blocked_by": "application_contribution::producer::WorthQueryApplicationOutputDemand",
+     "in": "not vocabulary: trait",
+     "item": "application_contribution::producer::WorthQueryApplicationOutputDemand"
+    }
+   ]
+  },
+  {
+   "against": 21,
+   "items": 12,
+   "pair": [
+    "application_discovery",
+    "application_attempt"
+   ],
+   "references": {
+    "application_attempt -> application_discovery": 18,
+    "application_discovery -> application_attempt": 21
+   },
+   "top_items": [
+    {
+     "item": "application_attempt::fact::adjacency::observe_adjacency",
+     "references": 4
+    },
+    {
+     "item": "application_attempt::workflow::schema::layout::WorthQueryWorkflowLayout",
+     "references": 3
+    },
+    {
+     "item": "application_attempt::workflow_instance_observation::governed_record",
+     "references": 2
+    },
+    {
+     "item": "application_attempt::denial::WorthQueryApplicationAttemptDenial",
+     "references": 2
+    },
+    {
+     "item": "application_attempt::workflow_instance_program::discovery_intent::WorthQueryWorkflowInstanceDiscoveryIntent",
+     "references": 2
+    },
+    {
+     "item": "application_attempt::workflow_instance_observation::read_only::ReadOnlyWorkflowHistory",
+     "references": 2
+    },
+    {
+     "item": "application_attempt::workflow::schema::version::WORKFLOW_INSTANCE_FACT_PROTOCOL_VERSION",
+     "references": 1
+    },
+    {
+     "item": "application_attempt::workflow_instance_observation::read_fields::ReadFields",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_attempt::workflow_instance_observation::governed_record",
+     "in": "not vocabulary: module",
+     "item": "application_attempt::workflow_instance_observation::governed_record"
+    },
+    {
+     "blocked_by": "application_attempt::workflow::schema::layout::WorthQueryWorkflowLayout",
+     "in": "not vocabulary: struct",
+     "item": "application_attempt::workflow::schema::layout::WorthQueryWorkflowLayout"
+    },
+    {
+     "blocked_by": "application_attempt::workflow::schema::version::WORKFLOW_INSTANCE_FACT_PROTOCOL_VERSION",
+     "in": "not vocabulary: const",
+     "item": "application_attempt::workflow::schema::version::WORKFLOW_INSTANCE_FACT_PROTOCOL_VERSION"
+    },
+    {
+     "blocked_by": "application_attempt::denial::WorthQueryApplicationAttemptDenial",
+     "in": "not vocabulary: struct",
+     "item": "application_attempt::denial::WorthQueryApplicationAttemptDenial"
+    },
+    {
+     "blocked_by": "application_attempt::fact::adjacency::observe_adjacency",
+     "in": "not vocabulary: fn",
+     "item": "application_attempt::fact::adjacency::observe_adjacency"
+    },
+    {
+     "blocked_by": "application_attempt::workflow_instance_program::publication::PerformedWorkflowInstanceStart",
+     "in": "impl<Schema> WorthQueryWorkflowInstanceDiscoveryIntent<Schema>",
+     "item": "application_attempt::workflow_instance_program::discovery_intent::WorthQueryWorkflowInstanceDiscoveryIntent"
+    }
+   ]
+  },
+  {
+   "against": 19,
+   "items": 1,
+   "pair": [
+    "invariant_projection",
+    "application_entry"
+   ],
+   "references": {
+    "application_entry -> invariant_projection": 3,
+    "invariant_projection -> application_entry": 19
+   },
+   "top_items": [
+    {
+     "item": "application_entry::mutation::HandlerExecutionDenial",
+     "references": 19
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_entry::mutation::HandlerExecutionDenial",
+     "in": "not vocabulary: struct",
+     "item": "application_entry::mutation::HandlerExecutionDenial"
+    }
+   ]
+  },
+  {
+   "against": 19,
+   "items": 5,
+   "pair": [
+    "provider",
+    "application_query"
+   ],
+   "references": {
+    "application_query -> provider": 6,
+    "provider -> application_query": 19
+   },
+   "top_items": [
+    {
+     "item": "application_query::derived_view::registry::predicate::preparation::PredicatePreparationOwner",
+     "references": 10
+    },
+    {
+     "item": "application_query::derived_view::registry::predicate::preparation::PredicatePreparationRetirement",
+     "references": 6
+    },
+    {
+     "item": "application_query::derived_view::registry::predicate::preparation::PreparedPredicatePublication",
+     "references": 1
+    },
+    {
+     "item": "application_query::derived_view::registry::PreparedManagedViewPublication",
+     "references": 1
+    },
+    {
+     "item": "application_query::derived_view::registry::predicate::preparation::PredicatePreparationFactory",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_query::derived_view::registry::predicate::preparation::round::PreparedPredicateNotices",
+     "in": "declaration",
+     "item": "application_query::derived_view::registry::predicate::preparation::PreparedPredicatePublication"
+    },
+    {
+     "blocked_by": "application_query::derived_view::registry::predicate::preparation::round::PreparedPredicateNotices",
+     "in": "declaration",
+     "item": "application_query::derived_view::registry::predicate::preparation::PredicatePreparationOwner"
+    },
+    {
+     "blocked_by": "application_query::derived_view::registry::predicate::preparation::round::Round",
+     "in": "declaration",
+     "item": "application_query::derived_view::registry::predicate::preparation::PredicatePreparationOwner"
+    },
+    {
+     "blocked_by": "application_query::derived_view::registry::RegisteredDerivedView",
+     "in": "declaration",
+     "item": "application_query::derived_view::registry::PreparedManagedViewPublication"
+    },
+    {
+     "blocked_by": "application_query::derived_view::registry::predicate::preparation::PredicatePreparationOwner",
+     "in": "declaration",
+     "item": "application_query::derived_view::registry::predicate::preparation::PredicatePreparationRetirement"
+    },
+    {
+     "blocked_by": "application_query::derived_view::registry::predicate::preparation::PredicatePreparationOwner",
+     "in": "impl PredicatePreparationRetirement",
+     "item": "application_query::derived_view::registry::predicate::preparation::PredicatePreparationRetirement"
+    }
+   ]
+  },
+  {
+   "against": 17,
+   "items": 10,
+   "pair": [
+    "provider",
+    "output_lineage"
+   ],
+   "references": {
+    "output_lineage -> provider": 5,
+    "provider -> output_lineage": 17
+   },
+   "top_items": [
+    {
+     "item": "output_lineage::prepared_slot::PreparedOutputLineageSlot",
+     "references": 4
+    },
+    {
+     "item": "output_lineage::invalidation::computation_changes::postcondition_carry::PostconditionCarry",
+     "references": 2
+    },
+    {
+     "item": "output_lineage::invalidation::settlement::posting_continuation::PostingContinuation",
+     "references": 2
+    },
+    {
+     "item": "output_lineage::prepared_slot::preparation::prepare",
+     "references": 2
+    },
+    {
+     "item": "output_lineage::native_output_witness::PreparedNativeOutputWitness",
+     "references": 2
+    },
+    {
+     "item": "output_lineage::invalidation::publication::register_completed",
+     "references": 1
+    },
+    {
+     "item": "output_lineage::invalidation::output_availability::publication_fence::SourcePublicationReadFence",
+     "references": 1
+    },
+    {
+     "item": "output_lineage::invalidation::settlement::posting_continuation::PostingRebaseBasis",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "output_lineage::invalidation::computation_changes::postcondition_carry::PostconditionCarry",
+     "in": "not vocabulary: struct",
+     "item": "output_lineage::invalidation::computation_changes::postcondition_carry::PostconditionCarry"
+    },
+    {
+     "blocked_by": "output_lineage::invalidation::settlement::posting_continuation::CompletedPostingRebase",
+     "in": "declaration",
+     "item": "output_lineage::invalidation::settlement::posting_continuation::PostingContinuation"
+    },
+    {
+     "blocked_by": "output_lineage::invalidation::mark_state::MarkState",
+     "in": "impl PostingContinuation",
+     "item": "output_lineage::invalidation::settlement::posting_continuation::PostingContinuation"
+    },
+    {
+     "blocked_by": "output_lineage::WorthQueryApplicationOutputLineage",
+     "in": "declaration",
+     "item": "output_lineage::prepared_slot::PreparedOutputLineageSlot"
+    },
+    {
+     "blocked_by": "output_lineage::input_reuse_key::PreparedInputReuseKey",
+     "in": "declaration",
+     "item": "output_lineage::prepared_slot::PreparedOutputLineageSlot"
+    },
+    {
+     "blocked_by": "application_output_demand::denial::WorthQueryOutputDemandDenial",
+     "in": "body",
+     "item": "output_lineage::prepared_slot::preparation::prepare"
+    }
+   ]
+  },
+  {
+   "against": 16,
+   "items": 11,
+   "pair": [
+    "invariant_projection",
+    "application_contribution"
+   ],
+   "references": {
+    "application_contribution -> invariant_projection": 52,
+    "invariant_projection -> application_contribution": 16
+   },
+   "top_items": [
+    {
+     "item": "application_contribution::partitioned_computation::incremental::Comparator",
+     "references": 3
+    },
+    {
+     "item": "application_contribution::partitioned_computation::incremental::carriage::ComputationPrior",
+     "references": 2
+    },
+    {
+     "item": "application_contribution::producer::WorthQueryProducerOutputFamily",
+     "references": 2
+    },
+    {
+     "item": "application_contribution::partitioned_computation::incremental::prior_absence::CompletedComputationRetention",
+     "references": 2
+    },
+    {
+     "item": "application_contribution::partitioned_computation::incremental::deposit::ComputationDeposit",
+     "references": 1
+    },
+    {
+     "item": "application_contribution::producer::WorthQueryApplicationOutputDemand",
+     "references": 1
+    },
+    {
+     "item": "application_contribution::producer::source_qualification::SourceQualificationScopedOps",
+     "references": 1
+    },
+    {
+     "item": "application_contribution::partitioned_computation::incremental::prior_absence::Suppression",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_contribution::partitioned_computation::incremental::carriage::ComputationPrior",
+     "in": "not vocabulary: struct",
+     "item": "application_contribution::partitioned_computation::incremental::carriage::ComputationPrior"
+    },
+    {
+     "blocked_by": "application_contribution::partitioned_computation::incremental::Comparator",
+     "in": "not vocabulary: struct",
+     "item": "application_contribution::partitioned_computation::incremental::Comparator"
+    },
+    {
+     "blocked_by": "application_contribution::partitioned_computation::incremental::deposit::ComputationDeposit",
+     "in": "not vocabulary: struct",
+     "item": "application_contribution::partitioned_computation::incremental::deposit::ComputationDeposit"
+    },
+    {
+     "blocked_by": "application_contribution::producer::WorthQueryProducerOutputFamily",
+     "in": "not vocabulary: trait",
+     "item": "application_contribution::producer::WorthQueryProducerOutputFamily"
+    },
+    {
+     "blocked_by": "application_contribution::producer::WorthQueryApplicationOutputDemand",
+     "in": "not vocabulary: trait",
+     "item": "application_contribution::producer::WorthQueryApplicationOutputDemand"
+    },
+    {
+     "blocked_by": "application_contribution::partitioned_computation::incremental::prior_absence::CompletedComputationRetention",
+     "in": "not vocabulary: enum",
+     "item": "application_contribution::partitioned_computation::incremental::prior_absence::CompletedComputationRetention"
+    }
+   ]
+  },
+  {
+   "against": 14,
+   "items": 2,
+   "pair": [
+    "handler",
+    "application_attempt"
+   ],
+   "references": {
+    "application_attempt -> handler": 4,
+    "handler -> application_attempt": 14
+   },
+   "top_items": [
+    {
+     "item": "application_attempt::denial::WorthQueryApplicationAttemptDenial",
+     "references": 13
+    },
+    {
+     "item": "application_attempt::effect_program::model::WorthQueryApplicationEffectProgramBuilder",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_attempt::denial::WorthQueryApplicationAttemptDenial",
+     "in": "not vocabulary: struct",
+     "item": "application_attempt::denial::WorthQueryApplicationAttemptDenial"
+    },
+    {
+     "blocked_by": "application_attempt::effect_program::model::WorthQueryApplicationEffectProgramBuilder",
+     "in": "not vocabulary: struct",
+     "item": "application_attempt::effect_program::model::WorthQueryApplicationEffectProgramBuilder"
+    }
+   ]
+  },
+  {
+   "against": 14,
+   "items": 4,
+   "pair": [
+    "application_checkpoint",
+    "application_output_demand"
+   ],
+   "references": {
+    "application_checkpoint -> application_output_demand": 14,
+    "application_output_demand -> application_checkpoint": 13
+   },
+   "top_items": [
+    {
+     "item": "application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointIdentity",
+     "references": 10
+    },
+    {
+     "item": "application_output_demand::registry::accepted_checkpoint::AcceptedCheckpointFactSource",
+     "references": 2
+    },
+    {
+     "item": "application_output_demand::recovered_outputs::WorthQueryRecoveredOutputs",
+     "references": 1
+    },
+    {
+     "item": "application_output_demand::registry::WorthQueryOutputDemandRegistry",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_checkpoint::metadata_funding::CheckpointMetadataFunding",
+     "in": "declaration",
+     "item": "application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointIdentity"
+    },
+    {
+     "blocked_by": "vocabulary::application_attempt::output_correspondence::WorthQueryCheckpointOutputRole",
+     "in": "declaration",
+     "item": "application_output_demand::registry::accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointIdentity"
+    },
+    {
+     "blocked_by": "application_attempt::compare_and_commit::commit_receipt::WorthQueryApplicationCommitReceipt",
+     "in": "declaration",
+     "item": "application_output_demand::registry::accepted_checkpoint::AcceptedCheckpointFactSource"
+    },
+    {
+     "blocked_by": "output_lineage::input_cutoff::stable_cutover::PublishedStableLineage",
+     "in": "declaration",
+     "item": "application_output_demand::registry::accepted_checkpoint::AcceptedCheckpointFactSource"
+    },
+    {
+     "blocked_by": "application_checkpoint::metadata_funding::CheckpointMetadataFunding",
+     "in": "declaration",
+     "item": "application_output_demand::recovered_outputs::WorthQueryRecoveredOutputs"
+    },
+    {
+     "blocked_by": "application_output_demand::registry::WorthQueryReadmittedAcceptedOutput",
+     "in": "declaration",
+     "item": "application_output_demand::recovered_outputs::WorthQueryRecoveredOutputs"
+    }
+   ]
+  },
+  {
+   "against": 14,
+   "items": 7,
+   "pair": [
+    "application_contribution",
+    "conditional_operation"
+   ],
+   "references": {
+    "application_contribution -> conditional_operation": 14,
+    "conditional_operation -> application_contribution": 6
+   },
+   "top_items": [
+    {
+     "item": "conditional_operation::signal_decision_reentry::WorthQueryConditionalTruthBasis",
+     "references": 5
+    },
+    {
+     "item": "conditional_operation::signal_decision_reentry::classify_bridge_signal",
+     "references": 2
+    },
+    {
+     "item": "conditional_operation::signal_decision_reentry::selected_projections::WorthQuerySelectedSignalProjections",
+     "references": 2
+    },
+    {
+     "item": "conditional_operation::installation::denial::WorthQueryConditionalRuntimeInstallationDenial",
+     "references": 2
+    },
+    {
+     "item": "conditional_operation::installation::WorthQueryConditionalApplicationRuntimeInstallation",
+     "references": 1
+    },
+    {
+     "item": "conditional_operation::installation::denial::WorthQueryConditionalRuntimeInstallationDenialKind",
+     "references": 1
+    },
+    {
+     "item": "conditional_operation::predicate_admission::output_readiness_installation::prepare_dependency_conditional_installation",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "conditional_operation::signal_decision_reentry::classify_bridge_signal",
+     "in": "not vocabulary: fn",
+     "item": "conditional_operation::signal_decision_reentry::classify_bridge_signal"
+    },
+    {
+     "blocked_by": "conditional_operation::installation::WorthQueryConditionalApplicationRuntimeInstallation",
+     "in": "not vocabulary: struct",
+     "item": "conditional_operation::installation::WorthQueryConditionalApplicationRuntimeInstallation"
+    },
+    {
+     "blocked_by": "product_operation::shared_query_basis::SharedSelectedProductOperation",
+     "in": "impl WorthQuerySelectedSignalProjections",
+     "item": "conditional_operation::signal_decision_reentry::selected_projections::WorthQuerySelectedSignalProjections"
+    },
+    {
+     "blocked_by": "application_query::resource_lifecycle::basis_registry::lease::WorthQueryApplicationBasisLease",
+     "in": "declaration",
+     "item": "conditional_operation::signal_decision_reentry::WorthQueryConditionalTruthBasis"
+    },
+    {
+     "blocked_by": "application_attempt::compare_and_commit::commit_receipt::WorthQueryApplicationCommitReceipt",
+     "in": "impl WorthQueryConditionalTruthBasis",
+     "item": "conditional_operation::signal_decision_reentry::WorthQueryConditionalTruthBasis"
+    },
+    {
+     "blocked_by": "conditional_operation::installation::denial::WorthQueryConditionalRuntimeInstallationDenialKind",
+     "in": "declaration",
+     "item": "conditional_operation::installation::denial::WorthQueryConditionalRuntimeInstallationDenial"
+    }
+   ]
+  },
+  {
+   "against": 13,
+   "items": 8,
+   "pair": [
+    "application_attempt",
+    "application_query"
+   ],
+   "references": {
+    "application_attempt -> application_query": 13,
+    "application_query -> application_attempt": 43
+   },
+   "top_items": [
+    {
+     "item": "application_query::observed_source::WorthQueryObservedSource",
+     "references": 6
+    },
+    {
+     "item": "application_query::observed_source::result_set::WorthQueryObservedResultSet",
+     "references": 1
+    },
+    {
+     "item": "application_query::observed_source::denial::WorthQuerySourceExpectationDenial",
+     "references": 1
+    },
+    {
+     "item": "application_query::observed_source::query_context_binding::ObservedQueryExpressionContext",
+     "references": 1
+    },
+    {
+     "item": "application_query::derived_view::registry::predicate::preparation::PreparedPredicatePublication",
+     "references": 1
+    },
+    {
+     "item": "application_query::retained_read::WorthQueryApplicationReadObservation",
+     "references": 1
+    },
+    {
+     "item": "application_query::host::ApplicationQueryHost",
+     "references": 1
+    },
+    {
+     "item": "application_query::resource_lifecycle::basis_registry::lease::WorthQueryApplicationBasisLease",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_query::observed_source::WorthQueryObservedSource",
+     "in": "not vocabulary: struct",
+     "item": "application_query::observed_source::WorthQueryObservedSource"
+    },
+    {
+     "blocked_by": "application_query::observed_source::WorthQueryObservedSource",
+     "in": "declaration",
+     "item": "application_query::observed_source::result_set::WorthQueryObservedResultSet"
+    },
+    {
+     "blocked_by": "application_query::observed_source::WorthQueryObservedSource",
+     "in": "impl<Query> WorthQueryObservedResultSet<Query>",
+     "item": "application_query::observed_source::result_set::WorthQueryObservedResultSet"
+    },
+    {
+     "blocked_by": "application_attempt::retained_decision_facts::StoreDenial",
+     "in": "declaration",
+     "item": "application_query::observed_source::denial::WorthQuerySourceExpectationDenial"
+    },
+    {
+     "blocked_by": "application_attempt::retained_decision_facts::StoreDenial",
+     "in": "impl WorthQuerySourceExpectationDenial",
+     "item": "application_query::observed_source::denial::WorthQuerySourceExpectationDenial"
+    },
+    {
+     "blocked_by": "application_query::observed_source::expression_context::RetainedExpressionContext",
+     "in": "declaration",
+     "item": "application_query::observed_source::query_context_binding::ObservedQueryExpressionContext"
+    }
+   ]
+  },
+  {
+   "against": 13,
+   "items": 4,
+   "pair": [
+    "application_output_demand",
+    "product_operation"
+   ],
+   "references": {
+    "application_output_demand -> product_operation": 13,
+    "product_operation -> application_output_demand": 22
+   },
+   "top_items": [
+    {
+     "item": "product_operation::context::WorthQuerySelectedProductOperation",
+     "references": 10
+    },
+    {
+     "item": "product_operation::document_history::navigation::WorthQueryHistoryNavigationDenial",
+     "references": 1
+    },
+    {
+     "item": "product_operation::document_history::denial::WorthQueryDocumentHistoryDenial",
+     "references": 1
+    },
+    {
+     "item": "product_operation::context::WorthQueryProductEntry",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "product_operation::context::WorthQuerySelectedProductOperation",
+     "in": "not vocabulary: struct",
+     "item": "product_operation::context::WorthQuerySelectedProductOperation"
+    },
+    {
+     "blocked_by": "product_operation::document_history::denial::WorthQueryDocumentHistoryDenial",
+     "in": "declaration",
+     "item": "product_operation::document_history::navigation::WorthQueryHistoryNavigationDenial"
+    },
+    {
+     "blocked_by": "application_query::managed_index::denial::WorthQueryManagedIndexDenial",
+     "in": "declaration",
+     "item": "product_operation::document_history::denial::WorthQueryDocumentHistoryDenial"
+    },
+    {
+     "blocked_by": "product_operation::context::WorthQueryProductEntry",
+     "in": "not vocabulary: struct",
+     "item": "product_operation::context::WorthQueryProductEntry"
+    }
+   ]
+  },
+  {
+   "against": 13,
+   "items": 7,
+   "pair": [
+    "invariant_projection",
+    "application_query"
+   ],
+   "references": {
+    "application_query -> invariant_projection": 2,
+    "invariant_projection -> application_query": 13
+   },
+   "top_items": [
+    {
+     "item": "application_query::output_source_observation::SourceQueryObservationStop",
+     "references": 3
+    },
+    {
+     "item": "application_query::output_source_observation::SourceQueryReaderAccess",
+     "references": 3
+    },
+    {
+     "item": "application_query::observed_source::query_context_binding::ObservedQueryExpressionContext",
+     "references": 2
+    },
+    {
+     "item": "application_query::native_access::ApplicationQueryNativeAccess",
+     "references": 2
+    },
+    {
+     "item": "application_query::managed_index::denial::WorthQueryManagedIndexDenial",
+     "references": 1
+    },
+    {
+     "item": "application_query::projection::WorthQueryApplicationProjection",
+     "references": 1
+    },
+    {
+     "item": "application_query::derived_view::registry::ManagedDerivedViewRegistry",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_output_demand::denial::WorthQueryOutputDemandDenial",
+     "in": "declaration",
+     "item": "application_query::output_source_observation::SourceQueryObservationStop"
+    },
+    {
+     "blocked_by": "application_query::managed_index::denial::WorthQueryManagedIndexDenial",
+     "in": "declaration",
+     "item": "application_query::output_source_observation::SourceQueryObservationStop"
+    },
+    {
+     "blocked_by": "application_query::host::ApplicationQueryHost",
+     "in": "declaration",
+     "item": "application_query::output_source_observation::SourceQueryReaderAccess"
+    },
+    {
+     "blocked_by": "application_query::output_source_observation::SourceQueryObservationStop",
+     "in": "declaration",
+     "item": "application_query::output_source_observation::SourceQueryReaderAccess"
+    },
+    {
+     "blocked_by": "application_query::managed_index::denial::WorthQueryManagedIndexDenial",
+     "in": "not vocabulary: struct",
+     "item": "application_query::managed_index::denial::WorthQueryManagedIndexDenial"
+    },
+    {
+     "blocked_by": "application_query::observed_source::expression_context::RetainedExpressionContext",
+     "in": "declaration",
+     "item": "application_query::observed_source::query_context_binding::ObservedQueryExpressionContext"
+    }
+   ]
+  },
+  {
+   "against": 12,
+   "items": 5,
+   "pair": [
+    "application_attempt",
+    "application_contribution"
+   ],
+   "references": {
+    "application_attempt -> application_contribution": 12,
+    "application_contribution -> application_attempt": 45
+   },
+   "top_items": [
+    {
+     "item": "application_contribution::partitioned_computation::incremental::prior_absence::CompletedComputationRetention",
+     "references": 4
+    },
+    {
+     "item": "application_contribution::partitioned_computation::incremental::native_reads::NativeComputationReads",
+     "references": 3
+    },
+    {
+     "item": "application_contribution::partitioned_computation::incremental::prior_absence::PriorAbsence",
+     "references": 3
+    },
+    {
+     "item": "application_contribution::partitioned_computation::incremental::prior_absence::SealedComputationRetention",
+     "references": 1
+    },
+    {
+     "item": "application_contribution::partitioned_computation::incremental::Comparator",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_contribution::partitioned_computation::incremental::prior_absence::CompletedComputationRetention",
+     "in": "not vocabulary: enum",
+     "item": "application_contribution::partitioned_computation::incremental::prior_absence::CompletedComputationRetention"
+    },
+    {
+     "blocked_by": "application_contribution::partitioned_computation::incremental::native_reads::NativeComputationReads",
+     "in": "not vocabulary: struct",
+     "item": "application_contribution::partitioned_computation::incremental::native_reads::NativeComputationReads"
+    },
+    {
+     "blocked_by": "application_contribution::partitioned_computation::incremental::prior_absence::PriorAbsence",
+     "in": "not vocabulary: enum",
+     "item": "application_contribution::partitioned_computation::incremental::prior_absence::PriorAbsence"
+    },
+    {
+     "blocked_by": "application_contribution::partitioned_computation::incremental::prior_absence::SealedComputationRetention",
+     "in": "not vocabulary: enum",
+     "item": "application_contribution::partitioned_computation::incremental::prior_absence::SealedComputationRetention"
+    },
+    {
+     "blocked_by": "application_contribution::partitioned_computation::incremental::Comparator",
+     "in": "not vocabulary: struct",
+     "item": "application_contribution::partitioned_computation::incremental::Comparator"
+    }
+   ]
+  },
+  {
+   "against": 11,
+   "items": 3,
+   "pair": [
+    "provider",
+    "application_checkpoint"
+   ],
+   "references": {
+    "application_checkpoint -> provider": 3,
+    "provider -> application_checkpoint": 11
+   },
+   "top_items": [
+    {
+     "item": "application_checkpoint::facts::payload::FactPayload",
+     "references": 8
+    },
+    {
+     "item": "application_checkpoint::facts::payload::native::NativeFactPayloadBuilder",
+     "references": 2
+    },
+    {
+     "item": "application_checkpoint::facts::payload::patch::NativeFactPatchBuilder",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_checkpoint::facts::payload::FactStorage",
+     "in": "declaration",
+     "item": "application_checkpoint::facts::payload::FactPayload"
+    },
+    {
+     "blocked_by": "application_attempt::fact::WorthQueryApplicationObservedFact",
+     "in": "impl FactPayload",
+     "item": "application_checkpoint::facts::payload::FactPayload"
+    },
+    {
+     "blocked_by": "application_checkpoint::facts::payload::patch::PreparedNode",
+     "in": "declaration",
+     "item": "application_checkpoint::facts::payload::patch::NativeFactPatchBuilder"
+    },
+    {
+     "blocked_by": "application_attempt::fact::WorthQueryApplicationObservedFact",
+     "in": "impl NativeFactPatchBuilder",
+     "item": "application_checkpoint::facts::payload::patch::NativeFactPatchBuilder"
+    },
+    {
+     "blocked_by": "application_attempt::fact::WorthQueryApplicationObservedFact",
+     "in": "declaration",
+     "item": "application_checkpoint::facts::payload::native::NativeFactPayloadBuilder"
+    },
+    {
+     "blocked_by": "application_checkpoint::facts::payload::FactPayload",
+     "in": "declaration",
+     "item": "application_checkpoint::facts::payload::native::NativeFactPayloadBuilder"
+    }
+   ]
+  },
+  {
+   "against": 11,
+   "items": 7,
+   "pair": [
+    "application_output_demand",
+    "application_contribution"
+   ],
+   "references": {
+    "application_contribution -> application_output_demand": 382,
+    "application_output_demand -> application_contribution": 11
+   },
+   "top_items": [
+    {
+     "item": "application_contribution::producer::output_evaluation::ProducerOutputEvaluation",
+     "references": 3
+    },
+    {
+     "item": "application_contribution::partitioned_computation::incremental::prior_absence::SealedComputationRetention",
+     "references": 2
+    },
+    {
+     "item": "application_contribution::producer::demand::progression::required_wave::performed::certification::CurrentProof",
+     "references": 2
+    },
+    {
+     "item": "application_contribution::producer::demand::bridge_denial::bridge_denial_kind",
+     "references": 1
+    },
+    {
+     "item": "application_contribution::producer::execution::prepared_plan::OwnerPlan",
+     "references": 1
+    },
+    {
+     "item": "application_contribution::producer::execution::unpublished::PendingProducerPublication",
+     "references": 1
+    },
+    {
+     "item": "application_contribution::partitioned_computation::incremental::carriage::ComputationPrior",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_contribution::partitioned_computation::incremental::prior_absence::SealedComputationRetention",
+     "in": "not vocabulary: enum",
+     "item": "application_contribution::partitioned_computation::incremental::prior_absence::SealedComputationRetention"
+    },
+    {
+     "blocked_by": "application_output_demand::registry::required_work::RequiredWorkMembership",
+     "in": "declaration",
+     "item": "application_contribution::producer::demand::progression::required_wave::performed::certification::CurrentProof"
+    },
+    {
+     "blocked_by": "application_output_demand::registry::required_work::RequiredWorkMembership",
+     "in": "impl<T> CurrentProof<T>",
+     "item": "application_contribution::producer::demand::progression::required_wave::performed::certification::CurrentProof"
+    },
+    {
+     "blocked_by": "application_contribution::producer::demand::bridge_denial::bridge_denial_kind",
+     "in": "not vocabulary: fn",
+     "item": "application_contribution::producer::demand::bridge_denial::bridge_denial_kind"
+    },
+    {
+     "blocked_by": "application_output_demand::registry::required_work::wave_admission::PreparedRequiredInputs",
+     "in": "declaration",
+     "item": "application_contribution::producer::execution::prepared_plan::OwnerPlan"
+    },
+    {
+     "blocked_by": "vocabulary::application_contribution::prepared_request::PreparedCompute",
+     "in": "declaration",
+     "item": "application_contribution::producer::execution::prepared_plan::OwnerPlan"
+    }
+   ]
+  },
+  {
+   "against": 10,
+   "items": 1,
+   "pair": [
+    "product_operation",
+    "application_runtime"
+   ],
+   "references": {
+    "application_runtime -> product_operation": 102,
+    "product_operation -> application_runtime": 10
+   },
+   "top_items": [
+    {
+     "item": "application_runtime::WorthQueryPrimaryGraphApplicationRuntime",
+     "references": 10
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_runtime::WorthQueryPrimaryGraphApplicationRuntime",
+     "in": "not vocabulary: struct",
+     "item": "application_runtime::WorthQueryPrimaryGraphApplicationRuntime"
+    }
+   ]
+  },
+  {
+   "against": 9,
+   "items": 2,
+   "pair": [
+    "application_attempt",
+    "operation_body"
+   ],
+   "references": {
+    "application_attempt -> operation_body": 9,
+    "operation_body -> application_attempt": 10
+   },
+   "top_items": [
+    {
+     "item": "operation_body::emission::BodyExternalEffectSelection",
+     "references": 6
+    },
+    {
+     "item": "operation_body::WorthQueryOperationBodyDecision",
+     "references": 3
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "operation_body::emission::BodyExternalEffectSelection",
+     "in": "declaration",
+     "item": "operation_body::WorthQueryOperationBodyDecision"
+    },
+    {
+     "blocked_by": "vocabulary::operation_body::selection::PreparedBodySelections",
+     "in": "declaration",
+     "item": "operation_body::WorthQueryOperationBodyDecision"
+    },
+    {
+     "blocked_by": "application_query::observed_source::query_context_binding::ObservedQueryExpressionContext",
+     "in": "declaration",
+     "item": "operation_body::emission::BodyExternalEffectSelection"
+    },
+    {
+     "blocked_by": "application_query::observed_source::query_context_binding::ObservedQueryExpressionContext",
+     "in": "impl BodyExternalEffectSelection",
+     "item": "operation_body::emission::BodyExternalEffectSelection"
+    }
+   ]
+  },
+  {
+   "against": 9,
+   "items": 6,
+   "pair": [
+    "product_operation",
+    "application_installation"
+   ],
+   "references": {
+    "application_installation -> product_operation": 33,
+    "product_operation -> application_installation": 9
+   },
+   "top_items": [
+    {
+     "item": "application_installation::program::program_runtime::WorthQueryProgramApplicationRuntime",
+     "references": 3
+    },
+    {
+     "item": "application_installation::program::program_owner::contract::WorthQueryProgramOwner",
+     "references": 2
+    },
+    {
+     "item": "application_installation::program::specialized_action::WorthQueryAdmittedProgramOperation",
+     "references": 1
+    },
+    {
+     "item": "application_installation::program::demand::WorthQuerySettledProgramOutput",
+     "references": 1
+    },
+    {
+     "item": "application_installation::program::demand::root_completion::OriginalProgramRootCompletion",
+     "references": 1
+    },
+    {
+     "item": "application_installation::program::demand::WorthQueryAdmittedProgramOutput",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_installation::program::program_runtime::WorthQueryProgramApplicationRuntime",
+     "in": "not vocabulary: struct",
+     "item": "application_installation::program::program_runtime::WorthQueryProgramApplicationRuntime"
+    },
+    {
+     "blocked_by": "application_installation::program::specialized_action::WorthQueryAdmittedProgramOperation",
+     "in": "not vocabulary: struct",
+     "item": "application_installation::program::specialized_action::WorthQueryAdmittedProgramOperation"
+    },
+    {
+     "blocked_by": "application_installation::program::program_owner::contract::WorthQueryProgramOwner",
+     "in": "not vocabulary: trait",
+     "item": "application_installation::program::program_owner::contract::WorthQueryProgramOwner"
+    },
+    {
+     "blocked_by": "application_contribution::producer::WorthQueryApplicationOutputDemand",
+     "in": "declaration",
+     "item": "application_installation::program::demand::WorthQuerySettledProgramOutput"
+    },
+    {
+     "blocked_by": "application_output_demand::settlement::WorthQueryOutputDemandSettlement",
+     "in": "declaration",
+     "item": "application_installation::program::demand::WorthQuerySettledProgramOutput"
+    },
+    {
+     "blocked_by": "application_output_demand::settlement::WorthQueryOutputDemandSettlement",
+     "in": "declaration",
+     "item": "application_installation::program::demand::root_completion::OriginalProgramRootCompletion"
+    }
+   ]
+  },
+  {
+   "against": 9,
+   "items": 2,
+   "pair": [
+    "provider",
+    "application_output_demand"
+   ],
+   "references": {
+    "application_output_demand -> provider": 2,
+    "provider -> application_output_demand": 9
+   },
+   "top_items": [
+    {
+     "item": "application_output_demand::registry::prerequisite_claims::PreparedPrerequisiteClaims",
+     "references": 6
+    },
+    {
+     "item": "application_output_demand::denial::WorthQueryOutputDemandDenial",
+     "references": 3
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_output_demand::registry::claim_readthrough::incoming::ClaimBatch",
+     "in": "declaration",
+     "item": "application_output_demand::registry::prerequisite_claims::PreparedPrerequisiteClaims"
+    },
+    {
+     "blocked_by": "application_output_demand::registry::demand_key::WorthQueryOutputDemandKey",
+     "in": "declaration",
+     "item": "application_output_demand::registry::prerequisite_claims::PreparedPrerequisiteClaims"
+    },
+    {
+     "blocked_by": "application_output_demand::denial::WorthQueryOutputDemandDenial",
+     "in": "not vocabulary: struct",
+     "item": "application_output_demand::denial::WorthQueryOutputDemandDenial"
+    }
+   ]
+  },
+  {
+   "against": 8,
+   "items": 3,
+   "pair": [
+    "live_delivery",
+    "application_attempt"
+   ],
+   "references": {
+    "application_attempt -> live_delivery": 2,
+    "live_delivery -> application_attempt": 8
+   },
+   "top_items": [
+    {
+     "item": "application_attempt::compare_and_commit::committed_publication::WorthQueryCommittedProductPublication",
+     "references": 5
+    },
+    {
+     "item": "application_attempt::effect_program::model::emission::WorthQueryApplicationEmission",
+     "references": 2
+    },
+    {
+     "item": "application_attempt::effect_program::model::emission::WorthQueryAdmittedApplicationEmissionBatch",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_attempt::compare_and_commit::committed_publication::WorthQueryCommittedProductPublication",
+     "in": "not vocabulary: struct",
+     "item": "application_attempt::compare_and_commit::committed_publication::WorthQueryCommittedProductPublication"
+    },
+    {
+     "blocked_by": "application_query::observed_source::query_context_binding::ObservedQueryExpressionContext",
+     "in": "declaration",
+     "item": "application_attempt::effect_program::model::emission::WorthQueryApplicationEmission"
+    },
+    {
+     "blocked_by": "application_query::observed_source::query_context_binding::ObservedQueryExpressionContext",
+     "in": "impl WorthQueryApplicationEmission",
+     "item": "application_attempt::effect_program::model::emission::WorthQueryApplicationEmission"
+    },
+    {
+     "blocked_by": "application_attempt::effect_program::model::emission::WorthQueryApplicationEmission",
+     "in": "declaration",
+     "item": "application_attempt::effect_program::model::emission::WorthQueryAdmittedApplicationEmissionBatch"
+    },
+    {
+     "blocked_by": "application_attempt::effect_program::model::emission::WorthQueryApplicationEmission",
+     "in": "impl WorthQueryAdmittedApplicationEmissionBatch",
+     "item": "application_attempt::effect_program::model::emission::WorthQueryAdmittedApplicationEmissionBatch"
+    }
+   ]
+  },
+  {
+   "against": 8,
+   "items": 7,
+   "pair": [
+    "handler",
+    "operation_body"
+   ],
+   "references": {
+    "handler -> operation_body": 8,
+    "operation_body -> handler": 8
+   },
+   "top_items": [
+    {
+     "item": "operation_body::emission::BodyExternalEffectSelection",
+     "references": 2
+    },
+    {
+     "item": "operation_body::input::prepare_inputs",
+     "references": 1
+    },
+    {
+     "item": "operation_body::requirement::evaluation::evaluate_requirements",
+     "references": 1
+    },
+    {
+     "item": "operation_body::value::prepare",
+     "references": 1
+    },
+    {
+     "item": "operation_body::WorthQueryOperationBodyDecision",
+     "references": 1
+    },
+    {
+     "item": "operation_body::handler::OperationBodyHandler",
+     "references": 1
+    },
+    {
+     "item": "operation_body::emission::prepare",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_entry::mutation::HandlerExecutionDenial",
+     "in": "body",
+     "item": "operation_body::input::prepare_inputs"
+    },
+    {
+     "blocked_by": "application_entry::mutation::HandlerResult",
+     "in": "body",
+     "item": "operation_body::input::prepare_inputs"
+    },
+    {
+     "blocked_by": "application_entry::mutation::HandlerExecutionDenial",
+     "in": "body",
+     "item": "operation_body::requirement::evaluation::evaluate_requirements"
+    },
+    {
+     "blocked_by": "invariant_projection::operation_reader::WorthQueryApplicationOperationInvariantProjectionReader",
+     "in": "body",
+     "item": "operation_body::requirement::evaluation::evaluate_requirements"
+    },
+    {
+     "blocked_by": "application_entry::mutation::HandlerExecutionDenial",
+     "in": "body",
+     "item": "operation_body::value::prepare"
+    },
+    {
+     "blocked_by": "invariant_projection::operation_reader::WorthQueryApplicationOperationInvariantProjectionReader",
+     "in": "body",
+     "item": "operation_body::value::prepare"
+    }
+   ]
+  },
+  {
+   "against": 7,
+   "items": 2,
+   "pair": [
+    "application_attempt",
+    "application_installation"
+   ],
+   "references": {
+    "application_attempt -> application_installation": 7,
+    "application_installation -> application_attempt": 78
+   },
+   "top_items": [
+    {
+     "item": "application_installation::program::workflow_runtime::vocabulary::WorthQueryWorkflowVocabulary",
+     "references": 5
+    },
+    {
+     "item": "application_installation::program::workflow_runtime::authentication::workflow_approval_authentication_intent",
+     "references": 2
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_installation::program::workflow_runtime::vocabulary::WorthQueryWorkflowVocabulary",
+     "in": "not vocabulary: struct",
+     "item": "application_installation::program::workflow_runtime::vocabulary::WorthQueryWorkflowVocabulary"
+    },
+    {
+     "blocked_by": "application_attempt::workflow_transition_program::publication::approval::RequiredWorkflowApproval",
+     "in": "body",
+     "item": "application_installation::program::workflow_runtime::authentication::workflow_approval_authentication_intent"
+    }
+   ]
+  },
+  {
+   "against": 7,
+   "items": 1,
+   "pair": [
+    "application_installation",
+    "application_runtime"
+   ],
+   "references": {
+    "application_installation -> application_runtime": 7,
+    "application_runtime -> application_installation": 4
+   },
+   "top_items": [
+    {
+     "item": "application_runtime::WorthQueryPrimaryGraphApplicationRuntime",
+     "references": 7
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_runtime::WorthQueryPrimaryGraphApplicationRuntime",
+     "in": "not vocabulary: struct",
+     "item": "application_runtime::WorthQueryPrimaryGraphApplicationRuntime"
+    }
+   ]
+  },
+  {
+   "against": 6,
+   "items": 2,
+   "pair": [
+    "provider",
+    "application_inbound"
+   ],
+   "references": {
+    "application_inbound -> provider": 22,
+    "provider -> application_inbound": 6
+   },
+   "top_items": [
+    {
+     "item": "application_inbound::inbound_publication::installed_transport::PerformedInstalledTransportCompletion",
+     "references": 4
+    },
+    {
+     "item": "application_inbound::inbound_publication::installed_transport::InstalledTransportCompletion",
+     "references": 2
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_inbound::inbound_publication::installed_transport::InstalledTransportCompletion",
+     "in": "not vocabulary: struct",
+     "item": "application_inbound::inbound_publication::installed_transport::InstalledTransportCompletion"
+    },
+    {
+     "blocked_by": "application_inbound::inbound_publication::installed_transport::PerformedInstalledTransportCompletion",
+     "in": "not vocabulary: struct",
+     "item": "application_inbound::inbound_publication::installed_transport::PerformedInstalledTransportCompletion"
+    }
+   ]
+  },
+  {
+   "against": 6,
+   "items": 2,
+   "pair": [
+    "output_reuse",
+    "application_output_demand"
+   ],
+   "references": {
+    "application_output_demand -> output_reuse": 23,
+    "output_reuse -> application_output_demand": 6
+   },
+   "top_items": [
+    {
+     "item": "application_output_demand::denial::WorthQueryOutputDemandDenial",
+     "references": 3
+    },
+    {
+     "item": "application_output_demand::denial::kind::WorthQueryOutputDemandDenialKind",
+     "references": 3
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_output_demand::denial::WorthQueryOutputDemandDenial",
+     "in": "not vocabulary: struct",
+     "item": "application_output_demand::denial::WorthQueryOutputDemandDenial"
+    },
+    {
+     "blocked_by": "application_output_demand::denial::kind::WorthQueryOutputDemandDenialKind",
+     "in": "not vocabulary: enum",
+     "item": "application_output_demand::denial::kind::WorthQueryOutputDemandDenialKind"
+    }
+   ]
+  },
+  {
+   "against": 5,
+   "items": 3,
+   "pair": [
+    "access_strategy",
+    "application_query"
+   ],
+   "references": {
+    "access_strategy -> application_query": 5,
+    "application_query -> access_strategy": 36
+   },
+   "top_items": [
+    {
+     "item": "application_query::managed_index::source_structure::SourceTree",
+     "references": 3
+    },
+    {
+     "item": "application_query::managed_index::source_rows::SourceImageView",
+     "references": 1
+    },
+    {
+     "item": "application_query::managed_index::realized_footprint::CheckedManagedFootprintCapture",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_query::managed_index::source_rows::SourceImageView",
+     "in": "impl SourceTree",
+     "item": "application_query::managed_index::source_structure::SourceTree"
+    },
+    {
+     "blocked_by": "application_query::managed_index::source_structure::cold_postings::capture",
+     "in": "impl SourceTree",
+     "item": "application_query::managed_index::source_structure::SourceTree"
+    },
+    {
+     "blocked_by": "application_query::managed_index::source_rows::SourceImageRows",
+     "in": "declaration",
+     "item": "application_query::managed_index::source_rows::SourceImageView"
+    },
+    {
+     "blocked_by": "application_query::managed_index::source_rows::SourceImageRows",
+     "in": "impl SourceImageView<'_>",
+     "item": "application_query::managed_index::source_rows::SourceImageView"
+    },
+    {
+     "blocked_by": "access_strategy::coverage::RetainedCoverage",
+     "in": "declaration",
+     "item": "application_query::managed_index::realized_footprint::CheckedManagedFootprintCapture"
+    },
+    {
+     "blocked_by": "access_strategy::coverage::RetainedCoverage",
+     "in": "impl CheckedManagedFootprintCapture<'_>",
+     "item": "application_query::managed_index::realized_footprint::CheckedManagedFootprintCapture"
+    }
+   ]
+  },
+  {
+   "against": 5,
+   "items": 1,
+   "pair": [
+    "application_inbound",
+    "application_attempt"
+   ],
+   "references": {
+    "application_attempt -> application_inbound": 9,
+    "application_inbound -> application_attempt": 5
+   },
+   "top_items": [
+    {
+     "item": "application_attempt::compare_and_commit::commit_outcome::denial::WorthQueryApplicationCommitDenialStage",
+     "references": 5
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_attempt::compare_and_commit::commit_outcome::denial::WorthQueryApplicationCommitDenialStage",
+     "in": "not vocabulary: enum",
+     "item": "application_attempt::compare_and_commit::commit_outcome::denial::WorthQueryApplicationCommitDenialStage"
+    }
+   ]
+  },
+  {
+   "against": 5,
+   "items": 4,
+   "pair": [
+    "handler",
+    "application_contribution"
+   ],
+   "references": {
+    "application_contribution -> handler": 5,
+    "handler -> application_contribution": 5
+   },
+   "top_items": [
+    {
+     "item": "application_contribution::producer::WorthQueryProducerOutputFamily",
+     "references": 2
+    },
+    {
+     "item": "application_contribution::conditional::WorthQueryApplicationConditionalBinding",
+     "references": 1
+    },
+    {
+     "item": "application_contribution::conditional::WorthQueryInstalledApplicationConditionalRegistry",
+     "references": 1
+    },
+    {
+     "item": "application_contribution::producer::WorthQueryApplicationOutputDemand",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_contribution::conditional::WorthQueryApplicationConditionalBinding",
+     "in": "not vocabulary: trait",
+     "item": "application_contribution::conditional::WorthQueryApplicationConditionalBinding"
+    },
+    {
+     "blocked_by": "application_contribution::conditional::WorthQueryApplicationConditionalBinding",
+     "in": "impl<Schema> WorthQueryInstalledApplicationConditionalRegistry<Schema>",
+     "item": "application_contribution::conditional::WorthQueryInstalledApplicationConditionalRegistry"
+    },
+    {
+     "blocked_by": "application_contribution::producer::WorthQueryProducerOutputFamily",
+     "in": "not vocabulary: trait",
+     "item": "application_contribution::producer::WorthQueryProducerOutputFamily"
+    },
+    {
+     "blocked_by": "application_contribution::producer::WorthQueryApplicationOutputDemand",
+     "in": "not vocabulary: trait",
+     "item": "application_contribution::producer::WorthQueryApplicationOutputDemand"
+    }
+   ]
+  },
+  {
+   "against": 5,
+   "items": 4,
+   "pair": [
+    "output_lineage",
+    "application_query"
+   ],
+   "references": {
+    "application_query -> output_lineage": 2,
+    "output_lineage -> application_query": 5
+   },
+   "top_items": [
+    {
+     "item": "application_query::observed_source::source_identity::membership::WorthQueryObservedSourceSelection",
+     "references": 2
+    },
+    {
+     "item": "application_query::observed_source::prepared_expectation::BoundStableObservedSourceFacts",
+     "references": 1
+    },
+    {
+     "item": "application_query::output_source_observation::read_closure::SourceQueryReadClosure",
+     "references": 1
+    },
+    {
+     "item": "application_query::derived_view::registry::ManagedDerivedViewRegistry",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_attempt::fact::managed_source_read::ManagedSourceRead",
+     "in": "declaration",
+     "item": "application_query::observed_source::source_identity::membership::WorthQueryObservedSourceSelection"
+    },
+    {
+     "blocked_by": "application_query::observed_source::source_identity::WorthQueryObservedSourceMeaning",
+     "in": "declaration",
+     "item": "application_query::observed_source::source_identity::membership::WorthQueryObservedSourceSelection"
+    },
+    {
+     "blocked_by": "application_attempt::fact::WorthQueryApplicationObservedFact",
+     "in": "declaration",
+     "item": "application_query::observed_source::prepared_expectation::BoundStableObservedSourceFacts"
+    },
+    {
+     "blocked_by": "application_query::observed_source::WorthQueryBoundSourceExpectation",
+     "in": "declaration",
+     "item": "application_query::observed_source::prepared_expectation::BoundStableObservedSourceFacts"
+    },
+    {
+     "blocked_by": "application_checkpoint::facts::payload::FactPayload",
+     "in": "declaration",
+     "item": "application_query::output_source_observation::read_closure::SourceQueryReadClosure"
+    },
+    {
+     "blocked_by": "application_query::access_receipt::WorthQueryApplicationQueryAccessReceipt",
+     "in": "declaration",
+     "item": "application_query::output_source_observation::read_closure::SourceQueryReadClosure"
+    }
+   ]
+  },
+  {
+   "against": 5,
+   "items": 3,
+   "pair": [
+    "conditional_operation",
+    "application_runtime"
+   ],
+   "references": {
+    "application_runtime -> conditional_operation": 17,
+    "conditional_operation -> application_runtime": 5
+   },
+   "top_items": [
+    {
+     "item": "application_runtime::installation::input::ApplicationRuntimePublication",
+     "references": 3
+    },
+    {
+     "item": "application_runtime::WorthQueryPrimaryGraphApplicationRuntime",
+     "references": 1
+    },
+    {
+     "item": "application_runtime::installation::publish_application_runtime_with_conditionals",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_runtime::WorthQueryPrimaryGraphApplicationRuntime",
+     "in": "not vocabulary: struct",
+     "item": "application_runtime::WorthQueryPrimaryGraphApplicationRuntime"
+    },
+    {
+     "blocked_by": "bootstrap::WorthQueryPrimaryGraphBootstrap",
+     "in": "declaration",
+     "item": "application_runtime::installation::input::ApplicationRuntimePublication"
+    },
+    {
+     "blocked_by": "provider::fault_port::WorthQueryPrimaryGraphFaultPort",
+     "in": "declaration",
+     "item": "application_runtime::installation::input::ApplicationRuntimePublication"
+    },
+    {
+     "blocked_by": "application_contribution::producer::readiness::PendingOutputReadiness",
+     "in": "body",
+     "item": "application_runtime::installation::publish_application_runtime_with_conditionals"
+    },
+    {
+     "blocked_by": "application_contribution::producer::readiness::install_output_readiness_routes",
+     "in": "body",
+     "item": "application_runtime::installation::publish_application_runtime_with_conditionals"
+    }
+   ]
+  },
+  {
+   "against": 5,
+   "items": 1,
+   "pair": [
+    "entity_resolution",
+    "product_operation"
+   ],
+   "references": {
+    "entity_resolution -> product_operation": 5,
+    "product_operation -> entity_resolution": 3
+   },
+   "top_items": [
+    {
+     "item": "product_operation::context::WorthQuerySelectedProductOperation",
+     "references": 5
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "product_operation::context::WorthQuerySelectedProductOperation",
+     "in": "not vocabulary: struct",
+     "item": "product_operation::context::WorthQuerySelectedProductOperation"
+    }
+   ]
+  },
+  {
+   "against": 5,
+   "items": 1,
+   "pair": [
+    "provider",
+    "product_operation"
+   ],
+   "references": {
+    "product_operation -> provider": 21,
+    "provider -> product_operation": 5
+   },
+   "top_items": [
+    {
+     "item": "product_operation::document_history::navigation::output_authority::producer_invocation::HistoryProducerCutover",
+     "references": 5
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "product_operation::document_history::navigation::output_authority::producer_invocation::HistoryProducerCutover",
+     "in": "not vocabulary: struct",
+     "item": "product_operation::document_history::navigation::output_authority::producer_invocation::HistoryProducerCutover"
+    }
+   ]
+  },
+  {
+   "against": 4,
+   "items": 4,
+   "pair": [
+    "root",
+    "application_attempt"
+   ],
+   "references": {
+    "application_attempt -> root": 13,
+    "root -> application_attempt": 4
+   },
+   "top_items": [
+    {
+     "item": "application_attempt::workflow::definition::compilation::reuse::WorkflowDefinitionCompilationReuse",
+     "references": 1
+    },
+    {
+     "item": "application_attempt::workflow::instance::progression::retention::default_progress_retention_shards",
+     "references": 1
+    },
+    {
+     "item": "application_attempt::workflow::instance::progression::retention::WorkflowInstanceProgressRetention",
+     "references": 1
+    },
+    {
+     "item": "application_attempt::workflow::schema::indexes::register_indexes",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_attempt::workflow::definition::compilation::reuse::RetainedPublicationBinding",
+     "in": "declaration",
+     "item": "application_attempt::workflow::definition::compilation::reuse::WorkflowDefinitionCompilationReuse"
+    },
+    {
+     "blocked_by": "application_attempt::workflow::definition::compilation::publication_binding::WorkflowDefinitionPublicationBinding",
+     "in": "impl WorkflowDefinitionCompilationReuse",
+     "item": "application_attempt::workflow::definition::compilation::reuse::WorkflowDefinitionCompilationReuse"
+    },
+    {
+     "blocked_by": "application_attempt::workflow::instance::progression::retention::WorkflowInstanceProgressRetention",
+     "in": "body",
+     "item": "application_attempt::workflow::instance::progression::retention::default_progress_retention_shards"
+    },
+    {
+     "blocked_by": "application_attempt::workflow::instance::progression::retention::RetainedWorkflowInstanceProgress",
+     "in": "declaration",
+     "item": "application_attempt::workflow::instance::progression::retention::WorkflowInstanceProgressRetention"
+    },
+    {
+     "blocked_by": "application_attempt::workflow::instance::progression::WorkflowInstanceProgress",
+     "in": "impl WorkflowInstanceProgressRetention",
+     "item": "application_attempt::workflow::instance::progression::retention::WorkflowInstanceProgressRetention"
+    },
+    {
+     "blocked_by": "application_attempt::workflow::schema::layout::WorthQueryWorkflowLayout",
+     "in": "body",
+     "item": "application_attempt::workflow::schema::indexes::register_indexes"
+    }
+   ]
+  },
+  {
+   "against": 4,
+   "items": 3,
+   "pair": [
+    "application_attempt",
+    "application_entry"
+   ],
+   "references": {
+    "application_attempt -> application_entry": 4,
+    "application_entry -> application_attempt": 6
+   },
+   "top_items": [
+    {
+     "item": "application_entry::mutation::execution::MutationHandlerExecutionDenial",
+     "references": 2
+    },
+    {
+     "item": "application_entry::mutation::execution::candidate::build_handler_candidate",
+     "references": 1
+    },
+    {
+     "item": "application_entry::mutation::HandlerResult",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_attempt::denial::WorthQueryApplicationAttemptDenial",
+     "in": "declaration",
+     "item": "application_entry::mutation::execution::MutationHandlerExecutionDenial"
+    },
+    {
+     "blocked_by": "application_entry::mutation::HandlerExecutionDenial",
+     "in": "declaration",
+     "item": "application_entry::mutation::execution::MutationHandlerExecutionDenial"
+    },
+    {
+     "blocked_by": "application_entry::mutation::execution::candidate::build_handler_candidate",
+     "in": "not vocabulary: fn",
+     "item": "application_entry::mutation::execution::candidate::build_handler_candidate"
+    },
+    {
+     "blocked_by": "application_entry::mutation::HandlerResult",
+     "in": "not vocabulary: enum",
+     "item": "application_entry::mutation::HandlerResult"
+    }
+   ]
+  },
+  {
+   "against": 4,
+   "items": 4,
+   "pair": [
+    "application_checkpoint",
+    "output_lineage"
+   ],
+   "references": {
+    "application_checkpoint -> output_lineage": 4,
+    "output_lineage -> application_checkpoint": 33
+   },
+   "top_items": [
+    {
+     "item": "output_lineage::WorthQueryApplicationOutputLineage",
+     "references": 1
+    },
+    {
+     "item": "output_lineage::computation_source::ComputationSourceEvidence",
+     "references": 1
+    },
+    {
+     "item": "output_lineage::native_output_witness::SealedNativeOutputWitness",
+     "references": 1
+    },
+    {
+     "item": "output_lineage::family_selection::checkpoint_priors::NativePriorCheckpointOutput",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "output_lineage::WorthQueryApplicationOutputLineage",
+     "in": "not vocabulary: struct",
+     "item": "output_lineage::WorthQueryApplicationOutputLineage"
+    },
+    {
+     "blocked_by": "application_checkpoint::producer_computation::CheckpointProducerFacts",
+     "in": "impl ComputationSourceEvidence",
+     "item": "output_lineage::computation_source::ComputationSourceEvidence"
+    },
+    {
+     "blocked_by": "output_lineage::computation_source::CurrentComputation",
+     "in": "impl ComputationSourceEvidence",
+     "item": "output_lineage::computation_source::ComputationSourceEvidence"
+    },
+    {
+     "blocked_by": "output_lineage::native_output_witness::PreparedNativeOutputFacts",
+     "in": "impl SealedNativeOutputWitness",
+     "item": "output_lineage::native_output_witness::SealedNativeOutputWitness"
+    },
+    {
+     "blocked_by": "application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence",
+     "in": "impl SealedNativeOutputWitness",
+     "item": "output_lineage::native_output_witness::SealedNativeOutputWitness"
+    },
+    {
+     "blocked_by": "output_lineage::family_selection::checkpoint_priors::NativePriorCheckpointIdentity",
+     "in": "declaration",
+     "item": "output_lineage::family_selection::checkpoint_priors::NativePriorCheckpointOutput"
+    }
+   ]
+  },
+  {
+   "against": 4,
+   "items": 1,
+   "pair": [
+    "entity_resolution",
+    "application_query"
+   ],
+   "references": {
+    "application_query -> entity_resolution": 16,
+    "entity_resolution -> application_query": 4
+   },
+   "top_items": [
+    {
+     "item": "application_query::native_access::ApplicationQueryNativeAccess",
+     "references": 4
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "root::WorthQueryPrimaryGraph",
+     "in": "impl<'a> ApplicationQueryNativeAccess<'a>",
+     "item": "application_query::native_access::ApplicationQueryNativeAccess"
+    },
+    {
+     "blocked_by": "schema_layout::WorthQueryPrimaryGraphLayout",
+     "in": "impl<'a> ApplicationQueryNativeAccess<'a>",
+     "item": "application_query::native_access::ApplicationQueryNativeAccess"
+    }
+   ]
+  },
+  {
+   "against": 3,
+   "items": 2,
+   "pair": [
+    "schema_layout",
+    "application_attempt"
+   ],
+   "references": {
+    "application_attempt -> schema_layout": 66,
+    "schema_layout -> application_attempt": 3
+   },
+   "top_items": [
+    {
+     "item": "application_attempt::workflow::schema::layout::WorthQueryWorkflowLayout",
+     "references": 2
+    },
+    {
+     "item": "application_attempt::workflow::schema::lower_workflow",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_attempt::workflow::schema::lower_workflow",
+     "in": "not vocabulary: fn",
+     "item": "application_attempt::workflow::schema::lower_workflow"
+    },
+    {
+     "blocked_by": "application_attempt::workflow::schema::layout::WorthQueryWorkflowLayout",
+     "in": "not vocabulary: struct",
+     "item": "application_attempt::workflow::schema::layout::WorthQueryWorkflowLayout"
+    }
+   ]
+  },
+  {
+   "against": 3,
+   "items": 1,
+   "pair": [
+    "application_contribution",
+    "application_installation"
+   ],
+   "references": {
+    "application_contribution -> application_installation": 3,
+    "application_installation -> application_contribution": 51
+   },
+   "top_items": [
+    {
+     "item": "application_installation::program::output_source::recovery::WorthQueryRecoveredProgramOutputSource",
+     "references": 3
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_attempt::compare_and_commit::committed_publication::WorthQueryCommittedProductPublication",
+     "in": "declaration",
+     "item": "application_installation::program::output_source::recovery::WorthQueryRecoveredProgramOutputSource"
+    },
+    {
+     "blocked_by": "application_attempt::compare_and_commit::commit_receipt::WorthQueryApplicationCommitReceipt",
+     "in": "impl WorthQueryRecoveredProgramOutputSource",
+     "item": "application_installation::program::output_source::recovery::WorthQueryRecoveredProgramOutputSource"
+    }
+   ]
+  },
+  {
+   "against": 3,
+   "items": 1,
+   "pair": [
+    "program_occurrence",
+    "application_installation"
+   ],
+   "references": {
+    "application_installation -> program_occurrence": 8,
+    "program_occurrence -> application_installation": 3
+   },
+   "top_items": [
+    {
+     "item": "application_installation::program::supported_program::WorthQuerySupportedProgramRecord",
+     "references": 3
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "product_operation::program_adoption::authorization::ProgramAdoptionAdmission",
+     "in": "impl WorthQuerySupportedProgramRecord",
+     "item": "application_installation::program::supported_program::WorthQuerySupportedProgramRecord"
+    },
+    {
+     "blocked_by": "product_operation::program_adoption::authorization::admit_program",
+     "in": "impl WorthQuerySupportedProgramRecord",
+     "item": "application_installation::program::supported_program::WorthQuerySupportedProgramRecord"
+    }
+   ]
+  },
+  {
+   "against": 3,
+   "items": 2,
+   "pair": [
+    "invariant_projection",
+    "application_output_demand"
+   ],
+   "references": {
+    "application_output_demand -> invariant_projection": 11,
+    "invariant_projection -> application_output_demand": 3
+   },
+   "top_items": [
+    {
+     "item": "application_output_demand::denial::WorthQueryOutputDemandDenial",
+     "references": 2
+    },
+    {
+     "item": "application_output_demand::denial::kind::WorthQueryOutputDemandDenialKind",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_output_demand::denial::kind::WorthQueryOutputDemandDenialKind",
+     "in": "not vocabulary: enum",
+     "item": "application_output_demand::denial::kind::WorthQueryOutputDemandDenialKind"
+    },
+    {
+     "blocked_by": "application_output_demand::denial::WorthQueryOutputDemandDenial",
+     "in": "not vocabulary: struct",
+     "item": "application_output_demand::denial::WorthQueryOutputDemandDenial"
+    }
+   ]
+  },
+  {
+   "against": 3,
+   "items": 2,
+   "pair": [
+    "root",
+    "application_query"
+   ],
+   "references": {
+    "application_query -> root": 8,
+    "root -> application_query": 3
+   },
+   "top_items": [
+    {
+     "item": "application_query::derived_view::registry::ManagedDerivedViewRegistry",
+     "references": 2
+    },
+    {
+     "item": "application_query::managed_index::source::installation::ManagedSourceInstallation",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_query::derived_view::registry::ManagedDerivedViewRegistry",
+     "in": "not vocabulary: struct",
+     "item": "application_query::derived_view::registry::ManagedDerivedViewRegistry"
+    },
+    {
+     "blocked_by": "application_query::managed_index::source::service::SourceService",
+     "in": "declaration",
+     "item": "application_query::managed_index::source::installation::ManagedSourceInstallation"
+    },
+    {
+     "blocked_by": "application_query::managed_index::configuration::ManagedIndexProviderCatalog",
+     "in": "impl ManagedSourceInstallation",
+     "item": "application_query::managed_index::source::installation::ManagedSourceInstallation"
+    }
+   ]
+  },
+  {
+   "against": 3,
+   "items": 2,
+   "pair": [
+    "invariant_projection",
+    "operation_body"
+   ],
+   "references": {
+    "invariant_projection -> operation_body": 3,
+    "operation_body -> invariant_projection": 6
+   },
+   "top_items": [
+    {
+     "item": "operation_body::requirement::value::field_value",
+     "references": 2
+    },
+    {
+     "item": "operation_body::requirement::evaluation::evaluate_requirements",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_attempt::denial::WorthQueryApplicationAttemptDenial",
+     "in": "body",
+     "item": "operation_body::requirement::value::field_value"
+    },
+    {
+     "blocked_by": "application_entry::mutation::HandlerExecutionDenial",
+     "in": "body",
+     "item": "operation_body::requirement::value::field_value"
+    },
+    {
+     "blocked_by": "application_entry::mutation::HandlerExecutionDenial",
+     "in": "body",
+     "item": "operation_body::requirement::evaluation::evaluate_requirements"
+    },
+    {
+     "blocked_by": "invariant_projection::operation_reader::WorthQueryApplicationOperationInvariantProjectionReader",
+     "in": "body",
+     "item": "operation_body::requirement::evaluation::evaluate_requirements"
+    }
+   ]
+  },
+  {
+   "against": 2,
+   "items": 1,
+   "pair": [
+    "program_occurrence",
+    "application_attempt"
+   ],
+   "references": {
+    "application_attempt -> program_occurrence": 13,
+    "program_occurrence -> application_attempt": 2
+   },
+   "top_items": [
+    {
+     "item": "application_attempt::compare_and_commit::commit_outcome::denial::WorthQueryApplicationCommitDenial",
+     "references": 2
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_attempt::compare_and_commit::commit_outcome::denial::WorthQueryApplicationCommitDenial",
+     "in": "not vocabulary: struct",
+     "item": "application_attempt::compare_and_commit::commit_outcome::denial::WorthQueryApplicationCommitDenial"
+    }
+   ]
+  },
+  {
+   "against": 2,
+   "items": 1,
+   "pair": [
+    "source_disclosure",
+    "application_attempt"
+   ],
+   "references": {
+    "application_attempt -> source_disclosure": 2,
+    "source_disclosure -> application_attempt": 2
+   },
+   "top_items": [
+    {
+     "item": "application_attempt::denial::WorthQueryApplicationAttemptDenial",
+     "references": 2
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_attempt::denial::WorthQueryApplicationAttemptDenial",
+     "in": "not vocabulary: struct",
+     "item": "application_attempt::denial::WorthQueryApplicationAttemptDenial"
+    }
+   ]
+  },
+  {
+   "against": 2,
+   "items": 2,
+   "pair": [
+    "component_selection",
+    "application_attempt"
+   ],
+   "references": {
+    "application_attempt -> component_selection": 5,
+    "component_selection -> application_attempt": 2
+   },
+   "top_items": [
+    {
+     "item": "application_attempt::fact::WorthQueryApplicationObservedFact",
+     "references": 1
+    },
+    {
+     "item": "application_attempt::retained_decision_facts::endpoints::AdmittedAdjacencyEndpoints",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_attempt::fact::WorthQueryApplicationObservedFact",
+     "in": "not vocabulary: enum",
+     "item": "application_attempt::fact::WorthQueryApplicationObservedFact"
+    },
+    {
+     "blocked_by": "application_attempt::denial::WorthQueryApplicationAttemptDenial",
+     "in": "impl AdmittedAdjacencyEndpoints",
+     "item": "application_attempt::retained_decision_facts::endpoints::AdmittedAdjacencyEndpoints"
+    },
+    {
+     "blocked_by": "application_attempt::retained_decision_facts::StoreDenial",
+     "in": "impl AdmittedAdjacencyEndpoints",
+     "item": "application_attempt::retained_decision_facts::endpoints::AdmittedAdjacencyEndpoints"
+    }
+   ]
+  },
+  {
+   "against": 2,
+   "items": 1,
+   "pair": [
+    "application_entry",
+    "application_runtime"
+   ],
+   "references": {
+    "application_entry -> application_runtime": 2,
+    "application_runtime -> application_entry": 8
+   },
+   "top_items": [
+    {
+     "item": "application_runtime::WorthQueryPrimaryGraphApplicationRuntime",
+     "references": 2
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_runtime::WorthQueryPrimaryGraphApplicationRuntime",
+     "in": "not vocabulary: struct",
+     "item": "application_runtime::WorthQueryPrimaryGraphApplicationRuntime"
+    }
+   ]
+  },
+  {
+   "against": 2,
+   "items": 2,
+   "pair": [
+    "application_program",
+    "application_installation"
+   ],
+   "references": {
+    "application_installation -> application_program": 27,
+    "application_program -> application_installation": 2
+   },
+   "top_items": [
+    {
+     "item": "application_installation::program::output_source::recovery::WorthQueryUnpublishedProgramOutputSource",
+     "references": 1
+    },
+    {
+     "item": "application_installation::program::output_source::recovery::WorthQueryRecoveredProgramOutputSource",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_attempt::idempotency::WorthQueryApplicationIdempotencyBinding",
+     "in": "declaration",
+     "item": "application_installation::program::output_source::recovery::WorthQueryUnpublishedProgramOutputSource"
+    },
+    {
+     "blocked_by": "application_installation::program::output_source::recovery::UnpublishedCorrectionCommand",
+     "in": "declaration",
+     "item": "application_installation::program::output_source::recovery::WorthQueryUnpublishedProgramOutputSource"
+    },
+    {
+     "blocked_by": "application_attempt::compare_and_commit::committed_publication::WorthQueryCommittedProductPublication",
+     "in": "declaration",
+     "item": "application_installation::program::output_source::recovery::WorthQueryRecoveredProgramOutputSource"
+    },
+    {
+     "blocked_by": "application_attempt::compare_and_commit::commit_receipt::WorthQueryApplicationCommitReceipt",
+     "in": "impl WorthQueryRecoveredProgramOutputSource",
+     "item": "application_installation::program::output_source::recovery::WorthQueryRecoveredProgramOutputSource"
+    }
+   ]
+  },
+  {
+   "against": 2,
+   "items": 2,
+   "pair": [
+    "application_program",
+    "application_output_demand"
+   ],
+   "references": {
+    "application_output_demand -> application_program": 4,
+    "application_program -> application_output_demand": 2
+   },
+   "top_items": [
+    {
+     "item": "application_output_demand::registry::WorthQueryOutputDemandRegistry",
+     "references": 1
+    },
+    {
+     "item": "application_output_demand::denial::WorthQueryOutputDemandDenial",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_output_demand::registry::WorthQueryOutputDemandRegistry",
+     "in": "not vocabulary: struct",
+     "item": "application_output_demand::registry::WorthQueryOutputDemandRegistry"
+    },
+    {
+     "blocked_by": "application_output_demand::denial::WorthQueryOutputDemandDenial",
+     "in": "not vocabulary: struct",
+     "item": "application_output_demand::denial::WorthQueryOutputDemandDenial"
+    }
+   ]
+  },
+  {
+   "against": 2,
+   "items": 1,
+   "pair": [
+    "resolution",
+    "application_query"
+   ],
+   "references": {
+    "application_query -> resolution": 6,
+    "resolution -> application_query": 2
+   },
+   "top_items": [
+    {
+     "item": "application_query::native_access::ApplicationQueryNativeAccess",
+     "references": 2
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "root::WorthQueryPrimaryGraph",
+     "in": "impl<'a> ApplicationQueryNativeAccess<'a>",
+     "item": "application_query::native_access::ApplicationQueryNativeAccess"
+    },
+    {
+     "blocked_by": "schema_layout::WorthQueryPrimaryGraphLayout",
+     "in": "impl<'a> ApplicationQueryNativeAccess<'a>",
+     "item": "application_query::native_access::ApplicationQueryNativeAccess"
+    }
+   ]
+  },
+  {
+   "against": 2,
+   "items": 2,
+   "pair": [
+    "live_delivery",
+    "application_query"
+   ],
+   "references": {
+    "application_query -> live_delivery": 13,
+    "live_delivery -> application_query": 2
+   },
+   "top_items": [
+    {
+     "item": "application_query::derived_view::registry::predicate::preparation::round::PreparedPredicateNotices",
+     "references": 1
+    },
+    {
+     "item": "application_query::derived_view::registry::predicate::preparation::PreparedPredicatePublication",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "source_facts::allocation::SourceFactsAllocation",
+     "in": "declaration",
+     "item": "application_query::derived_view::registry::predicate::preparation::round::PreparedPredicateNotices"
+    },
+    {
+     "blocked_by": "source_facts::allocation::SourceFactsAllocation",
+     "in": "impl PreparedPredicateNotices",
+     "item": "application_query::derived_view::registry::predicate::preparation::round::PreparedPredicateNotices"
+    },
+    {
+     "blocked_by": "application_query::derived_view::registry::predicate::preparation::round::PreparedPredicateNotices",
+     "in": "declaration",
+     "item": "application_query::derived_view::registry::predicate::preparation::PreparedPredicatePublication"
+    }
+   ]
+  },
+  {
+   "against": 2,
+   "items": 1,
+   "pair": [
+    "provider",
+    "application_runtime"
+   ],
+   "references": {
+    "application_runtime -> provider": 26,
+    "provider -> application_runtime": 2
+   },
+   "top_items": [
+    {
+     "item": "application_runtime::operation_control::attempt_registration::WorthQueryApplicationAttemptOperationControl",
+     "references": 2
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_runtime::operation_control::attempt_registration::WorthQueryApplicationAttemptOperationControl",
+     "in": "not vocabulary: struct",
+     "item": "application_runtime::operation_control::attempt_registration::WorthQueryApplicationAttemptOperationControl"
+    }
+   ]
+  },
+  {
+   "against": 2,
+   "items": 2,
+   "pair": [
+    "product_operation",
+    "conditional_operation"
+   ],
+   "references": {
+    "conditional_operation -> product_operation": 11,
+    "product_operation -> conditional_operation": 2
+   },
+   "top_items": [
+    {
+     "item": "conditional_operation::signal_decision_reentry::WorthQueryConditionalTruthBasis",
+     "references": 1
+    },
+    {
+     "item": "conditional_operation::lifecycle::registry::WorthQueryConditionalOperationRegistry",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_query::resource_lifecycle::basis_registry::lease::WorthQueryApplicationBasisLease",
+     "in": "declaration",
+     "item": "conditional_operation::signal_decision_reentry::WorthQueryConditionalTruthBasis"
+    },
+    {
+     "blocked_by": "application_attempt::compare_and_commit::commit_receipt::WorthQueryApplicationCommitReceipt",
+     "in": "impl WorthQueryConditionalTruthBasis",
+     "item": "conditional_operation::signal_decision_reentry::WorthQueryConditionalTruthBasis"
+    },
+    {
+     "blocked_by": "conditional_operation::lifecycle::operation_cell::WorthQueryConditionalOperationCell",
+     "in": "declaration",
+     "item": "conditional_operation::lifecycle::registry::WorthQueryConditionalOperationRegistry"
+    },
+    {
+     "blocked_by": "conditional_operation::host::ConditionalOperationHost",
+     "in": "impl<Schema> WorthQueryConditionalOperationRegistry<Schema>",
+     "item": "conditional_operation::lifecycle::registry::WorthQueryConditionalOperationRegistry"
+    }
+   ]
+  },
+  {
+   "against": 2,
+   "items": 2,
+   "pair": [
+    "output_reuse",
+    "output_lineage"
+   ],
+   "references": {
+    "output_lineage -> output_reuse": 7,
+    "output_reuse -> output_lineage": 2
+   },
+   "top_items": [
+    {
+     "item": "output_lineage::invalidation::owner::SourceInvalidationOwner",
+     "references": 1
+    },
+    {
+     "item": "output_lineage::native_output_witness::SealedNativeOutputWitness",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "output_lineage::invalidation::owner::SourceInvalidationOwner",
+     "in": "not vocabulary: struct",
+     "item": "output_lineage::invalidation::owner::SourceInvalidationOwner"
+    },
+    {
+     "blocked_by": "output_lineage::native_output_witness::PreparedNativeOutputFacts",
+     "in": "impl SealedNativeOutputWitness",
+     "item": "output_lineage::native_output_witness::SealedNativeOutputWitness"
+    },
+    {
+     "blocked_by": "application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence",
+     "in": "impl SealedNativeOutputWitness",
+     "item": "output_lineage::native_output_witness::SealedNativeOutputWitness"
+    }
+   ]
+  },
+  {
+   "against": 1,
+   "items": 1,
+   "pair": [
+    "fact_verification_observation",
+    "application_attempt"
+   ],
+   "references": {
+    "application_attempt -> fact_verification_observation": 16,
+    "fact_verification_observation -> application_attempt": 1
+   },
+   "top_items": [
+    {
+     "item": "application_attempt::fact::WorthQueryApplicationObservedFact",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_attempt::fact::WorthQueryApplicationObservedFact",
+     "in": "not vocabulary: enum",
+     "item": "application_attempt::fact::WorthQueryApplicationObservedFact"
+    }
+   ]
+  },
+  {
+   "against": 1,
+   "items": 1,
+   "pair": [
+    "content",
+    "application_attempt"
+   ],
+   "references": {
+    "application_attempt -> content": 3,
+    "content -> application_attempt": 1
+   },
+   "top_items": [
+    {
+     "item": "application_attempt::denial::WorthQueryApplicationAttemptDenial",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_attempt::denial::WorthQueryApplicationAttemptDenial",
+     "in": "not vocabulary: struct",
+     "item": "application_attempt::denial::WorthQueryApplicationAttemptDenial"
+    }
+   ]
+  },
+  {
+   "against": 1,
+   "items": 1,
+   "pair": [
+    "source_facts",
+    "application_attempt"
+   ],
+   "references": {
+    "application_attempt -> source_facts": 4,
+    "source_facts -> application_attempt": 1
+   },
+   "top_items": [
+    {
+     "item": "application_attempt::fact::WorthQueryApplicationObservedFact",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_attempt::fact::WorthQueryApplicationObservedFact",
+     "in": "not vocabulary: enum",
+     "item": "application_attempt::fact::WorthQueryApplicationObservedFact"
+    }
+   ]
+  },
+  {
+   "against": 1,
+   "items": 1,
+   "pair": [
+    "application_attempt",
+    "application_runtime"
+   ],
+   "references": {
+    "application_attempt -> application_runtime": 1,
+    "application_runtime -> application_attempt": 59
+   },
+   "top_items": [
+    {
+     "item": "application_runtime::WorthQueryPrimaryGraphApplicationRuntime",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_runtime::WorthQueryPrimaryGraphApplicationRuntime",
+     "in": "not vocabulary: struct",
+     "item": "application_runtime::WorthQueryPrimaryGraphApplicationRuntime"
+    }
+   ]
+  },
+  {
+   "against": 1,
+   "items": 1,
+   "pair": [
+    "denial",
+    "application_contribution"
+   ],
+   "references": {
+    "application_contribution -> denial": 48,
+    "denial -> application_contribution": 1
+   },
+   "top_items": [
+    {
+     "item": "application_contribution::conditional::output_readiness_contract::WorthQueryOutputReadinessContractDenial",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_contribution::conditional::output_readiness_contract::WorthQueryOutputReadinessContractDenial",
+     "in": "not vocabulary: struct",
+     "item": "application_contribution::conditional::output_readiness_contract::WorthQueryOutputReadinessContractDenial"
+    }
+   ]
+  },
+  {
+   "against": 1,
+   "items": 1,
+   "pair": [
+    "application_entry",
+    "application_contribution"
+   ],
+   "references": {
+    "application_contribution -> application_entry": 14,
+    "application_entry -> application_contribution": 1
+   },
+   "top_items": [
+    {
+     "item": "application_contribution::computation::wave_dispatch::dispatch",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "vocabulary::application_contribution::member_execution::WorthQueryMemberExecution",
+     "in": "body",
+     "item": "application_contribution::computation::wave_dispatch::dispatch"
+    },
+    {
+     "blocked_by": "vocabulary::application_contribution::wave_dispatch::PreparedMember",
+     "in": "body",
+     "item": "application_contribution::computation::wave_dispatch::dispatch"
+    }
+   ]
+  },
+  {
+   "against": 1,
+   "items": 1,
+   "pair": [
+    "application_program",
+    "application_contribution"
+   ],
+   "references": {
+    "application_contribution -> application_program": 5,
+    "application_program -> application_contribution": 1
+   },
+   "top_items": [
+    {
+     "item": "application_contribution::producer::WorthQueryApplicationOutputDemand",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_contribution::producer::WorthQueryApplicationOutputDemand",
+     "in": "not vocabulary: trait",
+     "item": "application_contribution::producer::WorthQueryApplicationOutputDemand"
+    }
+   ]
+  },
+  {
+   "against": 1,
+   "items": 1,
+   "pair": [
+    "product_operation",
+    "application_entry"
+   ],
+   "references": {
+    "application_entry -> product_operation": 2,
+    "product_operation -> application_entry": 1
+   },
+   "top_items": [
+    {
+     "item": "application_entry::mutation::completed_candidate::WorthQueryCompletedMutationCandidate",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_attempt::effect_program::model::WorthQueryApplicationEffectProgram",
+     "in": "declaration",
+     "item": "application_entry::mutation::completed_candidate::WorthQueryCompletedMutationCandidate"
+    },
+    {
+     "blocked_by": "application_attempt::effect_program::model::WorthQueryApplicationEffectProgram",
+     "in": "impl<Schema, Binding> WorthQueryCompletedMutationCandidate<Schema, Bin",
+     "item": "application_entry::mutation::completed_candidate::WorthQueryCompletedMutationCandidate"
+    }
+   ]
+  },
+  {
+   "against": 1,
+   "items": 1,
+   "pair": [
+    "application_inbound",
+    "application_runtime"
+   ],
+   "references": {
+    "application_inbound -> application_runtime": 1,
+    "application_runtime -> application_inbound": 23
+   },
+   "top_items": [
+    {
+     "item": "application_runtime::WorthQueryPrimaryGraphApplicationRuntime",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_runtime::WorthQueryPrimaryGraphApplicationRuntime",
+     "in": "not vocabulary: struct",
+     "item": "application_runtime::WorthQueryPrimaryGraphApplicationRuntime"
+    }
+   ]
+  },
+  {
+   "against": 1,
+   "items": 1,
+   "pair": [
+    "bootstrap",
+    "application_installation"
+   ],
+   "references": {
+    "application_installation -> bootstrap": 25,
+    "bootstrap -> application_installation": 1
+   },
+   "top_items": [
+    {
+     "item": "application_installation::denial::WorthQueryInMemoryApplicationDenial",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_checkpoint::WorthQueryApplicationCheckpoint",
+     "in": "declaration",
+     "item": "application_installation::denial::WorthQueryInMemoryApplicationDenial"
+    },
+    {
+     "blocked_by": "application_checkpoint::denial::WorthQueryCheckpointCaptureDenial",
+     "in": "declaration",
+     "item": "application_installation::denial::WorthQueryInMemoryApplicationDenial"
+    }
+   ]
+  },
+  {
+   "against": 1,
+   "items": 1,
+   "pair": [
+    "application_output_demand",
+    "application_installation"
+   ],
+   "references": {
+    "application_installation -> application_output_demand": 55,
+    "application_output_demand -> application_installation": 1
+   },
+   "top_items": [
+    {
+     "item": "application_installation::program::program_runtime::WorthQueryProgramApplicationRuntime",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_installation::program::program_runtime::WorthQueryProgramApplicationRuntime",
+     "in": "not vocabulary: struct",
+     "item": "application_installation::program::program_runtime::WorthQueryProgramApplicationRuntime"
+    }
+   ]
+  },
+  {
+   "against": 1,
+   "items": 1,
+   "pair": [
+    "application_output_demand",
+    "conditional_operation"
+   ],
+   "references": {
+    "application_output_demand -> conditional_operation": 1,
+    "conditional_operation -> application_output_demand": 1
+   },
+   "top_items": [
+    {
+     "item": "conditional_operation::signal_decision_reentry::classify_bridge_signal",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "conditional_operation::signal_decision_reentry::classify_bridge_signal",
+     "in": "not vocabulary: fn",
+     "item": "conditional_operation::signal_decision_reentry::classify_bridge_signal"
+    }
+   ]
+  },
+  {
+   "against": 1,
+   "items": 1,
+   "pair": [
+    "application_query",
+    "causal_inspection"
+   ],
+   "references": {
+    "application_query -> causal_inspection": 1,
+    "causal_inspection -> application_query": 37
+   },
+   "top_items": [
+    {
+     "item": "causal_inspection::application_observation::declared_query::WorthQueryApplicationQueryObservation",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_query::observed_source::WorthQueryObservedSource",
+     "in": "declaration",
+     "item": "causal_inspection::application_observation::declared_query::WorthQueryApplicationQueryObservation"
+    },
+    {
+     "blocked_by": "application_query::observed_source::WorthQueryObservedSource",
+     "in": "impl WorthQueryApplicationQueryObservation",
+     "item": "causal_inspection::application_observation::declared_query::WorthQueryApplicationQueryObservation"
+    }
+   ]
+  },
+  {
+   "against": 1,
+   "items": 1,
+   "pair": [
+    "product_activation",
+    "application_query"
+   ],
+   "references": {
+    "application_query -> product_activation": 1,
+    "product_activation -> application_query": 1
+   },
+   "top_items": [
+    {
+     "item": "application_query::resource_lifecycle::basis_registry::lease::WorthQueryApplicationBasisLease",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_query::resource_lifecycle::basis_registry::lease::BasisCustody",
+     "in": "declaration",
+     "item": "application_query::resource_lifecycle::basis_registry::lease::WorthQueryApplicationBasisLease"
+    },
+    {
+     "blocked_by": "application_query::resource_lifecycle::basis_registry::lease::BasisCustody",
+     "in": "impl WorthQueryApplicationBasisLease",
+     "item": "application_query::resource_lifecycle::basis_registry::lease::WorthQueryApplicationBasisLease"
+    }
+   ]
+  },
+  {
+   "against": 1,
+   "items": 1,
+   "pair": [
+    "output_reuse",
+    "application_query"
+   ],
+   "references": {
+    "application_query -> output_reuse": 8,
+    "output_reuse -> application_query": 1
+   },
+   "top_items": [
+    {
+     "item": "application_query::observed_source::WorthQueryObservedSource",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_query::observed_source::WorthQueryObservedSource",
+     "in": "not vocabulary: struct",
+     "item": "application_query::observed_source::WorthQueryObservedSource"
+    }
+   ]
+  },
+  {
+   "against": 1,
+   "items": 1,
+   "pair": [
+    "application_query",
+    "application_runtime"
+   ],
+   "references": {
+    "application_query -> application_runtime": 1,
+    "application_runtime -> application_query": 174
+   },
+   "top_items": [
+    {
+     "item": "application_runtime::operation_control::attempt_registration::WorthQueryApplicationAttemptOperationControl",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_runtime::operation_control::attempt_registration::WorthQueryApplicationAttemptOperationControl",
+     "in": "not vocabulary: struct",
+     "item": "application_runtime::operation_control::attempt_registration::WorthQueryApplicationAttemptOperationControl"
+    }
+   ]
+  },
+  {
+   "against": 1,
+   "items": 1,
+   "pair": [
+    "runtime_host",
+    "application_runtime"
+   ],
+   "references": {
+    "application_runtime -> runtime_host": 1,
+    "runtime_host -> application_runtime": 1
+   },
+   "top_items": [
+    {
+     "item": "application_runtime::WorthQueryPrimaryGraphApplicationRuntime",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "application_runtime::WorthQueryPrimaryGraphApplicationRuntime",
+     "in": "not vocabulary: struct",
+     "item": "application_runtime::WorthQueryPrimaryGraphApplicationRuntime"
+    }
+   ]
+  },
+  {
+   "against": 1,
+   "items": 1,
+   "pair": [
+    "authenticated_principal",
+    "freshness"
+   ],
+   "references": {
+    "authenticated_principal -> freshness": 1,
+    "freshness -> authenticated_principal": 1
+   },
+   "top_items": [
+    {
+     "item": "freshness::WorthQueryPrincipalFreshnessEvidence",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "freshness::WorthQueryPrincipalFreshnessEvidence",
+     "in": "not vocabulary: struct",
+     "item": "freshness::WorthQueryPrincipalFreshnessEvidence"
+    }
+   ]
+  },
+  {
+   "against": 1,
+   "items": 1,
+   "pair": [
+    "handler",
+    "bootstrap"
+   ],
+   "references": {
+    "bootstrap -> handler": 2,
+    "handler -> bootstrap": 1
+   },
+   "top_items": [
+    {
+     "item": "bootstrap::WorthQueryPrimaryGraphBootstrap",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "bootstrap::WorthQueryPrimaryGraphBootstrap",
+     "in": "not vocabulary: struct",
+     "item": "bootstrap::WorthQueryPrimaryGraphBootstrap"
+    }
+   ]
+  },
+  {
+   "against": 1,
+   "items": 1,
+   "pair": [
+    "typed_bootstrap",
+    "bootstrap"
+   ],
+   "references": {
+    "bootstrap -> typed_bootstrap": 4,
+    "typed_bootstrap -> bootstrap": 1
+   },
+   "top_items": [
+    {
+     "item": "bootstrap::WorthQueryPrimaryGraphBootstrap",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "bootstrap::WorthQueryPrimaryGraphBootstrap",
+     "in": "not vocabulary: struct",
+     "item": "bootstrap::WorthQueryPrimaryGraphBootstrap"
+    }
+   ]
+  },
+  {
+   "against": 1,
+   "items": 1,
+   "pair": [
+    "component_selection",
+    "source_read_verification"
+   ],
+   "references": {
+    "component_selection -> source_read_verification": 1,
+    "source_read_verification -> component_selection": 2
+   },
+   "top_items": [
+    {
+     "item": "source_read_verification::SourceReadVerification",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "aggregate_observation::AggregateObservation",
+     "in": "declaration",
+     "item": "source_read_verification::SourceReadVerification"
+    },
+    {
+     "blocked_by": "aggregate_observation::AggregateObservation",
+     "in": "impl<'runtime> SourceReadVerification<'runtime>",
+     "item": "source_read_verification::SourceReadVerification"
+    }
+   ]
+  },
+  {
+   "against": 1,
+   "items": 1,
+   "pair": [
+    "provider",
+    "invariant_projection"
+   ],
+   "references": {
+    "invariant_projection -> provider": 3,
+    "provider -> invariant_projection": 1
+   },
+   "top_items": [
+    {
+     "item": "invariant_projection::consumed_output::ConsumedOutputEvidence",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "invariant_projection::consumed_output::ConsumedOutputEvidence",
+     "in": "not vocabulary: struct",
+     "item": "invariant_projection::consumed_output::ConsumedOutputEvidence"
+    }
+   ]
+  },
+  {
+   "against": 1,
+   "items": 1,
+   "pair": [
+    "program_occurrence",
+    "product_operation"
+   ],
+   "references": {
+    "product_operation -> program_occurrence": 7,
+    "program_occurrence -> product_operation": 1
+   },
+   "top_items": [
+    {
+     "item": "product_operation::program_adoption::authorization::ProgramAdoptionAdmission",
+     "references": 1
+    }
+   ],
+   "why": [
+    {
+     "blocked_by": "product_operation::context::WorthQuerySelectedProductOperation",
+     "in": "declaration",
+     "item": "product_operation::program_adoption::authorization::ProgramAdoptionAdmission"
+    },
+    {
+     "blocked_by": "product_operation::program_adoption::authorization::effect::AdoptionEffect",
+     "in": "declaration",
+     "item": "product_operation::program_adoption::authorization::ProgramAdoptionAdmission"
+    }
+   ]
+  }
+ ],
+ "vocabulary_cycles": [],
+ "vocabulary_edges": {},
+ "vocabulary_upward": {}
+}

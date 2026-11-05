@@ -26,3 +26,10 @@ phase 2 after application_entry, operation_body, handler, output_lineage, condit
 phase 2 checkpoint (b78fc0c6b6 + milestone fixes): every module below the runtime on a host trait, inbound out of the runtime, 33 bridges left: component 59 of 80; 150 upward edges, 1506 refs; 108 mutual pairs, lighter-side weight 974; 
   domain level: component 12 of 21; 20 upward edges, 581 refs; 17 mutual pairs, lighter-side weight 427; 
   milestone: cargo check --workspace --tests over workspaces/worth-query clean (2b7b9d8f37); holding for the owner's decision on proposal 03 and the ownership simulation
+# Wave 1: owner vocabulary modules (b323f60f94 script, 5ced11d45a scripted output, 1060779246 hand fixes)
+wave 1 batch: 231 primary-graph and 123 domain units moved whole into primary_graph::vocabulary and domain_computation::vocabulary (one child per family source file, root-file items in the family module); family F's two stop translators into request_execution::execution_stop; 30 units held back after the post-move checks (vocabulary/held-back.md)
+wave 1, greedy report (module_coupling.py report): primary_graph component 57 of 81 (was 59 of 80); 126 upward edges, 1141 refs (was 150, 1506)
+  domain level: component 12 of 22 (was 12 of 21); 14 upward edges, 396 refs (was 20, 581)
+wave 1, canonical host order (vocabulary_simulation.py, host-supertrait order, draft stack for ties): primary_graph component 57, 1105 refs against the layering (was 59, 1625); domain component 12, 396 refs (was 12, 432)
+  remaining seams under the host order: ownership/vocabulary/after-wave-1/*/host-order-seams.md
+  milestone: cargo check --workspace --tests over workspaces/worth-query clean at 1060779246; boundary-check and agent-context check clean; line caps (dirty) pass
