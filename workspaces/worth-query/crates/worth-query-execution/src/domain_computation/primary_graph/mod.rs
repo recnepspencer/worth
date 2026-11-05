@@ -35,7 +35,6 @@ mod application_program;
 pub(crate) mod application_query;
 pub(crate) mod application_resource;
 pub(crate) mod application_runtime;
-pub(in crate::domain_computation) use application_runtime::WorthQueryApplicationRuntimeCore;
 pub(crate) mod authenticated_principal;
 mod bootstrap;
 pub(crate) mod bootstrap_publication;

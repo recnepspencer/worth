@@ -113,9 +113,4 @@ impl WorthQueryManagedDerivedViewReconciliation {
 }
 pub use registration::CollectionOps;
 pub use registration::PairOps;
-pub use registration::ReconcileOps;
-pub use registration::ReconstructDependentOps;
-pub use registration::ReconstructLazyOps;
-pub use registration::ReconstructParallelOps;
-pub use registration::RefreshBatchOps;
 pub use registration::RegistrationOps;

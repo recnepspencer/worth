@@ -220,6 +220,5 @@ impl std::fmt::Debug for WorthQueryGeneratedOutputSuspensionFailure {
 mod court_doors_for_test;
 pub use reconstruction::ReconstructionOps;
 pub use restoration::AdvancementOps;
-pub use restoration::RepublicationDoorsOps;
 pub use restoration::RestorationOps;
 pub use suspension::RecoveryAdvancementOps;

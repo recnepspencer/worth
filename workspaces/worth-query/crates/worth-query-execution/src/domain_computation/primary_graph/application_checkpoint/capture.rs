@@ -6,7 +6,6 @@ use super::{
 
 pub(crate) mod native_priors;
 mod output_facts;
-pub(in crate::domain_computation::primary_graph) use native_priors::merge as merge_native_checkpoint_priors;
 
 pub fn merge_accepted_outputs(
     mut current: Vec<

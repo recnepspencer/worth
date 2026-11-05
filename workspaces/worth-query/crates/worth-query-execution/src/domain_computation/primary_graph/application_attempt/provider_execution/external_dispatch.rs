@@ -340,4 +340,3 @@ impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_
     Schema: ApplicationSchema, {}
 
 mod court_doors_for_test;
-pub use court_doors_for_test::ExternalDispatchDoorsOps;

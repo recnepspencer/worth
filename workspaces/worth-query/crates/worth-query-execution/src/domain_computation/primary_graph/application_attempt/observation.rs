@@ -13,7 +13,6 @@ pub(crate) mod aspect_presence;
 pub(crate) mod predecode_admission;
 pub(in crate::domain_computation::primary_graph) use aspect_presence::observe_aspect_presence;
 pub(crate) mod read_rendezvous;
-pub(in crate::domain_computation::primary_graph) use read_rendezvous::ReadRendezvous;
 std::thread_local! {
     static NATIVE_FIELD_CONTACTS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
 }

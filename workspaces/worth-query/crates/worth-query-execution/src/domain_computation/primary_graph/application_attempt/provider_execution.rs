@@ -48,7 +48,6 @@ pub(in crate::domain_computation::primary_graph) use elevation_lifecycle::Elevat
 pub use elevation_lifecycle::ElevationRequestOps;
 pub(in crate::domain_computation::primary_graph) use elevation_lifecycle::ElevationRequestScopedOps;
 pub(in crate::domain_computation::primary_graph) use elevation_lifecycle::InstalledReadmissionScopedOps;
-pub use elevation_lifecycle::InstalledReadmissionDoorsOps;
 pub use elevation_lifecycle::MandatoryReviewOps;
 pub(in crate::domain_computation::primary_graph) use elevation_lifecycle::MandatoryReviewScopedOps;
 pub(in crate::domain_computation::primary_graph) use elevation_refusal::ElevationRefusalScopedOps;
@@ -59,7 +58,4 @@ pub use entry::ApplicationCommitOps;
 pub(in crate::domain_computation::primary_graph) use entry::ApplicationCommitScopedOps;
 pub use entry::OutputSourceOps;
 pub use external_dispatch::ExternalDispatchOps;
-pub use external_dispatch::ExternalDispatchDoorsOps;
 pub(in crate::domain_computation) use phase::EntryCustodyScopedOps;
-pub use phase::EntryCustodyDoorsOps;
-pub use phase::EntryCustodyEntryCustodyDoorsOps;

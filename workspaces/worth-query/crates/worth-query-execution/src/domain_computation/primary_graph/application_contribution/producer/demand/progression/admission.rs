@@ -11,9 +11,7 @@ pub(super) use selection_mode::SourceAdmissionSelection;
 pub(super) use source_custody::validate_prepared_source_carrier;
 
 use super::denial;
-use crate::domain_computation::primary_graph::{
-    WorthQueryObservedSource, WorthQueryPrimaryGraphApplicationRuntime,
-};
+use crate::domain_computation::primary_graph::WorthQueryObservedSource;
 use {
     super::super::FamilySourceQuery, super::super::FamilySourceValue,
     super::super::WorthQueryAdmittedOutputDemand, super::super::WorthQueryProducerOutputFamily,

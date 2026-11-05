@@ -220,4 +220,3 @@ fn suspended_from_completion(
     }
 }
 pub use recovery::AdvancementOps;
-pub use republication::RepublicationDoorsOps;

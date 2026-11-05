@@ -39,7 +39,6 @@ pub(crate) mod computation_routing;
 mod mutation_read_attempt_core;
 mod native_completion;
 mod value_decode;
-pub(in crate::domain_computation::primary_graph) use computation_routing::ComputationFactReaders;
 pub(in crate::domain_computation::primary_graph) use computation_routing::{
     CheckedCallShape, ComputationFactAttribution, ComputationFactIndex, ComputationRead,
     NativeCallCarriage, SealedComputationFacts,

@@ -28,7 +28,6 @@ use crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissio
 use crate::domain_computation::primary_graph::WorthQueryApplicationQueryControls;
 use crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenial;
 use crate::domain_computation::primary_graph::WorthQueryObservedSource;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenial;
 use worth_query_declaration::facade::{
     application_query::{ApplicationQueryBinding, ApplicationQueryScopeBinding},

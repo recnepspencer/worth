@@ -6,7 +6,6 @@ use crate::domain_computation::primary_graph::output_reuse::require_installed_ou
 use crate::domain_computation::primary_graph::output_reuse::retained_output_settlement_is_verified;
 use crate::domain_computation::primary_graph::output_reuse::OutputDependencySelection;
 use crate::domain_computation::primary_graph::WorthQueryApplicationBasisSelectionIdentity;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use {
     crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial,
     crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind,
@@ -87,5 +86,4 @@ fn select_output_producer_with_remaining<Family>(
 
 impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> + ?Sized> SelectionParentOps<Schema> for HostRuntime where
     Schema: ApplicationSchema + 'static, {}
-pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) use selected_basis::SelectedBasisScopedOps;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) use selected_basis::SelectionSelectedBasisScopedOps;

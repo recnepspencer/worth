@@ -215,7 +215,3 @@ fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
-pub(in crate::domain_computation::primary_graph) use preparation_denial::{
-    preparation_denial as completion_preparation_denial,
-    validation_denial as completion_validation_denial,
-};

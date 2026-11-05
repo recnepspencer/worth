@@ -52,7 +52,6 @@ use crate::domain_computation::primary_graph::application_output_demand::Selecte
 use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandInterest;
 use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandRegistry;
 use crate::domain_computation::primary_graph::WorthQueryApplicationProjection;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 pub(super) use wave_checkpoint::CheckpointReady;
 pub(super) use wave_checkpoint::WaveCheckpointTurn;

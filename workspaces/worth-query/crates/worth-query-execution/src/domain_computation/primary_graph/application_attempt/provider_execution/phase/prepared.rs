@@ -168,7 +168,6 @@ struct WorthQueryCurrentApplicationCommit<Schema, Operation, Input, Scope> {
         Option<crate::domain_computation::authorization::WorthQueryWorkflowApprovalAuthorityBasis>,
 }
 
-pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) use entry_custody::prepare_application_commit;
 
 fn prepare_authorized_application_commit<Schema, Operation, Input, Scope>(
     application: &dyn crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema>,

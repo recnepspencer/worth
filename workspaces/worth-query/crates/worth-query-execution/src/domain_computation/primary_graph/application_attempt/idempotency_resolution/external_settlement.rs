@@ -93,4 +93,3 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema, HostRuntime: c
 
 #[path = "external_settlement_court_doors_for_test.rs"]
 mod court_doors_for_test;
-pub use court_doors_for_test::ExternalSettlementCourtDoorsForTestOps;

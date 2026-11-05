@@ -113,7 +113,6 @@ pub use admitted_result::{
     WorthQueryApplicationOutputDemandSource,
 };
 pub use authorization_work::WorthQueryApplicationAuthorizationWorkEvidence;
-pub(crate) use basis::WorthQueryApplicationHistoricalRead;
 pub use continuation::{
     WorthQueryApplicationContinuationDenial, WorthQueryApplicationContinuationDenialKind,
     WorthQueryApplicationContinuationPageResult, WorthQueryApplicationQueryContinuation,

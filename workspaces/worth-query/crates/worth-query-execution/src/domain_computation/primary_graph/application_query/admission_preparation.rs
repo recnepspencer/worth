@@ -283,5 +283,4 @@ fn denial(
 }
 
 mod court_doors_for_test;
-pub use court_doors_for_test::AdmissionPreparationDoorsOps;
 pub(in crate::domain_computation::primary_graph::application_query) use fresh_source::FreshSourceScopedOps;

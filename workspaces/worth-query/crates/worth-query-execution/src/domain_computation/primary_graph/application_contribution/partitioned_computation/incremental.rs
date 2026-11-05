@@ -59,7 +59,6 @@ mod tree_edits;
 mod tree_membership;
 pub(crate) mod tree_report;
 pub(crate) mod tree_update;
-pub(in super::super) use observed::observe_retained_full_tree;
 pub use observed::partitioned_computation_tree_work_on_this_thread_for_test;
 pub use tree_report::{
     WorthQueryPartitionedTreeAccounting, WorthQueryPartitionedTreeMetrics,

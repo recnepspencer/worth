@@ -148,7 +148,6 @@ fn denial(
 ) -> WorthQueryApplicationQueryAdmissionDenial {
     WorthQueryApplicationQueryAdmissionDenial::new(kind, subject)
 }
-pub use fresh::AccessDoorsOps;
 pub(in crate::domain_computation::primary_graph) use fresh::AccessScopedOps;
 pub(in crate::domain_computation::primary_graph) use fresh::FreshScopedOps;
 pub(in crate::domain_computation::primary_graph) use read_authorization::ReadAuthorizationScopedOps;

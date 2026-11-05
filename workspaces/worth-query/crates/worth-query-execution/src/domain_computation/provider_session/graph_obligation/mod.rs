@@ -40,9 +40,7 @@ pub use session_identity::{
     WorthQueryGraphWorkManagedRunIdentity, WorthQueryGraphWorkSessionIdentity,
 };
 
-pub(in crate::domain_computation) use owner_execution::pin_panic;
 
-pub(in crate::domain_computation) use owner_execution::pin_control;
 
 pub use session::WorthQueryManagedGraphReadDenial;
 

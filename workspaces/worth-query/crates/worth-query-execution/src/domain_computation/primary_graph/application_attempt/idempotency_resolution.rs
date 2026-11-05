@@ -393,5 +393,4 @@ pub(in crate::domain_computation::primary_graph) trait ApplicationAttemptIdempot
 
 impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_attempt::host::ApplicationAttemptHost<Schema> + ?Sized> ApplicationAttemptIdempotencyResolutionScopedOps<Schema> for HostRuntime where
     Schema: ApplicationSchema, {}
-pub use external_settlement::ExternalSettlementCourtDoorsForTestOps;
 pub(in crate::domain_computation::primary_graph) use external_settlement::ExternalSettlementScopedOps;

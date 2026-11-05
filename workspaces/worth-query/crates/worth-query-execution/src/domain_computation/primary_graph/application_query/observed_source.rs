@@ -247,6 +247,5 @@ impl<Query> WorthQueryObservedSource<Query> {
 }
 
 mod court_doors_for_test;
-pub use prepared_expectation::PreparedExpectationDoorsOps;
 pub use prepared_expectation::PreparedExpectationOps;
 pub(in crate::domain_computation::primary_graph) use prepared_expectation::PreparedExpectationScopedOps;

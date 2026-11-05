@@ -6,30 +6,14 @@ use worth_query_installation::facade::ApplicationSchema;
 use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
-use crate::domain_computation::primary_graph::application_contribution::producer::ProducerInvocationAuthority;
-use crate::domain_computation::primary_graph::application_contribution::producer::WorthQueryProducerCommitAuthority;
 use crate::domain_computation::primary_graph::application_contribution::producer::demand::WorthQueryAdmittedOutputDemand;
 use crate::domain_computation::primary_graph::application_contribution::producer::demand::WorthQueryOutputDemandAdvance;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
-use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
-use crate::domain_computation::primary_graph::application_contribution::producer::demand::progression::denial;
 use crate::domain_computation::primary_graph::WorthQueryObservedSource;
-use crate::domain_computation::primary_graph::application_output_demand::host::OutputDemandHost;
-use std::sync::Arc;
-use worth_relational::facade::runtime::ProjectionAspectScope;
-use worth_relational::facade::storage::RecordLifecycleState;
-use crate::basis::WorthQueryProductBranchReadIdentity;
-use crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding;
 use crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits;
-use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_query_declaration::facade::application_program::ApplicationProgramIdentity;
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
 use crate::domain_computation::primary_graph::application_contribution::producer::demand::*;
-use crate::domain_computation::primary_graph::output_reuse::compare_retained_output_dependencies;
-use crate::domain_computation::primary_graph::output_reuse::compare_retained_output_witness;
-use crate::domain_computation::primary_graph::output_reuse::retained_output_settlement_is_verified;
-use crate::domain_computation::primary_graph::output_reuse::OutputDependencySelection;
 impl<Schema: ApplicationSchema> super::super::WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub fn advance_output_demand<Family>(
         &self,

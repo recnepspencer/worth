@@ -169,12 +169,10 @@ where
 mod court_doors_for_test;
 pub(in crate::domain_computation::primary_graph::application_query) use access_observation::AccessObservationScopedOps;
 pub(in crate::domain_computation::primary_graph) use correction_disclosure::CorrectionDisclosureScopedOps;
-pub use court_doors_for_test::AdmissionDoorsOps;
 pub(in crate::domain_computation::primary_graph) use finish::OrdinaryScopedOps;
 pub(in crate::domain_computation::primary_graph) use finish::PreparedPermissionScopedOps;
 pub(in crate::domain_computation::primary_graph) use finish::ReadmittedScopedOps;
 pub(in crate::domain_computation::primary_graph::application_query) use live_readmission::LiveReadmissionScopedOps;
-pub use permission::AccessDoorsOps;
 pub(in crate::domain_computation::primary_graph) use permission::AccessScopedOps;
 pub(in crate::domain_computation::primary_graph) use permission::FreshScopedOps;
 pub(in crate::domain_computation::primary_graph) use permission::ReadAuthorizationScopedOps;

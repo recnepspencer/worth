@@ -5,7 +5,6 @@ use worth_query_installation::facade::ApplicationSchema;
 use {
     crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial,
     crate::domain_computation::primary_graph::WorthQueryHistoryNavigationDenial,
-    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime,
 };
 
 pub(super) fn confirm_history_source<S: ApplicationSchema, T>(

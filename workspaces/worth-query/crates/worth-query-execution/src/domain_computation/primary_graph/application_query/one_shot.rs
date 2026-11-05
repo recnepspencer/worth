@@ -313,8 +313,5 @@ pub(in crate::domain_computation::primary_graph::application_query) use admitted
 pub use batch::BatchOps;
 pub(in crate::domain_computation) use batch::BatchScopedOps;
 pub(in crate::domain_computation::primary_graph::application_query) use batch::OneShotBatchScopedOps;
-pub use correction_disclosure::CorrectionDisclosureDoorsOps;
 pub(in crate::domain_computation::primary_graph) use correction_disclosure::OneShotCorrectionDisclosureScopedOps;
-pub use court_doors_for_test::OneShotDoorsOps;
 pub use history_capture::HistoryCaptureOps;
-pub(in crate::domain_computation) use history_capture::HistoryCaptureScopedOps;

@@ -249,4 +249,3 @@ fn denial(
     WorthQueryOperationAuthorizationDenial::new(kind, subject)
 }
 pub use replay::ReplayOps;
-pub(in crate::domain_computation) use replay::ReplayScopedOps;

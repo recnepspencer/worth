@@ -278,31 +278,18 @@ where
 }
 
 pub(crate) mod registry;
-pub use demand::AdmissionDoorsOps;
 pub use demand::AdmissionOps;
 pub(in crate::domain_computation) use demand::AdmissionScopedOps;
-pub use demand::CallerPassObservationOps;
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) use demand::CallerPassScopedOps;
-pub use demand::CheckpointDeliveryDoorsOps;
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) use demand::DemandProgressionScopedOps;
 pub(in crate::domain_computation) use demand::DependentScopedOps;
-pub use demand::PreparedOps;
-pub use demand::ProgressionDoorsOps;
 pub use demand::ProgressionOps;
 pub(in crate::domain_computation::primary_graph) use demand::ProgressionScopedOps;
-pub use demand::RecoveryRefreshObservationOps;
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) use demand::RequiredFreshScopedOps;
 pub use demand::RetainedObservationOps;
-pub use demand::SchedulingProgressionDoorsOps;
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) use demand::SchedulingProgressionScopedOps;
 pub use demand::SelectedProgramOps;
 pub use demand::SelectionOps;
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) use demand::SelectionSelectedBasisScopedOps;
 pub use demand::SourceCustodyOps;
 pub(in crate::domain_computation::primary_graph) use demand::SourceCustodyScopedOps;
 pub(in crate::domain_computation::primary_graph) use demand::SourceRecoveryScopedOps;
 pub(in crate::domain_computation::primary_graph) use demand::UnavailableScopedOps;
-pub use execution::ContactObservationOps;
 pub(super) use registry::DeclaredProducerBinding;
 pub(in crate::domain_computation::primary_graph) use registry::InstalledProducerEdition;
 pub(in crate::domain_computation::primary_graph) use registry::PendingProducerRegistry;

@@ -110,20 +110,12 @@ pub use producer::demand::progression::caller_pass_observation::caller_pass_repo
 
 pub(in crate::domain_computation::primary_graph) use execution_denial::publication_execution_kind;
 
-pub use producer::AdmissionDoorsOps;
 pub use producer::AdmissionOps;
 pub(in crate::domain_computation) use producer::AdmissionScopedOps;
-pub use producer::CallerPassObservationOps;
-pub use producer::CheckpointDeliveryDoorsOps;
-pub use producer::ContactObservationOps;
 pub(in crate::domain_computation) use producer::DependentScopedOps;
-pub use producer::PreparedOps;
-pub use producer::ProgressionDoorsOps;
 pub use producer::ProgressionOps;
 pub(in crate::domain_computation::primary_graph) use producer::ProgressionScopedOps;
-pub use producer::RecoveryRefreshObservationOps;
 pub use producer::RetainedObservationOps;
-pub use producer::SchedulingProgressionDoorsOps;
 pub use producer::SelectedProgramOps;
 pub use producer::SelectionOps;
 pub use producer::SourceCustodyOps;

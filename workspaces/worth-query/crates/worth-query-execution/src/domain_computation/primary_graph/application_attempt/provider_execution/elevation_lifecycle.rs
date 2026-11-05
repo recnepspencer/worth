@@ -20,7 +20,6 @@ pub use elevation_close::ElevationCloseOps;
 pub(in crate::domain_computation::primary_graph) use elevation_close::ElevationCloseScopedOps;
 pub use elevation_request::ElevationRequestOps;
 pub(in crate::domain_computation::primary_graph) use elevation_request::ElevationRequestScopedOps;
-pub use installed_readmission::InstalledReadmissionDoorsOps;
 pub(in crate::domain_computation::primary_graph) use installed_readmission::InstalledReadmissionScopedOps;
 pub use mandatory_review::MandatoryReviewOps;
 pub(in crate::domain_computation::primary_graph) use mandatory_review::MandatoryReviewScopedOps;

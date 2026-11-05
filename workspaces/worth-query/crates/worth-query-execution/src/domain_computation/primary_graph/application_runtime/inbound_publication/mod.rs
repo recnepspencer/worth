@@ -18,6 +18,3 @@ pub(in crate::domain_computation) use outcome::{
     WorthQueryPerformedInboundCompletion, WorthQueryUnpublishedInboundCompletion,
 };
 
-pub(in crate::domain_computation::primary_graph) use installed_transport::InstalledTransportPublicationOutcome;
-pub(in crate::domain_computation::primary_graph) use progression::completion_candidate as authenticated_completion_candidate;
-pub(in crate::domain_computation::primary_graph) use transport_progression::completion_candidate as transport_completion_candidate;
