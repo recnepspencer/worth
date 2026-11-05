@@ -113,7 +113,6 @@ fn authorization_denial(
     )
 }
 
-
 pub(in crate::domain_computation::authorization) use admission::OperationObservationScopedOps;
 pub(in crate::domain_computation) use admission::RequirementObservationScopedOps;
 pub(in crate::domain_computation) use admission::ResourceObservationScopedOps;

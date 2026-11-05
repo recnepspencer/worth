@@ -12,8 +12,7 @@ use crate::domain_computation::authorization::{
 };
 use crate::domain_computation::primary_graph::{
     validate_freshness_at_snapshot, WorthQueryApplicationEntityIdentity,
-    WorthQueryAuthenticatedPrincipal,
-    WorthQueryPrincipalResolutionMode,
+    WorthQueryAuthenticatedPrincipal, WorthQueryPrincipalResolutionMode,
 };
 use worth_query_declaration::facade::authentication::WorthQueryExternalPrincipalIdentityBinding;
 use worth_query_installation::facade::{

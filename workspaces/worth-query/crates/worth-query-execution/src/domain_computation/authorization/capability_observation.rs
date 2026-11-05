@@ -355,4 +355,3 @@ pub(super) fn invalid_policy(subject: &str) -> WorthQueryOperationAuthorizationD
         subject,
     )
 }
-
