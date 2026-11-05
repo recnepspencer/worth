@@ -1693,6 +1693,11 @@ changed build identity is an oracle dimension rather than a single case.
 
 **Required tests**
 
+- **Producer directory build identity.** Restore
+  `directory_changed_build_reuses_original_output_until_new_implementation_is_demanded`
+  (restore from `5358b31d3083dc88eea961af716e948f759eac96:workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-application-graph/tests/worth_query_court_decl_host_package_archive_replay_application_graph/certification/application_graph/producer_predicate_checkpoint/changed_build.rs`): produce under A, reuse the
+  original accepted output under A, reopen under B without producer execution,
+  then regenerate only on demand.
 - **Retirement survives restart.** Retire support, kill, reopen: the status is
   still Retired, and interpretation refuses where the retirement requires it.
 - **Adoption resumes.** Adoption interrupted at each stage across a kill
