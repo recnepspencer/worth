@@ -87,8 +87,8 @@ where
     }
 }
 
-impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S> {
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) fn close_unpublished_checkpoint(
+pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) trait UnpublishedScopedOps<S: ApplicationSchema + 'static>: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<S> {
+fn close_unpublished_checkpoint(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         interest: &WorthQueryOutputDemandInterest,
@@ -96,7 +96,7 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
     ) -> Result<(), crate::domain_computation::primary_graph::application_output_demand::denial::read_cleanup::WorthQueryOutputReadCloseDenial>{
         use crate::domain_computation::primary_graph::application_output_demand::denial::read_cleanup::WorthQueryOutputReadCloseDenial as Denial;
         let Some((claim, checkpoint)) = self
-            .output_production
+            .output_production()
             .demands()
             .begin_unpublished_close(interest)?
         else {
@@ -105,7 +105,7 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
         let mut loan = PublicationLoan::new(checkpoint, |checkpoint| {
             use crate::domain_computation::primary_graph::application_output_demand::CheckpointFinishStop;
             match self
-                .output_production
+                .output_production()
                 .demands()
                 .finish_checkpoint_owned(interest, claim, checkpoint, None)
             {
@@ -117,12 +117,16 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
                 }
             }
         });
-        let result = loan.owner().close(phase, self);
+        let result = loan.owner().close(phase, self.application_contribution_host());
         loan.finish().map_err(Denial::Cleanup)?;
         result
     }
+}
 
-    pub(super) fn advance_unpublished_checkpoint(
+impl<S: ApplicationSchema + 'static, HostRuntime: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<S> + ?Sized> UnpublishedScopedOps<S> for HostRuntime {}
+
+pub(super) trait UnpublishedParentOps<S: ApplicationSchema + 'static>: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<S> {
+fn advance_unpublished_checkpoint(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         producer: &str,
@@ -141,14 +145,14 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
             finish,
         );
         let entry = self
-            .output_production
+            .output_production()
             .producers()
             .entries
             .get(producer)
             .expect("a claimed checkpoint retains its original installed producer");
         match entry.executor.recover_publication(
             phase,
-            self,
+            self.application_contribution_host(),
             principal,
             request,
             invocation,
@@ -172,3 +176,5 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
         }
     }
 }
+
+impl<S: ApplicationSchema + 'static, HostRuntime: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<S> + ?Sized> UnpublishedParentOps<S> for HostRuntime {}

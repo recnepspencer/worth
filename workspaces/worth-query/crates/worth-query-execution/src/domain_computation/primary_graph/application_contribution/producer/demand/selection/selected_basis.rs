@@ -1,17 +1,13 @@
 //! Exact selected Product checks for a fresh required-output continuation.
 
+use crate::domain_computation::primary_graph::application_contribution::producer::demand::selection::native_selection::NativeSelectionParentOps;
 use super::*;
 use crate::domain_computation::primary_graph::product_operation::SharedSelectedProductOperation;
 use crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation;
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
-where
-    Schema: ApplicationSchema + 'static,
-{
-    /// The required wave has already selected and retained this Product.
-    /// Its fresh disclosed source must name that exact read; predecessor
-    /// program custody may name an older head of the same occurrence.
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) fn select_output_producer_with_remaining_on_selected<
+pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) trait SelectedBasisScopedOps<Schema>: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> where
+    Schema: ApplicationSchema + 'static, {
+fn select_output_producer_with_remaining_on_selected<
         Family,
     >(
         &self,
@@ -29,7 +25,14 @@ where
     {
         self.select_output_producer_with_remaining_core::<Family>(execution, source, profile_kind, retained_program_basis, Some(shared), SelectionPurpose::OutputDelivery, &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess::acquire())
     }
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn select_output_producer_for_observation<
+}
+
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> + ?Sized> SelectedBasisScopedOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema + 'static, {}
+
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) trait SelectionSelectedBasisScopedOps<Schema>: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> where
+    Schema: ApplicationSchema + 'static, {
+fn select_output_producer_for_observation<
         Family,
     >(
         &self,
@@ -57,10 +60,13 @@ where
     }
 }
 
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> + ?Sized> SelectionSelectedBasisScopedOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema + 'static, {}
+
 /// Historical program custody constrains the application and occurrence. It
 /// does not assert that its earlier commit equals the fresh selected head.
 pub(super) fn historical_basis_matches<Schema>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
     retained: &WorthQueryApplicationReadObservation,
     shared: &SharedSelectedProductOperation<'_, Schema>,
 ) -> Result<bool, WorthQueryOutputDemandDenial>
@@ -76,7 +82,7 @@ where
 /// Check the selected read before candidate enumeration, including the empty
 /// candidate path. A failed comparison never authorizes another Product read.
 pub(super) fn require_fresh_source<Schema>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
     source: &crate::basis::WorthQueryProductBranchReadIdentity,
     family: &str,
     shared: &SharedSelectedProductOperation<'_, Schema>,
@@ -142,7 +148,7 @@ pub(super) fn selection_budget_denial(family: &str) -> WorthQueryOutputDemandDen
 /// Retained discovery pins the source, while lifecycle reads the current head
 /// of that same admitted occurrence. Candidate lookup and liveness share it.
 pub(super) fn select_retained_lifecycle<'runtime, Schema>(
-    runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &'runtime dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     source: &crate::basis::WorthQueryProductBranchReadIdentity,
     family: &str,

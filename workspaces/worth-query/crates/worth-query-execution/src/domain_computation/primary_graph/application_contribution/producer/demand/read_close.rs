@@ -13,14 +13,14 @@ impl<S: ApplicationSchema + 'static, F: WorthQueryProducerOutputFamily<S>>
     pub(in crate::domain_computation::primary_graph) fn close_read_request(
         &mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<S>,
         branch: WorthQueryProductBranch,
     ) -> Result<(), WorthQueryOutputReadCloseDenial> {
         phase
-            .checked_execution_request_for(&runtime.runtime.product_runtime)
+            .checked_execution_request_for(runtime.product_runtime())
             .map_err(WorthQueryOutputReadCloseDenial::Execution)?;
-        if self.runtime_authority != runtime.runtime.authority_identity().as_u64()
-            || self.schema_binding != runtime.installed_schema.binding_identity()
+        if self.runtime_authority != runtime.authority_identity().as_u64()
+            || self.schema_binding != runtime.installed_schema().binding_identity()
             || self
                 .observed_source
                 .selected_product_occurrence()
@@ -29,7 +29,7 @@ impl<S: ApplicationSchema + 'static, F: WorthQueryProducerOutputFamily<S>>
             return Err(WorthQueryOutputReadCloseDenial::ForeignDemand);
         }
         if let Some(denial) = self.terminal_caller_denial.as_mut() {
-            denial.close_read_cleanup(phase, runtime)?;
+            denial.close_read_cleanup(phase, runtime.application_runtime())?;
         }
         if let Some(crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputCheckpoint::PublicationPending { owner, .. }) =
             self.unpublished_selected_checkpoint.as_mut()

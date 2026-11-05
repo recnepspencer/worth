@@ -122,7 +122,7 @@ impl PendingProducerPublication {
     pub(in crate::domain_computation::primary_graph) fn close<S: ApplicationSchema>(
         &mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<S>,
     ) -> Result<(), WorthQueryOutputReadCloseDenial> {
         self.state_mut().close(phase, runtime)
     }
@@ -154,7 +154,7 @@ impl ContinuationState {
     fn close<S: ApplicationSchema>(
         &mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<S>,
     ) -> Result<(), WorthQueryOutputReadCloseDenial> {
         self.close_prior(phase, runtime)?;
         if matches!(self.state, PublicationState::Closing) {
@@ -175,8 +175,9 @@ impl ContinuationState {
             PublicationState::Closed | PublicationState::Closing => None,
         };
         if let Some(recovery) = recovery
-            && let Err(failure) =
-                runtime.close_product_publication_recovery_in_advancement(phase, recovery)
+            && let Err(failure) = runtime
+                .application_runtime()
+                .close_product_publication_recovery_in_advancement(phase, recovery)
         {
             let denial = close_failure(&failure);
             self.prior_cleanup = Some(failure);
@@ -196,7 +197,7 @@ impl ContinuationState {
     fn close_prior<S: ApplicationSchema>(
         &mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<S>,
     ) -> Result<(), WorthQueryOutputReadCloseDenial> {
         let Some(failure) = self.prior_cleanup.take() else {
             return Ok(());
@@ -204,6 +205,7 @@ impl ContinuationState {
         use WorthQueryProductUnpublishedRecoveryReleaseFailure as Failure;
         let result = match failure {
             Failure::Recovery(failure) => runtime
+                .application_runtime()
                 .close_product_publication_recovery_in_advancement(phase, failure.into_recovery()),
             Failure::OwnerCleanup(failure) => failure
                 .into_cleanup()

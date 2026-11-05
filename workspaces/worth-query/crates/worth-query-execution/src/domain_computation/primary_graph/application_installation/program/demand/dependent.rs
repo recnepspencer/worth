@@ -1,4 +1,5 @@
 use super::*;
+use crate::domain_computation::primary_graph::application_contribution::DependentScopedOps;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 mod parent;
 mod source_basis;

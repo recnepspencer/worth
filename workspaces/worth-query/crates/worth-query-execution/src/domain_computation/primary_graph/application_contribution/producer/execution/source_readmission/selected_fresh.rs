@@ -22,7 +22,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     Binding,
 >(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &'prepared WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &'prepared dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
     permission: PreparedApplicationQueryPermission<
         'prepared,
         Schema,

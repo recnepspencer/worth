@@ -120,18 +120,6 @@ impl Drop for RequiredWorkQueue {
     }
 }
 
-pub trait QueueOps<Schema>:
-    crate::domain_computation::primary_graph::application_output_demand::host::OutputDemandHost<Schema>
-{
-    #[doc(hidden)]
-    fn leave_one_readiness_attempt_for_test(&self) {
-        self.next_output_producer_attempt()
-            .store(u64::MAX - 1, std::sync::atomic::Ordering::Relaxed);
-    }
-}
-
-impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_output_demand::host::OutputDemandHost<Schema> + ?Sized> QueueOps<Schema> for HostRuntime {}
-
 impl crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandRegistry {
     /// Read the exact issued rows and their recorded intrinsic stop values.
     #[doc(hidden)]

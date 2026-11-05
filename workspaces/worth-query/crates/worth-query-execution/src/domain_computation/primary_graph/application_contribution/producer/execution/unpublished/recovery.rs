@@ -1,5 +1,6 @@
 //! Fresh typed admission resumes the original managed publication, never its handler.
 use super::*;
+use crate::domain_computation::primary_graph::application_attempt::IdempotencyResolutionOps;
 use crate::domain_computation::primary_graph::product_operation::ProductOperationContextScopedOps;
 use crate::domain_computation::primary_graph::provider::ProducerScopedOps;
 use crate::domain_computation::primary_graph::{
@@ -25,7 +26,7 @@ impl ContinuationState {
         &mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
         installed: &TypedInstalledProducer<S, B>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<S>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<S>,
         request: &WorthQueryRequestScope,
         invocation: &ProducerInvocationAuthority<'_>,
@@ -71,11 +72,10 @@ impl ContinuationState {
             }
         };
         let execution = phase
-            .checked_execution_request_for(&runtime.runtime.product_runtime)
+            .checked_execution_request_for(runtime.product_runtime())
             .map_err(|stop| retryable(WorthQueryOutputDemandDenialKind::ExecutionRequest(stop)))?;
         let product = runtime
-            .runtime
-            .product_runtime
+            .product_runtime()
             .admit_product_occurrence(branch.occurrence())
             .map_err(|stop| {
                 readmission_denial(WorthQueryOutputDemandDenial::product_selection(
@@ -173,8 +173,9 @@ impl ContinuationState {
             return Ok(None);
         }
         if let Some(recovery) = outcome.take_original_cleanup()
-            && let Err(failure) =
-                runtime.close_product_publication_recovery_in_advancement(phase, recovery)
+            && let Err(failure) = runtime
+                .application_runtime()
+                .close_product_publication_recovery_in_advancement(phase, recovery)
         {
             self.prior_cleanup = Some(failure);
             return Ok(None);

@@ -11,11 +11,9 @@ use super::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial;
 use crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind;
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
-where
-    Schema: ApplicationSchema + 'static,
-{
-    pub(super) fn readmit_checkpoint_output<Query>(
+pub(super) trait RestorationParentOps<Schema>: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> where
+    Schema: ApplicationSchema + 'static, {
+fn readmit_checkpoint_output<Query>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         producer: &str,
@@ -28,11 +26,11 @@ where
     ) -> Result<Option<ReadmittedOutput>, WorthQueryOutputDemandDenial> {
         let checkpoint_source = source_epoch.checkpoint_identity();
         let Some(readmitted) = self
-            .output_production
+            .output_production()
             .recovered()
             .matching_source_partition(source_scope, observed_source.partition_identity())
             .find(|readmitted| {
-                self.output_production
+                self.output_production()
                     .producers()
                     .implementation_matches(producer, readmitted.checkpoint.implementation)
                     && readmitted.checkpoint.producer.as_str() == producer
@@ -44,8 +42,7 @@ where
             return Ok(None);
         };
         let authority = self
-            .runtime
-            .product_runtime
+            .product_runtime()
             .recovered_root_authority
             .as_ref()
             .ok_or_else(|| {
@@ -62,16 +59,14 @@ where
         }
         // A restored row posts the settlement candidate selection recorded.
         let Some(settlement) = self
-            .runtime
-            .primary_provider
-            .graph
+            .provider_graph()
             .output_lineage
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .restored_settlement_identity(
                 output_binding,
-                self.runtime.authority_identity().as_u64(),
-                self.installed_schema.binding_identity(),
+                self.authority_identity().as_u64(),
+                self.installed_schema().binding_identity(),
                 source_scope,
                 observation,
                 readmitted.checkpoint.source_partition,
@@ -123,8 +118,7 @@ where
             return Ok(None);
         }
         let current_head = self
-            .runtime
-            .product_runtime
+            .product_runtime()
             .owner
             .observation_port()
             .while_product_branch_current(selected_observation, (), |(), _head| true);
@@ -139,7 +133,7 @@ where
                 return Ok(None);
             }
         }
-        let graph = self.runtime.primary_graph().ok_or_else(|| {
+        let graph = self.primary_graph().ok_or_else(|| {
             denial(
                 WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
                 "",
@@ -186,7 +180,7 @@ where
         }))
     }
 
-    pub(super) fn record_restored_output(
+fn record_restored_output(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         source_scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
@@ -200,15 +194,14 @@ where
             )
         })?;
         let recorded = self
-            .runtime.primary_provider
-            .graph
+            .provider_graph()
             .output_lineage
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .record_restoration(
                 output_binding,
-                self.runtime.authority_identity().as_u64(),
-                self.installed_schema.binding_identity(),
+                self.authority_identity().as_u64(),
+                self.installed_schema().binding_identity(),
                 source_scope,
                 &restored.observation,
                 std::sync::Arc::clone(&restored.correspondence),
@@ -233,7 +226,7 @@ where
             // Readmission is this output's one full comparison. Recording it
             // as marks lets the next clean demand read them instead; a stop
             // here leaves the output requiring verification.
-            let source_owner = &self.runtime.primary_provider.graph.source_owner;
+            let source_owner = &self.provider_graph().source_owner;
             if let Some(facts) = recorded.facts.for_comparison().filter(|_| {
 use crate::domain_computation::primary_graph::output_lineage::HeadCellRegistrationStop;
 use worth_relational::facade::mvcc::PublicationCompanionRegistrationStop as NativeStop;
@@ -254,6 +247,9 @@ use worth_relational::facade::mvcc::PublicationCompanionRegistrationStop as Nati
         Ok(())
     }
 }
+
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> + ?Sized> RestorationParentOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema + 'static, {}
 
 /// A checkpoint output whose facts and output were compared in full at
 /// `verified_at`, the head of its branch.

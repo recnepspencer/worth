@@ -1,4 +1,5 @@
 use super::*;
+use crate::domain_computation::primary_graph::application_contribution::ProgressionScopedOps;
 
 impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program>
 where

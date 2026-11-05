@@ -9,7 +9,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     Schema,
     Binding,
 >(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
     selected: &WorthQuerySelectedProductOperation<'_, Schema>,
 ) -> Result<bool, ProducerExecutionStop>
 where
@@ -19,8 +19,7 @@ where
     let expected = selected.product().observation();
 
     let checked = runtime
-        .runtime
-        .product_runtime
+        .product_runtime()
         .owner
         .observation_port()
         .while_product_branch_current(expected, (), |(), _head| true);

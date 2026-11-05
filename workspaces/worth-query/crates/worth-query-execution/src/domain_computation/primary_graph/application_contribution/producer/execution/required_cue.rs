@@ -68,7 +68,7 @@ impl<'basis> From<ReadyInspection<'basis>> for FrozenCurrentInspection<'basis> {
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) struct FrozenInspection<'basis, 'call, Schema: ApplicationSchema> {
     pub invocation: super::ProducerInvocationAuthority<'call>,
     pub execution: &'call worth_execution::ExecutionRequest<'call, 'call>,
-    pub runtime: &'call crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    pub runtime: &'call dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
     pub principal: &'call worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal<Schema>,
     pub request: &'call worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     pub shared: &'basis crate::domain_computation::primary_graph::SharedSelectedProductOperation<'call, Schema>,

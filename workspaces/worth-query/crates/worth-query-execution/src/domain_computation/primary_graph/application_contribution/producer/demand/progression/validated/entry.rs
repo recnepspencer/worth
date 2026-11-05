@@ -1,13 +1,13 @@
 //! Typed entry points into the shared validated progression owner.
 
+use crate::domain_computation::primary_graph::application_contribution::producer::demand::checkpoint_delivery::CheckpointDeliveryParentOps;
+use crate::domain_computation::primary_graph::application_contribution::producer::demand::progression::validated::ready::ReadyParentOps;
 use super::*;
 use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
-where
-    Schema: ApplicationSchema + 'static,
-{
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand::progression) fn advance_validated_output_demand<
+pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand::progression) trait EntryScopedOps<Schema>: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> where
+    Schema: ApplicationSchema + 'static, {
+fn advance_validated_output_demand<
         Family,
     >(
         &self,
@@ -62,7 +62,7 @@ where
                 .interest
                 .as_ref()
                 .expect("a published row retains its live Interest");
-            match self.output_production.demands().begin_published(interest) {
+            match self.output_production().demands().begin_published(interest) {
                 Admission::AdvanceCheckpoint { claim, checkpoint } => {
                     if !self.advance_output_checkpoint(
                         execution,
@@ -91,7 +91,7 @@ where
                 .expect("Ready retains its Interest")
                 .key(),
             &completion,
-            self,
+            self.application_contribution_host(),
         )?;
         if matches!(checkpoint_progress, CheckpointProgress::Published(_)) {
             return self.settle_own_ready(
@@ -108,7 +108,7 @@ where
         if let Some(advance) = super::super::required_wave::advance_required_before_caller(
             execution,
             phase,
-            self,
+            self.application_contribution_host(),
             demand,
             principal,
             request_scope,
@@ -128,3 +128,6 @@ where
         )
     }
 }
+
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> + ?Sized> EntryScopedOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema + 'static, {}

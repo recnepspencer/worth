@@ -11,7 +11,7 @@ use {
 pub(super) fn confirm_history_source<S: ApplicationSchema, T>(
     history: Option<HistoryProducerInvocation<'_>>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<S>,
     value: T,
 ) -> Result<T, WorthQueryOutputDemandDenial> {
     let Some(history) = history else {
@@ -38,7 +38,7 @@ impl<'invocation> ProducerInvocationAuthority<'invocation> {
     pub(in crate::domain_computation::primary_graph) fn confirm_source<S: ApplicationSchema, T>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<S>,
         value: T,
     ) -> Result<T, WorthQueryOutputDemandDenial> {
         confirm_history_source(self.history, execution, runtime, value)

@@ -8,7 +8,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     Schema: ApplicationSchema,
 >(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &'runtime dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
     invocation: &ProducerInvocationAuthority<'_>,
 ) -> Result<Option<SharedSelectedProductOperation<'runtime, Schema>>, ProducerExecutionStop> {
     select_history_control(execution, runtime, invocation.history_control())
@@ -19,7 +19,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     Schema: ApplicationSchema,
 >(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &'runtime dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
     history: Option<HistoryProducerInvocation<'_>>,
 ) -> Result<Option<SharedSelectedProductOperation<'runtime, Schema>>, ProducerExecutionStop> {
     let Some(history) = history else {

@@ -2,7 +2,7 @@
 use super::*;
 
 pub(super) fn publish<Schema, Binding, OperationType, Input, Scope>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
     observation: &worth_runtime_world::facade::ProductBranchObservation,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     operation: &WorthQueryAdmittedApplicationOperation<Schema, OperationType, Input, Scope>,
@@ -15,11 +15,10 @@ where
     Binding: WorthQueryApplicationProducerBinding<Schema>,
 {
     let scope = operation.operation_scope_binding();
-    let handle = &runtime.runtime.primary_provider.graph;
+    let handle = &runtime.provider_graph();
     let source_owner = &handle.source_owner.invalidation_owner;
     let lane = runtime
-        .runtime
-        .primary_provider
+        .primary_provider()
         .application_branch_commit_lane(observation);
 
     let coordination = lane.enter();
@@ -42,7 +41,7 @@ where
             _ => denial(WorthQueryOutputDemandDenialKind::PublicationStale, "producer input cutoff source changed during preparation"),
         })?;
     let displaced = publication.displaced_settlement();
-    let published = publication.publish::<Operation<Schema, Binding>, _, _, _, _>(operation, observation, &runtime.runtime.product_runtime.owner.observation_port(), registration, execution).map_err(|stop| match stop {
+    let published = publication.publish::<Operation<Schema, Binding>, _, _, _, _>(operation, observation, &runtime.product_runtime().owner.observation_port(), registration, execution).map_err(|stop| match stop {
         crate::domain_computation::primary_graph::output_lineage::StablePublicationStop::Demand(stop) => ProducerExecutionStop::ExecutionStopped(stop),
         crate::domain_computation::primary_graph::output_lineage::StablePublicationStop::RequestAuthority(stop) => super::denial::request_authority_denied(Binding::IDENTITY, stop),
     })?;

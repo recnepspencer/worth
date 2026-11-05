@@ -22,11 +22,9 @@ use schedule_progression::OwnStages;
 use schedule_progression::ScheduleProgression;
 use source_guard::SourceGuard;
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
-where
-    Schema: ApplicationSchema + 'static,
-{
-    fn advance_ordinary_validated_output_demand<Family>(
+trait ValidatedOwnOps<Schema>: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> where
+    Schema: ApplicationSchema + 'static, {
+fn advance_ordinary_validated_output_demand<Family>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
 
@@ -72,3 +70,8 @@ where
         }
     }
 }
+
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> + ?Sized> ValidatedOwnOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema + 'static, {}
+pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand::progression) use entry::EntryScopedOps;
+pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand::progression) use execution_preparation::ExecutionPreparationScopedOps;

@@ -24,7 +24,7 @@ pub(super) enum FrozenTruth {
 }
 pub(super) fn collect<'a, Schema: ApplicationSchema + 'static>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request: &WorthQueryRequestScope,
     wave: &RequiredWaveSelection<'_, Schema>,
@@ -35,7 +35,9 @@ pub(super) fn collect<'a, Schema: ApplicationSchema + 'static>(
     authority: &ProducerInvocationAuthority<'_>,
     performed: &std::cell::RefCell<super::super::performed::PerformedMembers>,
 ) -> Result<FrozenRequiredWave<'a, Schema>, WorthQueryOutputDemandDenial> {
-    if let Some(delivery) = caller_storage.awaited_delivery(runtime.output_production.demands())? {
+    if let Some(delivery) =
+        caller_storage.awaited_delivery(runtime.output_production().demands())?
+    {
         return Ok(FrozenRequiredWave::Delivery(SuccessorCustody::Caller(
             delivery,
         )));

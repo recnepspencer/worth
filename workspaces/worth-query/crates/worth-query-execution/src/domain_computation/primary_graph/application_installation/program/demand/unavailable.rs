@@ -1,5 +1,6 @@
 //! Native negative completion of a fixed leaf root, never a partial output tree.
 use super::*;
+use crate::domain_computation::primary_graph::application_contribution::UnavailableScopedOps;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_query_declaration::facade::application_program::{
     ApplicationOutputLeaf, ApplicationRequiredOutputRoot,

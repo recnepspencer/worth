@@ -39,13 +39,9 @@ mod source_recovery;
 mod unavailable;
 mod validated;
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
-where
-    Schema: ApplicationSchema + 'static,
-{
-    /// A required caller settles first; the request work it leaves over is
-    /// spent progressing other dirty required records from the shared queue.
-    pub fn advance_output_demand<Family>(
+pub trait ProgressionOps<Schema>: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> where
+    Schema: ApplicationSchema + 'static, {
+fn advance_output_demand<Family>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
 
@@ -64,7 +60,7 @@ where
         FamilySourceQuery<Schema, Family>: 'static,
     {
         let execution = phase
-            .execution_request_for(&self.runtime.product_runtime)
+            .execution_request_for(self.product_runtime())
             .map_err(|cause| {
                 denial(
                     WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
@@ -86,9 +82,7 @@ where
         })
     }
 
-    /// Reenter the admitted demand's frozen source selector, parameters and
-    /// scope only if its existing Ready cannot be certified on this call.
-    pub fn advance_output_demand_from_retained<Family>(
+fn advance_output_demand_from_retained<Family>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
 
@@ -107,7 +101,7 @@ where
         FamilySourceQuery<Schema, Family>: 'static,
     {
         let execution = phase
-            .execution_request_for(&self.runtime.product_runtime)
+            .execution_request_for(self.product_runtime())
             .map_err(|cause| {
                 denial(
                     WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
@@ -127,10 +121,14 @@ where
             )
         })
     }
+}
 
-    /// Reenter the frozen source under the commit authority the demand was
-    /// issued with, on the caller's request meter.
-    pub(super) fn advance_retained_with_commit_authority<Family>(
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> + ?Sized> ProgressionOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema + 'static, {}
+
+pub(super) trait ProgressionParentOps<Schema>: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> where
+    Schema: ApplicationSchema + 'static, {
+fn advance_retained_with_commit_authority<Family>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -163,7 +161,7 @@ where
             |retained| {
                 retained_read::read_retained_source::<Schema, Family>(
                     execution,
-                    self,
+                    self.application_contribution_host(),
                     retained,
                     principal,
                     request_scope,
@@ -177,88 +175,7 @@ where
         )
     }
 
-    pub(in crate::domain_computation::primary_graph) fn advance_program_output_demand<Family>(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        phase: &WorthQueryAdvancementPhase<'_>,
-
-        demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
-        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
-        request_scope: &WorthQueryRequestScope,
-        delivery_branch: crate::basis::WorthQueryProductBranch,
-        disclosure: crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource<
-            FamilySourceQuery<Schema, Family>,
-            FamilySourceValue<Schema, Family>,
-        >,
-    ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>
-    where
-        Family: WorthQueryProducerOutputFamily<Schema>,
-        FamilySourceValue<Schema, Family>: 'static,
-        FamilySourceQuery<Schema, Family>: 'static,
-    {
-        phase
-            .execution_request_for(&self.runtime.product_runtime)
-            .map_err(|cause| {
-                denial(
-                    WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
-                    "the phase belongs to another installed runtime",
-                )
-            })?;
-        self.advance_as_caller(demand, |demand, performed| {
-            self.advance_output_demand_with_commit_authority(
-                execution,
-                phase,
-                demand,
-                principal,
-                request_scope,
-                delivery_branch,
-                disclosure,
-                WorthQueryProducerCommitAuthority::ProgramOutput.into(),
-                performed,
-            )
-        })
-    }
-
-    /// One advance a caller starts, on a fresh request meter. A custody
-    /// refusal reaches the caller as that caller meets it; advances nested
-    /// in this one keep the rows' own stops.
-    pub(in crate::domain_computation::primary_graph) fn advance_history_output_demand<Family>(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        phase: &WorthQueryAdvancementPhase<'_>,
-        demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
-        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
-        request_scope: &WorthQueryRequestScope,
-        delivery_branch: crate::basis::WorthQueryProductBranch,
-        history: crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation<'_>,
-    ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>
-    where
-        Family: WorthQueryProducerOutputFamily<Schema>,
-        FamilySourceValue<Schema, Family>:
-            crate::domain_computation::primary_graph::WorthQueryApplicationProjection<
-                    Schema,
-                    FamilySourceQuery<Schema, Family>,
-                > + 'static,
-        FamilySourceQuery<Schema, Family>: 'static,
-    {
-        self.advance_as_caller(demand, |demand, performed| {
-            self.advance_retained_with_commit_authority(
-                execution,
-                phase,
-                demand,
-                principal,
-                request_scope,
-                delivery_branch,
-                ProducerInvocationAuthority::history(
-                    WorthQueryProducerCommitAuthority::ProgramOutput,
-                    history,
-                ),
-                performed,
-            )
-        })
-    }
-
-    pub(super) fn advance_as_caller<Family>(
+fn advance_as_caller<Family>(
         &self,
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
         advance: impl FnOnce(
@@ -294,8 +211,98 @@ where
         }
         Err(stop)
     }
+}
 
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn advance_output_demand_with_commit_authority<
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> + ?Sized> ProgressionParentOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema + 'static, {}
+
+pub(in crate::domain_computation::primary_graph) trait ProgressionScopedOps<Schema>: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> where
+    Schema: ApplicationSchema + 'static, {
+fn advance_program_output_demand<Family>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
+        demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
+        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        request_scope: &WorthQueryRequestScope,
+        delivery_branch: crate::basis::WorthQueryProductBranch,
+        disclosure: crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource<
+            FamilySourceQuery<Schema, Family>,
+            FamilySourceValue<Schema, Family>,
+        >,
+    ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>
+    where
+        Family: WorthQueryProducerOutputFamily<Schema>,
+        FamilySourceValue<Schema, Family>: 'static,
+        FamilySourceQuery<Schema, Family>: 'static,
+    {
+        phase
+            .execution_request_for(self.product_runtime())
+            .map_err(|cause| {
+                denial(
+                    WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
+                    "the phase belongs to another installed runtime",
+                )
+            })?;
+        self.advance_as_caller(demand, |demand, performed| {
+            self.advance_output_demand_with_commit_authority(
+                execution,
+                phase,
+                demand,
+                principal,
+                request_scope,
+                delivery_branch,
+                disclosure,
+                WorthQueryProducerCommitAuthority::ProgramOutput.into(),
+                performed,
+            )
+        })
+    }
+
+fn advance_history_output_demand<Family>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
+        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        request_scope: &WorthQueryRequestScope,
+        delivery_branch: crate::basis::WorthQueryProductBranch,
+        history: crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation<'_>,
+    ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>
+    where
+        Family: WorthQueryProducerOutputFamily<Schema>,
+        FamilySourceValue<Schema, Family>:
+            crate::domain_computation::primary_graph::WorthQueryApplicationProjection<
+                    Schema,
+                    FamilySourceQuery<Schema, Family>,
+                > + 'static,
+        FamilySourceQuery<Schema, Family>: 'static,
+    {
+        self.advance_as_caller(demand, |demand, performed| {
+            self.advance_retained_with_commit_authority(
+                execution,
+                phase,
+                demand,
+                principal,
+                request_scope,
+                delivery_branch,
+                ProducerInvocationAuthority::history(
+                    WorthQueryProducerCommitAuthority::ProgramOutput,
+                    history,
+                ),
+                performed,
+            )
+        })
+    }
+}
+
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> + ?Sized> ProgressionScopedOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema + 'static, {}
+
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) trait DemandProgressionScopedOps<Schema>: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> where
+    Schema: ApplicationSchema + 'static, {
+fn advance_output_demand_with_commit_authority<
         Family,
     >(
         &self,
@@ -334,6 +341,9 @@ where
     }
 }
 
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> + ?Sized> DemandProgressionScopedOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema + 'static, {}
+
 pub fn denial(
     kind: WorthQueryOutputDemandDenialKind,
     subject: impl Into<std::borrow::Cow<'static, str>>,
@@ -344,3 +354,21 @@ pub fn denial(
 pub(in crate::domain_computation::primary_graph) mod caller_pass_observation;
 
 mod court_doors_for_test;
+pub use admission::AdmissionOps;
+pub(in crate::domain_computation) use admission::AdmissionScopedOps;
+pub use admission::AdmissionDoorsOps;
+pub(in crate::domain_computation) use admission::DependentScopedOps;
+pub use admission::RetainedObservationOps;
+pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand::progression) use admission::SourceAdmissionScopedOps;
+pub(in crate::domain_computation::primary_graph) use admission::SourceCustodyScopedOps;
+pub use admission::SourceCustodyOps;
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) use caller_pass::CallerPassScopedOps;
+pub use caller_pass_observation::CallerPassObservationOps;
+pub use court_doors_for_test::ProgressionDoorsOps;
+pub use refresh::RecoveryRefreshObservationOps;
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) use required_fresh::RequiredFreshScopedOps;
+pub use selected_program::SelectedProgramOps;
+pub(in crate::domain_computation::primary_graph) use source_recovery::SourceRecoveryScopedOps;
+pub(in crate::domain_computation::primary_graph) use unavailable::UnavailableScopedOps;
+pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand::progression) use validated::EntryScopedOps;
+pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand::progression) use validated::ExecutionPreparationScopedOps;

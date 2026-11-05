@@ -70,7 +70,7 @@ where
 pub(super) fn prepare_selected_public_mutation<'selected, 'runtime, Schema, Binding>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     installed: &TypedInstalledProducer<Schema, Binding>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
     shared: &'selected SharedSelectedProductOperation<'runtime, Schema>,
     control: Option<&'selected SharedSelectedProductOperation<'runtime, Schema>>,
     external: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
@@ -93,7 +93,7 @@ where
 pub(super) fn prepare_recovery_public_mutation<'selected, 'runtime, Schema, Binding>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     installed: &TypedInstalledProducer<Schema, Binding>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
     shared: &'selected SharedSelectedProductOperation<'runtime, Schema>,
     control: Option<&'selected SharedSelectedProductOperation<'runtime, Schema>>,
     external: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
@@ -125,7 +125,7 @@ where
 fn prepare_public_mutation<'selected, 'runtime, Schema, Binding>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     installed: &TypedInstalledProducer<Schema, Binding>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
     shared: &'selected SharedSelectedProductOperation<'runtime, Schema>,
     control: Option<&'selected SharedSelectedProductOperation<'runtime, Schema>>,
     external: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
@@ -151,7 +151,6 @@ where
         return Err(Stop::ForeignSelectedRuntime);
     }
     let current = runtime
-        .runtime
         .installed_packages()
         .validate_retained_mutation_binding(runtime.installed_schema(), &installed.mutation)
         .map_err(|_| Stop::Issuer)?;

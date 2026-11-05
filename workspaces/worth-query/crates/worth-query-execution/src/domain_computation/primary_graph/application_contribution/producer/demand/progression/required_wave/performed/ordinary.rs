@@ -6,7 +6,7 @@ use super::*;
 pub enum DecisionInput<'a, 'basis, 'runtime, Schema> {
     Selected(&'a SelectedDecisionInput<'basis, 'runtime, Schema>),
     Ordinary {
-        runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &'a dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
         branch: WorthQueryProductBranch,
     },
 }
@@ -23,13 +23,13 @@ impl<Schema: ApplicationSchema + 'static> DecisionInput<'_, '_, '_, Schema> {
                 // A first attempt never buys a redundant selected observation.
                 let (shared, positioned) = super::super::selection::select_required_basis(
                     request_execution,
-                    runtime,
+                    *runtime,
                     *branch,
                 )?;
                 SelectedDecisionInput {
                     shared: &shared,
                     positioned: &positioned,
-                    runtime,
+                    runtime: *runtime,
                 }
                 .changed(request_execution, input)
             }
@@ -45,7 +45,7 @@ impl PerformedMembers {
         &mut self,
         key: &WorthQueryOutputDemandKey,
         completion: &crate::domain_computation::primary_graph::application_output_demand::ReadyCompletion,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         for entry in &mut self.entries {
             if !entry.names(key) || !entry.performed || !entry.input.is_uncaptured() {
@@ -53,15 +53,13 @@ impl PerformedMembers {
             }
 
             let candidate = runtime
-                .runtime
-                .primary_provider
-                .graph
+                .provider_graph()
                 .output_lineage
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner)
                 .resolve_required_settlement(
-                    runtime.runtime.authority_identity().as_u64(),
-                    &runtime.installed_schema.binding_identity(),
+                    runtime.authority_identity().as_u64(),
+                    &runtime.installed_schema().binding_identity(),
                     completion,
                 )
                 .map_err(super::super::required_settlement_denial)?;
@@ -77,7 +75,7 @@ impl PerformedMembers {
         request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         key: &WorthQueryOutputDemandKey,
         source: WorthQueryObservedSourceEpoch,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
         branch: WorthQueryProductBranch,
     ) -> Result<Option<PublicationReadiness>, WorthQueryOutputDemandDenial> {
         self.fresh(

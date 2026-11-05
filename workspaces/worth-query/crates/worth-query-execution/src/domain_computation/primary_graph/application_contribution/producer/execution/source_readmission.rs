@@ -1,5 +1,6 @@
 use crate::domain_computation::primary_graph::application_query::OneShotScopedOps;
 use crate::domain_computation::primary_graph::application_query::SourceReadmissionScopedOps;
+use crate::domain_computation::primary_graph::application_query::WorkLimitOps;
 use crate::domain_computation::primary_graph::product_operation::SelectedQueryBasisRetentionStop;
 use crate::domain_computation::primary_graph::product_operation::SharedQueryBasisScopedOps;
 use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
@@ -86,7 +87,7 @@ where
 
 pub(super) fn authorize_retained_source<'runtime, Schema, Binding>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &'runtime dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
     external_principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request: &WorthQueryRequestScope,
     branch: WorthQueryProductBranch,
@@ -128,7 +129,7 @@ where
 /// each exact producer without choosing another Product or Query authority.
 pub(super) fn authorize_retained_source_on_selected<Schema, Binding>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
     external_principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request: &WorthQueryRequestScope,
     retained: &WorthQueryObservedSource<SourceQuery<Schema, Binding>>,
@@ -143,7 +144,7 @@ where
         .installed_query_binding::<SourceBinding<Schema, Binding>>()
         .map_err(|error| failed(Binding::IDENTITY, error))?;
     let query = installed.query();
-    if retained.runtime_authority != runtime.runtime.authority_identity().as_u64()
+    if retained.runtime_authority != runtime.authority_identity().as_u64()
         || retained.schema_binding != *query.binding_identity()
         || retained.query_identity != *query.identity()
     {
@@ -175,7 +176,7 @@ where
 
 pub(super) fn readmit_source<Schema, Binding>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
     external_principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request: &WorthQueryRequestScope,
     branch: WorthQueryProductBranch,
@@ -220,7 +221,7 @@ where
 /// stays live through the query plan; no second branch or identity is chosen.
 pub(super) fn readmit_authorized_source<'runtime, Schema, Binding>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &'runtime dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
     external_principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request: &WorthQueryRequestScope,
     branch: WorthQueryProductBranch,

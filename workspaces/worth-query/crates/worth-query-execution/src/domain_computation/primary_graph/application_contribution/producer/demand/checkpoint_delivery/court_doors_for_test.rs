@@ -1,12 +1,10 @@
 //! Sealed test doors over this module's private members.
 use super::*;
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
-where
-    Schema: ApplicationSchema + 'static,
-{
-    #[doc(hidden)]
-    pub fn deliver_output_checkpoint_with_finish_for_test(
+pub trait CheckpointDeliveryDoorsOps<Schema>: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> where
+    Schema: ApplicationSchema + 'static, {
+#[doc(hidden)]
+    fn deliver_output_checkpoint_with_finish_for_test(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         producer_identity: &str,
@@ -34,6 +32,9 @@ where
         )
     }
 }
+
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> + ?Sized> CheckpointDeliveryDoorsOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema + 'static, {}
 
 impl<'a> PreparedSelectedDelivery<'a> {
     #[doc(hidden)]

@@ -77,18 +77,18 @@ where
     }
 }
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    /// Funded Vec storage of one required successor result, before dispatch.
-    #[doc(hidden)]
-    pub fn required_continuation_slot_custody_bytes_for_test() -> usize {
+pub trait PreparedOps<Schema: ApplicationSchema>: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> {
+#[doc(hidden)]
+    fn required_continuation_slot_custody_bytes_for_test() -> usize {
         std::mem::size_of::<RequiredFreshProgress<Schema>>()
     }
 
-    /// Funded storage of one typed required successor, before its admission.
-    #[doc(hidden)]
-    pub fn required_successor_custody_bytes_for_test<
+#[doc(hidden)]
+    fn required_successor_custody_bytes_for_test<
         Family: WorthQueryProducerOutputFamily<Schema>,
     >() -> usize {
         std::mem::size_of::<TypedRequiredSuccessor<Schema, Family>>()
     }
 }
+
+impl<Schema: ApplicationSchema, HostRuntime: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> + ?Sized> PreparedOps<Schema> for HostRuntime {}

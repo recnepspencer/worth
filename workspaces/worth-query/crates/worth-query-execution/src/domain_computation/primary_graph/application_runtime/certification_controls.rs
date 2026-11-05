@@ -45,6 +45,14 @@ where
 
     /// Hands courts the output-production state this runtime owns; its test doors live there.
     #[doc(hidden)]
+    pub fn output_production_for_test(
+        &self,
+    ) -> &crate::domain_computation::primary_graph::application_contribution::WorthQueryOutputProduction<Schema>{
+        &self.output_production
+    }
+
+    /// Hands courts the output-production state this runtime owns, for mutation.
+    #[doc(hidden)]
     pub fn output_production_mut_for_test(
         &mut self,
     ) -> &mut crate::domain_computation::primary_graph::application_contribution::WorthQueryOutputProduction<Schema>{

@@ -1,5 +1,6 @@
 //! Checked promotion of the original program-source carrier.
 
+use crate::domain_computation::primary_graph::application_contribution::SourceCustodyScopedOps;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::sync::Arc;
 

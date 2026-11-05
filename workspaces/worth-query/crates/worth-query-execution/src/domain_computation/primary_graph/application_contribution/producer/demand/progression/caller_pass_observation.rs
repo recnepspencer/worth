@@ -59,51 +59,50 @@ pub(super) fn observe_publication(
         }
     }
 }
-impl<Schema>
-    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
-{
-    /// Counts new authoritative commits, independently of readiness marks.
-    #[doc(hidden)]
-    pub fn producer_publications_at_root_on_this_thread_for_test(
+pub trait CallerPassObservationOps<Schema>: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> {
+#[doc(hidden)]
+    fn producer_publications_at_root_on_this_thread_for_test(
         &self,
         root: worth_relational::facade::identity::EntityId,
     ) -> u64 {
         PUBLICATIONS.with(|publications| {
             publications
                 .borrow()
-                .get(&(self.runtime.authority_identity().as_u64(), root))
+                .get(&(self.authority_identity().as_u64(), root))
                 .copied()
                 .unwrap_or(0)
         })
     }
-    /// Counts publication handoffs whose member is sealed in the advance's record.
-    #[doc(hidden)]
-    pub fn producer_recorded_publications_at_root_on_this_thread_for_test(
+
+#[doc(hidden)]
+    fn producer_recorded_publications_at_root_on_this_thread_for_test(
         &self,
         root: worth_relational::facade::identity::EntityId,
     ) -> u64 {
         PUBLICATION_RECORDS.with(|records| {
             records
                 .borrow()
-                .get(&(self.runtime.authority_identity().as_u64(), root))
+                .get(&(self.authority_identity().as_u64(), root))
                 .copied()
                 .unwrap_or(0)
         })
     }
+
+#[doc(hidden)]
     #[doc(hidden)]
     #[doc(hidden)]
-    #[doc(hidden)]
-    pub fn interleave_before_owned_reobservation_for_test(
+    fn interleave_before_owned_reobservation_for_test(
         &self,
         action: impl FnOnce() + Send + 'static,
     ) {
-        self.runtime
-            .primary_provider
+        self.primary_provider()
             .application_attempt_operation_control
             .caller_pass
             .arm_interleaving(action);
     }
 }
+
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> + ?Sized> CallerPassObservationOps<Schema> for HostRuntime {}
 
 thread_local! { static CLEANUP_REGISTERED: std::cell::Cell<bool> = const { std::cell::Cell::new(false) }; }
 fn clear_observations() {

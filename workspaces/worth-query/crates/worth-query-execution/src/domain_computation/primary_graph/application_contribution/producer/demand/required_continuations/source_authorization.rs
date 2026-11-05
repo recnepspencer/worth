@@ -13,7 +13,7 @@ where
     pub(super) fn authorize_source_in_current_invocation(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
         invocation: &ProducerInvocationAuthority<'_>,

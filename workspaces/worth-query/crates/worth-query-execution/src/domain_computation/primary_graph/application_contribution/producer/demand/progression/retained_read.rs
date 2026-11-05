@@ -3,6 +3,7 @@
 use crate::domain_computation::primary_graph::application_query::FreshScopedOps;
 use crate::domain_computation::primary_graph::application_query::PreparedPermissionScopedOps;
 use crate::domain_computation::primary_graph::application_query::RetainedPermissionScopedOps;
+use crate::domain_computation::primary_graph::application_query::WorkLimitOps;
 use crate::domain_computation::primary_graph::product_operation::SharedQueryBasisScopedOps;
 use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
@@ -57,7 +58,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     Family,
 >(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
     retained: &WorthQueryObservedSource<FamilySourceQuery<Schema, Family>>,
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request: &WorthQueryRequestScope,
@@ -107,7 +108,7 @@ fn history_permission_denial(
 
 pub(super) fn read_retained_source<Schema, Family>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
     retained: &WorthQueryObservedSource<FamilySourceQuery<Schema, Family>>,
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request: &WorthQueryRequestScope,
@@ -156,7 +157,7 @@ where
 
 fn with_retained_source_permission<Schema, Family, R>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
     retained: &WorthQueryObservedSource<FamilySourceQuery<Schema, Family>>,
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request: &WorthQueryRequestScope,

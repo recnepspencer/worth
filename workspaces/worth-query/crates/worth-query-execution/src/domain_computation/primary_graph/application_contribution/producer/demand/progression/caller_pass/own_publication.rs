@@ -1,7 +1,7 @@
 //! Reobservation may follow only this pass's still-selected own publication.
 use super::*;
-impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub(super) fn own_publication_is_selected(
+pub(super) trait OwnPublicationParentOps<Schema: ApplicationSchema + 'static>: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> {
+fn own_publication_is_selected(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         branch: crate::basis::WorthQueryProductBranch,
@@ -11,8 +11,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             return Ok(true);
         };
         own_effect_observation::record(Stage::OwnPublicationContinuation);
-        self.runtime
-            .primary_provider
+        self.primary_provider()
             .application_attempt_operation_control
             .caller_pass
             .run_interleaving();
@@ -34,3 +33,5 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         Ok(current)
     }
 }
+
+impl<Schema: ApplicationSchema + 'static, HostRuntime: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> + ?Sized> OwnPublicationParentOps<Schema> for HostRuntime {}

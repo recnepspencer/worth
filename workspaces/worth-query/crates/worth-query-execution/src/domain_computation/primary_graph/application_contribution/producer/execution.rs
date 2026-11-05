@@ -86,7 +86,7 @@ pub(super) trait InstalledProducerExecutor<Schema>:
     fn recover_publication(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
         invocation: &ProducerInvocationAuthority<'_>,
@@ -97,7 +97,7 @@ pub(super) trait InstalledProducerExecutor<Schema>:
     fn execute(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
         branch: WorthQueryProductBranch,
@@ -146,7 +146,7 @@ where
     fn recover_publication(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
         invocation: &ProducerInvocationAuthority<'_>,
@@ -184,7 +184,7 @@ where
     fn execute(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
         branch: WorthQueryProductBranch,
@@ -196,7 +196,7 @@ where
         producer_contacts: &mut usize,
     ) -> Result<PreparedProducerExecutionOutcome, ProducerExecutionStop> {
         let execution = phase
-            .execution_request_for(&runtime.runtime.product_runtime)
+            .execution_request_for(runtime.product_runtime())
             .map_err(|cause| {
                 denial(
                     WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
@@ -281,3 +281,4 @@ where
         ))
     }
 }
+pub use contact_observation::ContactObservationOps;

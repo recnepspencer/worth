@@ -76,7 +76,7 @@ fn fresh<'owner, Schema, OperationType, Input, Scope>(
 /// no input/context proof or source fact set is reconstructed on fallback.
 pub(super) fn advance_input_cutoff<'owner, Schema, Binding, OperationType, Input, Scope>(
     phase: &'owner WorthQueryAdvancementPhase<'owner>,
-    runtime: &'owner WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &'owner dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
     selected: &'owner WorthQuerySelectedProductOperation<'_, Schema>,
     operation: &WorthQueryAdmittedApplicationOperation<Schema, OperationType, Input, Scope>,
     source: PreparedObservedSourceExpectation,
@@ -96,7 +96,7 @@ where
     let _observation = observation::Scope::begin(Binding::IDENTITY, Gate::ExecutionRequest);
     let scope = operation.operation_scope_binding();
     let execution = phase
-        .execution_request_for(&runtime.runtime.product_runtime)
+        .execution_request_for(runtime.product_runtime())
         .map_err(|cause| {
             WorthQueryOutputDemandDenial::new(
                 WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
@@ -104,7 +104,7 @@ where
             )
         })?;
     let observation = selected.product().observation();
-    let handle = &runtime.runtime.primary_provider.graph;
+    let handle = runtime.provider_graph();
     let source_owner = &handle.source_owner.invalidation_owner;
     // A producer whose operation runs a retained partitioned computation
     // takes the live record at the demand's own address, the one its

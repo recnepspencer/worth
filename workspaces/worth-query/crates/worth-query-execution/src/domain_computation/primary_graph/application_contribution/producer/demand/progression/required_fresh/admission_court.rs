@@ -4,6 +4,7 @@ use crate::domain_computation::primary_graph::application_contribution::producer
     disclosure::{validate_disclosure, validate_required_successor, ValidatedOutputDisclosure},
     PreparedRequiredFreshSlot,
 };
+use crate::domain_computation::primary_graph::product_operation::BranchesOps;
 use crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource;
 impl<Schema, Family> WorthQueryAdmittedOutputDemand<Schema, Family>
 where
@@ -19,7 +20,7 @@ where
 {
     pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) fn assert_required_admission(
         &self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
         phase: &WorthQueryAdvancementPhase<'_>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
@@ -45,7 +46,7 @@ where
             panic!("actual current authenticated disclosure");
         };
         let ready = runtime
-            .output_production
+            .output_production()
             .demands()
             .interest_ready_readmission(self.interest.as_ref().unwrap())
             .unwrap()
@@ -54,7 +55,7 @@ where
             .matches_interest(self.interest.as_ref().unwrap())
             .unwrap());
         let claim = runtime
-            .output_production
+            .output_production()
             .demands()
             .claim_required_ready_refresh(&ready)
             .unwrap()
@@ -75,7 +76,7 @@ where
             .unwrap();
         slot.bind_admitted(&mut successor);
         runtime
-            .output_production
+            .output_production()
             .demands()
             .finish_replaced_interest(
                 slot.claim().interest(),

@@ -28,7 +28,7 @@ use validated::RetainedProgramOutputDisclosure;
 
 pub(super) fn validate_disclosure<Schema, Family>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
     demand: &WorthQueryAdmittedOutputDemand<Schema, Family>,
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request_scope: &WorthQueryRequestScope,
@@ -70,7 +70,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     Value,
 >(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
     retained: &WorthQueryObservedSource<Query>,
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request: &WorthQueryRequestScope,
@@ -112,7 +112,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     Value,
 >(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
     retained: &WorthQueryObservedSource<Query>,
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request: &WorthQueryRequestScope,
@@ -170,7 +170,7 @@ enum DisclosureSelection<'a> {
 
 fn validate_source<Schema, Query, Value>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
     retained: &WorthQueryObservedSource<Query>,
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request: &WorthQueryRequestScope,
@@ -252,8 +252,8 @@ where
         // Metadata reads precede the variable-width source comparisons. The
         // same exact observation is then checked by the original validator.
     }
-    if source.runtime_authority != runtime.runtime.authority_identity().as_u64()
-        || source.schema_binding != runtime.installed_schema.binding_identity()
+    if source.runtime_authority != runtime.authority_identity().as_u64()
+        || source.schema_binding != runtime.installed_schema().binding_identity()
         || receipt.query_identity() != &source.query_identity
         || source.query_identity != retained.query_identity
         || source.query_identifier != retained.query_identifier

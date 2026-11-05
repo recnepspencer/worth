@@ -1,4 +1,5 @@
 //! Drive the original typed successor checkpoint under fresh invocation authority.
+use crate::domain_computation::primary_graph::application_contribution::producer::demand::checkpoint_delivery::SelectedScopedOps;
 use super::*;
 impl<Schema, Family> TypedRequiredSuccessor<Schema, Family>
 where
@@ -13,13 +14,13 @@ where
 
         phase: &WorthQueryAdvancementPhase<'_>,
 
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
         request: &WorthQueryRequestScope,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         invocation: &ProducerInvocationAuthority<'_>,
     ) -> Result<bool, WorthQueryOutputDemandDenial> {
         let execution = phase
-            .execution_request_for(&runtime.runtime.product_runtime)
+            .execution_request_for(runtime.product_runtime())
             .map_err(|cause| {
                 WorthQueryOutputDemandDenial::new(
                     crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
@@ -41,7 +42,7 @@ where
             .as_ref()
             .expect("installed successor retains its real Interest");
         let prepared = runtime
-            .output_production
+            .output_production()
             .demands()
             .prepare_selected_checkpoint_finish(interest)?;
         let Some((finish, claim, checkpoint)) = prepared.claim()? else {

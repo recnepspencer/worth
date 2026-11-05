@@ -1,12 +1,10 @@
 //! Sealed test doors over this module's private members.
 use super::*;
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
-where
-    Schema: ApplicationSchema + 'static,
-{
-    #[doc(hidden)]
-    pub fn advance_program_output_demand_for_test<Family>(
+pub trait ProgressionDoorsOps<Schema>: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> where
+    Schema: ApplicationSchema + 'static, {
+#[doc(hidden)]
+    fn advance_program_output_demand_for_test<Family>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -36,3 +34,6 @@ where
         )
     }
 }
+
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> + ?Sized> ProgressionDoorsOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema + 'static, {}

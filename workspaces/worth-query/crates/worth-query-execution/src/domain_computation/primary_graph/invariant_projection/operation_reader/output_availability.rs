@@ -1,5 +1,6 @@
 //! Non-driving observation of an installed required output, in this reader.
 use super::*;
+use crate::domain_computation::primary_graph::application_contribution::SourceQualificationScopedOps;
 use crate::domain_computation::primary_graph::{
     application_attempt::{SourcePublicationRead, WorthQueryApplicationFactKey},
     application_contribution::{WorthQueryApplicationOutputDemand, WorthQueryProducerOutputFamily},

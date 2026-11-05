@@ -12,11 +12,9 @@ use crate::domain_computation::primary_graph::application_output_demand::denial:
 
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
-where
-    Schema: ApplicationSchema + 'static,
-{
-    pub(super) fn evaluate_current_output_readiness(
+pub(super) trait ReadinessParentOps<Schema>: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> where
+    Schema: ApplicationSchema + 'static, {
+fn evaluate_current_output_readiness(
         &self,
 execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -40,10 +38,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         )
     }
 
-    /// The required Fresh continuation uses the actual newly published head.
-    /// Query routing and projection share its original source admission; the
-    /// Bridge/Signal conditional keeps its installed serial admission class.
-    pub(super) fn evaluate_current_output_readiness_admitted(
+fn evaluate_current_output_readiness_admitted(
         &self,
 execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -68,8 +63,14 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
             Some(request),
         )
     }
+}
 
-    fn evaluate_current_output_readiness_core(
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> + ?Sized> ReadinessParentOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema + 'static, {}
+
+trait ReadinessOwnOps<Schema>: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> where
+    Schema: ApplicationSchema + 'static, {
+fn evaluate_current_output_readiness_core(
         &self,
 execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -88,8 +89,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
             check_readiness_request(request)?;
         }
         if self
-            .runtime
-            .primary_provider
+            .primary_provider()
             .take_failed_output_readiness_evaluation()
         {
             return Err(denial(
@@ -102,20 +102,19 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
             ));
         }
         let route = self
-            .output_production
+            .output_production()
             .readiness_routes()
             .get(producer_identity)
             .expect("installation requires one readiness route for every output producer");
         let producer = self
-            .output_production
+            .output_production()
             .producers()
             .entries
             .get(producer_identity)
             .expect("readiness route must retain its installed producer");
         let source_record = producer.executor.readiness_record(receipt)?;
         let _held_world_observations = if self
-            .runtime
-            .primary_provider
+            .primary_provider()
             .take_readiness_snapshot_pressure()
         {
             Some(self.hold_world_snapshot_pressure_for_test(receipt.product_branch()))
@@ -144,7 +143,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         };
 
         let attempt = {
-            let update_counter = self.output_production.next_producer_attempt();
+            let update_counter = self.output_production().next_producer_attempt();
             let mut current = update_counter.load(std::sync::atomic::Ordering::Relaxed);
             loop {
                 let Some(updated_value) = current.checked_add(1) else {
@@ -171,7 +170,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
                 },
             )
         })?;
-        let bridge = self.runtime.bridge.conditional();
+        let bridge = self.bridge().conditional();
         let execution = super::super::evaluate_output_readiness(
             phase
                 .request_for_owner(truth.owner_identity())
@@ -209,7 +208,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
             ));
         }
         let evaluation = match self
-            .output_production
+            .output_production()
             .producer_routes()
             .get(producer_identity)
             .and_then(|route| route.output_comparison.as_ref())
@@ -227,13 +226,13 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
                         readiness: &execution,
                         lowering: &route.lowering,
                         ordinal: route.delivery_dependency_ordinal,
-                        layout: &self.runtime.primary_provider.graph.layout,
+                        layout: &self.provider_graph().layout,
                     },
                     ready,
-                    self.output_production.next_producer_attempt(),
+                    self.output_production().next_producer_attempt(),
                 )?;
                 if visit.compared_now {
-                    self.runtime.primary_provider.output_comparison_completed();
+                    self.primary_provider().output_comparison_completed();
                 }
                 Some(visit.evaluation)
             }
@@ -254,6 +253,9 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         ).with_output_evaluation(evaluation))
     }
 }
+
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> + ?Sized> ReadinessOwnOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema + 'static, {}
 
 fn check_readiness_request(
     request: &WorthQueryRequestScope,

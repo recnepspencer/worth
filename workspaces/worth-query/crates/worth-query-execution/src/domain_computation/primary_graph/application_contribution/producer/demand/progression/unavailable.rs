@@ -3,8 +3,8 @@ use super::*;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationOutputDemandSource, WorthQueryPreparedRequiredOutputSource,
 };
-impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub(in crate::domain_computation::primary_graph) fn finish_unavailable_output_demand<Family>(
+pub(in crate::domain_computation::primary_graph) trait UnavailableScopedOps<Schema: ApplicationSchema + 'static>: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> {
+fn finish_unavailable_output_demand<Family>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -22,15 +22,15 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
         phase
-            .execution_request_for(&self.runtime.product_runtime)
+            .execution_request_for(self.product_runtime())
             .map_err(|cause| {
                 denial(
                     WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
                     "foreign advancement phase",
                 )
             })?;
-        if demand.runtime_authority != self.runtime.authority_identity().as_u64()
-            || demand.schema_binding != self.installed_schema.binding_identity()
+        if demand.runtime_authority != self.authority_identity().as_u64()
+            || demand.schema_binding != self.installed_schema().binding_identity()
             || demand.settled
             || demand.settled_at_observation.is_some()
             || demand.unpublished_selected_checkpoint.is_some()
@@ -49,7 +49,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         // validation consumes disclosure only and never enters producer execution.
         validate_disclosure(
             execution,
-            self,
+            self.application_contribution_host(),
             demand,
             principal,
             scope,
@@ -59,13 +59,11 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             demand.installed_entry.edition,
         )?;
 
-        let result = self.output_production.demands().finish_unavailable_source(
+        let result = self.output_production().demands().finish_unavailable_source(
             prepared,
             interest,
             &self
-                .runtime
-                .primary_provider
-                .graph
+                .provider_graph()
                 .source_owner
                 .invalidation_owner,
         )?;
@@ -73,3 +71,5 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         Ok(result)
     }
 }
+
+impl<Schema: ApplicationSchema + 'static, HostRuntime: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> + ?Sized> UnavailableScopedOps<Schema> for HostRuntime {}

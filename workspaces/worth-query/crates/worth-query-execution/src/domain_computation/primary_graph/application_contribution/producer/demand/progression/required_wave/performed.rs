@@ -143,7 +143,7 @@ impl PerformedMembers {
 pub struct SelectedDecisionInput<'a, 'runtime, Schema> {
     pub shared: &'a SharedSelectedProductOperation<'runtime, Schema>,
     pub positioned: &'a PositionedRelationalSnapshot,
-    pub runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    pub runtime: &'a dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
 }
 impl<Schema: ApplicationSchema + 'static> SelectedDecisionInput<'_, '_, Schema> {
     fn changed(
@@ -151,7 +151,7 @@ impl<Schema: ApplicationSchema + 'static> SelectedDecisionInput<'_, '_, Schema> 
         request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         input: &AcceptedCurrentCandidate,
     ) -> Result<bool, ProducerExecutionStop> {
-        let graph = &self.runtime.runtime.primary_provider.graph;
+        let graph = &self.runtime.provider_graph();
         graph
             .with_runtime(request_execution, |runtime| {
                 input.decision_input_changed_at(

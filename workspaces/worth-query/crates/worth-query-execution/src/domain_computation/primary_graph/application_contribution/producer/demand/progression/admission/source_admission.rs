@@ -1,13 +1,14 @@
 //! Source selection and registry admission share one request meter.
 
+use crate::domain_computation::primary_graph::application_contribution::producer::demand::progression::admission::restoration::RestorationParentOps;
+use crate::domain_computation::primary_graph::application_contribution::producer::demand::selection::SelectionParentOps;
+use crate::domain_computation::primary_graph::application_contribution::producer::demand::selection::selected_basis::SelectedBasisScopedOps;
 use super::*;
 use crate::domain_computation::primary_graph::application_output_demand::SelectedOutputAdmission;
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
-where
-    Schema: ApplicationSchema + 'static,
-{
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand::progression) fn admit_output_demand_with_source_admitted<
+pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand::progression) trait SourceAdmissionScopedOps<Schema>: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> where
+    Schema: ApplicationSchema + 'static, {
+fn admit_output_demand_with_source_admitted<
         Family,
     >(
         &self,
@@ -35,7 +36,7 @@ where
         let selected_product = source_selection.selected_product();
         let limits = self.output_demand_resource_profile().constrain(limits);
 
-        let observed_source = self.output_production.demands().retain_readmission_source(
+        let observed_source = self.output_production().demands().retain_readmission_source(
             observed_source,
             limits,
             retained_program_basis.clone(),
@@ -121,7 +122,7 @@ where
         };
         if let Some(readmitted) = restored {
             let restored = &readmitted.restored;
-            let (interest, newly_adopted) = self.output_production.demands().admit_restored(
+            let (interest, newly_adopted) = self.output_production().demands().admit_restored(
                 key,
                 source_scope,
                 product_occurrence,
@@ -135,8 +136,8 @@ where
             }
             let observed_source = observed_source.install(&interest, installed_entry.clone())?;
             return Ok(WorthQueryAdmittedOutputDemand {
-                runtime_authority: self.runtime.authority_identity().as_u64(),
-                schema_binding: self.installed_schema.binding_identity(),
+                runtime_authority: self.authority_identity().as_u64(),
+                schema_binding: self.installed_schema().binding_identity(),
                 selected,
                 installed_entry,
                 observed_source,
@@ -157,7 +158,7 @@ where
         }
         let (interest, join_pause) = match performed_source {
             Some(source_commit) => (
-                self.output_production.demands().admit_performed(
+                self.output_production().demands().admit_performed(
                     key,
                     &source_commit,
                     source_scope,
@@ -165,7 +166,7 @@ where
                 )?,
                 None,
             ),
-            None => self.output_production.demands().admit(
+            None => self.output_production().demands().admit(
                 key,
                 Some(SelectedOutputAdmission::new(
                     observed_source.selected_product_commit().ok_or_else(|| {
@@ -191,8 +192,8 @@ where
         let observed_source = observed_source.install(&interest, installed_entry.clone())?;
         crate::domain_computation::primary_graph::application_output_demand::observe_stable_join_admission(join_pause);
         Ok(WorthQueryAdmittedOutputDemand {
-            runtime_authority: self.runtime.authority_identity().as_u64(),
-            schema_binding: self.installed_schema.binding_identity(),
+            runtime_authority: self.authority_identity().as_u64(),
+            schema_binding: self.installed_schema().binding_identity(),
             selected,
             installed_entry,
             observed_source,
@@ -212,3 +213,6 @@ where
         })
     }
 }
+
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> + ?Sized> SourceAdmissionScopedOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema + 'static, {}

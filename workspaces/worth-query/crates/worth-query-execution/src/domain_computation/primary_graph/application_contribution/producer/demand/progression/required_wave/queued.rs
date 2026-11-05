@@ -107,37 +107,27 @@ impl QueuedRequiredRoots {
     /// Claim every queued row once, without selecting its version or Ready.
     pub(super) fn next_claim<Schema>(
         &mut self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
         wave: &RequiredWaveSelection<'_, Schema>,
     ) -> Result<Option<(usize, RequiredWorkClaim)>, WorthQueryOutputDemandDenial> {
         if self.drained {
             runtime
-                .output_production
+                .output_production()
                 .demands()
                 .maintain_selected_required_cleanup(
                     wave.shared.selected().product().read_lease_ref(),
                     &wave.positioned,
-                    &runtime
-                        .runtime
-                        .primary_provider
-                        .graph
-                        .source_owner
-                        .invalidation_owner,
+                    &runtime.provider_graph().source_owner.invalidation_owner,
                 )?;
             return Ok(None);
         }
         let Some(claim) = runtime
-            .output_production
+            .output_production()
             .demands()
             .next_required_claim_for_selected(
                 wave.shared.selected().product().read_lease_ref(),
                 &wave.positioned,
-                &runtime
-                    .runtime
-                    .primary_provider
-                    .graph
-                    .source_owner
-                    .invalidation_owner,
+                &runtime.provider_graph().source_owner.invalidation_owner,
             )?
         else {
             self.drained = true;
@@ -171,14 +161,14 @@ impl QueuedRequiredRoots {
         &mut self,
         index: usize,
         claim: &mut RequiredWorkClaim,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
         wave: &RequiredWaveSelection<'_, Schema>,
     ) -> Result<Option<SelectedReadyReadmission>, WorthQueryOutputDemandDenial> {
         let Some(work) = self.prepare_selection(claim, runtime, wave)? else {
             return Ok(None);
         };
         let Some(ready) = runtime
-            .output_production
+            .output_production()
             .demands()
             .selected_ready_completion(&work)?
         else {
@@ -210,7 +200,7 @@ impl QueuedRequiredRoots {
         &mut self,
         index: usize,
         claim: &mut RequiredWorkClaim,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
         wave: &RequiredWaveSelection<'_, Schema>,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         let work = self.prepare_selection(claim, runtime, wave)?;
@@ -220,11 +210,11 @@ impl QueuedRequiredRoots {
     fn prepare_selection<Schema>(
         &mut self,
         claim: &mut RequiredWorkClaim,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
         wave: &RequiredWaveSelection<'_, Schema>,
     ) -> Result<Option<SelectedRequiredWork>, WorthQueryOutputDemandDenial> {
         let Some(work) = runtime
-            .output_production
+            .output_production()
             .demands()
             .select_required_claim(claim, &wave.positioned)?
         else {
@@ -304,13 +294,11 @@ fn is_budget(denial: &WorthQueryOutputDemandDenial) -> bool {
 }
 
 fn head_is_selected<Schema>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
     wave: &RequiredWaveSelection<'_, Schema>,
 ) -> Result<bool, WorthQueryOutputDemandDenial> {
     match runtime
-        .runtime
-        .primary_provider
-        .graph
+        .provider_graph()
         .source_owner
         .invalidation_owner
         .selected_installed_discontinuity(&wave.positioned)

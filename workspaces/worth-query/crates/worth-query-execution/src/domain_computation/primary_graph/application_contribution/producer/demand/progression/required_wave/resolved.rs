@@ -109,7 +109,7 @@ where
     /// predecessor of a successor that this wave already proved Current.
     pub(in crate::domain_computation::primary_graph) fn match_pending(
         &self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
         pending: &SelectedPendingConsumedOutput<'_>,
         positioned: &PositionedRelationalSnapshot,
     ) -> Result<Option<ResolvedConsumedPredecessor>, WorthQueryOutputDemandDenial> {
@@ -145,14 +145,14 @@ where
     /// to refresh.
     pub(in crate::domain_computation::primary_graph) fn match_current_upstream(
         &self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
         pending: &SelectedPendingConsumedOutput<'_>,
         positioned: &PositionedRelationalSnapshot,
     ) -> Result<Option<ResolvedConsumedPredecessor>, WorthQueryOutputDemandDenial> {
         let crate::domain_computation::primary_graph::application_output_demand::PendingUpstream::Ready(
             upstream,
         ) = runtime
-            .output_production.demands()
+            .output_production().demands()
             .pending_exact_ready_readmission(pending, positioned)?
         else {
             return Ok(None);
@@ -174,7 +174,7 @@ where
 
 /// One resolved successor's exact predecessor, when it is `pending`.
 fn match_one<Schema>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
     progress: &RequiredFreshProgress<Schema>,
     successor_ready: &SelectedReadyReadmission,
     current: &WorthQueryOutputDemandSettlement,
@@ -195,7 +195,7 @@ where
     // Initial and Preserve may have different bindings; this match authenticates
     // the live successor cell and the exact consumed predecessor below.
     let Some(live_successor) = runtime
-        .output_production
+        .output_production()
         .demands()
         .interest_ready_readmission(progress.interest())?
     else {
@@ -206,15 +206,13 @@ where
     }
 
     let predecessor = runtime
-        .runtime
-        .primary_provider
-        .graph
+        .provider_graph()
         .output_lineage
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
         .resolve_required_settlement(
-            runtime.runtime.authority_identity().as_u64(),
-            &runtime.installed_schema.binding_identity(),
+            runtime.authority_identity().as_u64(),
+            &runtime.installed_schema().binding_identity(),
             progress.predecessor().completion(),
         );
     let predecessor = match predecessor.map_err(required_settlement_denial)? {

@@ -1,11 +1,8 @@
 //! Exercise the direct refresh door after genuine exact-publication admission.
 use super::*;
-impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    /// Certification-only entry into the direct door. Public program recovery
-    /// uses selected execution; this admits a genuine Recovery demand and
-    /// calls the other door itself, skipping the progression that leads there.
-    #[doc(hidden)]
-    pub fn attempt_recovery_refresh_for_test<Family>(
+pub trait RecoveryRefreshObservationOps<Schema: ApplicationSchema + 'static>: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> {
+#[doc(hidden)]
+    fn attempt_recovery_refresh_for_test<Family>(
         &self,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         retained: crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource<
@@ -26,7 +23,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         FamilySourceQuery<Schema, Family>: 'static,
     {
         let execution = phase
-            .execution_request_for(&self.runtime.product_runtime)
+            .execution_request_for(self.product_runtime())
             .map_err(|cause| WorthQueryOutputDemandDenial::request_admission(cause.into()))?;
         let mut demand = self
             .admit_recovered_output_demand::<Family>(&execution, retained, current, limits, receipt)
@@ -41,7 +38,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             .interest
             .as_ref()
             .expect("Recovery retains its admitted interest");
-        let crate::domain_computation::primary_graph::application_output_demand::OutputRowStage::Ready(completion) = self.output_production.demands().row_stage(interest) else {
+        let crate::domain_computation::primary_graph::application_output_demand::OutputRowStage::Ready(completion) = self.output_production().demands().row_stage(interest) else {
             panic!("the direct-door probe must join the exact Ready before refreshing");
         };
 
@@ -54,3 +51,5 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         )
     }
 }
+
+impl<Schema: ApplicationSchema + 'static, HostRuntime: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> + ?Sized> RecoveryRefreshObservationOps<Schema> for HostRuntime {}

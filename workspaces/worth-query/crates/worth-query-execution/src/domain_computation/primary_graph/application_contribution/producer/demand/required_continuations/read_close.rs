@@ -4,7 +4,7 @@ impl<S: ApplicationSchema + 'static> RequiredContinuations<S> {
     pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) fn close_read_request(
         &mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<S>,
         branch: crate::basis::WorthQueryProductBranch,
     ) -> Result<(), crate::domain_computation::primary_graph::application_output_demand::denial::read_cleanup::WorthQueryOutputReadCloseDenial>{
         for entry in &mut self.entries {

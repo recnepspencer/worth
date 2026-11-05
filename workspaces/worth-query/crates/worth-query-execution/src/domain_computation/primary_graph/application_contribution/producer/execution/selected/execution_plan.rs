@@ -3,7 +3,7 @@ use super::*;
 pub(super) fn prepare_selected_execution<'owner, Schema, Binding>(
     this: &TypedInstalledProducer<Schema, Binding>,
     phase: &'owner WorthQueryAdvancementPhase<'owner>,
-    runtime: &'owner WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &'owner dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request_scope: &WorthQueryRequestScope,
     shared: &'owner crate::domain_computation::primary_graph::SharedSelectedProductOperation<
@@ -30,7 +30,7 @@ where
     SourceQuery<Schema, Binding>: 'static,
 {
     let execution = phase
-        .execution_request_for(&runtime.runtime.product_runtime)
+        .execution_request_for(runtime.product_runtime())
         .map_err(|cause| {
             denial(
                 WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),

@@ -20,7 +20,7 @@ pub(super) enum CollectedRequiredWave<'owner, 'custody, Schema: ApplicationSchem
 #[allow(clippy::too_many_arguments)]
 pub(super) fn collect<'owner, 'custody, 'collection, Schema, Family>(
     phase: &'owner WorthQueryAdvancementPhase<'owner>,
-    runtime: &'owner WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &'owner dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request: &WorthQueryRequestScope,
     wave: &'owner RequiredWaveSelection<'owner, Schema>,
@@ -41,7 +41,7 @@ where
 {
     if wave.is_frozen() {
         let execution = phase
-            .execution_request_for(&runtime.runtime.product_runtime)
+            .execution_request_for(runtime.product_runtime())
             .map_err(|cause| {
                 WorthQueryOutputDemandDenial::new(
                     WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
@@ -90,7 +90,7 @@ where
                 )
             {
                 let declared = runtime
-                    .output_production
+                    .output_production()
                     .demands()
                     .declared_required_predecessors(frontier.members[index].key())?;
                 let mut pending = None;
@@ -160,7 +160,7 @@ where
             } else {
                 &mut *queue_storage
             };
-            storage.reserve_one(runtime.output_production.demands())?;
+            storage.reserve_one(runtime.output_production().demands())?;
             let view = resolved.view_two(caller_storage.entries(), queue_storage.entries());
             let permission = super::super::super::refresh::permit_refresh(
                 if index == 0 && wave.target == RequiredWaveTarget::Caller {
@@ -196,7 +196,7 @@ where
                     };
                     storage.release_unused();
                     runtime
-                        .output_production
+                        .output_production()
                         .demands()
                         .clear_required_stop(member.key());
                     if index == 0 {
@@ -246,7 +246,7 @@ where
                     frontier.members[index].dependency_schedule =
                         DependencySchedule::PendingConsumed;
                     let prerequisites = runtime
-                        .output_production
+                        .output_production()
                         .demands()
                         .declared_required_readmissions(frontier.members[index].ready.selected())?;
                     for prerequisite in prerequisites {

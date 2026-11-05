@@ -1,5 +1,6 @@
 //! Installed producer execution on the required wave's one selected Product.
 
+use crate::domain_computation::primary_graph::application_contribution::producer::demand::progression::RequiredFreshScopedOps;
 use super::super::demand::DecisionInput;
 use super::super::demand::PerformedMembers;
 use super::super::demand::SelectedDecisionInput;
@@ -27,7 +28,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
         &self,
         phase: &'owner WorthQueryAdvancementPhase<'owner>,
 
-        runtime: &'owner WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &'owner dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
         shared: &'owner crate::domain_computation::primary_graph::SharedSelectedProductOperation<
@@ -63,7 +64,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     fn execute_on_selected<'owner>(
         &self,
         phase: &'owner WorthQueryAdvancementPhase<'owner>,
-        runtime: &'owner WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &'owner dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
         shared: &'owner crate::domain_computation::primary_graph::SharedSelectedProductOperation<
@@ -111,7 +112,7 @@ where
         &self,
         phase: &'owner WorthQueryAdvancementPhase<'owner>,
 
-        runtime: &'owner WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &'owner dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
         shared: &'owner crate::domain_computation::primary_graph::SharedSelectedProductOperation<
@@ -137,7 +138,7 @@ where
     {
         use super::required_cue::RequiredCueProgress;
         let execution = phase
-            .execution_request_for(&runtime.runtime.product_runtime)
+            .execution_request_for(runtime.product_runtime())
             .map_err(|cause| {
                 denial(
                     WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
@@ -188,7 +189,7 @@ where
                 refresh_permission.map_err(ProducerExecutionStop::ExecutionStopped)?;
 
                 let claim = runtime
-                    .output_production.demands()
+                    .output_production().demands()
                     .claim_required_ready_refresh(selected)
                     .map_err(ProducerExecutionStop::ExecutionStopped)?
                     // A later wave must select the Ready row after this claim moved.
@@ -320,7 +321,7 @@ where
     fn execute_on_selected<'owner>(
         &self,
         phase: &'owner WorthQueryAdvancementPhase<'owner>,
-        runtime: &'owner WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &'owner dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
         shared: &'owner crate::domain_computation::primary_graph::SharedSelectedProductOperation<

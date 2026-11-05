@@ -1,6 +1,7 @@
 //! What a demand does when a commit replaced the source it names. The rule
 //! is applied once, before the row is begun, so nothing is claimed.
 
+use crate::domain_computation::primary_graph::application_contribution::producer::demand::progression::refresh::RefreshParentOps;
 use super::*;
 use crate::domain_computation::primary_graph::application_output_demand::OutputRowStage;
 use crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority as Authority;
@@ -12,15 +13,9 @@ pub(super) enum SourceGuard {
     Replaced,
 }
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
-where
-    Schema: ApplicationSchema + 'static,
-{
-    /// Reclamation can release the cached Ready a fresh source was admitted
-    /// beside. Its empty row no longer carries that predecessor. Admit the
-    /// disclosed source under its own key before any Fresh execution instead
-    /// of publishing a new receipt under the released predecessor's key.
-    pub(super) fn released_predecessor_needs_source<Family>(
+pub(super) trait SourceGuardParentOps<Schema>: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> where
+    Schema: ApplicationSchema + 'static, {
+fn released_predecessor_needs_source<Family>(
         &self,
         demand: &WorthQueryAdmittedOutputDemand<Schema, Family>,
         source: &WorthQueryObservedSource<FamilySourceQuery<Schema, Family>>,
@@ -46,14 +41,14 @@ where
             return Ok(false);
         }
         Ok(matches!(
-            self.output_production
+            self.output_production()
                 .demands()
                 .row_stage_admitted(interest)?,
             OutputRowStage::BeforeReady
         ))
     }
 
-    pub(super) fn prepare_progression_entry<Family>(
+fn prepare_progression_entry<Family>(
         &self,
         demand: &WorthQueryAdmittedOutputDemand<Schema, Family>,
         source: &WorthQueryObservedSource<FamilySourceQuery<Schema, Family>>,
@@ -83,22 +78,7 @@ where
         })
     }
 
-    /// A demand that settled keeps following its output: it moves to a row
-    /// admitted under the disclosed source, whatever stage its own row had
-    /// reached, and so does the holder of a Stable alias or a restored
-    /// output. One that never settled does not: its caller demands again.
-    ///
-    /// That stop is the demand's alone while its row holds a Ready, which
-    /// stays for the demands settled on it. A row before its Ready can no
-    /// longer publish a current output, so it ends with the stop and gives
-    /// its occurrence back to the Ready it replaced. A required wave's
-    /// successor is never settled and its row is the wave's own: it ends.
-    ///
-    /// A row that ended this way is one more stage a settled demand follows
-    /// from: it holds no Ready, so the demand moves on with no predecessor.
-    /// A row another call drives, or one stopped for any other reason,
-    /// answers as its begin would.
-    pub(super) fn leave_replaced_source<Family>(
+fn leave_replaced_source<Family>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
@@ -121,14 +101,14 @@ where
             .as_ref()
             .expect("progression entry checked live Interest");
         let end_row = || {
-            self.output_production
+            self.output_production()
                 .demands()
                 .finish_superseded(interest, Family::IDENTITY)
         };
         if selected {
             return Err(end_row()?);
         }
-        let ready = match self.output_production.demands().row_stage(interest) {
+        let ready = match self.output_production().demands().row_stage(interest) {
             OutputRowStage::Driven => {
                 return Ok(OwnStages::Answer(WorthQueryOutputDemandAdvance::Pending))
             }
@@ -185,3 +165,6 @@ where
         Ok(OwnStages::Refreshed(disclosure))
     }
 }
+
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> + ?Sized> SourceGuardParentOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema + 'static, {}

@@ -49,7 +49,7 @@ impl<Schema: ApplicationSchema + 'static> RegistryDelivery<Schema> {
     pub(in super::super) fn deliver(
         self,
         phase: &WorthQueryAdvancementPhase<'_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
         branch: crate::basis::WorthQueryProductBranch,

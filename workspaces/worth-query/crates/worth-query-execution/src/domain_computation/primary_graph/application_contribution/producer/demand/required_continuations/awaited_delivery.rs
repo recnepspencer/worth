@@ -42,7 +42,7 @@ impl<Schema: ApplicationSchema + 'static> AwaitedDelivery<'_, Schema> {
     pub(in super::super) fn deliver(
         &mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
         branch: crate::basis::WorthQueryProductBranch,
@@ -59,7 +59,7 @@ impl<Schema: ApplicationSchema + 'static> AwaitedDelivery<'_, Schema> {
         match result {
             Ok(Some(ready)) => {
                 runtime
-                    .output_production
+                    .output_production()
                     .demands()
                     .clear_required_stop(self.key());
                 self.entries.rotate_left(1);

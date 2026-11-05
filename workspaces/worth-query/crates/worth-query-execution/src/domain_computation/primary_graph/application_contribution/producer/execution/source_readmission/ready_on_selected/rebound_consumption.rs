@@ -7,16 +7,16 @@ use worth_relational::facade::snapshots::SnapshotHandle;
 
 pub(super) fn retain<Schema: worth_query_installation::facade::ApplicationSchema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
     completion: &ReadyCompletion,
     pending: &crate::domain_computation::primary_graph::invariant_projection::SelectedPendingConsumedOutput<'_>,
     product: &WorthQueryProductObservationLease,
     snapshot: &SnapshotHandle,
     positioned: &PositionedRelationalSnapshot,
 ) -> Result<ReboundConsumedOutput, ProducerExecutionStop> {
-    let handle = &runtime.runtime.primary_provider.graph;
+    let handle = &runtime.provider_graph();
     let candidate = handle.output_lineage.lock().unwrap_or_else(std::sync::PoisonError::into_inner)
-        .resolve_required_settlement(runtime.runtime.authority_identity().as_u64(), &runtime.installed_schema.binding_identity(), completion)
+        .resolve_required_settlement(runtime.authority_identity().as_u64(), &runtime.installed_schema().binding_identity(), completion)
         .map_err(|stop| match stop {
             crate::domain_computation::primary_graph::output_lineage::RequiredSettlementStop::Admission(stop) =>
                 ready::ready_resource_denial("resolved consumed output", stop),

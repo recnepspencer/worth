@@ -27,11 +27,9 @@ pub(crate) fn validate_prepared_source_carrier<Query>(
     Ok(())
 }
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
-where
-    Schema: ApplicationSchema + 'static,
-{
-    pub(in crate::domain_computation::primary_graph) fn retain_required_output_source_carrier(
+pub(in crate::domain_computation::primary_graph) trait SourceCustodyScopedOps<Schema>: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> where
+    Schema: ApplicationSchema + 'static, {
+fn retain_required_output_source_carrier(
         &self,
         receipt: crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
         change: std::sync::Arc<crate::domain_computation::execution_runtime::product_world::WorthQueryPerformedRelationalProductChange>,
@@ -51,7 +49,7 @@ where
         let publication = receipt.committed_product_publication();
         if !std::sync::Arc::ptr_eq(
             &change.root_identity,
-            &self.runtime.product_runtime.root_identity(),
+            &self.product_runtime().root_identity(),
         ) || change.product_branch_identity() != publication.product_branch()
             || change.product_commit() != publication.composite_commit()
             || observation.branch_identity() != change.product_branch_identity()
@@ -63,11 +61,11 @@ where
             ));
         }
         let retained = crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation::from_product(
-            self,
+            self.application_query_host(),
             crate::basis::WorthQueryProductObservationLease::new(observation.clone()),
         );
         let product_occurrence = observation.lifecycle_incarnation();
-        let source_commit = self.output_production.demands().retain_performed_source(
+        let source_commit = self.output_production().demands().retain_performed_source(
             crate::domain_computation::primary_graph::application_output_demand::WorthQueryPerformedOutputDemandSource {
                 receipt,
                 change,
@@ -80,16 +78,16 @@ where
         )?;
         Ok((
             crate::domain_computation::primary_graph::WorthQueryPreparedRequiredOutputSource {
-                runtime_authority: self.runtime.authority_identity().as_u64(),
+                runtime_authority: self.authority_identity().as_u64(),
                 source_commit,
                 product_occurrence,
-                owner: self.output_production.demands().clone(),
+                owner: self.output_production().demands().clone(),
             },
             retained,
         ))
     }
 
-    pub(in crate::domain_computation::primary_graph) fn recover_discovered_output_source<
+fn recover_discovered_output_source<
         Discovery,
     >(
         &self,
@@ -109,27 +107,27 @@ where
         Discovery: Clone + Send + Sync + 'static,
     {
         let (discovery, observation) = self
-            .output_production
+            .output_production()
             .demands()
             .recover_discovered_source::<Discovery>(receipt, root_type)?;
         let retained = crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation::from_product(
-            self,
+            self.application_query_host(),
             crate::basis::WorthQueryProductObservationLease::new(observation),
         );
         let prepared =
             crate::domain_computation::primary_graph::WorthQueryPreparedRequiredOutputSource {
-                runtime_authority: self.runtime.authority_identity().as_u64(),
+                runtime_authority: self.authority_identity().as_u64(),
                 source_commit: receipt
                     .committed_product_publication()
                     .composite_commit()
                     .clone(),
                 product_occurrence: receipt.product_branch().occurrence(),
-                owner: self.output_production.demands().clone(),
+                owner: self.output_production().demands().clone(),
             };
         Ok((discovery, retained, prepared))
     }
 
-    pub(in crate::domain_computation::primary_graph) fn bind_prepared_output_source<
+fn bind_prepared_output_source<
         Query,
         Value,
     >(
@@ -151,11 +149,11 @@ where
             ));
         };
         validate_prepared_source_carrier(
-            self.runtime.authority_identity().as_u64(),
+            self.authority_identity().as_u64(),
             prepared,
             observed,
         )?;
-        self.output_production.demands().bind_prepared_output_source(
+        self.output_production().demands().bind_prepared_output_source(
             &prepared.source_commit,
             crate::domain_computation::primary_graph::application_output_demand::BoundOutputSource {
                 scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(observed.source_root()),
@@ -169,7 +167,7 @@ where
         )
     }
 
-    pub(in crate::domain_computation::primary_graph) fn bind_prepared_output_sources<
+fn bind_prepared_output_sources<
         Query,
         Value,
     >(
@@ -194,7 +192,7 @@ where
                         )
                     })?;
                 validate_prepared_source_carrier(
-                    self.runtime.authority_identity().as_u64(),
+                    self.authority_identity().as_u64(),
                     prepared,
                     observed,
                 )?;
@@ -209,19 +207,28 @@ where
                 })
             })
             .collect::<Result<Vec<_>, WorthQueryOutputDemandDenial>>()?;
-        self.output_production
+        self.output_production()
             .demands()
             .ensure_discovered_sources_bound(&prepared.source_commit, &identities)
     }
+}
 
-    pub fn discard_prepared_required_output_source(
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> + ?Sized> SourceCustodyScopedOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema + 'static, {}
+
+pub trait SourceCustodyOps<Schema>: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> where
+    Schema: ApplicationSchema + 'static, {
+fn discard_prepared_required_output_source(
         &self,
         prepared: crate::domain_computation::primary_graph::WorthQueryPreparedRequiredOutputSource,
     ) {
-        if prepared.runtime_authority == self.runtime.authority_identity().as_u64() {
-            self.output_production
+        if prepared.runtime_authority == self.authority_identity().as_u64() {
+            self.output_production()
                 .demands()
                 .discard_prepared_source(&prepared.source_commit);
         }
     }
 }
+
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> + ?Sized> SourceCustodyOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema + 'static, {}

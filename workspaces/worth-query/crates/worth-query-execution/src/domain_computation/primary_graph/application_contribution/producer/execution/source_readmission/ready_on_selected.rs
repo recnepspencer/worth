@@ -7,6 +7,7 @@ use crate::domain_computation::primary_graph::application_contribution::producer
 use crate::domain_computation::primary_graph::application_query::FreshQueryPermissionStop;
 use crate::domain_computation::primary_graph::application_query::FreshScopedOps;
 use crate::domain_computation::primary_graph::application_query::PreparedApplicationQueryPermission;
+use crate::domain_computation::primary_graph::application_query::WorkLimitOps;
 use crate::domain_computation::primary_graph::product_operation::SelectedQueryBasisRetentionStop;
 use crate::domain_computation::primary_graph::product_operation::SharedQueryBasisScopedOps;
 use crate::domain_computation::primary_graph::product_operation::SharedSelectedProductOperation;
@@ -32,7 +33,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     Binding,
 >(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
     installed: &WorthQueryInstalledApplicationQueryBinding<Schema, SourceBinding<Schema, Binding>>,
     validated_principal: &worth_query_installation::facade::WorthQueryValidatedPrincipalBinding,
     external_principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
@@ -71,13 +72,13 @@ where
     // prepared permission uses the caller's selected Product.
 
     let query = installed.query();
-    if query.binding_identity() != &runtime.installed_schema.binding_identity() {
+    if query.binding_identity() != &runtime.installed_schema().binding_identity() {
         return Err(denial(WorthQueryOutputDemandDenialKind::Superseded, "").into());
     }
     // The retained identity comparison reads two schema digests and one
     // Query digest. Static denial subjects need no initialized backing.
 
-    if retained.runtime_authority != runtime.runtime.authority_identity().as_u64()
+    if retained.runtime_authority != runtime.authority_identity().as_u64()
         || retained.schema_binding != *query.binding_identity()
         || retained.query_identity != *query.identity()
     {
@@ -148,7 +149,7 @@ where
                 else {
                     return on_disclosure(permission, None);
                 };
-                let handle = &runtime.runtime.primary_provider.graph;
+                let handle = &runtime.provider_graph();
                 let current = handle
                     .with_runtime(execution, |relational| {
                         candidate.certify_current(execution,
@@ -214,7 +215,7 @@ where
                                 let evidence = rebound_consumption::retain(execution, runtime, &successor, &pending, sealed.product(),
                                     sealed.snapshot_handle(), positioned)?;
 
-                                MatchedRequiredPredecessors::join(&mut matched, runtime.output_production.demands(), &consumer, old, evidence, positioned)
+                                MatchedRequiredPredecessors::join(&mut matched, runtime.output_production().demands(), &consumer, old, evidence, positioned)
                                     .map_err(ProducerExecutionStop::ExecutionStopped)?;
                                 let next = handle
                                     .with_runtime(execution, |relational| {
@@ -258,7 +259,7 @@ where
                             let consumer = candidate.retain_recorded_identity()
                                 .map_err(|stop| ready::ready_resource_denial(Binding::IDENTITY, stop))?;
                             Some(MatchedRequiredPredecessors::retain_consumer(
-                                runtime.output_production.demands(), &consumer, positioned,
+                                runtime.output_production().demands(), &consumer, positioned,
                             ).map_err(ProducerExecutionStop::ExecutionStopped)?)
                         } else { None };
                         drop(sealed);

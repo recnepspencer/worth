@@ -2,13 +2,9 @@ use super::*;
 
 mod recovery_refresh_observation;
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
-where
-    Schema: ApplicationSchema + 'static,
-{
-    /// Both named-source Ready refresh and replaced-source Ready refresh use
-    /// this same original-publication boundary. Ordinary/external refresh does not.
-    pub(super) fn refresh_ready_output_demand<Family>(
+pub(super) trait RefreshParentOps<Schema>: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> where
+    Schema: ApplicationSchema + 'static, {
+fn refresh_ready_output_demand<Family>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
@@ -65,11 +61,7 @@ where
         Ok(())
     }
 
-    /// Move `demand` to a row admitted under the disclosed source. The Ready
-    /// it held is the new row's `predecessor`. A row that held none has no
-    /// accepted output to succeed: the new row executes Fresh, and its
-    /// admission supersedes the older rows of the occurrence.
-    pub(super) fn refresh_output_demand<Family>(
+fn refresh_output_demand<Family>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
@@ -109,7 +101,7 @@ where
         refreshed.producer_contacts_in_this_demand = demand.producer_contacts_in_this_demand;
         refreshed.settled = demand.settled;
         if let Some(interest) = demand.interest.as_ref() {
-            self.output_production.demands().finish_replaced_interest(
+            self.output_production().demands().finish_replaced_interest(
                 interest,
                 refreshed
                     .interest
@@ -125,6 +117,9 @@ where
     }
 }
 
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> + ?Sized> RefreshParentOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema + 'static, {}
+
 /// Every route creating a successor preserves exact-publication recovery.
 pub(super) fn permit_refresh(
     kind: crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind,
@@ -139,3 +134,4 @@ pub(super) fn permit_refresh(
     }
     Ok(())
 }
+pub use recovery_refresh_observation::RecoveryRefreshObservationOps;

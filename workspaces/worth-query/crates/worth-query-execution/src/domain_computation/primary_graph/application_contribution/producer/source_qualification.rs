@@ -4,6 +4,7 @@
 //! execute. Its partition survives the first publication and a change of the
 //! family's Initial/Preserve binding; changing source epochs are values.
 
+use crate::domain_computation::primary_graph::application_contribution::producer::demand::selection::selected_basis::SelectionSelectedBasisScopedOps;
 use std::cmp::Ordering;
 use std::hash::Hash;
 use std::hash::Hasher;
@@ -191,10 +192,8 @@ where
     })
 }
 
-impl<Schema: ApplicationSchema + 'static>
-    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
-{
-    pub(in crate::domain_computation::primary_graph) fn qualify_observed_output_source<Family>(
+pub(in crate::domain_computation::primary_graph) trait SourceQualificationScopedOps<Schema: ApplicationSchema + 'static>: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> {
+fn qualify_observed_output_source<Family>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         observed: &crate::domain_computation::primary_graph::application_query::ObservedQuerySource<
@@ -225,3 +224,5 @@ impl<Schema: ApplicationSchema + 'static>
         )
     }
 }
+
+impl<Schema: ApplicationSchema + 'static, HostRuntime: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> + ?Sized> SourceQualificationScopedOps<Schema> for HostRuntime {}

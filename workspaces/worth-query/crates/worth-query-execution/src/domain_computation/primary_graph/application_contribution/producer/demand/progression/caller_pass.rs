@@ -1,4 +1,5 @@
 //! Typed caller disclosure, publication, and requested-output progression.
+use crate::domain_computation::primary_graph::application_contribution::producer::demand::progression::caller_pass::own_publication::OwnPublicationParentOps;
 use super::*;
 mod own_publication;
 use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
@@ -44,15 +45,9 @@ type Observed<Schema, Family> = crate::domain_computation::primary_graph::WorthQ
     FamilySourceQuery<Schema, Family>,
 >;
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
-where
-    Schema: ApplicationSchema + 'static,
-{
-    /// `disclosure` answers `None` once the caller has no further source to
-    /// disclose in this call. A caller that reads its retained source again
-    /// retries after source replacement or upstream completion; one that handed over its
-    /// only disclosure reports `Progressed` after a native move and discloses on its next advance.
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn advance_output_demand_with_prepared_source<
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) trait CallerPassScopedOps<Schema>: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> where
+    Schema: ApplicationSchema + 'static, {
+fn advance_output_demand_with_prepared_source<
         Family,
     >(
         &self,
@@ -108,8 +103,14 @@ where
             }
         }
     }
+}
 
-    fn advance_caller_pass<Family>(
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> + ?Sized> CallerPassScopedOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema + 'static, {}
+
+trait CallerPassOwnOps<Schema>: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> where
+    Schema: ApplicationSchema + 'static, {
+fn advance_caller_pass<Family>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -140,8 +141,8 @@ where
             AdvancePass::OwnPublication(receipt) | AdvancePass::Final(_, receipt) => Some(receipt),
             AdvancePass::Initial | AdvancePass::Refreshed(_) | AdvancePass::RetryDisclosure => None,
         };
-        if demand.runtime_authority != self.runtime.authority_identity().as_u64()
-            || demand.schema_binding != self.installed_schema.binding_identity()
+        if demand.runtime_authority != self.authority_identity().as_u64()
+            || demand.schema_binding != self.installed_schema().binding_identity()
         {
             return Err(denial(
                 WorthQueryOutputDemandDenialKind::ForeignDemand,
@@ -150,7 +151,7 @@ where
         }
         super::retained_read::authorize_history_source::<Schema, Family>(
             execution,
-            self,
+            self.application_contribution_host(),
             demand.observed_source.source(),
             principal,
             request_scope,
@@ -174,7 +175,7 @@ where
             .interest
             .as_ref()
             .ok_or_else(|| denial(WorthQueryOutputDemandDenialKind::Closed, Family::IDENTITY))?;
-        demand.rejoin_refreshed_output(self.output_production.demands())?;
+        demand.rejoin_refreshed_output(self.output_production().demands())?;
 
         let installed_entry = std::sync::Arc::clone(&demand.installed_entry);
         let entry = installed_entry.as_ref();
@@ -203,7 +204,7 @@ where
         ) && let Some(advance) = required_wave::advance_required_before_caller(
             execution,
             phase,
-            self,
+            self.application_contribution_host(),
             demand,
             principal,
             request_scope,
@@ -225,7 +226,7 @@ where
                     };
                     let disclosed = validate_disclosure(
                         execution,
-                        self,
+                        self.application_contribution_host(),
                         demand,
                         principal,
                         request_scope,
@@ -302,7 +303,7 @@ where
                     };
                     let disclosed = validate_disclosure(
                         execution,
-                        self,
+                        self.application_contribution_host(),
                         demand,
                         principal,
                         request_scope,
@@ -368,7 +369,7 @@ where
             match required_wave::advance_requested_output(
                 execution,
                 phase,
-                self,
+                self.application_contribution_host(),
                 demand,
                 principal,
                 request_scope,
@@ -389,3 +390,6 @@ where
         })
     }
 }
+
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> + ?Sized> CallerPassOwnOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema + 'static, {}

@@ -5,7 +5,7 @@ pub(super) fn execute_fresh<Schema, Binding>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     phase: &WorthQueryAdvancementPhase<'_>,
     installed: &TypedInstalledProducer<Schema, Binding>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
     external_principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request_scope: &WorthQueryRequestScope,
     branch: WorthQueryProductBranch,

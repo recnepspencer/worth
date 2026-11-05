@@ -19,11 +19,9 @@ use worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly;
 
 const OUTPUT_SCHEDULE_DOMAIN: &[u8] = b"worth-query:output-schedule:v1";
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
-where
-    Schema: worth_query_installation::facade::ApplicationSchema + 'static,
-{
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn schedule_selected_output_producer<
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) trait SchedulingProgressionScopedOps<Schema>: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> where
+    Schema: worth_query_installation::facade::ApplicationSchema + 'static, {
+fn schedule_selected_output_producer<
         Query,
     >(
         &self,
@@ -38,7 +36,7 @@ where
         >,
     ) -> Result<WorthQueryOutputSchedulingResult, WorthQueryOutputDemandDenial> {
         let route = self
-            .output_production
+            .output_production()
             .producer_routes()
             .get(&selected.identity)
             .ok_or_else(|| {
@@ -102,10 +100,7 @@ where
         )
     }
 
-    /// Use the already selected Product and its owner-issued bridge identity
-    /// projections for a required wave. The ordinary and selected entries
-    /// share route, attempt, performed-source and Signal classification.
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn schedule_selected_output_producer_on_selected<
+fn schedule_selected_output_producer_on_selected<
         Query,
     >(
         &self,
@@ -134,7 +129,7 @@ where
             ));
         }
         let route = self
-            .output_production
+            .output_production()
             .producer_routes()
             .get(&selected.identity)
             .ok_or_else(|| {
@@ -174,8 +169,14 @@ where
             },
         )
     }
+}
 
-    fn schedule_selected_output_producer_with_truth<Query>(
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> + ?Sized> SchedulingProgressionScopedOps<Schema> for HostRuntime where
+    Schema: worth_query_installation::facade::ApplicationSchema + 'static, {}
+
+trait SchedulingProgressionOwnOps<Schema>: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> where
+    Schema: worth_query_installation::facade::ApplicationSchema + 'static, {
+fn schedule_selected_output_producer_with_truth<Query>(
         &self,
         selected: &WorthQuerySelectedApplicationProducer,
         observed_source: &WorthQueryObservedSource<Query>,
@@ -210,7 +211,7 @@ where
             |source| source.change.signal_basis(),
         );
         let attempt = {
-            let update_counter = self.output_production.next_producer_attempt();
+            let update_counter = self.output_production().next_producer_attempt();
             let mut current = update_counter.load(std::sync::atomic::Ordering::Relaxed);
             loop {
                 let Some(updated_value) = current.checked_add(1) else {
@@ -242,7 +243,7 @@ where
         let mut identity_bytes = [0_u8; 8];
         identity_bytes.copy_from_slice(&identity[..8]);
         let query_identity = u64::from_le_bytes(identity_bytes);
-        let bridge = self.runtime.bridge.conditional();
+        let bridge = self.bridge().conditional();
         let decision = match execute_signal(&bridge, route, signal_basis, query_identity, attempt) {
             Ok(decision) => decision,
             Err(error) => {
@@ -262,6 +263,9 @@ where
         }
     }
 }
+
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> + ?Sized> SchedulingProgressionOwnOps<Schema> for HostRuntime where
+    Schema: worth_query_installation::facade::ApplicationSchema + 'static, {}
 
 fn schedule_admission_denial(
     stop: worth_relational::facade::mvcc::CompanionPreflightStop,
@@ -283,3 +287,4 @@ pub fn scheduling_refusal(
 }
 
 mod court_doors_for_test;
+pub use court_doors_for_test::SchedulingProgressionDoorsOps;

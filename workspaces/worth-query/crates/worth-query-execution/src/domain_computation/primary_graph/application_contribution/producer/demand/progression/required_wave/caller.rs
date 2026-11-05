@@ -24,7 +24,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     phase: &WorthQueryAdvancementPhase<'_>,
 
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
     demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request_scope: &WorthQueryRequestScope,
@@ -54,15 +54,13 @@ where
     // only Dirty/Pending marks can extend the dependency closure.
 
     let candidate = runtime
-        .runtime
-        .primary_provider
-        .graph
+        .provider_graph()
         .output_lineage
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
         .resolve_required_settlement(
-            runtime.runtime.authority_identity().as_u64(),
-            &runtime.installed_schema.binding_identity(),
+            runtime.authority_identity().as_u64(),
+            &runtime.installed_schema().binding_identity(),
             wave.anchor_ready.completion(),
         );
     // A reason withholds the candidate: the caller's Ready is verified in
@@ -76,9 +74,7 @@ where
     };
 
     let posture = runtime
-        .runtime
-        .primary_provider
-        .graph
+        .provider_graph()
         .source_owner
         .invalidation_owner
         .currentness(&wave.positioned, candidate.recorded_identity())
@@ -95,7 +91,7 @@ where
         // that changed refreshes on this wave first, whether or not anything
         // else demands it.
         let snapshot = wave.shared.selected().application_basis().snapshot_handle();
-        let graph = &runtime.runtime.primary_provider.graph;
+        let graph = &runtime.provider_graph();
         let pending = graph.with_runtime(execution, |relational| {
             candidate.pending_consumed_output(
                 execution,
@@ -182,7 +178,7 @@ where
         &mut frame_custody,
         performed,
     );
-    frame_custody.hold_unfinished(runtime.output_production.demands());
+    frame_custody.hold_unfinished(runtime.output_production().demands());
     queue.conclude(result)
 }
 
@@ -198,7 +194,7 @@ pub(super) struct CurrentCaller<'a> {
 }
 
 pub(super) fn finish_current_caller<Schema, Family>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
     demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
     caller: CurrentCaller<'_>,
     proof: performed::CurrentProof<Arc<WorthQueryOutputDemandSettlement>>,
@@ -223,7 +219,7 @@ where
     match demand
         .required_continuations
         .promote_caller_successor::<Family>(
-            runtime.output_production.demands(),
+            runtime.output_production().demands(),
             anchor_ready,
             selected,
             continues_caller,
@@ -252,7 +248,7 @@ where
         .as_ref()
         .expect("Current caller retains its Interest");
     runtime
-        .output_production
+        .output_production()
         .demands()
         .finish_settlement_admitted(interest, selected)?;
     drop(demand.required_continuations.take_all());

@@ -13,7 +13,7 @@ pub(super) struct RequestedDependency<'a, 'basis, Schema: ApplicationSchema> {
     pub resolved: &'a ResolvedOnWave,
 }
 pub(super) fn resolve<Schema: ApplicationSchema + 'static>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
     custody: &mut RequiredContinuations<Schema>,
     stop: &mut WorthQueryOutputDemandDenial,
     dependency: RequestedDependency<'_, '_, Schema>,
@@ -27,7 +27,7 @@ pub(super) fn resolve<Schema: ApplicationSchema + 'static>(
         return Ok(RequestedRefusal::Unavailable);
     };
     match custody.requested_readmission(
-        runtime.output_production.demands(),
+        runtime.output_production().demands(),
         &requested,
         &wave.positioned,
     )? {

@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_contribution::producer::demand::progression::refresh::RefreshParentOps;
 use super::*;
 use crate::domain_computation::primary_graph::application_output_demand::ReadyCompletion;
 use crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority as Authority;
@@ -24,11 +25,9 @@ pub(super) enum ReadyCertification {
     OnBranch(crate::basis::WorthQueryProductBranch),
 }
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
-where
-    Schema: ApplicationSchema + 'static,
-{
-    pub(super) fn advance_validated_ready<Family>(
+pub(super) trait ReadyParentOps<Schema>: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> where
+    Schema: ApplicationSchema + 'static, {
+fn advance_validated_ready<Family>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -77,10 +76,7 @@ where
         Ok(OwnStages::Refreshed(disclosure))
     }
 
-    /// Settle the Ready this call's own stages reached. Its disclosure went
-    /// into the execution. A born-stale publication requests one reobservation
-    /// within this advance, using the same request admission.
-    pub(super) fn settle_own_ready<Family>(
+fn settle_own_ready<Family>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -129,8 +125,14 @@ where
             },
         )
     }
+}
 
-    fn certify_ready<Family>(
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> + ?Sized> ReadyParentOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema + 'static, {}
+
+trait ReadyOwnOps<Schema>: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> where
+    Schema: ApplicationSchema + 'static, {
+fn certify_ready<Family>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -179,7 +181,7 @@ where
                 }
                 match Settlement::from_committed_ready(
                     execution,
-                    self,
+                    self.output_demand_host(),
                     completion,
                     &demand.selected.identity,
                     Family::IDENTITY,
@@ -197,7 +199,7 @@ where
             }
             Authority::Stable(stable) => alias(Settlement::from_stable(
                 execution,
-                self,
+                self.output_demand_host(),
                 stable,
                 &current,
                 &demand.selected.identity,
@@ -206,7 +208,7 @@ where
             )?)?,
             Authority::Restored(restored) => alias(Settlement::from_restoration(
                 execution,
-                self,
+                self.output_demand_host(),
                 restored,
                 Family::IDENTITY,
                 demand.producer_contacts_in_this_demand,
@@ -216,13 +218,16 @@ where
             Ok(settlement) => settlement,
             Err(kind) => return Ok(ReadyVerdict::Unavailable(kind)),
         };
-        self.output_production
+        self.output_production()
             .demands()
             .finish_settlement(interest, &completion.authority)?;
         own_effect_observation::record(Stage::ReadySettled);
         Ok(ReadyVerdict::Settled(settlement))
     }
 }
+
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> + ?Sized> ReadyOwnOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema + 'static, {}
 
 fn ready_unavailable(denial: &WorthQueryOutputDemandDenial) -> Option<ReadyUnavailable> {
     match denial.kind() {

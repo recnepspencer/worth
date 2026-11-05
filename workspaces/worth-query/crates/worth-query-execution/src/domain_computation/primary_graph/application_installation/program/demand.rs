@@ -1,3 +1,7 @@
+use crate::domain_computation::primary_graph::application_contribution::AdmissionScopedOps as _;
+use crate::domain_computation::primary_graph::application_contribution::SourceCustodyScopedOps;
+use crate::domain_computation::primary_graph::application_contribution::SourceRecoveryScopedOps;
+use crate::domain_computation::primary_graph::product_operation::AdmissionScopedOps;
 mod advancement;
 use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 use crate::equality_type_id::EqualityTypeId as TypeId;

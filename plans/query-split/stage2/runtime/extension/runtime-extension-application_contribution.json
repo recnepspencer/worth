@@ -1,0 +1,497 @@
+{
+ "module": "domain_computation::primary_graph::application_contribution",
+ "blocks": 37,
+ "methods": 81,
+ "traits": [
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/checkpoint_delivery.rs",
+   "trait": "CheckpointDeliveryParentOps",
+   "visibility": "pub(super)",
+   "methods": [
+    "advance_output_checkpoint"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/checkpoint_delivery.rs",
+   "trait": "CheckpointDeliveryOwnOps",
+   "visibility": "private",
+   "methods": [
+    "deliver_output_checkpoint_with_finish",
+    "finish_output_checkpoint"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/checkpoint_delivery/court_doors_for_test.rs",
+   "trait": "CheckpointDeliveryDoorsOps",
+   "visibility": "pub",
+   "methods": [
+    "deliver_output_checkpoint_with_finish_for_test"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/checkpoint_delivery/selected.rs",
+   "trait": "SelectedScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand)",
+   "methods": [
+    "advance_selected_output_checkpoint"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/checkpoint_delivery/selected.rs",
+   "trait": "SelectedOwnOps",
+   "visibility": "private",
+   "methods": [
+    "prepare_selected_delivery"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/checkpoint_delivery/unpublished.rs",
+   "trait": "UnpublishedScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand)",
+   "methods": [
+    "close_unpublished_checkpoint"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/checkpoint_delivery/unpublished.rs",
+   "trait": "UnpublishedParentOps",
+   "visibility": "pub(super)",
+   "methods": [
+    "advance_unpublished_checkpoint"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/progression.rs",
+   "trait": "ProgressionOps",
+   "visibility": "pub",
+   "methods": [
+    "advance_output_demand",
+    "advance_output_demand_from_retained"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/progression.rs",
+   "trait": "ProgressionParentOps",
+   "visibility": "pub(super)",
+   "methods": [
+    "advance_retained_with_commit_authority",
+    "advance_as_caller"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/progression.rs",
+   "trait": "ProgressionScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph)",
+   "methods": [
+    "advance_program_output_demand",
+    "advance_history_output_demand"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/progression.rs",
+   "trait": "DemandProgressionScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph::application_contribution::producer)",
+   "methods": [
+    "advance_output_demand_with_commit_authority"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/progression/admission.rs",
+   "trait": "AdmissionOps",
+   "visibility": "pub",
+   "methods": [
+    "output_demand_resource_profile",
+    "admit_output_demand",
+    "admit_performed_output_demand"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/progression/admission.rs",
+   "trait": "AdmissionScopedOps",
+   "visibility": "pub(in crate::domain_computation)",
+   "methods": [
+    "admit_required_output_demand",
+    "admit_recovered_output_demand"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/progression/admission.rs",
+   "trait": "AdmissionParentOps",
+   "visibility": "pub(super)",
+   "methods": [
+    "admit_output_demand_with_source"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/progression/admission/court_doors_for_test.rs",
+   "trait": "AdmissionDoorsOps",
+   "visibility": "pub",
+   "methods": [
+    "admit_required_output_demand_for_test"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/progression/admission/dependent.rs",
+   "trait": "DependentScopedOps",
+   "visibility": "pub(in crate::domain_computation)",
+   "methods": [
+    "admit_dependent_output_demand"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/progression/admission/restoration.rs",
+   "trait": "RestorationParentOps",
+   "visibility": "pub(super)",
+   "methods": [
+    "readmit_checkpoint_output",
+    "record_restored_output"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/progression/admission/retained_observation.rs",
+   "trait": "RetainedObservationOps",
+   "visibility": "pub",
+   "methods": [
+    "admit_output_demand_at"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/progression/admission/retained_observation.rs",
+   "trait": "RetainedObservationOwnOps",
+   "visibility": "private",
+   "methods": [
+    "admit_settled_at_observation"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/progression/admission/source_admission.rs",
+   "trait": "SourceAdmissionScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand::progression)",
+   "methods": [
+    "admit_output_demand_with_source_admitted"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/progression/admission/source_custody.rs",
+   "trait": "SourceCustodyScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph)",
+   "methods": [
+    "retain_required_output_source_carrier",
+    "recover_discovered_output_source",
+    "bind_prepared_output_source",
+    "bind_prepared_output_sources"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/progression/admission/source_custody.rs",
+   "trait": "SourceCustodyOps",
+   "visibility": "pub",
+   "methods": [
+    "discard_prepared_required_output_source"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/progression/caller_pass.rs",
+   "trait": "CallerPassScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph::application_contribution::producer)",
+   "methods": [
+    "advance_output_demand_with_prepared_source"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/progression/caller_pass.rs",
+   "trait": "CallerPassOwnOps",
+   "visibility": "private",
+   "methods": [
+    "advance_caller_pass"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/progression/caller_pass/own_publication.rs",
+   "trait": "OwnPublicationParentOps",
+   "visibility": "pub(super)",
+   "methods": [
+    "own_publication_is_selected"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/progression/caller_pass_observation.rs",
+   "trait": "CallerPassObservationOps",
+   "visibility": "pub",
+   "methods": [
+    "producer_publications_at_root_on_this_thread_for_test",
+    "producer_recorded_publications_at_root_on_this_thread_for_test",
+    "interleave_before_owned_reobservation_for_test"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/progression/court_doors_for_test.rs",
+   "trait": "ProgressionDoorsOps",
+   "visibility": "pub",
+   "methods": [
+    "advance_program_output_demand_for_test"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/progression/refresh.rs",
+   "trait": "RefreshParentOps",
+   "visibility": "pub(super)",
+   "methods": [
+    "refresh_ready_output_demand",
+    "refresh_output_demand"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/progression/refresh/recovery_refresh_observation.rs",
+   "trait": "RecoveryRefreshObservationOps",
+   "visibility": "pub",
+   "methods": [
+    "attempt_recovery_refresh_for_test"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/progression/required_fresh.rs",
+   "trait": "RequiredFreshScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph::application_contribution::producer)",
+   "methods": [
+    "prepare_required_fresh"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/progression/required_fresh.rs",
+   "trait": "RequiredFreshParentOps",
+   "visibility": "pub(super)",
+   "methods": [
+    "admit_required_fresh_successor"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/progression/selected_program.rs",
+   "trait": "SelectedProgramOps",
+   "visibility": "pub",
+   "methods": [
+    "advance_selected_program_output_demand",
+    "advance_selected_program_output_demand_from_retained"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/progression/selected_program.rs",
+   "trait": "SelectedProgramOwnOps",
+   "visibility": "private",
+   "methods": [
+    "advance_selected_program_output_demand_with_source"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/progression/source_recovery.rs",
+   "trait": "SourceRecoveryScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph)",
+   "methods": [
+    "validate_recovered_output_root_kind",
+    "complete_prepared_output_source",
+    "recover_prepared_output_source",
+    "ensure_recovered_output_source_bound",
+    "validate_recovered_output_source_currentness"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/progression/unavailable.rs",
+   "trait": "UnavailableScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph)",
+   "methods": [
+    "finish_unavailable_output_demand"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/progression/validated.rs",
+   "trait": "ValidatedOwnOps",
+   "visibility": "private",
+   "methods": [
+    "advance_ordinary_validated_output_demand"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/progression/validated/entry.rs",
+   "trait": "EntryScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand::progression)",
+   "methods": [
+    "advance_validated_output_demand"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/progression/validated/execution_preparation.rs",
+   "trait": "ExecutionPreparationScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand::progression)",
+   "methods": [
+    "prepare_validated_output_demand_with_schedule"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/progression/validated/ready.rs",
+   "trait": "ReadyParentOps",
+   "visibility": "pub(super)",
+   "methods": [
+    "advance_validated_ready",
+    "settle_own_ready"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/progression/validated/ready.rs",
+   "trait": "ReadyOwnOps",
+   "visibility": "private",
+   "methods": [
+    "certify_ready"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/progression/validated/source_guard.rs",
+   "trait": "SourceGuardParentOps",
+   "visibility": "pub(super)",
+   "methods": [
+    "released_predecessor_needs_source",
+    "prepare_progression_entry",
+    "leave_replaced_source"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/readiness.rs",
+   "trait": "ReadinessParentOps",
+   "visibility": "pub(super)",
+   "methods": [
+    "evaluate_current_output_readiness",
+    "evaluate_current_output_readiness_admitted"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/readiness.rs",
+   "trait": "ReadinessOwnOps",
+   "visibility": "private",
+   "methods": [
+    "evaluate_current_output_readiness_core"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/required_continuations/prepared.rs",
+   "trait": "PreparedOps",
+   "visibility": "pub",
+   "methods": [
+    "required_continuation_slot_custody_bytes_for_test",
+    "required_successor_custody_bytes_for_test"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/scheduling_progression.rs",
+   "trait": "SchedulingProgressionScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph::application_contribution::producer)",
+   "methods": [
+    "schedule_selected_output_producer",
+    "schedule_selected_output_producer_on_selected"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/scheduling_progression.rs",
+   "trait": "SchedulingProgressionOwnOps",
+   "visibility": "private",
+   "methods": [
+    "schedule_selected_output_producer_with_truth"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/scheduling_progression/court_doors_for_test.rs",
+   "trait": "SchedulingProgressionDoorsOps",
+   "visibility": "pub",
+   "methods": [
+    "schedule_selected_output_producer_for_test"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/selection.rs",
+   "trait": "SelectionOps",
+   "visibility": "pub",
+   "methods": [
+    "select_output_producer"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/selection.rs",
+   "trait": "SelectionParentOps",
+   "visibility": "pub(super)",
+   "methods": [
+    "select_output_producer_with_remaining"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/selection/native_selection.rs",
+   "trait": "NativeSelectionParentOps",
+   "visibility": "pub(super)",
+   "methods": [
+    "select_output_producer_with_remaining_core"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/selection/recovered_candidates.rs",
+   "trait": "RecoveredCandidatesParentOps",
+   "visibility": "pub(super)",
+   "methods": [
+    "record_recovered_output_candidates"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/selection/selected_basis.rs",
+   "trait": "SelectedBasisScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand)",
+   "methods": [
+    "select_output_producer_with_remaining_on_selected"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/selection/selected_basis.rs",
+   "trait": "SelectionSelectedBasisScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph::application_contribution::producer)",
+   "methods": [
+    "select_output_producer_for_observation"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/execution/contact_observation.rs",
+   "trait": "ContactObservationOps",
+   "visibility": "pub",
+   "methods": [
+    "producer_contacts_on_this_thread_for_test",
+    "producer_contacts_at_root_on_this_thread_for_test"
+   ]
+  },
+  {
+   "file": "/home/user/worth/workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/source_qualification.rs",
+   "trait": "SourceQualificationScopedOps",
+   "visibility": "pub(in crate::domain_computation::primary_graph)",
+   "methods": [
+    "qualify_observed_output_source"
+   ]
+  }
+ ],
+ "facades": 10,
+ "host": {
+  "core_fields": [
+   "bridge",
+   "primary_provider",
+   "product_runtime"
+  ],
+  "top_fields": [
+   "installed_schema",
+   "output_production"
+  ],
+  "core_methods": [
+   "authority_identity",
+   "output_demand_resource_profile",
+   "primary_graph"
+  ],
+  "foreign": [
+   "granular_invalidation_installation",
+   "hold_world_snapshot_pressure_for_test",
+   "on_branch",
+   "select_application_read_observation_with_request"
+  ],
+  "hand": []
+ }
+}

@@ -14,7 +14,7 @@ use super::*;
 pub(in super::super) fn advance_requested_output<Schema, Family>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
     demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request: &WorthQueryRequestScope,
@@ -33,7 +33,7 @@ where
     // A packet is scheduling evidence for exactly the native basis that issued it.
     let (shared, positioned) = selection::select_required_basis(execution, runtime, branch)?;
     let upstream = runtime
-        .output_production
+        .output_production()
         .demands()
         .requested_ready_readmission(
             &requested,
@@ -72,7 +72,7 @@ where
         }
     };
     let head = runtime
-        .output_production
+        .output_production()
         .demands()
         .publication_head_selection(
             shared
@@ -106,6 +106,6 @@ where
         &mut frame_custody,
         performed,
     );
-    frame_custody.hold_unfinished(runtime.output_production.demands());
+    frame_custody.hold_unfinished(runtime.output_production().demands());
     result
 }

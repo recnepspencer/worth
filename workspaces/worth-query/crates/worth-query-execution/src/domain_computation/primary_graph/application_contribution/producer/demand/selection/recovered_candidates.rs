@@ -3,8 +3,8 @@
 use super::*;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 
-impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub(super) fn record_recovered_output_candidates<Family>(
+pub(super) trait RecoveredCandidatesParentOps<Schema: ApplicationSchema + 'static>: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> {
+fn record_recovered_output_candidates<Family>(
         &self,
         source: &WorthQueryObservedSource<
             <<Family as WorthQueryProducerOutputFamily<Schema>>::Source as worth_query_declaration::facade::application_query::ApplicationQueryBinding<Schema>>::Query,
@@ -17,7 +17,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
         for recovered in self
-            .output_production
+            .output_production()
             .recovered()
             .matching_source_partition(scope, source.partition_identity())
         {
@@ -29,8 +29,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                 continue;
             }
             if let (Some(authority), Some(_)) = (
-                self.runtime
-                    .product_runtime
+                self.product_runtime()
                     .recovered_root_authority
                     .as_ref(),
                 checkpoint.producer_facts.as_deref(),
@@ -46,8 +45,8 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             }
             lineage.record_recovered_prior_output(
                 binding,
-                self.runtime.authority_identity().as_u64(),
-                self.installed_schema.binding_identity(),
+                self.authority_identity().as_u64(),
+                self.installed_schema().binding_identity(),
                 scope,
                 observation.lifecycle_incarnation(),
                 observation.reference_generation().get(),
@@ -63,3 +62,5 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         }
     }
 }
+
+impl<Schema: ApplicationSchema + 'static, HostRuntime: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> + ?Sized> RecoveredCandidatesParentOps<Schema> for HostRuntime {}

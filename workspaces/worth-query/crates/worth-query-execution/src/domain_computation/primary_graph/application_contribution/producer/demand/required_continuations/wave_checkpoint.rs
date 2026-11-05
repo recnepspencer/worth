@@ -43,7 +43,7 @@ impl<Schema: ApplicationSchema + 'static> CheckpointStage<'_, Schema> {
     pub(in super::super) fn advance(
         self,
         phase: &WorthQueryAdvancementPhase<'_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
         request: &WorthQueryRequestScope,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         invocation: &ProducerInvocationAuthority<'_>,

@@ -1,3 +1,5 @@
+use crate::domain_computation::primary_graph::application_contribution::producer::demand::progression::ProgressionParentOps;
+use crate::domain_computation::primary_graph::application_contribution::producer::demand::progression::caller_pass::CallerPassScopedOps;
 use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
@@ -17,11 +19,9 @@ use crate::domain_computation::primary_graph::application_output_demand::denial:
 use crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
-where
-    Schema: ApplicationSchema + 'static,
-{
-    pub fn advance_selected_program_output_demand<Family>(
+pub trait SelectedProgramOps<Schema>: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> where
+    Schema: ApplicationSchema + 'static, {
+fn advance_selected_program_output_demand<Family>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -58,8 +58,7 @@ where
         )
     }
 
-    /// Reuse the source meaning retained when the public demand was admitted.
-    pub fn advance_selected_program_output_demand_from_retained<Family>(
+fn advance_selected_program_output_demand_from_retained<Family>(
         &self,
 
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -81,7 +80,7 @@ where
                 > + 'static,
         FamilySourceQuery<Schema, Family>: 'static,
     {
-        let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
+        let phase_request = match phase.execution_request_for(self.product_runtime()) {
             Ok(request) => request,
             Err(cause) => return Err(crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "output-demand-phase")),
         };
@@ -98,7 +97,7 @@ where
             |retained| {
                 super::retained_read::read_retained_source::<Schema, Family>(
                     execution,
-                    self,
+                    self.application_contribution_host(),
                     retained,
                     principal,
                     request_scope,
@@ -111,8 +110,14 @@ where
             revision,
         )
     }
+}
 
-    fn advance_selected_program_output_demand_with_source<Family>(
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> + ?Sized> SelectedProgramOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema + 'static, {}
+
+trait SelectedProgramOwnOps<Schema>: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> where
+    Schema: ApplicationSchema + 'static, {
+fn advance_selected_program_output_demand_with_source<Family>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -145,7 +150,7 @@ where
         FamilySourceQuery<Schema, Family>: 'static,
     {
         phase
-            .execution_request_for(&self.runtime.product_runtime)
+            .execution_request_for(self.product_runtime())
             .map_err(|cause| {
                 denial(
                     WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
@@ -190,3 +195,6 @@ where
         })
     }
 }
+
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> + ?Sized> SelectedProgramOwnOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema + 'static, {}

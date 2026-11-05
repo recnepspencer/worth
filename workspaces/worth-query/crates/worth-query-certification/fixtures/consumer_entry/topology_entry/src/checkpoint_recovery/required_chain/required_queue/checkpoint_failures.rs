@@ -29,7 +29,9 @@ mod serial {
         );
         assert_eq!(before[0].1, None);
         change_root_input!(request, application, 2, 0x9176_7900_u64);
-        application.leave_one_readiness_attempt_for_test();
+        application
+            .output_production_for_test()
+            .leave_one_readiness_attempt_for_test();
         let settled = settled_in_one_advance!(d, request, "the unchanged independent caller");
         assert_eq!(settled.producer_contacts_in_this_demand(), 1);
         let after = application

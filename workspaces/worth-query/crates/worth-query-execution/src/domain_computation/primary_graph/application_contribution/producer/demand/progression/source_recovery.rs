@@ -12,27 +12,27 @@ use {
     crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime,
 };
 
-impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub(in crate::domain_computation::primary_graph) fn validate_recovered_output_root_kind(
+pub(in crate::domain_computation::primary_graph) trait SourceRecoveryScopedOps<Schema: ApplicationSchema + 'static>: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> {
+fn validate_recovered_output_root_kind(
         &self,
         receipt: &WorthQueryApplicationCommitReceipt,
         kind: crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
-        self.output_production
+        self.output_production()
             .demands()
             .validate_recovery_root_kind(receipt, kind)
     }
 
-    pub(in crate::domain_computation::primary_graph) fn complete_prepared_output_source(
+fn complete_prepared_output_source(
         &self,
         receipt: &WorthQueryApplicationCommitReceipt,
     ) {
-        self.output_production
+        self.output_production()
             .demands()
             .complete_prepared_source(receipt);
     }
 
-    pub(in crate::domain_computation::primary_graph) fn recover_prepared_output_source(
+fn recover_prepared_output_source(
         &self,
         receipt: &WorthQueryApplicationCommitReceipt,
         root_type: TypeId,
@@ -41,28 +41,28 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         WorthQueryPreparedRequiredOutputSource,
     )> {
         let observation = self
-            .output_production
+            .output_production()
             .demands()
             .retained_prepared_source_observation(receipt, root_type)?;
         let retained = WorthQueryApplicationReadObservation::from_product(
-            self,
+            self.application_query_host(),
             crate::basis::WorthQueryProductObservationLease::new(observation),
         );
         Some((
             retained,
             WorthQueryPreparedRequiredOutputSource {
-                runtime_authority: self.runtime.authority_identity().as_u64(),
+                runtime_authority: self.authority_identity().as_u64(),
                 source_commit: receipt
                     .committed_product_publication()
                     .composite_commit()
                     .clone(),
                 product_occurrence: receipt.product_branch().occurrence(),
-                owner: self.output_production.demands().clone(),
+                owner: self.output_production().demands().clone(),
             },
         ))
     }
 
-    pub(in crate::domain_computation::primary_graph) fn ensure_recovered_output_source_bound<
+fn ensure_recovered_output_source_bound<
         Query,
         Value,
     >(
@@ -81,11 +81,11 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                 )
             })?;
         validate_prepared_source_carrier(
-            self.runtime.authority_identity().as_u64(),
+            self.authority_identity().as_u64(),
             prepared,
             observed,
         )?;
-        self.output_production.demands().ensure_prepared_output_source_bound(
+        self.output_production().demands().ensure_prepared_output_source_bound(
             &prepared.source_commit,
             crate::domain_computation::primary_graph::application_output_demand::BoundOutputSource {
                 scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(observed.source_root()),
@@ -99,7 +99,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         )
     }
 
-    pub(in crate::domain_computation::primary_graph) fn validate_recovered_output_source_currentness<
+fn validate_recovered_output_source_currentness<
         Query,
         Value,
     >(
@@ -121,7 +121,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             )
         })?;
         validate_prepared_source_carrier(
-            self.runtime.authority_identity().as_u64(),
+            self.authority_identity().as_u64(),
             prepared,
             retained_observed,
         )?;
@@ -131,7 +131,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                 "current recovery query belongs to another product occurrence",
             ));
         }
-        self.output_production
+        self.output_production()
             .demands()
             .validate_prepared_recovery_currentness(
                 &prepared.source_commit,
@@ -150,6 +150,8 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             )
     }
 }
+
+impl<Schema: ApplicationSchema + 'static, HostRuntime: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> + ?Sized> SourceRecoveryScopedOps<Schema> for HostRuntime {}
 
 fn paired_source<Query, Value>(
     source: &WorthQueryApplicationOutputDemandSource<Query, Value>,

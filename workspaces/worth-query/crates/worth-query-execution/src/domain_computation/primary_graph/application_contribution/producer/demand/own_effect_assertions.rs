@@ -28,7 +28,7 @@ where
 {
     pub fn assert_born_stale_absence_for_test(
         &self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
         phase: &WorthQueryAdvancementPhase<'_>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         root: worth_relational::facade::identity::EntityId,
@@ -73,7 +73,7 @@ where
         );
         let interest = self.interest.as_ref().expect("original live Interest");
         let OutputRowStage::Ready(completion) =
-            runtime.output_production.demands().row_stage(interest)
+            runtime.output_production().demands().row_stage(interest)
         else {
             panic!("the original row must retain its actual Ready, not an inferred commit");
         };
@@ -81,8 +81,7 @@ where
             panic!("performed original receipt, never stable alias or reconstruction");
         };
         let completed = runtime
-            .runtime
-            .primary_provider
+            .primary_provider()
             .observe_completed_application(receipt.commit_reference())
             .unwrap();
         let facts = completed.commit_evidence().rebased_source_facts().unwrap();
@@ -110,7 +109,7 @@ where
     }
     pub fn assert_preserve_successor_for_test(
         &self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
         root: worth_relational::facade::identity::EntityId,
         contacts: usize,
     ) {
@@ -133,7 +132,7 @@ where
     }
     pub fn assert_changed_successor_for_test(
         &self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
         phase: &WorthQueryAdvancementPhase<'_>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         root: worth_relational::facade::identity::EntityId,
@@ -156,7 +155,7 @@ where
         );
         let interest = self.interest.as_ref().expect("actual P2 Interest");
         let OutputRowStage::Ready(completion) =
-            runtime.output_production.demands().row_stage(interest)
+            runtime.output_production().demands().row_stage(interest)
         else {
             panic!("P2 must retain its own completed publication");
         };
@@ -168,8 +167,7 @@ where
             "P2's canonical output mutation must reset P1 before renewal"
         );
         let completed = runtime
-            .runtime
-            .primary_provider
+            .primary_provider()
             .observe_completed_application(receipt.commit_reference())
             .unwrap();
         let facts = completed.commit_evidence().rebased_source_facts().unwrap();

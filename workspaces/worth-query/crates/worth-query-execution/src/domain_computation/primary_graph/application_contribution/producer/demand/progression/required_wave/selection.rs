@@ -29,7 +29,7 @@ impl<'runtime, Schema: ApplicationSchema + 'static> RequiredWaveSelection<'runti
     pub(super) fn reselect(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &'runtime dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
     ) -> Result<Self, WorthQueryOutputDemandDenial> {
         match self.state {
             SelectionState::Frozen => Ok(self),
@@ -42,11 +42,11 @@ impl<'runtime, Schema: ApplicationSchema + 'static> RequiredWaveSelection<'runti
     pub(super) fn after_awaited_delivery(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &'runtime dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
         _delivery: super::super::super::required_continuations::DeliveredAwaited,
     ) -> Result<Self, WorthQueryOutputDemandDenial> {
         let head = runtime
-            .output_production
+            .output_production()
             .demands()
             .publication_head_selection(
                 self.shared
@@ -87,7 +87,7 @@ impl<'runtime, Schema: ApplicationSchema + 'static> RequiredWaveSelection<'runti
 
 pub(super) fn select_required_wave<'runtime, Schema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &'runtime dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
     interest: &WorthQueryOutputDemandInterest,
     branch: WorthQueryProductBranch,
 ) -> Result<Option<RequiredWaveSelection<'runtime, Schema>>, WorthQueryOutputDemandDenial>
@@ -95,7 +95,7 @@ where
     Schema: ApplicationSchema + 'static,
 {
     let Some(anchor_ready) = runtime
-        .output_production
+        .output_production()
         .demands()
         .interest_ready_readmission(interest)?
     else {
@@ -114,7 +114,7 @@ where
 /// Only a live advance can select the basis following a completed publication.
 fn reselect_required_wave<'runtime, Schema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &'runtime dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
     previous: LiveSelection<'_, Schema>,
 ) -> Result<RequiredWaveSelection<'runtime, Schema>, WorthQueryOutputDemandDenial>
 where
@@ -134,7 +134,7 @@ where
 
 fn select_required_wave_from_ready<'runtime, Schema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &'runtime dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
     anchor_ready: SelectedReadyReadmission,
     branch: WorthQueryProductBranch,
     target: RequiredWaveTarget,
@@ -144,7 +144,7 @@ where
 {
     let (shared, positioned) = select_required_basis(execution, runtime, branch)?;
     let head = runtime
-        .output_production
+        .output_production()
         .demands()
         .publication_head_selection(
             shared
@@ -166,7 +166,7 @@ where
 /// The same owner-issued Product/native basis for both kinds of wave anchor.
 pub fn select_required_basis<'runtime, Schema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &'runtime dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
     branch: WorthQueryProductBranch,
 ) -> Result<
     (
@@ -180,8 +180,7 @@ where
 {
     // A Ready the wave answers is read at this selection.
     let _held_world_observations = runtime
-        .runtime
-        .primary_provider
+        .primary_provider()
         .take_ready_read_snapshot_pressure()
         .then(|| runtime.hold_world_snapshot_pressure_for_test(branch));
     let selected = runtime
@@ -196,25 +195,18 @@ where
     let product = selected.product().read_lease_ref();
     let snapshot = selected.application_basis().snapshot_handle();
     let positioned = runtime
-        .runtime
-        .primary_provider
-        .graph
+        .provider_graph()
         .with_runtime(execution, |native| {
             native.read_truth().positioned_snapshot(snapshot)
         })
         .map_err(position_denial)?;
     runtime
-        .output_production
+        .output_production()
         .demands()
         .observe_selected_discontinuity(
             product,
             &positioned,
-            &runtime
-                .runtime
-                .primary_provider
-                .graph
-                .source_owner
-                .invalidation_owner,
+            &runtime.provider_graph().source_owner.invalidation_owner,
         )?;
     let shared = selected
         .prepare_shared_query_basis()

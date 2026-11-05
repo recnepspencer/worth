@@ -1,5 +1,7 @@
 //! Reenter the real Published/Delivered checkpoint under the required meter.
 
+use crate::domain_computation::primary_graph::application_contribution::producer::demand::checkpoint_delivery::unpublished::UnpublishedParentOps;
+use crate::domain_computation::primary_graph::application_contribution::producer::demand::readiness::ReadinessParentOps;
 use super::*;
 use crate::domain_computation::primary_graph::application_output_demand::CheckpointFinishStop;
 use crate::domain_computation::primary_graph::application_output_demand::PreparedSelectedCheckpointFinish;
@@ -7,14 +9,9 @@ use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
-where
-    Schema: ApplicationSchema + 'static,
-{
-    /// The caller owns the exact successor Interest and any checkpoint that a
-    /// racing registry finish returns. Delivery and readiness use the ordinary
-    /// stage, while Query preparation and finish stay on the carried meter.
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) fn advance_selected_output_checkpoint(
+pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) trait SelectedScopedOps<Schema>: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> where
+    Schema: ApplicationSchema + 'static, {
+fn advance_selected_output_checkpoint(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -141,19 +138,25 @@ where
             Checkpoint::Ready(_) => unreachable!("ready output opens without a checkpoint claim"),
         }
     }
+}
 
-    fn prepare_selected_delivery<'a>(
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> + ?Sized> SelectedScopedOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema + 'static, {}
+
+trait SelectedOwnOps<Schema>: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> where
+    Schema: ApplicationSchema + 'static, {
+fn prepare_selected_delivery<'a>(
         &'a self,
         producer_identity: &str,
         receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
     ) -> Result<PreparedSelectedDelivery<'a>, WorthQueryOutputDemandDenial> {
         let route = self
-            .output_production
+            .output_production()
             .readiness_routes()
             .get(producer_identity)
             .expect("installation retains one readiness route per producer");
         let installed = self
-            .output_production
+            .output_production()
             .producers()
             .entries
             .get(producer_identity)
@@ -166,6 +169,9 @@ where
         })
     }
 }
+
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> + ?Sized> SelectedOwnOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema + 'static, {}
 
 fn finish_selected(
     finish: PreparedSelectedCheckpointFinish<'_>,

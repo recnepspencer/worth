@@ -75,7 +75,7 @@ trait ErasedRequiredSuccessor<Schema: ApplicationSchema>: Send + Sync {
     fn close_read_request(
         &mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
         branch: crate::basis::WorthQueryProductBranch,
     ) -> Result<(), crate::domain_computation::primary_graph::application_output_demand::denial::read_cleanup::WorthQueryOutputReadCloseDenial>;
 
@@ -91,7 +91,7 @@ trait ErasedRequiredSuccessor<Schema: ApplicationSchema>: Send + Sync {
     fn authorize_current_source(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
         invocation: &ProducerInvocationAuthority<'_>,
@@ -106,7 +106,7 @@ trait ErasedRequiredSuccessor<Schema: ApplicationSchema>: Send + Sync {
         &mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
 
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
         request: &WorthQueryRequestScope,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         invocation: &ProducerInvocationAuthority<'_>,
@@ -116,7 +116,7 @@ trait ErasedRequiredSuccessor<Schema: ApplicationSchema>: Send + Sync {
         &mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
 
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
         branch: crate::basis::WorthQueryProductBranch,
@@ -149,7 +149,7 @@ where
     fn authorize_current_source(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
         invocation: &ProducerInvocationAuthority<'_>,
@@ -162,7 +162,7 @@ where
     fn close_read_request(
         &mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
         branch: crate::basis::WorthQueryProductBranch,
     ) -> Result<(), crate::domain_computation::primary_graph::application_output_demand::denial::read_cleanup::WorthQueryOutputReadCloseDenial>{
         if self.pending_claim.is_some() {
@@ -259,7 +259,7 @@ where
 
         phase: &WorthQueryAdvancementPhase<'_>,
 
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
         request: &WorthQueryRequestScope,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         invocation: &ProducerInvocationAuthority<'_>,
@@ -271,7 +271,7 @@ where
         &mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
 
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
         branch: crate::basis::WorthQueryProductBranch,
@@ -279,7 +279,7 @@ where
         performed: &std::cell::RefCell<PerformedMembers>,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial> {
         let execution = phase
-            .execution_request_for(&runtime.runtime.product_runtime)
+            .execution_request_for(runtime.product_runtime())
             .map_err(|cause| {
                 WorthQueryOutputDemandDenial::new(
                     crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
@@ -368,3 +368,4 @@ fn capacity_denial() -> WorthQueryOutputDemandDenial {
 }
 
 mod court_doors_for_test;
+pub use prepared::PreparedOps;

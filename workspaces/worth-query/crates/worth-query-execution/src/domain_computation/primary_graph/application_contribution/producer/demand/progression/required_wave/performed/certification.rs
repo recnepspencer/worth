@@ -49,7 +49,7 @@ impl<T> CurrentProof<T> {
 pub(in super::super) fn certify_required_ready<'owner, Schema>(
     phase: &'owner WorthQueryAdvancementPhase<'owner>,
 
-    runtime: &'owner WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &'owner dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request_scope: &WorthQueryRequestScope,
     wave: &'owner RequiredWaveSelection<'_, Schema>,
@@ -65,15 +65,13 @@ where
     Schema: ApplicationSchema + 'static,
 {
     let candidate = runtime
-        .runtime
-        .primary_provider
-        .graph
+        .provider_graph()
         .output_lineage
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
         .resolve_required_settlement(
-            runtime.runtime.authority_identity().as_u64(),
-            &runtime.installed_schema.binding_identity(),
+            runtime.authority_identity().as_u64(),
+            &runtime.installed_schema().binding_identity(),
             selected.completion(),
         );
     // Without an exact candidate, Ready takes Fresh; this advance's record
@@ -127,7 +125,7 @@ where
         }
         RequiredCueProgress::PendingExact(pending) => {
             let upstream = runtime
-                .output_production
+                .output_production()
                 .demands()
                 .pending_exact_ready_readmission(&pending, &wave.positioned)?;
             Ok(match upstream {
@@ -147,7 +145,7 @@ where
 /// A caller needing work is Pending and is retried by its driving owner.
 pub(in super::super) fn certify_frozen_ready<'call, Schema: ApplicationSchema + 'static>(
     execution: &'call worth_execution::ExecutionRequest<'call, 'call>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request: &WorthQueryRequestScope,
     wave: &RequiredWaveSelection<'_, Schema>,
@@ -162,15 +160,13 @@ pub(in super::super) fn certify_frozen_ready<'call, Schema: ApplicationSchema + 
     } = caller;
 
     let candidate = runtime
-        .runtime
-        .primary_provider
-        .graph
+        .provider_graph()
         .output_lineage
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
         .resolve_required_settlement(
-            runtime.runtime.authority_identity().as_u64(),
-            &runtime.installed_schema.binding_identity(),
+            runtime.authority_identity().as_u64(),
+            &runtime.installed_schema().binding_identity(),
             selected.completion(),
         )
         .map_err(required_settlement_denial)?;
@@ -191,14 +187,14 @@ pub(in super::super) fn certify_frozen_ready<'call, Schema: ApplicationSchema + 
         crate::domain_computation::primary_graph::application_contribution::producer::execution::FrozenCurrentInspection::Current(value) =>
             FrozenCallerInspection::Current(performed.borrow().current(value, CurrentBasis::of(wave.shared.selected().product().observation()), selected.certify_current_record(CurrentBasis::of(wave.shared.selected().product().observation())))),
         crate::domain_computation::primary_graph::application_contribution::producer::execution::FrozenCurrentInspection::PendingExact(pending) => {
-            match super::super::super::super::required_continuations::RegistryDelivery::from_pending(&pending, &wave.positioned, runtime.output_production.demands())? {
+            match super::super::super::super::required_continuations::RegistryDelivery::from_pending(&pending, &wave.positioned, runtime.output_production().demands())? {
                 super::super::super::super::required_continuations::RequiredDelivery::Delivery(delivery) => FrozenCallerInspection::RegistryDelivery(delivery),
                 super::super::super::super::required_continuations::RequiredDelivery::Ready(ready) => FrozenCallerInspection::Upstream(ready),
                 super::super::super::super::required_continuations::RequiredDelivery::Unavailable => FrozenCallerInspection::NotCurrent,
             }
         }
         crate::domain_computation::primary_graph::application_contribution::producer::execution::FrozenCurrentInspection::NotCurrent => {
-            match super::super::super::super::required_continuations::RegistryDelivery::from_required_claim(selected, runtime.output_production.demands())? {
+            match super::super::super::super::required_continuations::RegistryDelivery::from_required_claim(selected, runtime.output_production().demands())? {
                 Some(delivery) => FrozenCallerInspection::RegistryDelivery(delivery),
                 None => FrozenCallerInspection::NotCurrent,
             }

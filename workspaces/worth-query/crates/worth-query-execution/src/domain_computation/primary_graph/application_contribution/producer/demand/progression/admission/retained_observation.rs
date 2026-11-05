@@ -34,14 +34,9 @@ use {
     crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation,
 };
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
-where
-    Schema: ApplicationSchema + 'static,
-{
-    /// Admit a demand of the output as `observation` reads it. At the head
-    /// this is an ordinary demand. At an older retained observation the
-    /// demand settles on the output current there, or stops `Superseded`.
-    pub fn admit_output_demand_at<Family>(
+pub trait RetainedObservationOps<Schema>: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> where
+    Schema: ApplicationSchema + 'static, {
+fn admit_output_demand_at<Family>(
         &self,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         source_result: WorthQueryApplicationOutputDemandSource<
@@ -54,7 +49,7 @@ where
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
-        let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
+        let phase_request = match phase.execution_request_for(self.product_runtime()) {
             Ok(request) => request,
             Err(cause) => return Err(crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::application_output_demand::denial::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "output-demand-phase")),
         };
@@ -101,8 +96,14 @@ where
         })?;
         self.admit_settled_at_observation::<Family>(execution, observed_source, limits, &at, &read)
     }
+}
 
-    fn admit_settled_at_observation<Family>(
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> + ?Sized> RetainedObservationOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema + 'static, {}
+
+trait RetainedObservationOwnOps<Schema>: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> where
+    Schema: ApplicationSchema + 'static, {
+fn admit_settled_at_observation<Family>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         observed_source: WorthQueryObservedSource<FamilySourceQuery<Schema, Family>>,
@@ -118,8 +119,8 @@ where
             denial(kind, Family::IDENTITY)
                 .with_recovery_posture(WorthQueryOutputDemandRecoveryPosture::Retryable)
         };
-        if observed_source.runtime_authority != self.runtime.authority_identity().as_u64()
-            || observed_source.schema_binding != self.installed_schema.binding_identity()
+        if observed_source.runtime_authority != self.authority_identity().as_u64()
+            || observed_source.schema_binding != self.installed_schema().binding_identity()
             || !matches!(
                 &observed_source.selection,
                 WorthQueryApplicationBasisSelectionIdentity::Product(source) if source == read
@@ -128,7 +129,7 @@ where
             return Err(stop(WorthQueryOutputDemandDenialKind::ForeignSource));
         }
         let installed = self
-            .installed_schema
+            .installed_schema()
             .installed_query_binding::<Family::Source>()
             .map_err(|_| stop(WorthQueryOutputDemandDenialKind::ForeignSource))?;
         require_installed_output_dependencies(
@@ -137,9 +138,7 @@ where
         )?;
         let limits = self.output_demand_resource_profile().constrain(limits);
         let owner = &self
-            .runtime
-            .primary_provider
-            .graph
+            .provider_graph()
             .source_owner
             .invalidation_owner;
         // The selection and its verification share one meter, no larger than
@@ -147,19 +146,17 @@ where
 
         let observation = at.product().observation();
         let outputs = self
-            .runtime
-            .primary_provider
-            .graph
+            .provider_graph()
             .output_lineage
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .outputs_at_observation(
-                self.runtime.authority_identity().as_u64(),
-                &self.installed_schema.binding_identity(),
+                self.authority_identity().as_u64(),
+                &self.installed_schema().binding_identity(),
                 WorthQueryOperationScopeEntityBinding::from_entity(observed_source.source_root()),
                 observation,
                 &self
-                    .output_production
+                    .output_production()
                     .producers()
                     .family_output_bindings::<Family>(),
                 observed_source.partition_identity(),
@@ -175,7 +172,7 @@ where
         let mut current = None;
         for output in outputs {
             let role = self
-                .output_production
+                .output_production()
                 .producers()
                 .family_output_role::<Family>(output.binding)?;
             let source_matches =
@@ -202,8 +199,7 @@ where
                 continue;
             };
             let verified = self
-                .runtime.primary_provider
-                .graph
+                .provider_graph()
                 .with_runtime(execution, |relational| {
                     let unavailable =
                         || stop(WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable);
@@ -276,7 +272,7 @@ where
         }
         let output = current.ok_or_else(|| stop(WorthQueryOutputDemandDenialKind::Superseded))?;
         let (mut selected, entry) = self
-            .output_production
+            .output_production()
             .producers()
             .select_exact::<Family>(output.binding)?;
 
@@ -285,7 +281,7 @@ where
         let installed_entry = Arc::clone(entry);
         let settlement = WorthQueryOutputDemandSettlement::from_stable(
             execution,
-            self,
+            self.output_demand_host(),
             &output.stable,
             at,
             &selected.identity,
@@ -294,13 +290,13 @@ where
         )?;
 
         let observed_source = self
-            .output_production
+            .output_production()
             .demands()
             .retain_readmission_source(observed_source, limits, None)?
             .without_row();
         Ok(WorthQueryAdmittedOutputDemand {
-            runtime_authority: self.runtime.authority_identity().as_u64(),
-            schema_binding: self.installed_schema.binding_identity(),
+            runtime_authority: self.authority_identity().as_u64(),
+            schema_binding: self.installed_schema().binding_identity(),
             selected,
             installed_entry,
             observed_source,
@@ -320,3 +316,6 @@ where
         })
     }
 }
+
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> + ?Sized> RetainedObservationOwnOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema + 'static, {}

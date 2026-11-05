@@ -1,10 +1,8 @@
 use super::*;
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
-where
-    Schema: ApplicationSchema + 'static,
-{
-    pub(in crate::domain_computation) fn admit_dependent_output_demand<Family>(
+pub(in crate::domain_computation) trait DependentScopedOps<Schema>: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> where
+    Schema: ApplicationSchema + 'static, {
+fn admit_dependent_output_demand<Family>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         source_result: crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource<
@@ -39,3 +37,6 @@ where
         )
     }
 }
+
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> + ?Sized> DependentScopedOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema + 'static, {}

@@ -2,7 +2,7 @@
 use super::*;
 
 pub(super) fn finish<Schema, Family>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
     demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
     wave: &RequiredWaveSelection<'_, Schema>,
     frontier: &mut RequiredFrontier,
@@ -38,7 +38,7 @@ where
 /// Caller failure returns at once; a queue failure cannot replace an already
 /// certified caller outcome. Certification is separate from committing a slot.
 pub(super) fn accept_current_caller<Schema, Family>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
     demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
     wave: &RequiredWaveSelection<'_, Schema>,
     frontier: &mut RequiredFrontier,

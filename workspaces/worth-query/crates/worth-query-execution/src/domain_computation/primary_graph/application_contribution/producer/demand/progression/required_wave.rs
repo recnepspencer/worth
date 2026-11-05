@@ -77,14 +77,14 @@ enum RequiredWaveStep<'owner, Schema: ApplicationSchema> {
 /// table is an ordered tree; this pays its selected String comparisons before
 /// the lookup and does not infer a provider from output family or branch.
 pub(super) fn installed_for_selected_cue<'runtime, Schema>(
-    runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &'runtime dyn crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema>,
     producer: &str,
 ) -> Result<&'runtime InstalledProducerProvider<Schema>, WorthQueryOutputDemandDenial> {
     // These visits pay the ordered-table and producer-width measurements
     // before the variable lookup quote is computed.
 
     runtime
-        .output_production
+        .output_production()
         .producers()
         .entries
         .get(producer)

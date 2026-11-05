@@ -20,12 +20,9 @@ use crate::domain_computation::primary_graph::application_output_demand::Selecte
 
 use crate::domain_computation::primary_graph::product_operation::SharedSelectedProductOperation;
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
-where
-    Schema: ApplicationSchema + 'static,
-{
-    /// Preparation retains the real typed successor until canonical apply.
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn prepare_required_fresh<'owner, Family>(
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) trait RequiredFreshScopedOps<Schema>: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> where
+    Schema: ApplicationSchema + 'static, {
+fn prepare_required_fresh<'owner, Family>(
         &'owner self,
         phase: &'owner WorthQueryAdvancementPhase<'owner>,
         fresh: FreshOutputDisclosure<
@@ -54,7 +51,7 @@ where
         WorthQueryAdmittedOutputDemand<Schema, Family>: Send + Sync,
 {
         let execution = phase
-            .execution_request_for(&self.runtime.product_runtime)
+            .execution_request_for(self.product_runtime())
             .map_err(|cause| {
                 WorthQueryOutputDemandDenial::new(
                     WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
@@ -83,7 +80,7 @@ where
         // join must observe the same predecessor ownership on every exit.
         let outcome = transfer
             .and_then(|readiness| {
-                self.output_production
+                self.output_production()
                     .demands()
                     .finish_replaced_interest(
                         slot.claim().interest(),
@@ -147,11 +144,14 @@ where
             Ok(slot.finish(successor, outcome))
         }))
     }
+}
 
-    /// This returns a real admitted demand and its interest. The caller keeps
-    /// the same Fresh proof and prepared claim slot until it has transferred
-    /// the predecessor and advanced or refused that demand.
-    pub(super) fn admit_required_fresh_successor<Family>(
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> + ?Sized> RequiredFreshScopedOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema + 'static, {}
+
+pub(super) trait RequiredFreshParentOps<Schema>: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> where
+    Schema: ApplicationSchema + 'static, {
+fn admit_required_fresh_successor<Family>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         fresh: &FreshOutputDisclosure<
@@ -196,5 +196,8 @@ where
         )
     }
 }
+
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> + ?Sized> RequiredFreshParentOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema + 'static, {}
 
 mod admission_court;

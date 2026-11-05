@@ -1,3 +1,5 @@
+use crate::domain_computation::primary_graph::application_contribution::producer::demand::checkpoint_delivery::unpublished::UnpublishedParentOps;
+use crate::domain_computation::primary_graph::application_contribution::producer::demand::readiness::ReadinessParentOps;
 use super::own_effect_observation::{self, Stage};
 use crate::domain_computation::request_execution::WorthQueryAdvancementPhase;
 use worth_query_installation::facade::ApplicationSchema;
@@ -24,11 +26,9 @@ pub struct PreparedSelectedDelivery<'a> {
     preserved: bool,
 }
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
-where
-    Schema: ApplicationSchema + 'static,
-{
-    pub(super) fn advance_output_checkpoint(
+pub(super) trait CheckpointDeliveryParentOps<Schema>: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> where
+    Schema: ApplicationSchema + 'static, {
+fn advance_output_checkpoint(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -135,8 +135,14 @@ where
             Checkpoint::Ready(_) => unreachable!("ready output opens reads without a claim"),
         }
     }
+}
 
-    fn deliver_output_checkpoint_with_finish(
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> + ?Sized> CheckpointDeliveryParentOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema + 'static, {}
+
+trait CheckpointDeliveryOwnOps<Schema>: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> where
+    Schema: ApplicationSchema + 'static, {
+fn deliver_output_checkpoint_with_finish(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
 
@@ -153,8 +159,7 @@ where
             -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial> {
         if self
-            .runtime
-            .primary_provider
+            .primary_provider()
             .take_delayed_output_readiness_delivery()
         {
             return finish(
@@ -180,14 +185,14 @@ where
             (prepared.lowering, prepared.ordinal)
         } else {
             let route = self
-                .output_production
+                .output_production()
                 .readiness_routes()
                 .get(producer_identity)
                 .expect("installation requires one readiness route for every output producer");
             (&route.lowering, route.delivery_dependency_ordinal)
         };
         let root = self
-            .granular_invalidation_installation()
+            .application_runtime().granular_invalidation_installation()
             .retain_product_shared_root();
         let outcome = root.deliver_performed_relational_change(phase, lowering, ordinal, change);
         let delivered = match outcome {
@@ -240,7 +245,7 @@ where
             let preserved = if let Some(prepared) = prepared.as_ref() {
                 prepared.preserved
             } else {
-                self.output_production
+                self.output_production()
                     .producers()
                     .entries
                     .get(producer_identity)
@@ -285,7 +290,7 @@ where
         )
     }
 
-    fn finish_output_checkpoint(
+fn finish_output_checkpoint(
         &self,
         interest: &WorthQueryOutputDemandInterest,
         claim: WorthQueryOutputClaimIdentity,
@@ -294,7 +299,7 @@ where
         returned: &mut Option<Checkpoint>,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial> {
         use crate::domain_computation::primary_graph::application_output_demand::CheckpointFinishStop;
-        match self.output_production.demands().finish_checkpoint_owned(
+        match self.output_production().demands().finish_checkpoint_owned(
             interest,
             claim,
             checkpoint,
@@ -315,4 +320,10 @@ where
     }
 }
 
+impl<Schema, HostRuntime: crate::domain_computation::primary_graph::application_contribution::host::ApplicationContributionHost<Schema> + ?Sized> CheckpointDeliveryOwnOps<Schema> for HostRuntime where
+    Schema: ApplicationSchema + 'static, {}
+
 mod court_doors_for_test;
+pub use court_doors_for_test::CheckpointDeliveryDoorsOps;
+pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) use selected::SelectedScopedOps;
+pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) use unpublished::UnpublishedScopedOps;
