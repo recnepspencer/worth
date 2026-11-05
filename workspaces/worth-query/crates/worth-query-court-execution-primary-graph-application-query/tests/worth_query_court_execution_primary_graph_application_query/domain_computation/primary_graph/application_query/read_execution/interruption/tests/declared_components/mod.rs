@@ -1,9 +1,7 @@
 //! Original Query stop survives the real Native component callback and outer handoff.
 use crate::domain_computation::primary_graph::application_query::read_execution::interruption::tests::*;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::read_execution::entry_observation::component_native_acquisitions_on_this_thread_for_test as native_entries;
-use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::declared_queries;
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::declared_queries::components::Of;
-use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::declared_queries::read;
 #[test]
 fn original_query_cancellation_and_deadline_survive_native_component_entry() {
     let _isolation =

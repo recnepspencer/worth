@@ -84,7 +84,7 @@ fn equivalent_retry_recovers_original_receipt_while_intent_drift_is_denied() {
     else {
         panic!("an equivalent retry must recover the original commit");
     };
-    crate::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
+    worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
         &recovered, &original,
     );
     assert_eq!(

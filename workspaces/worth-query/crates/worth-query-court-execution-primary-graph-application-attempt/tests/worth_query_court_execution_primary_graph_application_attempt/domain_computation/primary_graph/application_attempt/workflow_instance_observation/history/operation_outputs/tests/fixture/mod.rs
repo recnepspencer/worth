@@ -76,7 +76,7 @@ impl Context {
         let transition = inventory(
             &world,
             &execution,
-            (*(*layout.transition_for_test()).entity_kind_for_test()),
+            *(*layout.transition_for_test()).entity_kind_for_test(),
         )
         .pop()
         .unwrap();
@@ -96,9 +96,9 @@ impl Context {
     pub fn targets(&self) -> Vec<(String, EntityId)> {
         self.read(|execution, runtime, snapshot, layout| {
             let output = &layout.operation_output;
-            let mut result = observe_adjacency(runtime, execution, snapshot, (*output.membership_for_test()), self.transition, Direction::Outgoing, 8).unwrap().unwrap().into_iter().map(|entry| {
-                let role = text(execution, runtime, snapshot, (*entry.to_for_test()), (*output.entity_kind_for_test()), &(*output.role_for_test())).unwrap();
-                let target = (*worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::adjacency::observe_audit_outgoing_adjacency(runtime, execution, snapshot, (*output.target_for_test()), (*entry.to_for_test()), 4).unwrap().unwrap()[0].to_for_test());
+            let mut result = observe_adjacency(runtime, execution, snapshot, *output.membership_for_test(), self.transition, Direction::Outgoing, 8).unwrap().unwrap().into_iter().map(|entry| {
+                let role = text(execution, runtime, snapshot, *entry.to_for_test(), *output.entity_kind_for_test(), &(*output.role_for_test())).unwrap();
+                let target = *worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::adjacency::observe_audit_outgoing_adjacency(runtime, execution, snapshot, *output.target_for_test(), *entry.to_for_test(), 4).unwrap().unwrap()[0].to_for_test();
                 (role, target)
             }).collect::<Vec<_>>();
             result.sort(); result

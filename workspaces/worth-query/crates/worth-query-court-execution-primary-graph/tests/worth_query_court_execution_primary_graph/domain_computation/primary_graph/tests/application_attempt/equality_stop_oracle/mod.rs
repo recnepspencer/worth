@@ -1,14 +1,12 @@
 //! Each cancellation is raised inside equality; work belongs to the caller.
 use crate::process::domain_computation::primary_graph::tests::application_attempt::*;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::consult_observation::Door;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::consult_observation::ReadConsultObservationForTest;
-use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
-use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionDenialKind as Session;
+use worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource;
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_execution::facade::domain_computation::bound_advancement_requests_on_this_thread_for_test as bound;
 use worth_query_execution::facade::domain_computation::place_managed_computations_on_this_thread_for_test as place;
 use worth_query_execution::facade::domain_computation::WorthQueryExecutionPlacementForTest as Placement;
-use worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource;
-use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
+use worth_query_execution::facade::domain_computation::WorthQueryProviderSessionDenialKind as Session;
 pub struct Policy(Placement, Option<worth_foundational::ExecutionBudget>);
 /// How a stopped comparison left the public commit door.
 #[derive(Debug, PartialEq)]

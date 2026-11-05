@@ -1,5 +1,4 @@
 use std::sync::Arc;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandRecord;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandState;
 use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenial;
 use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenialKind;
@@ -12,7 +11,6 @@ use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_co
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::closed_retirement::ready;
 
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::*;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint;
 #[test]
 fn a_closing_dependent_keeps_its_claim_while_the_newest_row_still_refreshes() {
     let (registry, interest, old, newest) = claim_on_superseded(DemandState::Running);

@@ -1,5 +1,4 @@
 //! Sealed correction metadata survives real optional history retirement.
-use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::correction_source;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationIdempotencyResolution;
 use worth_query_execution::facade::domain_computation::WorthQueryCorrectionSelectionDenial;
 use worth_runtime_world::facade::CompositeAncestorSelectionDenial;
@@ -90,7 +89,7 @@ fn a_causal_replay_after_its_history_retires_answers_with_its_sealed_causality()
     else {
         panic!("fresh admitted idempotency resolution recovers the original causal receipt");
     };
-    crate::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_causality(
+    worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_causality(
         recovered.aftermath_causality().unwrap(),
         &causality,
     );

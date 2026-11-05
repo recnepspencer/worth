@@ -78,7 +78,7 @@ pub fn last_claim_closes(held_successor: bool) {
                 "the superseded row is retired too"
             );
             assert!((*state.records_for_test()).iter_for_test().all(|(key, record)| key == &unrelated ||
-                !matches!(&(*record.state_for_test()), DemandState::Output(output) if matches!((*output.checkpoint_for_test()),
+                !matches!(&(*record.state_for_test()), DemandState::Output(output) if matches!( *output.checkpoint_for_test(),
                     Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryOutputCheckpoint::Published { .. })))));
         }
 

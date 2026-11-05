@@ -2,7 +2,7 @@
 use crate::domain_computation::primary_graph::provider::application_touch_admission::tests::fixture::*;
 pub struct Edge;
 impl Edge {
-    pub const fn reference() -> ApplicationRelationRef<TouchSchema, Self, Node, Node> {
+    const fn reference() -> ApplicationRelationRef<TouchSchema, Self, Node, Node> {
         ApplicationRelationRef::from_schema_identifiers(
             "Edge",
             "Node",

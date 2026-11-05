@@ -105,7 +105,7 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
                         .unwrap()
                         .unwrap();
                 assert_ne!((*metadata.created_at_for_test()), (*metadata.deleted_at_for_test()));
-                (*(*(*changed.roles_mut_for_test())[1].retirement_mut_for_test()).as_mut().unwrap().created_at_mut_for_test()) = (*metadata.deleted_at_for_test());
+                (*(*(*changed.roles_mut_for_test())[1].retirement_mut_for_test()).as_mut().unwrap().created_at_mut_for_test()) = *metadata.deleted_at_for_test();
                 assert!(
                     !witness.same_output_as_for_test(changed).unwrap(),
                     "the original creation version belongs to exact retirement equality"
@@ -121,7 +121,7 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
                         .read_truth()
                         .read_exact_snapshot_live_entity_kind(request_execution, &committed, live)
                         .unwrap(),
-                    Some((*metadata.kind_for_test()))
+                    Some(*metadata.kind_for_test())
                 );
                 assert!(witness
                     .unchanged_in_for_test(runtime, &committed, request_execution)

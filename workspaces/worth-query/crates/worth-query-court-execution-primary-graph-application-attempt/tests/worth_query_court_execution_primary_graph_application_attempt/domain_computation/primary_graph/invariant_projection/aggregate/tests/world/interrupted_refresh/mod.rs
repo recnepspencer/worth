@@ -65,8 +65,8 @@ fn exhausted_affected_source_read_cannot_stamp_an_old_sum_current() {
                     .unwrap();
                 let committed = transaction.commit(&healthy, runtime).unwrap();
                 let retained = (*(*world.authority.graph_for_test()).aggregate_projections_for_test()).lock().unwrap().clone();
-                let runtime_cell = std::cell::RefCell::new(runtime);
-                worth_query_execution::test_read_stops::every_consult_under(&healthy, |request| retained.clone().refresh_after_commit_for_test(request, &runtime_cell.borrow_mut(), &before, &committed.snapshot, committed.patch()), worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled, worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkExhausted);
+
+                worth_query_execution::test_read_stops::every_consult_under(&healthy, |request| retained.clone().refresh_after_commit_for_test(request, runtime, &before, &committed.snapshot, committed.patch()), worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled, worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkExhausted);
                 let map = ExecutionMap::<_, u64>::from_keyless_partitions(BTreeMap::from([(
                     PartitionIdentity::new(0),
                     KeylessPartition {
@@ -76,7 +76,7 @@ fn exhausted_affected_source_read_cannot_stamp_an_old_sum_current() {
                     },
                 )]))
                 .unwrap();
-                let refresh_runtime = std::sync::Mutex::new(runtime);
+
                 let refreshed = std::sync::atomic::AtomicBool::new(false);
                 let (outcome, report) = healthy
                     .run(ExecutionWorkCeiling::new(Some(0)), |lease| {
@@ -96,7 +96,7 @@ fn exhausted_affected_source_read_cannot_stamp_an_old_sum_current() {
                                     .unwrap()
                                     .refresh_after_commit_for_test(
                                         &healthy,
-                                        &refresh_runtime.lock().unwrap(),
+                                        runtime,
                                         &before,
                                         &committed.snapshot,
                                         committed.patch(),

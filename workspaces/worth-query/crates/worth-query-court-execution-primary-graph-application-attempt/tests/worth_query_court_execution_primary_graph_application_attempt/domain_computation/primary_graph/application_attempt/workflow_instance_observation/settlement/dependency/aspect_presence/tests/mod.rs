@@ -1,11 +1,9 @@
 //! A reconstructed presence obligation moves even when its field stays absent.
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::workflow_instance_observation::settlement::dependency::aspect_presence::decode;
-use crate::domain_computation::primary_graph::application_attempt::workflow_instance_observation::settlement::dependency::aspect_presence::tests;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::workflow::evidence_dependency::WorkflowEvidenceDependencyKind;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::observation::aspect_presence::observe_aspect_presence;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::resolved_account;
-use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture;
 use worth_foundational::facade::ContractValidationInput;
 use worth_foundational::facade::PortableAspectContractBasis;
 use worth_foundational::facade::PortableAspectPatchOperation;

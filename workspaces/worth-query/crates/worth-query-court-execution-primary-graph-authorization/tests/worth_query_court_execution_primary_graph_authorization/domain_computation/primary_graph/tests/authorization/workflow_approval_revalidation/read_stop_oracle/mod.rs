@@ -1,7 +1,5 @@
 //! The readmission door preserves stops raised inside its freshness reads.
 use crate::domain_computation::primary_graph::tests::authorization::workflow_approval_revalidation::*;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::consult_observation::Door;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::consult_observation::ReadConsultObservationForTest;
 use worth_query_execution::facade::domain_computation::bound_advancement_requests_on_this_thread_for_test as bound;
 use worth_query_execution::facade::domain_computation::place_managed_computations_on_this_thread_for_test as place;
 use worth_query_execution::facade::domain_computation::WorthQueryExecutionPlacementForTest as Placement;

@@ -76,7 +76,7 @@ fn nested_forks_select_the_captured_generation_and_stop_at_local_absence() {
     let restored =
         |lineage: &mut WorthQueryApplicationOutputLineage,
          observation: &worth_runtime_world::facade::ProductBranchObservation| {
-            lineage.record_restoration_for_test(lineage.binding_type_for_test(&(*source.output_binding_for_test())), (*source.runtime_authority_for_test()), (*source.schema_for_test()).clone(), source.scope, observation,
+            lineage.record_restoration_for_test(lineage.binding_type_for_test(&(*source.output_binding_for_test())), *source.runtime_authority_for_test(), (*source.schema_for_test()).clone(), source.scope, observation,
             Arc::new(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondence::default()),
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::recorded_source_identity::RecordedSourceIdentity::Checkpoint(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::identity_kind::WorthQueryCheckpointSourceIdentity::new_for_test([0x72; 32])),
             partition, None, [0x73; 32], worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::computation_source::ComputationSourceEvidence::for_test(false).retain_facts_for_test(Arc::<[worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact]>::from([])), None, None,
@@ -115,7 +115,7 @@ fn nested_forks_select_the_captured_generation_and_stop_at_local_absence() {
     assert!(Arc::ptr_eq(&select(&lineage, &nested), &captured));
     assert!(lineage.fork_pins_computation(captured.get().unwrap()));
 
-    lineage.release_occurrence_for_test((*parent.occurrence_for_test()));
+    lineage.release_occurrence_for_test(*parent.occurrence_for_test());
     assert!(!(*lineage.by_source_for_test())[&source].contains_key(&child.lifecycle_incarnation()));
     assert!(!(*lineage.by_source_for_test())[&source].contains_key(&nested.lifecycle_incarnation()));
     assert!(
@@ -132,10 +132,10 @@ fn nested_forks_select_the_captured_generation_and_stop_at_local_absence() {
     assert!(!Arc::ptr_eq(&local, &captured));
     assert!(
         matches!(
-            (*(*local.get().unwrap().mutable_for_test())
+            *(*local.get().unwrap().mutable_for_test())
                 .lock()
                 .unwrap()
-                .computation_for_test()),
+                .computation_for_test(),
             RecordedComputation::Absent(PriorAbsence::Restored)
         ),
         "local typed absence stops ancestor reuse"

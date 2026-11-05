@@ -60,7 +60,7 @@ fn governance_matches_only_the_managed_session_that_minted_it() {
             assert!(
                 !(*first.governance_for_test()).computation_matches_for_test(
                     &foreign_plan.graph_work,
-                    (*foreign_plan.runtime_authority_for_test()),
+                    *foreign_plan.runtime_authority_for_test(),
                     (*first.query_for_test()).identity(),
                     (*first.parameters_for_test()).identity(),
                     first.principal.principal_entity_id_for_test(),

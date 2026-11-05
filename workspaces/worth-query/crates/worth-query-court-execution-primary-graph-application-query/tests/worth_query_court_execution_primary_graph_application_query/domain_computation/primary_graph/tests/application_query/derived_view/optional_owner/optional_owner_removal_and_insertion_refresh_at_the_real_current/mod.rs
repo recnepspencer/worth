@@ -136,11 +136,11 @@ fn optional_owner_removal_and_insertion_refresh_at_the_real_current_product() {
                 Some(owner)
             );
             let graph = (*world.application.runtime_for_test()).primary_graph_for_test().unwrap();
-            let kind = (*(*graph
+            let kind = *(*graph
                 .layout_for_test())
                 .relation(AccountOwner::reference().name())
                 .unwrap()
-                .kind_for_test());
+                .kind_for_test();
             let edge = graph
                 .integration_handle_for_test()
                 .with_runtime_for_test(request_execution, |runtime| {

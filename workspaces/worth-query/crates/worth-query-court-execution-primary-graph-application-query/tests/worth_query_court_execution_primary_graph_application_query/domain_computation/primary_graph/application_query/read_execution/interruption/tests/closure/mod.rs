@@ -1,8 +1,6 @@
 //! Cancel the actual Native traversal through its borrowed Query control.
 use crate::domain_computation::primary_graph::application_query::read_execution::interruption::tests::*;
 use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::tests::application_attempt::invariant_walks::declared_queries::declarations::Forward;
-use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_walks::declared_queries::read;
-use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_walks::world;
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_walks::world::Graph;
 #[test]
 fn query_caller_cancel_interrupts_complete_native_closure_and_preserves_original_request() {

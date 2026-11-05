@@ -243,16 +243,16 @@ pub fn attach_structural_parent(
         });
     }
     let lineage = reference(
-        (*(*layout.lineage_for_test()).entity_kind_for_test()),
+        *(*layout.lineage_for_test()).entity_kind_for_test(),
         "lineage",
     );
     let definition = reference(
-        (*(*layout.definition_for_test()).entity_kind_for_test()),
+        *(*layout.definition_for_test()).entity_kind_for_test(),
         "definition",
     );
-    let node = reference((*(*layout.node_for_test()).entity_kind_for_test()), "node");
+    let node = reference(*(*layout.node_for_test()).entity_kind_for_test(), "node");
     let instance = reference(
-        (*(*layout.instance_for_test()).entity_kind_for_test()),
+        *(*layout.instance_for_test()).entity_kind_for_test(),
         "instance",
     );
     for (kind, from, to) in [
@@ -285,14 +285,14 @@ pub fn attach_structural_parent(
             (*layout.instance_transition_relation_for_test()),
             instance,
             reference(
-                (*(*layout.transition_for_test()).entity_kind_for_test()),
+                *(*layout.transition_for_test()).entity_kind_for_test(),
                 "transition",
             ),
         ),
         (
             (*layout.transition_node_relation_for_test()),
             reference(
-                (*(*layout.transition_for_test()).entity_kind_for_test()),
+                *(*layout.transition_for_test()).entity_kind_for_test(),
                 "transition",
             ),
             node,

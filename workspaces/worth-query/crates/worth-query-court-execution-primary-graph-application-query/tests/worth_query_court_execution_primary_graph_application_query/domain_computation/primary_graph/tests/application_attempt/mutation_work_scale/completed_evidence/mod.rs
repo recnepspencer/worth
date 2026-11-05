@@ -145,7 +145,7 @@ fn held_completed_evidence_preserves_exact_old_replay_without_eviction() {
             panic!("the original prepared retry must recover its retained receipt: {outcome:?}")
         };
         assert_eq!(held.len(), 64);
-        crate::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
+        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
             &replayed, first,
         );
         assert_eq!(replayed.commit_reference(), first.commit_reference());

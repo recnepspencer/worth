@@ -142,7 +142,7 @@ fn history_basis_requires_same_owner_branch_version_and_live_candidate() {
         1
     ));
     worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(
-        &mut runtime,
+        &runtime,
         &second_lease,
     );
     assert!(!remains_equal(
@@ -175,19 +175,19 @@ fn history_basis_requires_same_owner_branch_version_and_live_candidate() {
         Err(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::adjacency::AdjacencyObservationDenial::SnapshotUnavailable)
     );
     worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(
-        &mut runtime,
+        &runtime,
         &first,
     );
     worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(
-        &mut runtime,
+        &runtime,
         &changed,
     );
     worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(
-        &mut runtime,
+        &runtime,
         &fork_snapshot,
     );
     worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(
-        &mut foreign,
+        &foreign,
         &foreign_snapshot,
     );
 }

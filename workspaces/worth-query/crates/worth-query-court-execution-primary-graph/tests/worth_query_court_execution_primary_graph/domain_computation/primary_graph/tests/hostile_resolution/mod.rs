@@ -290,7 +290,7 @@ pub fn append_duplicate_mapping(
         };
         // Read before the status locator moves the layout out.
         let principal_identity_locator = (*layout.principal_identity_locator_for_test()).clone();
-        let relation_kind = (*layout.relation_kind_for_test());
+        let relation_kind = *layout.relation_kind_for_test();
         let fields = AspectFieldPatch::from(BTreeMap::from([
             (
                 (*layout.identity_locator_for_test()).clone(),

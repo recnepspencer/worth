@@ -45,7 +45,7 @@ fn a_canceled_prepared_publication_cannot_take_its_priors_custody() {
         .entry(occurrence)
         .or_default()
         .insert(
-            (*coordinate.generation_for_test()),
+            *coordinate.generation_for_test(),
             vec![Arc::clone(&record_cell)],
         );
     let partition_cell = (*lineage.partition_index_mut_for_test()).insert_vacancy_for_test(
@@ -89,10 +89,10 @@ fn a_canceled_prepared_publication_cannot_take_its_priors_custody() {
     let mut lineage = owner.lock().unwrap();
 
     assert!(matches!(
-        (*(*captured.get().unwrap().mutable_for_test())
+        *(*captured.get().unwrap().mutable_for_test())
             .lock()
             .unwrap()
-            .computation_for_test()),
+            .computation_for_test(),
         RecordedComputation::Retained(_)
     ));
     (*lineage.cancelled_slots_mut_for_test()).take();

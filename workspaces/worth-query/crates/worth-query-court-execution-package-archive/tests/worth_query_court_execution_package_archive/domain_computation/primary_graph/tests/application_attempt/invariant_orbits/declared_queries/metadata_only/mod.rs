@@ -2,13 +2,10 @@
 
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::declared_queries::metadata_only::Names;
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::schema::OrbitSchema;
-use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::declared_queries::declarations::orbit;
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::declared_queries::declarations::whole;
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::declared_queries::world;
 
-use crate::domain_computation::primary_graph::tests::application_attempt::invariant_orbits::declared_queries::*;
 use worth_query_declaration::facade::application_query::*;
-use worth_query_declaration::*;
 #[test]
 fn complete_orbit_metadata_does_not_require_an_arbitrary_member_field() {
     let _isolation =

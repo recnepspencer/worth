@@ -5,7 +5,6 @@ use worth_query_installation::facade::WorthQueryInstalledAftermathContract;
 use worth_query_execution::facade::domain_computation::compensate_recovery_handle;
 use worth_query_execution::facade::domain_computation::reconcile_recovery_handle;
 use worth_query_execution::facade::domain_computation::WorthQueryRecoveryEffectAuthority;
-use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::application_aftermath::aftermath_schema_fixture as fixture;
 use worth_query_execution::facade::domain_computation::WorthQueryRecoveryHandle;
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::application_aftermath::recovery_handle::binding::WorthQueryRecoveryHandleBindingAxisProbe;
 use worth_query_execution::facade::domain_computation::WorthQueryRecoveryHandleDenialKind;

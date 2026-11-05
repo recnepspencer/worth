@@ -31,7 +31,7 @@ fn unrelated_graph_drift_preserves_current_idempotent_recovery() {
     let WorthQueryApplicationCommitOutcome::RecoveredCommitted(recovered) = outcome else {
         panic!("unrelated drift must preserve lawful idempotent recovery: {outcome:?}");
     };
-    crate::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
+    worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
         &recovered, &committed,
     );
     assert!(recovered.new_product_head().memory().is_some());

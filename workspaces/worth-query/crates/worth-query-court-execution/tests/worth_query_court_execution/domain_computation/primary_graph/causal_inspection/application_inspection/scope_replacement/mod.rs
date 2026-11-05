@@ -1,6 +1,5 @@
 //! A real replacement with the same selector cannot inherit the original subject.
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::causal_inspection::application_inspection::tests::observe;
-use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::causal_inspection::application_inspection::tests;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_reclaiming_authorization_world;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::product_publication::publish_relational_mutation;
@@ -219,7 +218,7 @@ fn same_scope_reused_slot_cannot_inherit_original_observation_generation() {
         .unwrap();
     assert!(
         matches!(
-            (*denial.cause_for_test()),
+            *denial.cause_for_test(),
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::causal_inspection::application_inspection::stop::InspectionCause::Admission(
                 worth_query_execution::court_doors_for_test::domain_computation::primary_graph::causal_inspection::application_inspection::admission::InspectionAdmissionDenial::ForeignIssuedAccess
             )

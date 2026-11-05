@@ -99,7 +99,7 @@ fn a_membership_that_gained_an_instance_or_is_full_is_not_current() {
     );
     for snapshot in [&read.snapshot, &raced.snapshot] {
         worth_query_execution::court_doors_for_test::relational_snapshot_release::release_query_snapshot(
-            &mut runtime,
+            &runtime,
             snapshot,
         );
     }

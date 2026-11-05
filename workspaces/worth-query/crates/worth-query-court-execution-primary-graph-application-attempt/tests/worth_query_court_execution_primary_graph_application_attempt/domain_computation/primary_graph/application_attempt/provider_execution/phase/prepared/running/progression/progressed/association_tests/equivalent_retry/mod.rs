@@ -25,7 +25,7 @@ fn interleaved_retry_reads_original_after_discarding_derived_evidence() {
                 let binding = idempotency(139, 140);
                 let left = start(phase, &world.application, left, binding);
                 let right = start(phase, &world.application, right, binding);
-                let both_attempts = world.invariant.active_snapshot_count(&active_phase.borrowed_request_for_test());
+                let both_attempts = world.invariant.active_snapshot_count_for_test(&active_phase.borrowed_request_for_test());
                 let left = progress_application_commit(
                     &phase.borrowed_request_for_test(),
                     phase,
@@ -97,7 +97,7 @@ fn interleaved_retry_reads_original_after_discarding_derived_evidence() {
                         &worth_relational::facade::transactions::RecordRef::Entity(entity)));
                 }
                 assert!(recovered.semantic_result().semantic().changed_records().contains(
-                    &worth_relational::facade::transactions::RecordRef::Entity(executed_output.entity_id_for_test())));
+                    &worth_relational::facade::transactions::RecordRef::Entity(executed_output.entity_id())));
                 assert_eq!(recovered.exact_output_settlement(), worth_foundational::facade::DurableQueryOutputSettlement::OriginalOccurrenceSlot { slot: 0 });
                 assert_eq!(executed.terminal().attempt_resources_released(), Some(true));
                 assert_eq!(executed.terminal().kind(), WorthQueryApplicationCommitTerminalKind::Executed);
@@ -130,7 +130,7 @@ fn genuinely_interleaved_equivalent_sessions_validate_retry_cleanup_separately()
                 let binding = idempotency(139, 140);
                 let left = start(phase, &world.application, left, binding);
                 let right = start(phase, &world.application, right, binding);
-                let both_attempts = world.invariant.active_snapshot_count(&active_phase.borrowed_request_for_test());
+                let both_attempts = world.invariant.active_snapshot_count_for_test(&active_phase.borrowed_request_for_test());
                 let left = progress_application_commit(
                     &phase.borrowed_request_for_test(),
                     phase,
@@ -207,7 +207,7 @@ fn genuinely_interleaved_equivalent_sessions_validate_retry_cleanup_separately()
                         &worth_relational::facade::transactions::RecordRef::Entity(entity)));
                 }
                 assert!(recovered.semantic_result().semantic().changed_records().contains(
-                    &worth_relational::facade::transactions::RecordRef::Entity(executed_output.entity_id_for_test())));
+                    &worth_relational::facade::transactions::RecordRef::Entity(executed_output.entity_id())));
                 assert_eq!(recovered.exact_output_settlement(), worth_foundational::facade::DurableQueryOutputSettlement::OriginalOccurrenceSlot { slot: 0 });
                 assert_eq!(executed.terminal().attempt_resources_released(), Some(true));
                 assert_eq!(executed.terminal().kind(), WorthQueryApplicationCommitTerminalKind::Executed);

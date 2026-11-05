@@ -1,6 +1,5 @@
 //! A wave's funded interest protects a real row; reclamation grants no proof.
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::*;
-use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::output_lineage::registry_fixture;
 
 #[test]
 fn a_consumer_handoff_ends_at_real_row_reclamation() {

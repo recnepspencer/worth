@@ -150,7 +150,7 @@ fn response_loss_recovers_emit_receipt_without_duplicate_publication() {
     else {
         panic!("retry must recover the exact emit commit");
     };
-    crate::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
+    worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
         &recovered, &original,
     );
     assert_eq!(

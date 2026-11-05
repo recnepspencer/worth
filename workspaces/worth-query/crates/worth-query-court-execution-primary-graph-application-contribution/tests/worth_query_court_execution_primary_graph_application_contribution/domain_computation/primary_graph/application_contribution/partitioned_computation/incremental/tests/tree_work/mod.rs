@@ -191,8 +191,8 @@ fn every_edit_obeys_its_pre_edit_shape_bound_and_reconciles() {
     for key in &keys {
         reset_counts();
         let next = run(&retained, &keys, BTreeMap::from([(*key, 2)]), u64::MAX);
-        reconcile((*next.report_for_test()));
-        let TreeRun::Edited(metrics) = (*next.report_for_test()) else {
+        reconcile(*next.report_for_test());
+        let TreeRun::Edited(metrics) = *next.report_for_test() else {
             panic!("an ordinary update edits")
         };
         let metrics = metrics
@@ -204,7 +204,7 @@ fn every_edit_obeys_its_pre_edit_shape_bound_and_reconciles() {
         assert_eq!(*next.outcome_into_for_test().unwrap().result(), 129);
         reset_counts();
         let same = run(&retained, &keys, BTreeMap::from([(*key, 1)]), u64::MAX);
-        reconcile((*same.report_for_test()));
+        reconcile(*same.report_for_test());
         assert_eq!(
             (*same.report_for_test())
                 .metrics_for_test()
@@ -225,8 +225,8 @@ fn every_edit_obeys_its_pre_edit_shape_bound_and_reconciles() {
         let deleted: Vec<_> = keys.iter().copied().filter(|id| id != key).collect();
         reset_counts();
         let next = run(&retained, &deleted, BTreeMap::new(), u64::MAX);
-        reconcile((*next.report_for_test()));
-        assert!(matches!((*next.report_for_test()), TreeRun::Edited(_)));
+        reconcile(*next.report_for_test());
+        assert!(matches!(*next.report_for_test(), TreeRun::Edited(_)));
         assert_eq!(
             (*next.report_for_test())
                 .metrics_for_test()
@@ -256,8 +256,8 @@ fn every_edit_obeys_its_pre_edit_shape_bound_and_reconciles() {
         let bound = crate::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::tree_work::shape::Shape::depth(&shape, key) + crate::domain_computation::primary_graph::application_contribution::partitioned_computation::incremental::tests::tree_work::shape::Shape::rotations(&shape, key) + 1;
         reset_counts();
         let next = run(&retained, &inserted, BTreeMap::from([(key, 2)]), u64::MAX);
-        reconcile((*next.report_for_test()));
-        assert!(matches!((*next.report_for_test()), TreeRun::Edited(_)));
+        reconcile(*next.report_for_test());
+        assert!(matches!(*next.report_for_test(), TreeRun::Edited(_)));
         assert_eq!(
             (*next.report_for_test())
                 .metrics_for_test()

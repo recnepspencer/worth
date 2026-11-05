@@ -201,6 +201,7 @@ fn foreign_installed_phase_refuses_provider_readmission_before_read_or_charge() 
             a_mutation_run,
             _a_basis,
             _a_causality,
+            _a_completion_storage,
         ) = arun.into_parts_for_test();
         finish_uncommitted(a_mutation_run, a_running, a_lease);
         let (
@@ -215,6 +216,7 @@ fn foreign_installed_phase_refuses_provider_readmission_before_read_or_charge() 
             b_mutation_run,
             _b_basis,
             _b_causality,
+            _b_completion_storage,
         ) = brun.into_parts_for_test();
         finish_uncommitted(b_mutation_run, b_running, b_lease);
         place(previous);

@@ -41,7 +41,7 @@ fn world_recovery_metadata_carries_the_original_computation_and_absence() {
     let owner = Arc::new(Mutex::new(WorthQueryApplicationOutputLineage::default()));
     // These are private vacant addresses, never publication authority.
     // Reserve their ledger custody before constructing their test slots.
-    let generation = std::cell::Cell::new((*coordinate.generation_for_test()));
+    let generation = std::cell::Cell::new(*coordinate.generation_for_test());
 
     let slot = || {
         let coordinate = {
@@ -57,10 +57,10 @@ fn world_recovery_metadata_carries_the_original_computation_and_absence() {
         (*lineage.by_source_mut_for_test())
             .entry(source.clone())
             .or_default()
-            .entry((*coordinate.occurrence_for_test()))
+            .entry(*coordinate.occurrence_for_test())
             .or_default()
             .insert(
-                (*coordinate.generation_for_test()),
+                *coordinate.generation_for_test(),
                 vec![Arc::clone(&record_cell)],
             );
         let partition_cell = (*lineage.partition_index_mut_for_test()).insert_vacancy_for_test(
@@ -89,7 +89,7 @@ fn world_recovery_metadata_carries_the_original_computation_and_absence() {
         );
         if !produced {
             assert!(matches!(
-                (*replacement.computation_for_test()),
+                *replacement.computation_for_test(),
                 PreparedComputationCustody::Assigned(SealedComputationRetention::Absent(
                     PriorAbsence::Stopped
                 ))

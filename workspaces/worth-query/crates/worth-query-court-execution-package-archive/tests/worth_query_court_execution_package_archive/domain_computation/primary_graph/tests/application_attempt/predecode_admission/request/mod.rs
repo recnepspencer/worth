@@ -1,5 +1,4 @@
 //! The scoped checkpointer observes genuine cancellation/deadline while borrowed.
-use crate::domain_computation::primary_graph::tests::application_attempt::predecode_admission::projection;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_authorization_world;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountStatus;
 use worth_query_execution::facade::domain_computation::HandlerInterruption;

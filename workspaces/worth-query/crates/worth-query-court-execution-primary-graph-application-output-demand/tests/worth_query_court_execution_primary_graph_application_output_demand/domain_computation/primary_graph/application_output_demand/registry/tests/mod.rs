@@ -20,9 +20,6 @@ pub use worth_query_execution::court_doors_for_test::domain_computation::primary
 pub use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputSchedulingResult;
 pub use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenial;
 pub use worth_query_execution::facade::domain_computation::WorthQueryOutputDemandDenialKind;
-pub(super) use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::support::key;
-pub(super) use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::support::occurrence;
-pub(super) use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::support::record;
 pub use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::support::*;
 #[test]
 fn stale_successor_is_denied_without_mutating_newer_or_unrelated_records() {
@@ -43,11 +40,11 @@ fn stale_successor_is_denied_without_mutating_newer_or_unrelated_records() {
     assert_eq!(denial.kind(), WorthQueryOutputDemandDenialKind::Superseded);
     assert_eq!((*state.records_for_test()).len_for_test(), 2);
     assert!(matches!(
-        (*(*state.records_for_test())[&newer].state_for_test()),
+        *(*state.records_for_test())[&newer].state_for_test(),
         DemandState::Admitted
     ));
     assert!(matches!(
-        (*(*state.records_for_test())[&unrelated].state_for_test()),
+        *(*state.records_for_test())[&unrelated].state_for_test(),
         DemandState::Admitted
     ));
     assert_eq!(
@@ -79,7 +76,7 @@ fn newer_successor_supersedes_only_its_older_occurrence() {
             if denial.kind() == WorthQueryOutputDemandDenialKind::Superseded
     ));
     assert!(matches!(
-        (*(*state.records_for_test())[&unrelated].state_for_test()),
+        *(*state.records_for_test())[&unrelated].state_for_test(),
         DemandState::Admitted
     ));
     assert_eq!(
@@ -217,7 +214,7 @@ fn deferred_scheduling_returns_to_admitted_while_no_effect_is_terminal() {
 
     let state = (*registry.state_for_test()).lock().unwrap();
     assert!(matches!(
-        (*(*state.records_for_test())[&deferred_key].state_for_test()),
+        *(*state.records_for_test())[&deferred_key].state_for_test(),
         DemandState::Admitted
     ));
     assert!(matches!(

@@ -171,7 +171,7 @@ fn local_full_verification_requirement_overrides_a_clean_actor_row() {
                         .for_comparison()
                         .unwrap(),
                     &(*candidate.consumed_outputs_for_test()),
-                    (*candidate.verification_requirement_for_test()),
+                    *candidate.verification_requirement_for_test(),
                     &before,
                     owner,
                     runtime,

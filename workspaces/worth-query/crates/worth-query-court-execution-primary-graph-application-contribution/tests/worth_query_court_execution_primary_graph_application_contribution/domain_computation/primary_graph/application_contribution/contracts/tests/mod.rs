@@ -35,7 +35,7 @@ fn distinct_family_types_cannot_share_one_declared_identity_at_installation() {
     (*first.supported_mut_for_test()) = vec![INITIAL, PRESERVE];
     (*second.supported_mut_for_test()) = (*first.supported_for_test()).clone();
     (*first.output_family_type_mut_for_test()) = TypeId::of_for_test::<FirstFamily>();
-    (*second.output_family_type_mut_for_test()) = (*first.output_family_type_for_test());
+    (*second.output_family_type_mut_for_test()) = *first.output_family_type_for_test();
     (*catalog.producers_mut_for_test()).insert("initial".into(), first);
     (*catalog.producers_mut_for_test()).insert("preserve".into(), second);
     catalog

@@ -160,7 +160,7 @@ fn a_capability_workflow_encodes_its_input_and_key_once_each_first_and_replayed(
     else {
         panic!("the unchanged retry replays the commit");
     };
-    crate::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
+    worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
         &recovered, &committed,
     );
     assert_eq!(

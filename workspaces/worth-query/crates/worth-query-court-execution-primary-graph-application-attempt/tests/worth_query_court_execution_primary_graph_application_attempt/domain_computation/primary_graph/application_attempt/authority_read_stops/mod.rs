@@ -1,7 +1,7 @@
-use worth_query_execution::facade::primary_graph::tests::application_attempt::preimage_evidence::{
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::preimage_evidence::{
         retained_status_program, RetentionMutationBreadth,
     };
-    use worth_query_execution::facade::primary_graph::tests::application_attempt::{
+    use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::{
         authenticated_principal, idempotency, resolved_account,
     };
     use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::{
@@ -10,13 +10,14 @@ use worth_query_execution::facade::primary_graph::tests::application_attempt::pr
     use worth_query_execution::facade::primary_graph::{
         WorthQueryApplicationCommitDenialStage as Stage,
         WorthQueryApplicationCommitOutcome as Outcome,
-        WorthQueryManagedComputationResourceDenial as Resource,
+
     };
-    use crate::domain_computation::{
-        authorization::WorthQueryOperationAuthorizationDenialKind as Authority,
-        WorthQueryProviderSessionControlStopKind as Control,
-        WorthQueryProviderSessionDenialKind as Kind,
-    };
+    use worth_query_execution::facade::primary_graph::{
+    WorthQueryOperationAuthorizationDenialKind as Authority,
+    WorthQueryProviderSessionControlStopKind as Control,
+    WorthQueryProviderSessionDenialKind as Kind,
+};
+use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationResourceDenial as Resource;
 type Evidence = (Stage, Option<Result<Kind, Control>>, Option<Authority>);
 fn commit_at(ceiling: u64) -> (bool, Option<Evidence>, Vec<u64>) {
     let world = installed_authorization_world(

@@ -19,7 +19,7 @@ pub fn assert_subject_affinity<Schema, Scope>(
             &(*read.session_for_test()),
             target,
             &target.parameters_for_test(),
-            (*read.principal_for_test()),
+            *read.principal_for_test(),
             subject,
         )
     };
@@ -28,7 +28,7 @@ pub fn assert_subject_affinity<Schema, Scope>(
             &(*read.session_for_test()),
             target,
             target.parameters_for_test(),
-            (*read.principal_for_test()),
+            *read.principal_for_test(),
             subject,
         )
     };

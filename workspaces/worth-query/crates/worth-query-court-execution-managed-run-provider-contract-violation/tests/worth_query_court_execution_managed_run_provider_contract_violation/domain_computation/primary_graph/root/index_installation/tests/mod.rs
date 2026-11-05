@@ -40,7 +40,7 @@ fn recovered_index_binding_stays_exact_as_unrelated_definition_inventory_grows()
         .unwrap();
         let (binding, installed) = source_layout.principal_bindings_for_test().next().unwrap();
         let name = format!("application-principal.{binding}");
-        let recovered_id = (*installed.index_id_for_test());
+        let recovered_id = *installed.index_id_for_test();
         assert!(recovered_id.0 > unrelated as u64);
         let snapshot_started = Instant::now();
         let lookup = runtime.index_access().definition_lookup_snapshot();

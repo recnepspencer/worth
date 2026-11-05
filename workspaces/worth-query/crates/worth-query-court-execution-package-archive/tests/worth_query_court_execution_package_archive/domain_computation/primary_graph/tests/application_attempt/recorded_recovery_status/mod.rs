@@ -1,10 +1,8 @@
 //! Actual World originals identify owner claims without granting a new handle.
-use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::{AuthorizationWorld, installed_authorization_world, live_scope};
+use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::live_scope;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::{authenticated_principal, resolved_account, idempotency};
-use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::program_fixture::admitted_program;
-use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::preimage_evidence::{retained_status_program, RetentionMutationBreadth};
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support::recoverable_application_world;
-use worth_query_execution::facade::application_aftermath::WorthQueryRecoveryClaimStatus as Status;
+use worth_query_execution::facade::primary_graph::WorthQueryRecoveryClaimStatus as Status;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::ExactStatusRetentionOperation;
 use worth_query_declaration::facade::application_schema::TypedMutationPreconditions;
 
@@ -55,10 +53,7 @@ fn admitted_original_status_tracks_only_its_actual_provider_and_world_claim() {
     assert_eq!(observe(), Some(Status::Unclaimed));
     let handle = world.application.mint_recovery_handle(&live).unwrap();
     assert_eq!(observe(), Some(Status::Live));
-    let registry = &world
-        .application
-        .runtime_for_test()
-        .recovery_handles_for_test();
+    let registry = handle.registry_arc_for_test();
     assert_eq!(
         registry.recorded_claim_state_for_test(
             live.provider_runtime_instance_id() + 1,

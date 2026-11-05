@@ -256,7 +256,7 @@ pub fn publish_instance_value(
             .read_truth()
             .visible_entities_of_kind(
                 execution,
-                (*(*layout.instance_for_test()).entity_kind_for_test()),
+                *(*layout.instance_for_test()).entity_kind_for_test(),
                 basis.1.snapshot_handle().version_id(),
             )
             .unwrap()
@@ -295,7 +295,7 @@ pub fn publish_instance_value(
     only_new_entity(
         world,
         execution,
-        (*(*layout.instance_for_test()).entity_kind_for_test()),
+        *(*layout.instance_for_test()).entity_kind_for_test(),
         &before,
     )
 }

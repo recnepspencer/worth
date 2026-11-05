@@ -14,10 +14,10 @@ pub use worth_execution::ExecutionAllocationPolicy;
 
 #[test]
 fn first_post_commit_admission_failure_retains_exact_idempotent_recovery_evidence() {
-    let host_request = crate::bridge_host_request::serial_request();
+    let host_request = worth_query_testkit_execution_primary_graph_application_attempt::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
-    let host_request = crate::test_request_policy::serial_request();
+    let host_request = worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let world = installed_authorization_world(
@@ -34,7 +34,7 @@ fn first_post_commit_admission_failure_retains_exact_idempotent_recovery_evidenc
         .application
         .runtime_for_test()
         .primary_provider_for_test()
-        .observe_application_commit_causality(selected.product());
+        .observe_application_commit_causality_for_test(selected.product());
     let request = live_scope();
     let principal = world
         .application
@@ -57,7 +57,7 @@ fn first_post_commit_admission_failure_retains_exact_idempotent_recovery_evidenc
         .application
         .runtime_for_test()
         .primary_provider_for_test()
-        .graph
+        .graph_for_test()
         .with_runtime(request_execution, |runtime| {
             runtime
                 .storage_access()
@@ -140,26 +140,30 @@ fn first_post_commit_admission_failure_retains_exact_idempotent_recovery_evidenc
         .application
         .runtime_for_test()
         .primary_provider_for_test()
-        .committed_application_emissions_for_test(owner_evidence.committed_product_publication());
+        .committed_application_emissions_for_test(
+            owner_evidence.committed_product_publication_for_test(),
+        );
     assert_eq!(emissions.len(), 1);
     assert_eq!(
-        emissions[0].payload::<String>().map(String::as_str),
+        emissions[0]
+            .payload_for_test::<String>()
+            .map(String::as_str),
         Some("post-commit-effect")
     );
     assert!(world
         .application
         .runtime_for_test()
         .primary_provider_for_test()
-        .retained_application_commit_basis(first_receipt.commit_reference())
+        .retained_application_commit_basis_for_test(first_receipt.commit_reference())
         .is_some());
     let bridge_head = world
         .application
         .runtime_for_test()
         .primary_provider_for_test()
-        .graph
+        .graph_for_test()
         .relational_bridge_source()
         .load_branch_head_patch(
-            &crate::domain_computation::primary_graph::primary_truth_branch_identity(),
+            &worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_branch::primary_truth_branch_identity(),
             resource_request,
         )
         .expect("post-commit recovery binds the exact Bridge head");
@@ -174,7 +178,7 @@ fn first_post_commit_admission_failure_retains_exact_idempotent_recovery_evidenc
             .application
             .runtime_for_test()
             .primary_provider_for_test()
-            .graph
+            .graph_for_test()
             .with_runtime(request_execution, |runtime| {
                 runtime
                     .storage_access()

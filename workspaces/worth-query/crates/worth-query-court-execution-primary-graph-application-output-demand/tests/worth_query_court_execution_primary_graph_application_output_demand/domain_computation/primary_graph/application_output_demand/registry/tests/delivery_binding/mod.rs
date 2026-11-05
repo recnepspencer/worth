@@ -2,7 +2,6 @@
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::*;
 use worth_query_execution::facade::application_contribution::WorthQueryProducerApplicability;
 use worth_query_execution::facade::application_contribution::WorthQueryProducerLifecyclePosture;
-use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support;
 
 #[test]
 fn selected_delivery_keeps_both_producer_and_applicability_identity() {

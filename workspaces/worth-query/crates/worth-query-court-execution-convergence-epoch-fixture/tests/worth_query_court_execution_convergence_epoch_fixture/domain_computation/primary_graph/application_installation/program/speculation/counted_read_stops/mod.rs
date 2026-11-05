@@ -115,8 +115,8 @@ fn begin_preview_preserves_admission_stops_at_every_consult() {
     );
 }
 
-pub fn installed_preview_runtime(
-) -> WorthQueryProgramApplicationRuntime<PreviewSchema, PreviewProgram> {
+fn installed_preview_runtime() -> WorthQueryProgramApplicationRuntime<PreviewSchema, PreviewProgram>
+{
     let program = ApplicationProgramAuthoring::<PreviewSchema, PreviewProgram>::begin()
         .validated_program()
         .unwrap();

@@ -85,7 +85,7 @@ pub fn try_with_reader<Output>(
     let affinity = admission.operation_scope_binding().clone();
     let context = std::cell::Cell::new(DecisionContextUse::default());
     let interruption = std::cell::Cell::new(None);
-    world.application.product_runtime().with_execution_placement(|placement| {
+    world.application.product_runtime().with_execution_placement_for_test(|placement| {
     let execution = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_contribution::request_execution::QueryRequestExecution::open_for_test(placement, admission.publication_request_for_test());
     world
         .invariant

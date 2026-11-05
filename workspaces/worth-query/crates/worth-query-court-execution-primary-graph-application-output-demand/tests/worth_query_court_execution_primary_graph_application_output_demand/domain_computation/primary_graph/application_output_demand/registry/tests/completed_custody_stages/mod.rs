@@ -98,7 +98,7 @@ pub fn completed_stage(claimed_with_ready: bool) {
             };
             output.reopen_for_test();
             assert!(matches!(
-                (*output.checkpoint_for_test()),
+                *output.checkpoint_for_test(),
                 Some(WorthQueryOutputCheckpoint::Ready(_))
             ));
         }

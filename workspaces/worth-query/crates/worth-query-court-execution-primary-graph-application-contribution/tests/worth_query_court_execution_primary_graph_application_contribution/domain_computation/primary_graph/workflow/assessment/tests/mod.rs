@@ -63,21 +63,21 @@ fn evidence_and_each_dependency_charge_their_field_widths_and_nothing_else_does(
     let charge = |effect| workflow_evidence_retained_bytes(layout, &effect);
     assert_eq!(
         charge(created(
-            (*layout.assessment_evidence.entity_kind_for_test()),
+            *layout.assessment_evidence.entity_kind_for_test(),
             evidence.clone()
         )),
         5 + 9
     );
     assert_eq!(
         charge(created(
-            (*layout.evidence_dependency.entity_kind_for_test()),
+            *layout.evidence_dependency.entity_kind_for_test(),
             dependency
         )),
         6 + 9 + 2
     );
     assert_eq!(
         charge(created(
-            (*(*layout.transition_for_test()).entity_kind_for_test()),
+            *(*layout.transition_for_test()).entity_kind_for_test(),
             evidence
         )),
         0

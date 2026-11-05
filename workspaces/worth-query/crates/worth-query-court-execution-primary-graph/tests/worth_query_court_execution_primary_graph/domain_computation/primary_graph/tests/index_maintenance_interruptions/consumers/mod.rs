@@ -17,7 +17,7 @@ pub fn currency_consumer(consumer: u8) {
     let setup = ExecutionRequest::serial(&setup_host);
     (*handle.source_owner_for_test()).with_runtime(&setup,|runtime|{
   commit_empty(&setup,runtime,"main");let (_,basis)=runtime.observe_branch(&runtime.main_branch_identity()).unwrap();
-  let discard=|runtime:&mut worth_relational::facade::runtime::RelationalRuntime|for index in (*handle.primary_index_ids_for_test()).iter(){runtime.index_authority().discard_generations(worth_relational::facade::indexes::DerivedIndexDiscardRequest::all_bases(*index)).unwrap();};
+  let discard=|runtime:&worth_relational::facade::runtime::RelationalRuntime|for index in (*handle.primary_index_ids_for_test()).iter(){runtime.index_authority().discard_generations(worth_relational::facade::indexes::DerivedIndexDiscardRequest::all_bases(*index)).unwrap();};
   discard(runtime);
   let (healthy,count)=with_request_consult_observer_for_test(|_|{},||handle.ensure_primary_indexes_for_basis_for_test(&setup,runtime,&basis));healthy.unwrap();assert!(count>2);eprintln!("currency consults={count}");
   for k in 1..=count+1 {

@@ -126,7 +126,7 @@ fn rebuilt_index_generation_preserves_stable_entity_meaning() {
             let index_id = graph
                 .layout_for_test()
                 .equality_field_for_test("Account", "AccountPolicy", "AccountStatus")
-                .and_then(|field| (*field.equality_index_id_for_test()))
+                .and_then(|field| *field.equality_index_id_for_test())
                 .unwrap();
 
             graph.integration_handle_for_test().with_runtime_for_test(

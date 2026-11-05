@@ -52,11 +52,11 @@ fn retryable_publication_stale_does_not_keep_a_closed_required_interest() {
         WorthQueryOutputDemandRecoveryPosture::Retryable
     );
     assert!(matches!(
-        (*(*(*registry.state_for_test())
+        *(*(*registry.state_for_test())
             .lock()
             .unwrap()
             .records_for_test())[&demand_key]
-            .state_for_test()),
+            .state_for_test(),
         DemandState::Scheduled
     ));
     drop(demand_interest);

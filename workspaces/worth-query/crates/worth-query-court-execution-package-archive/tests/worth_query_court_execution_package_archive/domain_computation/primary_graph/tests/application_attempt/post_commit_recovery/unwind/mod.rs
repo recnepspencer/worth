@@ -107,7 +107,7 @@ fn unwind_after_performed_publication_preserves_one_exact_retriable_record() {
     else {
         panic!("the equivalent retry must recover the exact performed publication");
     };
-    crate::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
+    worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
         &recovered,
         &first_receipt,
     );
@@ -128,7 +128,9 @@ fn unwind_after_performed_publication_preserves_one_exact_retriable_record() {
         .application
         .runtime_for_test()
         .primary_provider_for_test()
-        .committed_application_emissions_for_test(owner_evidence.committed_product_publication());
+        .committed_application_emissions_for_test(
+            owner_evidence.committed_product_publication_for_test(),
+        );
     assert_eq!(emissions.len(), 1);
     assert_eq!(
         emissions[0]

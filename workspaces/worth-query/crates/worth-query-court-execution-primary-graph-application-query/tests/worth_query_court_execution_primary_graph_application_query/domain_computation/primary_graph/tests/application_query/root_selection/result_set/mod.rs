@@ -49,11 +49,11 @@ fn empty_path_union_stales_when_a_matching_edge_is_inserted() {
     let graph = (*world.application.runtime_for_test())
         .primary_graph_for_test()
         .unwrap();
-    let primary_kind = (*(*graph
+    let primary_kind = *(*graph
         .layout_for_test())
         .relation(worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::AccountPrimaryActivity::reference().name())
         .unwrap()
-        .kind_for_test());
+        .kind_for_test();
     let selected = world
         .application
         .with_host_advancement(|phase| {
@@ -86,7 +86,7 @@ fn empty_path_union_stales_when_a_matching_edge_is_inserted() {
                     ]
                     .into_iter()
                     .flat_map(|name| {
-                        let kind = (*(*graph.layout_for_test()).relation(name).unwrap().kind_for_test());
+                        let kind = *(*graph.layout_for_test()).relation(name).unwrap().kind_for_test();
                         runtime
                             .read_truth()
                             .visible_relations_of_kind(

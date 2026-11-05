@@ -87,11 +87,11 @@ pub fn has_exact_reviewer(
     let graph = (*world.application.runtime_for_test())
         .primary_graph_for_test()
         .unwrap();
-    let relation_kind = (*graph
+    let relation_kind = *graph
         .layout_for_test()
         .relation(CapabilityReviewer::reference().name())
         .unwrap()
-        .kind_for_test());
+        .kind_for_test();
     let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
     graph
         .integration_handle_for_test()
@@ -144,11 +144,11 @@ pub fn has_exact_approver(
     let graph = (*world.application.runtime_for_test())
         .primary_graph_for_test()
         .unwrap();
-    let relation_kind = (*graph
+    let relation_kind = *graph
         .layout_for_test()
         .relation(CapabilityElevationApprover::reference().name())
         .unwrap()
-        .kind_for_test());
+        .kind_for_test();
     let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
     graph
         .integration_handle_for_test()

@@ -87,7 +87,7 @@ fn equivalent_retry_prepared_at_the_original_product_recovers_exact_owner_eviden
     let WorthQueryApplicationCommitOutcome::RecoveredCommitted(recovered) = outcome else {
         panic!("an equivalent retry must recover the exact completed owner evidence: {outcome:?}");
     };
-    crate::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
+    worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
         &recovered, &committed,
     );
     assert!(recovered.new_product_head().memory().is_some());

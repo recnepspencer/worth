@@ -110,7 +110,7 @@ fn guarded_operation_custody_recovers_only_the_exact_committed_mutation() {
             .expect("the fixture read owns its installed host call");
         match (completed, recovered) {
             (None, WorthQueryGuardedWorkflowOperationCustody::RecoveredCommitted(original)) => {
-                crate::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(&original, &committed);
+                worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(&original, &committed);
             }
             (Some(_), WorthQueryGuardedWorkflowOperationCustody::Committed(owned)) => {
                 assert!(owned.is_same_authoritative_commit(&committed));

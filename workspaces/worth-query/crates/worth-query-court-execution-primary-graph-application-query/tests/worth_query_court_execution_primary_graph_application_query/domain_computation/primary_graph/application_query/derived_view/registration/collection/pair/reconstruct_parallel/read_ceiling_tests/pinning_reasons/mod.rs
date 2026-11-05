@@ -213,10 +213,10 @@ pub fn missing_door_index(live: bool, predicate_missing: bool) {
             // Keep all installed bindings except the precise missing index.
             let mut layout = installed_layout();
             for (key, field) in layout.equality_fields_mut_for_test() {
-                (*field.equality_index_id_mut_for_test()) = (*(*graph.layout_for_test())
+                (*field.equality_index_id_mut_for_test()) = *(*graph.layout_for_test())
                     .equality_field_for_test(&key.0, &key.1, &key.2)
                     .unwrap()
-                    .equality_index_id_for_test());
+                    .equality_index_id_for_test();
                 if (live && key.0 == "Activity" && key.2 == "ActivityIdentity")
                     || (predicate_missing && key.0 == "Account" && key.2 == "AccountIdentity")
                 {

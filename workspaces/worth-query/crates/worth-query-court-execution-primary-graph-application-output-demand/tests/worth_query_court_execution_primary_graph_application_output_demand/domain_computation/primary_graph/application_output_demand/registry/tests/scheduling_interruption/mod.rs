@@ -104,7 +104,7 @@ fn both_scheduling_finishes_preserve_claims_and_custody_on_interruption() {
                         assert_eq!(std::ptr::from_ref(&**ready).cast::<()>(), fixture.ready);
                         assert!((*row.successor_of_for_test()).is_none());
                     } else {
-                        assert!(matches!((*row.state_for_test()), DemandState::Admitted));
+                        assert!(matches!( *row.state_for_test(), DemandState::Admitted));
                         assert_eq!(
                             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::succession::Succession::predecessor_of_for_test(&(*row.successor_of_for_test())),
                             Some(*fixture.receipt.idempotency_binding().key_identity())

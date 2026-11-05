@@ -6,7 +6,6 @@ use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_co
 use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::application_output_demand::registry::tests::support::record;
 
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::record_map::DemandRecords;
-use crate::domain_computation::primary_graph::application_output_demand::registry::tests::*;
 #[test]
 fn only_a_stop_intrinsic_to_the_head_row_fails_its_dependents() {
     let head = key("required-stop-head", 1, 1);

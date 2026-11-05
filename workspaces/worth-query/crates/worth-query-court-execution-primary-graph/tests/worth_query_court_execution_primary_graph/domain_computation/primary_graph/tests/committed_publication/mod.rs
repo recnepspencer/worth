@@ -153,7 +153,7 @@ fn idempotent_recovery_reuses_the_original_world_terminal() {
         panic!("retry must recover the committed terminal")
     };
 
-    crate::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
+    worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
         &recovered, &committed,
     );
 }

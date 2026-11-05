@@ -46,7 +46,7 @@ fn discarded_ordered_generation_rebuilds_without_reviving_old_query_cursors() {
         (*old_cursor.index_generation_for_test()),
         (*cold_cursor.index_generation_for_test())
     );
-    let index_id = (*old_cursor.index_id_for_test());
+    let index_id = *old_cursor.index_id_for_test();
     let basis = (*old_cursor.product_for_test())
         .relational_basis_for_test()
         .clone();
@@ -102,13 +102,13 @@ fn discarded_ordered_generation_rebuilds_without_reviving_old_query_cursors() {
                 let lookup = BoundedRelatedEntityOrderedLookupRequest::new(
                     snapshot.clone(),
                     index_id,
-                    (*old_cursor.scope_entity_id_for_test()),
+                    *old_cursor.scope_entity_id_for_test(),
                     child_kind,
                     None,
                     1,
                 )
                 .unwrap()
-                .expect_generation((*old_cursor.index_generation_for_test()));
+                .expect_generation(*old_cursor.index_generation_for_test());
                 let denied = runtime
                     .index_access()
                     .execute_bounded_related_entity_ordered_lookup(

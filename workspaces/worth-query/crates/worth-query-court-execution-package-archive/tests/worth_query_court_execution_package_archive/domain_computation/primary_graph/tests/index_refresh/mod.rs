@@ -4,13 +4,10 @@ use worth_foundational::facade::AspectKey;
 use worth_foundational::facade::FieldKey;
 use worth_query_declaration::facade::authentication::WorthQueryPrincipalMappingStatus;
 use worth_relational::facade::history::BranchId;
-use worth_relational::facade::history::RelationalCommitReceipt;
 use worth_relational::facade::indexes::DerivedIndexBuildRequest;
 use worth_relational::facade::indexes::DerivedIndexDefinition;
 use worth_relational::facade::indexes::DerivedIndexId;
 use worth_relational::facade::indexes::DerivedIndexKind;
-use worth_relational::facade::mvcc::RelationalTransactionIntent;
-use worth_relational::facade::runtime::RelationalRuntime;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::world_installation::installed_world;
 #[test]
 fn bootstrap_seeds_exact_workflow_transition_lookup_before_any_settlement() {
@@ -32,11 +29,11 @@ fn bootstrap_seeds_exact_workflow_transition_lookup_before_any_settlement() {
     handle.with_runtime_for_test(&execution, |runtime| {
         let basis = runtime.admit_branch_basis(&runtime.main_branch_identity()).unwrap();
         assert!(runtime.index_access().read_published_generation_for_observation(&execution,
-            (*transition.identity_index_id_for_test()), &basis.observation(),
+            *transition.identity_index_id_for_test(), &basis.observation(),
         ).unwrap().is_some(), "bootstrap must seed the exact installed transition index");
         let snapshot = worth_query_execution::court_doors_for_test::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(runtime, &basis).unwrap();
         let request = BoundedEntityFieldLookupRequest::new(
-            snapshot.clone(), (*transition.identity_index_id_for_test()), (*transition.entity_kind_for_test()),
+            snapshot.clone(), *transition.identity_index_id_for_test(), *transition.entity_kind_for_test(),
             (*transition.identity_for_test()).clone(), AspectValue::String(InternedString::Raw("unsettled-operation".to_owned())), 2,
         ).unwrap();
         let outcome = runtime.index_access().execute_bounded_entity_field_lookup(

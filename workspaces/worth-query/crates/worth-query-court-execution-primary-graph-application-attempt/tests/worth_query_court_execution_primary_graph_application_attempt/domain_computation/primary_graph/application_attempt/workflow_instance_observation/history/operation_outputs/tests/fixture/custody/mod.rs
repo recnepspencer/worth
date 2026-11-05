@@ -10,23 +10,23 @@ impl Context {
             .unwrap();
         let layout = (*graph.layout_for_test()).workflow();
         let edge = self.read(|execution, runtime, snapshot, layout| {
-            let entry = (*observe_adjacency(
+            let entry = *observe_adjacency(
                 runtime,
                 execution,
                 snapshot,
-                (*layout.operation_output.membership_for_test()),
+                *layout.operation_output.membership_for_test(),
                 self.transition,
                 Direction::Outgoing,
                 8,
             )
             .unwrap()
             .unwrap()[0]
-                .to_for_test());
+                .to_for_test();
             observe_adjacency(
                 runtime,
                 execution,
                 snapshot,
-                (*layout.operation_output.target_for_test()),
+                *layout.operation_output.target_for_test(),
                 entry,
                 Direction::Outgoing,
                 4,
@@ -54,7 +54,7 @@ impl Context {
                 UpdateRelationEndpointsIntent {
                     relation_id: (*edge.relation_id_for_test()),
                     kind_id: (*layout.operation_output.target_for_test()),
-                    source: EntityReference::Existing((*edge.from_for_test())),
+                    source: EntityReference::Existing(*edge.from_for_test()),
                     target: EntityReference::Existing(alternate),
                 },
             )),

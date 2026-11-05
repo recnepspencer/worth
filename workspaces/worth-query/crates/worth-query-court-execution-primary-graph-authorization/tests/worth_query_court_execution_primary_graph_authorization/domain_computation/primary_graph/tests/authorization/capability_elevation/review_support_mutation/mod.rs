@@ -58,11 +58,11 @@ pub fn complete_review_out_of_band(
         .field_locator_for_test(field.entity(), field.aspect(), field.field())
         .unwrap()
         .clone();
-    let relation_kind = (*graph
+    let relation_kind = *graph
         .layout_for_test()
         .relation(CapabilityReviewer::reference().name())
         .unwrap()
-        .kind_for_test());
+        .kind_for_test();
     let fields = AspectFieldPatch::from(BTreeMap::from([(
         locator,
         worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::CapabilityReviewStatusBinding::encode(
@@ -120,16 +120,16 @@ pub fn replace_support_grantor_with_custodian(
     let graph = (*world.application.runtime_for_test())
         .primary_graph_for_test()
         .unwrap();
-    let grantor_kind = (*graph
+    let grantor_kind = *graph
         .layout_for_test()
         .relation(CapabilityGrantor::reference().name())
         .unwrap()
-        .kind_for_test());
-    let custodian_kind = (*graph
+        .kind_for_test();
+    let custodian_kind = *graph
         .layout_for_test()
         .relation(CapabilityCustodian::reference().name())
         .unwrap()
-        .kind_for_test());
+        .kind_for_test();
     let handle = graph.integration_handle_for_test();
     let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
     let grantor = handle.with_runtime_for_test(execution, |runtime| {

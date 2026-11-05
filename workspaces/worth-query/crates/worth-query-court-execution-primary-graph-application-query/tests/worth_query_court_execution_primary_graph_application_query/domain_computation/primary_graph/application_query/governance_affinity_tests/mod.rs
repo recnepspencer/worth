@@ -92,7 +92,7 @@ fn governance_rejects_real_query_parameter_principal_and_scope_substitution() {
 
             assert!(!(*plan.governance_for_test()).computation_matches_for_test(
                 &plan.graph_work,
-                (*plan.runtime_authority_for_test()),
+                *plan.runtime_authority_for_test(),
                 alternate_query.identity(),
                 (*plan.parameters_for_test()).identity(),
                 plan.principal.principal_entity_id_for_test(),
@@ -100,7 +100,7 @@ fn governance_rejects_real_query_parameter_principal_and_scope_substitution() {
             ));
             assert!(!(*plan.governance_for_test()).computation_matches_for_test(
                 &plan.graph_work,
-                (*plan.runtime_authority_for_test()),
+                *plan.runtime_authority_for_test(),
                 (*plan.query_for_test()).identity(),
                 alternate_parameters.identity(),
                 plan.principal.principal_entity_id_for_test(),
@@ -108,7 +108,7 @@ fn governance_rejects_real_query_parameter_principal_and_scope_substitution() {
             ));
             assert!(!(*plan.governance_for_test()).computation_matches_for_test(
                 &plan.graph_work,
-                (*plan.runtime_authority_for_test()),
+                *plan.runtime_authority_for_test(),
                 (*plan.query_for_test()).identity(),
                 (*plan.parameters_for_test()).identity(),
                 bob.principal_entity_id_for_test(),
@@ -116,7 +116,7 @@ fn governance_rejects_real_query_parameter_principal_and_scope_substitution() {
             ));
             assert!(!(*plan.governance_for_test()).computation_matches_for_test(
                 &plan.graph_work,
-                (*plan.runtime_authority_for_test()),
+                *plan.runtime_authority_for_test(),
                 (*plan.query_for_test()).identity(),
                 (*plan.parameters_for_test()).identity(),
                 plan.principal.principal_entity_id_for_test(),
@@ -125,28 +125,28 @@ fn governance_rejects_real_query_parameter_principal_and_scope_substitution() {
 
             for matches in [
                 (*plan.governance_for_test()).readmission_matches_for_test(
-                    (*plan.runtime_authority_for_test()),
+                    *plan.runtime_authority_for_test(),
                     alternate_query.identity(),
                     (*plan.parameters_for_test()).identity(),
                     plan.principal.principal_entity_id_for_test(),
                     (*plan.scope_for_test()).entity_id_for_test(),
                 ),
                 (*plan.governance_for_test()).readmission_matches_for_test(
-                    (*plan.runtime_authority_for_test()),
+                    *plan.runtime_authority_for_test(),
                     (*plan.query_for_test()).identity(),
                     alternate_parameters.identity(),
                     plan.principal.principal_entity_id_for_test(),
                     (*plan.scope_for_test()).entity_id_for_test(),
                 ),
                 (*plan.governance_for_test()).readmission_matches_for_test(
-                    (*plan.runtime_authority_for_test()),
+                    *plan.runtime_authority_for_test(),
                     (*plan.query_for_test()).identity(),
                     (*plan.parameters_for_test()).identity(),
                     bob.principal_entity_id_for_test(),
                     (*plan.scope_for_test()).entity_id_for_test(),
                 ),
                 (*plan.governance_for_test()).readmission_matches_for_test(
-                    (*plan.runtime_authority_for_test()),
+                    *plan.runtime_authority_for_test(),
                     (*plan.query_for_test()).identity(),
                     (*plan.parameters_for_test()).identity(),
                     plan.principal.principal_entity_id_for_test(),
@@ -316,7 +316,7 @@ pub fn governance_matches_plan(
 ) -> bool {
     (*owner.governance_for_test()).computation_matches_for_test(
         &candidate.graph_work,
-        (*candidate.runtime_authority_for_test()),
+        *candidate.runtime_authority_for_test(),
         (*owner.query_for_test()).identity(),
         (*owner.parameters_for_test()).identity(),
         owner.principal.principal_entity_id_for_test(),

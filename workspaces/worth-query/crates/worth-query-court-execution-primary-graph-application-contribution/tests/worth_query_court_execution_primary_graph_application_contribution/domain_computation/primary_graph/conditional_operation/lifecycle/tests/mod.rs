@@ -38,8 +38,9 @@ impl WorthQueryInstalledConditionalOperation<TestSchema> for InstalledClock {
 
     fn take_released_managed_cleanup(
         &mut self,
-    ) -> Option<crate::domain_computation::primary_graph::WorthQueryApplicationManagedCleanupReceipt>
-    {
+    ) -> Option<
+        worth_query_execution::facade::primary_graph::WorthQueryApplicationManagedCleanupReceipt,
+    > {
         None
     }
 

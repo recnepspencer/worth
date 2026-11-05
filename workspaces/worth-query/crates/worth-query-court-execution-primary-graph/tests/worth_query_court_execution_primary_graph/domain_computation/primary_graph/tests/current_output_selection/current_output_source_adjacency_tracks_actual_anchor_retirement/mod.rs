@@ -23,10 +23,10 @@ fn current_output_source_adjacency_tracks_actual_anchor_retirement() {
     let graph = (*world.application.runtime_for_test())
         .primary_graph_for_test()
         .unwrap();
-    let kind = (*(*graph.layout_for_test())
+    let kind = *(*graph.layout_for_test())
         .relation(AccountOwner::reference().name())
         .unwrap()
-        .kind_for_test());
+        .kind_for_test();
     let original = world
         .application
         .with_host_advancement(|phase| {

@@ -3,12 +3,7 @@ use worth_query_testkit_execution_primary_graph_application_attempt::domain_comp
 use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::application_query::observed_source::source_identity::membership::tests::entity;
 use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::application_query::observed_source::source_identity::membership::tests::footprint;
 
-use std::sync::Arc;
 use worth_foundational::facade::CanonicalDigestId;
-use worth_relational::facade::identity::EntityId;
-use worth_relational::facade::identity::KindId;
-use worth_relational::facade::identity::PartitionId;
-use worth_relational::facade::identity::VersionId;
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::observed_source::source_identity::membership::WorthQueryObservedSourceSelection;

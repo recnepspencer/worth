@@ -111,7 +111,7 @@ pub fn assert_publication_credit(replay: bool, publish: bool) {
                 let permission = record.attach_successor_for_test(permission, &a).unwrap();
                 if publish {
                     if replay {
-                        let recovered = crate::domain_computation::primary_graph::tests::fixture::recorded_receipt::read_original_in_phase(world, &receipt, &phase);
+                        let recovered = worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::recorded_receipt::read_original_in_phase(world, &receipt, &phase);
                         let denial = commit_receipt("actual publication", WorthQueryApplicationCommitOutcome::RecoveredCommitted(recovered))
                             .expect_err("original receipt data cannot pay fresh publication credit");
                         assert!(denial.recovered_publication().is_some());

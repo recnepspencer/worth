@@ -10,7 +10,6 @@ use worth_query_execution::court_doors_for_test::domain_computation::primary_gra
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::checkpoint::WorthQueryPendingOutputDelivery;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::WorthQueryPerformedOutputDemandSource;
 use crate::domain_computation::primary_graph::application_output_demand::registry::tests::*;
-use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::recoverable_commit_support;
 use worth_query_execution::court_doors_for_test::equality_type_id::EqualityTypeId;
 
 pub fn retained_source(
@@ -163,7 +162,7 @@ fn delivered_and_ready_roots_keep_their_consumption_on_removal() {
                 },
             ))
         };
-        let mut row = record((*initial.occurrence_for_test()), stage, 0);
+        let mut row = record(*initial.occurrence_for_test(), stage, 0);
         (*row.source_scope_mut_for_test()) = Some(scope);
         (*row.source_commits_mut_for_test()).push(commit.clone());
         (*state.records_mut_for_test()).insert_for_test(row_key.clone(), row);
@@ -192,7 +191,7 @@ fn an_abandoned_join_returns_the_requested_source_it_consumed() {
         state
             .source_custody
             .insert(commit.clone(), repeat_source(&initial));
-        let mut row = record((*initial.occurrence_for_test()), DemandState::Admitted, 0);
+        let mut row = record(*initial.occurrence_for_test(), DemandState::Admitted, 0);
         (*row.source_scope_mut_for_test()) = Some(scope);
         (*state.records_mut_for_test()).insert_for_test(older.clone(), row);
     }
@@ -201,7 +200,7 @@ fn an_abandoned_join_returns_the_requested_source_it_consumed() {
             requested.clone(),
             Some(worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::admission::selected_output::SelectedOutputAdmission::new(&commit, None)),
             scope,
-            (*initial.occurrence_for_test()),
+            *initial.occurrence_for_test(),
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_output_demand::registry::DemandAdmissionKind::Required,
             None,
             None,

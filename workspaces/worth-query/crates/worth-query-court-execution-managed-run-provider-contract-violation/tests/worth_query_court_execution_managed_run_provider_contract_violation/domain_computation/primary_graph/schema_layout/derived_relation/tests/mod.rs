@@ -67,9 +67,9 @@ fn typed_ordered_event_schema_installs_exact_native_roles_and_full_physical_rost
     let (layout, registry) = installed_schema_layout::<Events>();
     let event = layout.entity_kind_for_test("Event").unwrap();
     let row = layout.entity_kind_for_test("Row").unwrap();
-    let previous = (*layout.relation("Previous").unwrap().kind_for_test());
-    let introduces = (*layout.relation("Introduces").unwrap().kind_for_test());
-    let retires = (*layout.relation("Retires").unwrap().kind_for_test());
+    let previous = *layout.relation("Previous").unwrap().kind_for_test();
+    let introduces = *layout.relation("Introduces").unwrap().kind_for_test();
+    let retires = *layout.relation("Retires").unwrap().kind_for_test();
     let live = layout.derived_relation("Live").unwrap();
     assert_eq!(
         (*live.handle_for_test()).parts().nodes,

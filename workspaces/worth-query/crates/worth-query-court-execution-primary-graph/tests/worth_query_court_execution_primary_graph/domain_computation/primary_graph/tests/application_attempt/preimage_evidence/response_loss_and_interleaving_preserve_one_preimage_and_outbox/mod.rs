@@ -187,7 +187,7 @@ fn response_loss_and_interleaving_preserve_one_preimage_and_outbox_bundle() {
         .observe_completed_application_for_test(&commit)
         .expect("the actual performed source still owns its preimage");
     let retained = owner_evidence
-        .commit_evidence_for_test()
+        .commit_evidence()
         .retained_preimage()
         .unwrap();
     assert!(!format!("{retained:?}").contains("open"));
@@ -201,11 +201,11 @@ fn response_loss_and_interleaving_preserve_one_preimage_and_outbox_bundle() {
         )
     );
     let original_meaning = owner_evidence
-        .commit_evidence_for_test()
+        .commit_evidence()
         .original_authority()
         .clone();
     let original_preimage = owner_evidence
-        .commit_evidence_for_test()
+        .commit_evidence()
         .retained_preimage()
         .cloned();
     drop(owner_evidence);

@@ -64,7 +64,7 @@ pub fn eligible(state: &DemandRegistryState, commit: &CompositeCommitIdentity) -
                 || awaited
                 || !(*row.performed_obligations_for_test()).is_empty()
                 || !(row.has_cached_ready_for_test()
-                    || matches!((*row.state_for_test()), DemandState::Failed(_)))
+                    || matches!(*row.state_for_test(), DemandState::Failed(_)))
         })
 }
 

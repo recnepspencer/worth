@@ -68,7 +68,7 @@ fn started_revision_actual_producer_is_immutable_but_current_revision_can_change
                 &execution,
                 before.1.snapshot_handle(),
                 instance,
-                (*(*layout.instance_for_test()).entity_kind_for_test()),
+                *(*layout.instance_for_test()).entity_kind_for_test(),
                 &(*(*layout.instance_for_test()).started_program_revision_for_test()),
                 true
             ),
@@ -157,7 +157,7 @@ fn started_revision_actual_producer_is_immutable_but_current_revision_can_change
                 &execution,
                 current.1.snapshot_handle(),
                 instance,
-                (*(*layout.instance_for_test()).entity_kind_for_test()),
+                *(*layout.instance_for_test()).entity_kind_for_test(),
                 &(*(*layout.instance_for_test()).program_revision_for_test()),
                 false
             ),
@@ -168,7 +168,7 @@ fn started_revision_actual_producer_is_immutable_but_current_revision_can_change
             // only started_program_revision promises managed Symbol custody.
             worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::observation::predecode_admission::observe_field_value_borrowed(
                 runtime, &execution, before.1.snapshot_handle(), instance,
-                (*(*layout.instance_for_test()).entity_kind_for_test()), &(*(*layout.instance_for_test()).program_revision_for_test()),
+                *(*layout.instance_for_test()).entity_kind_for_test(), &(*(*layout.instance_for_test()).program_revision_for_test()),
                 |value| value == Some(&AspectValue::String(InternedString::Raw(original.to_string()))),
             ).unwrap(),
             Some(true)
@@ -264,7 +264,7 @@ fn started_revision_current_capture_restore_retains_exact_data_after_original_pa
             &receiving,
             &snapshot,
             instance,
-            (*(*layout.instance_for_test()).entity_kind_for_test()),
+            *(*layout.instance_for_test()).entity_kind_for_test(),
             &(*(*layout.instance_for_test()).started_program_revision_for_test()),
             true
         ),

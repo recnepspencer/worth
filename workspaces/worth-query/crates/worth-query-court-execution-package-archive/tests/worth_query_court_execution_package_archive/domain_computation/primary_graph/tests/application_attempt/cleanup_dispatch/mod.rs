@@ -1,7 +1,6 @@
 //! An original effect keeps its first-send and recovery custody after failed cleanup.
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::{AuthorizationWorld, installed_authorization_world, live_scope};
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::{authenticated_principal, resolved_account, idempotency};
-use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::program_fixture::admitted_program;
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::preimage_evidence::{retained_status_program, RetentionMutationBreadth};
 use worth_query_execution::facade::primary_graph::*;
 use worth_query_execution::facade::primary_graph::{
@@ -41,7 +40,9 @@ impl WorthQueryExternalEffectTransport for Transport {
         }
     }
 }
-fn committed_with_failed_cleanup(world: &AuthorizationWorld) -> Cleanup {
+fn committed_with_failed_cleanup(
+    world: &AuthorizationWorld,
+) -> (Cleanup, WorthQueryApplicationIdempotencyBinding) {
     let request = live_scope();
     let program = world
         .application
@@ -64,9 +65,10 @@ fn committed_with_failed_cleanup(world: &AuthorizationWorld) -> Cleanup {
         .application
         .schedule_next_managed_cleanup_on_worker_for_test()
         .unwrap();
+    let binding = idempotency(207, 208);
     let outcome = world.application.compare_and_commit_application(
         program,
-        idempotency(207, 208),
+        binding,
         worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
     );
     drop(worker);
@@ -86,29 +88,29 @@ fn committed_with_failed_cleanup(world: &AuthorizationWorld) -> Cleanup {
         .unwrap();
     assert!(receipt.inspection().resources_released());
     assert_eq!(receipt.dispatch_posture(), Posture::Pending);
-    receipt
+    (receipt, binding)
 }
 fn original(
     world: &AuthorizationWorld,
-    cleanup: &Cleanup,
+    binding: WorthQueryApplicationIdempotencyBinding,
 ) -> WorthQueryRecoveredApplicationCommitReceipt {
-    let binding = cleanup
-        .original
-        .as_ref()
-        .unwrap()
-        .original()
-        .original_authority()
-        .idempotency_binding();
     world.application.with_host_advancement(|phase| {
         let selected = world.selected_product(&phase.test_host_request_for_test());
         match world.application.runtime_for_test().primary_provider_for_test().resolve_idempotency_binding_at_product_for_test(
             &phase.borrowed_request_for_test(), binding, &selected.product().publication_binding_for_test()).unwrap() {
-            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolution::Readmitted(receipt) => receipt,
+            worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::idempotency::WorthQueryProviderIdempotencyResolution::Readmitted(receipt) => receipt,
             other => panic!("the actual durable owner reads the original commit: {other:?}"),
         }
     }).unwrap()
 }
-fn setup(response: Response) -> (AuthorizationWorld, Arc<Transport>, Cleanup) {
+fn setup(
+    response: Response,
+) -> (
+    AuthorizationWorld,
+    Arc<Transport>,
+    Cleanup,
+    WorthQueryApplicationIdempotencyBinding,
+) {
     let world = installed_authorization_world(
         true,
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
@@ -121,14 +123,14 @@ fn setup(response: Response) -> (AuthorizationWorld, Arc<Transport>, Cleanup) {
         .application
         .install_external_effect_transport(transport.clone())
         .unwrap();
-    let cleanup = committed_with_failed_cleanup(&world);
+    let (cleanup, binding) = committed_with_failed_cleanup(&world);
     assert_eq!(transport.contacts.load(Ordering::SeqCst), 0);
-    (world, transport, cleanup)
+    (world, transport, cleanup, binding)
 }
 #[test]
 fn failed_cleanup_keeps_the_original_first_send_after_derived_windows_are_discarded() {
-    let (world, transport, mut cleanup) = setup(Response::Completed);
-    let recorded = original(&world, &cleanup);
+    let (world, transport, mut cleanup, binding) = setup(Response::Completed);
+    let recorded = original(&world, binding);
     let mut copy = cleanup.clone();
     let request = live_scope();
     world
@@ -175,13 +177,13 @@ fn failed_cleanup_keeps_the_original_first_send_after_derived_windows_are_discar
         .unwrap();
     assert_eq!(transport.contacts.load(Ordering::SeqCst), 1);
     assert_eq!(cleanup.dispatch_posture(), Posture::Observed);
-    assert_eq!(original(&world, &cleanup), recorded);
+    assert_eq!(original(&world, binding), recorded);
     assert_eq!(transport.contacts.load(Ordering::SeqCst), 1);
 }
 #[test]
 fn lost_original_dispatch_retains_its_exact_recovery_binding_without_another_first_send() {
-    let (world, transport, mut cleanup) = setup(Response::Lost);
-    let recorded = original(&world, &cleanup);
+    let (world, transport, mut cleanup, binding) = setup(Response::Lost);
+    let recorded = original(&world, binding);
     let request = live_scope();
     world
         .application
@@ -211,7 +213,7 @@ fn lost_original_dispatch_retains_its_exact_recovery_binding_without_another_fir
 }
 #[test]
 fn transport_unwind_cannot_restore_original_first_send_eligibility() {
-    let (world, transport, mut cleanup) = setup(Response::Panic);
+    let (world, transport, mut cleanup, binding) = setup(Response::Panic);
     let request = live_scope();
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         world
@@ -244,7 +246,7 @@ fn transport_unwind_cannot_restore_original_first_send_eligibility() {
         .unwrap();
     assert_eq!(
         handle.binding().commit_reference(),
-        original(&world, &cleanup).commit_reference()
+        original(&world, binding).commit_reference()
     );
     assert_eq!(transport.contacts.load(Ordering::SeqCst), 1);
 }

@@ -19,10 +19,10 @@ fn refused_comparison_preserves_ordinal_and_live_coordinate_for_retry() {
     let first = registry
         .intern_for_test(&[7; 32], &[8; 32], footprint(root, true), &selection)
         .unwrap();
-    let ordinal = (*(*registry.state_for_test())
+    let ordinal = *(*registry.state_for_test())
         .lock()
         .unwrap()
-        .next_ordinal_for_test());
+        .next_ordinal_for_test();
     let refusal = worth_relational::facade::transactions::RelationalExecutionDenialCause::PolicyMemoryExhausted {
         requested: 97,
         admitted: 53,

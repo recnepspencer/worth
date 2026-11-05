@@ -132,10 +132,10 @@ pub fn observe_roles<Schema: BirthSchema>(
             .outgoing_relations_of_kind(
                 &execution,
                 node,
-                (*(*graph.layout_for_test())
+                *(*graph.layout_for_test())
                     .relation("Incidence")
                     .unwrap()
-                    .kind_for_test()),
+                    .kind_for_test(),
             )
             .unwrap();
         assert_eq!(

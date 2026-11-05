@@ -99,7 +99,7 @@ fn complete_declared_paths_preserve_cycles_reverse_and_actual_origins() {
         assert_eq!(
             (*selection.aspects_for_test())
                 .iter()
-                .map(|aspect| (*aspect.entity_for_test()))
+                .map(|aspect| *aspect.entity_for_test())
                 .collect::<std::collections::BTreeSet<_>>(),
             expected,
             "exactly the actual predecessor guard and this terminal guard are retained"

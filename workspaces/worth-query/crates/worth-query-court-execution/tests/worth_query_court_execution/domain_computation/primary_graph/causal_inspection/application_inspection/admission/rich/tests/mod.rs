@@ -6,7 +6,6 @@ use worth_query_execution::court_doors_for_test::domain_computation::primary_gra
 use worth_query_execution::facade::application_inspection::WorthQueryApplicationMaterializationRequest;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::causal_inspection::application_inspection::admission::preparation::prepare;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::causal_inspection::application_inspection::admission::require_request;
-use crate::domain_computation::primary_graph::causal_inspection::application_inspection::admission::rich::tests;
 use worth_query_execution::court_doors_for_test::domain_computation::authorization::application_disclosure::pending_access::funded::prepare_funded_pending_disclosure;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_query::admission::permission::fresh::FreshQueryPermissionStop;
 use worth_query_execution::facade::application_inspection::WorthQueryApplicationEvidenceFamily as Family;
@@ -141,7 +140,7 @@ fn separately_admitted_rich_body_cannot_replace_scope_or_requested_families() {
                 !(*report_a.body_for_test()).matches_for_test(&(*report_b.reference_for_test())),
                 "same original and mask do not grant another session membership"
             );
-            let saved = (*(*(*report_b.body_for_test()).artifact_for_test()).request_for_test());
+            let saved = *(*(*report_b.body_for_test()).artifact_for_test()).request_for_test();
             (*(*(*report_b.body_mut_for_test()).artifact_mut_for_test()).request_mut_for_test()) = saved.with_family(Family::BridgeRoute);
             assert!(
                 !(*report_b.body_for_test()).matches_for_test(&(*report_b.reference_for_test())),

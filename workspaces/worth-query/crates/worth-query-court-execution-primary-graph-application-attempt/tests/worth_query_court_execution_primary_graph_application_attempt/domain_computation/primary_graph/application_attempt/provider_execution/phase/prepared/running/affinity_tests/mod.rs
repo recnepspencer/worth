@@ -75,6 +75,12 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
                 &admission,
                 lease.snapshot_for_test(),
                 lease.product(),
+                phase
+                    .execution_request_for_for_test(
+                        &(*(*world.application.runtime_for_test()).product_runtime_for_test())
+                    )
+                    .expect("fixture issuer")
+                    .allocation_policy()
             )
             .is_err());
 
@@ -98,6 +104,12 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
                 &admission,
                 substitute_lease.snapshot_for_test(),
                 substitute_lease.product(),
+                phase
+                    .execution_request_for_for_test(
+                        &(*(*world.application.runtime_for_test()).product_runtime_for_test()),
+                    )
+                    .expect("fixture issuer")
+                    .allocation_policy(),
             )
             .expect("same-runtime same-branch snapshot remains a valid pre-session basis");
             assert!(staged
@@ -143,6 +155,12 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
                 &admission,
                 &foreign_branch_snapshot,
                 lease.product(),
+                phase
+                    .execution_request_for_for_test(
+                        &(*(*world.application.runtime_for_test()).product_runtime_for_test())
+                    )
+                    .expect("fixture issuer")
+                    .allocation_policy()
             )
             .is_err());
             assert!(lease.handle_for_test().with_runtime_for_test(
@@ -198,6 +216,7 @@ fn a_real_peer_plan_and_session_cannot_substitute_for_the_captured_attempt() {
                 first_mutation_run,
                 first_basis,
                 _first_aftermath,
+                _first_completion_storage,
             ) = first.into_parts_for_test();
             let (
                 _second_admission,
@@ -211,6 +230,7 @@ fn a_real_peer_plan_and_session_cannot_substitute_for_the_captured_attempt() {
                 second_mutation_run,
                 second_basis,
                 _second_aftermath,
+                _second_completion_storage,
             ) = second.into_parts_for_test();
             let first_staged = real_terminal_session(
                 execution,
@@ -355,33 +375,8 @@ pub fn start(
         .unwrap_or_else(|outcome| panic!("affinity fixture must start: {outcome:?}"))
 }
 
-pub fn retained_program(
-    phase_custody: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
-    world: &AuthorizationWorld,
-    replacement: &str,
-) -> RetainedProgram {
-    let request = live_scope();
-    let principal = authenticated_principal(
-        &(phase_custody).test_host_request_for_test(),
-        world,
-        &request,
-    );
-    let account = resolved_account(
-        &(phase_custody).test_host_request_for_test(),
-        world,
-        "open",
-        &request,
-    );
-    retained_status_program(
-        &(phase_custody).test_host_request_for_test(),
-        world,
-        &principal,
-        &account,
-        &request,
-        replacement,
-        RetentionMutationBreadth::Narrow,
-    )
-}
+mod retained_program;
+pub use retained_program::retained_program;
 
 #[path = "foreign_phase/mod.rs"]
 pub mod foreign_phase;

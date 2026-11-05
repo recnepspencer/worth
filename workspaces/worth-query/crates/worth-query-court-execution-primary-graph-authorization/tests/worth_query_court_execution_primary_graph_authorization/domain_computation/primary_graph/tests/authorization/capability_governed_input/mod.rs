@@ -84,7 +84,7 @@ fn every_capability_admission_reports_its_one_governed_input_derivation() {
     else {
         panic!("an equal input under the same key must recover the commit");
     };
-    crate::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
+    worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
         &recovered, &committed,
     );
     assert_eq!(

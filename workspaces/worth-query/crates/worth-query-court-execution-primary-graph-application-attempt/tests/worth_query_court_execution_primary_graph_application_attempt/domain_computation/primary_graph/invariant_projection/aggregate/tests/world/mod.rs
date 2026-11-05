@@ -244,7 +244,7 @@ impl AggregateWorld {
                     &self.target,
                 );
                 denial.set(result.as_ref().err().map(|error| error.kind()));
-                work.set((*reader.work_for_test()));
+                work.set(*reader.work_for_test());
                 result
             },
             None,

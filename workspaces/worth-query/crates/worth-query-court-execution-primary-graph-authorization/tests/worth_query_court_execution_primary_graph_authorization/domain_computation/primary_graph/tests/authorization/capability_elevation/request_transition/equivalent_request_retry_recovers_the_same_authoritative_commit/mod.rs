@@ -67,7 +67,7 @@ fn equivalent_request_retry_recovers_original_data_without_elevation_authority()
                 panic!("equivalent request retry must recover the original commit: {unexpected:?}")
             }
         };
-        crate::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
+        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
             &recovered,
             original.commit_receipt(),
         );

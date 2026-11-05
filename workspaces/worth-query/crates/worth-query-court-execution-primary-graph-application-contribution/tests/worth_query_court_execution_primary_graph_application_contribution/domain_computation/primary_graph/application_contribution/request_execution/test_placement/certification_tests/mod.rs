@@ -1,7 +1,5 @@
 //! Diagnostic interruption preserves the request cause rather than panicking.
 use worth_execution::ExecutionMap;
-use worth_foundational::ExecutionPosture;
-use worth_foundational::ExecutionReport;
 use worth_execution::MapKernelContext;
 use worth_execution::MapKernelFailure;
 use std::num::NonZeroUsize;

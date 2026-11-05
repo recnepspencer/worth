@@ -28,7 +28,7 @@ fn original_output_reuses_retained_owner_custody_after_derived_receipt_index_dis
                     .resolve_original_publication_for_test::<RetentionOutputs>(
                         &phase.borrowed_request_for_test(),
                         fresh.principal_scope(),
-                        current.product().observation(),
+                        current.product().observation_for_test(),
                         fresh.idempotency_binding(),
                         &original,
                     )
@@ -39,9 +39,10 @@ fn original_output_reuses_retained_owner_custody_after_derived_receipt_index_dis
                     *original.idempotency_key_identity()
                 );
                 assert_eq!(resolved.exact_settlement_for_test().address_for_test().2, 0);
+                let original_correspondence = fresh.retain_output_correspondence_for_test();
                 assert!(std::ptr::eq(
                     resolved.output_correspondence_for_test().as_ref(),
-                    fresh.output_correspondence_for_test()
+                    original_correspondence.as_ref()
                 ));
             })
             .unwrap();
@@ -68,7 +69,7 @@ fn original_receipt_from_another_world_cannot_resolve_this_owners_output() {
                         .resolve_original_publication_for_test::<RetentionOutputs>(
                             &phase.borrowed_request_for_test(),
                             fresh.principal_scope(),
-                            current.product().observation(),
+                            current.product().observation_for_test(),
                             fresh.idempotency_binding(),
                             &foreign
                         )

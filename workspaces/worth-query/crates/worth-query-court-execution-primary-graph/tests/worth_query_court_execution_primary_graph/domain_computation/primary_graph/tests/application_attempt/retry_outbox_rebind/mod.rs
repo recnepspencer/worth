@@ -15,7 +15,6 @@ use worth_query_testkit_execution_primary_graph_application_contribution::domain
 use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::application_attempt::resolved_account;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitDenialStage;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitOutcome;
-use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitTerminalKind;
 use worth_query_execution::facade::domain_computation::WorthQueryApplicationCommitReceipt;
 use worth_query_execution::facade::domain_computation::WorthQueryExternalDispatchRequest;
 use worth_query_execution::facade::domain_computation::WorthQueryExternalEffectTransport;
@@ -187,7 +186,7 @@ pub fn retry_without_managed_work(
     assert_eq!((*retry_work.retained_resolutions_for_test()), 1);
     assert_no_managed_attempt_work(retry_work);
     assert_eq!(transport.0.load(Ordering::Acquire), 1);
-    crate::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
+    worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
         &recovered, original,
     );
     assert!(recovered.world_journal_position().is_none());

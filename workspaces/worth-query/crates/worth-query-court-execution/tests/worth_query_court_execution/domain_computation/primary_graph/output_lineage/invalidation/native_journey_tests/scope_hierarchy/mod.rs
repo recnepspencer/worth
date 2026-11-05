@@ -85,7 +85,7 @@ pub fn run(
         let (before_handle, before) = snapshot(runtime);
         let registries: Vec<_> = entities.iter().map(|_| WorthQueryOutputDemandRegistry::default()).collect();
         let members: Vec<_> = registries.iter().zip(&entities).map(|(registry, entity)|
-            registry.fixture_scope_work_membership((*coordinate.occurrence_for_test()), *entity)).collect();
+            registry.fixture_scope_work_membership(*coordinate.occurrence_for_test(), *entity)).collect();
         let outputs: Vec<_> = entities.iter().map(|entity| RecordedSettlementIdentity::retain_for_test(&SemanticSource::new_for_test((*world.application.runtime_for_test()).authority_identity_for_test().as_u64(), (*world.application.installed_schema_for_test()).binding_identity().clone(), worth_query_execution::facade::domain_computation::WorthQueryOperationScopeEntityBinding::from_entity_for_test(*entity), OutputBindingIdentity::declared_for_test("ScopeOutput")), coordinate, 0)).collect();
         for n in 0..entities.len() {
             // Each distinct Native scope above the leaf consumes exactly its
@@ -109,7 +109,7 @@ assert!(matches!(initial.kind_for_test(), SelectedRequiredWorkKind::Local { .. }
 let report = owner.native_marking_report_for_test(&after).unwrap().unwrap();
 
 
-        let WorthQueryNativeMarkingPrecision::Exact(counts) = (*report.precision_for_test()) else { panic!("the declared Native leaf touch is exact") };
+        let WorthQueryNativeMarkingPrecision::Exact(counts) = *report.precision_for_test() else { panic!("the declared Native leaf touch is exact") };
         assert_eq!(counts.marked_fact_ordinals, 1);
         assert_eq!(counts.visited_vertices, DEPTH as u64);
         assert_eq!(counts.downstream_edges, DEPTH as u64 - 1);

@@ -1,6 +1,5 @@
 //! Counted owner reads retain request stops for a real co-committed correction fact.
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::provider::aftermath_causality::aftermath_read_stop;
-use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::correction_source;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 
 #[test]

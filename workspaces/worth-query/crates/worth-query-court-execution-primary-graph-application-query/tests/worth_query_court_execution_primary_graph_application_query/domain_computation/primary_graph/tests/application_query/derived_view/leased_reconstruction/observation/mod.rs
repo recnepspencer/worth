@@ -14,7 +14,6 @@ pub use worth_execution::ExecutionRequest;
 pub use worth_execution::ExecutionWorkCeiling;
 pub use worth_execution::LeaseRequest;
 
-pub(super) use crate::domain_computation::primary_graph::tests::application_query::derived_view::leased_reconstruction::observation::default_case::observe;
 pub fn observe_case(
     workers: Option<usize>,
     count: usize,

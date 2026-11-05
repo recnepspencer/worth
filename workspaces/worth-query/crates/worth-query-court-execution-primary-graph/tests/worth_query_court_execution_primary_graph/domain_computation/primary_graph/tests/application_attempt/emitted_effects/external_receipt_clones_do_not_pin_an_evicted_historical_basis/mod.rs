@@ -142,7 +142,7 @@ fn external_receipt_clones_do_not_pin_an_evicted_historical_basis() {
         else {
             panic!("provider idempotency must recover after live-source eviction");
         };
-        crate::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
+        worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
             &recovered, &original,
         );
         assert!(recovered.new_product_head().memory().is_some());

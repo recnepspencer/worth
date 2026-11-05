@@ -15,11 +15,11 @@ fn no_position_policy_preserves_funded_history_and_original_reader_currentness()
     .into_parts_for_test();
     // This history court funds all 301 publications; finite work has its own court.
     let policy = worth_foundational::ExecutionRequestPolicy::new(
-        execution.policy.posture(),
-        execution.policy.determinism(),
+        execution.policy_for_test().posture(),
+        execution.policy_for_test().determinism(),
         worth_foundational::ExecutionBudget::new(
-            execution.policy.max_workers(),
-            execution.policy.charged_memory_bytes(),
+            execution.policy_for_test().max_workers(),
+            execution.policy_for_test().charged_memory_bytes(),
             None,
         ),
     );
@@ -28,7 +28,7 @@ fn no_position_policy_preserves_funded_history_and_original_reader_currentness()
         worth_runtime_world::facade::RuntimeWorldBudgets::without_policy_limits(),
         clock,
         resources,
-        (*execution.policy_for_test()),
+        *execution.policy_for_test(),
     );
     let configured = match execution.authority_into_for_test() {
         Some(authority) => configured.with_execution_authority(authority),

@@ -130,10 +130,10 @@ pub fn reads(
         .field_locator_for_test(note.entity(), note.aspect(), note.field())
         .unwrap()
         .clone();
-    let relation = (*(*graph.layout_for_test())
+    let relation = *(*graph.layout_for_test())
         .relation(AccountAllActivity::reference().name())
         .unwrap()
-        .kind_for_test());
+        .kind_for_test();
     let (aspect_revision, field_revision, adjacency_revision, relations) = graph
         .integration_handle_for_test()
         .with_runtime(execution, |runtime| {
@@ -216,7 +216,7 @@ pub fn reads(
             comparison_work_limit: 16,
             endpoints: AdmittedAdjacencyEndpoints::from_exact_iterator_for_test(
                 relations.len(),
-                relations.iter().map(|relation| (*relation.to_for_test())),
+                relations.iter().map(|relation| *relation.to_for_test()),
                 StorageControl::new_for_test(
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                     Some(&request),

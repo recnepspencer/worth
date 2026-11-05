@@ -57,9 +57,7 @@ fn sibling_publication_substitution_denies_before_transport() {
                 &phase.phase_for_application_for_test(&world.application),
                 &transport,
                 substituted,
-                &worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope(),
-                |_| {}
-            ),
+                &worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::schema_types::live_scope()),
             Err(
                 WorthQueryExternalDispatchPreparationDenial::AttemptAdmissionDenied(
                     worth_query_execution::facade::domain_computation::WorthQueryExternalDispatchAttemptDenial::PublicationCommitMismatch

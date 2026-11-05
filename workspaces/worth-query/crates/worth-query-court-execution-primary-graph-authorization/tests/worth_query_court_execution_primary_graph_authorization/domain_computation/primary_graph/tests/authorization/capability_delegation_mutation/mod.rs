@@ -201,13 +201,13 @@ pub fn replace_parent(
 }
 
 pub fn relation_kind(world: &AuthorizationWorld, name: &str) -> KindId {
-    (*(*world.application.runtime_for_test())
+    *(*world.application.runtime_for_test())
         .primary_graph_for_test()
         .unwrap()
         .layout_for_test()
         .relation(name)
         .unwrap()
-        .kind_for_test())
+        .kind_for_test()
 }
 
 pub fn relation_source(

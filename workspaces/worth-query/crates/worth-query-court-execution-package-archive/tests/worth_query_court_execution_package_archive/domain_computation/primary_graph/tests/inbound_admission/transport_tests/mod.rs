@@ -115,8 +115,8 @@ fn transport_candidate_rejects_another_owner_and_terminal_matches_later_attempt(
         .admit_external_dispatch_attempt_for_test(first_owner.clone())
         .unwrap();
     let transport = CompletingTransport(AtomicUsize::new(0));
-    let completed = dispatch_external_effect(&transport, first_attempt).unwrap();
-    let later = dispatch_external_effect(&transport, later_attempt).unwrap();
+    let completed = dispatch_external_effect(&transport, first_attempt, || {}).unwrap();
+    let later = dispatch_external_effect(&transport, later_attempt, || {}).unwrap();
     assert!(completed.matches_committed_owner_for_test(binding.runtime_for_test(), &first_owner));
     assert_ne!(
         completed.causal_ladder().attempt().identity(),
@@ -227,8 +227,8 @@ fn two_real_completed_attempts_share_the_first_world_terminal() {
         .unwrap()
         .unwrap();
     let transport = CompletingTransport(AtomicUsize::new(0));
-    let first = dispatch_external_effect(&transport, first_attempt).unwrap();
-    let later = dispatch_external_effect(&transport, second_attempt).unwrap();
+    let first = dispatch_external_effect(&transport, first_attempt, || {}).unwrap();
+    let later = dispatch_external_effect(&transport, second_attempt, || {}).unwrap();
     assert_eq!(transport.0.load(Ordering::Acquire), 2);
     assert_ne!(
         first.causal_ladder().attempt().identity(),

@@ -120,7 +120,7 @@ let report = owner.native_marking_report_for_test(&after)
             .unwrap().expect("exact Native publication owns a delivery report");
 
 
-        let WorthQueryNativeMarkingPrecision::Exact(counts) = (*report.precision_for_test()) else {
+        let WorthQueryNativeMarkingPrecision::Exact(counts) = *report.precision_for_test() else {
             panic!("the actual declared field change must have exact logical counts");
         };
         for ((entity, output), old) in entities.iter().zip(&identities).zip(old_revisions) {

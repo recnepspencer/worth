@@ -126,9 +126,15 @@ fn erased_slot_and_active_handler_aliases_refuse_while_the_same_query_serves() {
             .unwrap()
             .value_mut_for_test(),
     );
-    let alias = world.application.mutation_handlers.entries[Binding::IDENTITY]
-        .value
-        .clone();
+    let alias = Arc::clone(
+        &*world
+            .application
+            .mutation_handlers_mut_for_test()
+            .entries_mut_for_test()
+            .get_mut(Binding::IDENTITY)
+            .unwrap()
+            .value_mut_for_test(),
+    );
     assert!(matches!(
         world
             .application

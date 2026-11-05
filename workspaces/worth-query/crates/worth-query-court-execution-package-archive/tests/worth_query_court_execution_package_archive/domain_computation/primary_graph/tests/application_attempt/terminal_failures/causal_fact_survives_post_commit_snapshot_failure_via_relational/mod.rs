@@ -1,6 +1,5 @@
 //! Actual typed correction causality survives a post-commit snapshot failure.
 use worth_query_execution::facade::domain_computation::WorthQueryAftermathCausalRole;
-use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::correction_source;
 
 #[test]
 fn causal_fact_survives_post_commit_snapshot_failure_via_relational_owner_read() {

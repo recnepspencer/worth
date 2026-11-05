@@ -181,10 +181,10 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
     let source_facts = observed_source
         .clone()
         .validate_and_into_facts_for_test(
-            (*observed_source.runtime_authority_for_test()),
+            *observed_source.runtime_authority_for_test(),
             &(*observed_source.schema_binding_for_test()),
             &(*observed_source.branch_for_test()),
-            (*observed_source.model_root_for_test()),
+            *observed_source.model_root_for_test(),
             product,
             &(*observed_source.query_identifier_for_test()),
             &(*observed_source.query_identity_for_test()),
@@ -207,7 +207,7 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
         WorthQueryApplicationObservedFact::SourceFieldRevision { entity_id, .. }
             if *entity_id == account.entity_id_for_test()
     )));
-    let kind = (*first.adjacencies[0].relation_kind_for_test());
+    let kind = *first.adjacencies[0].relation_kind_for_test();
     let selected = world
         .application
         .with_host_advancement(|phase| {

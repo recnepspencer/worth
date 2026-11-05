@@ -69,11 +69,11 @@ fn native_reverification_clears_only_the_verified_live_image() {
         .unwrap();
     let handle = graph.integration_handle_for_test();
     let owner = &(*(*handle.source_owner_for_test()).invalidation_owner_for_test());
-    let kind = (*graph
+    let kind = *graph
         .layout_for_test()
         .relation(AccountBlocked::reference().name())
         .unwrap()
-        .kind_for_test());
+        .kind_for_test();
     let label_ref = AccountLabel::reference();
     let label = graph
         .layout_for_test()

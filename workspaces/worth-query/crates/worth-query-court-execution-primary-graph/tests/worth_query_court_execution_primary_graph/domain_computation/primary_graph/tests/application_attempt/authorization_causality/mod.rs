@@ -209,10 +209,10 @@ pub fn revoke_account_ownership(
     let graph = (*(*(*world.application.runtime_for_test()).primary_provider_for_test())
         .graph_for_test())
     .clone();
-    let relation_kind = (*(*graph.layout_for_test())
+    let relation_kind = *(*graph.layout_for_test())
         .relation(AccountOwner::reference().name())
         .expect("account ownership is installed")
-        .kind_for_test());
+        .kind_for_test();
     let selected = world.selected_product(&(phase_custody).test_host_request_for_test());
     let relation = graph.with_runtime_for_test(execution, |runtime| {
         let snapshot = selected.application_basis_for_test().snapshot_handle();

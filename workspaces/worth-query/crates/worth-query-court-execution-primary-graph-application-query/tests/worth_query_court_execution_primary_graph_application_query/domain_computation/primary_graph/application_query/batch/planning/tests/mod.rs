@@ -19,10 +19,10 @@ fn installed_schedule_preserves_exact_slots_and_plan_association() {
             .unwrap()
     };
     let read = issue();
-    let runtime = (*read.runtime_for_test());
+    let runtime = *read.runtime_for_test();
     let schema = (*read.schema_for_test()).clone();
     let query = (*read.query_for_test()).clone();
-    let roots = (*read.roots_for_test());
+    let roots = *read.roots_for_test();
     let batch = world
         .application
         .application_query_batch_from_installed_reads(&[read])

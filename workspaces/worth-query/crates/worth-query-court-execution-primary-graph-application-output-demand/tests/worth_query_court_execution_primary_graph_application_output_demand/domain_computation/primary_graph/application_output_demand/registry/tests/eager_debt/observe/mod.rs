@@ -75,7 +75,7 @@ pub fn compare(
                     Phase::Closed
                 } else if row.has_cached_ready_for_test() {
                     Phase::Ready
-                } else if matches!((*row.state_for_test()), DemandState::Running) {
+                } else if matches!( *row.state_for_test(), DemandState::Running) {
                     Phase::Running
                 } else {
                     Phase::Pending

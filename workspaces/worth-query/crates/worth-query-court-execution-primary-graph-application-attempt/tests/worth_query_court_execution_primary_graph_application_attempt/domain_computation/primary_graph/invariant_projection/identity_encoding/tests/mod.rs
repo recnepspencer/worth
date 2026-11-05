@@ -1,7 +1,6 @@
 use std::marker::PhantomData;
 use std::sync::Arc;
 use worth_query_declaration::facade::application_operation::application_computation_partition_identity;
-use worth_query_declaration::facade::application_program::ApplicationComputationPartition;
 use worth_query_execution::facade::domain_computation::WorthQueryInvariantEntityIdentity;
 use worth_relational::facade::identity::EntityId;
 use worth_relational::facade::identity::KindId;

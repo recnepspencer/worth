@@ -71,7 +71,7 @@ fn response_loss_resolves_the_published_commit_before_returning() {
     else {
         panic!("retry must recover the transaction published before response loss");
     };
-    crate::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
+    worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture::recorded_receipt::assert_original(
         &receipt,
         &first_receipt,
     );

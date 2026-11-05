@@ -1,6 +1,5 @@
 //! Real installed snapshot callbacks use the pinned Native complete walk.
 use worth_query_testkit_execution_primary_graph_application_attempt::domain_computation::primary_graph::tests::application_attempt::invariant_walks::schema::*;
-use worth_query_testkit_execution_primary_graph_application_attempt_2::domain_computation::primary_graph::tests::application_attempt::invariant_walks::world;
 use worth_execution::ExecutionRequest;
 use worth_query_execution::facade::domain_computation::WorthQueryInvariantProjectionDenialKind;
 use worth_query_execution::facade::domain_computation::WorthQueryInvariantProjectionTraversalDenialKind;
@@ -65,19 +64,19 @@ fn snapshot_walks_mint_local_identities_without_rereading_metadata() {
                             .unwrap();
                         assert!(empty.is_empty());
                         assert!(empty.issued_at_for_test(
-                            (*reader.snapshot_for_test()),
-                            (*reader.authority_identity_for_test())
+                            *reader.snapshot_for_test(),
+                            *reader.authority_identity_for_test()
                         ));
                         assert!(!empty.issued_at_for_test(
-                            (*reader.snapshot_for_test()),
+                            *reader.snapshot_for_test(),
                             (*reader.authority_identity_for_test()).wrapping_add(1)
                         ));
                         assert!(walk.issued_at_for_test(
-                            (*reader.snapshot_for_test()),
-                            (*reader.authority_identity_for_test())
+                            *reader.snapshot_for_test(),
+                            *reader.authority_identity_for_test()
                         ));
                         assert!(!walk.issued_at_for_test(
-                            (*reader.snapshot_for_test()),
+                            *reader.snapshot_for_test(),
                             (*reader.authority_identity_for_test()).wrapping_add(1)
                         ));
                         let closure = reader

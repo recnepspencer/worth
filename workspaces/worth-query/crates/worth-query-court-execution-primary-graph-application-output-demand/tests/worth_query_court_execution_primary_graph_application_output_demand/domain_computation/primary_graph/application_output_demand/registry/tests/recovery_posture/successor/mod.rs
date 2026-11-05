@@ -40,7 +40,7 @@ fn stale_ready_successor_admission_forces_a_new_execution_cycle() {
     assert_eq!((*replacement.key_for_test()), demand_key);
     let state = (*registry.state_for_test()).lock().unwrap();
     let record = &(*state.records_for_test())[&demand_key];
-    assert!(matches!((*record.state_for_test()), DemandState::Admitted));
+    assert!(matches!(*record.state_for_test(), DemandState::Admitted));
     assert_eq!(
         (*record
             .successor_of_for_test())
@@ -133,7 +133,7 @@ fn stopped_ready_record_rejects_successor_without_reviving_custody() {
         &(*record.state_for_test()),
         DemandState::Output(output)
             if matches!(output.advancement_for_test(), WorthQueryOutputAdvancement::Stopped { .. })
-                && matches!((*output.checkpoint_for_test()), Some(WorthQueryOutputCheckpoint::Ready(_)))
+                && matches!( *output.checkpoint_for_test(), Some(WorthQueryOutputCheckpoint::Ready(_)))
     ));
 }
 
@@ -175,6 +175,6 @@ fn failed_successor_admission_preserves_ready_custody() {
     assert!(matches!(
         &(*record.state_for_test()),
         DemandState::Output(output)
-            if matches!((*output.checkpoint_for_test()), Some(WorthQueryOutputCheckpoint::Ready(_)))
+            if matches!( *output.checkpoint_for_test(), Some(WorthQueryOutputCheckpoint::Ready(_)))
     ));
 }

@@ -19,7 +19,6 @@ use worth_query_execution::court_doors_for_test::domain_computation::primary_gra
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::invariant_projection::consumed_output::ConsumedOutputEvidence;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::publication::register_republished;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::invalidation::mark_state::FullVerificationReason;
-use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutput;
 use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::fact::WorthQueryApplicationObservedFact as Fact;
 
 pub const ALIAS_INPUT: [u8; 32] = [0x63; 32];
@@ -127,7 +126,7 @@ fn a_restored_row_without_performed_proof_stays_fresh_until_verified() {
             .is_none());
         stage.lineage.record_restoration_for_test(
             stage.lineage.binding_type_for_test(&(*stage.source.output_binding_for_test())),
-            (*stage.source.runtime_authority_for_test()),
+            *stage.source.runtime_authority_for_test(),
             (*stage.source.schema_for_test()).clone(),
             stage.source.scope,
             stage.observation,
@@ -273,7 +272,7 @@ fn a_stable_alias_is_compared_by_the_witness_of_its_origin() {
         let candidates = stage
             .lineage
             .retained_output_candidates_metered_for_test(
-                (*stage.source.runtime_authority_for_test()),
+                *stage.source.runtime_authority_for_test(),
                 &(*stage.source.schema_for_test()),
                 stage.source.scope,
                 stage.observation.lifecycle_incarnation(),

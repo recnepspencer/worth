@@ -1,7 +1,6 @@
 //! Author-held handles return their cause to owner completion.
 use crate::domain_computation::primary_graph::application_contribution::producer::execution::prepared_plan::canonical_apply::tests::*;
 use worth_query_execution::facade::domain_computation::query_test_execution_authority_for_test as test_authority;
-use worth_query_testkit_execution_primary_graph_application_contribution::domain_computation::primary_graph::tests::fixture;
 use worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial;
 use worth_runtime_world::facade::RuntimeWorldExecutionPlacement;
 
