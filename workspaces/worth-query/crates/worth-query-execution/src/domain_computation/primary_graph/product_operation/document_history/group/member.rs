@@ -29,7 +29,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             .members
             .get(member)
             .ok_or(Denial::GroupMemberMismatch)?;
-        if !std::ptr::eq(self.application(), candidate.application()) {
+        if !std::ptr::addr_eq(self.application(), candidate.application()) {
             return Err(Denial::ForeignRuntime);
         }
         if candidate.expected_source() != group.reservation.expected {
@@ -120,7 +120,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         {
             return Err(Denial::ReceiptMismatch);
         }
-        if !std::ptr::eq(self.application(), candidate.application())
+        if !std::ptr::addr_eq(self.application(), candidate.application())
             || candidate.expected_source() != group.reservation.expected
         {
             return Err(Denial::ForeignRecording);

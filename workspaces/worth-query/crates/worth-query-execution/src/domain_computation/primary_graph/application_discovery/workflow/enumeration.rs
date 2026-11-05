@@ -92,7 +92,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         B: ApplicationWorkflowReadBinding<Schema>,
     {
         if !std::ptr::addr_eq(vocabulary.runtime(), self.application())
-            || !std::ptr::eq(self.application(), data.application())
+            || !std::ptr::addr_eq(self.application(), data.application())
             || self.product().branch_identity() != data.product().branch_identity()
         {
             return Err(Denial::PolicyMismatch);

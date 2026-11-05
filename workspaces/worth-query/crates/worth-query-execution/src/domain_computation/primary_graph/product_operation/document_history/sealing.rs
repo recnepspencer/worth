@@ -248,7 +248,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
     ) -> Result<PreparedBinding, Denial> {
         self.validate_reservation(reserved)?;
         let runtime = self.application();
-        if !std::ptr::eq(runtime, candidate.application()) {
+        if !std::ptr::addr_eq(runtime, candidate.application()) {
             return Err(Denial::ForeignRuntime);
         }
         if candidate.expected_source() != reserved.expected {

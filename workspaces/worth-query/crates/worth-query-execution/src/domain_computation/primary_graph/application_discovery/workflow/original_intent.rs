@@ -63,7 +63,7 @@ where
     let access = admit(current, phase, installed, principal, input, request)?;
     // Caller supplied domain input, not a principal/entity forged from the missing target.
     if access.resource_entity_id() != original.subject_entity_id()
-        || !std::ptr::eq(current.application(), data.application())
+        || !std::ptr::addr_eq(current.application(), data.application())
         || current.product().branch_identity() != data.product().branch_identity()
     {
         return Err(Denial::PolicyMismatch);

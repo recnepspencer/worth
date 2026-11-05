@@ -161,7 +161,7 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
     where
         Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>,
     {
-        if !std::ptr::eq(runtime, document.application()) {
+        if !std::ptr::addr_eq(runtime, document.application()) {
             return Err(Denial::ForeignRuntime);
         }
         if runtime.installed_schema().binding_identity() != *self.history.binding_identity()

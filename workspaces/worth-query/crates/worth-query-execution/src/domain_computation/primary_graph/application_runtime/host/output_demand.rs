@@ -33,7 +33,7 @@ impl<Schema: ApplicationSchema> OutputDemandHost<Schema>
         &self,
         branch: crate::basis::WorthQueryProductBranch,
     ) -> WorthQueryProductEntry<'_, Schema> {
-        <Self as crate::domain_computation::primary_graph::product_operation::context::ContextOps<Schema>>::on_branch(self, branch)
+        Self::on_branch(self, branch)
     }
     fn select_application_read_observation_with_request(
         &self,
@@ -43,7 +43,7 @@ impl<Schema: ApplicationSchema> OutputDemandHost<Schema>
         WorthQuerySelectedProductOperation<'_, Schema>,
         WorthQueryProductBranchAdmissionDenial,
     > {
-        Self::select_application_read_observation_with_request(self, execution, observation)
+        <Self as crate::domain_computation::primary_graph::application_query::RetainedReadScopedOps<Schema>>::select_application_read_observation_with_request(self, execution, observation)
     }
 }
 

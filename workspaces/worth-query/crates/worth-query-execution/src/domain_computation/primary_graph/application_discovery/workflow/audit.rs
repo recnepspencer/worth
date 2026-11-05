@@ -74,7 +74,7 @@ where
 {
     if target.subject != subject.resource_entity_id()
         || target.data.product().branch_identity() != current.product().branch_identity()
-        || !std::ptr::eq(target.data.application(), current.application())
+        || !std::ptr::addr_eq(target.data.application(), current.application())
         || subject_binding.route() != ApplicationWorkflowReadRoute::Subject
         || audit_binding.route() != ApplicationWorkflowReadRoute::Audit
         || subject_binding.workflow().support_identity_bytes()

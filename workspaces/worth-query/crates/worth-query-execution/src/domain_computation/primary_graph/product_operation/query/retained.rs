@@ -41,7 +41,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         let (application, _current_security, _) = self.into_parts();
         let producer = retained.original_settled_producer().cloned();
         let (retained_application, product, application_basis) = retained.into_parts();
-        if !std::ptr::eq(application, retained_application) {
+        if !std::ptr::addr_eq(application, retained_application) {
             return Err(foreign_basis(query_name));
         }
         Ok((

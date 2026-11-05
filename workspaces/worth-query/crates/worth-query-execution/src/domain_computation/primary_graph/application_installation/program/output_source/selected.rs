@@ -205,7 +205,7 @@ where
         use super::super::WorthQueryProgramOwner;
 
         let source = TypeId::of::<Source>();
-        if !std::ptr::eq(owner.owned_runtime(), &self.backing.runtime)
+        if !std::ptr::addr_eq(owner.owned_runtime(), &self.backing.runtime)
             || !self.backing.initial.root_graph_types.contains(&root)
             || !owner.owns_output_root(root)
             || !owner.owns_output_source(source.into_external())

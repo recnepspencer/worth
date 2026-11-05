@@ -57,7 +57,7 @@ impl<'runtime> SourceReadVerification<'runtime> {
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
     ) -> bool {
-        std::ptr::eq(self.runtime, runtime) && self.pin.snapshot() == snapshot
+        std::ptr::addr_eq(self.runtime, runtime) && self.pin.snapshot() == snapshot
     }
 
     #[expect(

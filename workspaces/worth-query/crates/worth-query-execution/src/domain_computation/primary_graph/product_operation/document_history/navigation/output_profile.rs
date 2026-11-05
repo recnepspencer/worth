@@ -120,7 +120,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         use WorthQueryHistoryNavigationDenial as Denial;
         use WorthQueryHistoryNavigationEligibilityDenial as Eligibility;
         let application = document.application();
-        if !std::ptr::eq(self.runtime(), application) {
+        if !std::ptr::addr_eq(self.runtime(), application) {
             return Err(Denial::Document(
                 super::super::WorthQueryDocumentHistoryDenial::ForeignModel,
             ));

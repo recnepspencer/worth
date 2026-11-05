@@ -242,6 +242,7 @@ pub(in crate::domain_computation) use one_shot::OneShotScopedOps;
 
 pub use readiness::ReadinessOps;
 pub use retained_read::RetainedReadOps;
+pub(in crate::domain_computation) use retained_read::RetainedReadScopedOps;
 pub(crate) mod host;
 pub use derived_view::ReconcileOps;
 pub use derived_view::ReconstructDependentOps;

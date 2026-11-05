@@ -103,7 +103,7 @@ where
 {
     use WorthQueryCorrectionDerivationDenial as Denial;
     let application = target.application();
-    if !std::ptr::eq(application, source.application()) {
+    if !std::ptr::addr_eq(application, source.application()) {
         return Err(Denial::ForeignSelection);
     }
     if target.product().observation().lifecycle_incarnation()

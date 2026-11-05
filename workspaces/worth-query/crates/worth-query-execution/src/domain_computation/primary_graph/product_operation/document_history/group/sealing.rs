@@ -39,7 +39,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             }) {
                 return Err(Denial::IntentDrift);
             }
-            if !std::ptr::eq(self.application(), candidate.application())
+            if !std::ptr::addr_eq(self.application(), candidate.application())
                 || candidate.expected_source() != group.reservation.expected
                 || group.candidate.as_ref().is_none_or(|(branch, initial)| {
                     *branch != candidate.branch() || initial.is_none()

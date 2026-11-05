@@ -147,7 +147,7 @@ where
     // selected catalog and authority work before issuing the borrowed proof.
 
     let selected = control.unwrap_or(shared).selected();
-    if !std::ptr::eq(selected.application(), runtime) {
+    if !std::ptr::addr_eq(selected.application(), runtime) {
         return Err(Stop::ForeignSelectedRuntime);
     }
     let current = runtime

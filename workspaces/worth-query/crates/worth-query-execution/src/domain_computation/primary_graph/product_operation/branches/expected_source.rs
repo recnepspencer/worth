@@ -51,7 +51,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
         WorthQueryExpectedProductBranchFork<'runtime, Schema>,
         WorthQueryProductBranchAdmissionDenial,
     > {
-        if !std::ptr::eq(self.application, selected.application()) {
+        if !std::ptr::addr_eq(self.application, selected.application()) {
             return Err(WorthQueryProductBranchAdmissionDenial::Refused(
                 WorthQueryProductBranchAdmissionRefusalKind::ForeignOwner,
             ));

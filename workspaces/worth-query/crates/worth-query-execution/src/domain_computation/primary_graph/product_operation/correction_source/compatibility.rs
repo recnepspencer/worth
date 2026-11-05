@@ -44,7 +44,7 @@ fn require_selected_ancestry<Schema: ApplicationSchema>(
     source: &WorthQuerySelectedCorrectionSource<'_, Schema>,
     ancestry: &ProductBranchAncestorSelection,
 ) -> Result<(), Denial> {
-    if !std::ptr::eq(target.application(), source.application())
+    if !std::ptr::addr_eq(target.application(), source.application())
         || ancestry.source().identity() != source.ancestry().source().identity()
         || ancestry.target() != target.product().observation()
     {

@@ -59,7 +59,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         candidate: &WorthQueryExpectedProductBranch<'runtime, S>,
     ) -> Result<WorthQueryDocumentHistoryOperationConstraint, Denial> {
         self.validate_reservation(reserved)?;
-        if !std::ptr::eq(self.application(), candidate.application()) {
+        if !std::ptr::addr_eq(self.application(), candidate.application()) {
             return Err(Denial::ForeignRuntime);
         }
         if candidate.expected_source() != reserved.expected {
