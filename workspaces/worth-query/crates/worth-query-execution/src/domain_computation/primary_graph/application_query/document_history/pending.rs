@@ -16,7 +16,7 @@ impl PendingDocumentRead {
     }
     pub(super) fn retained_source<S: ApplicationSchema>(
         &self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<S>,
     ) -> std::sync::Arc<
         crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
     > {
@@ -47,7 +47,7 @@ impl PendingDocumentRead {
     pub(super) fn confirm<S: ApplicationSchema, Value>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<S>,
         branch: WorthQueryProductBranch,
         value: Value,
     ) -> Result<Value, (Value, Denial)> {

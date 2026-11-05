@@ -61,13 +61,13 @@ impl<'request, 'authority> SourceFactExpansionControl<'request, 'authority> {
     pub(in crate::domain_computation::primary_graph) fn for_phase<
         S: worth_query_installation::facade::ApplicationSchema,
     >(
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<S>,
         phase: &'request WorthQueryAdvancementPhase<'authority>,
         request: Option<&'request WorthQueryRequestScope>,
         subject: &str,
     ) -> Result<Self, WorthQuerySourceExpectationDenial> {
         let execution = phase
-            .execution_request_for(&runtime.runtime.product_runtime)
+            .execution_request_for(runtime.product_runtime())
             .map_err(|_| {
                 WorthQuerySourceExpectationDenial::new(
                     WorthQuerySourceExpectationDenialKind::ForeignOperation,

@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_query::admission::finish::FinishOwnOps;
 use worth_query_admission::facade::application_query::WorthQueryAdmittedApplicationQueryParameters;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQuery;
@@ -10,9 +11,10 @@ use super::super::super::{
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    /// The established public Query path retains its historical index-currency owner.
-    pub(in crate::domain_computation::primary_graph) fn finish_application_query_admission<
+pub(in crate::domain_computation::primary_graph) trait OrdinaryScopedOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
+{
+    fn finish_application_query_admission<
         'a,
         Query,
         Parameters,
@@ -61,9 +63,18 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             controls,
             pending_governance,
             |basis, _security| {
-                admit_application_query_basis(execution, self, basis)
+                admit_application_query_basis(execution, self.application_query_host(), basis)
                     .map(|basis| (basis, WorthQueryQueryIndexPosture::HistoricalAllPrimary))
             },
         )
     }
+}
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > OrdinaryScopedOps<Schema> for HostRuntime
+{
 }

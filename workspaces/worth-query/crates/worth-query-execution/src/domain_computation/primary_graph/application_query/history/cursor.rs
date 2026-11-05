@@ -79,7 +79,7 @@ impl<Schema: ApplicationSchema, History: ApplicationHistoryQueryBinding<Schema>>
 {
     pub(super) fn open(
         execution: worth_execution::ExecutionRequest<'_, '_>,
-        application: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
         subjects: WorthQueryCapturedApplicationHistorySubjects<Schema, History>,
         target: crate::basis::WorthQueryProductObservationLease,
         maximum_owned_bytes: usize,
@@ -99,8 +99,7 @@ impl<Schema: ApplicationSchema, History: ApplicationHistoryQueryBinding<Schema>>
         let memory = storage::retain(execution, source_bytes)?;
         let position = if has_subjects {
             let cursor = application
-                .runtime
-                .product_runtime
+                .product_runtime()
                 .open_exact_product_history(execution, &target)
                 .map_err(Denial::World)?;
             HistoryPosition::World(RetainedWorldCursor::retain(execution, cursor)?)

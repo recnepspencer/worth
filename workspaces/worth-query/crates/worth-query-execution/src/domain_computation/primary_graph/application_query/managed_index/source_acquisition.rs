@@ -4,6 +4,8 @@ use super::{
     source_completion::{complete_source, SourceDenial},
     source_image::{SourceBinding, SourceImage},
 };
+use crate::domain_computation::primary_graph::application_query::AdmissionScopedOps as _;
+use crate::domain_computation::primary_graph::product_operation::AdmissionScopedOps;
 use crate::domain_computation::{
     primary_graph::{
         application_query::{
@@ -59,7 +61,7 @@ impl From<Cause> for AcquisitionCause {
 #[allow(clippy::too_many_arguments)]
 pub(super) fn acquire<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+    application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<S>,
     adapter: &dyn InstalledIndexProvider<S, I>,
     parent: &WorthQueryManagedGraphWorkSession,
     association: &WorthQueryInstalledManagedIndexParent,
@@ -79,7 +81,7 @@ pub(super) fn acquire<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>
         let installed = adapter.installed();
         let access_contract = association.access_contract();
         if !std::ptr::addr_eq(application, selected.application())
-            || context.runtime() != application.runtime.authority_identity()
+            || context.runtime() != application.authority_identity()
             || !installed.is_installed_in(application.installed_schema())
             || !installed.admits_association(association)
             || parent.obligation() != access_contract.parent_obligation()

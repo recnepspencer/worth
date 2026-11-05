@@ -1,5 +1,7 @@
 //! One certified membership read reconciles retained pair entries.
 
+use crate::domain_computation::primary_graph::application_query::derived_view::registration::RegistrationOwnOps;
+use crate::domain_computation::primary_graph::application_query::derived_view::registration::collection::pair::read::ReadParentOps;
 use std::collections::BTreeMap;
 
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
@@ -15,14 +17,12 @@ use crate::domain_computation::primary_graph::application_query::{
     derived_view::WorthQueryManagedDerivedViewReconciliation, WorthQueryApplicationOneShotResult,
 };
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub trait ReconcileOps<Schema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
 where
     Schema: ApplicationSchema,
 {
-    /// Certify current membership, then read only added or dirty pair entries.
-    /// Publication has already tracked every intervening dependency change;
-    /// any unknown transition makes this route cold instead of reusing values.
-    pub fn reconcile_managed_derived_collection_pair_lazy<
+    fn reconcile_managed_derived_collection_pair_lazy<
         MembershipQuery,
         MembershipResult,
         Member,
@@ -122,4 +122,15 @@ where
             removed_entries,
         })
     }
+}
+
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > ReconcileOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
 }

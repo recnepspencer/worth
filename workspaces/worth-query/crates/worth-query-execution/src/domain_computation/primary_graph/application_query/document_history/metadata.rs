@@ -84,7 +84,7 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
     /// Resolve an original typed metadata capability; it is freshly bound to this query session.
     pub fn with_metadata_capability<C, O, I>(
         mut self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<S>,
         phase: &WorthQueryAdvancementPhase<'_>,
         capability: ApplicationCapabilityRef<S, C>,
         operation: ApplicationOperationRef<S, O, I>,
@@ -100,6 +100,7 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             .capability(capability, operation)
             .map_err(Denial::MetadataCapabilityInstallation)?;
         let selected = runtime
+            .application_runtime()
             .on_branch(
                 crate::basis::WorthQueryProductBranchReadIdentity::from_observation(
                     self.plan.basis.selected_product().observation(),
@@ -134,7 +135,7 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
 
     pub(super) fn complete_metadata_read<'phase, 'scope>(
         self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<S>,
         phase: &'phase WorthQueryAdvancementPhase<'scope>,
         document: &WorthQueryDocumentHistory<'_, S, H>,
         access: &WorthQueryProgramPublicationAccess,
@@ -151,7 +152,7 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
 
     pub(super) fn observe_metadata_read<'phase, 'scope>(
         mut self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<S>,
         phase: &'phase WorthQueryAdvancementPhase<'scope>,
         document: &WorthQueryDocumentHistory<'_, S, H>,
         _access: &WorthQueryProgramPublicationAccess,
@@ -173,7 +174,7 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             return Err(Denial::InstalledBindingMismatch);
         }
         let execution = phase
-            .checked_execution_request_for(&runtime.runtime.product_runtime)
+            .checked_execution_request_for(runtime.product_runtime())
             .map_err(Denial::Stopped)?;
         let contract =
             compile_document_history_disclosure_contract(self.history).map_err(|cause| {
@@ -217,8 +218,10 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
     }
 }
 
-impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
-    pub fn read_document_history_step<H: ApplicationHistoryBinding<S>>(
+pub trait MetadataOps<S: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<S>
+{
+    fn read_document_history_step<H: ApplicationHistoryBinding<S>>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         access: &WorthQueryProgramPublicationAccess,
@@ -228,11 +231,12 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     where
         Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>,
     {
-        let completed = read.complete_metadata_read(self, phase, document, access)?;
+        let completed =
+            read.complete_metadata_read(self.application_query_host(), phase, document, access)?;
         completed.confirm(document, document.current_history_step(access))
     }
 
-    pub fn read_document_history_selection<H: ApplicationHistoryBinding<S>>(
+    fn read_document_history_selection<H: ApplicationHistoryBinding<S>>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         access: &WorthQueryProgramPublicationAccess,
@@ -242,8 +246,18 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     where
         Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>,
     {
-        let completed = read.complete_metadata_read(self, phase, document, access)?;
+        let completed =
+            read.complete_metadata_read(self.application_query_host(), phase, document, access)?;
         let selection = document.current_history_selection(access);
         completed.confirm(document, selection)
     }
+}
+
+impl<
+        S: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                S,
+            > + ?Sized,
+    > MetadataOps<S> for HostRuntime
+{
 }

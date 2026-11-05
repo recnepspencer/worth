@@ -74,6 +74,11 @@ pub use provider::{
     WorthQueryManagedIndexSourceChange,
 };
 pub use provider_failure::WorthQueryManagedIndexProviderFailure;
+pub use receiver::EvictionOps;
+pub use receiver::LifecycleOps;
+pub use receiver::NextOps;
+pub use receiver::OpenOps;
+pub use receiver::ReceiverOps;
 pub use receiver::{
     WorthQueryManagedIndexWatch, WorthQueryManagedIndexWatchOutcome,
     WorthQueryManagedIndexWatchUpdate,

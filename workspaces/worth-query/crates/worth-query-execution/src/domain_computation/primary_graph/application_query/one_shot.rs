@@ -72,11 +72,12 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryAdmittedOneShotS
     Execution(WorthQueryApplicationOneShotDenial),
 }
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub trait OneShotOps<Schema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub fn execute_application_query_one_shot<
+    fn execute_application_query_one_shot<
         Query,
         Parameters,
         QueryResult,
@@ -103,15 +104,32 @@ where
     where
         QueryResult: WorthQueryApplicationProjection<Schema, Query>,
     {
-        let request = match phase.execution_request_for(&self.runtime.product_runtime) {
+        let request = match phase.execution_request_for(self.product_runtime()) {
             Ok(request) => request,
             Err(_) => return Err(authorization_denial(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody"), plan.query.name())),
         };
         let execution = &request;
         self.execute_application_query_one_shot_with_request(execution, plan)
     }
+}
 
-    pub(in crate::domain_computation) fn execute_application_query_one_shot_with_request<
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > OneShotOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
+}
+
+pub(in crate::domain_computation) trait OneShotScopedOps<Schema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
+where
+    Schema: ApplicationSchema,
+{
+    fn execute_application_query_one_shot_with_request<
         Query,
         Parameters,
         QueryResult,
@@ -140,7 +158,24 @@ where
     {
         self.execute_application_query_one_shot_core(execution, plan, None)
     }
+}
 
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > OneShotScopedOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
+}
+
+trait OneShotOwnOps<Schema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
+where
+    Schema: ApplicationSchema,
+{
     fn execute_application_query_one_shot_core<
         Query,
         Parameters,
@@ -169,17 +204,37 @@ where
     where
         QueryResult: WorthQueryApplicationProjection<Schema, Query>,
     {
-        validate_one_shot_plan(execution, self, &plan)?;
-        refresh_governed_authorization(execution, self, &mut plan)
+        validate_one_shot_plan(execution, self.application_query_host(), &plan)?;
+        refresh_governed_authorization(execution, self.application_query_host(), &mut plan)
             .map_err(|read| map_authorized_read_denial(read, plan.query.name()))?;
 
-        let (raw, authorization_work, read_proof) =
-            execute_authorized_read(execution, self, &plan, |runtime, graph, plan| {
-                read_bounded_root_rows(runtime, execution, graph, plan, spent)
-            })
-            .map_err(|read| map_authorized_read_denial(read, plan.query.name()))?;
-        finalize_one_shot(execution, self, plan, raw, authorization_work, read_proof)
+        let (raw, authorization_work, read_proof) = execute_authorized_read(
+            execution,
+            self.application_query_host(),
+            &plan,
+            |runtime, graph, plan| read_bounded_root_rows(runtime, execution, graph, plan, spent),
+        )
+        .map_err(|read| map_authorized_read_denial(read, plan.query.name()))?;
+        finalize_one_shot(
+            execution,
+            self.application_query_host(),
+            plan,
+            raw,
+            authorization_work,
+            read_proof,
+        )
     }
+}
+
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > OneShotOwnOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
 }
 
 pub fn map_authorized_read_denial(
@@ -255,3 +310,12 @@ pub fn map_authorized_read_denial(
 }
 
 mod court_doors_for_test;
+pub(in crate::domain_computation::primary_graph::application_query) use admitted::AdmittedScopedOps;
+pub use batch::BatchOps;
+pub(in crate::domain_computation) use batch::BatchScopedOps;
+pub(in crate::domain_computation::primary_graph::application_query) use batch::OneShotBatchScopedOps;
+pub use correction_disclosure::CorrectionDisclosureDoorsOps;
+pub(in crate::domain_computation::primary_graph) use correction_disclosure::OneShotCorrectionDisclosureScopedOps;
+pub use court_doors_for_test::OneShotDoorsOps;
+pub use history_capture::HistoryCaptureOps;
+pub(in crate::domain_computation) use history_capture::HistoryCaptureScopedOps;

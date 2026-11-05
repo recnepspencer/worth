@@ -1,3 +1,5 @@
+use crate::domain_computation::primary_graph::application_query::admission_preparation::AdmissionPreparationParentOps;
+use crate::domain_computation::primary_graph::application_query::ReadmittedScopedOps;
 use worth_query_admission::facade::application_query::WorthQueryAdmittedApplicationQueryParameters;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQuery;
@@ -45,10 +47,12 @@ impl<'a, Schema> PreparedApplicationQuerySourceReadmission<'a, Schema> {
     }
 }
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    /// Reissue the retained source's parameters only after a fresh principal,
-    /// scope, installed query, request, and basis have been selected.
-    pub(in crate::domain_computation::primary_graph) fn readmit_application_query_from_observed<
+pub(in crate::domain_computation::primary_graph) trait SourceReadmissionScopedOps<
+    Schema: ApplicationSchema,
+>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
+{
+    fn readmit_application_query_from_observed<
         'a,
         Query,
         Parameters,
@@ -96,7 +100,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         )
     }
 
-    pub(in crate::domain_computation::primary_graph) fn prepare_application_query_from_observed<
+    fn prepare_application_query_from_observed<
         'a,
         Query,
         Parameters,
@@ -128,7 +132,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     > {
         let selector = observed.retained_scope_selector();
 
-        if observed.runtime_authority != self.runtime.authority_identity().as_u64()
+        if observed.runtime_authority != self.authority_identity().as_u64()
             || observed.query_identity != *query.identity()
             || observed.schema_binding != *query.binding_identity()
         {
@@ -159,4 +163,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             controls,
         })
     }
+}
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > SourceReadmissionScopedOps<Schema> for HostRuntime
+{
 }

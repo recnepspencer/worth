@@ -146,3 +146,5 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> Drop
         let _ = self.terminate(Disposition::Abandoned);
     }
 }
+pub use next::NextOps;
+pub use open::OpenOps;

@@ -1,6 +1,8 @@
 //! Authorization sources a conditional operation uses to admit its
 //! reconstruction query; operation sources live in the `operation` submodule.
 
+use crate::domain_computation::primary_graph::application_query::AdmissionScopedOps as _;
+use crate::domain_computation::primary_graph::product_operation::AdmissionScopedOps;
 use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationQueryPlan, WorthQueryApplicationQueryAccessContext,
     WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryControls,

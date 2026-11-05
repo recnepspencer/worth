@@ -47,6 +47,7 @@ where
         ))
     })?;
     let adapter = application
+        .application_runtime()
         .managed_indexes
         .executor(execution, &association, allocation)?
         .ok_or(Denial::ForeignAssociation)?;

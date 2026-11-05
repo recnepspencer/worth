@@ -1,11 +1,11 @@
 use super::*;
 
-impl<Schema>
-    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub(super) trait AffinityParentOps<Schema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
 where
     Schema: worth_query_installation::facade::ApplicationSchema,
 {
-    pub(super) fn checked_source_affinity<'a, Binding, Scope>(
+    fn checked_source_affinity<'a, Binding, Scope>(
         &'a self,
         admission: &WorthQueryAdmittedApplicationOperation<
             Schema,
@@ -36,14 +36,14 @@ where
                     Binding::IDENTITY,
                 )
             })?;
-        let graph = self.runtime.primary_graph().ok_or_else(|| {
+        let graph = self.primary_graph().ok_or_else(|| {
             WorthQuerySourceExpectationDenial::new(
                 WorthQuerySourceExpectationDenialKind::ForeignApplication,
                 Binding::IDENTITY,
             )
         })?;
         let expected_query_identity = self
-            .installed_schema
+            .installed_schema()
             .installed_query_identity_by_name(expected_query_identifier)
             .ok_or_else(|| {
                 WorthQuerySourceExpectationDenial::new(
@@ -83,8 +83,8 @@ where
             return Err(parameters_denial());
         }
         source.validate_affinity(
-            self.runtime.authority_identity().as_u64(),
-            &self.installed_schema.binding_identity(),
+            self.authority_identity().as_u64(),
+            &self.installed_schema().binding_identity(),
             admission.graph_work_branch(),
             admission.scope_entity_id(),
             &selected_product,
@@ -97,6 +97,17 @@ where
             expected_query_identifier,
         })
     }
+}
+
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > AffinityParentOps<Schema> for HostRuntime
+where
+    Schema: worth_query_installation::facade::ApplicationSchema,
+{
 }
 
 pub(in crate::domain_computation::primary_graph::application_query::observed_source) fn parameter_denial(

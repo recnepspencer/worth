@@ -1,21 +1,15 @@
 //! Fresh issued identities stay borrowed until the retained-source continuation returns.
 use super::*;
+use crate::domain_computation::primary_graph::application_query::SourceReadmissionScopedOps;
 use crate::domain_computation::primary_graph::{
     WorthQueryIssuedSelectedPrincipal, WorthQueryIssuedSelectedScope,
 };
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    /// Ordinary and governed reads share actual principal/scope resolution and
-    /// original source preparation. No caller can replace these issued guards.
+pub(in crate::domain_computation::primary_graph) trait AccessScopedOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
+{
     #[allow(clippy::too_many_arguments)]
-    pub(in crate::domain_computation::primary_graph) fn with_fresh_retained_query_access<
-        'a,
-        'selected,
-        'runtime,
-        Binding,
-        R,
-        E,
-    >(
+    fn with_fresh_retained_query_access<'a, 'selected, 'runtime, Binding, R, E>(
         &'a self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &'a WorthQueryInstalledApplicationQueryBinding<Schema, Binding>,
@@ -76,17 +70,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         )
     }
 
-    /// Resolve current issued identities without preparing Query payload
-    /// permission. The continuation must separately admit its actual intent.
     #[allow(clippy::too_many_arguments)]
-    pub(in crate::domain_computation::primary_graph) fn with_fresh_retained_query_identities<
-        'a,
-        'selected,
-        'runtime,
-        Binding,
-        R,
-        E,
-    >(
+    fn with_fresh_retained_query_identities<'a, 'selected, 'runtime, Binding, R, E>(
         &'a self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &'a WorthQueryInstalledApplicationQueryBinding<Schema, Binding>,
@@ -135,17 +120,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         )
     }
 
-    /// Resolve current issued identities without preparing Query payload
-    /// permission. The continuation must separately admit its actual intent.
     #[allow(clippy::too_many_arguments)]
-    pub(in crate::domain_computation::primary_graph) fn with_fresh_inspection_scope_identities<
-        'a,
-        'selected,
-        'runtime,
-        Binding,
-        R,
-        E,
-    >(
+    fn with_fresh_inspection_scope_identities<'a, 'selected, 'runtime, Binding, R, E>(
         &'a self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &'a WorthQueryInstalledApplicationQueryBinding<Schema, Binding>,
@@ -206,4 +182,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     }
 }
 
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > AccessScopedOps<Schema> for HostRuntime
+{
+}
+
 mod court_doors_for_test;
+pub use court_doors_for_test::AccessDoorsOps;

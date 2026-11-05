@@ -1,13 +1,13 @@
 //! Sealed test doors over this module's private members.
 use super::*;
 
-impl<Schema>
-    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub trait PreparedExpectationDoorsOps<Schema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
 where
     Schema: worth_query_installation::facade::ApplicationSchema,
 {
     #[doc(hidden)]
-    pub fn prepare_application_source_expectation_for_test<Binding, Scope>(
+    fn prepare_application_source_expectation_for_test<Binding, Scope>(
         &self,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         admission: &WorthQueryAdmittedApplicationOperation<
@@ -30,4 +30,15 @@ where
             self, phase, admission, source, input,
         )
     }
+}
+
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > PreparedExpectationDoorsOps<Schema> for HostRuntime
+where
+    Schema: worth_query_installation::facade::ApplicationSchema,
+{
 }

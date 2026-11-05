@@ -35,17 +35,11 @@ pub enum FreshQueryPermissionStop<E> {
     Inspect(E),
 }
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    /// Resolve the installed principal and original descriptive scope on this
-    /// selected root, prepare the retained source, and consume permission in
-    /// one scoped callback. Neither access identity can be supplied separately.
+pub(in crate::domain_computation::primary_graph) trait FreshScopedOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
+{
     #[allow(clippy::too_many_arguments)]
-    pub(in crate::domain_computation::primary_graph) fn with_fresh_retained_query_permission<
-        'a,
-        Binding,
-        R,
-        E,
-    >(
+    fn with_fresh_retained_query_permission<'a, Binding, R, E>(
         &'a self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &'a WorthQueryInstalledApplicationQueryBinding<Schema, Binding>,
@@ -101,3 +95,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         )
     }
 }
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > FreshScopedOps<Schema> for HostRuntime
+{
+}
+pub use access::AccessDoorsOps;
+pub(in crate::domain_computation::primary_graph) use access::AccessScopedOps;

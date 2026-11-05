@@ -29,7 +29,7 @@ use crate::domain_computation::{
 
 pub(super) fn open<Schema: ApplicationSchema, History: ApplicationHistoryQueryBinding<Schema>>(
     execution: worth_execution::ExecutionRequest<'_, '_>,
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     mut plan: SubjectPlan<'_, Schema, History>,
     metadata: HistoryMetadataAdmission,
     subjects: Subjects<Schema, History>,
@@ -75,7 +75,7 @@ pub(super) fn open<Schema: ApplicationSchema, History: ApplicationHistoryQueryBi
 
 pub(super) fn page<Schema: ApplicationSchema, History: ApplicationHistoryQueryBinding<Schema>>(
     execution: worth_execution::ExecutionRequest<'_, '_>,
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     mut plan: SubjectPlan<'_, Schema, History>,
     metadata: HistoryMetadataAdmission,
     subjects: &Subjects<Schema, History>,
@@ -152,7 +152,7 @@ pub(super) fn page<Schema: ApplicationSchema, History: ApplicationHistoryQueryBi
 
 fn complete<Schema: ApplicationSchema, History: ApplicationHistoryQueryBinding<Schema>>(
     execution: worth_execution::ExecutionRequest<'_, '_>,
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     plan: SubjectPlan<'_, Schema, History>,
     proof: WorthQuerySessionGraphReadProof,
 ) -> Result<(), Denial> {

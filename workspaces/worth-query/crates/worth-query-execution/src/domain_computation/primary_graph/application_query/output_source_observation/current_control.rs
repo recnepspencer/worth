@@ -78,7 +78,7 @@ impl SourceQueryObservationStop {
 
 impl<'a, S: ApplicationSchema> SourceQueryReaderAccess<'a, S> {
     pub(in crate::domain_computation::primary_graph) fn ordinary(
-        application: &'a WorthQueryPrimaryGraphApplicationRuntime<S>,
+        application: &'a dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<S>,
         shared: &'a SharedSelectedProductOperation<'a, S>,
         principal: &'a WorthQueryAuthenticatedExternalPrincipal<S>,
         request: &'a WorthQueryRequestScope,
@@ -106,7 +106,7 @@ impl<'a, S: ApplicationSchema> SourceQueryReaderAccess<'a, S> {
         stop
     }
     pub(in crate::domain_computation::primary_graph) fn new(
-        application: &'a WorthQueryPrimaryGraphApplicationRuntime<S>,
+        application: &'a dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<S>,
         shared: &'a SharedSelectedProductOperation<'a, S>,
         current: Option<&'a SharedSelectedProductOperation<'a, S>>,
         invocation: Option<HistoryProducerInvocation<'a>>,
@@ -123,8 +123,7 @@ impl<'a, S: ApplicationSchema> SourceQueryReaderAccess<'a, S> {
             {
                 // Capture before any Native borrow: registry entry can allocate or wait.
                 let lane = application
-                    .runtime
-                    .primary_provider
+                    .primary_provider()
                     .application_branch_commit_lane_for_occurrence(
                         invocation.current().observation().lifecycle_incarnation(),
                     );

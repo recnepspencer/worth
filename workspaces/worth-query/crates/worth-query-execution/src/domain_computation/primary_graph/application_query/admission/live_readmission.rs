@@ -1,3 +1,5 @@
+use crate::domain_computation::primary_graph::application_query::admission_preparation::AdmissionPreparationParentOps;
+use crate::domain_computation::primary_graph::application_query::OrdinaryScopedOps;
 use worth_query_declaration::facade::{
     application_query::ApplicationQueryParameterSet, application_schema::ApplicationSchema,
 };
@@ -11,11 +13,13 @@ use super::super::{
 use super::denial::denial;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
-where
+pub(in crate::domain_computation::primary_graph::application_query) trait LiveReadmissionScopedOps<
+    Schema,
+>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema> where
     Schema: ApplicationSchema,
 {
-    pub(in crate::domain_computation::primary_graph::application_query) fn readmit_application_query_live<
+    fn readmit_application_query_live<
         'a,
         Query,
         Parameters,
@@ -59,7 +63,7 @@ where
         let (parameters, controls) =
             self.prepare_application_query_admission(query, access, parameters, controls)?;
         if !governance.readmission_matches(
-            self.runtime.authority_identity(),
+            self.authority_identity(),
             query.identity(),
             parameters.identity(),
             access.principal().principal_entity_id(),
@@ -75,4 +79,15 @@ where
             execution, query, access, parameters, controls, pending,
         )
     }
+}
+
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > LiveReadmissionScopedOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
 }

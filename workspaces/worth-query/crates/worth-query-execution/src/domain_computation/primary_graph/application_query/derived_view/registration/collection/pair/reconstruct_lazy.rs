@@ -1,5 +1,7 @@
 //! Sequential reconstruction when the first genuine row selects the second scope.
 
+use crate::domain_computation::primary_graph::application_query::derived_view::registration::RegistrationOwnOps;
+use crate::domain_computation::primary_graph::application_query::derived_view::registration::collection::pair::read::ReadParentOps;
 use super::{
     reconstruction::owner_stage, reconstruction_denial as denial, Denial,
     WorthQueryApplicationOneShotResult, WorthQueryApplicationProjection,
@@ -17,13 +19,10 @@ use {
     crate::domain_computation::request_execution::WorthQueryAdvancementPhase,
 };
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    /// Reads in canonical root order under the caller's actual advancement.
-    /// The second read may depend on the first row and use a distinct root.
-    /// Both callbacks retain their ordinary query authorization and source
-    /// checks. Callers keep any shared-batch row claims through projection.
-    /// Failure publishes no partial image; successful retention is atomic.
-    pub fn reconstruct_managed_derived_collection_pair_lazy<
+pub trait ReconstructLazyOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
+{
+    fn reconstruct_managed_derived_collection_pair_lazy<
         MQ,
         MR,
         Member,
@@ -54,7 +53,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Link: Eq,
     {
         let request = phase
-            .execution_request_for(&self.runtime.product_runtime)
+            .execution_request_for(self.product_runtime())
             .map_err(|_| Denial::ForeignApplication)?;
         request
             .run(ExecutionWorkCeiling::new(request.work_ceiling()), |lease| {
@@ -62,7 +61,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     let mut hold = ExecutionMemoryReservation::reserve_in_scope(lease, 0)
                         .map_err(denial::lease)?;
                     let (expected, membership) = super::reconstruction::membership::prepare(
-                        self, lease, &mut hold, view, product, membership_result, members,
+                        self.application_query_host(), lease, &mut hold, view, product, membership_result, members,
                     )?;
                     owner_stage::reserve_entry_slots::<WorthQueryManagedDerivedViewKey, Value>(
                         &mut hold, expected.len(),
@@ -106,4 +105,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .map_err(denial::scope)?
             .0
     }
+}
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > ReconstructLazyOps<Schema> for HostRuntime
+{
 }

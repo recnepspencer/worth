@@ -60,3 +60,6 @@ type SubjectAccess<'a, Schema, History> = super::WorthQueryApplicationQueryAcces
     <SubjectRead<Schema, History> as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
     SubjectScope<Schema, History>,
 >;
+pub use capture_plan::CapturePlanOps;
+pub use fresh::FreshPagingOps;
+pub use fresh::OpeningOps;

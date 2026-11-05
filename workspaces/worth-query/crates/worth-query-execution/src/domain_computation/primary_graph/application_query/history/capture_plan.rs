@@ -1,4 +1,5 @@
 //! An admitted SubjectRead and its independent history governance share one genuine session.
+use crate::domain_computation::primary_graph::application_query::history::admission::AdmissionParentOps;
 use worth_query_declaration::facade::{
     application_capability::ApplicationCapabilityRequest,
     application_query::ApplicationHistoryQueryBinding, application_schema::ApplicationSchema,
@@ -35,10 +36,10 @@ pub struct WorthQueryAdmittedApplicationHistoryCapture<
         WorthQueryApplicationHistoryCaptureLimits,
 }
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    /// The authored history contract must admit Public metadata; absence of a capability
-    /// is not an implicit permission. SubjectRead retains its own admission and governance.
-    pub fn admit_application_history_capture<'a, History>(
+pub trait CapturePlanOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
+{
+    fn admit_application_history_capture<'a, History>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         history: &'a WorthQueryInstalledApplicationHistoryQuery<Schema, History>,
@@ -58,8 +59,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         })
     }
 
-    /// The typed capability admits only the independent history contract on this session.
-    pub fn admit_governed_application_history_capture<'a, History, Capability, Operation, Input>(
+    fn admit_governed_application_history_capture<'a, History, Capability, Operation, Input>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         history: &'a WorthQueryInstalledApplicationHistoryQuery<Schema, History>,
@@ -79,7 +79,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     {
         let access = WorthQueryApplicationQueryAccessContext::new(plan.principal, plan.scope);
         let pending = prepare_governed_access(
-            self,
+            self.application_query_host(),
             plan.query,
             &access,
             capability,
@@ -95,4 +95,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             limits,
         })
     }
+}
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > CapturePlanOps<Schema> for HostRuntime
+{
 }

@@ -51,13 +51,12 @@ where
     }
 }
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub trait ReadinessOps<Schema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
 where
     Schema: ApplicationSchema,
 {
-    /// Renders the transport precondition for the exact basis observed by an
-    /// application query result.
-    pub fn application_basis_token(
+    fn application_basis_token(
         &self,
         basis: &WorthQueryApplicationBasisIdentity,
     ) -> Result<String, WorthQueryApplicationQueryAdmissionDenial> {
@@ -67,15 +66,13 @@ where
             "application query basis",
         )?;
         Ok(basis_token(
-            &self.runtime.application_readiness_schema_token,
+            self.application_readiness_schema_token(),
             basis.runtime_instance_id(),
             basis.descriptor(),
         ))
     }
 
-    /// Renders the transport precondition established by an exact committed
-    /// application receipt without rediscovering a newer global head.
-    pub fn application_commit_basis_token(
+    fn application_commit_basis_token(
         &self,
         receipt: &WorthQueryApplicationCommitReceipt,
     ) -> Result<String, WorthQueryApplicationQueryAdmissionDenial> {
@@ -86,24 +83,37 @@ where
             "application commit basis",
         )?;
         Ok(basis_token(
-            &self.runtime.application_readiness_schema_token,
+            self.application_readiness_schema_token(),
             receipt.provider_runtime_instance_id(),
             descriptor,
         ))
     }
+}
 
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > ReadinessOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
+}
+
+trait ReadinessOwnOps<Schema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
+where
+    Schema: ApplicationSchema,
+{
     fn require_owned_basis(
         &self,
         runtime_instance_id: u64,
         branch_id: &worth_relational::facade::history::BranchId,
         subject: &str,
     ) -> Result<(), WorthQueryApplicationQueryAdmissionDenial> {
-        if runtime_instance_id
-            != self
-                .runtime
-                .relational_branch_identity
-                .runtime_instance_id()
-            || branch_id != self.runtime.relational_branch_identity.branch_id()
+        if runtime_instance_id != self.relational_branch_identity().runtime_instance_id()
+            || branch_id != self.relational_branch_identity().branch_id()
         {
             return Err(WorthQueryApplicationQueryAdmissionDenial::new(
                 WorthQueryApplicationQueryAdmissionDenialKind::ForeignBasis,
@@ -112,6 +122,17 @@ where
         }
         Ok(())
     }
+}
+
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > ReadinessOwnOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
 }
 
 impl WorthQueryPrimaryGraphApplicationReadinessSnapshot {

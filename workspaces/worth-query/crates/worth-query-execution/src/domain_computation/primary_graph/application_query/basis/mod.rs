@@ -21,3 +21,5 @@ pub(super) use selected_indexes::{
     ensure_query_truth_and_security_indexes_admitted,
     ensure_query_truth_and_security_indexes_admitted_with_native_access,
 };
+pub use truth_view_admission::HistoricalDoorsOps;
+pub(crate) use truth_view_admission::HistoricalScopedOps;

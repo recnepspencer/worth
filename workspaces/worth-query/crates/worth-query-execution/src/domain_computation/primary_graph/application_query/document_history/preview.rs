@@ -5,8 +5,10 @@ use crate::domain_computation::primary_graph::{WorthQueryHistoryNodeId, WorthQue
 mod admission;
 pub use admission::WorthQueryHistoryPreviewReadAdmission;
 
-impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
-    pub fn open_document_history_preview<H: ApplicationHistoryBinding<S>>(
+pub trait PreviewOps<S: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<S>
+{
+    fn open_document_history_preview<H: ApplicationHistoryBinding<S>>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         access: &WorthQueryProgramPublicationAccess,
@@ -17,7 +19,8 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     where
         Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>,
     {
-        let completed = read.complete_metadata_read(self, phase, document, access)?;
+        let completed =
+            read.complete_metadata_read(self.application_query_host(), phase, document, access)?;
         let preview = document
             .selection
             .lock()
@@ -26,7 +29,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         completed.confirm(document, preview)
     }
 
-    pub fn prepare_document_history_preview_read<'phase, 'scope, H: ApplicationHistoryBinding<S>>(
+    fn prepare_document_history_preview_read<'phase, 'scope, H: ApplicationHistoryBinding<S>>(
         &self,
         phase: &'phase WorthQueryAdvancementPhase<'scope>,
         access: &WorthQueryProgramPublicationAccess,
@@ -46,7 +49,8 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             .ok_or(Denial::InstalledBindingMismatch)?;
         let parameters = *read.plan.parameters.identity();
         let principal = read.plan.principal.principal_entity_id();
-        let completed = read.complete_metadata_read(self, phase, document, access)?;
+        let completed =
+            read.complete_metadata_read(self.application_query_host(), phase, document, access)?;
         if !document
             .selection
             .lock()
@@ -61,7 +65,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         ))
     }
 
-    pub fn read_document_history_preview<H: ApplicationHistoryBinding<S>>(
+    fn read_document_history_preview<H: ApplicationHistoryBinding<S>>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         _access: &WorthQueryProgramPublicationAccess,
@@ -76,7 +80,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         if read.binding.query().binding_observation() != read.plan.query.binding_observation() {
             return Err(Denial::InstalledBindingMismatch);
         }
-        let (historical, result) = read.execute(self, phase)?;
+        let (historical, result) = read.execute(self.application_query_host(), phase)?;
         if historical.model() != admission.model
             || historical.identity() != *admission.step.endpoint()
         {
@@ -95,4 +99,13 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         // Only the separately captured current document is the delivery guard.
         admission.completed.confirm(document, result)
     }
+}
+
+impl<
+        S: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                S,
+            > + ?Sized,
+    > PreviewOps<S> for HostRuntime
+{
 }

@@ -5,8 +5,10 @@ use crate::domain_computation::primary_graph::{
     WorthQueryHistoryPageLimits,
 };
 
-impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
-    pub fn read_document_history_page<H: ApplicationHistoryBinding<S>>(
+pub trait PagingOps<S: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<S>
+{
+    fn read_document_history_page<H: ApplicationHistoryBinding<S>>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         access: &WorthQueryProgramPublicationAccess,
@@ -18,9 +20,10 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     where
         Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>,
     {
-        let completed = read.complete_metadata_read(self, phase, document, access)?;
+        let completed =
+            read.complete_metadata_read(self.application_query_host(), phase, document, access)?;
         let execution = phase
-            .checked_execution_request_for(&self.runtime.product_runtime)
+            .checked_execution_request_for(self.product_runtime())
             .map_err(Denial::Stopped)?;
         let context = document.history_description_context(access);
         let (page, generation) = {
@@ -42,4 +45,13 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             .0;
         completed.confirm_generation(document, generation, page)
     }
+}
+
+impl<
+        S: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                S,
+            > + ?Sized,
+    > PagingOps<S> for HostRuntime
+{
 }

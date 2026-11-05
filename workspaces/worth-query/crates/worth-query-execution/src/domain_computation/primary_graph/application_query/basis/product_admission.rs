@@ -10,14 +10,13 @@ use crate::domain_computation::primary_graph::{
 
 pub(super) fn admit<Schema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     product: WorthQueryProductObservationLease,
     application_basis: super::super::resource_lifecycle::WorthQueryApplicationBasisLease,
 ) -> Result<WorthQueryApplicationQueryBasisCustody, WorthQueryApplicationQueryAdmissionDenial> {
     let selected =
         admit_selected_permission_basis(execution, application, product, application_basis)?;
     let graph = application
-        .runtime
         .primary_graph()
         .ok_or_else(|| {
             admission_denial(
@@ -43,7 +42,7 @@ pub(super) fn admit<Schema>(
 /// without rebuilding unrelated indexes on a Clean demand.
 pub(super) fn admit_selected_permission_basis<Schema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     product: WorthQueryProductObservationLease,
     application_basis: super::super::resource_lifecycle::WorthQueryApplicationBasisLease,
 ) -> Result<WorthQueryApplicationQueryBasisCustody, WorthQueryApplicationQueryAdmissionDenial> {
@@ -58,20 +57,20 @@ pub(super) fn admit_selected_permission_basis<Schema>(
 
 pub(super) fn admit_selected_permission_basis_with_native_access<Schema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     product: WorthQueryProductObservationLease,
     application_basis: super::super::resource_lifecycle::WorthQueryApplicationBasisLease,
     native: &mut super::super::ApplicationQueryNativeAccess<'_>,
 ) -> Result<WorthQueryApplicationQueryBasisCustody, WorthQueryApplicationQueryAdmissionDenial> {
     if product.observation().owner_identity()
-        != application.runtime.product_runtime.owner.owner_identity()
+        != application.product_runtime().owner.owner_identity()
     {
         return Err(admission_denial(
             WorthQueryApplicationQueryAdmissionDenialKind::ForeignBasis,
             "product World owner",
         ));
     }
-    let graph = application.runtime.primary_graph().ok_or_else(|| {
+    let graph = application.primary_graph().ok_or_else(|| {
         admission_denial(
             WorthQueryApplicationQueryAdmissionDenialKind::BasisUnavailable,
             "primary graph",
@@ -102,11 +101,11 @@ pub(super) fn admit_selected_permission_basis_with_native_access<Schema>(
 
 pub(super) fn admit_retained<Schema: worth_query_installation::facade::ApplicationSchema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     product: WorthQueryProductObservationLease,
 ) -> Result<WorthQueryApplicationQueryBasisCustody, WorthQueryApplicationQueryAdmissionDenial> {
     if product.observation().owner_identity()
-        != application.runtime.product_runtime.owner.owner_identity()
+        != application.product_runtime().owner.owner_identity()
     {
         return Err(admission_denial(
             WorthQueryApplicationQueryAdmissionDenialKind::ForeignBasis,

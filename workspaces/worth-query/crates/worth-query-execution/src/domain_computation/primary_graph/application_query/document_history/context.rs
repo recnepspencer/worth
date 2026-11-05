@@ -6,8 +6,10 @@ use crate::domain_computation::primary_graph::{
 };
 use worth_query_declaration::facade::application_history::ApplicationHistoryModelDomain;
 
-impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
-    pub fn refresh_document_history_context<H: ApplicationHistoryBinding<S>>(
+pub trait ContextOps<S: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<S>
+{
+    fn refresh_document_history_context<H: ApplicationHistoryBinding<S>>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         access: &WorthQueryProgramPublicationAccess,
@@ -21,7 +23,8 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         let domain = read.history.definition().parts().model_domain;
         // This is the same original admitted READ and metadata purpose; only
         // this receiver can propose a new physical context after that read.
-        let observed = read.observe_metadata_read(self, phase, document, access)?;
+        let observed =
+            read.observe_metadata_read(self.application_query_host(), phase, document, access)?;
         if domain != ApplicationHistoryModelDomain::ScopeEntityRecord {
             return Err(Denial::UnsupportedContextRefresh);
         }
@@ -47,13 +50,11 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             return Err(Denial::UnsupportedContextRefresh);
         }
         let execution = phase
-            .checked_execution_request_for(&self.runtime.product_runtime)
+            .checked_execution_request_for(self.product_runtime())
             .map_err(Denial::Stopped)?;
         let record = document.model.record();
         let proof = self
-            .runtime
-            .primary_provider
-            .graph
+            .provider_graph()
             .with_runtime(&execution, |native| {
                 native.observe_untouched_record_advance(
                     &execution,
@@ -78,9 +79,12 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         if selected.expected != previous_expected {
             return Err(Denial::HeadDiverged);
         }
-        let prepared = observed
-            .source()
-            .confirm(phase, self, selected.head.branch(), prepared);
+        let prepared = observed.source().confirm(
+            phase,
+            self.application_query_host(),
+            selected.head.branch(),
+            prepared,
+        );
         let prepared = match prepared {
             Ok(prepared) => prepared,
             Err((prepared, cause)) => {
@@ -98,4 +102,13 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         drop(previous);
         Ok(())
     }
+}
+
+impl<
+        S: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                S,
+            > + ?Sized,
+    > ContextOps<S> for HostRuntime
+{
 }

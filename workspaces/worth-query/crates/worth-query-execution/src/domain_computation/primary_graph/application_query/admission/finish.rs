@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_query::admission::authorization::AuthorizationParentOps;
 use worth_query_admission::facade::{
     application_query::WorthQueryAdmittedApplicationQueryParameters,
     graph_obligation::{WorthQueryAdmittedGraphWorkPlan, WorthQueryGraphWorkIntent},
@@ -55,7 +56,8 @@ struct ReviewedApplicationQueryGraphWork {
     obligation_identity: WorthQueryInstalledGraphObligationSetIdentity,
 }
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+trait FinishOwnOps<Schema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
 where
     Schema: ApplicationSchema,
 {
@@ -114,7 +116,7 @@ where
             WorthQueryApplicationQueryAdmissionDenial,
         >,
     {
-        let graph = self.runtime.primary_graph().ok_or_else(|| {
+        let graph = self.primary_graph().ok_or_else(|| {
             denial(
                 WorthQueryApplicationQueryAdmissionDenialKind::StaleScope,
                 query.name(),
@@ -153,14 +155,12 @@ where
             planned_batch_item: None,
             retain_expression_context: false,
             retain_projection_for_inspection: false,
-            runtime_authority: self.runtime.authority_identity(),
+            runtime_authority: self.authority_identity(),
             graph_authority_identity: self
-                .runtime
                 .primary_graph_authority()
                 .authority_identity()
                 .to_string(),
             provider_identity: self
-                .runtime
                 .primary_graph_authority()
                 .provider_identity()
                 .to_string(),
@@ -209,9 +209,11 @@ where
                 query.name(),
             ));
         }
-        let plan =
-            admit_application_query_graph_work(reviewed.work, &self.graph_work_resource_support())
-                .map_err(|denial| graph_work_denial(format!("{}: {denial:?}", query.name())))?;
+        let plan = admit_application_query_graph_work(
+            reviewed.work,
+            &self.application_runtime().graph_work_resource_support(),
+        )
+        .map_err(|denial| graph_work_denial(format!("{}: {denial:?}", query.name())))?;
         validate_one_shot_shape(query)?;
         let disclosure = compile_disclosure_contract(query, &graph.layout).map_err(|denial| {
             WorthQueryApplicationQueryAdmissionDenial::new(
@@ -308,7 +310,7 @@ where
         );
         WorthQueryManagedGraphWorkSession::start_query(
             plan,
-            self.runtime.authority_identity(),
+            self.authority_identity(),
             query.binding_identity(),
             obligation_identity,
             query.authority_identity(),
@@ -317,11 +319,22 @@ where
             basis.identity(),
             basis.retained_product(),
             security_product,
-            self.graph_work_provider_identity(),
+            self.application_runtime().graph_work_provider_identity(),
             graph.product_read_session_port(),
         )
         .map_err(|denial| graph_work_denial(format!("{}: {denial:?}", query.name())))
     }
+}
+
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > FinishOwnOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
 }
 
 fn continuation_index_id<Schema, Query, Parameters, QueryResult, Scope>(
@@ -348,3 +361,6 @@ where
         })
         .map(Some)
 }
+pub(in crate::domain_computation::primary_graph) use ordinary::OrdinaryScopedOps;
+pub(in crate::domain_computation::primary_graph) use prepared_permission::PreparedPermissionScopedOps;
+pub(in crate::domain_computation::primary_graph) use readmitted::ReadmittedScopedOps;

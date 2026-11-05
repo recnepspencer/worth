@@ -11,7 +11,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn complete_
     Scope,
 >(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     decode: &ValueDecodeState,
     plan: WorthQueryAdmittedApplicationQueryPlan<
         '_,
@@ -68,7 +68,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn finalize_
     Scope,
 >(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     plan: WorthQueryAdmittedApplicationQueryPlan<
         '_,
         Schema,
@@ -112,7 +112,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn finalize_
     Scope,
 >(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     decode: &ValueDecodeState,
     plan: WorthQueryAdmittedApplicationQueryPlan<
         '_,
@@ -157,7 +157,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn complete_
     Scope,
 >(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     plan: WorthQueryAdmittedApplicationQueryPlan<
         '_,
         Schema,
@@ -199,7 +199,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn complete_
     Projected,
 >(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     decode: &ValueDecodeState,
     plan: WorthQueryAdmittedApplicationQueryPlan<
         '_,

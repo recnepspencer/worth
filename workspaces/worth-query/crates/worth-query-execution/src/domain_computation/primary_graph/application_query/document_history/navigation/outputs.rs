@@ -10,7 +10,9 @@ use crate::domain_computation::primary_graph::{
     WorthQueryHistoryOutputReadDenial,
 };
 
-impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
+trait OutputsOwnOps<S: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<S>
+{
     fn validate_navigation_source<H, N, B>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -28,11 +30,14 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     {
         use WorthQueryHistoryOutputReadDenial as ReadDenial;
         let execution = phase
-            .checked_execution_request_for(&self.runtime.product_runtime)
+            .checked_execution_request_for(self.product_runtime())
             .map_err(|cause| ReadDenial::Authority(NavigationDenial::Stopped(cause)))?;
-        profile
-            .source_intent()
-            .require_control(self, &execution, binding, control)?;
+        profile.source_intent().require_control(
+            self.application_query_host(),
+            &execution,
+            binding,
+            control,
+        )?;
         let request = admission.retain_admitted_request();
         if !request.same_request(control.controls.request_scope())
             || control.security_product.observation() != read.current_product().observation()
@@ -42,11 +47,28 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         { return Err(ReadDenial::Authority(NavigationDenial::ForeignDocument)); }
         read.confirm(document, ())
             .map_err(|cause| ReadDenial::Authority(NavigationDenial::Document(cause)))?;
-        validate_execution_lifetimes(self, &control.controls, control.principal)
-            .map_err(super::super::output_read::control_denial)
+        validate_execution_lifetimes(
+            self.application_query_host(),
+            &control.controls,
+            control.principal,
+        )
+        .map_err(super::super::output_read::control_denial)
     }
+}
 
-    pub fn prepare_document_history_navigation_with_outputs<'runtime, H, N, B>(
+impl<
+        S: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                S,
+            > + ?Sized,
+    > OutputsOwnOps<S> for HostRuntime
+{
+}
+
+pub trait OutputsOps<S: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<S>
+{
+    fn prepare_document_history_navigation_with_outputs<'runtime, H, N, B>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         access: &WorthQueryProgramPublicationAccess,
@@ -68,7 +90,13 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     {
         let installed = read.history;
         let (read, admission) = read
-            .admit_navigation::<N>(self, phase, access, document, N::input(history_access))
+            .admit_navigation::<N>(
+                self.application_query_host(),
+                phase,
+                access,
+                document,
+                N::input(history_access),
+            )
             .map_err(Denial::Navigation)?;
         self.validate_navigation_source::<H, N, B>(
             phase,
@@ -94,9 +122,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             .map_err(Denial::Navigation)
     }
 
-    /// The SDK callback owns slot allocation, tree progress and refused results.
-    /// No SDK work runs while a Native selection or attempt guard is held.
-    pub fn advance_document_history_navigation_with_outputs<'runtime, 'scope, H, N, B, E>(
+    fn advance_document_history_navigation_with_outputs<'runtime, 'scope, H, N, B, E>(
         &self,
         phase: &WorthQueryAdvancementPhase<'scope>,
         access: &WorthQueryProgramPublicationAccess,
@@ -122,7 +148,13 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     {
         let installed = read.history;
         let (read, admission) = read
-            .admit_navigation::<N>(self, phase, access, document, N::input(history_access))
+            .admit_navigation::<N>(
+                self.application_query_host(),
+                phase,
+                access,
+                document,
+                N::input(history_access),
+            )
             .map_err(Denial::Navigation)?;
         self.validate_navigation_source::<H, N, B>(
             phase,
@@ -187,8 +219,12 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         };
         // A stopped callback leaves its SDK owners in the document registry.
         // The actual Native transition remains authoritative if its delivery lapses.
-        validate_execution_lifetimes(self, &source.controls, source.principal)
-            .map_err(|cause| Denial::Source(super::super::output_read::control_denial(cause)))?;
+        validate_execution_lifetimes(
+            self.application_query_host(),
+            &source.controls,
+            source.principal,
+        )
+        .map_err(|cause| Denial::Source(super::super::output_read::control_denial(cause)))?;
         read.confirm(document, ())
             .map_err(|cause| Denial::Navigation(NavigationDenial::Document(cause)))?;
         document
@@ -205,4 +241,13 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             .map(Ok)
             .map_err(Denial::Navigation)
     }
+}
+
+impl<
+        S: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                S,
+            > + ?Sized,
+    > OutputsOps<S> for HostRuntime
+{
 }

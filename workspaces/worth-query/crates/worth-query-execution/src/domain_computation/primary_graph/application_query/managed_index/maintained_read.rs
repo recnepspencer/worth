@@ -39,7 +39,7 @@ use worth_relational::facade::runtime::{
 #[allow(clippy::too_many_arguments)]
 pub(super) fn select<'a, 'request, 'authority, S, I>(
     execution: &ExecutionRequest<'request, 'authority>,
-    application: &'a crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<S>,
+    application: &'a dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<S>,
     access: &SourceQueryReaderAccess<'_, S>,
     parent: &'a WorthQueryManagedGraphWorkSession,
     request: &'a WorthQueryRequestScope,
@@ -175,7 +175,6 @@ fn read_source<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>>(
 > {
     let application = access.application;
     let graph = application
-        .runtime
         .primary_graph()
         .ok_or(Denial::ForeignAssociation)?;
     let program = graph
@@ -263,7 +262,7 @@ fn read_source<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>>(
                 .into_managed_source(context, execution, allocation, |units| storage.work(units))?
                 .ok_or(Denial::ForeignAssociation)?;
             let authorization = crate::domain_computation::primary_graph::application_attempt::SourceReadAuthorization::complete(
-                execution, &terminal, binding, source_identity, plan.authorization, &application.runtime.authorization, allocation,
+                execution, &terminal, binding, source_identity, plan.authorization, application.authorization(), allocation,
             ).map_err(Denial::NativeAdmission)?.ok_or(Denial::ForeignAssociation)?;
             storage.arc::<WorthQueryCompletedSourceRead>()?;
             Ok((Arc::new(terminal), observation, authorization))

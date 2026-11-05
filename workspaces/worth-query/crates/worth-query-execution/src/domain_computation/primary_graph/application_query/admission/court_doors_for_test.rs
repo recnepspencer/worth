@@ -1,12 +1,13 @@
 //! Sealed test doors over this module's private members.
 use super::*;
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub trait AdmissionDoorsOps<Schema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
 where
     Schema: ApplicationSchema,
 {
     #[doc(hidden)]
-    pub fn admit_application_query_for_test<
+    fn admit_application_query_for_test<
         'a,
         Query,
         Parameters,
@@ -55,4 +56,15 @@ where
             Scope,
         >(self, execution, query, access, parameters, controls)
     }
+}
+
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > AdmissionDoorsOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
 }

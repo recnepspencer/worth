@@ -1,5 +1,6 @@
 //! Read and admit a child only through its original history parent connection.
 use super::*;
+use crate::domain_computation::primary_graph::application_query::OutputReadScopedOps;
 use crate::domain_computation::primary_graph::runtime_host::WorthQueryRuntimeIdentityHost;
 use crate::domain_computation::primary_graph::{
     application_query::HistoryOutputControlPlan,

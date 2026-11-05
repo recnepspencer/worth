@@ -16,7 +16,7 @@ static NEXT_APPLICATION_QUERY_LIVE_LEASE: AtomicU64 = AtomicU64::new(1);
 pub(in crate::domain_computation::primary_graph::application_query) fn admit_live_managed_basis<
     Schema,
 >(
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     buffer_capacity: usize,
     graph_work: &crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
     subject: &str,
@@ -37,14 +37,10 @@ pub(in crate::domain_computation::primary_graph::application_query) fn admit_liv
         descriptor,
         worth_runtime_bridge::facade::SnapshotReadPacket::new(Vec::new()),
     );
-    let request_bridge = application
-        .runtime
-        .bridge
-        .ordinary()
-        .fork_managed_request_lane();
+    let request_bridge = application.bridge().ordinary().fork_managed_request_lane();
     admit_live_lower_execution_basis(
         &request_bridge,
-        &application.runtime.product_runtime.source,
+        &application.product_runtime().source,
         subject,
         &attempt_identity,
         buffer_capacity,

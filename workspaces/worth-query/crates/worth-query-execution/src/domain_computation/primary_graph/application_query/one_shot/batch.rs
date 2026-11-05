@@ -15,15 +15,10 @@ pub enum WorthQueryApplicationBatchReadDenial {
     Execution(WorthQueryApplicationOneShotDenial),
 }
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    /// Executes an ordinary installed plan under one shared read/custody loan.
-    /// Both ordinary index postures and historical authorization remain intact.
-    /// The returned claim keeps the admitted result-row envelope charged while
-    /// the caller privately stages its result. Preparation and authorization
-    /// keep their existing per-item protections, outside this read-work loan.
-    /// Each admission consumes one finite slot, including a failed attempt;
-    /// retained admission carries its slot so execution does not debit it twice.
-    pub fn execute_application_query_one_shot_in_batch<
+pub trait BatchOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
+{
+    fn execute_application_query_one_shot_in_batch<
         Query,
         Parameters,
         QueryResult,
@@ -51,15 +46,28 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     where
         QueryResult: WorthQueryApplicationProjection<Schema, Query>,
     {
-        let request = match phase.execution_request_for(&self.runtime.product_runtime) {
+        let request = match phase.execution_request_for(self.product_runtime()) {
             Ok(request) => request,
             Err(_) => return Err(WorthQueryApplicationBatchReadDenial::Execution(authorization_denial(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody"), plan.query.name()))),
         };
         let execution = &request;
         self.execute_application_query_one_shot_in_batch_with_request(execution, plan, batch)
     }
+}
 
-    pub(in crate::domain_computation) fn execute_application_query_one_shot_in_batch_with_request<
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > BatchOps<Schema> for HostRuntime
+{
+}
+
+pub(in crate::domain_computation) trait BatchScopedOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
+{
+    fn execute_application_query_one_shot_in_batch_with_request<
         Query,
         Parameters,
         QueryResult,
@@ -89,8 +97,23 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     {
         self.execute_application_query_one_shot_in_batch_metered(execution, plan, batch, None)
     }
+}
 
-    pub(in crate::domain_computation::primary_graph::application_query) fn execute_application_query_one_shot_in_batch_metered<
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > BatchScopedOps<Schema> for HostRuntime
+{
+}
+
+pub(in crate::domain_computation::primary_graph::application_query) trait OneShotBatchScopedOps<
+    Schema: ApplicationSchema,
+>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
+{
+    fn execute_application_query_one_shot_in_batch_metered<
         Query,
         Parameters,
         QueryResult,
@@ -153,4 +176,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .map(|result| WorthQueryApplicationBatchResult::issued(result, item))
             .map_err(Execution)
     }
+}
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > OneShotBatchScopedOps<Schema> for HostRuntime
+{
 }

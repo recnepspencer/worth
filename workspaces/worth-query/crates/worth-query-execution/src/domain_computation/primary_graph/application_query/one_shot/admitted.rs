@@ -1,8 +1,12 @@
 use super::*;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub(in crate::domain_computation::primary_graph::application_query) fn execute_application_query_one_shot_admitted_with_native_access<
+pub(in crate::domain_computation::primary_graph::application_query) trait AdmittedScopedOps<
+    Schema: ApplicationSchema,
+>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
+{
+    fn execute_application_query_one_shot_admitted_with_native_access<
         Query,
         Parameters,
         QueryResult,
@@ -33,13 +37,20 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     {
         let spent = OneShotReadWorkObservation::new();
         super::plan_admission::validate_one_shot_plan_with_native_access(
-            execution, self, &plan, native,
+            execution,
+            self.application_query_host(),
+            &plan,
+            native,
         )
         .map_err(WorthQueryAdmittedOneShotStop::Execution)?;
 
         let (raw, authorization_work, read_proof) =
             match super::super::authorized_read::execute_selected_authorized_read_with_native_access(
-                execution, self, &plan, &spent, native,
+                execution,
+                self.application_query_host(),
+                &plan,
+                &spent,
+                native,
             ) {
                 Ok(read) => read,
                 Err(SelectedAuthorizedReadStop::Read(denial)) => {
@@ -53,7 +64,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             };
         let result = super::outcome::complete_one_shot(
             execution,
-            self,
+            self.application_query_host(),
             plan,
             raw,
             authorization_work,
@@ -61,6 +72,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         );
         settle_admitted_read(&spent, result)
     }
+}
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > AdmittedScopedOps<Schema> for HostRuntime
+{
 }
 
 pub(in crate::domain_computation::primary_graph::application_query) fn settle_admitted_read<

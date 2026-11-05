@@ -14,11 +14,12 @@ use crate::domain_computation::primary_graph::{
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub(crate) trait HistoricalScopedOps<Schema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub(crate) fn admit_application_historical_basis(
+    fn admit_application_historical_basis(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         read: WorthQueryApplicationHistoricalRead,
@@ -29,14 +30,35 @@ where
     > {
         validate_truth_view_request(request)?;
         let basis = self.admit_historical_execution_basis(execution, read.into_source())?;
-        let lease = super::super::admission::register_basis(execution, self, basis)?;
+        let lease = super::super::admission::register_basis(
+            execution,
+            self.application_query_host(),
+            basis,
+        )?;
         validate_truth_view_request(request)?;
         Ok(WorthQueryApplicationHistoricalBasis {
             lease,
             _schema: PhantomData,
         })
     }
+}
 
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > HistoricalScopedOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
+}
+
+trait HistoricalOwnOps<Schema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
+where
+    Schema: ApplicationSchema,
+{
     fn admit_historical_execution_basis(
         &self,
         request_execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -54,10 +76,7 @@ where
             } => {
                 if provider_runtime_instance_id != descriptor.runtime_instance_id()
                     || provider_runtime_instance_id
-                        != self
-                            .runtime
-                            .relational_branch_identity
-                            .runtime_instance_id()
+                        != self.relational_branch_identity().runtime_instance_id()
                     || commit.branch_id != *descriptor.branch_id()
                 {
                     return Err(denial(
@@ -67,8 +86,7 @@ where
                 }
                 let retention = match retention {
                     WorthQueryApplicationHistoricalRetention::OwnerLifecycle => self
-                        .runtime
-                        .primary_provider
+                        .primary_provider()
                         .retained_application_commit_basis(&commit),
                 }
                 .ok_or_else(|| {
@@ -84,23 +102,20 @@ where
                     ));
                 }
                 let basis = self
-                    .runtime
-                    .primary_provider
-                    .graph
+                    .provider_graph()
                     .with_runtime(request_execution, |runtime| {
                         runtime.readmit_retained_branch_basis(&descriptor, retention.lease())
                     })
                     .map_err(super::super::map_basis_denial)?;
-                let selected_commit = self.runtime.primary_provider.graph.with_runtime(
-                    request_execution,
-                    |runtime| {
-                        runtime
-                            .history()
-                            .branch_head_for_observation(&basis.observation())
-                            .ok()
-                            .flatten()
-                    },
-                );
+                let selected_commit =
+                    self.provider_graph()
+                        .with_runtime(request_execution, |runtime| {
+                            runtime
+                                .history()
+                                .branch_head_for_observation(&basis.observation())
+                                .ok()
+                                .flatten()
+                        });
                 if selected_commit.as_ref() != Some(&commit) {
                     return Err(denial(
                         WorthQueryApplicationQueryAdmissionDenialKind::BasisUnavailable,
@@ -113,4 +128,16 @@ where
     }
 }
 
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > HistoricalOwnOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
+}
+
 mod court_doors_for_test;
+pub use court_doors_for_test::HistoricalDoorsOps;

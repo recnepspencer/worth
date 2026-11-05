@@ -1,32 +1,28 @@
 //! Authority precedes source affinity, retention and admission mutation.
 use super::*;
 use crate::domain_computation::authorization::{BrandTag, WorthQueryAdmittedOperation};
-use crate::domain_computation::primary_graph::application_runtime::WorthQueryApplicationRuntimeCore;
-use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 
 mod binding;
 mod pending;
 mod preparation;
 
 pub(super) struct CheckedSourceAdmission<'a, Schema, Operation, Input, Scope> {
-    runtime: &'a crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
-        Schema,
-    >,
+    runtime: &'a dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     admission: &'a WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
 }
 
 pub(super) struct CheckedMutableSourceAdmission<'a, Schema, Operation, Input, Scope> {
-    runtime: &'a crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
-        Schema,
-    >,
+    runtime: &'a dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     admission: &'a mut WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
 }
 
-impl<Schema: worth_query_installation::facade::ApplicationSchema>
-    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub(super) trait PreparedExpectationAdmissionParentOps<
+    Schema: worth_query_installation::facade::ApplicationSchema,
+>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
 {
     #[inline]
-    pub(super) fn validate_source_admission<'a, Operation, Input, Scope>(
+    fn validate_source_admission<'a, Operation, Input, Scope>(
         &'a self,
         admission: &'a WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         subject: &str,
@@ -35,20 +31,15 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
         WorthQuerySourceExpectationDenial,
     > {
         let (core, tag) = admission.reentry_parts();
-        self.runtime.validate_source_admission(
-            core,
-            tag,
-            &self.installed_schema.binding_identity(),
-            subject,
-        )?;
+        validate_source_admission(self.application_query_host(), core, tag, subject)?;
         Ok(CheckedSourceAdmission {
-            runtime: self,
+            runtime: self.application_query_host(),
             admission,
         })
     }
 
     #[inline]
-    pub(super) fn readmit_mutable_source_admission<'a, Operation, Input, Scope>(
+    fn readmit_mutable_source_admission<'a, Operation, Input, Scope>(
         &'a self,
         admission: &'a mut WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         subject: &str,
@@ -57,35 +48,34 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
         WorthQuerySourceExpectationDenial,
     > {
         let (core, tag) = admission.reentry_parts();
-        self.runtime.validate_source_admission(
-            core,
-            tag,
-            &self.installed_schema.binding_identity(),
-            subject,
-        )?;
+        validate_source_admission(self.application_query_host(), core, tag, subject)?;
         Ok(CheckedMutableSourceAdmission {
-            runtime: self,
+            runtime: self.application_query_host(),
             admission,
         })
     }
 }
 
-impl WorthQueryApplicationRuntimeCore {
-    fn validate_source_admission(
-        &self,
-        core: &WorthQueryAdmittedOperation,
-        tag: &BrandTag,
-        binding: &ApplicationSchemaBindingIdentity,
-        subject: &str,
-    ) -> Result<(), WorthQuerySourceExpectationDenial> {
-        core.validate_projection_entry_with_tag(
-            tag,
-            self.authority_identity(),
-            binding,
-            &self.installed_operations,
-        )
-        .map_err(|denial| {
-            WorthQuerySourceExpectationDenial::admission_authorization(subject, denial)
-        })
-    }
+impl<
+        Schema: worth_query_installation::facade::ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > PreparedExpectationAdmissionParentOps<Schema> for HostRuntime
+{
+}
+
+fn validate_source_admission<Schema: worth_query_installation::facade::ApplicationSchema>(
+    host: &(dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema> + '_),
+    core: &WorthQueryAdmittedOperation,
+    tag: &BrandTag,
+    subject: &str,
+) -> Result<(), WorthQuerySourceExpectationDenial> {
+    core.validate_projection_entry_with_tag(
+        tag,
+        host.authority_identity(),
+        &host.installed_schema().binding_identity(),
+        host.installed_operations(),
+    )
+    .map_err(|denial| WorthQuerySourceExpectationDenial::admission_authorization(subject, denial))
 }

@@ -2,6 +2,7 @@
 pub(super) use super::super::super::admission::connected::PendingInspectionPolicies;
 use super::super::super::{admission, source_original::SourceOriginal};
 use super::*;
+use crate::domain_computation::primary_graph::application_query::AccessScopedOps;
 use crate::domain_computation::primary_graph::{
     application_query::FreshQueryPermissionStop, WorthQueryApplicationBasisSelectionIdentity,
 };

@@ -128,7 +128,7 @@ impl WorthQueryHistoryOutputIntent {
         B: ApplicationQueryBinding<S>,
     >(
         &self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<S>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: &WorthQueryInstalledApplicationQueryBinding<S, B>,
         control: &HistoryOutputControlPlan<'_, S, B>,
@@ -171,8 +171,10 @@ impl WorthQueryHistoryOutputIntent {
     }
 }
 
-impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
-    pub fn capture_history_output_intent<
+pub trait OutputIntentOps<S: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<S>
+{
+    fn capture_history_output_intent<
         H: ApplicationHistoryBinding<S>,
         B: ApplicationQueryBinding<S>,
     >(
@@ -184,10 +186,14 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         control: HistoryOutputControlPlan<'_, S, B>,
     ) -> Result<WorthQueryHistoryOutputIntent, WorthQueryHistoryOutputReadDenial> {
         use WorthQueryHistoryOutputReadDenial as ReadDenial;
-        validate_execution_plan(self, &control).map_err(control_denial)?;
-        validate_execution_lifetimes(self, &control.controls, control.principal)
-            .map_err(control_denial)?;
-        if !std::ptr::eq(self, document.application())
+        validate_execution_plan(self.application_query_host(), &control).map_err(control_denial)?;
+        validate_execution_lifetimes(
+            self.application_query_host(),
+            &control.controls,
+            control.principal,
+        )
+        .map_err(control_denial)?;
+        if !std::ptr::addr_eq(self, document.application())
             || control.query.identity() != binding.query().identity()
             || HistoryModelIdentity::from_resolved(control.scope) != document.model
             || !control.controls.is_current_product_one_shot()
@@ -199,7 +205,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             ));
         }
         let execution = phase
-            .checked_execution_request_for(&self.runtime.product_runtime)
+            .checked_execution_request_for(self.product_runtime())
             .map_err(|cause| {
                 ReadDenial::Authority(WorthQueryHistoryNavigationDenial::Stopped(cause))
             })?;
@@ -247,4 +253,13 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             }),
         })
     }
+}
+
+impl<
+        S: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                S,
+            > + ?Sized,
+    > OutputIntentOps<S> for HostRuntime
+{
 }

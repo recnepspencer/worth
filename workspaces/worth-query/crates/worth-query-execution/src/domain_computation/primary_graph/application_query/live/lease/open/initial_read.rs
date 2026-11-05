@@ -27,7 +27,7 @@ pub(super) fn execute_live_initial_read<
     Scope,
 >(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     mut plan: crate::domain_computation::primary_graph::application_query::WorthQueryAdmittedApplicationQueryPlan<
         '_, Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, Scope,
     >,
@@ -38,7 +38,7 @@ where
 {
     refresh_governed_authorization(execution, application, &mut plan)
         .map_err(|denial| open_read_denial(denial, subject))?;
-    application.runtime.primary_graph().ok_or_else(|| {
+    application.primary_graph().ok_or_else(|| {
         open_denial(
             WorthQueryApplicationLiveOpenDenialKind::ScopeIdentityUnavailable,
             subject,

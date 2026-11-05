@@ -11,10 +11,10 @@ use worth_query_declaration::facade::application_operation::{
 type Model<S, M> =
     <<M as ApplicationMutationBinding<S>>::ScopeBinding as ApplicationMutationScopeBinding<S>>::Scope;
 
-impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
-    /// Called after fresh document READ and binding-selected action admission.
-    /// Success observes correspondence; it retains no permission or execution grant.
-    pub fn assess_document_history_operation<H, M>(
+pub trait OperationOps<S: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<S>
+{
+    fn assess_document_history_operation<H, M>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         _access: &WorthQueryProgramPublicationAccess,
@@ -28,7 +28,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         M: ApplicationMutationBinding<S>,
         M::ScopeBinding: ApplicationMutationScopeBinding<S, Scope = ApplicationHistoryModel<S, H>>,
     {
-        if !std::ptr::eq(self, document.application())
+        if !std::ptr::addr_eq(self, document.application())
             || !std::ptr::addr_eq(self, selected.application())
         {
             return Err(Denial::ForeignRuntime);
@@ -60,10 +60,20 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         if expected != document.selection.lock().expected {
             return Err(Denial::HeadDiverged);
         }
-        confirm_document_head(self, phase, product, ()).map_err(|(_, denial)| denial)?;
+        confirm_document_head(self.product_operation_host(), phase, product, ())
+            .map_err(|(_, denial)| denial)?;
         if expected != document.selection.lock().expected {
             return Err(Denial::HeadDiverged);
         }
         Ok(())
     }
+}
+
+impl<
+        S: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                S,
+            > + ?Sized,
+    > OperationOps<S> for HostRuntime
+{
 }

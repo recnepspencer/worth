@@ -4,8 +4,12 @@ use super::*;
 use crate::domain_computation::primary_graph::value_decode::ValueDecodeState;
 use worth_relational::facade::identity::EntityId;
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub(in crate::domain_computation::primary_graph) fn execute_correction_disclosure<
+pub(in crate::domain_computation::primary_graph) trait OneShotCorrectionDisclosureScopedOps<
+    Schema: ApplicationSchema,
+>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
+{
+    fn execute_correction_disclosure<
         Query,
         Parameters,
         QueryResult,
@@ -27,18 +31,20 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         >,
         original_subject: EntityId,
     ) -> Result<bool, WorthQueryApplicationOneShotDenial> {
-        validate_one_shot_plan(execution, self, &plan)?;
-        refresh_governed_authorization(execution, self, &mut plan)
+        validate_one_shot_plan(execution, self.application_query_host(), &plan)?;
+        refresh_governed_authorization(execution, self.application_query_host(), &mut plan)
             .map_err(|read| map_authorized_read_denial(read, plan.query.name()))?;
-        let (raw, authorization_work, read_proof) =
-            execute_authorized_read(execution, self, &plan, |runtime, graph, plan| {
-                read_bounded_root_rows(runtime, execution, graph, plan, None)
-            })
-            .map_err(|read| map_authorized_read_denial(read, plan.query.name()))?;
+        let (raw, authorization_work, read_proof) = execute_authorized_read(
+            execution,
+            self.application_query_host(),
+            &plan,
+            |runtime, graph, plan| read_bounded_root_rows(runtime, execution, graph, plan, None),
+        )
+        .map_err(|read| map_authorized_read_denial(read, plan.query.name()))?;
         let decode = ValueDecodeState::new(self.installed_schema().value_bindings().clone());
         let completed = super::outcome::complete_one_shot_with_projection(
             execution,
-            self,
+            self.application_query_host(),
             &decode,
             plan,
             raw,
@@ -53,4 +59,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     }
 }
 
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > OneShotCorrectionDisclosureScopedOps<Schema> for HostRuntime
+{
+}
+
 mod court_doors_for_test;
+pub use court_doors_for_test::CorrectionDisclosureDoorsOps;

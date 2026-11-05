@@ -6,6 +6,7 @@ use super::{
     },
     execution::ProviderExecutionDenial,
 };
+use crate::domain_computation::primary_graph::application_query::OneShotScopedOps;
 use std::sync::Arc;
 use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
 use worth_query_declaration::facade::{
@@ -57,10 +58,10 @@ struct ManagedParentRead<'plan, S: ApplicationSchema, B: ApplicationQueryBinding
     selection: Option<super::selection::MaintainedWatchSelection>,
 }
 
-impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
-    /// Executes this actual typed binding. A committed managed selector uses
-    /// its existing Ready registration; Created/Evicted requires explicit rebuild.
-    pub fn execute_application_query_binding_one_shot<B>(
+pub trait ReceiverOps<S: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<S>
+{
+    fn execute_application_query_binding_one_shot<B>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         binding: &WorthQueryInstalledApplicationQueryBinding<S, B>,
@@ -72,7 +73,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         ResultValue<S, B>: WorthQueryApplicationProjection<S, B::Query>,
     {
         let execution = phase
-            .execution_request_for(&self.runtime.product_runtime)
+            .execution_request_for(self.product_runtime())
             .map_err(|_| Denial::new(ReceiverCause::Refused(Refusal::ForeignPhase), None))?;
         if !std::ptr::eq(binding.query(), plan.query) {
             return Err(Denial::new(
@@ -90,7 +91,20 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         self.execute_managed_parent(&execution, binding, external, plan, &allocation)
             .map_err(|cause| Denial::new(cause, Some(allocation)))
     }
+}
 
+impl<
+        S: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                S,
+            > + ?Sized,
+    > ReceiverOps<S> for HostRuntime
+{
+}
+
+trait ReceiverOwnOps<S: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<S>
+{
     fn execute_managed_parent<B>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -103,7 +117,13 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         B: ApplicationQueryBinding<S>,
         ResultValue<S, B>: WorthQueryApplicationProjection<S, B::Query>,
     {
-        let context = context::prepare(execution, self, binding, &mut plan, allocation)?;
+        let context = context::prepare(
+            execution,
+            self.application_query_host(),
+            binding,
+            &mut plan,
+            allocation,
+        )?;
         let read = self.read_managed_parent::<B>(
             execution,
             plan,
@@ -142,7 +162,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         );
         one_shot::outcome::complete_one_shot_with_capture(
             execution,
-            self,
+            self.application_query_host(),
             &decode,
             read.plan,
             read.kernel,
@@ -189,7 +209,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         ResultValue<S, B>: WorthQueryApplicationProjection<S, B::Query>,
     {
         let adapter = self
-            .managed_indexes
+            .managed_indexes()
             .executor(execution, &context.association, allocation)?
             .ok_or(ReceiverCause::Refused(Refusal::MissingProvider))?;
         let parameter = &context
@@ -217,7 +237,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         let lease = adapter
             .select(
                 execution,
-                self,
+                self.application_query_host(),
                 &plan.graph_work,
                 plan.controls.request_scope(),
                 &context.association,
@@ -233,8 +253,11 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         let rows = lease
             .rows(&plan.graph_work, plan.controls.request_scope())
             .map_err(|cause| ReceiverCause::Provider(ProviderExecutionDenial::Selection(cause)))?;
-        let (kernel, authorization, proof) =
-            execute_authorized_read(execution, self, &plan, |runtime, graph, plan| {
+        let (kernel, authorization, proof) = execute_authorized_read(
+            execution,
+            self.application_query_host(),
+            &plan,
+            |runtime, graph, plan| {
                 let mut read = ReadPlan::of(plan);
                 read.managed_rows = Some(rows);
                 read.material_source = Some(allocation);
@@ -246,13 +269,14 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                     None,
                     ReadInterruption::Query(plan.controls.request_scope()),
                 )
-            })
-            .map_err(|cause| {
-                ReceiverCause::Read(one_shot::map_authorized_read_denial(
-                    cause,
-                    plan.query.name(),
-                ))
-            })?;
+            },
+        )
+        .map_err(|cause| {
+            ReceiverCause::Read(one_shot::map_authorized_read_denial(
+                cause,
+                plan.query.name(),
+            ))
+        })?;
         lease
             .rows(&plan.graph_work, plan.controls.request_scope())
             .map_err(|cause| ReceiverCause::Provider(ProviderExecutionDenial::Selection(cause)))?;
@@ -278,3 +302,16 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         })
     }
 }
+
+impl<
+        S: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                S,
+            > + ?Sized,
+    > ReceiverOwnOps<S> for HostRuntime
+{
+}
+pub use eviction::EvictionOps;
+pub use lifecycle::LifecycleOps;
+pub use watch::NextOps;
+pub use watch::OpenOps;

@@ -2,14 +2,11 @@
 use super::*;
 use crate::domain_computation::primary_graph::application_query::execution_shape::PreparedOneShotShape;
 use crate::domain_computation::primary_graph::application_query::WorthQueryAdmittedApplicationQueryControls;
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+pub(super) trait AdmittedGraphParentOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
+{
     #[allow(clippy::too_many_arguments)]
-    pub(super) fn prepare_application_query_graph_work_admitted<
-        Query,
-        Parameters,
-        QueryResult,
-        Scope,
-    >(
+    fn prepare_application_query_graph_work_admitted<Query, Parameters, QueryResult, Scope>(
         &self,
         query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
         parameters: &WorthQueryAdmittedApplicationQueryParameters,
@@ -60,9 +57,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             worth_query_installation::facade::WorthQueryCanonicalWorkEvidence::zero(),
             worth_query_installation::facade::WorthQueryCanonicalWorkEvidence::zero(),
         );
-        let plan =
-            admit_application_query_graph_work(reviewed, self.graph_work_resource_support_ref())
-                .map_err(|cause| graph_work_denial(format!("{}: {cause:?}", query.name())))?;
+        let plan = admit_application_query_graph_work(
+            reviewed,
+            self.application_runtime().graph_work_resource_support_ref(),
+        )
+        .map_err(|cause| graph_work_denial(format!("{}: {cause:?}", query.name())))?;
         Ok(PreparedApplicationQueryGraphWork {
             plan,
             obligation_identity,
@@ -71,4 +70,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             continuation_index_id: None,
         })
     }
+}
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > AdmittedGraphParentOps<Schema> for HostRuntime
+{
 }

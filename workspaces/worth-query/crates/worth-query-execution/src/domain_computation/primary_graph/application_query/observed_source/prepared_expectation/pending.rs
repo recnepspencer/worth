@@ -1,4 +1,5 @@
 //! Checked source ownership retained across recorded idempotency resolution.
+use crate::domain_computation::primary_graph::application_query::observed_source::prepared_expectation::admission::PreparedExpectationAdmissionParentOps;
 use super::*;
 
 /// A checked source identity with its actual observed-source owner.
@@ -20,7 +21,7 @@ impl<Query> WorthQueryPendingSourceExpectation<Query> {
     /// Materialize only after recorded resolution has selected fresh execution.
     pub fn consume_into<Schema, Operation, Input, Scope>(
         self,
-        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         admission: &mut WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     ) -> Result<(), WorthQuerySourceExpectationDenial>

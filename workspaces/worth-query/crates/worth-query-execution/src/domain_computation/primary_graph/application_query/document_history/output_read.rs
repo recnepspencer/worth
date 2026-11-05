@@ -1,5 +1,7 @@
 //! Consume actual C admission before selecting the independent output truth.
 use super::*;
+use crate::domain_computation::primary_graph::application_query::OrdinaryScopedOps;
+use crate::domain_computation::primary_graph::application_query::ReceiverOps;
 use crate::domain_computation::primary_graph::application_query::{
     execution_validation::{
         validate_execution_lifetimes, validate_execution_plan,
@@ -30,8 +32,10 @@ pub(in crate::domain_computation::primary_graph) type HistoryOutputControlPlan<'
         Scope<S, B>,
     >;
 
-impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
-    pub(in crate::domain_computation::primary_graph) fn validate_history_output_control<B>(
+pub(in crate::domain_computation::primary_graph) trait OutputReadScopedOps<S: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<S>
+{
+    fn validate_history_output_control<B>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         authority: &WorthQueryHistoryOutputAuthority<'_, '_>,
@@ -44,11 +48,15 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         use WorthQueryHistoryOutputReadDenial as ReadDenial;
         let request = control.controls.request_scope();
         authority
-            .validate(phase, self, request)
+            .validate(phase, self.product_operation_host(), request)
             .map_err(ReadDenial::Authority)?;
-        validate_execution_plan(self, control).map_err(control_denial)?;
-        validate_execution_lifetimes(self, &control.controls, control.principal)
-            .map_err(control_denial)?;
+        validate_execution_plan(self.application_query_host(), control).map_err(control_denial)?;
+        validate_execution_lifetimes(
+            self.application_query_host(),
+            &control.controls,
+            control.principal,
+        )
+        .map_err(control_denial)?;
         let access = WorthQueryApplicationQueryAccessContext::new(control.principal, control.scope);
         if control.query.identity() != binding.query().identity()
             || control.security_product.observation() != authority.current().observation()
@@ -59,14 +67,11 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             return Err(ReadDenial::Authority(crate::domain_computation::primary_graph::WorthQueryHistoryNavigationDenial::ForeignDocument));
         }
         authority
-            .confirm_read(phase, self, request, ())
+            .confirm_read(phase, self.product_operation_host(), request, ())
             .map_err(ReadDenial::Authority)
     }
 
-    pub(in crate::domain_computation::primary_graph) fn execute_history_output_query_on_selected<
-        'control,
-        B,
-    >(
+    fn execute_history_output_query_on_selected<'control, B>(
         &'control self,
         phase: &WorthQueryAdvancementPhase<'_>,
         authority: &WorthQueryHistoryOutputAuthority<'_, '_>,
@@ -86,7 +91,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         let request = control.controls.request_scope();
         self.validate_history_output_control(phase, authority, binding, &control)?;
         let access = WorthQueryApplicationQueryAccessContext::new(control.principal, control.scope);
-        let execution = phase.checked_execution_request_for(&self.runtime.product_runtime)
+        let execution = phase.checked_execution_request_for(self.product_runtime())
             .map_err(|cause| ReadDenial::Authority(crate::domain_computation::primary_graph::WorthQueryHistoryNavigationDenial::Stopped(cause)))?;
         let producer = retained.original_settled_producer().cloned();
         let (_, product, basis) = retained.into_parts();
@@ -114,15 +119,32 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         let result = self
             .execute_application_query_binding_one_shot(phase, binding, external, plan)
             .map_err(ReadDenial::Read)?;
-        validate_execution_lifetimes(self, &control.controls, control.principal)
-            .map_err(control_denial)?;
+        validate_execution_lifetimes(
+            self.application_query_host(),
+            &control.controls,
+            control.principal,
+        )
+        .map_err(control_denial)?;
         let result = authority
-            .confirm_read(phase, self, request, result)
+            .confirm_read(phase, self.product_operation_host(), request, result)
             .map_err(ReadDenial::Authority)?;
-        validate_execution_lifetimes(self, &control.controls, control.principal)
-            .map_err(control_denial)?;
+        validate_execution_lifetimes(
+            self.application_query_host(),
+            &control.controls,
+            control.principal,
+        )
+        .map_err(control_denial)?;
         Ok(result)
     }
+}
+
+impl<
+        S: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                S,
+            > + ?Sized,
+    > OutputReadScopedOps<S> for HostRuntime
+{
 }
 
 pub(super) fn control_denial(stop: ControlStop) -> WorthQueryHistoryOutputReadDenial {

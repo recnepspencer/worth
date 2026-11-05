@@ -25,7 +25,7 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
 {
     fn admit_navigation<'phase, 'scope, N: ApplicationHistoryNavigationBinding<S, H>>(
         self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<S>,
         phase: &'phase WorthQueryAdvancementPhase<'scope>,
         access: &WorthQueryProgramPublicationAccess,
         document: &WorthQueryDocumentHistory<'_, S, H>,
@@ -75,14 +75,17 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             .installed_operation(reference)
             .map_err(NavigationDenial::OperationInstallation)?;
         let admission = runtime
+            .application_runtime()
             .authorize_capability_operation(phase, capability, &operation, Default::default())
             .map_err(NavigationDenial::Authorization)?;
         Ok((completed, admission))
     }
 }
 
-impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
-    pub fn prepare_document_history_navigation<'runtime, H, N>(
+pub trait NavigationOps<S: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<S>
+{
+    fn prepare_document_history_navigation<'runtime, H, N>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         access: &WorthQueryProgramPublicationAccess,
@@ -99,14 +102,19 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>,
     {
         let installed = read.history;
-        let (read, admission) =
-            read.admit_navigation::<N>(self, phase, access, document, N::input(history_access))?;
+        let (read, admission) = read.admit_navigation::<N>(
+            self.application_query_host(),
+            phase,
+            access,
+            document,
+            N::input(history_access),
+        )?;
         document.prepare_navigation::<N>(
             phase, read, installed, admission, expected, intent, key, None,
         )
     }
 
-    pub fn advance_document_history_navigation<'runtime, H, N>(
+    fn advance_document_history_navigation<'runtime, H, N>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         access: &WorthQueryProgramPublicationAccess,
@@ -122,10 +130,25 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>,
     {
         let installed = read.history;
-        let (read, admission) =
-            read.admit_navigation::<N>(self, phase, access, document, N::input(history_access))?;
+        let (read, admission) = read.admit_navigation::<N>(
+            self.application_query_host(),
+            phase,
+            access,
+            document,
+            N::input(history_access),
+        )?;
         document.advance_navigation::<N>(
             phase, &read, installed, &admission, navigation, key, None, None,
         )
     }
 }
+
+impl<
+        S: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                S,
+            > + ?Sized,
+    > NavigationOps<S> for HostRuntime
+{
+}
+pub use outputs::OutputsOps;

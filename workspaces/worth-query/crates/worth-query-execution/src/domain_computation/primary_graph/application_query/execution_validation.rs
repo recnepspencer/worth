@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_query::installed_schema_currentness::InstalledSchemaCurrentnessParentOps;
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryRequestInterruption, WorthQueryRequestScope,
 };
@@ -28,7 +29,7 @@ pub(super) fn validate_execution_plan<
     PrincipalIdentity,
     Scope,
 >(
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     plan: &WorthQueryAdmittedApplicationQueryPlan<
         '_,
         Schema,
@@ -43,26 +44,25 @@ pub(super) fn validate_execution_plan<
 where
     Schema: ApplicationSchema,
 {
-    if plan.runtime_authority != application.runtime.authority_identity() {
+    if plan.runtime_authority != application.authority_identity() {
         return Err(WorthQueryApplicationQueryExecutionValidationDenial::ForeignPlan);
     }
     if !application.installed_schema_is_current() {
         return Err(WorthQueryApplicationQueryExecutionValidationDenial::StaleInstalledQuery);
     }
     application
-        .installed_schema
+        .installed_schema()
         .validate_installed_query(plan.query)
         .map_err(|_| WorthQueryApplicationQueryExecutionValidationDenial::StaleInstalledQuery)
 }
 
 pub(super) fn validate_execution_lifetimes<Schema, Principal, PrincipalIdentity>(
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     controls: &WorthQueryAdmittedApplicationQueryControls<'_>,
     principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
 ) -> Result<(), WorthQueryApplicationQueryExecutionValidationDenial> {
     if !application
-        .runtime
-        .authorization_clock
+        .authorization_clock()
         .admission_clock
         .same_clock(principal.clock())
         || !principal
@@ -75,7 +75,10 @@ pub(super) fn validate_execution_lifetimes<Schema, Principal, PrincipalIdentity>
     if controls.basis_is_expired() {
         return Err(WorthQueryApplicationQueryExecutionValidationDenial::ExpiredBasis);
     }
-    if application.authentication_is_expired(principal.valid_until()) {
+    if application
+        .application_runtime()
+        .authentication_is_expired(principal.valid_until())
+    {
         return Err(WorthQueryApplicationQueryExecutionValidationDenial::StalePrincipal);
     }
     Ok(())

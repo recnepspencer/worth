@@ -5,6 +5,7 @@ use super::*;
 use crate::domain_computation::primary_graph::application_contribution::producer::demand::MatchedRequiredPredecessors;
 use crate::domain_computation::primary_graph::application_contribution::producer::demand::ResolvedRequiredPredecessors;
 use crate::domain_computation::primary_graph::application_query::FreshQueryPermissionStop;
+use crate::domain_computation::primary_graph::application_query::FreshScopedOps;
 use crate::domain_computation::primary_graph::application_query::PreparedApplicationQueryPermission;
 use crate::domain_computation::primary_graph::product_operation::SelectedQueryBasisRetentionStop;
 use crate::domain_computation::primary_graph::product_operation::SharedQueryBasisScopedOps;

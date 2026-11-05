@@ -39,8 +39,7 @@ pub(in crate::domain_computation::primary_graph) type SourceReadPlan<'a, S, B> =
 /// Borrowed from the real producer execution entry. Each call freshly admits
 /// its installed query; historical truth carries no current permission.
 pub(in crate::domain_computation::primary_graph) struct SourceQueryReaderAccess<'a, Schema> {
-    pub(in crate::domain_computation::primary_graph) application:
-        &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    pub(in crate::domain_computation::primary_graph) application: &'a dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     pub(in crate::domain_computation::primary_graph) shared:
         &'a SharedSelectedProductOperation<'a, Schema>,
     pub(in crate::domain_computation::primary_graph) principal:

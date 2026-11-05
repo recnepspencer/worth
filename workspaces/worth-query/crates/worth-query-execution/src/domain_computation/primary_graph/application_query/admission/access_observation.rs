@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_query::AuthorizationObservationScopedOps;
 mod freshness_denial;
 use super::super::{
     WorthQueryApplicationAuthorizationWorkEvidence, WorthQueryApplicationQueryAccessContext,
@@ -17,8 +18,12 @@ use worth_query_installation::facade::{
     ApplicationScalarValueBinding, WorthQueryInstalledApplicationQuery,
 };
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub(in crate::domain_computation::primary_graph::application_query) fn observe_application_query_access<
+pub(in crate::domain_computation::primary_graph::application_query) trait AccessObservationScopedOps<
+    Schema: ApplicationSchema,
+>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
+{
+    fn observe_application_query_access<
         Principal,
         PrincipalIdentity,
         Scope,
@@ -47,7 +52,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     > {
         let session_identity = graph_work.identity();
         let scope = access.scope();
-        let graph = self.runtime.primary_graph().ok_or_else(|| {
+        let graph = self.primary_graph().ok_or_else(|| {
             denial(
                 WorthQueryApplicationQueryAdmissionDenialKind::StaleScope,
                 query.name(),
@@ -136,6 +141,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         };
         Ok((authorization, work))
     }
+}
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > AccessObservationScopedOps<Schema> for HostRuntime
+{
 }
 
 fn map_authorization_denial(

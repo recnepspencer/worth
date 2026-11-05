@@ -8,6 +8,7 @@ use super::super::{
     },
 };
 use super::*;
+use crate::domain_computation::primary_graph::application_query::AccessScopedOps;
 use crate::domain_computation::{
     authorization::application_disclosure::WorthQueryPendingApplicationQueryGovernance,
     primary_graph::{

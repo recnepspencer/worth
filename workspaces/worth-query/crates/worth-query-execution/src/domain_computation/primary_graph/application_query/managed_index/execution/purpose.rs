@@ -29,7 +29,7 @@ pub(in crate::domain_computation::primary_graph::application_query::managed_inde
     S: ApplicationSchema,
 >(
     execution: &ExecutionRequest<'request, 'authority>,
-    application: &'a WorthQueryPrimaryGraphApplicationRuntime<S>,
+    application: &'a dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<S>,
     parent: &'a WorthQueryManagedGraphWorkSession,
     request: &'a WorthQueryRequestScope,
     association: &WorthQueryInstalledManagedIndexParent,
@@ -41,7 +41,9 @@ pub(in crate::domain_computation::primary_graph::application_query::managed_inde
         storage.work(work)?;
         allocation.claim(execution, bytes)
     };
-    let support = application.graph_work_resource_support_ref();
+    let support = application
+        .application_runtime()
+        .graph_work_resource_support_ref();
     let prepared = prepare_managed_index_read_graph_work(association, support, &mut admit)
         .map_err(Denial::Capacity)?;
     let admitted =
@@ -52,7 +54,7 @@ pub(in crate::domain_computation::primary_graph::application_query::managed_inde
     WorthQueryManagedIndexReadSession::start(
         execution,
         parent,
-        &application.runtime.product_runtime,
+        application.product_runtime(),
         request,
         association.clone(),
         source,

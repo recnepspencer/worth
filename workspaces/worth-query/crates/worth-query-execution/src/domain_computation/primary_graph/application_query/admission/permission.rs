@@ -43,7 +43,7 @@ pub(in crate::domain_computation::primary_graph) struct PreparedApplicationQuery
     PrincipalIdentity,
     Scope,
 > {
-    pub(super) issuer: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    pub(super) issuer: &'a dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     pub(super) query:
         &'a WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
     pub(super) access:
@@ -62,7 +62,9 @@ pub(in crate::domain_computation::primary_graph) struct PreparedApplicationQuery
     pub(super) shape: super::super::execution_shape::PreparedOneShotShape<'a>,
 }
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+trait PermissionOwnOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
+{
     #[allow(clippy::too_many_arguments)]
     fn prepare_application_query_permission<
         'a,
@@ -132,9 +134,23 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     }
 }
 
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > PermissionOwnOps<Schema> for HostRuntime
+{
+}
+
 fn denial(
     kind: WorthQueryApplicationQueryAdmissionDenialKind,
     subject: &str,
 ) -> WorthQueryApplicationQueryAdmissionDenial {
     WorthQueryApplicationQueryAdmissionDenial::new(kind, subject)
 }
+pub use fresh::AccessDoorsOps;
+pub(in crate::domain_computation::primary_graph) use fresh::AccessScopedOps;
+pub(in crate::domain_computation::primary_graph) use fresh::FreshScopedOps;
+pub(in crate::domain_computation::primary_graph) use read_authorization::ReadAuthorizationScopedOps;
+pub(in crate::domain_computation::primary_graph::application_query) use source_parameters::SourceParametersScopedOps;

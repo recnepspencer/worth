@@ -62,7 +62,7 @@ pub(super) fn finalize_continuation_page<
     Scope,
 >(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     plan: WorthQueryAdmittedApplicationQueryPlan<
         '_,
         Schema,
@@ -218,12 +218,15 @@ fn release_continuation_page_basis<
 }
 
 fn validate_continuation_projection<Schema>(
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     finalization: &WorthQueryContinuationFinalization,
 ) -> Result<(), WorthQueryApplicationContinuationDenial> {
     validate_request(&finalization.request)
         .map_err(|validation| denial(map_validation_denial(validation), &finalization.subject))?;
-    if application.authentication_is_expired(finalization.authentication_valid_until) {
+    if application
+        .application_runtime()
+        .authentication_is_expired(finalization.authentication_valid_until)
+    {
         return Err(denial(
             WorthQueryApplicationContinuationDenialKind::StalePrincipal,
             &finalization.subject,

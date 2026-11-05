@@ -110,11 +110,7 @@ impl<Schema: ApplicationSchema, Operation>
                 ));
             }
             let execution = self.reader.execution;
-            let graph = access
-                .application
-                .runtime
-                .primary_graph()
-                .ok_or_else(unavailable)?;
+            let graph = access.application.primary_graph().ok_or_else(unavailable)?;
             let mut native = ApplicationQueryNativeAccess::borrowed(graph, self.reader.runtime)
                 .map_err(HandlerExecutionDenial::new)?;
             let (rows, observation) = application_query::managed_index::read_decision::<Schema, B>(

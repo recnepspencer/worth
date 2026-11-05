@@ -11,11 +11,11 @@ use {
     crate::domain_computation::request_execution::WorthQueryAdvancementPhase,
 };
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    /// Both authored disclosure contracts must admit Public decisions. The captured
-    /// source grants provenance only; a fresh session grants this opening's read authority.
+pub trait OpeningOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
+{
     #[allow(clippy::too_many_arguments)]
-    pub fn open_application_history<'a, History>(
+    fn open_application_history<'a, History>(
         &'a self,
         phase: &WorthQueryAdvancementPhase<'_>,
         history: &'a WorthQueryInstalledApplicationHistoryQuery<Schema, History>,
@@ -42,9 +42,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         )
     }
 
-    /// Each actual typed capability is prepared for its own purpose on the same fresh session.
     #[allow(clippy::too_many_arguments)]
-    pub fn open_governed_application_history<
+    fn open_governed_application_history<
         'a,
         History,
         ReadCapability,
@@ -92,7 +91,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 Ok((
                     Some(
                         prepare_governed_access(
-                            self,
+                            self.application_query_host(),
                             history.subject_read().query(),
                             access,
                             read,
@@ -102,7 +101,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     ),
                     Some(
                         prepare_governed_access(
-                            self,
+                            self.application_query_host(),
                             history.subject_read().query(),
                             access,
                             metadata,
@@ -116,13 +115,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub fn open_application_history_with_governed_subject<
-        'a,
-        History,
-        Capability,
-        Operation,
-        Input,
-    >(
+    fn open_application_history_with_governed_subject<'a, History, Capability, Operation, Input>(
         &'a self,
         phase: &WorthQueryAdvancementPhase<'_>,
         history: &'a WorthQueryInstalledApplicationHistoryQuery<Schema, History>,
@@ -152,7 +145,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 Ok((
                     Some(
                         prepare_governed_access(
-                            self,
+                            self.application_query_host(),
                             history.subject_read().query(),
                             access,
                             read,
@@ -167,13 +160,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub fn open_application_history_with_governed_metadata<
-        'a,
-        History,
-        Capability,
-        Operation,
-        Input,
-    >(
+    fn open_application_history_with_governed_metadata<'a, History, Capability, Operation, Input>(
         &'a self,
         phase: &WorthQueryAdvancementPhase<'_>,
         history: &'a WorthQueryInstalledApplicationHistoryQuery<Schema, History>,
@@ -204,7 +191,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     None,
                     Some(
                         prepare_governed_access(
-                            self,
+                            self.application_query_host(),
                             history.subject_read().query(),
                             access,
                             metadata,
@@ -216,7 +203,20 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             },
         )
     }
+}
 
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > OpeningOps<Schema> for HostRuntime
+{
+}
+
+trait OpeningOwnOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
+{
     #[allow(clippy::too_many_arguments)]
     fn open_history_with<'a, History>(
         &'a self,
@@ -235,10 +235,10 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     where
         History: ApplicationHistoryQueryBinding<Schema>,
     {
-        let execution = request_for(self, phase)?;
+        let execution = request_for(self.application_query_host(), phase)?;
         let captured = subjects.clone();
         with_session(
-            self,
+            self.application_query_host(),
             execution,
             history,
             external,
@@ -250,7 +250,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             |plan, metadata| {
                 session::open(
                     execution,
-                    self,
+                    self.application_query_host(),
                     plan,
                     metadata,
                     captured,
@@ -259,4 +259,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             },
         )
     }
+}
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > OpeningOwnOps<Schema> for HostRuntime
+{
 }

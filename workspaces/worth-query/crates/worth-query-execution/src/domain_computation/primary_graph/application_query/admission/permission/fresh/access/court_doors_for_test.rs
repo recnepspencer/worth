@@ -1,9 +1,11 @@
 //! Sealed test doors over this module's private members.
 use super::*;
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+pub trait AccessDoorsOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
+{
     #[doc(hidden)]
-    pub fn with_fresh_retained_query_identities_for_test<'a, 'selected, 'runtime, Binding, R, E>(
+    fn with_fresh_retained_query_identities_for_test<'a, 'selected, 'runtime, Binding, R, E>(
         &'a self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &'a WorthQueryInstalledApplicationQueryBinding<Schema, Binding>,
@@ -52,4 +54,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             inspect,
         )
     }
+}
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > AccessDoorsOps<Schema> for HostRuntime
+{
 }

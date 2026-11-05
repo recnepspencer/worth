@@ -48,7 +48,7 @@ impl ChargedBytes for Prepared {
 
 pub(in crate::domain_computation::primary_graph) fn capture_parameters<Schema, Binding>(
     execution: &ExecutionRequest<'_, '_>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     framework_bytes: usize,
     project: impl FnOnce() -> Result<ApplicationQueryParameterSet<Binding::Query>, Denial>,
 ) -> Result<CapturedApplicationQueryParameters, Denial>

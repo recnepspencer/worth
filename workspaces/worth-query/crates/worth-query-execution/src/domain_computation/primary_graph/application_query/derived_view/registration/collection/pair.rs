@@ -1,5 +1,7 @@
 //! Two independently authorized public entry reads retained as one entry.
 
+use crate::domain_computation::primary_graph::application_query::derived_view::registration::RegistrationOwnOps;
+use crate::domain_computation::primary_graph::application_query::derived_view::registration::collection::pair::read::ReadParentOps;
 use worth_query_declaration::facade::{
     application_query::ApplicationDerivedViewDefinition, application_schema::ApplicationSchema,
 };
@@ -25,11 +27,12 @@ pub(crate) mod reconstruction;
 use super::super::super::reconstruction_denial;
 mod refresh_batch;
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub trait PairOps<Schema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub fn open_managed_derived_collection_pair<
+    fn open_managed_derived_collection_pair<
         MembershipQuery,
         MembershipParameters,
         MembershipResult,
@@ -79,10 +82,10 @@ where
         Value: WorthQueryManagedDerivedValue,
     {
         for valid in [
-            self.installed_schema
+            self.installed_schema()
                 .validate_installed_query(first_query)
                 .is_ok(),
-            self.installed_schema
+            self.installed_schema()
                 .validate_installed_query(second_query)
                 .is_ok(),
         ] {
@@ -108,10 +111,7 @@ where
         )
     }
 
-    /// Opens the ordinary pair lifecycle with checked actual image storage.
-    /// No caller-local entry or byte ceiling is imposed. Logical image quotes
-    /// are not allocator/RSS limits or funding from another owner's pool.
-    pub fn open_owner_sized_managed_derived_collection_pair<
+    fn open_owner_sized_managed_derived_collection_pair<
         MembershipQuery,
         MembershipParameters,
         MembershipResult,
@@ -155,10 +155,10 @@ where
         Value: WorthQueryManagedDerivedValue,
     {
         for valid in [
-            self.installed_schema
+            self.installed_schema()
                 .validate_installed_query(first_query)
                 .is_ok(),
-            self.installed_schema
+            self.installed_schema()
                 .validate_installed_query(second_query)
                 .is_ok(),
         ] {
@@ -185,11 +185,7 @@ where
         )
     }
 
-    /// The second plan is admitted from the first observed row. Both rows must
-    /// agree on their declared link key. All four source sets
-    /// (two rows, two result sets) are
-    /// retained before the projected value can become current.
-    pub fn refresh_managed_derived_collection_pair_entry<
+    fn refresh_managed_derived_collection_pair_entry<
         'a,
         MembershipQuery,
         FirstQuery,
@@ -259,3 +255,19 @@ where
             .refresh_entry(key, value, dependencies, product.selected_commit())
     }
 }
+
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > PairOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
+}
+pub use reconcile::ReconcileOps;
+pub use reconstruct_dependent::ReconstructDependentOps;
+pub use reconstruct_lazy::ReconstructLazyOps;
+pub use reconstruct_parallel::ReconstructParallelOps;
+pub use refresh_batch::RefreshBatchOps;

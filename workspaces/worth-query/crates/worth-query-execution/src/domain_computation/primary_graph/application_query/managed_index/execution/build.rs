@@ -29,7 +29,7 @@ pub(in crate::domain_computation::primary_graph::application_query::managed_inde
     I: ApplicationManagedIndexBinding<S>,
 >(
     execution: &ExecutionRequest<'_, '_>,
-    application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+    application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<S>,
     state: &Arc<ManagedIndexState<S, I>>,
     parent: &WorthQueryManagedGraphWorkSession,
     selected: &WorthQuerySelectedProductOperation<'_, S>,
@@ -104,7 +104,6 @@ pub(in crate::domain_computation::primary_graph::application_query::managed_inde
         .arc::<ReadyIndex<S, I>>()?;
         let payload: Arc<dyn std::any::Any + Send + Sync> = material;
         let graph = application
-            .runtime
             .primary_graph()
             .ok_or(Denial::ForeignAssociation)?;
         let cache = graph

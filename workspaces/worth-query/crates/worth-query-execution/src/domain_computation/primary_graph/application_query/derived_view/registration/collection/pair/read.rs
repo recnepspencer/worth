@@ -1,3 +1,5 @@
+use crate::domain_computation::primary_graph::application_query::derived_view::registration::RegistrationOwnOps;
+use crate::domain_computation::primary_graph::application_query::OneShotScopedOps;
 use std::collections::BTreeSet;
 
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
@@ -12,11 +14,12 @@ use crate::basis::WorthQueryProductBranchLease;
 use crate::domain_computation::primary_graph::application_query::derived_view::dependency::ViewDependency;
 use crate::domain_computation::primary_graph::application_query::WorthQueryApplicationOneShotResult;
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub(super) trait ReadParentOps<Schema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub(super) fn read_managed_entry_pair<
+    fn read_managed_entry_pair<
         'a,
         MembershipQuery,
         FirstQuery,
@@ -100,7 +103,7 @@ where
         )
     }
 
-    pub(super) fn read_managed_entry_pair_from_result<
+    fn read_managed_entry_pair_from_result<
         MembershipQuery,
         FirstQuery,
         FirstResult,
@@ -189,4 +192,15 @@ where
         )?);
         Ok((key, project(first_row, second_row), dependencies))
     }
+}
+
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > ReadParentOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
 }

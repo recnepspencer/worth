@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_query::observed_source::prepared_expectation::admission::PreparedExpectationAdmissionParentOps;
 mod admission;
 mod affinity;
 mod pending;
@@ -183,12 +184,12 @@ impl BoundStableObservedSourceFacts {
     }
 }
 
-impl<Schema>
-    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub trait PreparedExpectationOps<Schema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
 where
     Schema: worth_query_installation::facade::ApplicationSchema,
 {
-    pub fn bind_application_source_expectation<Binding, Scope>(
+    fn bind_application_source_expectation<Binding, Scope>(
         &self,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         admission: &mut WorthQueryAdmittedApplicationOperation<
@@ -218,7 +219,7 @@ where
         )
     }
 
-    pub fn bind_application_result_set_expectation<Binding, Scope>(
+fn bind_application_result_set_expectation<Binding, Scope>(
         &self,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         admission: &mut WorthQueryAdmittedApplicationOperation<
@@ -247,13 +248,25 @@ where
             WorthQuerySourceExpectationKind::ResultSet,
         )
     }
+}
 
-    /// The installed producer calls this before handler contact. Both fresh
-    /// execution and stable output use its checked fact construction.
-    pub(in crate::domain_computation::primary_graph) fn prepare_application_source_expectation<
-        Binding,
-        Scope,
-    >(
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > PreparedExpectationOps<Schema> for HostRuntime
+where
+    Schema: worth_query_installation::facade::ApplicationSchema,
+{
+}
+
+pub(in crate::domain_computation::primary_graph) trait PreparedExpectationScopedOps<Schema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
+where
+    Schema: worth_query_installation::facade::ApplicationSchema,
+{
+    fn prepare_application_source_expectation<Binding, Scope>(
         &self,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         admission: &WorthQueryAdmittedApplicationOperation<
@@ -275,7 +288,24 @@ where
         self.validate_source_admission(admission, Binding::IDENTITY)?
             .prepare::<Binding>(phase, source, input)
     }
+}
 
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > PreparedExpectationScopedOps<Schema> for HostRuntime
+where
+    Schema: worth_query_installation::facade::ApplicationSchema,
+{
+}
+
+trait PreparedExpectationOwnOps<Schema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
+where
+    Schema: worth_query_installation::facade::ApplicationSchema,
+{
     fn bind_checked_source_expectation<Binding, Scope>(
         &self,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
@@ -292,4 +322,16 @@ where
     }
 }
 
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > PreparedExpectationOwnOps<Schema> for HostRuntime
+where
+    Schema: worth_query_installation::facade::ApplicationSchema,
+{
+}
+
 mod court_doors_for_test;
+pub use court_doors_for_test::PreparedExpectationDoorsOps;

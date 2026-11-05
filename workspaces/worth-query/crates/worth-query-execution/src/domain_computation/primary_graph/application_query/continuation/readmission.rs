@@ -1,4 +1,6 @@
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::primary_graph::application_query::admission_preparation::AdmissionPreparationParentOps;
+use crate::domain_computation::primary_graph::application_query::OrdinaryScopedOps;
 use worth_query_declaration::facade::{
     application_capability::ApplicationCapabilityRequest,
     application_query::ApplicationQueryParameterSet, application_schema::ApplicationSchema,
@@ -21,11 +23,12 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphApplicationRuntime,
 };
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub trait ReadmissionOps<Schema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub fn readmit_application_query_continuation<
+    fn readmit_application_query_continuation<
         'a,
         Query,
         Parameters,
@@ -72,14 +75,18 @@ where
         >,
         WorthQueryApplicationQueryAdmissionDenial,
     > {
-        let request = match phase.execution_request_for(&self.runtime.product_runtime) {
+        let request = match phase.execution_request_for(self.product_runtime()) {
             Ok(request) => request,
             Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::Authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase)), query.name())),
         };
         let execution = &request;
 
-        let affinity =
-            validate_continuation_affinity(self, query, access.scope().entity_id(), continuation)?;
+        let affinity = validate_continuation_affinity(
+            self.application_query_host(),
+            query,
+            access.scope().entity_id(),
+            continuation,
+        )?;
         let query_controls = WorthQueryApplicationQueryControls::continuation_resume(
             affinity.product.retained_clone(),
             controls,
@@ -96,7 +103,7 @@ where
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub fn readmit_governed_application_query_continuation<
+    fn readmit_governed_application_query_continuation<
         'a,
         Query,
         Parameters,
@@ -155,20 +162,24 @@ where
     where
         Input: ApplicationCapabilityRequest<Schema, Capability, Scope = Scope>,
     {
-        let request = match phase.execution_request_for(&self.runtime.product_runtime) {
+        let request = match phase.execution_request_for(self.product_runtime()) {
             Ok(request) => request,
             Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::Authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase)), query.name())),
         };
         let execution = &request;
 
-        let affinity =
-            validate_continuation_affinity(self, query, access.scope().entity_id(), continuation)?;
+        let affinity = validate_continuation_affinity(
+            self.application_query_host(),
+            query,
+            access.scope().entity_id(),
+            continuation,
+        )?;
         let query_controls = WorthQueryApplicationQueryControls::continuation_resume(
             affinity.product.retained_clone(),
             controls,
         );
         let pending = prepare_governed_access(
-            self,
+            self.application_query_host(),
             query,
             access,
             capability,
@@ -184,7 +195,24 @@ where
             Some(pending),
         )
     }
+}
 
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > ReadmissionOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
+}
+
+trait ReadmissionOwnOps<Schema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
+where
+    Schema: ApplicationSchema,
+{
     #[allow(clippy::too_many_arguments)]
     fn finish_continuation_readmission<
         'a,
@@ -254,6 +282,17 @@ where
         });
         Ok(plan)
     }
+}
+
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > ReadmissionOwnOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
 }
 
 fn denial(

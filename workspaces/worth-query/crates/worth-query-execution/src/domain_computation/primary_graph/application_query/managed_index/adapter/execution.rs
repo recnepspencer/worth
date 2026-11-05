@@ -38,7 +38,7 @@ pub(in crate::domain_computation::primary_graph::application_query::managed_inde
     fn select<'a, 'request, 'authority>(
         self: Arc<Self>,
         execution: &ExecutionRequest<'request, 'authority>,
-        application: &'a WorthQueryPrimaryGraphApplicationRuntime<S>,
+        application: &'a dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<S>,
         parent: &'a WorthQueryManagedGraphWorkSession,
         request: &'a WorthQueryRequestScope,
         association: &WorthQueryInstalledManagedIndexParent,
@@ -54,7 +54,7 @@ pub(in crate::domain_computation::primary_graph::application_query::managed_inde
     fn select_admitted<'a, 'request, 'authority>(
         self: Arc<Self>,
         execution: &ExecutionRequest<'request, 'authority>,
-        application: &'a WorthQueryPrimaryGraphApplicationRuntime<S>,
+        application: &'a dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<S>,
         access: &SourceQueryReaderAccess<'_, S>,
         parent: &'a WorthQueryManagedGraphWorkSession,
         request: &'a WorthQueryRequestScope,
@@ -81,7 +81,7 @@ where
     fn select<'a, 'request, 'authority>(
         self: Arc<Self>,
         execution: &ExecutionRequest<'request, 'authority>,
-        application: &'a WorthQueryPrimaryGraphApplicationRuntime<S>,
+        application: &'a dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<S>,
         parent: &'a WorthQueryManagedGraphWorkSession,
         request: &'a WorthQueryRequestScope,
         association: &WorthQueryInstalledManagedIndexParent,
@@ -98,7 +98,6 @@ where
         }
         let adapter: Arc<dyn InstalledIndexProvider<S, I>> = self;
         let graph = application
-            .runtime
             .primary_graph()
             .ok_or(Denial::ForeignAssociation)?;
         if graph
@@ -132,7 +131,6 @@ where
             ManagedIndexState::new(execution, association.clone(), adapter, parent, selected)
                 .map_err(Denial::Lifecycle)?;
         let graph = application
-            .runtime
             .primary_graph()
             .ok_or(Denial::ForeignAssociation)?;
         let state = graph
@@ -157,7 +155,7 @@ where
     fn select_admitted<'a, 'request, 'authority>(
         self: Arc<Self>,
         execution: &ExecutionRequest<'request, 'authority>,
-        application: &'a WorthQueryPrimaryGraphApplicationRuntime<S>,
+        application: &'a dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<S>,
         access: &SourceQueryReaderAccess<'_, S>,
         parent: &'a WorthQueryManagedGraphWorkSession,
         request: &'a WorthQueryRequestScope,

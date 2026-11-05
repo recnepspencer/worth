@@ -1,11 +1,19 @@
-impl<Schema>
-    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub trait WorkLimitOps<Schema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
 {
-    /// Resolves optional declared caps against this runtime's finite work policy.
-    pub fn resolve_application_query_limits(
+    fn resolve_application_query_limits(
         &self,
         limits: worth_query_installation::facade::WorthQueryInstalledApplicationQueryLimits,
     ) -> worth_query_installation::facade::WorthQueryResolvedApplicationQueryLimits {
         limits.resolve()
     }
+}
+
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > WorkLimitOps<Schema> for HostRuntime
+{
 }

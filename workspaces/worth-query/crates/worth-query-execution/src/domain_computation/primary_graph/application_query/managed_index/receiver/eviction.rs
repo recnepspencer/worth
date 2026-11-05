@@ -5,10 +5,10 @@ use super::super::{
 };
 use super::*;
 use worth_query_declaration::facade::application_query::ApplicationManagedIndexBinding;
-impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
-    /// Makes the current maintained material cold under this Parent admission.
-    /// Historical Native/World images may retain their immutable temporal shares.
-    pub fn evict_application_managed_index<
+pub trait EvictionOps<S: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<S>
+{
+    fn evict_application_managed_index<
         B: ApplicationQueryBinding<S>,
         I: ApplicationManagedIndexBinding<S>,
     >(
@@ -19,14 +19,20 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         index: &WorthQueryManagedIndex<S, I>,
     ) -> Result<(), Denial> {
         let execution = phase
-            .execution_request_for(&self.runtime.product_runtime)
+            .execution_request_for(self.product_runtime())
             .map_err(|_| Denial::new(ReceiverCause::Refused(Refusal::ForeignPhase), None))?;
         let allocation = SourceFactsAllocation::open(&execution)
             .map_err(|cause| Denial::new(ReceiverCause::Execution(cause), None))?;
         let result = (|| {
-            let context = context::prepare(&execution, self, binding, &mut plan, &allocation)?;
+            let context = context::prepare(
+                &execution,
+                self.application_query_host(),
+                binding,
+                &mut plan,
+                &allocation,
+            )?;
             let adapter = self
-                .managed_indexes
+                .managed_indexes()
                 .get_admitted::<I>(&execution, &allocation)?
                 .ok_or(ReceiverCause::Refused(Refusal::MissingProvider))?;
             let candidate = ManagedIndexState::new(
@@ -43,7 +49,6 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                 ));
             }
             let graph = self
-                .runtime
                 .primary_graph()
                 .ok_or(ReceiverCause::Refused(Refusal::ForeignContext))?;
             let Some(program) = graph.layout.managed_source(I::NAME) else {
@@ -70,6 +75,15 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         })();
         result.map_err(|cause| Denial::new(cause, Some(allocation)))
     }
+}
+
+impl<
+        S: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                S,
+            > + ?Sized,
+    > EvictionOps<S> for HostRuntime
+{
 }
 fn lifecycle(cause: WorthQueryManagedIndexLifecycleDenial) -> ReceiverCause {
     ReceiverCause::Provider(ProviderExecutionDenial::Lifecycle(cause))

@@ -5,8 +5,10 @@ use crate::domain_computation::primary_graph::{
     live_delivery::WorthQueryLivePredicatePoll,
 };
 
-impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
-    pub fn next_application_managed_index_watch<B, I>(
+pub trait NextOps<S: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<S>
+{
+    fn next_application_managed_index_watch<B, I>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         binding: &WorthQueryInstalledApplicationQueryBinding<S, B>,
@@ -20,12 +22,18 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         ResultValue<S, B>: WorthQueryApplicationProjection<S, B::Query>,
     {
         let execution = phase
-            .execution_request_for(&self.runtime.product_runtime)
+            .execution_request_for(self.product_runtime())
             .map_err(|_| Denial::new(ReceiverCause::Refused(Refusal::ForeignPhase), None))?;
         let allocation = SourceFactsAllocation::open(&execution)
             .map_err(|cause| Denial::new(ReceiverCause::Execution(cause), None))?;
         let outcome = (|| {
-            let context = context::prepare(&execution, self, binding, &mut plan, &allocation)?;
+            let context = context::prepare(
+                &execution,
+                self.application_query_host(),
+                binding,
+                &mut plan,
+                &allocation,
+            )?;
             if !plan.query.lanes().live_enabled()
                 || context
                     .association
@@ -39,7 +47,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             let Some(state) = watch.state.as_mut() else {
                 return Ok(WorthQueryManagedIndexWatchOutcome::Closed);
             };
-            let source = &self.runtime.primary_provider.live_delivery;
+            let source = &self.primary_provider().live_delivery;
             if !source.admits_predicate_occurrence(
                 state.queue.subscription(),
                 context.selected.product().observation(),
@@ -91,7 +99,6 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             }
             // A physical suspension/untracked movement must not become Pending.
             let graph = self
-                .runtime
                 .primary_graph()
                 .ok_or(ReceiverCause::Refused(Refusal::ForeignGraph))?;
             let program = graph
@@ -194,4 +201,13 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         })();
         outcome.map_err(|cause| Denial::new(cause, Some(allocation)))
     }
+}
+
+impl<
+        S: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                S,
+            > + ?Sized,
+    > NextOps<S> for HostRuntime
+{
 }

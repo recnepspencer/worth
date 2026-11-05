@@ -9,7 +9,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn admit_app
     Schema,
 >(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     basis: WorthQueryApplicationQueryBasis,
 ) -> Result<super::WorthQueryApplicationQueryBasisCustody, WorthQueryApplicationQueryAdmissionDenial>
 where
@@ -32,7 +32,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn admit_app
     Schema,
 >(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     basis: WorthQueryApplicationQueryBasis,
 ) -> Result<super::WorthQueryApplicationQueryBasisCustody, WorthQueryApplicationQueryAdmissionDenial>
 where
@@ -50,7 +50,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn admit_app
     Schema,
 >(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     basis: WorthQueryApplicationQueryBasis,
     native: &mut super::super::ApplicationQueryNativeAccess<'_>,
 ) -> Result<super::WorthQueryApplicationQueryBasisCustody, WorthQueryApplicationQueryAdmissionDenial>
@@ -79,7 +79,7 @@ where
 
 pub(super) fn register_basis<Schema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     basis: worth_relational::facade::branch::AdmittedRelationalBranchBasis,
 ) -> Result<
     super::super::resource_lifecycle::WorthQueryApplicationBasisLease,
@@ -88,15 +88,14 @@ pub(super) fn register_basis<Schema>(
 where
     Schema: ApplicationSchema,
 {
-    let graph = application.runtime.primary_provider.graph.clone();
+    let graph = application.provider_graph().clone();
     graph
         .with_runtime_mut(execution, |runtime| {
             graph.ensure_primary_indexes_for_basis(execution, runtime, &basis)
         })
         .map_err(map_index_currency_denial)?;
     application
-        .runtime
-        .basis_leases
+        .basis_leases()
         .register(execution, basis, graph)
         .map_err(map_registration_denial)
 }

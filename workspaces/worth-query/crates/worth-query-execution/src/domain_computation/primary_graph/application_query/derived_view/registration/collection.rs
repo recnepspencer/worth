@@ -1,5 +1,7 @@
 //! One retained collection with an independently admitted public entry query.
 
+use crate::domain_computation::primary_graph::application_query::derived_view::registration::RegistrationOwnOps;
+use crate::domain_computation::primary_graph::application_query::OneShotScopedOps;
 use worth_query_declaration::facade::{
     application_query::ApplicationDerivedViewDefinition, application_schema::ApplicationSchema,
 };
@@ -18,13 +20,12 @@ use crate::domain_computation::primary_graph::application_query::{
 
 pub(crate) mod pair;
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub trait CollectionOps<Schema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
 where
     Schema: ApplicationSchema,
 {
-    /// Registers one collection handle. The entry query is a separately
-    /// installed public declaration, not an untracked projection callback.
-    pub fn open_managed_derived_collection<
+    fn open_managed_derived_collection<
         MembershipQuery,
         MembershipParameters,
         MembershipResult,
@@ -62,7 +63,7 @@ where
     where
         Value: WorthQueryManagedDerivedValue,
     {
-        self.installed_schema
+        self.installed_schema()
             .validate_installed_query(entry_query)
             .map_err(|_| Denial::ForeignInstallation)?;
         if !matches!(
@@ -80,9 +81,7 @@ where
         )
     }
 
-    /// Executes the declared scoped Query under its fresh admitted authority;
-    /// both row and scoped result-set facts become entry dependencies.
-    pub fn refresh_managed_derived_collection_entry<
+    fn refresh_managed_derived_collection_entry<
         'a,
         MembershipQuery,
         EntryQuery,
@@ -150,3 +149,20 @@ where
             .refresh_entry(key, project(row), dependencies, product.selected_commit())
     }
 }
+
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > CollectionOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
+}
+pub use pair::PairOps;
+pub use pair::ReconcileOps;
+pub use pair::ReconstructDependentOps;
+pub use pair::ReconstructLazyOps;
+pub use pair::ReconstructParallelOps;
+pub use pair::RefreshBatchOps;

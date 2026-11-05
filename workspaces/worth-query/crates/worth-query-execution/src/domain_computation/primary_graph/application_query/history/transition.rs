@@ -30,7 +30,7 @@ pub(super) struct WorldTransition {
 
 pub(super) fn prepare_world<Schema: ApplicationSchema>(
     execution: worth_execution::ExecutionRequest<'_, '_>,
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     original: &RetainedWorldCursor,
     limits: Limits,
 ) -> Result<WorldTransition, Denial> {
@@ -49,8 +49,7 @@ pub(super) fn prepare_world<Schema: ApplicationSchema>(
         limits.maximum_owned_bytes.get(),
     )?;
     let prepared = application
-        .runtime
-        .product_runtime
+        .product_runtime()
         .prepare_exact_product_history_page(execution, &original.cursor)
         .map_err(Denial::World)?;
     let parent_bytes = if prepared.is_complete() {

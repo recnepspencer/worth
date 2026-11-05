@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_query::installed_schema_currentness::InstalledSchemaCurrentnessParentOps;
 use worth_query_admission::facade::application_query::admit_application_query_parameters;
 use worth_query_admission::facade::application_query::readmit_application_query_parameters;
 use worth_query_admission::facade::application_query::WorthQueryAdmittedApplicationQueryParameters;
@@ -17,11 +18,12 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationR
 
 mod fresh_source;
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub(super) trait AdmissionPreparationParentOps<Schema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub(super) fn prepare_application_query_admission<
+    fn prepare_application_query_admission<
         'a,
         Query,
         Parameters,
@@ -65,7 +67,7 @@ where
         Ok((parameters, controls))
     }
 
-    pub(super) fn prepare_application_query_source_readmission<
+    fn prepare_application_query_source_readmission<
         'a,
         Query,
         Parameters,
@@ -109,7 +111,24 @@ where
             })?;
         Ok((parameters, controls))
     }
+}
 
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > AdmissionPreparationParentOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
+}
+
+trait AdmissionPreparationOwnOps<Schema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
+where
+    Schema: ApplicationSchema,
+{
     fn validate_application_query_admission<
         Query,
         Parameters,
@@ -148,7 +167,7 @@ where
                 query.name(),
             ));
         }
-        self.installed_schema
+        self.installed_schema()
             .validate_installed_query(query)
             .map_err(|denial| {
                 WorthQueryApplicationQueryAdmissionDenial::new(
@@ -176,26 +195,29 @@ where
             Scope,
         >,
     ) -> Result<(), WorthQueryApplicationQueryAdmissionDenial> {
-        if self.authentication_is_expired(access.principal().valid_until()) {
+        if self
+            .application_runtime()
+            .authentication_is_expired(access.principal().valid_until())
+        {
             return Err(denial(
                 WorthQueryApplicationQueryAdmissionDenialKind::StalePrincipal,
                 access.principal().binding(),
             ));
         }
-        if access.principal().runtime_authority() != self.runtime.authority_identity() {
+        if access.principal().runtime_authority() != self.authority_identity() {
             return Err(denial(
                 WorthQueryApplicationQueryAdmissionDenialKind::ForeignPrincipal,
                 query.name(),
             ));
         }
-        if access.principal().binding_identity() != &self.installed_schema.binding_identity() {
+        if access.principal().binding_identity() != &self.installed_schema().binding_identity() {
             return Err(denial(
                 WorthQueryApplicationQueryAdmissionDenialKind::StalePrincipal,
                 query.name(),
             ));
         }
         let scope = access.scope();
-        let authority = self.runtime.authority_identity();
+        let authority = self.authority_identity();
         if scope.runtime_authority() != authority {
             return Err(denial(
                 WorthQueryApplicationQueryAdmissionDenialKind::ForeignScope,
@@ -203,7 +225,7 @@ where
             ));
         }
         if scope.binding_identity() != query.binding_identity()
-            || scope.binding_identity() != &self.installed_schema.binding_identity()
+            || scope.binding_identity() != &self.installed_schema().binding_identity()
         {
             return Err(denial(
                 WorthQueryApplicationQueryAdmissionDenialKind::StaleScope,
@@ -216,7 +238,7 @@ where
                 scope.entity_name(),
             ));
         }
-        self.runtime.primary_graph().ok_or_else(|| {
+        self.primary_graph().ok_or_else(|| {
             denial(
                 WorthQueryApplicationQueryAdmissionDenialKind::StaleScope,
                 query.name(),
@@ -224,6 +246,17 @@ where
         })?;
         Ok(())
     }
+}
+
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > AdmissionPreparationOwnOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
 }
 
 pub(super) fn validate_admission_request(
@@ -251,3 +284,5 @@ fn denial(
 }
 
 mod court_doors_for_test;
+pub use court_doors_for_test::AdmissionPreparationDoorsOps;
+pub(in crate::domain_computation::primary_graph::application_query) use fresh_source::FreshSourceScopedOps;

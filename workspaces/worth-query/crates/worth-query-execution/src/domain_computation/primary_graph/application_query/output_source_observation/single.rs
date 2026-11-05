@@ -55,7 +55,7 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
                     .expect("exactly one native source");
                 let facts = source
                     .admit_fact_materialization(
-                        &application.runtime.primary_provider.graph.layout,
+                        &application.primary_provider().graph.layout,
                         query.name(),
                         super::super::observed_source::SourceFactExpansionControl::in_request(
                             *execution,
@@ -64,10 +64,7 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
                     )
                     .and_then(|prepared| prepared.into_facts())
                     .map_err(Stop::SourceFacts)?;
-                let graph = application
-                    .runtime
-                    .primary_graph()
-                    .ok_or(Stop::ForeignClosure)?;
+                let graph = application.primary_graph().ok_or(Stop::ForeignClosure)?;
                 native.with_runtime_mut(
                     graph,
                     execution,

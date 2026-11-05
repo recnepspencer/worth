@@ -20,8 +20,7 @@ use worth_relational::facade::identity::EntityId;
 /// a callback cannot substitute a result or read a second branch in this stage.
 /// The context has no public constructor and grants no plan admission authority.
 pub struct WorthQueryDependentPairReadContext<'stage, 'request, 'lease, 'map, 'kernel, S, Q, R> {
-    pub(in crate::domain_computation::primary_graph::application_query) application:
-        &'stage WorthQueryPrimaryGraphApplicationRuntime<S>,
+    pub(in crate::domain_computation::primary_graph::application_query) application: &'stage dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<S>,
     pub(in crate::domain_computation::primary_graph::application_query) request:
         &'stage ExecutionRequest<'request, 'lease>,
     pub(in crate::domain_computation::primary_graph::application_query) product:

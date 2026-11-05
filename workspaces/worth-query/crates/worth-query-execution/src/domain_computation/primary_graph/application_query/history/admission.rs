@@ -34,10 +34,10 @@ pub(in crate::domain_computation::primary_graph::application_query) struct Histo
     history: worth_query_declaration::facade::portable_identity::WorthQueryPortableTypeIdentity,
 }
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub(super) fn admit_application_history_metadata<
-        History: ApplicationHistoryQueryBinding<Schema>,
-    >(
+pub(super) trait AdmissionParentOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
+{
+    fn admit_application_history_metadata<History: ApplicationHistoryQueryBinding<Schema>>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         history: &WorthQueryInstalledApplicationHistoryQuery<Schema, History>,
@@ -47,7 +47,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         if history.binding_identity() != plan.query.binding_identity()
             || history.binding_identity() != &self.installed_schema().binding_identity()
             || history.subject_read().query().identity() != plan.query.identity()
-            || plan.runtime_authority != self.runtime.authority_identity()
+            || plan.runtime_authority != self.authority_identity()
         {
             return Err(Denial::SubjectMismatch);
         }
@@ -58,7 +58,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             ))
         })?;
         admit_metadata::<History, _, _, _, _, _, _, _>(
-            self,
+            self.application_query_host(),
             execution,
             plan,
             contract,
@@ -66,6 +66,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             History::IDENTITY,
         )
     }
+}
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > AdmissionParentOps<Schema> for HostRuntime
+{
 }
 
 pub(in crate::domain_computation::primary_graph::application_query) fn admit_metadata<
@@ -78,7 +87,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn admit_met
     I,
     E,
 >(
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     plan: &mut WorthQueryAdmittedApplicationQueryPlan<'_, Schema, Q, P, R, A, I, E>,
     contract: super::super::disclosure::WorthQueryAdmittedApplicationDisclosureContract,
@@ -186,14 +195,14 @@ impl HistoryMetadataAdmission {
     >(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         security: &worth_relational::facade::snapshots::SnapshotHandle,
         plan: &WorthQueryAdmittedApplicationQueryPlan<'_, Schema, Q, P, R, A, I, E>,
     ) -> Result<(), MetadataValidationDenial> {
         if !self.governance.computation_matches(
             &plan.graph_work,
-            application.runtime.authority_identity(),
+            application.authority_identity(),
             plan.query.identity(),
             plan.parameters.identity(),
             plan.principal.principal_entity_id(),
@@ -207,7 +216,7 @@ impl HistoryMetadataAdmission {
                     execution,
                     runtime,
                     security,
-                    application.runtime.authorization.bridge(),
+                    application.authorization().bridge(),
                 )
                 .map_err(|cause| {
                     MetadataValidationDenial::Authorization(

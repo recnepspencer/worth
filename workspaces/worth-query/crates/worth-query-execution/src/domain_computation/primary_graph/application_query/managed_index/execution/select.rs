@@ -29,7 +29,7 @@ pub(in crate::domain_computation::primary_graph::application_query::managed_inde
     I,
 >(
     execution: &ExecutionRequest<'request, 'authority>,
-    application: &'a WorthQueryPrimaryGraphApplicationRuntime<S>,
+    application: &'a dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<S>,
     parent: &'a WorthQueryManagedGraphWorkSession,
     request: &'a WorthQueryRequestScope,
     association: &WorthQueryInstalledManagedIndexParent,
@@ -52,7 +52,6 @@ where
     }
     let (epoch, root) = state.ready().map_err(Denial::Lifecycle)?;
     let graph = application
-        .runtime
         .primary_graph()
         .ok_or(Denial::ForeignAssociation)?;
     let terminal = &root.source.terminal;

@@ -67,7 +67,7 @@ pub struct WorthQueryApplicationLiveLease<
 > where
     Binding: ApplicationQueryLiveCauseBinding<Schema, Query, Scope, Target>,
 {
-    runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &'runtime dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     termination_failed: bool,
     query: WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
     scope: WorthQueryApplicationEntityIdentity<Schema, Scope>,
@@ -138,7 +138,7 @@ where
         &self,
         host: &crate::domain_computation::request_execution::TestHostRequest<'scope>,
     ) -> crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'scope> {
-        host.phase_for_application(self.runtime)
+        host.phase_for_application(self.runtime.application_runtime())
     }
 
     pub fn next(
@@ -147,7 +147,7 @@ where
         principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
         request: &WorthQueryRequestScope,
     ) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {
-        let phase_request = match phase.execution_request_for(&self.runtime.runtime.product_runtime) {
+        let phase_request = match phase.execution_request_for(self.runtime.product_runtime()) {
             Ok(request) => request,
             Err(_) => return WorthQueryApplicationLiveOutcome::AuthorizationDenied(Box::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody"))),
         };
@@ -166,7 +166,7 @@ where
             };
             let expected_scope = &self.scope_identity;
             self.queue.fill(
-                &self.runtime.runtime.primary_provider.live_delivery,
+                &self.runtime.primary_provider().live_delivery,
                 basis,
                 Binding::effect(),
                 self.controls.buffer_capacity(),

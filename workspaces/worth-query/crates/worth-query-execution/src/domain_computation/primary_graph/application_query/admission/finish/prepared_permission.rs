@@ -1,5 +1,6 @@
 //! Graph continuation of the exact permission prepared before a Clean probe.
 
+use crate::domain_computation::primary_graph::application_query::admission::finish::admitted_graph::AdmittedGraphParentOps;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 
 use super::*;
@@ -8,11 +9,12 @@ use crate::domain_computation::primary_graph::application_query::disclosure::Wor
 
 use crate::domain_computation::provider_session::WorthQueryPreparedProductReadSessionIdentity;
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    /// Consume exactly the same fresh principal, scope, selected Product and
-    /// reserved session that the Clean probe used. Only a genuine disclosure
-    /// need reaches this graph/index preparation.
-    pub(in crate::domain_computation::primary_graph) fn finish_prepared_application_query_permission<
+pub(in crate::domain_computation::primary_graph) trait PreparedPermissionScopedOps<
+    Schema: ApplicationSchema,
+>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
+{
+    fn finish_prepared_application_query_permission<
         'a,
         Query,
         Parameters,
@@ -49,7 +51,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         self.finish_prepared_application_query_permission_with_native_access(execution, permission, &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess::acquire())
     }
 
-    pub(in crate::domain_computation::primary_graph) fn finish_prepared_application_query_permission_with_native_access<
+    fn finish_prepared_application_query_permission_with_native_access<
         'a,
         Query,
         Parameters,
@@ -102,13 +104,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             shape,
         } = permission;
 
-        if !std::ptr::eq(self, issuer) {
+        if !std::ptr::addr_eq(self, issuer) {
             return Err(denial(
                 WorthQueryApplicationQueryAdmissionDenialKind::ForeignBasis,
                 query.name(),
             ));
         }
-        let graph = self.runtime.primary_graph().ok_or_else(|| {
+        let graph = self.primary_graph().ok_or_else(|| {
             denial(
                 WorthQueryApplicationQueryAdmissionDenialKind::StaleScope,
                 query.name(),
@@ -126,7 +128,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let index_posture = WorthQueryQueryIndexPosture::SelectedInstalled(indexes);
         validate_admission_request(controls.request_scope(), query.name())?;
         let graph_work = start_prepared_query_session(
-            self,
+            self.application_query_host(),
             session,
             prepared.plan,
             &prepared.obligation_identity,
@@ -146,14 +148,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             planned_batch_item: None,
             retain_expression_context: false,
             retain_projection_for_inspection: false,
-            runtime_authority: self.runtime.authority_identity(),
+            runtime_authority: self.authority_identity(),
             graph_authority_identity: self
-                .runtime
                 .primary_graph_authority()
                 .authority_identity()
                 .to_string(),
             provider_identity: self
-                .runtime
                 .primary_graph_authority()
                 .provider_identity()
                 .to_string(),
@@ -178,6 +178,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     }
 }
 
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > PreparedPermissionScopedOps<Schema> for HostRuntime
+{
+}
+
 #[allow(clippy::too_many_arguments)]
 fn start_prepared_query_session<
     Schema,
@@ -188,7 +197,7 @@ fn start_prepared_query_session<
     PrincipalIdentity,
     Scope,
 >(
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     reserved: WorthQueryPreparedProductReadSessionIdentity,
     plan: WorthQueryAdmittedGraphWorkPlan,
     obligation: &WorthQueryInstalledGraphObligationSetIdentity,
@@ -210,7 +219,7 @@ where
     WorthQueryManagedGraphWorkSession::start_query_with_reserved_identity(
         reserved,
         plan,
-        application.runtime.authority_identity(),
+        application.authority_identity(),
         query.binding_identity(),
         obligation,
         query.authority_identity(),
@@ -219,7 +228,9 @@ where
         basis.identity(),
         basis.retained_product(),
         security_product,
-        application.graph_work_provider_identity(),
+        application
+            .application_runtime()
+            .graph_work_provider_identity(),
         graph.product_read_session_port(),
     )
     .map_err(|cause| graph_work_denial(format!("{}: {cause:?}", query.name())))

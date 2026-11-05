@@ -17,7 +17,7 @@ pub(in crate::domain_computation::primary_graph) struct SourceQueryReadClosure {
 impl SourceQueryReadClosure {
     pub(super) fn retain<Schema: ApplicationSchema>(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
         receipt: WorthQueryApplicationQueryAccessReceipt,
         authorization: WorthQueryRetainedAuthorizationDecisionFacts,
         facts: Vec<crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact>,
@@ -33,14 +33,13 @@ impl SourceQueryReadClosure {
         let support = SourceReadSupport::retain(
             execution,
             authorization,
-            &application.runtime.authorization,
+            application.authorization(),
             &allocation,
         )?;
         let facts = crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload::from(Arc::<[crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact]>::from(facts));
         Ok(Arc::new(Self {
             control: application
-                .runtime
-                .primary_provider
+                .primary_provider()
                 .application_attempt_operation_control
                 .clone(),
             receipt,

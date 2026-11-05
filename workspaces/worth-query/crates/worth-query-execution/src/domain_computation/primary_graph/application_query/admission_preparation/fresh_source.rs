@@ -2,8 +2,12 @@
 use super::*;
 use worth_query_admission::facade::application_query::admit_application_query_parameters;
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub(in crate::domain_computation::primary_graph::application_query) fn prepare_source_query_admission<
+pub(in crate::domain_computation::primary_graph::application_query) trait FreshSourceScopedOps<
+    Schema: ApplicationSchema,
+>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
+{
+    fn prepare_source_query_admission<
         'a,
         Query,
         Parameters,
@@ -45,4 +49,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         })?;
         Ok((parameters, controls))
     }
+}
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > FreshSourceScopedOps<Schema> for HostRuntime
+{
 }

@@ -1,9 +1,11 @@
 //! Sealed test doors over this module's private members.
 use super::*;
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+pub trait CorrectionDisclosureDoorsOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
+{
     #[doc(hidden)]
-    pub fn execute_correction_disclosure_for_test<
+    fn execute_correction_disclosure_for_test<
         Query,
         Parameters,
         QueryResult,
@@ -34,4 +36,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             Scope,
         >(self, execution, plan, original_subject)
     }
+}
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > CorrectionDisclosureDoorsOps<Schema> for HostRuntime
+{
 }

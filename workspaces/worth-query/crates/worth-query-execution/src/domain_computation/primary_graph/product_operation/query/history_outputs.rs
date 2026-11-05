@@ -1,5 +1,6 @@
 //! Current C supplies query authority; the admitted original D supplies rows.
 use super::*;
+use crate::domain_computation::primary_graph::application_query::OutputReadScopedOps;
 use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
 use worth_query_declaration::facade::{
     application_query::ApplicationQueryBinding,

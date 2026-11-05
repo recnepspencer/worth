@@ -43,7 +43,7 @@ pub(super) use ordinary::{execute_authorized_read, execute_authorized_read_with_
 /// validation and read body; the selected caller retains its typed meter stop.
 fn execute_read_with_security<Schema, Context, Output, Stop>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     security_product: &crate::basis::WorthQueryProductObservationLease,
     basis: &super::basis::WorthQueryApplicationQueryBasisCustody,
     index_posture: &WorthQueryQueryIndexPosture,
@@ -89,7 +89,7 @@ where
 
 fn admit_read_security<'basis, Schema: ApplicationSchema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     security_product: &crate::basis::WorthQueryProductObservationLease,
     basis: &'basis super::basis::WorthQueryApplicationQueryBasisCustody,
     index_posture: &WorthQueryQueryIndexPosture,
@@ -182,7 +182,7 @@ fn validate_current_authorization<
     Scope,
 >(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     entity_resolution: &WorthQueryInstalledEntityResolutionContext,
     runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
     current: &worth_relational::facade::snapshots::SnapshotHandle,
@@ -201,7 +201,7 @@ where
     Schema: ApplicationSchema,
 {
     plan.authorization
-        .validate_currentness_in(execution, runtime, current, application.runtime.authorization.bridge())
+        .validate_currentness_in(execution, runtime, current, application.authorization().bridge())
         .map_err(|kind| match kind {
             crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::StalePrincipal) => {
                 WorthQueryAuthorizedApplicationReadDenial::StalePrincipal
@@ -215,7 +215,7 @@ where
         })?;
     if let Some(authorization) = plan.governance.authorization() {
         authorization
-            .validate_currentness_in(execution, runtime, current, application.runtime.authorization.bridge())
+            .validate_currentness_in(execution, runtime, current, application.authorization().bridge())
             .map_err(|kind| {
                 WorthQueryAuthorizedApplicationReadDenial::Authorization(
                     crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial::new(
@@ -227,7 +227,7 @@ where
     }
     if !plan.governance.computation_matches(
         &plan.graph_work,
-        application.runtime.authority_identity(),
+        application.authority_identity(),
         plan.query.identity(),
         plan.parameters.identity(),
         plan.principal.principal_entity_id(),
@@ -265,7 +265,7 @@ pub(super) fn refresh_governed_authorization<
     Scope,
 >(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     plan: &mut WorthQueryAdmittedApplicationQueryPlan<
         '_,
         Schema,

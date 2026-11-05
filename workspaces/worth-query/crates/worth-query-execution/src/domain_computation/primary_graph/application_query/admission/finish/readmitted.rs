@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_query::admission::finish::FinishOwnOps;
 use worth_query_admission::facade::application_query::WorthQueryAdmittedApplicationQueryParameters;
 use worth_query_admission::facade::application_query::WorthQueryApplicationQueryLane;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
@@ -14,10 +15,12 @@ use super::super::super::WorthQueryApplicationQueryControls;
 
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    /// Producer readmission prepares only this installed read's actual field
-    /// indexes against its already selected Product and cumulative admission.
-    pub(in crate::domain_computation::primary_graph) fn finish_application_query_readmission<
+pub(in crate::domain_computation::primary_graph) trait ReadmittedScopedOps<
+    Schema: ApplicationSchema,
+>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
+{
+    fn finish_application_query_readmission<
         'a,
         Query,
         Parameters,
@@ -66,7 +69,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 query.name(),
             ));
         }
-        let graph = self.runtime.primary_graph().ok_or_else(|| {
+        let graph = self.primary_graph().ok_or_else(|| {
             WorthQueryApplicationQueryAdmissionDenial::new(
                 WorthQueryApplicationQueryAdmissionDenialKind::StaleScope,
                 query.name(),
@@ -80,7 +83,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             controls,
             pending_governance,
             |basis, security| {
-                let selected = admit_application_query_permission_basis(execution, self, basis)?;
+                let selected = admit_application_query_permission_basis(
+                    execution,
+                    self.application_query_host(),
+                    basis,
+                )?;
                 let prepared = ensure_query_truth_and_security_indexes_admitted(
                     execution,
                     graph,
@@ -95,4 +102,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             },
         )
     }
+}
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > ReadmittedScopedOps<Schema> for HostRuntime
+{
 }

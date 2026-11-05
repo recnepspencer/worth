@@ -8,7 +8,7 @@ impl<'a, S: ApplicationSchema, FQ, FP, FR, SQ, SP, SR, A, I, C>
     pub fn admit_for_test(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+        application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<S>,
         root: EntityId,
         context: &mut MapKernelContext<'_, '_>,
     ) -> Result<

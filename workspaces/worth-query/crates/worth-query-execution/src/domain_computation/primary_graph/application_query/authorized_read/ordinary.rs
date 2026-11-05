@@ -12,7 +12,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn execute_a
     Output,
 >(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     plan: &WorthQueryAdmittedApplicationQueryPlan<
         '_,
         Schema,
@@ -70,7 +70,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn execute_a
     Stop,
 >(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     plan: &WorthQueryAdmittedApplicationQueryPlan<
         '_,
         Schema,
@@ -126,7 +126,6 @@ where
         || Stop::from(WorthQueryAuthorizedApplicationReadDenial::Session),
         || {
             application
-                .runtime
                 .primary_graph()
                 .ok_or_else(|| Stop::from(WorthQueryAuthorizedApplicationReadDenial::Session))
                 .map(|graph| graph.retain_entity_resolution_context())

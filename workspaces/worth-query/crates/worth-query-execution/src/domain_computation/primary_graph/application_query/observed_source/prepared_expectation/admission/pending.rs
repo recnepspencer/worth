@@ -27,14 +27,14 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema, Operation, Inp
                 "pending source expectation",
             ));
         }
-        let graph = runtime.runtime.primary_graph().ok_or_else(|| {
+        let graph = runtime.primary_graph().ok_or_else(|| {
             WorthQuerySourceExpectationDenial::new(
                 WorthQuerySourceExpectationDenialKind::ForeignApplication,
                 pending.expected_query_identifier,
             )
         })?;
         let query_identity = runtime
-            .installed_schema
+            .installed_schema()
             .installed_query_identity_by_name(pending.expected_query_identifier)
             .ok_or_else(|| {
                 WorthQuerySourceExpectationDenial::new(
@@ -43,8 +43,8 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema, Operation, Inp
                 )
             })?;
         pending.source.validate_affinity(
-            runtime.runtime.authority_identity().as_u64(),
-            &runtime.installed_schema.binding_identity(),
+            runtime.authority_identity().as_u64(),
+            &runtime.installed_schema().binding_identity(),
             admission.graph_work_branch(),
             admission.scope_entity_id(),
             &pending.selected_product,

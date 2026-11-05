@@ -1,5 +1,7 @@
 //! A cache-entry permission check reads only current C, never output truth E.
 use super::*;
+use crate::domain_computation::primary_graph::application_query::FreshScopedOps;
+use crate::domain_computation::primary_graph::application_query::WorkLimitOps;
 use crate::domain_computation::primary_graph::product_operation::SharedQueryBasisScopedOps;
 use crate::domain_computation::primary_graph::{
     application_query::{FreshQueryPermissionStop, WorthQueryApplicationQueryControls},
@@ -39,8 +41,12 @@ impl From<HistoryRetainedPermissionStop>
     }
 }
 
-impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
-    pub(in crate::domain_computation::primary_graph) fn authorize_retained_history_query<B>(
+pub(in crate::domain_computation::primary_graph) trait RetainedPermissionScopedOps<
+    S: ApplicationSchema,
+>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<S>
+{
+    fn authorize_retained_history_query<B>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         history: HistoryProducerInvocation<'_>,
@@ -58,7 +64,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             ));
         }
         history
-            .confirm_in_execution(execution, self, ())
+            .confirm_in_execution(execution, self.product_operation_host(), ())
             .map_err(Stop::Current)?;
         let installed = self
             .installed_schema()
@@ -66,6 +72,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             .map_err(|cause| Stop::Installation(cause.kind()))?;
         let limits = self.resolve_application_query_limits(installed.limits());
         let selected = self
+            .application_runtime()
             .on_branch(crate::basis::WorthQueryProductBranch::from_occurrence(
                 history.current().observation().lifecycle_incarnation(),
             ))
@@ -116,7 +123,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                     .validate_current_request()
                     .map_err(FreshQueryPermissionStop::Query)?;
                 history
-                    .confirm_in_execution(execution, self, ())
+                    .confirm_in_execution(execution, self.product_operation_host(), ())
                     .map_err(FreshQueryPermissionStop::Inspect)?;
                 permission
                     .validate_current_request()
@@ -125,6 +132,15 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         )
         .map_err(|stop| Stop::Permission(flatten_permission(stop)))
     }
+}
+
+impl<
+        S: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                S,
+            > + ?Sized,
+    > RetainedPermissionScopedOps<S> for HostRuntime
+{
 }
 
 fn flatten_permission(

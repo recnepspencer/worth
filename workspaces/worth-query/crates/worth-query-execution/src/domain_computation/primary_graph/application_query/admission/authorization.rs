@@ -1,6 +1,7 @@
 use super::{denial::graph_work_denial, governed_access::governance_denial};
 use crate::domain_computation::authorization::CapabilityRevalidationScopedOps;
 use crate::domain_computation::authorization::WorthQueryRetainedAuthorizationDecisionFacts;
+use crate::domain_computation::primary_graph::application_query::AccessObservationScopedOps;
 use crate::domain_computation::primary_graph::product_operation::ProductOperationSecurityBasisScopedOps;
 use crate::domain_computation::primary_graph::{
     application_query::{
@@ -25,9 +26,11 @@ pub(super) struct AdmittedApplicationQueryAuthorities {
     pub(super) governance: WorthQueryApplicationQueryGovernance,
 }
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+pub(super) trait AuthorizationParentOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
+{
     #[allow(clippy::too_many_arguments)]
-    pub(super) fn admit_application_query_authorities<
+    fn admit_application_query_authorities<
         Query,
         Parameters,
         QueryResult,
@@ -108,4 +111,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             governance,
         })
     }
+}
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > AuthorizationParentOps<Schema> for HostRuntime
+{
 }

@@ -1,3 +1,5 @@
+use crate::domain_computation::primary_graph::application_query::admission_preparation::AdmissionPreparationParentOps;
+use crate::domain_computation::primary_graph::application_query::OrdinaryScopedOps;
 use crate::domain_computation::primary_graph::product_operation::ApplicationBasisScopedOps;
 mod initial_read;
 use initial_read::execute_live_initial_read;
@@ -231,7 +233,8 @@ where
     }
 }
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+trait OpenOwnOps<Schema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
 where
     Schema: ApplicationSchema,
 {
@@ -280,7 +283,7 @@ where
         Binding: ApplicationQueryLiveCauseBinding<Schema, Query, Scope, Target>,
     {
         let execution = phase
-            .execution_request_for(&self.runtime.product_runtime)
+            .execution_request_for(self.product_runtime())
             .map_err(|_| {
                 open_denial(
                     WorthQueryApplicationLiveOpenDenialKind::ForeignAdvancementPhase,
@@ -318,9 +321,14 @@ where
                 request.pending_governance,
             )
             .map_err(open_admission_denial)?;
-        let initial_read = execute_live_initial_read(&execution, self, plan, request.query.name())?;
+        let initial_read = execute_live_initial_read(
+            &execution,
+            self.application_query_host(),
+            plan,
+            request.query.name(),
+        )?;
         let basis = admit_live_managed_basis(
-            self,
+            self.application_query_host(),
             request.controls.buffer_capacity(),
             &initial_read.graph_work,
             request.query.name(),
@@ -328,14 +336,14 @@ where
         )?;
         let buffer_capacity = request.controls.buffer_capacity();
         let queue = WorthQueryLiveCauseQueue::open(
-            &self.runtime.primary_provider.live_delivery,
+            &self.primary_provider().live_delivery,
             retained_product.observation(),
             buffer_capacity,
         )
         .map_err(|_| subscription_capacity_denial(request.query.name()))?;
         Ok(WorthQueryApplicationLiveLease {
             termination_failed: false,
-            runtime: self,
+            runtime: self.application_query_host(),
             query: request.query,
             scope: request.scope,
             parameters: request.parameters,
@@ -354,4 +362,15 @@ where
             _thread_affinity: PhantomData,
         })
     }
+}
+
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > OpenOwnOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
 }

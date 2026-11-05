@@ -1,4 +1,7 @@
 //! Original source readmission retains actual issued guards through the whole page action.
+use crate::domain_computation::primary_graph::application_query::history::admission::AdmissionParentOps;
+use crate::domain_computation::primary_graph::application_query::AccessScopedOps;
+use crate::domain_computation::primary_graph::application_query::ReadmittedScopedOps;
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
 };
@@ -28,7 +31,7 @@ type PendingDecisions = (Option<Pending>, Option<Pending>);
 
 #[allow(clippy::too_many_arguments)]
 fn with_session<'application, Schema, History, Output>(
-    application: &'application WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &'application dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     execution: worth_execution::ExecutionRequest<'_, '_>,
     history: &'application WorthQueryInstalledApplicationHistoryQuery<Schema, History>,
     external: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
@@ -110,10 +113,10 @@ where
 }
 
 fn request_for<'scope, Schema: ApplicationSchema>(
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'scope>,
 ) -> Result<worth_execution::ExecutionRequest<'scope, 'scope>, Denial> {
-    phase.execution_request_for(&application.runtime.product_runtime).map_err(|_| {
+    phase.execution_request_for(application.product_runtime()).map_err(|_| {
         Denial::Authorization(crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial::new(
             crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::Refused(
                 crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind::ForeignPhase,
@@ -121,3 +124,5 @@ fn request_for<'scope, Schema: ApplicationSchema>(
         ))
     })
 }
+pub use opening::OpeningOps;
+pub use paging::FreshPagingOps;

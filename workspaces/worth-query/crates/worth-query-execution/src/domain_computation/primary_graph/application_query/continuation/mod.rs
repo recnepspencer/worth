@@ -51,11 +51,12 @@ pub struct WorthQueryApplicationContinuationPageResult<
     _query: PhantomData<fn() -> Query>,
 }
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub trait ContinuationOps<Schema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub fn execute_application_query_continuation_page<
+    fn execute_application_query_continuation_page<
         Query,
         Parameters,
         QueryResult,
@@ -82,13 +83,13 @@ where
     where
         QueryResult: WorthQueryApplicationProjection<Schema, Query>,
     {
-        let request = match phase.execution_request_for(&self.runtime.product_runtime) {
+        let request = match phase.execution_request_for(self.product_runtime()) {
             Ok(request) => request,
             Err(_) => return Err(WorthQueryApplicationContinuationDenial::from_authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody"))),
         };
         let execution = &request;
 
-        validate_execution_plan(self, &plan)
+        validate_execution_plan(self.application_query_host(), &plan)
             .map_err(|denial| map_validation_denial(denial, plan.query.name()))?;
         if plan.controls.lane() != WorthQueryApplicationQueryLane::Continuation {
             return Err(denial(
@@ -96,11 +97,15 @@ where
                 plan.query.name(),
             ));
         }
-        validate_execution_lifetimes(self, &plan.controls, plan.principal)
-            .map_err(|denial| map_validation_denial(denial, plan.query.name()))?;
+        validate_execution_lifetimes(
+            self.application_query_host(),
+            &plan.controls,
+            plan.principal,
+        )
+        .map_err(|denial| map_validation_denial(denial, plan.query.name()))?;
         validate_live_basis(plan.basis.is_live(execution))
             .map_err(|denial| map_validation_denial(denial, plan.query.name()))?;
-        refresh_governed_authorization(execution, self, &mut plan)
+        refresh_governed_authorization(execution, self.application_query_host(), &mut plan)
             .map_err(|read| map_authorized_read_denial(read, plan.query.name()))?;
         let expected_generation = plan
             .continuation_state
@@ -110,18 +115,20 @@ where
             .continuation_state
             .as_ref()
             .map(|state| state.boundary.clone());
-        self.runtime.primary_graph().ok_or_else(|| {
+        self.primary_graph().ok_or_else(|| {
             denial(
                 WorthQueryApplicationContinuationDenialKind::StaleInstalledQuery,
                 plan.query.name(),
             )
         })?;
 
-        let (raw, authorization_work, read_proof) =
-            execute_authorized_read(execution, self, &plan, |runtime, graph, plan| {
-                read_continuation_page(runtime, execution, graph, plan, after)
-            })
-            .map_err(|read| map_authorized_read_denial(read, plan.query.name()))?;
+        let (raw, authorization_work, read_proof) = execute_authorized_read(
+            execution,
+            self.application_query_host(),
+            &plan,
+            |runtime, graph, plan| read_continuation_page(runtime, execution, graph, plan, after),
+        )
+        .map_err(|read| map_authorized_read_denial(read, plan.query.name()))?;
         if expected_generation.is_some() && raw.raw.ordered_index_generation != expected_generation
         {
             return Err(denial(
@@ -129,8 +136,26 @@ where
                 plan.query.name(),
             ));
         }
-        finalize_continuation_page(execution, self, plan, raw, authorization_work, read_proof)
+        finalize_continuation_page(
+            execution,
+            self.application_query_host(),
+            plan,
+            raw,
+            authorization_work,
+            read_proof,
+        )
     }
+}
+
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > ContinuationOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
 }
 
 impl<Schema, Query, Parameters, QueryResult, Scope>
@@ -288,3 +313,4 @@ fn denial(
 ) -> WorthQueryApplicationContinuationDenial {
     WorthQueryApplicationContinuationDenial::new(kind, subject)
 }
+pub use readmission::ReadmissionOps;

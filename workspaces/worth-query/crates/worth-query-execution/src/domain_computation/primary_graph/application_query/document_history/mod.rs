@@ -1,4 +1,5 @@
 //! A pending exact model capture leaves only after ordinary query completion.
+use crate::domain_computation::primary_graph::application_query::ReceiverOps;
 mod context;
 mod metadata;
 pub(in crate::domain_computation::primary_graph) use metadata::CompletedMetadataRead;
@@ -90,7 +91,7 @@ impl<'a, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
 
     fn execute(
         self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<S>,
         phase: &WorthQueryAdvancementPhase<'_>,
     ) -> Result<
         (
@@ -122,8 +123,10 @@ impl<'a, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
     }
 }
 
-impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
-    pub fn attach_document_history<'head, H: ApplicationHistoryBinding<S>>(
+pub trait DocumentHistoryOps<S: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<S>
+{
+    fn attach_document_history<'head, H: ApplicationHistoryBinding<S>>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         _access: &WorthQueryProgramPublicationAccess,
@@ -139,11 +142,11 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         let binding = read.history.binding_identity().clone();
         let navigation_resources = read.history.navigation_resources();
         let retention_resources = read.history.retention_resources();
-        let (pending, _read) = match read.execute(self, phase) {
+        let (pending, _read) = match read.execute(self.application_query_host(), phase) {
             Ok(completed) => completed,
             Err(denial) => return Err(WorthQueryDocumentHistoryAttachmentFailure { head, denial }),
         };
-        if !std::ptr::eq(self, head.application()) {
+        if !std::ptr::addr_eq(self, head.application()) {
             return Err(WorthQueryDocumentHistoryAttachmentFailure {
                 head,
                 denial: Denial::ForeignRuntime,
@@ -156,7 +159,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             });
         }
         let expected = pending.identity();
-        let execution = match phase.checked_execution_request_for(&self.runtime.product_runtime) {
+        let execution = match phase.checked_execution_request_for(self.product_runtime()) {
             Ok(execution) => execution,
             Err(cause) => {
                 return Err(WorthQueryDocumentHistoryAttachmentFailure {
@@ -167,7 +170,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         };
         let application = head.application();
         let selection = match crate::domain_computation::primary_graph::product_operation::document_history::HistorySelectionCell::attach(
-            &execution, head, expected, pending.product().retained_clone(), pending.retained_source(self), navigation_resources, retention_resources,
+            &execution, head, expected, pending.product().retained_clone(), pending.retained_source(self.application_query_host()), navigation_resources, retention_resources,
         ) {
             Ok(selection) => selection,
             Err((head, denial)) => return Err(WorthQueryDocumentHistoryAttachmentFailure { head, denial }),
@@ -192,7 +195,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         }
     }
 
-    pub fn read_document_history<H: ApplicationHistoryBinding<S>>(
+    fn read_document_history<H: ApplicationHistoryBinding<S>>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         _access: &WorthQueryProgramPublicationAccess,
@@ -202,8 +205,8 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     where
         Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>,
     {
-        let (pending, read) = read.execute(self, phase)?;
-        if !std::ptr::eq(self, document.application()) {
+        let (pending, read) = read.execute(self.application_query_host(), phase)?;
+        if !std::ptr::addr_eq(self, document.application()) {
             return Err(Denial::ForeignRuntime);
         }
         if document.binding != self.installed_schema().binding_identity() {
@@ -215,3 +218,24 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         pending.confirm_selection(phase, document, read)
     }
 }
+
+impl<
+        S: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                S,
+            > + ?Sized,
+    > DocumentHistoryOps<S> for HostRuntime
+{
+}
+pub use context::ContextOps;
+pub use metadata::MetadataOps;
+pub use navigation::NavigationOps;
+pub use navigation::OutputsOps;
+pub use operation::OperationOps;
+pub use output_intent::OutputIntentOps;
+pub(in crate::domain_computation::primary_graph) use output_read::OutputReadScopedOps;
+pub use paging::PagingOps;
+pub use preview::PreviewOps;
+pub use redo::RedoOps;
+pub(in crate::domain_computation::primary_graph) use retained_permission::RetainedPermissionScopedOps;
+pub use retention::RetentionOps;

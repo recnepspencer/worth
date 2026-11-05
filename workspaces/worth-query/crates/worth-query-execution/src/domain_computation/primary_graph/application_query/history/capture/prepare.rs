@@ -26,7 +26,7 @@ use crate::domain_computation::primary_graph::{
 #[allow(clippy::too_many_arguments)]
 pub(in crate::domain_computation::primary_graph::application_query) fn prepare<Schema, History>(
     execution: worth_execution::ExecutionRequest<'_, '_>,
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     layout: &WorthQueryPrimaryGraphLayout,
     security: &worth_relational::facade::snapshots::SnapshotHandle,

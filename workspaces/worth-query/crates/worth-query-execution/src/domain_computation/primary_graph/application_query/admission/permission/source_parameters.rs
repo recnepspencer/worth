@@ -1,9 +1,14 @@
 //! One permission owner for fresh source intent and retained-source readmission.
+use crate::domain_computation::primary_graph::application_query::admission::permission::read_authorization::ReadAuthorizationParentOps;
 use super::*;
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+pub(in crate::domain_computation::primary_graph::application_query) trait SourceParametersScopedOps<
+    Schema: ApplicationSchema,
+>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
+{
     #[allow(clippy::too_many_arguments)]
-    pub(in crate::domain_computation::primary_graph::application_query) fn prepare_application_query_permission_with_parameters<
+    fn prepare_application_query_permission_with_parameters<
         'a,
         Query,
         Parameters,
@@ -94,7 +99,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         };
         // Reuse the actual funded C share. D remains the independent truth basis;
         // retaining C here creates no new Native snapshot or authorization.
-        let security_basis = truth.map(|_| WorthQueryApplicationQueryBasisCustody::from_issued_selected(self, selected))
+        let security_basis = truth.map(|_| WorthQueryApplicationQueryBasisCustody::from_issued_selected(self.application_query_host(), selected))
             .transpose().map_err(|cause| {
                 use crate::domain_computation::primary_graph::product_operation::SelectedQueryBasisRetentionStop as Stop;
                 match cause {
@@ -111,7 +116,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let basis =
             crate::domain_computation::primary_graph::application_query::basis::admit_application_query_permission_basis_with_native_access(
                 execution,
-                self,
+                self.application_query_host(),
                 basis_selection,
                 native,
             )?;
@@ -131,7 +136,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 query.name(),
             ));
         }
-        let graph = self.runtime.primary_graph().ok_or_else(|| {
+        let graph = self.primary_graph().ok_or_else(|| {
             denial(
                 WorthQueryApplicationQueryAdmissionDenialKind::RuntimeSupportUnavailable,
                 query.name(),
@@ -159,7 +164,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 native,
             )?;
         Ok(PreparedApplicationQueryPermission {
-            issuer: self,
+            issuer: self.application_query_host(),
             query,
             access,
             parameters,
@@ -175,4 +180,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             shape,
         })
     }
+}
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > SourceParametersScopedOps<Schema> for HostRuntime
+{
 }

@@ -2,6 +2,7 @@
 
 use super::*;
 use crate::domain_computation::primary_graph::application_query::derived_view::reconstruction_denial as denial;
+use crate::domain_computation::primary_graph::application_query::OneShotBatchScopedOps;
 use crate::domain_computation::primary_graph::application_query::{
     read_execution::{read_execution_denial, WorthQueryApplicationReadExecutionDenialKind},
     WorthQueryApplicationBatchReadDenial, WorthQueryApplicationBatchResult,
@@ -12,7 +13,7 @@ use worth_execution::{ExecutionResourceLease, MapKernelContext};
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryAuthorization;
 
 pub(super) fn execute<S, Q, P, R, A, I, C>(
-    application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+    application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<S>,
     request: &ExecutionRequest<'_, '_>,
     plan: WorthQueryAdmittedApplicationQueryPlan<'_, S, Q, P, R, A, I, C>,
     batch: &WorthQueryApplicationQueryBatchAdmission,

@@ -30,7 +30,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn validate_
     Scope,
 >(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     security: &worth_relational::facade::snapshots::SnapshotHandle,
     plan: &WorthQueryAdmittedApplicationQueryPlan<
@@ -77,7 +77,7 @@ where
             execution,
             runtime,
             security,
-            application.runtime.authorization.bridge(),
+            application.authorization().bridge(),
         )
         .map_err(|stop| match stop {
             crate::domain_computation::authorization::AuthorizationCurrentnessStop::Admission(

@@ -1,6 +1,7 @@
 //! Owner-side plan, request, and lifetime admission for one-shot reads.
 
 use super::*;
+use crate::domain_computation::primary_graph::application_query::installed_schema_currentness::InstalledSchemaCurrentnessParentOps;
 
 pub(in crate::domain_computation::primary_graph::application_query) fn validate_one_shot_plan<
     Schema,
@@ -12,7 +13,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn validate_
     Scope,
 >(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     plan: &WorthQueryAdmittedApplicationQueryPlan<
         '_,
         Schema,
@@ -45,7 +46,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn validate_
     Scope,
 >(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     plan: &WorthQueryAdmittedApplicationQueryPlan<
         '_,
         Schema,
@@ -75,7 +76,7 @@ where
     admit_request(request, plan.query.name())?;
     validate_basis_lifetime(&plan.controls, plan.query.name())?;
     validate_authentication_lifetime(application, plan.principal, plan.query.name())?;
-    let graph = application.runtime.primary_graph().ok_or_else(|| {
+    let graph = application.primary_graph().ok_or_else(|| {
         denial(
             WorthQueryApplicationOneShotDenialKind::ForeignPlan,
             plan.query.name(),
@@ -109,11 +110,14 @@ pub(in crate::domain_computation::primary_graph::application_query) fn validate_
     Principal,
     PrincipalIdentity,
 >(
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
     subject: &str,
 ) -> Result<(), WorthQueryApplicationOneShotDenial> {
-    if application.authentication_is_expired(principal.valid_until()) {
+    if application
+        .application_runtime()
+        .authentication_is_expired(principal.valid_until())
+    {
         Err(denial(
             WorthQueryApplicationOneShotDenialKind::StalePrincipal,
             subject,
@@ -148,7 +152,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn validate_
     PrincipalIdentity,
     Scope,
 >(
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     plan: &WorthQueryAdmittedApplicationQueryPlan<
         '_,
         Schema,
@@ -163,7 +167,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn validate_
 where
     Schema: ApplicationSchema,
 {
-    if plan.runtime_authority != application.runtime.authority_identity() {
+    if plan.runtime_authority != application.authority_identity() {
         return Err(denial(
             WorthQueryApplicationOneShotDenialKind::ForeignPlan,
             plan.query.name(),
@@ -178,7 +182,7 @@ where
         ));
     }
     application
-        .installed_schema
+        .installed_schema()
         .validate_installed_query(plan.query)
         .map_err(|_| {
             denial(

@@ -27,8 +27,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         let control = RequestAllocationControl::new(request, execution.allocation_policy());
 
         runtime
-            .primary_provider()
-            .graph
+            .provider_graph()
             .with_runtime(&execution, |relational| {
                 let query_control = || match request.interruption() {
                     None => Ok(()),
@@ -72,8 +71,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         };
         if let (Some(coverage), Some(selected)) = (&source.coverage, &selected)
             && runtime
-                .primary_provider()
-                .graph
+                .provider_graph()
                 .source_owner
                 .invalidation_owner
                 .query_facts_clean_at(coverage, selected, policy)
@@ -85,7 +83,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         let retained = source;
         let source = &retained.source;
         let prepared = source.admit_fact_materialization(
-            &runtime.primary_provider().graph.layout,
+            &runtime.provider_graph().layout,
             &source.query_identifier,
             SourceFactExpansionControl::in_request(*execution, Some(request)),
         )?;
@@ -107,8 +105,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         }
         if let (Some(coverage), Some(selected)) = (&retained.coverage, &selected) {
             runtime
-                .primary_provider()
-                .graph
+                .provider_graph()
                 .source_owner
                 .invalidation_owner
                 .reestablish_query_read(coverage, selected, policy)

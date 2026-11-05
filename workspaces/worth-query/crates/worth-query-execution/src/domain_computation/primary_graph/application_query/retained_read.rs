@@ -65,7 +65,7 @@ impl WorthQueryApplicationReadObservation {
     }
 
     pub(in crate::domain_computation::primary_graph) fn from_product<Schema>(
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
         product: WorthQueryProductObservationLease,
     ) -> Arc<Self>
     where
@@ -77,13 +77,13 @@ impl WorthQueryApplicationReadObservation {
     pub(in crate::domain_computation::primary_graph) fn from_product_with_memory<
         Schema: ApplicationSchema,
     >(
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
         product: WorthQueryProductObservationLease,
         memory: Option<worth_execution::ExecutionMemoryReservation>,
     ) -> Arc<Self> {
         Arc::new(Self {
-            runtime_authority: runtime.runtime.authority_identity().as_u64(),
-            schema_binding: runtime.installed_schema.binding_identity(),
+            runtime_authority: runtime.authority_identity().as_u64(),
+            schema_binding: runtime.installed_schema().binding_identity(),
             product,
             producer: None,
             _memory: memory,
@@ -125,14 +125,14 @@ impl WorthQueryApplicationReadObservation {
     /// application and branch occurrence without authorizing the new read.
     pub(in crate::domain_computation::primary_graph) fn belongs_to_selected_occurrence<Schema>(
         &self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
         selected: &worth_runtime_world::facade::ProductBranchObservation,
     ) -> bool
     where
         Schema: ApplicationSchema,
     {
-        self.runtime_authority == runtime.runtime.authority_identity().as_u64()
-            && self.schema_binding == runtime.installed_schema.binding_identity()
+        self.runtime_authority == runtime.authority_identity().as_u64()
+            && self.schema_binding == runtime.installed_schema().binding_identity()
             && self.product.observation().branch_identity() == selected.branch_identity()
             && self.product.observation().lifecycle_incarnation()
                 == selected.lifecycle_incarnation()
@@ -161,11 +161,12 @@ where
     }
 }
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub trait RetainedReadOps<Schema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub fn select_application_read_observation(
+    fn select_application_read_observation(
         &self,
         phase: &crate::domain_computation::request_execution::WorthQueryAdvancementPhase<'_>,
         observation: &WorthQueryApplicationReadObservation,
@@ -173,7 +174,7 @@ where
         WorthQuerySelectedProductOperation<'_, Schema>,
         WorthQueryProductBranchAdmissionDenial,
     > {
-        let execution = match phase.execution_request_for(&self.runtime.product_runtime) {
+        let execution = match phase.execution_request_for(self.product_runtime()) {
             Ok(execution) => execution,
             Err(_) => {
                 return Err(WorthQueryProductBranchAdmissionDenial::Refused(
@@ -183,8 +184,25 @@ where
         };
         self.select_application_read_observation_with_request(&execution, observation)
     }
+}
 
-    pub(in crate::domain_computation) fn select_application_read_observation_with_request(
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > RetainedReadOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
+}
+
+pub(in crate::domain_computation) trait RetainedReadScopedOps<Schema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
+where
+    Schema: ApplicationSchema,
+{
+    fn select_application_read_observation_with_request(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         observation: &WorthQueryApplicationReadObservation,
@@ -192,20 +210,30 @@ where
         WorthQuerySelectedProductOperation<'_, Schema>,
         WorthQueryProductBranchAdmissionDenial,
     > {
-        if observation.runtime_authority != self.runtime.authority_identity().as_u64()
-            || observation.schema_binding != self.installed_schema.binding_identity()
+        if observation.runtime_authority != self.authority_identity().as_u64()
+            || observation.schema_binding != self.installed_schema().binding_identity()
         {
             return Err(WorthQueryProductBranchAdmissionDenial::Refused(
                 AdmissionRefusal::ForeignOwner,
             ));
         }
         let product = self
-            .runtime
-            .product_runtime
+            .product_runtime()
             .lease_from_observation(observation.product.observation().clone())?;
         self.on_product(execution, product)
             .map(|selected| selected.with_original_settled_producer(observation.producer.clone()))
     }
+}
+
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > RetainedReadScopedOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
 }
 
 mod court_doors_for_test;

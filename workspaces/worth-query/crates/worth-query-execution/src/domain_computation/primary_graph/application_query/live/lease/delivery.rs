@@ -1,5 +1,6 @@
 //! One queued native delivery retains decode custody through its final ACK.
 use super::*;
+use crate::domain_computation::primary_graph::application_query::LiveReadmissionScopedOps;
 use crate::domain_computation::primary_graph::product_operation::ApplicationBasisScopedOps;
 
 impl<
@@ -79,7 +80,7 @@ where
             let _ = plan.basis.release();
             return self.handle_read_denial(denial);
         }
-        let Some(_) = self.runtime.runtime.primary_graph() else {
+        let Some(_) = self.runtime.primary_graph() else {
             let _ = plan.basis.release();
             return WorthQueryApplicationLiveOutcome::Unavailable;
         };

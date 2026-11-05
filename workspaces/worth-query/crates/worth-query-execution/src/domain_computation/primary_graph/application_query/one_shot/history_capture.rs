@@ -53,8 +53,10 @@ impl<Schema: ApplicationSchema, History: ApplicationHistoryQueryBinding<Schema>>
     }
 }
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub fn execute_application_history_capture<History>(
+pub trait HistoryCaptureOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
+{
+    fn execute_application_history_capture<History>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         capture: WorthQueryAdmittedApplicationHistoryCapture<'_, Schema, History>,
@@ -64,7 +66,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         SubjectResult<Schema, History>:
             WorthQueryApplicationProjection<Schema, SubjectQuery<Schema, History>>,
     {
-        let request = phase.execution_request_for(&self.runtime.product_runtime).map_err(|_| {
+        let request = phase.execution_request_for(self.product_runtime()).map_err(|_| {
             Denial::Read(super::authorization_denial(
                 crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial::new(
                     crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::Refused(
@@ -77,8 +79,21 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         })?;
         self.execute_application_history_capture_with_request(&request, capture)
     }
+}
 
-    pub(in crate::domain_computation) fn execute_application_history_capture_with_request<History>(
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > HistoryCaptureOps<Schema> for HostRuntime
+{
+}
+
+pub(in crate::domain_computation) trait HistoryCaptureScopedOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
+{
+    fn execute_application_history_capture_with_request<History>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         capture: WorthQueryAdmittedApplicationHistoryCapture<'_, Schema, History>,
@@ -94,15 +109,21 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             metadata,
             limits,
         } = capture;
-        validate_one_shot_plan(execution, self, &plan)?;
-        refresh_governed_authorization(execution, self, &mut plan)
+        validate_one_shot_plan(execution, self.application_query_host(), &plan)?;
+        refresh_governed_authorization(execution, self.application_query_host(), &mut plan)
             .map_err(|cause| Denial::Read(map_authorized_read_denial(cause, plan.query.name())))?;
         let (raw, authorization_work, read_proof) = execute_authorized_read_with_access(
             execution,
-            self,
+            self.application_query_host(),
             &plan,
             |runtime, layout, security, plan| {
-                metadata.validate(execution, self, runtime, security, plan)?;
+                metadata.validate(
+                    execution,
+                    self.application_query_host(),
+                    runtime,
+                    security,
+                    plan,
+                )?;
                 read_bounded_root_rows(runtime, execution, layout, plan, None)
                     .map_err(WorthQueryAuthorizedApplicationReadDenial::Read)
                     .map_err(Denial::from)
@@ -111,7 +132,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let decode = ValueDecodeState::new(self.installed_schema().value_bindings().clone());
         let completed = super::outcome::complete_one_shot_with_capture(
             execution,
-            self,
+            self.application_query_host(),
             &decode,
             plan,
             raw,
@@ -145,12 +166,20 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 // Completion still consumes the genuine proof from the ordinary bounded read.
                 execute_authorized_read_with_access(
                     execution,
-                    self,
+                    self.application_query_host(),
                     plan,
                     |runtime, layout, security, plan| {
                         prepare_capture(
-                            *execution, self, runtime, layout, security, history, plan, &metadata,
-                            disclosed, limits,
+                            *execution,
+                            self.application_query_host(),
+                            runtime,
+                            layout,
+                            security,
+                            history,
+                            plan,
+                            &metadata,
+                            disclosed,
+                            limits,
                         )
                     },
                 )
@@ -165,4 +194,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             subjects,
         })
     }
+}
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > HistoryCaptureScopedOps<Schema> for HostRuntime
+{
 }

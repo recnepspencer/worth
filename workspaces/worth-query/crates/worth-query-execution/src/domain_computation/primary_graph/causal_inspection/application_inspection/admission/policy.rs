@@ -2,6 +2,7 @@
 use super::*;
 use crate::domain_computation::authorization::host::AuthorizationHost;
 use crate::domain_computation::authorization::PreparedReadScopedOps;
+use crate::domain_computation::primary_graph::application_query::ReadAuthorizationScopedOps;
 use crate::domain_computation::{
     authorization::application_disclosure::{
         compile_diagnostic_disclosure_contract, compile_inspection_disclosure_contract,

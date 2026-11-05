@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_query::admission_preparation::AdmissionPreparationParentOps;
 use worth_query_declaration::facade::{
     application_capability::ApplicationCapabilityRequest,
     application_query::ApplicationQueryParameterSet, application_schema::ApplicationSchema,
@@ -30,11 +31,12 @@ pub(in crate::domain_computation::primary_graph) use permission::{
     FreshQueryPermissionStop, PreparedApplicationQueryPermission,
 };
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub(in crate::domain_computation::primary_graph) trait AdmissionScopedOps<Schema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub(in crate::domain_computation::primary_graph) fn admit_application_query<
+    fn admit_application_query<
         'a,
         Query,
         Parameters,
@@ -82,7 +84,7 @@ where
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub(in crate::domain_computation::primary_graph) fn admit_governed_application_query<
+    fn admit_governed_application_query<
         'a,
         Query,
         Parameters,
@@ -134,8 +136,13 @@ where
     where
         Input: ApplicationCapabilityRequest<Schema, Capability, Scope = Scope>,
     {
-        let pending =
-            prepare_governed_access(self, query, access, capability, controls.request_scope())?;
+        let pending = prepare_governed_access(
+            self.application_query_host(),
+            query,
+            access,
+            capability,
+            controls.request_scope(),
+        )?;
         let (parameters, controls) =
             self.prepare_application_query_admission(query, access, parameters, controls)?;
         self.finish_application_query_admission(
@@ -149,4 +156,29 @@ where
     }
 }
 
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > AdmissionScopedOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
+}
+
 mod court_doors_for_test;
+pub(in crate::domain_computation::primary_graph::application_query) use access_observation::AccessObservationScopedOps;
+pub(in crate::domain_computation::primary_graph) use correction_disclosure::CorrectionDisclosureScopedOps;
+pub use court_doors_for_test::AdmissionDoorsOps;
+pub(in crate::domain_computation::primary_graph) use finish::OrdinaryScopedOps;
+pub(in crate::domain_computation::primary_graph) use finish::PreparedPermissionScopedOps;
+pub(in crate::domain_computation::primary_graph) use finish::ReadmittedScopedOps;
+pub(in crate::domain_computation::primary_graph::application_query) use live_readmission::LiveReadmissionScopedOps;
+pub use permission::AccessDoorsOps;
+pub(in crate::domain_computation::primary_graph) use permission::AccessScopedOps;
+pub(in crate::domain_computation::primary_graph) use permission::FreshScopedOps;
+pub(in crate::domain_computation::primary_graph) use permission::ReadAuthorizationScopedOps;
+pub(in crate::domain_computation::primary_graph::application_query) use permission::SourceParametersScopedOps;
+pub(in crate::domain_computation::primary_graph) use source_readmission::SourceReadmissionScopedOps;
+pub use work_limit::WorkLimitOps;

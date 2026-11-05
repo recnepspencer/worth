@@ -23,12 +23,11 @@ impl<S: ApplicationSchema> ParentContext<'_, S> {
     /// Pin Live history first, then observe the real current World occurrence.
     pub(super) fn recheck_current(
         &self,
-        application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+        application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<S>,
     ) -> Result<(), ReceiverCause> {
         let current = application.admit_with_observation_room(|| {
             application
-                .runtime
-                .product_runtime
+                .product_runtime()
                 .admit_product_occurrence(self.selected.product().product_branch().occurrence())
         })?;
         if current
@@ -44,7 +43,7 @@ impl<S: ApplicationSchema> ParentContext<'_, S> {
 
 pub(super) fn prepare<'a, S: ApplicationSchema, B: ApplicationQueryBinding<S>>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    application: &'a WorthQueryPrimaryGraphApplicationRuntime<S>,
+    application: &'a dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<S>,
     binding: &WorthQueryInstalledApplicationQueryBinding<S, B>,
     plan: &mut BoundPlan<'_, S, B>,
     allocation: &Arc<SourceFactsAllocation>,
@@ -89,7 +88,7 @@ pub(super) fn prepare<'a, S: ApplicationSchema, B: ApplicationQueryBinding<S>>(
     };
     // The occurrence token is Copy. Query-owned retained-basis copies are
     // admitted at their actual selected-observation owner before allocation.
-    let selected = application.on_branch(product.product_branch())
+    let selected = application.application_runtime().on_branch(product.product_branch())
         .select_for_managed_index(execution, |observed| {
             let bytes = super::super::super::WorthQueryApplicationBasisIdentity::retained_basis_clone_heap_bytes(
                 observed.basis().relational_basis(),

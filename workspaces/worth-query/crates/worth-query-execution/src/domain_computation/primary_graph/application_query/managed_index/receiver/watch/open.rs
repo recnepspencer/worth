@@ -3,8 +3,10 @@ use super::*;
 use crate::domain_computation::primary_graph::application_query::derived_view::PredicateWorld;
 use crate::domain_computation::primary_graph::live_delivery::WorthQueryLiveAdmissionDenial;
 
-impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
-    pub fn open_application_managed_index_watch<B, I>(
+pub trait OpenOps<S: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<S>
+{
+    fn open_application_managed_index_watch<B, I>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         binding: &WorthQueryInstalledApplicationQueryBinding<S, B>,
@@ -23,12 +25,18 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         ResultValue<S, B>: WorthQueryApplicationProjection<S, B::Query>,
     {
         let execution = phase
-            .execution_request_for(&self.runtime.product_runtime)
+            .execution_request_for(self.product_runtime())
             .map_err(|_| Denial::new(ReceiverCause::Refused(Refusal::ForeignPhase), None))?;
         let allocation = SourceFactsAllocation::open(&execution)
             .map_err(|cause| Denial::new(ReceiverCause::Execution(cause), None))?;
         let opened = (|| {
-            let context = context::prepare(&execution, self, binding, &mut plan, &allocation)?;
+            let context = context::prepare(
+                &execution,
+                self.application_query_host(),
+                binding,
+                &mut plan,
+                &allocation,
+            )?;
             if !plan.query.lanes().live_enabled()
                 || context
                     .association
@@ -40,14 +48,13 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                 return Err(ReceiverCause::Refused(Refusal::UnsupportedMode));
             }
             let adapter = self
-                .managed_indexes
+                .managed_indexes()
                 .get_admitted::<I>(&execution, &allocation)?
                 .ok_or(ReceiverCause::Refused(Refusal::MissingProvider))?;
             if !adapter.installed().admits_association(&context.association) {
                 return Err(ReceiverCause::Refused(Refusal::ForeignAssociation));
             }
             let graph = self
-                .runtime
                 .primary_graph()
                 .ok_or(ReceiverCause::Refused(Refusal::ForeignGraph))?;
             let program = graph
@@ -56,11 +63,11 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                 .ok_or(ReceiverCause::Refused(Refusal::UnsupportedMode))?;
             let registry = graph.managed_derived_views();
             let observation = context.selected.product().observation().clone();
-            let source = &self.runtime.primary_provider.live_delivery;
+            let source = &self.primary_provider().live_delivery;
             let subscription = source
                 .open_predicate(&execution, &observation)
                 .map_err(live_denial)?;
-            context.recheck_current(self)?;
+            context.recheck_current(self.application_query_host())?;
             let audience = Audience::of(&plan.graph_work)?;
             let governance = plan.governance.authorization().map(|authorization| {
                 crate::domain_computation::authorization::WorthQueryCapabilityUseIdentity::retain(authorization, &execution, &allocation)
@@ -101,7 +108,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                 .map_err(work_denial)?;
             // Independent queue bookkeeping: this does not issue Parent READ.
             let basis = super::super::super::super::live::admit_live_managed_basis(
-                self,
+                self.application_query_host(),
                 1,
                 &read.plan.graph_work,
                 read.plan.query.name(),
@@ -142,6 +149,15 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         })();
         opened.map_err(|cause| Denial::new(cause, Some(allocation)))
     }
+}
+
+impl<
+        S: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                S,
+            > + ?Sized,
+    > OpenOps<S> for HostRuntime
+{
 }
 pub(super) fn work_denial(
     cause: super::super::super::super::WorthQueryManagedIndexWorkDenial,

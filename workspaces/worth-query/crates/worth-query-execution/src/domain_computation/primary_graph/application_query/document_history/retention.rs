@@ -26,7 +26,7 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
 {
     fn admit_retention<'phase, 'scope, N: ApplicationHistoryRetentionBinding<S, H>>(
         self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+        runtime: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<S>,
         phase: &'phase WorthQueryAdvancementPhase<'scope>,
         access: &WorthQueryProgramPublicationAccess,
         document: &WorthQueryDocumentHistory<'_, S, H>,
@@ -45,6 +45,7 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         let request = self.plan.controls.request_scope().clone();
         let completed = self.complete_metadata_read(runtime, phase, document, access)?;
         let selected = runtime
+            .application_runtime()
             .on_branch(completed.source().identity().product_branch())
             .select(phase)
             .map_err(Denial::CandidateSelection)?;
@@ -66,14 +67,17 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             .installed_operation(reference)
             .map_err(Denial::RetentionOperationInstallation)?;
         let admission = runtime
+            .application_runtime()
             .authorize_capability_operation(phase, capability, &operation, Default::default())
             .map_err(Denial::OperationAdmission)?;
         Ok((completed, admission))
     }
 }
 
-impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
-    pub fn change_document_history_window<H, N>(
+pub trait RetentionOps<S: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<S>
+{
+    fn change_document_history_window<H, N>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         access: &WorthQueryProgramPublicationAccess,
@@ -90,8 +94,13 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         if !read.history.contains_window::<N>() {
             return Err(Denial::RetentionPolicyNotDeclared);
         }
-        let (read, admission) =
-            read.admit_retention::<N>(self, phase, access, document, N::input(history_access))?;
+        let (read, admission) = read.admit_retention::<N>(
+            self.application_query_host(),
+            phase,
+            access,
+            document,
+            N::input(history_access),
+        )?;
         document.apply_retention::<N>(
             phase,
             &read,
@@ -100,7 +109,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         )
     }
 
-    pub fn change_document_history_bookmark<H, N>(
+    fn change_document_history_bookmark<H, N>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         access: &WorthQueryProgramPublicationAccess,
@@ -118,8 +127,13 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         if !read.history.contains_bookmarks::<N>() {
             return Err(Denial::RetentionPolicyNotDeclared);
         }
-        let (read, admission) =
-            read.admit_retention::<N>(self, phase, access, document, N::input(history_access))?;
+        let (read, admission) = read.admit_retention::<N>(
+            self.application_query_host(),
+            phase,
+            access,
+            document,
+            N::input(history_access),
+        )?;
         document.apply_retention::<N>(
             phase,
             &read,
@@ -128,7 +142,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         )
     }
 
-    pub fn read_document_history_retention<H: ApplicationHistoryBinding<S>>(
+    fn read_document_history_retention<H: ApplicationHistoryBinding<S>>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         access: &WorthQueryProgramPublicationAccess,
@@ -138,7 +152,8 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     where
         Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>,
     {
-        let completed = read.complete_metadata_read(self, phase, document, access)?;
+        let completed =
+            read.complete_metadata_read(self.application_query_host(), phase, document, access)?;
         let (status, generation) = {
             let selected = document.selection.lock();
             (
@@ -148,4 +163,13 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         };
         completed.confirm_generation(document, generation, status)
     }
+}
+
+impl<
+        S: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                S,
+            > + ?Sized,
+    > RetentionOps<S> for HostRuntime
+{
 }

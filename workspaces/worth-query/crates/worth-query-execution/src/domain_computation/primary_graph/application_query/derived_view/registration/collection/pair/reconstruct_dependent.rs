@@ -1,5 +1,7 @@
 //! Serial runtime-dependent planning on one request and native read loan.
 
+use crate::domain_computation::primary_graph::application_query::derived_view::registration::RegistrationOwnOps;
+use crate::domain_computation::primary_graph::application_query::derived_view::registration::collection::pair::read::ReadParentOps;
 use super::{
     reconstruction::owner_stage as stage, reconstruction_denial as denial, Denial,
     WorthQueryApplicationProjection, WorthQueryManagedDerivedValue, WorthQueryManagedDerivedView,
@@ -16,22 +18,10 @@ use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, ExecutionWor
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_relational::facade::identity::EntityId;
 
-impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
-    /// Cold reconstruction when the first row supplies the second read's scope.
-    /// Inside host advancement, borrow the request from the issued phase's
-    /// `checked_execution_request_for` or narrow its active lease with a genuine
-    /// child. An independently created request has unrelated nested custody.
-    /// Both callbacks resolve local scopes and execute admitted plans through
-    /// the supplied Query context on the calling thread,
-    /// under this request and the same genuine loan. They cannot dispatch reads
-    /// to workers. Each pair's claims survive source/link checks and projection.
-    /// Roots are visited in EntityId order and the retained image changes only
-    /// after every pair succeeds and the product is still current. A newer
-    /// product can make the previous image cold before reconstruction finishes.
-    ///
-    /// Cost is the membership walk plus both ordinary reads per member and the
-    /// projected image. This serial dependency makes no worker parity claim.
-    pub fn reconstruct_managed_derived_collection_pair_dependent_in_batch<
+pub trait ReconstructDependentOps<S: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<S>
+{
+    fn reconstruct_managed_derived_collection_pair_dependent_in_batch<
         MQ,
         MR,
         Member,
@@ -73,7 +63,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                 let mut hold = ExecutionMemoryReservation::reserve_in_scope(lease, 0)
                     .map_err(denial::lease)?;
                 let (expected, membership) = super::reconstruction::membership::prepare(
-                    self, lease, &mut hold, view, product, membership_result, members,
+                    self.application_query_host(), lease, &mut hold, view, product, membership_result, members,
                 )?;
                 let slot_bytes = std::mem::size_of::<(
                     WorthQueryManagedDerivedViewKey, Value,
@@ -91,7 +81,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                     let (first, first_scope) = stage::run(lease, |context| {
                         context.checkpoint(1).map_err(|stop| denial::kernel(stop, Some(root)))?;
                         let mut read = WorthQueryDependentPairReadContext {
-                            application: self, request: &request, product,
+                            application: self.application_query_host(), request: &request, product,
                             query: view.state.entry_query.as_ref().ok_or(Denial::ForeignQuery)?,
                             root, scope_root: Some(root), batch, lease, context,
                             request_scope: None, attempted: false, result: None,
@@ -106,7 +96,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                             |row| {
                                 context.checkpoint(1).map_err(|stop| denial::kernel(stop, Some(root)))?;
                                 let mut read = WorthQueryDependentPairReadContext {
-                                    application: self, request: &request, product,
+                                    application: self.application_query_host(), request: &request, product,
                                     query: view.state.secondary_entry_query.as_ref().ok_or(Denial::ForeignQuery)?,
                                     root, scope_root: None, batch, lease, context,
                                     request_scope: first_scope, attempted: false, result: None,
@@ -141,4 +131,13 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             )
         }).map_err(denial::scope)?.0
     }
+}
+
+impl<
+        S: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                S,
+            > + ?Sized,
+    > ReconstructDependentOps<S> for HostRuntime
+{
 }

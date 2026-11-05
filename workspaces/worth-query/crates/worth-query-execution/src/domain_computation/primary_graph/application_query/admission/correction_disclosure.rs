@@ -1,9 +1,14 @@
 //! Fresh admission of the parameters captured by a performed source operation.
 use super::*;
+use crate::domain_computation::primary_graph::application_query::admission_preparation::AdmissionPreparationParentOps;
 use worth_query_admission::facade::application_query::WorthQueryAdmittedApplicationQueryParameters;
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub(in crate::domain_computation::primary_graph) fn admit_correction_disclosure<
+pub(in crate::domain_computation::primary_graph) trait CorrectionDisclosureScopedOps<
+    Schema: ApplicationSchema,
+>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
+{
+    fn admit_correction_disclosure<
         'a,
         Query,
         Parameters,
@@ -49,4 +54,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             execution, query, access, parameters, controls, None,
         )
     }
+}
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > CorrectionDisclosureScopedOps<Schema> for HostRuntime
+{
 }

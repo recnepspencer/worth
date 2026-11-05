@@ -1,5 +1,8 @@
 //! Entry refresh with both independent reads charged to one caller-owned loan.
 
+use crate::domain_computation::primary_graph::application_query::BatchScopedOps;
+use crate::domain_computation::primary_graph::application_query::derived_view::registration::RegistrationOwnOps;
+use crate::domain_computation::primary_graph::application_query::derived_view::registration::collection::pair::read::ReadParentOps;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 
 use super::{
@@ -13,16 +16,10 @@ use crate::domain_computation::primary_graph::application_query::{
     WorthQueryManagedDerivedCollectionBatchRefreshDenial as Denial,
 };
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    /// Refreshes one dirty entry under a shared read-work and result/source
-    /// custody allowance. The second callback executes its independently
-    /// admitted plan in the supplied batch and returns its genuine result and
-    /// live row claim. Both claims remain held through validation and projection.
-    ///
-    /// All ordinary public-query, root, link, source, branch and current-product
-    /// checks are unchanged. Authorization/preparation retain their ordinary
-    /// per-item protections. Failure leaves the entry dirty and unavailable.
-    pub fn refresh_managed_derived_collection_pair_entry_in_batch<
+pub trait RefreshBatchOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
+{
+    fn refresh_managed_derived_collection_pair_entry_in_batch<
         'a,
         MembershipQuery,
         FirstQuery,
@@ -101,10 +98,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         )
     }
 
-    /// Refreshes from an intact first result issued by the supplied loan. The
-    /// caller may inspect its genuine receipt before moving this sealed bundle.
-    /// Both actual result claims remain live through projection and installation.
-    pub fn refresh_managed_derived_collection_pair_entry_from_batch_result<
+    fn refresh_managed_derived_collection_pair_entry_from_batch_result<
         MembershipQuery,
         FirstQuery,
         FirstResult,
@@ -174,4 +168,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .refresh_entry(key, value, dependencies, product.selected_commit())
             .map_err(Denial::View)
     }
+}
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > RefreshBatchOps<Schema> for HostRuntime
+{
 }

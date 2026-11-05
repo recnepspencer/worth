@@ -4,6 +4,7 @@ mod application_checkpoint;
 mod application_discovery;
 mod application_entry;
 mod application_installation;
+mod application_query;
 mod application_resource;
 mod authorization;
 mod causal_inspection;

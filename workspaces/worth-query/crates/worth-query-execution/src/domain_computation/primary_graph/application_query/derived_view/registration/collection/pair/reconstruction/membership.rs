@@ -6,6 +6,7 @@ use super::super::{
 };
 use super::owner_stage;
 use crate::basis::WorthQueryProductBranchLease;
+use crate::domain_computation::primary_graph::application_query::derived_view::registration::RegistrationOwnOps;
 use crate::domain_computation::primary_graph::application_query::derived_view::{
     dependency::ViewDependency,
     retention::{WorthQueryManagedDerivedMemberToken, WorthQueryManagedDerivedValue},
@@ -16,7 +17,7 @@ use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_relational::facade::identity::EntityId;
 
 pub(in super::super) fn prepare<Schema: ApplicationSchema, Query, Row, Member, Value>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     lease: Option<&ExecutionResourceLease<'_>>,
     hold: &mut ExecutionMemoryReservation,
     view: &WorthQueryManagedDerivedView<Query, Value>,

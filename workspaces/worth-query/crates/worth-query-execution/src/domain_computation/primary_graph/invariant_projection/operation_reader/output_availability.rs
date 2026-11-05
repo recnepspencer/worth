@@ -145,7 +145,6 @@ impl<Schema: ApplicationSchema + 'static, Operation>
                 let mut native = ApplicationQueryNativeAccess::borrowed(
                     access
                         .application
-                        .runtime
                         .primary_graph()
                         .ok_or(Cause::ContextUnavailable)?,
                     self.reader.runtime,
@@ -166,6 +165,7 @@ impl<Schema: ApplicationSchema + 'static, Operation>
                 }
                 let qualified = access
                     .application
+                    .application_runtime()
                     .qualify_observed_output_source::<Family<Schema, Demand>>(
                         execution,
                         &observed,

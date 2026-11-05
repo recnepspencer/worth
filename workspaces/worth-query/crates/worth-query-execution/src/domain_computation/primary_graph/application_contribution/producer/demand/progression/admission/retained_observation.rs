@@ -8,6 +8,7 @@
 //! observation whose output is not current there stops `Superseded`:
 //! nothing is produced into the past.
 
+use crate::domain_computation::primary_graph::application_output_demand::host::OutputDemandHost;
 use std::sync::Arc;
 
 use worth_relational::facade::{runtime::ProjectionAspectScope, storage::RecordLifecycleState};

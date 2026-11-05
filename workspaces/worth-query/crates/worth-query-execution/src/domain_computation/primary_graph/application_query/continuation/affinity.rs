@@ -24,7 +24,7 @@ pub(super) struct WorthQueryValidatedContinuationAffinity {
 }
 
 pub(super) fn validate_continuation_affinity<Schema, Query, Parameters, QueryResult, Scope>(
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
     scope_entity_id: EntityId,
     continuation: WorthQueryApplicationQueryContinuation<
@@ -45,7 +45,7 @@ where
         )
     })?;
     validate_runtime_and_query(application, query, contract.digest(), &continuation)?;
-    let graph = application.runtime.primary_graph().ok_or_else(|| {
+    let graph = application.primary_graph().ok_or_else(|| {
         denial(
             WorthQueryApplicationQueryAdmissionDenialKind::RuntimeSupportUnavailable,
             query.name(),
@@ -67,15 +67,9 @@ where
         ));
     }
     if continuation.graph_authority_identity
-        != application
-            .runtime
-            .primary_graph_authority()
-            .authority_identity()
+        != application.primary_graph_authority().authority_identity()
         || continuation.provider_identity
-            != application
-                .runtime
-                .primary_graph_authority()
-                .provider_identity()
+            != application.primary_graph_authority().provider_identity()
         || continuation.index_id != installed_index
     {
         return Err(denial(
@@ -93,7 +87,7 @@ where
 }
 
 fn validate_runtime_and_query<Schema, Query, Parameters, QueryResult, Scope>(
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
     continuation_contract_digest: &CanonicalDigestId,
     continuation: &WorthQueryApplicationQueryContinuation<
@@ -104,7 +98,7 @@ fn validate_runtime_and_query<Schema, Query, Parameters, QueryResult, Scope>(
         Scope,
     >,
 ) -> Result<(), WorthQueryApplicationQueryAdmissionDenial> {
-    if continuation.runtime_authority != application.runtime.authority_identity().as_u64() {
+    if continuation.runtime_authority != application.authority_identity().as_u64() {
         return Err(denial(
             WorthQueryApplicationQueryAdmissionDenialKind::ForeignContinuation,
             query.name(),

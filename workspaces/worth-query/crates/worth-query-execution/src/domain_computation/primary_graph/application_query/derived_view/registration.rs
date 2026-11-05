@@ -22,11 +22,12 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationR
 
 pub(crate) mod collection;
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub trait RegistrationOps<Schema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub fn open_managed_derived_view<Query, Parameters, QueryResult, Scope, Value>(
+    fn open_managed_derived_view<Query, Parameters, QueryResult, Scope, Value>(
         &self,
         definition: &ApplicationDerivedViewDefinition<
             Schema,
@@ -44,6 +45,103 @@ where
         self.open_managed_derived_view_with_entry_query(definition, query, None, None, product)
     }
 
+    fn observe_managed_derived_view<Query, Value>(
+        &self,
+        view: &WorthQueryManagedDerivedView<Query, Value>,
+    ) -> Result<WorthQueryManagedDerivedViewSnapshot<Value>, Denial>
+    where
+        Value: WorthQueryManagedDerivedValue,
+    {
+        if view.state.runtime_authority != self.authority_identity().as_u64() {
+            return Err(Denial::ForeignApplication);
+        }
+        if view.state.binding != self.installed_schema().binding_identity() {
+            return Err(Denial::ForeignInstallation);
+        }
+        let current = self
+            .product_runtime()
+            .with_product_observation(&view.state.product_branch, |observation| {
+                Ok((
+                    observation.lifecycle_incarnation(),
+                    observation.selected_commit().clone(),
+                ))
+            })
+            .map_err(|_| Denial::ForeignBranch)?;
+        if current.0 != view.state.incarnation {
+            view.discard();
+            return Err(Denial::ForeignBranch);
+        }
+        if view.state.current_commit().as_ref() != Some(&current.1) {
+            view.state.rebase_cold(current.1);
+            return Err(Denial::ColdReconstructionRequired);
+        }
+        Ok(WorthQueryManagedDerivedViewSnapshot {
+            state: Arc::clone(&view.state),
+            commit: current.1,
+            _entry: std::marker::PhantomData,
+        })
+    }
+
+    fn reconstruct_managed_derived_view<Query, QueryResult, Value>(
+        &self,
+        view: &WorthQueryManagedDerivedView<Query, Value>,
+        product: &WorthQueryProductBranchLease,
+        result: &WorthQueryApplicationOneShotResult<Query, QueryResult>,
+        mut project: impl FnMut(&QueryResult) -> Value,
+    ) -> Result<(), Denial>
+    where
+        Value: WorthQueryManagedDerivedValue,
+    {
+        self.admit_view_product(view, product)?;
+        if result.rows().len() != result.observed_sources().len() {
+            return Err(Denial::IncompleteDependencies);
+        }
+        if view.state.limits.rejects_entries(result.rows().len()) {
+            return Err(Denial::EntryCapacityExceeded);
+        }
+        let membership = self.checked_view_dependencies(
+            view,
+            product,
+            result.result_set_observation().source(),
+        )?;
+        let mut reconstructed = Vec::with_capacity(result.rows().len());
+        for (source, row) in result.observed_sources().iter().zip(result.rows()) {
+            let dependencies = self.checked_view_dependencies(view, product, source)?;
+            reconstructed.push((
+                source.managed_derived_view_key(),
+                project(row),
+                dependencies,
+            ));
+        }
+        view.state.reconstruct(
+            result
+                .result_set_observation()
+                .source()
+                .managed_derived_view_key(),
+            None,
+            reconstructed,
+            membership,
+            product.selected_commit(),
+        )
+    }
+}
+
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > RegistrationOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
+}
+
+trait RegistrationOwnOps<Schema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
+where
+    Schema: ApplicationSchema,
+{
     fn open_managed_derived_view_with_entry_query<Query, Parameters, QueryResult, Scope, Value>(
         &self,
         definition: &ApplicationDerivedViewDefinition<
@@ -101,7 +199,7 @@ where
         if name.is_empty() {
             return Err(Denial::InvalidLimits);
         }
-        self.installed_schema
+        self.installed_schema()
             .validate_installed_query(query)
             .map_err(|_| Denial::ForeignInstallation)?;
         if !matches!(
@@ -111,14 +209,11 @@ where
             return Err(Denial::AuthorizationRequired);
         }
         self.admit_current_view_product(product)?;
-        let graph = self
-            .runtime
-            .primary_graph()
-            .ok_or(Denial::ForeignApplication)?;
+        let graph = self.primary_graph().ok_or(Denial::ForeignApplication)?;
         let observation = product.observation();
         let state = Arc::new(ManagedDerivedViewState::new(
-            self.runtime.authority_identity().as_u64(),
-            self.installed_schema.binding_identity().clone(),
+            self.authority_identity().as_u64(),
+            self.installed_schema().binding_identity().clone(),
             query.identity().clone(),
             entry_query,
             secondary_entry_query,
@@ -139,87 +234,6 @@ where
             registry: Arc::downgrade(&registry),
             _query: std::marker::PhantomData,
         })
-    }
-
-    pub fn observe_managed_derived_view<Query, Value>(
-        &self,
-        view: &WorthQueryManagedDerivedView<Query, Value>,
-    ) -> Result<WorthQueryManagedDerivedViewSnapshot<Value>, Denial>
-    where
-        Value: WorthQueryManagedDerivedValue,
-    {
-        if view.state.runtime_authority != self.runtime.authority_identity().as_u64() {
-            return Err(Denial::ForeignApplication);
-        }
-        if view.state.binding != self.installed_schema.binding_identity() {
-            return Err(Denial::ForeignInstallation);
-        }
-        let current = self
-            .runtime
-            .product_runtime
-            .with_product_observation(&view.state.product_branch, |observation| {
-                Ok((
-                    observation.lifecycle_incarnation(),
-                    observation.selected_commit().clone(),
-                ))
-            })
-            .map_err(|_| Denial::ForeignBranch)?;
-        if current.0 != view.state.incarnation {
-            view.discard();
-            return Err(Denial::ForeignBranch);
-        }
-        if view.state.current_commit().as_ref() != Some(&current.1) {
-            view.state.rebase_cold(current.1);
-            return Err(Denial::ColdReconstructionRequired);
-        }
-        Ok(WorthQueryManagedDerivedViewSnapshot {
-            state: Arc::clone(&view.state),
-            commit: current.1,
-            _entry: std::marker::PhantomData,
-        })
-    }
-
-    pub fn reconstruct_managed_derived_view<Query, QueryResult, Value>(
-        &self,
-        view: &WorthQueryManagedDerivedView<Query, Value>,
-        product: &WorthQueryProductBranchLease,
-        result: &WorthQueryApplicationOneShotResult<Query, QueryResult>,
-        mut project: impl FnMut(&QueryResult) -> Value,
-    ) -> Result<(), Denial>
-    where
-        Value: WorthQueryManagedDerivedValue,
-    {
-        self.admit_view_product(view, product)?;
-        if result.rows().len() != result.observed_sources().len() {
-            return Err(Denial::IncompleteDependencies);
-        }
-        if view.state.limits.rejects_entries(result.rows().len()) {
-            return Err(Denial::EntryCapacityExceeded);
-        }
-        let membership = self.checked_view_dependencies(
-            view,
-            product,
-            result.result_set_observation().source(),
-        )?;
-        let mut reconstructed = Vec::with_capacity(result.rows().len());
-        for (source, row) in result.observed_sources().iter().zip(result.rows()) {
-            let dependencies = self.checked_view_dependencies(view, product, source)?;
-            reconstructed.push((
-                source.managed_derived_view_key(),
-                project(row),
-                dependencies,
-            ));
-        }
-        view.state.reconstruct(
-            result
-                .result_set_observation()
-                .source()
-                .managed_derived_view_key(),
-            None,
-            reconstructed,
-            membership,
-            product.selected_commit(),
-        )
     }
 
     fn checked_view_dependencies<Query, Value>(
@@ -263,10 +277,7 @@ where
         if source.selected_product_commit() != Some(product.selected_commit()) {
             return Err(Denial::StaleSource);
         }
-        let graph = self
-            .runtime
-            .primary_graph()
-            .ok_or(Denial::ForeignApplication)?;
+        let graph = self.primary_graph().ok_or(Denial::ForeignApplication)?;
         let facts = source
             .retained_checkpoint_facts(
                 &graph.layout,
@@ -285,10 +296,10 @@ where
     where
         Value: WorthQueryManagedDerivedValue,
     {
-        if view.state.runtime_authority != self.runtime.authority_identity().as_u64() {
+        if view.state.runtime_authority != self.authority_identity().as_u64() {
             return Err(Denial::ForeignApplication);
         }
-        if view.state.binding != self.installed_schema.binding_identity() {
+        if view.state.binding != self.installed_schema().binding_identity() {
             return Err(Denial::ForeignInstallation);
         }
         if product.observation().lifecycle_incarnation() != view.state.incarnation
@@ -309,8 +320,7 @@ where
         product: &WorthQueryProductBranchLease,
     ) -> Result<(), Denial> {
         let current = self
-            .runtime
-            .product_runtime
+            .product_runtime()
             .with_product_observation(product.branch_identity(), |observation| {
                 Ok((
                     observation.lifecycle_incarnation(),
@@ -326,3 +336,21 @@ where
         Ok(())
     }
 }
+
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > RegistrationOwnOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
+}
+pub use collection::CollectionOps;
+pub use collection::PairOps;
+pub use collection::ReconcileOps;
+pub use collection::ReconstructDependentOps;
+pub use collection::ReconstructLazyOps;
+pub use collection::ReconstructParallelOps;
+pub use collection::RefreshBatchOps;

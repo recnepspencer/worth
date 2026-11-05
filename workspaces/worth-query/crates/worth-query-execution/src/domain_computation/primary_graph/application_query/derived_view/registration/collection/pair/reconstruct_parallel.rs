@@ -1,5 +1,7 @@
 //! Request-owned pair reads with canonical owner projection and atomic retention.
 
+use crate::domain_computation::primary_graph::application_query::derived_view::registration::RegistrationOwnOps;
+use crate::domain_computation::primary_graph::application_query::derived_view::registration::collection::pair::read::ReadParentOps;
 use super::{
     Denial, WorthQueryApplicationProjection, WorthQueryManagedDerivedValue,
     WorthQueryManagedDerivedView, WorthQueryManagedDerivedViewKey,
@@ -28,20 +30,10 @@ use super::reconstruction_denial as denial;
 mod decode_custody;
 mod preparation;
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    /// Reconstruct unique roots under the caller's bounded request. Owner
-    /// preparation precedes the owned map; application projection and all link
-    /// checks run on the calling thread, in EntityId order. A completed compute
-    /// prefix is projected only while the owner request checks permit it;
-    /// cancellation or an elapsed deadline can stop its projection. Projection
-    /// failures keep all work the map settled. Retention changes atomically
-    /// only on success; admitting a newer product may first make the view cold.
-    /// Owner preparation pins exact native read custody under the source lock.
-    /// Workers carry that immutable capability and no owner port, so native
-    /// reads overlap while the map preserves canonical order and caller charging.
-    /// Cancellation and deadline boundaries may differ with placement: each
-    /// reports a canonical prefix and only its admitted work, not width equality.
-    pub fn reconstruct_managed_derived_collection_pair<
+pub trait ReconstructParallelOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
+{
+    fn reconstruct_managed_derived_collection_pair<
         'a,
         MQ,
         MR,
@@ -94,7 +86,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     let mut owner_hold = ExecutionMemoryReservation::reserve_in_scope(lease, 0)
                         .map_err(denial::lease)?;
                     let (expected, membership) = super::reconstruction::membership::prepare(
-                        self, lease, &mut owner_hold, view, product, membership_result, members,
+                        self.application_query_host(), lease, &mut owner_hold, view, product, membership_result, members,
                     )?;
                     let roots =
                         CanonicalUniqueVec::from_btree_set(expected.keys().copied().collect());
@@ -139,7 +131,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                             owner_hold.resize(input_bytes).map_err(|memory| {
                                 denial::lease(worth_execution::LeaseDenial::MemoryExhausted(memory))
                             })?;
-                            authorization.push(pair.admit(&request, self, root, context)?);
+                            authorization.push(pair.admit(&request, self.application_query_host(), root, context)?);
                             owner_stage::retain_member_token(&mut owner_hold, &member)?;
                             tokens.insert(root, RetainedMemberToken::clone_admitted(&member)?);
                             plans.push(pair);
@@ -198,7 +190,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                             last_decoded_root = Some(root);
                             let first = finalize_one_shot_with_decode(
                                 &request,
-                                self,
+                                self.application_query_host(),
                                 &decode,
                                 pair.first,
                                 output.first.raw,
@@ -207,7 +199,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                             .map_err(read_denied)?;
                             let second = finalize_one_shot_with_decode(
                                 &request,
-                                self,
+                                self.application_query_host(),
                                 &decode,
                                 pair.second,
                                 output.second.raw,
@@ -266,6 +258,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .map_err(denial::scope)?
             .0
     }
+}
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > ReconstructParallelOps<Schema> for HostRuntime
+{
 }
 
 #[cfg(test)]

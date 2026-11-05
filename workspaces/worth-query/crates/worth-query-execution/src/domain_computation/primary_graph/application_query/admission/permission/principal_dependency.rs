@@ -12,7 +12,7 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationR
 use crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity;
 
 pub(super) fn capture<Schema, Principal, PrincipalIdentity>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
     session: WorthQueryGraphWorkSessionIdentity,
 ) -> Result<

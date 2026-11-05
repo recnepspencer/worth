@@ -8,10 +8,12 @@ type ReadAuthorization = (
     WorthQueryApplicationAuthorizationWorkEvidence,
 );
 
-impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    /// This observes READ only. The caller still admits its metadata contract
-    /// and consumes both decisions in its own actual session.
-    pub(in crate::domain_computation::primary_graph) fn observe_issued_query_read_authorization<
+pub(in crate::domain_computation::primary_graph) trait ReadAuthorizationScopedOps<
+    Schema: ApplicationSchema,
+>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
+{
+    fn observe_issued_query_read_authorization<
         Query,
         Parameters,
         QueryResult,
@@ -33,8 +35,21 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             &mut ApplicationQueryNativeAccess::acquire(),
         )
     }
+}
 
-    pub(super) fn observe_issued_query_read_authorization_with_native<
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > ReadAuthorizationScopedOps<Schema> for HostRuntime
+{
+}
+
+pub(super) trait ReadAuthorizationParentOps<Schema: ApplicationSchema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
+{
+    fn observe_issued_query_read_authorization_with_native<
         Query,
         Parameters,
         QueryResult,
@@ -49,15 +64,18 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         session: &WorthQueryPreparedProductReadSessionIdentity,
         native: &mut ApplicationQueryNativeAccess<'_>,
     ) -> Result<ReadAuthorization, WorthQueryApplicationQueryAdmissionDenial> {
-        let graph = self.runtime.primary_graph().ok_or_else(|| {
+        let graph = self.primary_graph().ok_or_else(|| {
             denial(
                 WorthQueryApplicationQueryAdmissionDenialKind::RuntimeSupportUnavailable,
                 query.name(),
             )
         })?;
         let access = WorthQueryApplicationQueryAccessContext::new(root.principal, root.scope);
-        let principal_currentness =
-            principal_dependency::capture(self, access.principal(), session.identity())?;
+        let principal_currentness = principal_dependency::capture(
+            self.application_query_host(),
+            access.principal(),
+            session.identity(),
+        )?;
         let (authorization, work) = match query.authorization() {
             WorthQueryInstalledApplicationQueryAuthorization::Public => (
                 WorthQueryRetainedAuthorizationDecisionFacts::principal(principal_currentness),
@@ -98,4 +116,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         }
         Ok((authorization, work))
     }
+}
+
+impl<
+        Schema: ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > ReadAuthorizationParentOps<Schema> for HostRuntime
+{
 }

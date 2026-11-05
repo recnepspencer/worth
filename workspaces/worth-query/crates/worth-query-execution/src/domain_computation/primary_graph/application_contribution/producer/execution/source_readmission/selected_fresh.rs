@@ -2,6 +2,7 @@
 
 use super::*;
 use crate::domain_computation::primary_graph::application_query::PreparedApplicationQueryPermission;
+use crate::domain_computation::primary_graph::application_query::PreparedPermissionScopedOps;
 use crate::domain_computation::primary_graph::product_operation::SharedSelectedProductOperation;
 use worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding;
 

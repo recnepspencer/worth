@@ -1,5 +1,7 @@
 //! Disclose one original subject under the target's current query authority.
 use super::{WorthQuerySelectedCorrectionSource, WorthQuerySelectedProductOperation};
+use crate::domain_computation::primary_graph::application_query::CorrectionDisclosureScopedOps;
+use crate::domain_computation::primary_graph::application_query::OneShotCorrectionDisclosureScopedOps;
 use std::{any::TypeId, num::NonZeroUsize};
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,

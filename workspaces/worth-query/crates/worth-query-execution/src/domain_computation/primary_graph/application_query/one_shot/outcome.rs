@@ -42,7 +42,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn complete_
     E,
 >(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     decode: &ValueDecodeState,
     plan: WorthQueryAdmittedApplicationQueryPlan<
         '_,
@@ -178,7 +178,7 @@ where
     let mut source_comparisons = crate::domain_computation::primary_graph::source_read_equivalence::SourceReadEquivalence::default();
     let meanings = source_meanings::SourceMeanings {
         execution,
-        registry: application.runtime.source_meanings(),
+        registry: application.source_meanings(),
         query: plan.query.identity().as_bytes(),
         parameters: parameter_binding_identity.bytes(),
         selection: basis_identity.selection(),

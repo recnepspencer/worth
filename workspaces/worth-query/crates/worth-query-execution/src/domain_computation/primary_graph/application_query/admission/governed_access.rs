@@ -25,7 +25,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn prepare_g
     Operation,
     Input,
 >(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>,
     query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
     access: &WorthQueryApplicationQueryAccessContext<
         '_,

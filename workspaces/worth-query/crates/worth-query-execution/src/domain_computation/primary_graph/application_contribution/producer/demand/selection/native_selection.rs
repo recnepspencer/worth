@@ -1,5 +1,6 @@
 //! Sole producer source/lifecycle selection on the original native borrow.
 use super::*;
+use crate::domain_computation::primary_graph::application_output_demand::host::OutputDemandHost;
 
 impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(super) fn select_output_producer_with_remaining_core<Family>(

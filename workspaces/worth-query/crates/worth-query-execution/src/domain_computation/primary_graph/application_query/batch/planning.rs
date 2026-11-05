@@ -1,4 +1,5 @@
 //! Exact installed query slots for a finite caller-described schedule.
+use crate::domain_computation::primary_graph::application_query::WorkLimitOps;
 use std::collections::BTreeMap;
 
 use worth_query_declaration::facade::application_query::ApplicationQueryBinding;
@@ -58,12 +59,12 @@ impl PlannedBatchItem {
     }
 }
 
-impl<Schema: worth_query_declaration::facade::application_schema::ApplicationSchema>
-    WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub trait PlanningOps<
+    Schema: worth_query_declaration::facade::application_schema::ApplicationSchema,
+>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
 {
-    /// Registers a finite schedule using genuine installed bindings.
-    /// Zero reads stays zero. The count is scheduling data, not membership proof.
-    pub fn plan_application_query_batch_reads<B: ApplicationQueryBinding<Schema>>(
+    fn plan_application_query_batch_reads<B: ApplicationQueryBinding<Schema>>(
         &self,
         binding: &WorthQueryInstalledApplicationQueryBinding<Schema, B>,
         count: usize,
@@ -75,9 +76,7 @@ impl<Schema: worth_query_declaration::facade::application_schema::ApplicationSch
         self.plan_installed_query_batch_reads(binding.query(), count, limits.maximum_results())
     }
 
-    /// Registers native installed reads for callers already owning their query
-    /// handle. This describes slots only: each read still needs fresh admission.
-    pub fn plan_installed_query_batch_reads<Q, P, R, S>(
+    fn plan_installed_query_batch_reads<Q, P, R, S>(
         &self,
         query: &worth_query_installation::facade::WorthQueryInstalledApplicationQuery<
             Schema,
@@ -92,7 +91,7 @@ impl<Schema: worth_query_declaration::facade::application_schema::ApplicationSch
         WorthQueryApplicationQueryBatchReadPlan,
         WorthQueryApplicationQueryBatchResourceDenial,
     > {
-        self.installed_schema
+        self.installed_schema()
             .validate_installed_query(query)
             .map_err(|_| WorthQueryApplicationQueryBatchResourceDenial::ForeignPlan)?;
         if let Some(maximum) =
@@ -105,17 +104,15 @@ impl<Schema: worth_query_declaration::facade::application_schema::ApplicationSch
             });
         }
         Ok(WorthQueryApplicationQueryBatchReadPlan {
-            runtime: self.runtime.authority_identity().as_u64(),
-            schema: self.installed_schema.binding_identity().clone(),
+            runtime: self.authority_identity().as_u64(),
+            schema: self.installed_schema().binding_identity().clone(),
             query: query.identity().clone(),
             count,
             roots: maximum_results.get(),
         })
     }
 
-    /// Opens one installed schedule. A census may run before its sole
-    /// extension; otherwise call `freeze_planned_reads` before the first read.
-    pub fn application_query_batch_from_installed_reads(
+    fn application_query_batch_from_installed_reads(
         &self,
         reads: &[WorthQueryApplicationQueryBatchReadPlan],
     ) -> Result<
@@ -123,8 +120,8 @@ impl<Schema: worth_query_declaration::facade::application_schema::ApplicationSch
         WorthQueryApplicationQueryBatchResourceDenial,
     > {
         let mut plan = InstalledBatchPlan {
-            runtime: self.runtime.authority_identity().as_u64(),
-            schema: self.installed_schema.binding_identity().clone(),
+            runtime: self.authority_identity().as_u64(),
+            schema: self.installed_schema().binding_identity().clone(),
 
             slots: BTreeMap::new(),
             items: 0,
@@ -138,9 +135,7 @@ impl<Schema: worth_query_declaration::facade::application_schema::ApplicationSch
         })
     }
 
-    /// Extends once from discovered planning data and freezes atomically.
-    /// Already consumed slots and original native custody remain unchanged.
-    pub fn extend_application_query_batch_once(
+    fn extend_application_query_batch_once(
         &self,
         batch: &WorthQueryApplicationQueryBatchAdmission,
         reads: &[WorthQueryApplicationQueryBatchReadPlan],
@@ -149,13 +144,22 @@ impl<Schema: worth_query_declaration::facade::application_schema::ApplicationSch
         let mut plan = plan
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        if plan.runtime != self.runtime.authority_identity().as_u64()
-            || plan.schema != self.installed_schema.binding_identity()
+        if plan.runtime != self.authority_identity().as_u64()
+            || plan.schema != self.installed_schema().binding_identity()
         {
             return Err(WorthQueryApplicationQueryBatchResourceDenial::ForeignPlan);
         }
         plan.extend(reads, true)
     }
+}
+
+impl<
+        Schema: worth_query_declaration::facade::application_schema::ApplicationSchema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > PlanningOps<Schema> for HostRuntime
+{
 }
 
 impl InstalledBatchPlan {

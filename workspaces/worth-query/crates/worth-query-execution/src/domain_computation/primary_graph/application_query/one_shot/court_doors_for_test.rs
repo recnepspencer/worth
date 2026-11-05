@@ -1,12 +1,13 @@
 //! Sealed test doors over this module's private members.
 use super::*;
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+pub trait OneShotDoorsOps<Schema>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema>
 where
     Schema: ApplicationSchema,
 {
     #[doc(hidden)]
-    pub fn execute_application_query_one_shot_with_request_for_test<
+    fn execute_application_query_one_shot_with_request_for_test<
         Query,
         Parameters,
         QueryResult,
@@ -42,4 +43,15 @@ where
             Scope,
         >(self, execution, plan)
     }
+}
+
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > OneShotDoorsOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
 }

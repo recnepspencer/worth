@@ -22,7 +22,7 @@ use worth_relational::facade::runtime::ManagedIndexSourceRebuild;
 #[allow(clippy::too_many_arguments)]
 pub(super) fn rebuild<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>>(
     execution: &ExecutionRequest<'_, '_>,
-    application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+    application: &dyn crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<S>,
     state: &Arc<ManagedIndexState<S, I>>,
     parent: &WorthQueryManagedGraphWorkSession,
     selected: &WorthQuerySelectedProductOperation<'_, S>,
@@ -69,7 +69,6 @@ pub(super) fn rebuild<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>
         .admit_build(epoch, &proof, parent, request, &source.terminal)
         .map_err(Denial::Lifecycle)?;
     let graph = application
-        .runtime
         .primary_graph()
         .ok_or(Denial::ForeignAssociation)?;
     let (observation, retirement) = graph

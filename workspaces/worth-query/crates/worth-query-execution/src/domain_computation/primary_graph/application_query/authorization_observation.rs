@@ -10,11 +10,13 @@ use crate::domain_computation::primary_graph::{
     WorthQueryOperationAuthorizationDenial, WorthQueryPrimaryGraphApplicationRuntime,
 };
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
-where
+pub(in crate::domain_computation::primary_graph::application_query) trait AuthorizationObservationScopedOps<
+    Schema,
+>:
+    crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<Schema> where
     Schema: ApplicationSchema,
 {
-    pub(in crate::domain_computation::primary_graph::application_query) fn observe_query_authorization<
+    fn observe_query_authorization<
         Principal,
         PrincipalIdentity,
         Scope,
@@ -52,4 +54,15 @@ where
             requirement,
         )
     }
+}
+
+impl<
+        Schema,
+        HostRuntime: crate::domain_computation::primary_graph::application_query::host::ApplicationQueryHost<
+                Schema,
+            > + ?Sized,
+    > AuthorizationObservationScopedOps<Schema> for HostRuntime
+where
+    Schema: ApplicationSchema,
+{
 }

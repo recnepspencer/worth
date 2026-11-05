@@ -1,5 +1,6 @@
 //! Runtime, root and original-observation checks for detached fixed outputs.
 use super::{RootConnection, WorthQueryProgramApplicationRuntime};
+use crate::domain_computation::primary_graph::application_output_demand::host::OutputDemandHost;
 use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_query_declaration::facade::application_program::{
