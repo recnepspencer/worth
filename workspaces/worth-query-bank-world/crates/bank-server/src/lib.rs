@@ -4,7 +4,7 @@
 //! Transport and Authentik protocol details belong to downstream adapters.
 
 #![forbid(unsafe_code)]
-#![cfg_attr(test, recursion_limit = "256")]
+#![recursion_limit = "256"]
 
 #[cfg(test)]
 #[path = "../../../../../scripts/test_cost/setup_observation.rs"]
