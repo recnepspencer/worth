@@ -1,7 +1,6 @@
 //! Intact digests cannot bless malformed selection meaning.
 use super::occurrences::{fixture, perform, prepare};
 use super::*;
-use sha2::{Digest, Sha256};
 use worth_relational::facade::{
     durability::RelationalCanonicalCommitArtifactRefusal as Refusal,
     durability::RelationalCanonicalPositionAdmissionDenial,
@@ -91,10 +90,7 @@ fn rehashed_selection_artifacts_refuse_wrong_source_identity_predecessor_and_mix
     for (name, mut bytes, expected) in cases {
         // Mutate a real artifact, preserving its original frame grammar and
         // producing a valid digest, so this reaches semantic readmission.
-        let length = u64::try_from(bytes.len() - 66).unwrap();
-        bytes[58..66].copy_from_slice(&length.to_le_bytes());
-        let digest = Sha256::digest(&bytes[66..]);
-        bytes[26..58].copy_from_slice(&digest);
+        crate::canonical_commit_frame::reseal(&mut bytes);
         RelationalCanonicalCommitArtifact::from_untrusted_bytes(bytes.clone().into_boxed_slice())
             .unwrap();
         let refusal = RelationalCanonicalCommitArtifact::readmit(&bytes, execution).unwrap_err();

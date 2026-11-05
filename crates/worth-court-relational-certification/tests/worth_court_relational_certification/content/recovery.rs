@@ -4,7 +4,6 @@ use super::{
     original,
     transaction::{batch, fixture, FORMAT},
 };
-use sha2::{Digest, Sha256};
 use worth_execution::{CancellationSource, ExecutionRequest};
 use worth_foundational::facade::ContentRefId;
 use worth_relational::facade::{
@@ -94,8 +93,7 @@ fn content_corruption_refuses_even_after_an_independent_outer_digest_repair() {
     bytes[start + super::expected::FRAME.len() - 1] ^= 1;
     // Independent test-side outer framing: reach Native's content hash rather
     // than letting the outer artifact digest reject first.
-    let repaired: [u8; 32] = Sha256::digest(&bytes[66..]).into();
-    bytes[26..58].copy_from_slice(&repaired);
+    crate::canonical_commit_frame::reseal(&mut bytes);
     assert!(RelationalCanonicalCommitArtifact::from_untrusted_bytes(bytes.clone()).is_ok());
     assert!(matches!(
         RelationalCanonicalCommitArtifact::readmit(&bytes, &execution),

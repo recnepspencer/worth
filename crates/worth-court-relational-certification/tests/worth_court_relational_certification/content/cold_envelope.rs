@@ -1,4 +1,4 @@
-//! A non-head journal body reaches content admission only on historical demand.
+//! Non-head canonical bodies reach content admission only on historical demand.
 use super::{recovery::publish, transaction::fixture};
 use sha2::{Digest, Sha256};
 use std::{
@@ -84,7 +84,23 @@ fn content_cold_envelope_preserves_a_literal_version_refusal_without_poisoning_h
         )
         .unwrap();
     let mut backing = Source::capture(&runtime, &execution, &checkpoint, older_position, None);
-    let bytes = backing.commits.get_mut(&older_position).unwrap();
+    let (old_member, mut bytes) = checkpoint
+        .members()
+        .iter()
+        .find_map(|member| match member {
+            RelationalCheckpointMember::New { locator, bytes }
+                if bytes.starts_with(b"WRTHRCCA")
+                    && u64::from_le_bytes(bytes[10..18].try_into().unwrap())
+                        == older_position.0 =>
+            {
+                Some((*locator, bytes.to_vec()))
+            }
+            RelationalCheckpointMember::New { .. } | RelationalCheckpointMember::Carried { .. } => {
+                None
+            }
+        })
+        .expect("the actual checkpoint owns the older canonical member");
+    assert_eq!(old_member.sha256, <[u8; 32]>::from(Sha256::digest(&bytes)));
     let previous_digest: [u8; 32] = bytes[26..58].try_into().unwrap();
     let at = bytes
         .windows(super::expected::FRAME.len())
@@ -93,12 +109,18 @@ fn content_cold_envelope_preserves_a_literal_version_refusal_without_poisoning_h
     bytes[at + 8..at + 10].copy_from_slice(&2_u16.to_le_bytes());
     // Independent physical framing repair reaches content's version check.
     // No canonical/root/field authority is constructed from these bytes.
-    let digest: [u8; 32] = Sha256::digest(&bytes[66..]).into();
-    bytes[26..58].copy_from_slice(&digest);
+    crate::canonical_commit_frame::reseal(&mut bytes);
+    let digest = bytes[26..58].try_into().unwrap();
+    let new_member = RelationalDurableMemberLocator {
+        sha256: Sha256::digest(&bytes).into(),
+        length: bytes.len() as u64,
+    };
+    backing.insert_selected_frame(&execution, new_member, &bytes);
     let physical = RelationalCanonicalCommitArtifact::from_untrusted_bytes(bytes.clone()).unwrap();
     assert_eq!(physical.position(), older_position);
     let mut manifest = checkpoint.bytes().to_vec();
     replace_index_digest(&mut manifest, previous_digest, digest);
+    replace_member_locator(&mut manifest, old_member, new_member);
     let source = Arc::new(backing);
     let target = reopen(&execution, &checkpoint, manifest, source.clone());
     assert_eq!(
@@ -274,7 +296,26 @@ fn replace_index_digest(bytes: &mut Vec<u8>, old: [u8; 32], new: [u8; 32]) {
         .filter_map(|(at, word)| (word == old).then_some(at))
         .collect();
     let [at] = positions.as_slice() else {
-        panic!("one old journal index digest, got {positions:?}")
+        panic!("one original canonical index digest, got {positions:?}")
     };
     bytes.splice(*at..*at + old.len(), encoded(new));
+}
+
+// Rewrite only this physical DATA locator, leaving all other wire values intact.
+fn replace_member_locator(
+    bytes: &mut Vec<u8>,
+    old: RelationalDurableMemberLocator,
+    new: RelationalDurableMemberLocator,
+) {
+    let old = rmp_serde::to_vec_named(&old).unwrap();
+    let new = rmp_serde::to_vec_named(&new).unwrap();
+    let positions: Vec<_> = bytes
+        .windows(old.len())
+        .enumerate()
+        .filter_map(|(at, word)| (word == old).then_some(at))
+        .collect();
+    let [at] = positions.as_slice() else {
+        panic!("one selected canonical locator, got {positions:?}")
+    };
+    bytes.splice(*at..*at + old.len(), new);
 }

@@ -5,7 +5,6 @@ use super::{
     recovery::publish,
     transaction::{fixture, FORMAT},
 };
-use sha2::{Digest, Sha256};
 use std::sync::Arc;
 use worth_execution::{CancellationSource, ExecutionRequest};
 use worth_relational::facade::{
@@ -54,10 +53,7 @@ fn content_controlled_journal_seed_admits_the_canonical_omitted_history_tail() {
         cursor = end;
     }
     assert!(removed, "the fixture originally carries authored history");
-    let length = (bytes.len() - 66) as u64;
-    bytes[58..66].copy_from_slice(&length.to_le_bytes());
-    let digest: [u8; 32] = Sha256::digest(&bytes[66..]).into();
-    bytes[26..58].copy_from_slice(&digest);
+    crate::canonical_commit_frame::reseal(&mut bytes);
     // Successful admission includes Native's independent exact canonical
     // re-emission check. Missing history remains its supported unavailable tail.
     RelationalCanonicalCommitArtifact::readmit(&bytes, &execution).unwrap();
@@ -194,10 +190,7 @@ fn content_decoded_journal_omission_refuses_before_selecting_a_root() {
     assert!(!bytes
         .windows(super::expected::FRAME.len())
         .any(|word| word == super::expected::FRAME));
-    let length = (bytes.len() - 66) as u64;
-    bytes[58..66].copy_from_slice(&length.to_le_bytes());
-    let repaired: [u8; 32] = Sha256::digest(&bytes[66..]).into();
-    bytes[26..58].copy_from_slice(&repaired);
+    crate::canonical_commit_frame::reseal(&mut bytes);
     let transport = RelationalCanonicalCommitArtifact::from_untrusted_bytes(bytes).unwrap();
     // Valid artifact data alone grants neither a frame resolver nor publication.
     RelationalCanonicalCommitArtifact::readmit(transport.as_bytes(), &execution).unwrap();

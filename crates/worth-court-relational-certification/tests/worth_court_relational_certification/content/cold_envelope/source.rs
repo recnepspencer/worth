@@ -34,8 +34,9 @@ fn snapshot_failure(cause: OwnedSnapshotDenial, missing: Cause) -> Refusal {
 #[derive(Debug)]
 pub(in crate::content) struct Source {
     members: MemberBytes,
-    pub(super) commits: BTreeMap<PatchStreamPosition, Vec<u8>>,
+    commits: BTreeMap<PatchStreamPosition, Vec<u8>>,
     older: PatchStreamPosition,
+    selected_probe: Option<RelationalDurableMemberLocator>,
     pub(super) reads: AtomicUsize,
 }
 impl Source {
@@ -77,11 +78,35 @@ impl Source {
             members,
             commits,
             older: older_position,
+            selected_probe: None,
             reads: AtomicUsize::new(0),
         }
     }
 }
+impl Source {
+    pub(super) fn insert_selected_frame(
+        &mut self,
+        request: &ExecutionRequest<'_, '_>,
+        member: RelationalDurableMemberLocator,
+        bytes: &[u8],
+    ) {
+        let mut body = ExecutionRequestArrayBuilder::allocate(*request, bytes.len()).unwrap();
+        body.extend_from_slice(bytes).unwrap();
+        self.members.insert(
+            member.sha256,
+            member.length,
+            body.seal_immutable_bytes().unwrap(),
+        );
+        self.selected_probe = Some(member);
+    }
+}
+
 impl RelationalDurableColdSource for Source {
+    fn observe_canonical_member_read(&self, member: RelationalDurableMemberLocator) {
+        if self.selected_probe == Some(member) {
+            self.reads.fetch_add(1, Ordering::SeqCst);
+        }
+    }
     fn retain_members(
         &self,
         _: &[RelationalDurableMemberLocator],
