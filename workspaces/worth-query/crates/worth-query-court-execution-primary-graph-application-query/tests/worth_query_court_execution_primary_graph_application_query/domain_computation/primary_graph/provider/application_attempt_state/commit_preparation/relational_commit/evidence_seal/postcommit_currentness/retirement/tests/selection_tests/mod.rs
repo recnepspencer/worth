@@ -9,6 +9,15 @@ use worth_relational::facade::transactions::RecordRef;
 
 #[test]
 fn checkpoint_retirement_requires_this_commits_changed_entity_and_deleted_snapshot() {
+    require_this_commits_deletion(false);
+}
+
+#[test]
+fn closure_retirement_requires_this_commits_changed_entity_and_deleted_snapshot() {
+    require_this_commits_deletion(true);
+}
+
+fn require_this_commits_deletion(closure: bool) {
     let world = installed_authorization_world(
         true,
         worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system(),
@@ -24,9 +33,14 @@ fn checkpoint_retirement_requires_this_commits_changed_entity_and_deleted_snapsh
             )
         })
         .expect("the fixture read owns its installed host call");
-    // This isolates owner checkpoint selector admission. Typed write/delete agreement
-    // is protected by retire_role_requires_the_matching_delete_effect.
+    // This isolates retirement selection; the fixture varies only proof placement.
+    // Native closure admission is exercised by the public installed producer court.
     let retirement = restored_role(owned, WorthQueryApplicationOutputPosture::Retire);
+    let retirement = if closure {
+        retirement.retirement_roles_as_closure_for_test()
+    } else {
+        retirement
+    };
     let preservation = restored_role(owned, WorthQueryApplicationOutputPosture::Preserve);
     let changed = [RecordRef::Entity(owned)];
     world

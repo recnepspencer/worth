@@ -17,3 +17,5 @@ mod write_fence_courts;
 mod route_degree;
 
 mod materialization;
+
+mod root_retirement;
