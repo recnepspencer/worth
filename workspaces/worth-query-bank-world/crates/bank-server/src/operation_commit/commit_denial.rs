@@ -8,6 +8,8 @@ use worth_query_host::facade::primary_graph::{
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankCommitDenialKind {
+    ContentInconsistency,
+    Content(worth_query_host::facade::primary_graph::RelationalContentRejection),
     OriginalEffectReleased,
     IdempotencyPreparationBusy,
     DomainValueRejected,
@@ -102,6 +104,8 @@ pub(crate) const fn denial_kind(
 ) -> BankCommitDenialKind {
     use WorthQueryApplicationCommitDenialKind as Query;
     match kind {
+        Query::ContentInconsistency => BankCommitDenialKind::ContentInconsistency,
+        Query::Content(cause) => BankCommitDenialKind::Content(cause),
         Query::OriginalEffectReleased => BankCommitDenialKind::OriginalEffectReleased,
         Query::IdempotencyPreparationBusy => BankCommitDenialKind::IdempotencyPreparationBusy,
         Query::DomainValueRejected => BankCommitDenialKind::DomainValueRejected,

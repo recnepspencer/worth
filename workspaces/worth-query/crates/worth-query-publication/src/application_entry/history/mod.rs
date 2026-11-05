@@ -110,8 +110,8 @@ pub use outputs::{
     WorthQueryHistoryWithOutputs,
 };
 pub use outputs::{
-    WorthQueryHistoryOutputAdvanceDenial, WorthQueryHistoryOutputReadDenial,
-    WorthQueryHistoryRootOutputAdmissionDenial,
+    WorthQueryHistoryOutputAdvanceDenial, WorthQueryHistoryOutputControlDenial,
+    WorthQueryHistoryOutputReadDenial, WorthQueryHistoryRootOutputAdmissionDenial,
 };
 mod page_pause;
 mod paging;

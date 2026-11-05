@@ -15,8 +15,8 @@ use worth_query_execution::publication_boundary::document_history::{
     WorthQueryHistoryNavigationIntent, WorthQueryHistorySelection,
 };
 pub use worth_query_execution::publication_boundary::document_history::{
-    WorthQueryHistoryOutputAdvanceDenial, WorthQueryHistoryOutputReadDenial,
-    WorthQueryHistoryRootOutputAdmissionDenial,
+    WorthQueryHistoryOutputAdvanceDenial, WorthQueryHistoryOutputControlDenial,
+    WorthQueryHistoryOutputReadDenial, WorthQueryHistoryRootOutputAdmissionDenial,
 };
 
 /// A document with no required derived-output tree has no output registry.

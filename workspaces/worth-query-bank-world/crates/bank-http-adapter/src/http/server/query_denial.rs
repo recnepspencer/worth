@@ -23,8 +23,10 @@ pub(super) fn query_denial(denial: BankApplicationQueryDenial) -> BankHttpDenial
         BankApplicationQueryDenial::Installation(_)
         | BankApplicationQueryDenial::CapabilityInstallation(_)
         | BankApplicationQueryDenial::PreviewSession(_)
-        | BankApplicationQueryDenial::ContinuationExecution(_)
-        | BankApplicationQueryDenial::LiveOpen(_) => unavailable(),
+        => unavailable(),
+        BankApplicationQueryDenial::ContinuationExecution(cause) => retained_execution::continuation(cause.kind()),
+        BankApplicationQueryDenial::LiveOpen(cause) => retained_execution::live(cause.kind()),
+        BankApplicationQueryDenial::HistoryOutput(cause) => history_output::denial(cause),
         BankApplicationQueryDenial::PrincipalResolution(
             worth_query_host::facade::primary_graph::WorthQueryPrincipalResolutionDenialKind::Stopped(stop),
         ) => super::mutation_application::pending_execution_stop(stop),
@@ -38,7 +40,7 @@ pub(super) fn query_denial(denial: BankApplicationQueryDenial) -> BankHttpDenial
         BankApplicationQueryDenial::ScopeResolution(denial) => entity(denial.kind()),
         BankApplicationQueryDenial::Admission(denial) => admission(denial.kind()),
         BankApplicationQueryDenial::Execution(denial) => execution(denial.kind()),
-        BankApplicationQueryDenial::OutputSettlement(kind) => output_settlement(kind),
+        BankApplicationQueryDenial::OutputSettlement(kind) => output_settlement::denial(kind),
         BankApplicationQueryDenial::ManagedIndex(cause) => managed_index(&cause),
     }
 }
@@ -136,6 +138,9 @@ fn admission(kind: BankApplicationQueryAdmissionDenialKind) -> BankHttpDenial {
 fn execution(kind: BankApplicationOneShotDenialKind) -> BankHttpDenial {
     use BankApplicationOneShotDenialKind as Execution;
     match kind {
+        Execution::Content(cause) => {
+            super::relational_execution_denial::denial(cause.into_execution_cause())
+        }
         Execution::ExecutionRequest(kind) => {
             super::mutation_application::pending_execution_denial(kind)
         }
@@ -254,52 +259,9 @@ fn entity(kind: BankEntityResolutionDenialKind) -> BankHttpDenial {
     }
 }
 
-fn output_settlement(kind: BankApplicationOutputSettlementDenialKind) -> BankHttpDenial {
-    use BankApplicationOutputSettlementDenialKind as Settlement;
-    match kind {
-        Settlement::ManagedCleanupRequired(_) => {
-            BankHttpDenial::new(Kind::ManagedCleanupRequired, Next::ContactOperator)
-        }
-        Settlement::BridgeConditional(_)
-        | Settlement::CorrespondenceDelivery(_)
-        | Settlement::ProductDelivery(_) => unavailable(),
-        Settlement::ExecutionRequest(cause) => super::advancement_denial::advancement(cause),
-        Settlement::RelationalExecution(cause) => super::relational_execution_denial::denial(cause),
-        Settlement::ManagedIndexSourceDenied | Settlement::SourceQueryInstallation(_) => {
-            unavailable()
-        }
-        Settlement::SourcePrincipal(_) => stale(),
-        Settlement::SourceScope(kind) => entity(kind),
-        Settlement::SourceQueryAdmission(kind) => admission(kind),
-        Settlement::SourceQueryExecution(kind) => execution(kind),
-        Settlement::RequestAuthorization(kind) => authorization_denial(kind),
-        Settlement::Cancelled => cancelled(),
-        Settlement::TimedOut => deadline(),
-        Settlement::ProducerDomainDenied => malformed(),
-        Settlement::Superseded
-        | Settlement::PublicationStale
-        | Settlement::ForeignSource
-        | Settlement::ForeignDemand
-        | Settlement::ForeignSettlement
-        | Settlement::RetainedBasisUnavailable
-        | Settlement::Closed => stale(),
-        Settlement::WorkBudgetExceeded
-        | Settlement::RetentionBudgetExceeded
-        | Settlement::PublicationCapacityExceeded => exhausted(),
-        Settlement::MissingApplicableProducer
-        | Settlement::AmbiguousApplicableProducer
-        | Settlement::ProducerUnavailable
-        | Settlement::SchedulingRejected
-        | Settlement::SchedulingDeferred
-        | Settlement::NoEffect => unavailable(),
-        Settlement::ProductSelection(kind) => product_selection(kind),
-        Settlement::RequiredSuccessorStateUnavailable
-        | Settlement::DuplicatePerformedSource
-        | Settlement::IncompleteDependencyCoverage
-        | Settlement::ManagedSourceExpansionUnsupported
-        | Settlement::UnobservedWrite(_) => internal_denied(),
-    }
-}
+mod history_output;
+mod output_settlement;
+mod retained_execution;
 
 const fn malformed() -> BankHttpDenial {
     BankHttpDenial::new(Kind::MalformedRequest, Next::CorrectRequest)
@@ -344,3 +306,6 @@ mod producer_quote_tests;
 #[cfg(test)]
 #[path = "query_denial/request_stop_tests.rs"]
 mod request_stop_tests;
+
+#[cfg(test)]
+mod content_stop_tests;

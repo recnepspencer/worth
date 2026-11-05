@@ -72,6 +72,9 @@ fn derivation(cause: WorthQueryCorrectionDerivationDenial) -> BankHttpDenial {
             mutation_application::pending_execution_stop(stop)
         }
         D::Workflow(cause) => match cause.kind() {
+            WorthQueryApplicationAttemptDenialKind::ContentInconsistency => {
+                BankHttpDenial::new(Kind::InternalDenied, Next::ContactOperator)
+            }
             WorthQueryApplicationAttemptDenialKind::Cancelled => cancelled(),
             WorthQueryApplicationAttemptDenialKind::DeadlineExceeded => deadline(),
             WorthQueryApplicationAttemptDenialKind::ExecutionRequest(cause) => {

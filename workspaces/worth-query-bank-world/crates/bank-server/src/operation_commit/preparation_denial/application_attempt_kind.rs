@@ -10,6 +10,7 @@ pub(super) const fn application_attempt_kind(
             BankApplicationAttemptDenialKind::ManagedIndexSourceDenied
         }
         Query::ValueDecode(cause) => BankApplicationAttemptDenialKind::ValueDecode(cause),
+        Query::ContentInconsistency => BankApplicationAttemptDenialKind::ContentInconsistency,
         Query::ForeignPhase => BankApplicationAttemptDenialKind::ForeignPhase,
         Query::StorageUnavailable => BankApplicationAttemptDenialKind::StorageUnavailable,
         Query::ExecutionRequest(cause) => BankApplicationAttemptDenialKind::ExecutionRequest(cause),

@@ -49,6 +49,12 @@ pub struct BankApplicationQueryLaneDenial<Kind> {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum BankApplicationOutputSettlementDenialKind {
+    WorldRecovery(worth_query_host::facade::primary_graph::RuntimeWorldRecoveryDenial),
+    RecoveryPublication(worth_query_host::facade::primary_graph::NoEffectCause),
+    PublicationReceipt(worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyResolutionDenialKind),
+    CurrentControlBusy,
+    RetainedVerificationFactUnavailable(worth_query_host::facade::primary_graph::RebaseVerificationReason),
+    SettlementProvenance(worth_query_host::facade::primary_graph::WorthQueryOutputSettlementProvenanceDenial),
     ManagedIndexSourceDenied,
     ManagedCleanupRequired(worth_query_host::facade::primary_graph::WorthQueryMutationCleanupFailureKind),
     RelationalExecution(worth_query_host::facade::primary_graph::RelationalExecutionDenialCause),
@@ -118,6 +124,7 @@ where
 
 #[derive(Debug)]
 pub enum BankApplicationQueryDenial {
+    HistoryOutput(worth_query_host::facade::application_entry::WorthQueryHistoryOutputReadDenial),
     ExecutionRequest(
         worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial,
     ),
@@ -227,6 +234,9 @@ impl BankApplicationQueryDenial {
             WorthQueryApplicationRequestQueryDenial::ManagedIndex(cause) => {
                 Self::ManagedIndex(Box::new(cause))
             }
+            WorthQueryApplicationRequestQueryDenial::HistoryOutput(cause) => {
+                Self::HistoryOutput(cause)
+            }
             WorthQueryApplicationRequestQueryDenial::RequestMode => Self::RequestMode,
             WorthQueryApplicationRequestQueryDenial::CapabilityInstallation(denial) => {
                 Self::from_capability_installation(denial)
@@ -285,6 +295,12 @@ impl BankApplicationQueryDenial {
         use WorthQueryOutputDemandDenialKind as Query;
 
         let kind = match denial.kind() {
+            Query::WorldRecovery(cause) => Bank::WorldRecovery(cause),
+            Query::RecoveryPublication(cause) => Bank::RecoveryPublication(cause),
+            Query::PublicationReceipt(cause) => Bank::PublicationReceipt(cause),
+            Query::CurrentControlBusy => Bank::CurrentControlBusy,
+            Query::RetainedVerificationFactUnavailable(cause) => Bank::RetainedVerificationFactUnavailable(cause),
+            Query::SettlementProvenance(cause) => Bank::SettlementProvenance(cause),
             Query::ManagedIndexSourceDenied => Bank::ManagedIndexSourceDenied,
             Query::ManagedCleanupRequired(kind) => Bank::ManagedCleanupRequired(kind),
             Query::BridgeConditional(cause) => Bank::BridgeConditional(cause),

@@ -33,11 +33,14 @@ pub(super) fn managed_index(
     }
 }
 
-fn source(
+pub(super) fn source(
     cause: &worth_query_host::facade::primary_graph::WorthQuerySourceExpectationDenial,
 ) -> BankHttpDenial {
     use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestInterruption;
 
+    if let Some(authorization) = cause.authorization_denial() {
+        return authorization_denial(authorization.kind().into());
+    }
     if let Some(stop) = cause.retention_interruption() {
         return match stop {
             WorthQueryRequestInterruption::Cancelled => cancelled(),
@@ -148,7 +151,7 @@ fn ordered_storage(
         Denial::CapacityOverflow => internal_denied(),
     }
 }
-fn native_admission(
+pub(super) fn native_admission(
     cause: &worth_query_host::facade::primary_graph::CompanionPreflightStop,
 ) -> BankHttpDenial {
     use worth_query_host::facade::primary_graph::{

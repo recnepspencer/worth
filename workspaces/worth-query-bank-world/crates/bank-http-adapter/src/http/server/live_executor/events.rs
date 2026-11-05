@@ -64,6 +64,8 @@ pub(super) fn live_event(
                 missed_commit_batches: overflow.missed_commit_batches(),
             })
         }
+        BankAccountActivityLiveOutcome::CauseDenied(bank_server::BankApplicationLiveCauseDenial::Content(cause)) => Some(denied(request_id, super::super::relational_execution_denial::denial(cause.into_execution_cause()))),
+        BankAccountActivityLiveOutcome::AuthorizationDenied(cause) if matches!(cause.kind(), bank_server::BankAuthorizationDenialKind::InputNotAdmitted | bank_server::BankAuthorizationDenialKind::ExecutionRequest(worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind::Content(_) | worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind::ContentInconsistency) | bank_server::BankAuthorizationDenialKind::RelationalExecution(worth_query_host::facade::primary_graph::RelationalExecutionDenialCause::Content(_))) => Some(denied(request_id, super::super::authorization_denial::authorization_denial(cause.kind()))),
         BankAccountActivityLiveOutcome::AuthorizationDenied(_)
         | BankAccountActivityLiveOutcome::ProjectionDenied(_)
         | BankAccountActivityLiveOutcome::CauseDenied(_) => Some(denied(
@@ -122,3 +124,6 @@ pub(super) fn send_terminal(
         let _ = terminal.send(event);
     }
 }
+
+#[cfg(test)]
+mod content_stop_tests;

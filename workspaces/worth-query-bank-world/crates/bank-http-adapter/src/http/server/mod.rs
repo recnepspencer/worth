@@ -254,3 +254,5 @@ mod closed_mutation_source;
 mod closed_source_evidence;
 
 pub use closed_mutation_delivery::BankHttpClosedMutationDelivery;
+
+mod world_denial;
