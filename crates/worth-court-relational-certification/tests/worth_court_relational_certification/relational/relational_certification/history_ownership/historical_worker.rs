@@ -106,6 +106,15 @@ fn worker_only_selection_restores_two_publication_families_at_their_original_ids
             )
             .unwrap();
         assert!(selected.publication().is_historical_selection());
+        // The antecedent walk through a HistoricalSelection origin also polls
+        // the original worker request; it never needs serial accounting.
+        let prior = world
+            .runtime
+            .readmit_restored_producer_prior(execution, &world.installed, &after, meaning)
+            .unwrap()
+            .unwrap();
+        assert!(prior.publication().is_historical_selection());
+        assert_eq!(prior.producer_scope(), world.source);
     }
     assert!(!execution.has_accounting());
     release_test_commit_snapshot(&world.runtime, &committed);
